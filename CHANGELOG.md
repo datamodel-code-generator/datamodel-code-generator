@@ -5,6 +5,78 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.80.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.80.0) - 2026-09-12
+
+## Breaking Changes
+
+
+### Code Generation Changes
+* Python union annotations preserve unsupported member types - When generating from Python input models, unions containing members such as `Callable` retain each member type and the original union order instead of repeating the first non-null type. Regenerated annotations change for the affected unions and nested containers. (#3947)
+* Optional nested factories require a callable empty constructor - With `--use-default-factory-for-optional-nested-models`, an optional child with required constructor fields, including inherited fields, keeps its normal `None` or `UNSET` default instead of receiving a factory that fails when called without arguments. (#3953)
+* Safe frozen set items use native Pydantic hash generation - Safely hashable frozen Pydantic v2 models used as set or frozenset items rely on the native hash in place of the explicit identity-hash assignment. Mutable models and models outside the supported safe cases retain the previous generated hash behavior. (#4025)
+* GraphQL msgspec typename fields retain separate inherited slots - For affected GraphQL inheritance collisions, generated models keep inherited synthetic typename slots separate from colliding child user fields, which receive distinct Python names while retaining their wire aliases. Python attribute names in these affected hierarchies can differ from earlier output. (#4045)
+* Constrained root aliases retain their validation - With `--use-root-model-type-alias`, constraints are retained in the alias where supported; affected roots otherwise use a `RootModel` class instead of an unconstrained alias. Unconstrained aliases retain their prior form, and an existing custom root-alias template keeps its selection and remains responsible for its own constraints. (#3962)
+* Eligible compound property names use string key types - Eligible string alternatives in `propertyNames` generate inline constrained string key types instead of nested-model keys. This changes ordinary key annotations for affected schemas; custom schema runtime validators remain conditional on `--schema-validator-type pydantic-v2`. (#3970)
+* Opt-in schema validators enforce undeclared required names - With `--schema-validator-type pydantic-v2`, required property names absent from generated fields are checked against the raw object input, including applicable pattern intersections. Payloads missing those required names are rejected where the previous validators accepted them; this fix does not add a validator when the option is disabled. (#3988)
+* Mapped allOf roots retain compatible constraints - For affected `allOf` roots with an outer format or type mapping, compatible numeric or string constraints are preserved while constraints incompatible with the mapped runtime type are omitted. Regenerated annotations change for these roots and avoid applying incompatible constraints to date, UUID, or other mapped values. (#4043)
+* Eligible property-name alternatives use constrained string keys - For supported `propertyNames` alternatives combining ordinary string constraints with non-string-only branches, generated dictionary keys use the applicable constrained string type instead of retaining the non-string alternatives. References, complex patterns, and unsupported cases retain the existing fallback. (#4046)
+* Mapped Avro logical defaults use their physical values - When `--type-mappings` or `--type-overrides` remap Avro logical types to physical types such as `int` or `bytes`, affected defaults use the physical Avro value instead of a logical constructor such as a datetime, decimal, or duration expression. (#4031)
+* Combined XSD patterns require Pydantic 2.8 at runtime - Pydantic v2 output for distinct sibling pattern facets or combined inherited and derived facets uses compiled Python regular expressions in place of string patterns. Affected generated models require Pydantic 2.8 or later at runtime; the generator dependency minimum and ordinary single-pattern output are unchanged, and this fix adds no custom runtime validator. (#4048)
+
+### Default Behavior Changes
+* Safe frozen set items use value-based hashing - Affected frozen Pydantic v2 set items use native value-based hashing, so equal values can deduplicate where identity-based hashing previously kept them distinct. Mutable models and unsupported field combinations retain the prior behavior; nested models are not required to become frozen. (#4025)
+
+### Error Handling Changes
+* XML Schema collision generation is restored - Inputs with unused type-name collisions or collisions between XML field names can generate again instead of triggering the additional blanket collision errors. Existing limitations in representing colliding XML fields remain; this restores earlier handling and does not add complete collision support. (#4034)
+* Warning-only Pydantic aliases are accepted - Explicit aliases that merely match a protected prefix and do not conflict with an actual base-model attribute retain the existing warning-only behavior instead of being rejected during generation. Actual attribute conflicts remain subject to the configured conflict checks. (#4038)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Fix nightly payload validation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4028
+* Preserve unsupported Python union members by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3947
+* Preserve inherited Python field overrides by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3948
+* Disambiguate Python model definitions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3949
+* Preserve Python alias field types by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3950
+* Fix nested Python type imports by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3979
+* Fix specialized Python model reuse by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3980
+* Avoid invalid nested default factories by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3953
+* Preserve nested Python type metadata by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3981
+* Preserve Python RootModel inputs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3954
+* Preserve safe native Pydantic set hashes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4025
+* Fix final RootModel sequence types by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3956
+* Preserve XSD generation with unused type collisions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4034
+* Preserve MCP boolean definition references by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4033
+* Preserve custom dataclass alias templates by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4032
+* Preserve warning-only Pydantic aliases by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4038
+* Preserve aliased discriminator generation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4039
+* Limit GraphQL typename collision renaming by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4042
+* Preserve Python generic reuse fallback by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4037
+* Fix msgspec typename inheritance by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4045
+* Preserve generation with unused msgspec enums by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4035
+* Fix root model alias constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3962
+* Fix numeric allOf intersections by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3963
+* Fix compound property name constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3970
+* Apply union constraints to matching types by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3971
+* Preserve raw pattern property inputs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3972
+* Preserve additional pattern intersections by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3984
+* Enforce undeclared required properties by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3988
+* Preserve pattern validation with root annotations by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/3990
+* Respect nested schema resource drafts by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4041
+* Preserve compatible allOf format constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4043
+* Fix allOf property key constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4044
+* Fix non-string property name alternatives by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4046
+* Preserve mapped Avro defaults by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4031
+* Fix XSD pattern validation in type aliases by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4048
+* Fix repeated directory generation by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4049
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.79.0...0.80.0
+
+---
+
 ## [0.79.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.79.0) - 2026-09-10
 
 ## Breaking Changes
