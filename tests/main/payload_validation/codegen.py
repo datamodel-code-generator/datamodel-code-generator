@@ -154,6 +154,7 @@ def _run_payload_codegen(args: list[str]) -> Exit:
 
 
 def _load_payload_type(module_name: str, output_path: Path) -> Any:
+    """Load the named alias, including None, or the sole generated class."""
     spec = importlib.util.spec_from_file_location(module_name, output_path)
     if spec is None or spec.loader is None:
         msg = f"Unable to import generated module from {output_path}"
