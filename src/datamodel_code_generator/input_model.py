@@ -924,7 +924,7 @@ def _add_python_type_to_properties(
 
 def _clear_field_schema_names(schema: dict[str, Any]) -> None:
     """Remove temporary owners from schema positions, including custom inlined models."""
-    from datamodel_code_generator.parser.mcp import (  # ruff: ignore[import-outside-top-level]
+    from datamodel_code_generator._json_schema import (  # ruff: ignore[import-outside-top-level]
         SCHEMA_MAP_KEYS,
         SCHEMA_VALUE_KEYS,
     )
@@ -1534,7 +1534,7 @@ class _InputModelDefinitions:
                     renames[old_name] = name
         if renames:
             # Only schema positions contain references: defaults/examples are user data.
-            from datamodel_code_generator.parser.mcp import _rewrite_schema_refs  # noqa: PLC0415
+            from datamodel_code_generator._json_schema import _rewrite_schema_refs  # noqa: PLC0415
 
             schema = _rewrite_schema_refs(schema, renames, set())
             schema["$defs"] = {renames.get(name, name): value for name, value in schema["$defs"].items()}
