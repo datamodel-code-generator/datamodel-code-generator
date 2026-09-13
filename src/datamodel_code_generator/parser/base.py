@@ -70,6 +70,7 @@ from datamodel_code_generator._source import (
     _is_parsed_source_cache_enabled,
     _read_parser_source_data_from_path,
 )
+from datamodel_code_generator._template_data import copy_extra_template_data
 from datamodel_code_generator.enums import DefaultValueType, StrictTypes
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
@@ -2530,7 +2531,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             and isinstance(source, Path | list)
         )
         self.custom_template_dir = config.custom_template_dir
-        self.extra_template_data: defaultdict[str, Any] = config.extra_template_data or defaultdict(dict)
+        self.extra_template_data: defaultdict[str, Any] = (
+            copy_extra_template_data(data) if (data := config.extra_template_data) else defaultdict(dict)
+        )
         self.validators = config.validators
         self.generate_schema_validators: bool = config.generate_schema_validators
         self._set_typed_extra_annotation_mode(use_deferred_annotations=True)

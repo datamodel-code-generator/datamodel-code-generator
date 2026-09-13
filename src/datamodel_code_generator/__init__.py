@@ -1892,20 +1892,12 @@ def _prepare_generation_config(config: GenerateConfig, caller_cwd: Path) -> tupl
     return config, output_context_path, emit_settings_path
 
 
-def _copy_generation_extra_template_data(config: GenerateConfig) -> defaultdict[str, dict[str, Any]] | None:
-    """Copy mutable template data once for the parser lifetime."""
-    if config.extra_template_data is None:
-        return None
-
-    from datamodel_code_generator._template_data import copy_template_data  # noqa: PLC0415
-
-    memo: dict[int, Any] = {}
-    extra_template_data = defaultdict(
-        dict,
-        ((key, copy_template_data(value, memo)) for key, value in config.extra_template_data.items()),
-    )
-    del memo
-    return extra_template_data
+def _prepare_generation_extra_template_data(config: GenerateConfig) -> defaultdict[str, dict[str, Any]] | None:
+    """Preserve facade dictionary defaults; the parser owns the nested copy."""
+    data = config.extra_template_data
+    if isinstance(data, defaultdict) and data.default_factory is not dict:
+        return defaultdict(dict, data)
+    return data
 
 
 def _build_generation_parser(  # noqa: PLR0913, PLR0917
@@ -2339,7 +2331,7 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
             retry_base_path = parser.base_path
             del parser
 
-            retry_extra_template_data = _copy_generation_extra_template_data(config)
+            retry_extra_template_data = _prepare_generation_extra_template_data(config)
             parser, data_model_types, defer_formatting = _build_generation_retry_parser(
                 input_,
                 input_text,
@@ -2478,7 +2470,7 @@ def _generate(  # noqa: PLR0914
         config, output_context_path, emit_settings_path = _prepare_generation_config(config, caller_cwd)
         input_filename = config.input_filename
         input_file_type = config.input_file_type
-        extra_template_data = _copy_generation_extra_template_data(config)
+        extra_template_data = _prepare_generation_extra_template_data(config)
         dataclass_arguments = config.dataclass_arguments
         skip_root_model = config.skip_root_model
         remote_text_cache: DefaultPutDict[str, str] = DefaultPutDict()

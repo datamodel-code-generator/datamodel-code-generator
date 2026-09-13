@@ -7,12 +7,13 @@ import json
 import socket
 import sys
 import weakref
-from collections import Counter
+from collections import Counter, defaultdict
 from copy import deepcopy
+from functools import partial
 from ipaddress import ip_address
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union, cast
 
 import pydantic
 import pytest
@@ -77,8 +78,8 @@ from datamodel_code_generator.parser.jsonschema import (
 )
 from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, Reference
 from datamodel_code_generator.types import ANY, DataType
-from tests.conftest import assert_output, validate_generated_code
-from tests.main.conftest import assert_generated_model_json_validation
+from tests.conftest import assert_inputs_not_mutated, assert_output, create_assert_file_content, validate_generated_code
+from tests.main.conftest import assert_generated_model_json_validation, run_generate_file_and_assert
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -88,10 +89,65 @@ if TYPE_CHECKING:
 DATA_PATH: Path = Path(__file__).parents[1] / "data" / "jsonschema"
 EXPECTED_PARSER_PATH: Path = Path(__file__).parents[1] / "data" / "expected" / "parser"
 EXPECTED_MAIN_JSONSCHEMA_PATH: Path = Path(__file__).parents[1] / "data" / "expected" / "main" / "jsonschema"
+assert_file_content = create_assert_file_content(EXPECTED_PARSER_PATH)
 
 
 def _json_schema_object(data: dict[str, Any]) -> JsonSchemaObject:
     return JsonSchemaObject.model_validate(data)
+
+
+@pytest.mark.parametrize("entrypoint", ["config", "options", "api"])
+@pytest.mark.parametrize("custom_factory", [False, True])
+def test_parser_template_data_reuse(output_file: Path, entrypoint: str, *, custom_factory: bool) -> None:
+    """Keep caller template data reusable while applying each parser's extra policy."""
+    case = json.loads((DATA_PATH.parent / "payloads/parser_template_data_reuse.json").read_text())
+    config = JSONSchemaParserConfig(
+        extra_template_data=defaultdict(partial(dict) if custom_factory else dict, case["template_data"]),
+        formatters=[Formatter.BUILTIN],
+    )
+    with assert_inputs_not_mutated({"template_data": config.extra_template_data}):
+        for extra_fields in ("allow", "forbid"):
+            match entrypoint:
+                case "api":
+                    run_generate_file_and_assert(
+                        input_path=DATA_PATH / "person.json",
+                        input_file_type=InputFileType.JsonSchema,
+                        output_path=output_file,
+                        output_model_type=DataModelType.PydanticV2BaseModel,
+                        extra_template_data=config.extra_template_data,
+                        extra_fields=extra_fields,
+                        formatters=[Formatter.BUILTIN],
+                        disable_timestamp=True,
+                        use_standard_collections=False,
+                        use_union_operator=False,
+                        settings_path=Path(__file__).parents[2],
+                        assert_func=assert_file_content,
+                        transform=lambda content: content.partition("\n\n")[2],
+                        expected_file=EXPECTED_PARSER_PATH / f"template_data_{extra_fields}.py",
+                    )
+                    continue
+                case "config":
+                    parser = JsonSchemaParser(
+                        DATA_PATH / "person.json", config=config.model_copy(update={"extra_fields": extra_fields})
+                    )
+                case _:
+                    parser = JsonSchemaParser(
+                        DATA_PATH / "person.json",
+                        extra_template_data=config.extra_template_data,
+                        extra_fields=extra_fields,
+                        formatters=[Formatter.BUILTIN],
+                    )
+            generated = parser.parse()
+            assert_output(generated, EXPECTED_PARSER_PATH / f"template_data_{extra_fields}.py")
+            output_file.write_text(cast("str", generated), encoding="utf-8")
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="parser_template_data_reuse",
+        model_name="Person",
+        valid_json=json.dumps(case["valid"]),
+        invalid_json=json.dumps(case["invalid"]),
+        expected_error_type="extra_forbidden",
+    )
 
 
 @pytest.mark.parametrize(
