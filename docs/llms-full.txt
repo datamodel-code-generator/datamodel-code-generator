@@ -42151,11 +42151,15 @@ paths:
   import or identify concrete Pydantic, dataclass, TypedDict, or msgspec output implementations.
 - Output-specific constructor, forward-reference, runtime-validation, import-conflict, and rendering behavior belongs
   to the output model that implements it. The parser calls the neutral capability without switching on backend names.
+  This includes annotation representation, TypedDict provider selection, configuration assembly, and access to
+  prepared output metadata. Existing custom-template keys and extension capabilities remain compatibility contracts;
+  moving their preparation between layers must preserve generated code, insertion order, and option precedence.
 - Output models inject reserved-field and generated-import conflict handling through `FIELD_NAME_RESOLVER_CLASS`;
   `ModelResolver` owns only neutral normalization and lazily creates the selected resolver.
   Legacy resolver imports and default `ModelResolver` policies resolve those output-owned providers lazily.
-- Reusable graph, detection, enum, cache, and parser retry-signal helpers belong in neutral package modules. Code outside `parser/` must not
-  import private `parser._*` helpers.
+- Reusable graph, detection, enum, cache, JSON Schema reference rewriting, and parser retry-signal helpers belong in
+  neutral package modules. Code outside `parser/` must not import private parser modules or private symbols from public
+  parser modules, such as `parser.mcp._rewrite_schema_refs`.
 - Input-model conversion reads output-family compatibility from the output selection registry. It must not maintain a
   second `DataModelType`-to-backend mapping.
 - Input-model build tokens must resolve to neutral `input_model_result` schema annotations before parser construction.
