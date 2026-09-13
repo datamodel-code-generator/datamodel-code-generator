@@ -40,3 +40,36 @@ async def inspect_async_backend(value):
 
 def build_backend(value):
     return value(module=BACKEND_MODULE)
+
+
+def inspect_output_metadata(model, python_version):
+    model._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")
+    return (
+        model._internal_template_data,
+        getattr(model, "_internal_template_data", {}),
+        model.PLAIN_PATTERN_ROOT_TYPES,
+        python_version.has_typed_dict_closed,
+        getattr(python_version, "has_typed_dict_non_required"),
+    )
+
+
+def select_output_policy():
+    from datamodel_code_generator.reference import ModelType as NamingType
+    from datamodel_code_generator.enums import DataModelType as OutputType
+
+    return NamingType.PYDANTIC, NamingType.MSGSPEC, OutputType.MsgspecStruct
+
+
+def neutral_output_capabilities(model, field):
+    from datamodel_code_generator.reference import ModelType
+
+    return (
+        ModelType.CLASS,
+        ModelType.ENUM,
+        model.has_model_config,
+        model.has_runtime_object_validation,
+        model.schema_runtime_validation,
+        model.FIELDS_CREATE_CLASS_DESCRIPTORS,
+        model.PLAIN_PATTERN_ROOT_CHECKER,
+        field.data_type,
+    )

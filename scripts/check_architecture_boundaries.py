@@ -35,7 +35,12 @@ CONCRETE_BACKEND_ROOTS: Final = frozenset({
     "typed_dict",
 })
 PARSER_BACKEND_ATTRIBUTES: Final = frozenset({
+    "PLAIN_PATTERN_ROOT_TYPES",
     "SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH",
+    "_append_internal_template_data",
+    "_internal_template_data",
+    "has_typed_dict_closed",
+    "has_typed_dict_non_required",
     "is_pydantic_extra_field",
 })
 REFERENCE_BACKEND_DEFINITION_MARKERS: Final = ("dataclass", "msgspec", "pydantic", "typeddict")
@@ -284,6 +289,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         self.sys_modules_aliases: set[str] = set()
         self.shared_model_scope_contexts: list[tuple[bool, SharedModelAliasState]] = []
         self.data_model_type_aliases = {"DataModelType"}
+        self.field_name_model_type_aliases: set[str] = set()
         self.module_string_constants, self.module_string_constant_names = self._collect_string_constants(
             tree,
             clear_reassigned=layer == "shared-model",
@@ -486,12 +492,14 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 and alias.name == "DataModelType"
             ):
                 self.data_model_type_aliases.add(alias.asname or alias.name)
+            if module == "datamodel_code_generator.reference" and alias.name == "ModelType":
+                self.field_name_model_type_aliases.add(alias_name)
             if module == "datamodel_code_generator.model" and alias.name in CONCRETE_BACKEND_ROOTS:
                 self._record_import_alias(alias.asname or alias.name, target)
                 self._check_import(node, target)
                 continue
             self._record_import_alias(alias.asname or alias.name, module)
-            self._check_import(node, target if self.layer == "reference" else module)
+            self._check_import(node, target if self.layer == "reference" or alias.name.startswith("_") else module)
 
     def visit_Call(self, node: ast.Call) -> None:
         """Check dynamic imports, semantic getattr, and backend module identity helpers."""
@@ -679,6 +687,15 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                         "backend-semantic-inspection",
                         node.attr,
                         "parser code must query a neutral DataModel or DataModelFieldBase capability",
+                    )
+                case ast.Name(id=type_alias) if type_alias in self.data_model_type_aliases or (
+                    type_alias in self.field_name_model_type_aliases and node.attr in {"PYDANTIC", "MSGSPEC"}
+                ):
+                    self._add(
+                        node,
+                        "parser-output-policy",
+                        f"{type_alias}.{node.attr}",
+                        "parser code must query output capabilities instead of selecting concrete backend policy",
                     )
                 case _:
                     pass
@@ -913,7 +930,11 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 _SHARED_MODEL_BACKEND_IMPORT_MESSAGE,
             )
             return
-        if target.startswith("datamodel_code_generator.parser._") and self.layer != "parser":
+        if (
+            self.layer != "parser"
+            and target.startswith("datamodel_code_generator.parser.")
+            and any(part.startswith("_") for part in target.split(".")[2:])
+        ):
             self._add(
                 node,
                 "private-parser-import",
