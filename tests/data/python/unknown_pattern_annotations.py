@@ -30,6 +30,12 @@ class CustomUnprovenModel(CustomModel):
     PLAIN_PATTERN_ROOT_TYPES = None
 
 
+class CustomUncheckedModel(CustomModel):
+    """Application model explicitly disabling the output annotation check."""
+
+    PLAIN_PATTERN_ROOT_CHECKER = None
+
+
 class CustomRoot(pydantic_v2.RootModel):
     """Application root model type retaining the standard template."""
 

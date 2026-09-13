@@ -32,10 +32,6 @@ from datamodel_code_generator.imports import (
     IMPORT_UNION,
     Import,
 )
-from datamodel_code_generator.model.runtime_validation import (
-    SchemaRuntimeValidation,
-    _is_internal_schema_runtime_validation,
-)
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
     _normalize_string,
@@ -57,9 +53,10 @@ if TYPE_CHECKING:
     from jinja2 import Environment, Template
 
     from datamodel_code_generator import DataclassArguments
+    from datamodel_code_generator import types as _types
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model import runtime_validation as _runtime_validation
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
-    from datamodel_code_generator.types import DataTypeManager
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
 _TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
@@ -1892,11 +1889,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     ] = None
     # Retain the original extension hook; the backend interprets its result.
     PLAIN_PATTERN_ROOT_TYPES: ClassVar[
-        Callable[[], tuple[type[DataModel], type[DataModel], type[DataModelFieldBase], type[DataTypeManager]]] | None
+        Callable[[], tuple[type[DataModel], type[DataModel], type[DataModelFieldBase], type[_types.DataTypeManager]]]
+        | None
     ] = None
     PLAIN_PATTERN_ROOT_CHECKER: ClassVar[
         Callable[
-            [type[DataModel], type[DataModel], type[DataModelFieldBase], type[DataTypeManager], Iterable[DataType]],
+            [
+                type[DataModel],
+                type[DataModel],
+                type[DataModelFieldBase],
+                type[_types.DataTypeManager],
+                Iterable[DataType],
+            ],
             bool,
         ]
         | None
@@ -2459,10 +2463,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")
 
     @property
-    def schema_runtime_validation(self) -> SchemaRuntimeValidation | None:
+    def schema_runtime_validation(self) -> _runtime_validation.SchemaRuntimeValidation | None:
         """Return executable schema rules already prepared by this output model."""
-        value = self._internal_template_data.get("schema_runtime_validation")
-        return value if _is_internal_schema_runtime_validation(value) else None
+        return self._internal_template_data.get("schema_runtime_validation")
 
     @property
     def has_runtime_object_validation(self) -> bool:
