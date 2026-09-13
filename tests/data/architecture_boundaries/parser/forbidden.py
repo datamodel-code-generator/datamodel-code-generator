@@ -61,6 +61,7 @@ def select_output_policy():
 
 
 def neutral_output_capabilities(model, field):
+    from datamodel_code_generator.model.output import _model_field_name_collisions
     from datamodel_code_generator.reference import ModelType
 
     return (
@@ -69,7 +70,7 @@ def neutral_output_capabilities(model, field):
         model.has_model_config,
         model.has_runtime_object_validation,
         model.schema_runtime_validation,
-        model.fields_create_class_descriptors,
+        _model_field_name_collisions(model, ()),
         model.PLAIN_PATTERN_ROOT_CHECKER,
         field.data_type,
     )
