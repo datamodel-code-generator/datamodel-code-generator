@@ -24217,6 +24217,57 @@ def test_undeclared_required(
     )
 
 
+@pytest.mark.parametrize("mode", ["all", "request-response"])
+@pytest.mark.parametrize("enabled", [False, True])
+def test_undeclared_required_variants(output_file: Path, mode: str, *, enabled: bool) -> None:
+    """Retain undeclared required keys in both variants only when validators are enabled."""
+    source = UNDECLARED_REQUIRED_FIXTURES / "variants.json"
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--read-only-write-only-model-type",
+            mode,
+            "--disable-timestamp",
+            *(["--schema-validator-type", "pydantic-v2"] if enabled else []),
+        ],
+    )
+    api_output = output_file.with_name("api.py")
+    run_generate_and_assert(
+        input_=source,
+        expected_file=output_file,
+        config=GenerateConfig(
+            output=api_output,
+            input_file_type=InputFileType.JsonSchema,
+            read_only_write_only_model_type=mode,
+            schema_validator_type=SchemaValidatorType.PydanticV2 if enabled else None,
+            disable_timestamp=True,
+        ),
+    )
+    payloads = json.loads((DATA_PATH / "payloads/variant_required.json").read_text())
+    results = {}
+    for suffix in ("Request", "Response"):
+        with (
+            _generated_model(api_output, "variant_required_generated", f"Document{suffix}") as model,
+            assert_inputs_not_mutated({"payloads": payloads}),
+        ):
+            records = []
+            for payload in payloads:
+                record = {}
+                for name, validate, value in (
+                    ("python", model.model_validate, payload),
+                    ("json", model.model_validate_json, json.dumps(payload)),
+                ):
+                    try:
+                        record[name] = validate(value).model_dump(mode="json")
+                    except ValidationError:  # noqa: PERF203
+                        record[name] = "rejected"
+                records.append(record)
+            results[suffix] = {"fields": list(model.model_fields), "validation": records}
+    assert_output(json.dumps(results, indent=2), UNDECLARED_REQUIRED_EXPECTED / f"variants_{enabled}_runtime.txt")
+
+
 UNKNOWN_PATTERN_FIXTURES = JSON_SCHEMA_DATA_PATH / "unknown_pattern_annotations"
 
 

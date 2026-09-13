@@ -5646,6 +5646,7 @@ def test_request_response_runtime_validation_copy_handles_empty_optional_parts()
         [field],
         "Response",
         obj=_json_schema_object({"type": "object"}),
+        source_fields=[field, DataModelFieldBase(name="removed", data_type=DataType(type="str"))],
     )
 
     assert "schema_runtime_validation" not in parser.extra_template_data[conditional_target_path]

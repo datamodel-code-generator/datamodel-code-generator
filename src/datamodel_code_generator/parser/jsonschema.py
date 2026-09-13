@@ -2856,6 +2856,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         suffix: Literal["Request", "Response"],
         *,
         obj: JsonSchemaObject,
+        source_fields: Sequence[DataModelFieldBase] = (),
         is_root_model: bool = False,
     ) -> None:
         """Copy schema runtime rules and retarget their model references."""
@@ -2864,14 +2865,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return
 
         available_names = {name for field in fields for name in self._field_input_names(field)}
+        declared_names = {name for field in source_fields for name in self._field_input_names(field)}
+
+        def keep_names(input_names: tuple[str, ...]) -> bool:
+            return bool(available_names.intersection(input_names)) or not declared_names.intersection(input_names)
 
         def filter_groups(
             groups: tuple[tuple[tuple[str, ...], ...], ...],
         ) -> tuple[tuple[tuple[str, ...], ...], ...]:
-            return tuple(
-                tuple(input_names for input_names in group if available_names.intersection(input_names))
-                for group in groups
-            )
+            return tuple(tuple(input_names for input_names in group if keep_names(input_names)) for group in groups)
 
         pattern_properties: list[PatternPropertiesRule] = []
         for rule in source.pattern_properties:
@@ -2909,7 +2911,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 else_groups=filter_groups(rule.else_groups),
             )
             for rule in source.conditional_required
-            if all(available_names.intersection(input_names) for input_names, _ in rule.condition)
+            if all(keep_names(input_names) for input_names, _ in rule.condition)
         ]
 
         target = _make_internal_schema_runtime_validation(
@@ -2926,13 +2928,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _generate_forced_base_models(self) -> None:
         """Retain the late parser extension hook used by schema subclasses."""
 
-    def _create_variant_model(
+    def _create_variant_model(  # noqa: PLR0913
         self,
         base_reference: Reference,
         suffix: Literal["Request", "Response"],
         model_fields: list[DataModelFieldBase],
         obj: JsonSchemaObject,
         data_model_type_class: type[DataModel],
+        *,
+        source_fields: Sequence[DataModelFieldBase] = (),
     ) -> None:
         """Create a Request or Response model variant."""
         if not model_fields and self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
@@ -2949,6 +2953,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             model_fields,
             suffix,
             obj=obj,
+            source_fields=source_fields,
         )
         model = self._create_data_model(
             model_type=data_model_type_class,
@@ -3007,6 +3012,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 model_fields,
                 obj,
                 data_model_type_class,
+                source_fields=all_fields,
             )
 
     def _build_neutral_object_field(  # noqa: PLR0913
@@ -8736,6 +8742,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     variant_fields,
                     suffix,
                     obj=obj,
+                    source_fields=fields,
                     is_root_model=True,
                 )
                 self._rw_model_variant_requirement_cache[reference.path, suffix] = True
