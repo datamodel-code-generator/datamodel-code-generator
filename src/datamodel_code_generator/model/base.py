@@ -54,6 +54,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
@@ -67,6 +68,7 @@ _TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
 _ADDITIONAL_PROPERTIES_REFERENCE_CLASSES_TEMPLATE_DATA_KEY = "additionalPropertiesReferenceClasses"
 _ADDITIONAL_PROPERTIES_TEMPLATE_DATA_KEY = "additionalProperties"
 _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
+# This key remains part of the legacy template contract, including custom outputs.
 _USE_TYPED_DICT_BACKPORT_TEMPLATE_DATA_KEY = "use_typeddict_backport"
 _MODULE_NAME_INVALID_CHAR_PATTERN = re.compile(r"[^0-9a-zA-Z_]")
 _MODULE_NAME_INVALID_CHAR_WITH_DOTS_PATTERN = re.compile(r"[^0-9a-zA-Z_.]")
@@ -1945,6 +1947,75 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def has_keyword_only_definition(self) -> bool:  # noqa: PLR6301
         """Return whether the model already makes inherited fields keyword-only."""
         return False
+
+    @classmethod
+    def configure_annotations(
+        cls,
+        extra_template_data: defaultdict[str, dict[str, Any]],
+        *,
+        target_python_version: PythonVersion,
+        use_deferred_annotations: bool,
+    ) -> None:
+        """Prepare the output's annotation representation for the target runtime."""
+        if key := cls.TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY:
+            extra_template_data.setdefault(ALL_MODEL, {})[key] = (
+                target_python_version.has_native_deferred_annotations or not use_deferred_annotations
+            )
+
+    @classmethod
+    def configure_required_fields(
+        cls,
+        extra_template_data: defaultdict[str, dict[str, Any]],
+        *,
+        target_python_version: PythonVersion,
+        use_total_false: bool,
+    ) -> None:
+        """Preserve the declared total=False capability for custom output classes."""
+        if use_total_false and cls.SUPPORTS_TYPED_DICT_TOTAL_FALSE:
+            data = extra_template_data[ALL_MODEL]
+            data["use_total_false_for_typed_dict"] = True
+            if not target_python_version.has_typed_dict_non_required:
+                data["use_total_false_typeddict_backport"] = True
+
+    @staticmethod
+    def requires_extra_items_backport(target_python_version: PythonVersion) -> bool:
+        """Preserve the historic extra-item template flag for custom output metadata."""
+        return not target_python_version.has_typed_dict_closed
+
+    @staticmethod
+    def resolve_dataclass_arguments(
+        arguments: DataclassArguments | None, *, frozen: bool, keyword_only: bool
+    ) -> DataclassArguments:
+        """Preserve explicit decorator arguments ahead of the legacy flags."""
+        if arguments is not None:
+            return arguments
+        arguments = {}
+        if frozen:
+            arguments["frozen"] = True
+        if keyword_only:
+            arguments["kw_only"] = True
+        return arguments
+
+    @classmethod
+    def prepare_constructor_arguments(
+        cls,
+        arguments: dict[str, Any],
+        *,
+        dataclass_arguments: DataclassArguments | None,
+        frozen: bool,
+        keyword_only: bool,
+    ) -> None:
+        """Adapt shared model creation options to the selected output constructor."""
+        if not cls.USES_DATACLASS_ARGUMENTS:
+            arguments.pop("dataclass_arguments", None)
+            return
+        if (explicit_arguments := arguments.pop("dataclass_arguments", None)) is None:
+            explicit_arguments = dataclass_arguments
+        arguments["dataclass_arguments"] = cls.resolve_dataclass_arguments(
+            explicit_arguments, frozen=frozen, keyword_only=keyword_only
+        )
+        arguments.pop("frozen", None)
+        arguments.pop("keyword_only", None)
 
     def enable_model_keyword_only(self) -> None:
         """Enable output-specific model-level keyword-only behavior when supported."""

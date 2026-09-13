@@ -3456,9 +3456,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._output_model_context.store_additional_properties_value(
                 self.extra_template_data[path],
                 value=obj.additionalProperties,
-                use_backport=(
-                    obj.additionalProperties is False and not self.target_python_version.has_typed_dict_closed
-                ),
+                target_python_version=self.target_python_version,
             )
         elif isinstance(obj.additionalProperties, JsonSchemaObject):
             # A schema-valued additionalProperties still means extra keys are accepted.
@@ -3486,7 +3484,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     additional_props_type.type_hint,
                     reference_classes,
                     imports=tuple(additional_props_type.all_imports),
-                    use_backport=not self.target_python_version.has_typed_dict_closed,
+                    target_python_version=self.target_python_version,
                 )
 
     def set_unevaluated_properties(self, path: str, obj: JsonSchemaObject) -> None:

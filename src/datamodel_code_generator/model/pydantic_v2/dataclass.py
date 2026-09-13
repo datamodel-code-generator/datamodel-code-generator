@@ -142,14 +142,9 @@ class DataClass(_DataclassReuseMixin, DataModel):
             treat_dot_as_module=treat_dot_as_module,
         )
 
-        if dataclass_arguments is not None:
-            self.dataclass_arguments = dataclass_arguments
-        else:
-            self.dataclass_arguments = {}
-            if frozen:
-                self.dataclass_arguments["frozen"] = True
-            if keyword_only:
-                self.dataclass_arguments["kw_only"] = True
+        self.dataclass_arguments = self.resolve_dataclass_arguments(
+            dataclass_arguments, frozen=frozen, keyword_only=keyword_only
+        )
         self._set_deprecated_decorator()
 
         config_parameters = build_base_config_parameters(

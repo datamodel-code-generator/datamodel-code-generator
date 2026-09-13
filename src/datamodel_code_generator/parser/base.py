@@ -80,7 +80,7 @@ from datamodel_code_generator.imports import (
     Imports,
 )
 from datamodel_code_generator.model.base import (
-    ALL_MODEL,
+    ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
     GENERIC_BASE_CLASS_NAME,
     GENERIC_BASE_CLASS_PATH,
     UNDEFINED,
@@ -101,6 +101,7 @@ from datamodel_code_generator.model.enum import escape_characters as _enum_escap
 from datamodel_code_generator.model.output import (
     _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
     _model_field_name_collisions,
+    prepare_output_model_config,
 )
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
@@ -2309,27 +2310,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if "decorators" not in kwargs and self.class_decorators:
             kwargs["decorators"] = list(self.class_decorators)
         data_model_class = model_type or self.data_model_type
-        if not data_model_class.USES_DATACLASS_ARGUMENTS:
-            kwargs.pop("dataclass_arguments", None)
-            return data_model_class(**kwargs)
-
-        # Use dataclass_arguments from kwargs, or fall back to self.dataclass_arguments.
-        # If both are None, construct from legacy frozen_dataclasses/keyword_only flags.
-        if (dataclass_arguments := kwargs.pop("dataclass_arguments", None)) is None:
-            dataclass_arguments = self.dataclass_arguments
-        if dataclass_arguments is None:
-            # Construct from legacy flags for library API compatibility.
-            dataclass_arguments = {}
-            if self.frozen_dataclasses:
-                dataclass_arguments["frozen"] = True
-            if self.keyword_only:
-                dataclass_arguments["kw_only"] = True
-        kwargs["dataclass_arguments"] = dataclass_arguments
-        kwargs.pop("frozen", None)
-        kwargs.pop("keyword_only", None)
+        data_model_class.prepare_constructor_arguments(
+            kwargs,
+            dataclass_arguments=self.dataclass_arguments,
+            frozen=self.frozen_dataclasses,
+            keyword_only=self.keyword_only,
+        )
         return data_model_class(**kwargs)
 
-    def __init__(  # noqa: PLR0912, PLR0915
+    def __init__(  # noqa: PLR0915
         self,
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
@@ -2498,76 +2487,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.generate_schema_validators: bool = config.generate_schema_validators
         self._set_typed_extra_annotation_mode(use_deferred_annotations=True)
 
-        if self.use_total_false_for_typed_dict and self.data_model_type.SUPPORTS_TYPED_DICT_TOTAL_FALSE:
-            typed_dict_data = self.extra_template_data[ALL_MODEL]
-            typed_dict_data["use_total_false_for_typed_dict"] = True
-            if not self.target_python_version.has_typed_dict_non_required:
-                typed_dict_data["use_total_false_typeddict_backport"] = True
-
-        if self.validators:
-            for model_name, model_config in self.validators.items():
-                self.extra_template_data[model_name]["validators"] = [
-                    v.model_dump(mode="json") for v in model_config.validators
-                ]
+        self.data_model_type.configure_required_fields(
+            self.extra_template_data,
+            target_python_version=self.target_python_version,
+            use_total_false=self.use_total_false_for_typed_dict,
+        )
 
         self.use_generic_base_class: bool = config.use_generic_base_class
-        self.generic_base_class_config: dict[str, Any] = {}
-
-        if config.allow_population_by_field_name:
-            if config.use_generic_base_class:
-                self.generic_base_class_config["allow_population_by_field_name"] = True
-            else:
-                self.extra_template_data[ALL_MODEL]["allow_population_by_field_name"] = True
-
-        if config.alias_generator:
-            if config.use_generic_base_class:
-                self.generic_base_class_config["allow_population_by_field_name"] = True
-                self.generic_base_class_config["alias_generator"] = config.alias_generator
-                self.extra_template_data[ALL_MODEL]["_alias_generator"] = config.alias_generator
-            else:
-                self.extra_template_data[ALL_MODEL]["allow_population_by_field_name"] = True
-                self.extra_template_data[ALL_MODEL]["alias_generator"] = config.alias_generator
-
-        if config.no_alias:
-            self.extra_template_data[ALL_MODEL]["_no_alias"] = True
-
-        if config.allow_extra_fields:
-            if config.use_generic_base_class:
-                self.generic_base_class_config["allow_extra_fields"] = True
-            else:
-                self.extra_template_data[ALL_MODEL]["allow_extra_fields"] = True
-
-        if config.extra_fields:
-            if config.use_generic_base_class:
-                self.generic_base_class_config["extra_fields"] = config.extra_fields
-            else:
-                self.extra_template_data[ALL_MODEL]["extra_fields"] = config.extra_fields
-
-        if config.enable_faux_immutability:
-            if config.use_generic_base_class:
-                self.generic_base_class_config["allow_mutation"] = False
-            else:
-                self.extra_template_data[ALL_MODEL]["allow_mutation"] = False
-
-        if config.use_attribute_docstrings:
-            if config.use_generic_base_class:
-                self.generic_base_class_config["use_attribute_docstrings"] = True
-            else:
-                self.extra_template_data[ALL_MODEL]["use_attribute_docstrings"] = True
-        if config.use_single_line_docstring:
-            self.extra_template_data[ALL_MODEL]["use_single_line_docstring"] = True
-
-        if config.target_pydantic_version:
-            if config.use_generic_base_class:
-                self.generic_base_class_config["target_pydantic_version"] = config.target_pydantic_version
-            else:
-                self.extra_template_data[ALL_MODEL]["target_pydantic_version"] = config.target_pydantic_version
-        if config.schema_validator_base_class_name:
-            self.extra_template_data[ALL_MODEL]["schema_validator_base_class_name"] = (
-                config.schema_validator_base_class_name
-            )
-        if config.generate_schema_validators:
-            self.extra_template_data[ALL_MODEL]["schema_runtime_validation_enabled"] = True
+        self.generic_base_class_config = prepare_output_model_config(
+            self.extra_template_data,
+            validators=config.validators,
+            use_generic_base_class=config.use_generic_base_class,
+            allow_population_by_field_name=config.allow_population_by_field_name,
+            alias_generator=config.alias_generator,
+            no_alias=config.no_alias,
+            allow_extra_fields=config.allow_extra_fields,
+            extra_fields=config.extra_fields,
+            enable_faux_immutability=config.enable_faux_immutability,
+            use_attribute_docstrings=config.use_attribute_docstrings,
+            use_single_line_docstring=config.use_single_line_docstring,
+            target_pydantic_version=config.target_pydantic_version,
+            schema_validator_base_class_name=config.schema_validator_base_class_name,
+            generate_schema_validators=config.generate_schema_validators,
+        )
 
         self.model_resolver = ModelResolver(
             base_url=source.geturl() if isinstance(source, ParseResult) else None,
@@ -5543,20 +5485,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return "\n".join(import_ for import_ in (future_imports_str, str(ctx.imports.extract_future())) if import_)
 
     def _set_typed_extra_annotation_mode(self, *, use_deferred_annotations: bool) -> None:
-        """Select the safe typed-extra annotation form for the generated runtime."""
-        if not (key := self.data_model_type.TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY):
-            return
-
-        native_deferred_annotations = self.target_python_version.has_native_deferred_annotations
-        match native_deferred_annotations:
-            case True:
-                use_plain_annotation = True
-            case False if use_deferred_annotations:
-                use_plain_annotation = False
-            case _:
-                use_plain_annotation = True
-
-        self.extra_template_data.setdefault(ALL_MODEL, {})[key] = use_plain_annotation
+        """Let the selected output configure its annotation representation."""
+        self.data_model_type.configure_annotations(
+            self.extra_template_data,
+            target_python_version=self.target_python_version,
+            use_deferred_annotations=use_deferred_annotations,
+        )
 
     def _prepare_parse_config(
         self,
