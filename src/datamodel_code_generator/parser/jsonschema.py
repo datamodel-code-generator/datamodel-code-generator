@@ -7476,7 +7476,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         try:
             if data_type.reference and isinstance(data_type.reference.source, DataModel):
                 source = data_type.reference.source
-                runtime_validation = source._internal_template_data.get("schema_runtime_validation")  # noqa: SLF001
+                runtime_validation = source.schema_runtime_validation
                 if not _is_internal_schema_runtime_validation(runtime_validation):
                     runtime_validation = self.extra_template_data[data_type.reference.path].get(
                         "schema_runtime_validation"
@@ -8062,21 +8062,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             config.alias_generator,
         )):
             return False
-        if (get_types := self.data_model_type.PLAIN_PATTERN_ROOT_TYPES) is None:
+        if (check_annotations := self.data_model_type.PLAIN_PATTERN_ROOT_CHECKER) is None:
             return False
-        model_type, root_type, field_type, manager_type = get_types()
-        if (
-            self.data_model_type is not model_type
-            or self.data_model_root_type is not root_type
-            or self.data_model_field_type is not field_type
-            or type(self.data_type_manager) is not manager_type
-        ):
-            return False
-        return all(
-            type(model := data_type.reference.source) is model_type
-            and all(type(field) is field_type for field in cast("DataModel", model).fields)
-            for _, data_type in patterns
-            if data_type.reference is not None
+        return check_annotations(
+            self.data_model_type,
+            self.data_model_root_type,
+            self.data_model_field_type,
+            type(self.data_type_manager),
+            (data_type for _, data_type in patterns),
         )
 
     def _add_pattern_properties_validator(  # noqa: PLR0913, PLR0917
@@ -9720,7 +9713,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if (
                     not root_model.IS_ROOT_MODEL
                     or root_model.decorators
-                    or root_model.extra_template_data.get("config")
+                    or root_model.has_model_config
                     or property_names.model_fields_set - {"allOf", "title", "description"}
                     or any(
                         not isinstance(item, JsonSchemaObject)

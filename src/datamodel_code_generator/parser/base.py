@@ -411,10 +411,9 @@ def _model_field_name_collisions(model: DataModel, import_names: Collection[str]
         for node in class_body
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
     ]
-    # Struct creates slot descriptors even for fields without a default assignment.
     assigned_names = (
         field_names
-        if model.FIELD_NAME_MODEL_TYPE is ModelType.MSGSPEC
+        if model.FIELDS_CREATE_CLASS_DESCRIPTORS
         else {name for name, node in fields if node.value is not None}
     )
     candidates.intersection_update(assigned_names)
@@ -3619,7 +3618,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for model in set_item_models:
             if model.reference.path in native_hash_paths:
                 continue
-            model._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")  # noqa: SLF001
+            model.enable_identity_hash()
 
     @classmethod
     def __set_reference_default_value_to_field(
@@ -3853,18 +3852,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                     # These runtime rules are owned by the referenced root model;
                     # replacing it with the raw type would discard its validator.
-                    runtime_validation = (
-                        root_type_model._internal_template_data.get("schema_runtime_validation")  # noqa: SLF001
-                        or root_type_model.extra_template_data.get("schema_runtime_validation")
-                    )
-                    if runtime_validation and any(
-                        getattr(runtime_validation, rule_name, None)
-                        for rule_name in (
-                            "pattern_properties",
-                            "required_groups",
-                            "conditional_required",
-                        )
-                    ):
+                    if root_type_model.has_runtime_object_validation:
                         continue
 
                     root_constraints = root_type_field.constraints

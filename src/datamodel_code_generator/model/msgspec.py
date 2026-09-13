@@ -121,6 +121,8 @@ class Struct(DataModel):
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
     FIELD_ASSIGNMENT_CHECKER = staticmethod(has_field_assignment)
+    # Struct creates slot descriptors even for fields without a default assignment.
+    FIELDS_CREATE_CLASS_DESCRIPTORS: ClassVar[bool] = True
     FIELD_DEFAULT_CLASSIFIER = staticmethod(get_field_default_info)
     FIELD_NAME_MODEL_TYPE: ClassVar[ModelType] = ModelType.MSGSPEC
     FIELD_NAME_RESOLVER_CLASS: ClassVar[type[FieldNameResolver]] = MsgspecFieldNameResolver

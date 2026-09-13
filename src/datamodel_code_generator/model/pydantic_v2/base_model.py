@@ -101,6 +101,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
+    from datamodel_code_generator.types import DataTypeManager as DataTypeManagerBase
 
 
 class _RawRepr:
@@ -161,12 +162,40 @@ def _supports_pydantic_typed_extra_dict_key(data_type: DataType) -> bool:  # noq
     return False
 
 
-def _get_plain_pattern_root_types() -> tuple[type, type, type, type]:
+def _get_plain_pattern_root_types() -> tuple[
+    type[DataModel], type[DataModel], type[DataModelFieldBase], type[DataTypeManagerBase]
+]:
     """Identify the uncustomized model types eligible for inert root annotations."""
     from .root_model import RootModel  # noqa: PLC0415
     from .types import DataTypeManager  # noqa: PLC0415
 
     return BaseModel, RootModel, DataModelField, DataTypeManager
+
+
+def _supports_plain_pattern_root_annotations(
+    model_type: type[DataModel],
+    root_type: type[DataModel],
+    field_type: type[DataModelFieldBase],
+    manager_type: type[DataTypeManagerBase],
+    pattern_types: Iterable[DataType],
+) -> bool:
+    """Decide whether this Pydantic implementation can ignore inert root annotations."""
+    if (get_types := model_type.PLAIN_PATTERN_ROOT_TYPES) is None:
+        return False
+    expected_model, expected_root, expected_field, expected_manager = get_types()
+    if (
+        model_type is not expected_model
+        or root_type is not expected_root
+        or field_type is not expected_field
+        or manager_type is not expected_manager
+    ):
+        return False
+    return all(
+        type(model := data_type.reference.source) is expected_model
+        and all(type(field) is expected_field for field in cast("DataModel", model).fields)
+        for data_type in pattern_types
+        if data_type.reference is not None
+    )
 
 
 def _get_schema_runtime_validation_root_model() -> type[DataModel]:
@@ -1038,6 +1067,7 @@ class BaseModel(BaseModelBase):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     SUPPORTS_SCHEMA_RUNTIME_VALIDATION: ClassVar[bool] = True
     PLAIN_PATTERN_ROOT_TYPES = staticmethod(_get_plain_pattern_root_types)
+    PLAIN_PATTERN_ROOT_CHECKER = staticmethod(_supports_plain_pattern_root_annotations)
     SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL = staticmethod(_get_schema_runtime_validation_root_model)
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     SUPPORTS_CONFIG_EXTRA: ClassVar[bool] = True
