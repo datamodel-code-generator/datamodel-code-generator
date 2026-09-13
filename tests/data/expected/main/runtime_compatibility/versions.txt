@@ -1,0 +1,46 @@
+{
+  "jsonschema/root_alias_constraints/lookaround.json": {
+    "2.0.3": {
+      "acceptance": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators",
+      "round_trip": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": "root pattern aliases have no consuming dataclass to carry ConfigDict(regex_engine='python-re')"
+  },
+  "jsonschema/compound_property_names/enum_oneof.json": {
+    "2.0.3": {
+      "acceptance": null,
+      "round_trip": "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": null
+  },
+  "jsonschema/compound_property_names/enum_refs.json": {
+    "2.0.3": {
+      "acceptance": null,
+      "round_trip": "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": null
+  },
+  "jsonschema/compound_property_names/extra_enum_disjoint.json": {
+    "2.0.3": {
+      "acceptance": null,
+      "round_trip": "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": null
+  }
+}

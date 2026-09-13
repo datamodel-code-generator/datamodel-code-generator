@@ -248,9 +248,9 @@ MISSING_SENTINEL_PAYLOAD_CASE_IDS = (
 )
 PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str, ...]]] = {
     **{
-        f"jsonschema/type_union_constraints/{name}.json": {
-            PayloadBackend.PYDANTIC_V2: ("--field-constraints",),
-        }
+        f"jsonschema/type_union_constraints/{name}.json": dict.fromkeys(
+            (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS), ("--field-constraints",)
+        )
         for name in ("keys_field", "keys_root", "keys_count_field", "keys_count_root")
     },
     **{
@@ -353,6 +353,9 @@ PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/nested_lookaround_array.json": (
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to nested lookaround pattern validators"
     ),
+    "jsonschema/root_alias_constraints/lookaround.json": (
+        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
+    ),
     "jsonschema/schema_validators_runtime_root_cross_module/a.json": (
         "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
     ),
@@ -430,6 +433,14 @@ PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: dict[PayloadBackend, dict[str, 
 }
 PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2: {
+        **dict.fromkeys(
+            (
+                "jsonschema/compound_property_names/enum_oneof.json",
+                "jsonschema/compound_property_names/enum_refs.json",
+                "jsonschema/compound_property_names/extra_enum_disjoint.json",
+            ),
+            "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys",
+        ),
         "jsonschema/property_names_anyof_ref.json": (
             "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
         ),

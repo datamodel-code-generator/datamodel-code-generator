@@ -6,6 +6,7 @@ import json
 import os
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Literal, TypeAlias
 
@@ -1201,3 +1202,176 @@ def test_payload_generation_reports_real_schema_failure(tmp_path: Path) -> None:
             case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2
         )
     assert_output(str(caught.value) + "\n", EXPECTED_MAIN_PATH / "payload_generation_missing_reference.txt")
+
+
+RUNTIME_COMPATIBILITY_PATH = DATA_PATH / "payloads/runtime_compatibility"
+RUNTIME_COMPATIBILITY_EXPECTED = EXPECTED_MAIN_PATH / "runtime_compatibility"
+
+
+@pytest.mark.parametrize(
+    ("case_id", "payloads"),
+    json.loads((RUNTIME_COMPATIBILITY_PATH / "null_aliases.json").read_text()).items(),
+)
+def test_payload_runtime_null_aliases(tmp_path: Path, case_id: str, payloads: dict[str, Any]) -> None:
+    """Load actual assignment-based null aliases and reuse their cached runtime."""
+    backend = PayloadBackend.MSGSPEC
+    case = replace(
+        SCHEMA_CASE_BY_ID[case_id],
+        backend_extra_args={backend: ("--target-python-version", "3.10")},
+    )
+    cache = GeneratedModelCache({"base": tmp_path, "adapters": {}})
+    with assert_inputs_not_mutated({"schema": case.source_schema, "payloads": payloads}):
+        validate_with_source_schema(case, payloads["valid"])
+        runtime = generate_payload_runtime(case, cache, backend)
+        result = {
+            "value": runtime.validate_python(payloads["valid"]),
+            "cached": generate_payload_runtime(case, cache, backend) is runtime,
+            "acceptance_exclusion": backend_acceptance_exclusion_reason(case, backend),
+        }
+        for payload in payloads["invalid"]:
+            with pytest.raises(JsonSchemaValidationError):
+                validate_with_source_schema(case, payload)
+            runtime.assert_rejects_python(payload)
+        assert_output(json.dumps(result, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "null_aliases.txt")
+
+
+@pytest.mark.parametrize("backend", [PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS])
+@pytest.mark.parametrize(
+    ("case_id", "payload"),
+    json.loads((RUNTIME_COMPATIBILITY_PATH / "union_cases.json").read_text()).items(),
+)
+def test_payload_runtime_union_options(
+    backend: PayloadBackend, case_id: str, payload: Any, generated_model_cache: dict[str, Any]
+) -> None:
+    """Keep valid array branches in the configured Pydantic model and dataclass matrix."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    with assert_inputs_not_mutated({"schema": case.source_schema, "payload": payload}):
+        validate_with_source_schema(case, payload)
+        runtime = generate_payload_runtime(case, generated_model_cache, backend)
+        runtime.validate_python(payload)
+        assert_output(
+            json.dumps({"options": case.backend_extra_args[backend], "validated": payload}, indent=2) + "\n",
+            RUNTIME_COMPATIBILITY_EXPECTED / f"union_{'field' if case_id.endswith('field.json') else 'root'}.txt",
+        )
+
+
+def test_payload_runtime_msgspec_gaps(generated_model_cache: dict[str, Any]) -> None:
+    """Prove classified msgspec gaps with source-valid payloads and real generated modules."""
+    payloads = json.loads((RUNTIME_COMPATIBILITY_PATH / "msgspec_gaps.json").read_text())
+    results = {}
+    for case_id, fixture in payloads.items():
+        case = SCHEMA_CASE_BY_ID[case_id]
+        payload = fixture["valid"]
+        with assert_inputs_not_mutated({"schema": case.source_schema, "payload": payload}):
+            validate_with_source_schema(case, payload)
+            runtime = generate_payload_runtime(case, generated_model_cache, PayloadBackend.MSGSPEC)
+            with pytest.raises(TypeError, match=fixture["error"]) as caught:
+                runtime.validate_python(payload)
+            results[case_id] = {
+                "acceptance": backend_acceptance_exclusion_reason(case, PayloadBackend.MSGSPEC),
+                "rejection": backend_rejection_exclusion_reason(case, PayloadBackend.MSGSPEC),
+                "error": type(caught.value).__name__,
+            }
+    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "msgspec_gaps.txt")
+
+
+def test_payload_runtime_legacy_alias_policy(tmp_path: Path) -> None:
+    """Gate unresolved assignment aliases on generated syntax and verify the supported syntax."""
+    case = SCHEMA_CASE_BY_ID["jsonschema/compound_property_names/ref_then_any.json"]
+    backend = PayloadBackend.MSGSPEC
+    results = {
+        target.value: _msgspec_type_statement_exclusion_reason(case, target)
+        for target in (PythonVersion.PY_311, PythonVersion.PY_312)
+    }
+    runtime = generate_payload_runtime(case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), backend)
+    payload = json.loads((RUNTIME_COMPATIBILITY_PATH / "legacy_alias.json").read_text())
+    validate_with_source_schema(case, payload)
+    if PythonVersion(PAYLOAD_TARGET_PYTHON_VERSION).has_type_statement:
+        runtime.validate_python(payload)
+    else:
+        with pytest.raises(TypeError, match="ForwardRef"):
+            runtime.validate_python(payload)
+    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "legacy_alias.txt")
+
+
+def test_payload_runtime_version_policies() -> None:
+    """Retain modern Pydantic coverage while classifying old-runtime and bare-alias limits."""
+    results = {}
+    for case_id in json.loads((RUNTIME_COMPATIBILITY_PATH / "version_cases.json").read_text()):
+        case = SCHEMA_CASE_BY_ID[case_id]
+        results[case_id] = {
+            version: {
+                "acceptance": _pydantic_v2_legacy_runtime_exclusion_reason(
+                    case, PayloadBackend.PYDANTIC_V2, Version(version)
+                ),
+                "round_trip": _pydantic_v2_legacy_runtime_exclusion_reason(
+                    case,
+                    PayloadBackend.PYDANTIC_V2,
+                    Version(version),
+                    PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+                ),
+            }
+            for version in ("2.0.3", "2.5.0")
+        }
+        results[case_id]["dataclass"] = backend_acceptance_exclusion_reason(case, PayloadBackend.PYDANTIC_V2_DATACLASS)
+    assert_output(json.dumps(results, indent=2) + "\n", RUNTIME_COMPATIBILITY_EXPECTED / "versions.txt")
+
+
+@pytest.mark.parametrize(
+    ("case_id", "payload"),
+    json.loads((RUNTIME_COMPATIBILITY_PATH / "version_cases.json").read_text()).items(),
+)
+def test_payload_runtime_pydantic_version_witnesses(
+    case_id: str, payload: Any, generated_model_cache: dict[str, Any]
+) -> None:
+    """Verify old-runtime failures and restored round trips with actual Pydantic adapters."""
+    case = SCHEMA_CASE_BY_ID[case_id]
+    validate_with_source_schema(case, payload)
+    if _pydantic_v2_legacy_runtime_exclusion_reason(case, PayloadBackend.PYDANTIC_V2):
+        with pytest.raises(PayloadAdapterError, match="look-around"):
+            generate_payload_runtime(case, generated_model_cache, PayloadBackend.PYDANTIC_V2)
+        return
+    adapter = load_generated_payload_adapter(case, generated_model_cache)
+    validated = adapter.validate_python(payload)
+    if _pydantic_v2_legacy_runtime_exclusion_reason(
+        case,
+        PayloadBackend.PYDANTIC_V2,
+        exclusion_groups=PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
+    ):
+        with pytest.raises(UserWarning, match="serializer warnings"):
+            adapter.dump_python(validated, mode="json")
+        return
+    validate_with_source_schema(case, adapter.dump_python(validated, mode="json"))
+
+
+def test_payload_runtime_dataclass_lookaround_gap(tmp_path: Path) -> None:
+    """A bare dataclass alias has no regex-engine config even on modern Pydantic."""
+    case = SCHEMA_CASE_BY_ID["jsonschema/root_alias_constraints/lookaround.json"]
+    with pytest.raises(PayloadAdapterError, match="look-around"):
+        generate_payload_runtime(
+            case, GeneratedModelCache({"base": tmp_path, "adapters": {}}), PayloadBackend.PYDANTIC_V2_DATACLASS
+        )
+
+
+@pytest.mark.parametrize(
+    ("name", "fixture"),
+    json.loads((RUNTIME_COMPATIBILITY_PATH / "alias_fallback.json").read_text()).items(),
+)
+def test_payload_runtime_alias_fallback(tmp_path: Path, name: str, fixture: dict[str, Any]) -> None:
+    """Keep single-class fallback and missing/ambiguous diagnostics after recognizing null aliases."""
+    backend = PayloadBackend.MSGSPEC
+    case = replace(
+        SCHEMA_CASE_BY_ID[fixture["schema"]],
+        backend_extra_args={backend: ("--class-name", "Alternate", "--target-python-version", "3.10")},
+    )
+    cache = GeneratedModelCache({"base": tmp_path, "adapters": {}})
+    if name == "single":
+        runtime = generate_payload_runtime(case, cache, backend)
+        validate_with_source_schema(case, fixture["payload"])
+        runtime.validate_python(fixture["payload"])
+        result = runtime.payload_type.__name__
+    else:
+        with pytest.raises(PayloadAdapterError) as caught:
+            generate_payload_runtime(case, cache, backend)
+        result = str(caught.value)
+    assert_output(result + "\n", RUNTIME_COMPATIBILITY_EXPECTED / f"fallback_{name}.txt")

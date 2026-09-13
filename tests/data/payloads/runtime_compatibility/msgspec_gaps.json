@@ -1,0 +1,92 @@
+{
+  "jsonschema/allof_outer_constraints/integer_date_time_bounds.json": {
+    "valid": 0,
+    "error": "Can only set `ge` on a numeric type"
+  },
+  "jsonschema/allof_outer_constraints/number_date_time_bounds.json": {
+    "valid": 0,
+    "error": "Can only set `ge` on a numeric type"
+  },
+  "jsonschema/compound_property_names/enum_oneof.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str enum type"
+  },
+  "jsonschema/compound_property_names/enum_refs.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str enum type|Type 'ForwardRef"
+  },
+  "jsonschema/compound_property_names/extra_enum_disjoint.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str enum type"
+  },
+  "jsonschema/compound_property_names/extra_enum_then_string.json": {
+    "valid": {},
+    "error": "Type unions may not contain more than one str-like type"
+  },
+  "jsonschema/compound_property_names/nonstring_complex_patterns.json": {
+    "valid": {
+      "backreference": {},
+      "end_anchor": {},
+      "lookbehind": {}
+    },
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/nonstring_length.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/nonstring_literal.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/nonstring_lookbehind.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/unconstrained_oneof.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/unrestricted_type_union.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/unsupported_mixed.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/unsupported_nonstring.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/unsupported_nonstring_union.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/unsupported_one_constrained.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/compound_property_names/unsupported_oneof.json": {
+    "valid": {},
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/numeric_allof_types/null_template.json": {
+    "valid": null,
+    "error": "Can only set `ge` on a numeric type"
+  },
+  "jsonschema/root_alias_constraints/null_numeric.json": {
+    "valid": null,
+    "error": "Can only set `ge` on a numeric type"
+  },
+  "jsonschema/root_alias_constraints/null_pattern.json": {
+    "valid": null,
+    "error": "Can only set `pattern` on a str type"
+  },
+  "jsonschema/type_union_constraints/enum_field.json": {
+    "valid": {
+      "value": 1
+    },
+    "error": "Enums must contain either all str or all int values"
+  }
+}

@@ -107,6 +107,9 @@ PYDANTIC_V2_DATACLASS_REGEX_EXCLUDED_CASES: Final[dict[str, str]] = {
         "root-level oneOf generates a bare TypeAliasType with no consuming dataclass to carry "
         "ConfigDict(regex_engine='python-re'), so TypeAdapter construction still rejects the lookaround pattern"
     ),
+    "jsonschema/root_alias_constraints/lookaround.json": (
+        "root pattern aliases have no consuming dataclass to carry ConfigDict(regex_engine='python-re')"
+    ),
     "openapi/pattern_lookaround.yaml::components.schemas.info": (
         "pydantic dataclass schema construction rejects lookaround regex constraints"
     ),
@@ -189,6 +192,49 @@ DATACLASS_FIELD_ORDER_EXCLUDED_CASES: Final[dict[str, str]] = {
     ),
 }
 MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
+    **dict.fromkeys(
+        (
+            "jsonschema/allof_outer_constraints/integer_date_time_bounds.json",
+            "jsonschema/allof_outer_constraints/number_date_time_bounds.json",
+        ),
+        "msgspec string date-time mappings cannot represent numeric timestamp bounds",
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/compound_property_names/enum_oneof.json",
+            "jsonschema/compound_property_names/enum_refs.json",
+            "jsonschema/compound_property_names/extra_enum_disjoint.json",
+            "jsonschema/compound_property_names/extra_enum_then_string.json",
+        ),
+        "msgspec conversion rejects unions containing multiple string-like key types",
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/compound_property_names/nonstring_complex_patterns.json",
+            "jsonschema/compound_property_names/nonstring_length.json",
+            "jsonschema/compound_property_names/nonstring_literal.json",
+            "jsonschema/compound_property_names/nonstring_lookbehind.json",
+            "jsonschema/compound_property_names/unconstrained_oneof.json",
+            "jsonschema/compound_property_names/unrestricted_type_union.json",
+            "jsonschema/compound_property_names/unsupported_mixed.json",
+            "jsonschema/compound_property_names/unsupported_nonstring.json",
+            "jsonschema/compound_property_names/unsupported_nonstring_union.json",
+            "jsonschema/compound_property_names/unsupported_one_constrained.json",
+            "jsonschema/compound_property_names/unsupported_oneof.json",
+        ),
+        "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/numeric_allof_types/null_template.json",
+            "jsonschema/root_alias_constraints/null_numeric.json",
+            "jsonschema/root_alias_constraints/null_pattern.json",
+        ),
+        "msgspec conversion rejects constraint metadata on generated null-only aliases",
+    ),
+    "jsonschema/type_union_constraints/enum_field.json": (
+        "msgspec conversion only supports Enum classes with homogeneous str or int values"
+    ),
     **dict.fromkeys(
         (
             "jsonschema/msgspec_enum_diagnostics/boolean.json",
@@ -422,6 +468,11 @@ MSGSPEC_TYPE_STATEMENT_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         "msgspec conversion rejects unions containing multiple dict-like runtime types"
     ),
 }
+MSGSPEC_LEGACY_ALIAS_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
+    "jsonschema/compound_property_names/ref_then_any.json": (
+        "msgspec conversion cannot resolve forward references in assignment-based property-name aliases"
+    ),
+}
 BACKEND_FULL_MATRIX_EXCLUDED_CASES: Final[dict[PayloadBackend, dict[str, str]]] = {
     PayloadBackend.PYDANTIC_V2_DATACLASS: {
         **PYDANTIC_V2_DATACLASS_IMPORT_EXCLUDED_CASES,
@@ -620,9 +671,9 @@ def _msgspec_type_statement_exclusion_reason(
     case: SchemaCase,
     target_python_version: PythonVersion = _PAYLOAD_TARGET_PYTHON_VERSION,
 ) -> str | None:
-    """Return msgspec exclusions caused by generated PEP 695 aliases."""
+    """Return msgspec exclusions specific to the generated alias syntax."""
     if not target_python_version.has_type_statement:
-        return None
+        return MSGSPEC_LEGACY_ALIAS_VALIDATION_EXCLUDED_CASES.get(case.id)
     return MSGSPEC_TYPE_STATEMENT_VALIDATION_EXCLUDED_CASES.get(case.id)
 
 

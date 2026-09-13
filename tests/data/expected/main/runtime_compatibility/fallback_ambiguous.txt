@@ -1,0 +1,1 @@
+Generated module contained 4 generated types instead of Payload: Alternate, Bar, Baz, Foo

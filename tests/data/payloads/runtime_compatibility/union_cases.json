@@ -1,0 +1,10 @@
+{
+  "jsonschema/type_union_constraints/keys_field.json": {
+    "value": []
+  },
+  "jsonschema/type_union_constraints/keys_root.json": [],
+  "jsonschema/type_union_constraints/keys_count_field.json": {
+    "value": []
+  },
+  "jsonschema/type_union_constraints/keys_count_root.json": []
+}

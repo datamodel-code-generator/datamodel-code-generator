@@ -1,0 +1,107 @@
+{
+  "jsonschema/allof_outer_constraints/integer_date_time_bounds.json": {
+    "acceptance": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
+    "rejection": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
+    "error": "TypeError"
+  },
+  "jsonschema/allof_outer_constraints/number_date_time_bounds.json": {
+    "acceptance": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
+    "rejection": "msgspec string date-time mappings cannot represent numeric timestamp bounds",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/enum_oneof.json": {
+    "acceptance": "msgspec conversion rejects unions containing multiple string-like key types",
+    "rejection": "msgspec conversion rejects unions containing multiple string-like key types",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/enum_refs.json": {
+    "acceptance": "msgspec conversion rejects unions containing multiple string-like key types",
+    "rejection": "msgspec conversion rejects unions containing multiple string-like key types",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/extra_enum_disjoint.json": {
+    "acceptance": "msgspec conversion rejects unions containing multiple string-like key types",
+    "rejection": "msgspec conversion rejects unions containing multiple string-like key types",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/extra_enum_then_string.json": {
+    "acceptance": "msgspec conversion rejects unions containing multiple string-like key types",
+    "rejection": "msgspec conversion rejects unions containing multiple string-like key types",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/nonstring_complex_patterns.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/nonstring_length.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/nonstring_literal.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/nonstring_lookbehind.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/unconstrained_oneof.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/unrestricted_type_union.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/unsupported_mixed.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/unsupported_nonstring.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/unsupported_nonstring_union.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/unsupported_one_constrained.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/compound_property_names/unsupported_oneof.json": {
+    "acceptance": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "rejection": "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/numeric_allof_types/null_template.json": {
+    "acceptance": "msgspec conversion rejects constraint metadata on generated null-only aliases",
+    "rejection": "msgspec conversion rejects constraint metadata on generated null-only aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/root_alias_constraints/null_numeric.json": {
+    "acceptance": "msgspec conversion rejects constraint metadata on generated null-only aliases",
+    "rejection": "msgspec conversion rejects constraint metadata on generated null-only aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/root_alias_constraints/null_pattern.json": {
+    "acceptance": "msgspec conversion rejects constraint metadata on generated null-only aliases",
+    "rejection": "msgspec conversion rejects constraint metadata on generated null-only aliases",
+    "error": "TypeError"
+  },
+  "jsonschema/type_union_constraints/enum_field.json": {
+    "acceptance": "msgspec conversion only supports Enum classes with homogeneous str or int values",
+    "rejection": "msgspec conversion only supports Enum classes with homogeneous str or int values",
+    "error": "TypeError"
+  }
+}

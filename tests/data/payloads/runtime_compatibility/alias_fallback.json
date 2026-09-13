@@ -1,0 +1,15 @@
+{
+  "single": {
+    "schema": "jsonschema/pydantic_v2_runtime_value.json",
+    "payload": {
+      "name": "Alice",
+      "age": 2
+    }
+  },
+  "missing": {
+    "schema": "jsonschema/root_alias_constraints/plain.json"
+  },
+  "ambiguous": {
+    "schema": "jsonschema/extra_fields.json"
+  }
+}

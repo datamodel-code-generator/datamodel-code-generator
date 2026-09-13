@@ -6,6 +6,28 @@ These cases are not simple fixture omissions. They need either better payload
 generation, an explicit backend compatibility policy, or a careful generator
 change that avoids surprising existing users.
 
+## Nightly Runtime Fixture Compatibility
+
+The nightly matrix also discovers regression fixtures that exercise existing output
+limitations. `tests/data/payloads/runtime_compatibility/` contains deterministic
+source-valid witnesses for the cases classified after issue #4061:
+
+- msgspec cannot convert unions with multiple string-like dictionary key types or
+  heterogeneous Enum values. Its assignment-based key aliases can also retain
+  unresolved forward references; that exclusion does not apply to PEP 695 aliases.
+- Some generated msgspec property-name aliases attach string constraints to
+  non-string types, and null-only aliases retain unrelated constraint metadata.
+  Numeric schemas with date-time formats can generate string aliases with numeric
+  bounds. These generator gaps need focused changes with output compatibility tests.
+- Bare Pydantic dataclass aliases cannot carry the model-level regex-engine config
+  needed by lookaround patterns. Pydantic before 2.5 also lacks the required regex
+  behavior and can warn while serializing enum dictionary keys.
+
+These cases retain explicit backend or version-specific reasons. E2E tests generate
+the modules and verify the runtime failures, so an exclusion that becomes obsolete
+fails a regression test. Supported null aliases remain in the matrix, and the
+array/object union fixtures use `--field-constraints` for both Pydantic backends.
+
 ## Payload Generator Limitations
 
 The following cases have valid payloads in principle, but `hypothesis-jsonschema`

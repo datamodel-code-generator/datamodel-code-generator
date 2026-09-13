@@ -153,7 +153,7 @@ def _run_payload_codegen(args: list[str]) -> Exit:
         restore()
 
 
-def _load_payload_type(module_name: str, output_path: Path) -> type[Any]:
+def _load_payload_type(module_name: str, output_path: Path) -> Any:
     spec = importlib.util.spec_from_file_location(module_name, output_path)
     if spec is None or spec.loader is None:
         msg = f"Unable to import generated module from {output_path}"
@@ -165,27 +165,25 @@ def _load_payload_type(module_name: str, output_path: Path) -> type[Any]:
     except Exception as exc:
         msg = f"Generated module failed to import: {type(exc).__name__}: {exc}"
         raise PayloadAdapterError(msg) from exc
-    payload_type = getattr(module, PAYLOAD_CLASS_NAME, None)
-    if payload_type is None:
-        generated_types = [
-            value
-            for value in module.__dict__.values()
-            if isinstance(value, type) and getattr(value, "__module__", None) == module_name
-        ]
-        match len(generated_types):
-            case 0:
-                msg = f"Generated module did not contain {PAYLOAD_CLASS_NAME}"
-                raise PayloadAdapterError(msg)
-            case 1:
-                payload_type = generated_types[0]
-            case generated_type_count:
-                generated_type_names = ", ".join(sorted(generated_type.__name__ for generated_type in generated_types))
-                msg = (
-                    f"Generated module contained {generated_type_count} generated types instead of "
-                    f"{PAYLOAD_CLASS_NAME}: {generated_type_names}"
-                )
-                raise PayloadAdapterError(msg)
-    return payload_type
+    if PAYLOAD_CLASS_NAME in module.__dict__:
+        return module.__dict__[PAYLOAD_CLASS_NAME]
+    generated_types = [
+        value
+        for value in module.__dict__.values()
+        if isinstance(value, type) and getattr(value, "__module__", None) == module_name
+    ]
+    match len(generated_types):
+        case 0:
+            msg = f"Generated module did not contain {PAYLOAD_CLASS_NAME}"
+        case 1:
+            return generated_types[0]
+        case generated_type_count:
+            generated_type_names = ", ".join(sorted(generated_type.__name__ for generated_type in generated_types))
+            msg = (
+                f"Generated module contained {generated_type_count} generated types instead of "
+                f"{PAYLOAD_CLASS_NAME}: {generated_type_names}"
+            )
+    raise PayloadAdapterError(msg)
 
 
 def _payload_runtime(payload_type: Any, backend: PayloadBackend) -> PayloadRuntime:
@@ -212,8 +210,8 @@ def generate_payload_runtime(
     """Generate or load the backend runtime for a payload validation case."""
     runtimes: dict[tuple[str, str], PayloadRuntime] = generated_model_cache["adapters"]
     cache_key = (backend.value, case.id)
-    if cache_key in runtimes:
-        return runtimes[cache_key]
+    if (runtime := runtimes.get(cache_key)) is not None:
+        return runtime
 
     case_dir = generated_model_cache["base"] / _safe_filename(backend.value) / _safe_filename(case.id)
     case_dir.mkdir(parents=True, exist_ok=True)

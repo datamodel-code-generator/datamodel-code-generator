@@ -1,0 +1,6 @@
+{
+  "jsonschema/root_alias_constraints/lookaround.json": "a",
+  "jsonschema/compound_property_names/enum_oneof.json": {"a": 1},
+  "jsonschema/compound_property_names/enum_refs.json": {"a": 1},
+  "jsonschema/compound_property_names/extra_enum_disjoint.json": {"a": 1}
+}
