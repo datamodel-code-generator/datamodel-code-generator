@@ -21523,6 +21523,27 @@ def test_validator_finalized_model_import(output_dir: Path, entrypoint: str, exa
         )
 
 
+def test_custom_model_field_name_binding_policy(output_file: Path) -> None:
+    """Keep import aliases chosen by a custom model's existing naming policy."""
+    from datamodel_code_generator.model.pydantic_v2 import BaseModel
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import ModelType
+
+    class CustomModel(BaseModel):
+        FIELD_NAME_MODEL_TYPE = ModelType.MSGSPEC
+
+    parser = JsonSchemaParser(
+        (JSON_SCHEMA_DATA_PATH / "field_name_bindings/required.json").resolve(),
+        data_model_type=CustomModel,
+        formatters=[Formatter.BUILTIN],
+    )
+    output_file.write_text(parser.parse(), encoding="utf-8")
+    assert_output(
+        output_file.read_text(encoding="utf-8"),
+        EXPECTED_JSON_SCHEMA_PATH / "field_name_bindings/custom_naming_policy.py",
+    )
+
+
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 @pytest.mark.parametrize(
     ("backend", "case", "union", "target"),

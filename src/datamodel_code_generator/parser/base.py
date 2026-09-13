@@ -413,7 +413,7 @@ def _model_field_name_collisions(model: DataModel, import_names: Collection[str]
     ]
     assigned_names = (
         field_names
-        if model.FIELDS_CREATE_CLASS_DESCRIPTORS
+        if model.fields_create_class_descriptors
         else {name for name, node in fields if node.value is not None}
     )
     candidates.intersection_update(assigned_names)

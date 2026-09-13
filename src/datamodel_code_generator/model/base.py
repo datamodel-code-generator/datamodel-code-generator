@@ -37,7 +37,7 @@ from datamodel_code_generator.python_literal import (
     _normalize_string,
     represent_python_value,
 )
-from datamodel_code_generator.reference import Reference, _BaseModel
+from datamodel_code_generator.reference import ModelType, Reference, _BaseModel
 from datamodel_code_generator.types import (
     ANY,
     NONE,
@@ -1849,7 +1849,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     IS_ROOT_MODEL: ClassVar[bool] = False
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = True
     FIELD_ASSIGNMENT_CHECKER: ClassVar[Callable[[DataModelFieldBase], bool]] = staticmethod(_has_field_assignment)
-    FIELDS_CREATE_CLASS_DESCRIPTORS: ClassVar[bool] = False
     FIELD_DEFAULT_CLASSIFIER: ClassVar[Callable[[DataModelFieldBase], tuple[bool, bool]]] = staticmethod(
         _get_field_default_info
     )
@@ -1857,7 +1856,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         _field_participates_in_constructor
     )
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = False
-    # Kept opaque so this generic layer does not import reference-layer policy.
+    # Preserve naming policies supplied by custom output model classes.
     FIELD_NAME_MODEL_TYPE: ClassVar[Any] = None
     FIELD_NAME_RESOLVER_CLASS: ClassVar[Any] = None
     EXPLICIT_ALIAS_CONFLICT_CHECKER: ClassVar[Callable[[DataModelFieldBase, str], bool] | None] = None
@@ -2461,6 +2460,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def enable_identity_hash(self) -> None:
         """Retain the legacy identity hash for a set item without a usable native hash."""
         self._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")
+
+    @property
+    def fields_create_class_descriptors(self) -> bool:
+        """Retain descriptor semantics declared through the existing naming policy."""
+        # A custom output class may override this legacy policy without inheriting Struct.
+        return self.FIELD_NAME_MODEL_TYPE is ModelType.MSGSPEC
 
     @property
     def schema_runtime_validation(self) -> _runtime_validation.SchemaRuntimeValidation | None:
