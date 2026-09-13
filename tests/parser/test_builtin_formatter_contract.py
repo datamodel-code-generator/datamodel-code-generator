@@ -58,16 +58,14 @@ def _generated_formatter_guarded_config_fields() -> set[str]:
                 targets = [target]
             case _:
                 continue
-        match value:
-            case ast.Attribute(value=ast.Name(id="config"), attr=config_field):
-                pass
-            case ast.Call(func=ast.Attribute(value=ast.Name(id="config"), attr=config_field)):
-                pass
-            case _:
-                continue
         for target in targets:
-            if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name) and target.value.id == "self":
-                config_by_instance_attribute[target.attr] = config_field
+            match target, value:
+                case (
+                    ast.Attribute(value=ast.Name(id="self"), attr=instance_attribute),
+                    ast.Attribute(value=ast.Name(id="config"), attr=config_field)
+                    | ast.Call(func=ast.Attribute(value=ast.Name(id="config"), attr=config_field)),
+                ):
+                    config_by_instance_attribute[instance_attribute] = config_field
     guarded_fields = (
         _attributes_on(configured_types, "config")
         | _attributes_on(standard_templates, "parser_config")
