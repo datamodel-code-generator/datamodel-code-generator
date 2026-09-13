@@ -69,7 +69,7 @@ def neutral_output_capabilities(model, field):
         model.has_model_config,
         model.has_runtime_object_validation,
         model.schema_runtime_validation,
-        model.FIELDS_CREATE_CLASS_DESCRIPTORS,
+        model.fields_create_class_descriptors,
         model.PLAIN_PATTERN_ROOT_CHECKER,
         field.data_type,
     )
