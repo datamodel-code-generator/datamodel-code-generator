@@ -150,6 +150,34 @@ def test_parser_template_data_reuse(output_file: Path, entrypoint: str, *, custo
     )
 
 
+def test_parser_template_data_root_cycle(output_file: Path) -> None:
+    """Retain a root alias inside the parser-owned copy without changing caller data."""
+    case = json.loads((DATA_PATH.parent / "payloads/parser_template_data_reuse.json").read_text())
+    config = JSONSchemaParserConfig(
+        extra_template_data=defaultdict(dict, case["template_data"]),
+        extra_fields="forbid",
+        formatters=[Formatter.BUILTIN],
+    )
+    data = config.extra_template_data
+    assert data is not None
+    data["#all#"] = data
+    parser = JsonSchemaParser(DATA_PATH / "person.json", config=config)
+    generated = cast("str", parser.parse())
+    assert_output(generated, EXPECTED_PARSER_PATH / "template_data_forbid.py")
+    assert tuple(data) == tuple(case["template_data"])
+    assert data["#all#"] is data
+    assert parser.extra_template_data["#all#"] is parser.extra_template_data
+    output_file.write_text(generated, encoding="utf-8")
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="parser_template_data_cycle",
+        model_name="Person",
+        valid_json=json.dumps(case["valid"]),
+        invalid_json=json.dumps(case["invalid"]),
+        expected_error_type="extra_forbidden",
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     [
