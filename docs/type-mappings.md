@@ -109,9 +109,9 @@ Generates Pydantic strict types that don't perform type coercion during validati
 
 ```python
 class User(BaseModel):
-    id: int        # Accepts "123" and converts to 123
-    name: str      # Accepts 123 and converts to "123"
-    active: bool   # Accepts 1 and converts to True
+    id: int  # Accepts "123" and converts to 123
+    name: str  # Accepts 123 and converts to "123"
+    active: bool  # Accepts 1 and converts to True
 ```
 
 ### With `--strict-types`
@@ -124,10 +124,11 @@ datamodel-codegen --input schema.json --output models.py \
 ```python
 from pydantic import StrictBool, StrictInt, StrictStr
 
+
 class User(BaseModel):
-    id: StrictInt      # Rejects "123", requires integer
-    name: StrictStr    # Rejects 123, requires string
-    active: StrictBool # Rejects 1, requires boolean
+    id: StrictInt  # Rejects "123", requires integer
+    name: StrictStr  # Rejects 123, requires string
+    active: StrictBool  # Rejects 1, requires boolean
 ```
 
 ### When to use
@@ -154,6 +155,7 @@ Controls the Python type used for `date-time` formatted strings.
 ```python
 from datetime import datetime
 
+
 class Event(BaseModel):
     created_at: datetime  # Accepts both aware and naive
 ```
@@ -168,6 +170,7 @@ datamodel-codegen --input schema.json --output models.py \
 ```python
 from pydantic import AwareDatetime
 
+
 class Event(BaseModel):
     created_at: AwareDatetime  # Requires timezone, e.g., 2024-01-01T00:00:00Z
 ```
@@ -181,6 +184,7 @@ datamodel-codegen --input schema.json --output models.py \
 
 ```python
 from pydantic import NaiveDatetime
+
 
 class Event(BaseModel):
     created_at: NaiveDatetime  # Rejects timezone, e.g., 2024-01-01T00:00:00
@@ -210,6 +214,7 @@ datamodel-codegen --input schema.json --output models.py --use-pendulum
 
 ```python
 import pendulum
+
 
 class Event(BaseModel):
     created_at: pendulum.DateTime
@@ -265,6 +270,7 @@ The generator supports the `email` and `idn-email` string formats, which generat
 ```python
 from pydantic import BaseModel, EmailStr
 
+
 class MyModel(BaseModel):
     email: EmailStr
 ```
@@ -316,6 +322,7 @@ The generator supports the `ulid` string format, which generates [`python-ulid`]
 from ulid import ULID
 from pydantic import BaseModel
 
+
 class MyModel(BaseModel):
     id: ULID
 ```
@@ -366,6 +373,7 @@ datamodel-codegen --input schema.json --output models.py \
 
 ```python
 from decimal import Decimal
+
 
 class Product(BaseModel):
     price: Decimal  # Exact decimal arithmetic

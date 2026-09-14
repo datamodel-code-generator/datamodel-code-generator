@@ -52,6 +52,7 @@ Uses the `|` operator for union types instead of `Union[X, Y]`.
 ```python
 from typing import Union, Optional
 
+
 class Item(BaseModel):
     value: Union[str, int]
     label: Optional[str] = None  # Same as Union[str, None]
@@ -85,6 +86,7 @@ Uses built-in collection types instead of `typing` module generics.
 
 ```python
 from typing import List, Dict, Set, Tuple
+
 
 class Data(BaseModel):
     items: List[str]
@@ -124,6 +126,7 @@ Uses `typing.Annotated` to attach metadata to types, which is the modern approac
 ```python
 from pydantic import Field
 
+
 class User(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     age: int = Field(..., ge=0, le=150)
@@ -138,6 +141,7 @@ datamodel-codegen --input schema.json --output models.py --use-annotated
 ```python
 from typing import Annotated
 from pydantic import Field
+
 
 class User(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=100)]
@@ -164,6 +168,7 @@ datamodel-codegen --input schema.json --output models.py --use-generic-container
 ```python
 from typing import Mapping, Sequence
 
+
 class Data(BaseModel):
     items: Sequence[str]
     mapping: Mapping[str, int]
@@ -186,6 +191,7 @@ Prevents adding `from __future__ import annotations` to generated files.
 ```python
 from __future__ import annotations
 
+
 class User(BaseModel):
     friends: list[User]  # Forward reference works due to PEP 563
 ```
@@ -201,6 +207,7 @@ from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import ForwardRef
+
 
 class User(BaseModel):
     friends: List["User"]  # String forward reference
@@ -232,6 +239,7 @@ Output:
 ```python
 from typing import Annotated
 from pydantic import BaseModel, Field
+
 
 class User(BaseModel):
     id: int

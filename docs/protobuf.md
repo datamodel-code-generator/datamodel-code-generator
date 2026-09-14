@@ -66,15 +66,15 @@ from pydantic import AwareDatetime, BaseModel, Field
 
 
 class ExampleShopV1Order(BaseModel):
-    id: str | None = Field('', description='Unique order identifier.')
+    id: str | None = Field("", description="Unique order identifier.")
     tags: list[str] | None = []
     created_at: AwareDatetime | None = None
-    email: str | None = Field(None, description='oneof: contact')
-    phone: str | None = Field(None, description='oneof: contact')
+    email: str | None = Field(None, description="oneof: contact")
+    phone: str | None = Field(None, description="oneof: contact")
 
 
 class ExampleShopV1GetOrderRequest(BaseModel):
-    id: str | None = ''
+    id: str | None = ""
 
 
 class ExampleShopV1GetOrderResponse(BaseModel):

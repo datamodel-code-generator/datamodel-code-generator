@@ -105,16 +105,19 @@ When you have the same field name in multiple classes but want different aliases
 ```python
 from pydantic import BaseModel, Field
 
+
 class User(BaseModel):
-    user_name: str | None = Field(None, alias='name')
+    user_name: str | None = Field(None, alias="name")
     id: int | None = None
 
+
 class Address(BaseModel):
-    address_name: str | None = Field(None, alias='name')
+    address_name: str | None = Field(None, alias="name")
     city: str | None = None
 
+
 class Root(BaseModel):
-    root_name: str | None = Field(None, alias='name')
+    root_name: str | None = Field(None, alias="name")
     user: User | None = None
     address: Address | None = None
 ```

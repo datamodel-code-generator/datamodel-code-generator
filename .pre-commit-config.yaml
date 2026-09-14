@@ -14,12 +14,12 @@ repos:
     - id: tox-ini-fmt
       args: ["-p", "fix"]
 - repo: https://github.com/tox-dev/pyproject-fmt
-  rev: v2.28.1
+  rev: v2.29.4
   hooks:
     - id: pyproject-fmt
       args: ["--max-supported-python=3.14"]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.16.4'
+  rev: 'v0.16.7'
   hooks:
   - id: ruff-format
     exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/model/_compiled_templates/"

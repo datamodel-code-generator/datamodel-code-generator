@@ -137,8 +137,7 @@ Schema with `title: "api.v1.User"` generates:
 
 ```python
 # models.py
-class ApiV1User(BaseModel):
-    ...
+class ApiV1User(BaseModel): ...
 ```
 
 ### With `--treat-dot-as-module`

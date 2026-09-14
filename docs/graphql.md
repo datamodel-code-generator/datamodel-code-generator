@@ -83,29 +83,24 @@ class Author(BaseModel):
     books: list[Book | None] | None = Field(default_factory=list)
     id: ID
     name: String | None = None
-    typename__: Literal['Author'] | None = Field('Author', alias='__typename')
+    typename__: Literal["Author"] | None = Field("Author", alias="__typename")
 
 
 class Book(BaseModel):
     author: Author | None = None
     id: ID
     title: String | None = None
-    typename__: Literal['Book'] | None = Field('Book', alias='__typename')
+    typename__: Literal["Book"] | None = Field("Book", alias="__typename")
 
 
 class AuthorBooksInput(BaseModel):
     id: ID
-    typename__: Literal['AuthorBooksInput'] | None = Field(
-        'AuthorBooksInput', alias='__typename'
-    )
+    typename__: Literal["AuthorBooksInput"] | None = Field("AuthorBooksInput", alias="__typename")
 
 
 class BooksInput(BaseModel):
     ids: list[ID]
-    typename__: Literal['BooksInput'] | None = Field(
-        'BooksInput', alias='__typename'
-    )
-
+    typename__: Literal["BooksInput"] | None = Field("BooksInput", alias="__typename")
 ```
 
 ---
@@ -144,9 +139,7 @@ from model import Book
 
 response = {...}
 
-books = [
-    Book.model_validate(book_raw) for book_raw in response["getAuthorBooks"]
-]
+books = [Book.model_validate(book_raw) for book_raw in response["getAuthorBooks"]]
 print(books)
 # [Book(author=Author(books=[], id='51341cdscwef14r13', name='J. K. Rowling', typename__='Author'), id='1321dfvrt211wdw', title='Harry Potter and the Prisoner of Azkaban', typename__='Book'), Book(author=Author(books=[], id='51341cdscwef14r13', name='J. K. Rowling', typename__='Author'), id='dvsmu12e19xmqacqw9', title='Fantastic Beasts: The Crimes of Grindelwald', typename__='Book')]
 ```
@@ -214,8 +207,7 @@ String: TypeAlias = str
 class A(BaseModel):
     duration: Long
     id: ID
-    typename__: Optional[Literal['A']] = Field('A', alias='__typename')
-
+    typename__: Optional[Literal["A"]] = Field("A", alias="__typename")
 ```
 
 ---
@@ -241,7 +233,7 @@ datamodel-codegen \
 class Book(BaseModel):
     id: ID
     title: String | None = None
-    typename__: Literal['Book'] | None = Field('Book', alias='__typename')
+    typename__: Literal["Book"] | None = Field("Book", alias="__typename")
 ```
 
 **After (with --graphql-no-typename):**

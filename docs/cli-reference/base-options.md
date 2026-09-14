@@ -97,7 +97,7 @@ Write a separate JSON map from source schema references to the final generated m
 
 
     class RootTitle(BaseModel):
-        method: Literal['thread/started']
+        method: Literal["thread/started"]
         payload: metadata_payload.MetadataPayload
     ```
 
@@ -209,7 +209,7 @@ Default is UTF-8, which is the standard encoding for JSON and most modern text f
 
 
     class 日本語Model(BaseModel):
-        名前: str | None = Field(None, description='ユーザー名')
+        名前: str | None = Field(None, description="ユーザー名")
         年齢: int | None = None
     ```
 
@@ -464,7 +464,7 @@ not `--input-file-type yaml`. The `yaml` type treats the file as raw data and in
 
 
         class Model(BaseModel):
-            Pet_1: Pet = Field(..., alias='Pet')
+            Pet_1: Pet = Field(..., alias="Pet")
         ```
 
     === "YAML"
@@ -495,7 +495,7 @@ not `--input-file-type yaml`. The `yaml` type treats the file as raw data and in
 
 
         class Model(BaseModel):
-            Pet_1: Pet = Field(..., alias='Pet')
+            Pet_1: Pet = Field(..., alias="Pet")
         ```
 
 ---
@@ -546,8 +546,8 @@ Use the format `module:Object` or `path/to/file.py:Object` to specify the type.
 
 
     class User(BaseModel):
-        name: str = Field(..., title='Name')
-        age: int = Field(..., title='Age')
+        name: str = Field(..., title="Name")
+        age: int = Field(..., title="Age")
     ```
 <!-- END AUTO-GENERATED DOC EXAMPLE: cli-reference.base-options.input-model.example -->
 
@@ -706,16 +706,12 @@ new projects. The preset name pins generated Python syntax and backports.
         model_config = ConfigDict(
             populate_by_name=True,
         )
-        first_name: Annotated[
-            str | None, Field(alias='firstName', description="The person's first name.")
-        ] = None
-        last_name: Annotated[
-            str | None, Field(alias='lastName', description="The person's last name.")
-        ] = None
+        first_name: Annotated[str | None, Field(alias="firstName", description="The person's first name.")] = None
+        last_name: Annotated[str | None, Field(alias="lastName", description="The person's last name.")] = None
         age: Annotated[
             int | None,
             Field(
-                description='Age in years which must be equal to or greater than zero.',
+                description="Age in years which must be equal to or greater than zero.",
                 ge=0,
             ),
         ] = None

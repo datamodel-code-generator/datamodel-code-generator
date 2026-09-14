@@ -131,8 +131,8 @@ Pydantic v2 BaseModel output and omits matching per-field aliases.
         )
         first_name: str
         last_name: str | None = None
-        foo_bar: str = Field(..., alias='foo_bar')
-        weird_url: int = Field(..., alias='weird-url')
+        foo_bar: str = Field(..., alias="foo_bar")
+        weird_url: int = Field(..., alias="weird-url")
     ```
 
 ---
@@ -359,7 +359,7 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 
         class Pet(BaseModel):
             model_config = ConfigDict(
-                extra='allow',
+                extra="allow",
             )
             id: int
             name: str
@@ -372,7 +372,7 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 
         class User(BaseModel):
             model_config = ConfigDict(
-                extra='allow',
+                extra="allow",
             )
             id: int
             name: str
@@ -393,7 +393,7 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 
         class Error(BaseModel):
             model_config = ConfigDict(
-                extra='allow',
+                extra="allow",
             )
             code: int
             message: str
@@ -401,20 +401,12 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 
         class Api(BaseModel):
             model_config = ConfigDict(
-                extra='allow',
+                extra="allow",
             )
-            apiKey: str | None = Field(
-                None, description='To be used as a dataset parameter value'
-            )
-            apiVersionNumber: str | None = Field(
-                None, description='To be used as a version parameter value'
-            )
-            apiUrl: AnyUrl | None = Field(
-                None, description="The URL describing the dataset's fields"
-            )
-            apiDocumentationUrl: AnyUrl | None = Field(
-                None, description='A URL to the API console for each API'
-            )
+            apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+            apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+            apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+            apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
         class Apis(RootModel[list[Api]]):
@@ -423,14 +415,14 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 
         class Event(BaseModel):
             model_config = ConfigDict(
-                extra='allow',
+                extra="allow",
             )
             name: str | None = None
 
 
         class Result(BaseModel):
             model_config = ConfigDict(
-                extra='allow',
+                extra="allow",
             )
             event: Event | None = None
         ```
@@ -501,8 +493,8 @@ exactly.
 
 
     class Status(Enum):
-        active = 'active'
-        inactive = 'inactive'
+        active = "active"
+        inactive = "inactive"
 
 
     class Item(BaseModel):
@@ -777,18 +769,10 @@ The `--allow-population-by-field-name` flag configures the code generation behav
             model_config = ConfigDict(
                 populate_by_name=True,
             )
-            apiKey: str | None = Field(
-                None, description='To be used as a dataset parameter value'
-            )
-            apiVersionNumber: str | None = Field(
-                None, description='To be used as a version parameter value'
-            )
-            apiUrl: AnyUrl | None = Field(
-                None, description="The URL describing the dataset's fields"
-            )
-            apiDocumentationUrl: AnyUrl | None = Field(
-                None, description='A URL to the API console for each API'
-            )
+            apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+            apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+            apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+            apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
         class Apis(RootModel[list[Api]]):
@@ -1059,18 +1043,10 @@ The `--base-class` flag configures the code generation behavior.
 
 
     class Api(Base):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -1245,9 +1221,7 @@ naming convention than what's in the schema.
     class ValidModelName(BaseModel):
         firstName: str | None = Field(None, description="The person's first name.")
         lastName: str | None = Field(None, description="The person's last name.")
-        age: conint(ge=0) | None = Field(
-            None, description='Age in years which must be equal to or greater than zero.'
-        )
+        age: conint(ge=0) | None = Field(None, description="Age in years which must be equal to or greater than zero.")
         friends: list[Any] | None = None
         comment: None = Field(None)
     ```
@@ -1320,8 +1294,8 @@ prefix or suffix specified by --class-name-prefix or --class-name-suffix:
 
 
     class Status(Enum):
-        active = 'active'
-        inactive = 'inactive'
+        active = "active"
+        inactive = "inactive"
 
 
     class ItemSchema(BaseModel):
@@ -1400,8 +1374,8 @@ code or avoiding conflicts with existing classes.
 
 
     class ApiStatus(Enum):
-        active = 'active'
-        inactive = 'inactive'
+        active = "active"
+        inactive = "inactive"
 
 
     class ApiItem(BaseModel):
@@ -1480,8 +1454,8 @@ classes (e.g., adding 'Schema' or 'Model' suffix).
 
 
     class StatusSchema(Enum):
-        active = 'active'
-        inactive = 'inactive'
+        active = "active"
+        inactive = "inactive"
 
 
     class ItemSchema(BaseModel):
@@ -1549,19 +1523,19 @@ by replacing all references to duplicate models with the canonical model.
 
 
     class ArmRight(BaseModel):
-        Joint_1: int = Field(..., alias='Joint 1')
-        Joint_2: int = Field(..., alias='Joint 2')
-        Joint_3: int = Field(..., alias='Joint 3')
+        Joint_1: int = Field(..., alias="Joint 1")
+        Joint_2: int = Field(..., alias="Joint 2")
+        Joint_3: int = Field(..., alias="Joint 3")
 
 
     class Head(BaseModel):
-        Joint_1: int = Field(..., alias='Joint 1')
+        Joint_1: int = Field(..., alias="Joint 1")
 
 
     class Model(BaseModel):
-        Arm_Right: ArmRight = Field(..., alias='Arm Right')
-        Arm_Left: ArmRight = Field(..., alias='Arm Left')
-        Head_1: Head = Field(..., alias='Head')
+        Arm_Right: ArmRight = Field(..., alias="Arm Right")
+        Arm_Left: ArmRight = Field(..., alias="Arm Left")
+        Head_1: Head = Field(..., alias="Head")
     ```
 
 ---
@@ -1624,7 +1598,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 
 
             class Api(BaseModel):
-                version: Literal['v1'] = Field(..., description='The version of this API')
+                version: Literal["v1"] = Field(..., description="The version of this API")
             ```
 
         === "dataclass"
@@ -1642,7 +1616,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 
             @dataclass
             class Api:
-                version: Literal['v1']
+                version: Literal["v1"]
             ```
 
         === "TypedDict"
@@ -1658,7 +1632,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 
 
             class Api(TypedDict):
-                version: Literal['v1']
+                version: Literal["v1"]
             ```
 
         === "msgspec"
@@ -1676,7 +1650,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 
 
             class Api(Struct):
-                version: Annotated[Literal['v1'], Meta(description='The version of this API')]
+                version: Annotated[Literal["v1"], Meta(description="The version of this API")]
             ```
 
         === "Without Option (Baseline)"
@@ -1692,7 +1666,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 
 
             class ApiVersion(BaseModel):
-                __root__: str = Field('v1', const=True, description='The version of this API')
+                __root__: str = Field("v1", const=True, description="The version of this API")
 
 
             class Api(BaseModel):
@@ -2044,7 +2018,7 @@ control over dataclass generation.
         vehicles: list[Vehicle]
         vehicles_ids: list[ID]
         producer: String | None = None
-        typename__: Literal['Film'] | None = 'Film'
+        typename__: Literal["Film"] | None = "Film"
 
 
     @dataclass(order=True, slots=True)
@@ -2068,7 +2042,7 @@ control over dataclass generation.
         homeworld_id: ID | None = None
         mass: Int | None = None
         skin_color: String | None = None
-        typename__: Literal['Person'] | None = 'Person'
+        typename__: Literal["Person"] | None = "Person"
 
 
     @dataclass(order=True, slots=True)
@@ -2087,7 +2061,7 @@ control over dataclass generation.
         rotation_period: String | None = None
         surface_water: String | None = None
         terrain: String | None = None
-        typename__: Literal['Planet'] | None = 'Planet'
+        typename__: Literal["Planet"] | None = "Planet"
 
 
     @dataclass(order=True, slots=True)
@@ -2106,7 +2080,7 @@ control over dataclass generation.
         hair_colors: String | None = None
         language: String | None = None
         skin_colors: String | None = None
-        typename__: Literal['Species'] | None = 'Species'
+        typename__: Literal["Species"] | None = "Species"
 
 
     @dataclass(order=True, slots=True)
@@ -2129,7 +2103,7 @@ control over dataclass generation.
         model: String | None = None
         passengers: String | None = None
         starship_class: String | None = None
-        typename__: Literal['Starship'] | None = 'Starship'
+        typename__: Literal["Starship"] | None = "Starship"
 
 
     @dataclass(order=True, slots=True)
@@ -2150,7 +2124,7 @@ control over dataclass generation.
         model: String | None = None
         passengers: String | None = None
         vehicle_class: String | None = None
-        typename__: Literal['Vehicle'] | None = 'Vehicle'
+        typename__: Literal["Vehicle"] | None = "Vehicle"
     ```
 
 ---
@@ -2516,18 +2490,10 @@ The `--enable-faux-immutability` flag configures the code generation behavior.
             model_config = ConfigDict(
                 frozen=True,
             )
-            apiKey: str | None = Field(
-                None, description='To be used as a dataset parameter value'
-            )
-            apiVersionNumber: str | None = Field(
-                None, description='To be used as a version parameter value'
-            )
-            apiUrl: AnyUrl | None = Field(
-                None, description="The URL describing the dataset's fields"
-            )
-            apiDocumentationUrl: AnyUrl | None = Field(
-                None, description='A URL to the API console for each API'
-            )
+            apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+            apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+            apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+            apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
         class Apis(RootModel[list[Api]]):
@@ -2799,18 +2765,10 @@ The `--force-optional` flag configures the code generation behavior.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api] | None]):
@@ -3038,12 +2996,12 @@ same schema produce the same ordering, which keeps diffs stable.
 
 
     class DogBase(BaseModel):
-        name: str | None = Field(None, title='Name')
-        woof: bool | None = Field(True, title='Woof')
+        name: str | None = Field(None, title="Name")
+        woof: bool | None = Field(True, title="Woof")
 
 
     class DogRelationships(BaseModel):
-        people: list[Person] | None = Field(None, title='People')
+        people: list[Person] | None = Field(None, title="People")
 
 
     class Dog(DogBase, DogRelationships):
@@ -3051,11 +3009,11 @@ same schema produce the same ordering, which keeps diffs stable.
 
 
     class PersonBase(BaseModel):
-        name: str | None = Field(None, title='Name')
+        name: str | None = Field(None, title="Name")
 
 
     class PersonRelationships(BaseModel):
-        people: list[Person] | None = Field(None, title='People')
+        people: list[Person] | None = Field(None, title="People")
 
 
     class Person(PersonBase, PersonRelationships):
@@ -3063,8 +3021,8 @@ same schema produce the same ordering, which keeps diffs stable.
 
 
     class PersonsBestFriend(BaseModel):
-        people: list[Person] | None = Field(None, title='People')
-        dogs: list[Dog] | None = Field(None, title='Dogs')
+        people: list[Person] | None = Field(None, title="People")
+        dogs: list[Dog] | None = Field(None, title="Dogs")
         dog_base: DogBase | None = None
         dog_relationships: DogRelationships | None = None
         person_base: PersonBase | None = None
@@ -3366,7 +3324,7 @@ positional argument errors.
             vehicles: list[Vehicle]
             vehicles_ids: list[ID]
             producer: String | None = None
-            typename__: Literal['Film'] | None = 'Film'
+            typename__: Literal["Film"] | None = "Film"
 
 
         @dataclass(frozen=True, kw_only=True)
@@ -3390,7 +3348,7 @@ positional argument errors.
             homeworld_id: ID | None = None
             mass: Int | None = None
             skin_color: String | None = None
-            typename__: Literal['Person'] | None = 'Person'
+            typename__: Literal["Person"] | None = "Person"
 
 
         @dataclass(frozen=True, kw_only=True)
@@ -3409,7 +3367,7 @@ positional argument errors.
             rotation_period: String | None = None
             surface_water: String | None = None
             terrain: String | None = None
-            typename__: Literal['Planet'] | None = 'Planet'
+            typename__: Literal["Planet"] | None = "Planet"
 
 
         @dataclass(frozen=True, kw_only=True)
@@ -3428,7 +3386,7 @@ positional argument errors.
             hair_colors: String | None = None
             language: String | None = None
             skin_colors: String | None = None
-            typename__: Literal['Species'] | None = 'Species'
+            typename__: Literal["Species"] | None = "Species"
 
 
         @dataclass(frozen=True, kw_only=True)
@@ -3451,7 +3409,7 @@ positional argument errors.
             model: String | None = None
             passengers: String | None = None
             starship_class: String | None = None
-            typename__: Literal['Starship'] | None = 'Starship'
+            typename__: Literal["Starship"] | None = "Starship"
 
 
         @dataclass(frozen=True, kw_only=True)
@@ -3472,7 +3430,7 @@ positional argument errors.
             model: String | None = None
             passengers: String | None = None
             vehicle_class: String | None = None
-            typename__: Literal['Vehicle'] | None = 'Vehicle'
+            typename__: Literal["Vehicle"] | None = "Vehicle"
         ```
 
 ---
@@ -3525,7 +3483,7 @@ to the model's ConfigDict json_schema_extra.
 
         class ModelExtras(BaseModel):
             model_config = ConfigDict(
-                json_schema_extra={'x-custom-metadata': {'key1': 'value1'}},
+                json_schema_extra={"x-custom-metadata": {"key1": "value1"}},
             )
             name: str | None = None
         ```
@@ -3580,7 +3538,7 @@ from the schema to the model's ConfigDict json_schema_extra with the x- prefix s
 
         class ModelExtras(BaseModel):
             model_config = ConfigDict(
-                json_schema_extra={'custom-metadata': {'key1': 'value1'}, 'version': 1},
+                json_schema_extra={"custom-metadata": {"key1": "value1"}, "version": 1},
             )
             name: str | None = None
         ```
@@ -4066,7 +4024,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 title: String
                 vehicles: list[Vehicle]
                 vehicles_ids: list[ID]
-                typename__: Literal['Film'] | None = Field('Film', alias='__typename')
+                typename__: Literal["Film"] | None = Field("Film", alias="__typename")
 
 
             class Person(BaseModel):
@@ -4089,7 +4047,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 starships_ids: list[ID]
                 vehicles: list[Vehicle]
                 vehicles_ids: list[ID]
-                typename__: Literal['Person'] | None = Field('Person', alias='__typename')
+                typename__: Literal["Person"] | None = Field("Person", alias="__typename")
 
 
             class Planet(BaseModel):
@@ -4107,7 +4065,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 rotation_period: String | None = None
                 surface_water: String | None = None
                 terrain: String | None = None
-                typename__: Literal['Planet'] | None = Field('Planet', alias='__typename')
+                typename__: Literal["Planet"] | None = Field("Planet", alias="__typename")
 
 
             class Species(BaseModel):
@@ -4125,7 +4083,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 people: list[Person]
                 people_ids: list[ID]
                 skin_colors: String | None = None
-                typename__: Literal['Species'] | None = Field('Species', alias='__typename')
+                typename__: Literal["Species"] | None = Field("Species", alias="__typename")
 
 
             class Starship(BaseModel):
@@ -4147,7 +4105,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 pilots: list[Person]
                 pilots_ids: list[ID]
                 starship_class: String | None = None
-                typename__: Literal['Starship'] | None = Field('Starship', alias='__typename')
+                typename__: Literal["Starship"] | None = Field("Starship", alias="__typename")
 
 
             class Vehicle(BaseModel):
@@ -4167,7 +4125,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 pilots: list[Person]
                 pilots_ids: list[ID]
                 vehicle_class: String | None = None
-                typename__: Literal['Vehicle'] | None = Field('Vehicle', alias='__typename')
+                typename__: Literal["Vehicle"] | None = Field("Vehicle", alias="__typename")
 
 
             Film.model_rebuild()
@@ -4229,7 +4187,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 vehicles: list[Vehicle]
                 vehicles_ids: list[ID]
                 producer: String | None = None
-                typename__: Literal['Film'] | None = 'Film'
+                typename__: Literal["Film"] | None = "Film"
 
 
             @dataclass
@@ -4253,7 +4211,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 homeworld_id: ID | None = None
                 mass: Int | None = None
                 skin_color: String | None = None
-                typename__: Literal['Person'] | None = 'Person'
+                typename__: Literal["Person"] | None = "Person"
 
 
             @dataclass
@@ -4272,7 +4230,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 rotation_period: String | None = None
                 surface_water: String | None = None
                 terrain: String | None = None
-                typename__: Literal['Planet'] | None = 'Planet'
+                typename__: Literal["Planet"] | None = "Planet"
 
 
             @dataclass
@@ -4291,7 +4249,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 hair_colors: String | None = None
                 language: String | None = None
                 skin_colors: String | None = None
-                typename__: Literal['Species'] | None = 'Species'
+                typename__: Literal["Species"] | None = "Species"
 
 
             @dataclass
@@ -4314,7 +4272,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 model: String | None = None
                 passengers: String | None = None
                 starship_class: String | None = None
-                typename__: Literal['Starship'] | None = 'Starship'
+                typename__: Literal["Starship"] | None = "Starship"
 
 
             @dataclass
@@ -4335,7 +4293,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
                 model: String | None = None
                 passengers: String | None = None
                 vehicle_class: String | None = None
-                typename__: Literal['Vehicle'] | None = 'Vehicle'
+                typename__: Literal["Vehicle"] | None = "Vehicle"
             ```
 
 ---
@@ -4457,7 +4415,7 @@ appears in different contexts within an OpenAPI specification.
 
 
     class PetType(Enum):
-        pet = 'pet'
+        pet = "pet"
 
 
     class PetDetails(BaseModel):
@@ -4473,7 +4431,7 @@ appears in different contexts within an OpenAPI specification.
 
 
     class CarType(Enum):
-        car = 'car'
+        car = "car"
 
 
     class CarDetails(BaseModel):
@@ -4587,27 +4545,25 @@ code duplication in the output.
 
 
     class Animal(Enum):
-        dog = 'dog'
-        cat = 'cat'
-        snake = 'snake'
+        dog = "dog"
+        cat = "cat"
+        snake = "snake"
 
 
     class RedistributeEnum(Enum):
-        static = 'static'
-        connected = 'connected'
+        static = "static"
+        connected = "connected"
 
 
     class User(BaseModel):
         name: str | None = None
-        animal: Animal | None = 'dog'
-        pet: Animal | None = 'cat'
+        animal: Animal | None = "dog"
+        pet: Animal | None = "cat"
         redistribute: list[RedistributeEnum] | None = None
 
 
     class Redistribute(RootModel[list[RedistributeEnum]]):
-        root: list[RedistributeEnum] = Field(
-            ..., description='Redistribute type for routes.'
-        )
+        root: list[RedistributeEnum] = Field(..., description="Redistribute type for routes.")
     ```
 
 ---
@@ -4699,6 +4655,7 @@ The `--reuse-scope` flag configures the code generation behavior.
     class Model(BaseModel):
         data: SharedModel | None = None
 
+
     # schema_b.py
     # generated by datamodel-codegen:
     #   filename:  schema_b.json
@@ -4713,6 +4670,7 @@ The `--reuse-scope` flag configures the code generation behavior.
 
     class Model(BaseModel):
         info: shared.SharedModel | None = None
+
 
     # shared.py
     # generated by datamodel-codegen:
@@ -4955,7 +4913,7 @@ where optional fields have defaults but cannot accept `None` values.
 
     class Cursors(BaseModel):
         prev: str | None = Field(...)
-        next: str = 'last'
+        next: str = "last"
         index: float
         tag: str | None = None
 
@@ -4973,18 +4931,10 @@ where optional fields have defaults but cannot accept `None` values.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api] | None]):
@@ -4993,8 +4943,8 @@ where optional fields have defaults but cannot accept `None` values.
 
     class EmailItem(BaseModel):
         author: str
-        address: str = Field(..., description='email address')
-        description: str = 'empty'
+        address: str = Field(..., description="email address")
+        description: str = "empty"
         tag: str | None = None
 
 
@@ -5007,7 +4957,7 @@ where optional fields have defaults but cannot accept `None` values.
 
 
     class Description(RootModel[str | None]):
-        root: str | None = 'example'
+        root: str | None = "example"
 
 
     class Name(RootModel[str | None]):
@@ -5278,14 +5228,10 @@ default to None.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(description='To be used as a dataset parameter value')
-        apiVersionNumber: str | None = Field(
-            description='To be used as a version parameter value'
-        )
+        apiKey: str | None = Field(description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(description="To be used as a version parameter value")
         apiUrl: AnyUrl | None = Field(description="The URL describing the dataset's fields")
-        apiDocumentationUrl: AnyUrl | None = Field(
-            description='A URL to the API console for each API'
-        )
+        apiDocumentationUrl: AnyUrl | None = Field(description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -5375,9 +5321,7 @@ This prevents breaking changes when generated code is used on older Pydantic ver
         )
         firstName: str | None = Field(None, description="The person's first name.")
         lastName: str | None = Field(None, description="The person's last name.")
-        age: conint(ge=0) | None = Field(
-            None, description='Age in years which must be equal to or greater than zero.'
-        )
+        age: conint(ge=0) | None = Field(None, description="Age in years which must be equal to or greater than zero.")
         friends: list[Any] | None = None
         comment: None = Field(None)
     ```
@@ -5457,9 +5401,7 @@ This affects import statements and type annotation syntax in generated code.
         class Person(BaseModel):
             firstName: str | None = Field(None, description="The person's first name.")
             lastName: str | None = Field(None, description="The person's last name.")
-            age: conint(ge=0) | None = Field(
-                None, description='Age in years which must be equal to or greater than zero.'
-            )
+            age: conint(ge=0) | None = Field(None, description="Age in years which must be equal to or greater than zero.")
             friends: list[Any] | None = None
             comment: None = Field(None)
         ```
@@ -5546,7 +5488,7 @@ The `--union-mode` flag configures the code generation behavior.
 
     class MySchema1(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         AddressLine1: str
         AddressLine2: str | None = None
@@ -5557,7 +5499,7 @@ The `--union-mode` flag configures the code generation behavior.
 
     class MySchema2(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         AddressLine1: str
         AddressLine2: str | None = None
@@ -5573,7 +5515,7 @@ The `--union-mode` flag configures the code generation behavior.
 
     class MySchema3(US):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         AddressLine1: str
         AddressLine2: str | None = None
@@ -5581,9 +5523,7 @@ The `--union-mode` flag configures the code generation behavior.
 
 
     class MySchema(RootModel[MySchema1 | MySchema2 | MySchema3]):
-        root: MySchema1 | MySchema2 | MySchema3 = Field(
-            ..., title='My schema', union_mode='left_to_right'
-        )
+        root: MySchema1 | MySchema2 | MySchema3 = Field(..., title="My schema", union_mode="left_to_right")
     ```
 
 ---
@@ -5656,10 +5596,10 @@ as `str = 'value'`, not `str | None = 'value'`, unless the schema allows null.
 
 
     class UseDefaultWithConst(BaseModel):
-        foo: Literal['foo'] | None = None
+        foo: Literal["foo"] | None = None
         bool_default: Literal[True] = False
         int_default: Literal[3] = 0
-        str_default: Literal['fast'] = ''
+        str_default: Literal["fast"] = ""
     ```
 
 ---
@@ -5881,7 +5821,7 @@ default values.
         optionalField: String | None = None
         optionalListField: list[String] | None = None
         optionalListOptionalField: list[String | None] | None = None
-        typename__: Literal['A'] | None = Field(default='A', alias='__typename')
+        typename__: Literal["A"] | None = Field(default="A", alias="__typename")
     ```
 
 ---
@@ -5950,9 +5890,9 @@ The `--use-frozen-field` flag generates frozen field definitions:
 
 
         class User(BaseModel):
-            id: int = Field(..., description='Server-generated ID', frozen=True)
+            id: int = Field(..., description="Server-generated ID", frozen=True)
             name: str
-            password: str = Field(..., description='User password')
+            password: str = Field(..., description="User password")
             created_at: AwareDatetime | None = Field(None, frozen=True)
         ```
 
@@ -6048,20 +5988,20 @@ Generate a shared base class with model configuration to avoid repetition (DRY).
 
     class BaseModel(_BaseModel):
         model_config = ConfigDict(
-            extra='forbid',
+            extra="forbid",
         )
 
 
     class Foo(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         x: int | None = None
 
 
     class Bar(BaseModel):
         model_config = ConfigDict(
-            extra='forbid',
+            extra="forbid",
         )
         y: int | None = None
 
@@ -6072,7 +6012,7 @@ Generate a shared base class with model configuration to avoid repetition (DRY).
 
     class Test(BaseModel):
         model_config = ConfigDict(
-            extra='forbid',
+            extra="forbid",
         )
         foo: Foo
         bar: Bar | None = None
@@ -6162,7 +6102,7 @@ difference between an omitted field and a nullable field set to `None`.
         nullableUnrequired: int | None | MISSING = MISSING
         withDefault: int | None = 1
         nullDefault: int | None = None
-        aliased_field: str | MISSING = Field(MISSING, alias='aliased-field')
+        aliased_field: str | MISSING = Field(MISSING, alias="aliased-field")
     ```
 
 ---
@@ -6358,8 +6298,8 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 
 
     class Kind(Enum):
-        dog = 'dog'
-        cat = 'cat'
+        dog = "dog"
+        cat = "cat"
 
 
     class Pet(BaseModel):
@@ -6367,7 +6307,7 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
         name: str
         tag: str | None = None
         kind: Kind | None = None
-        type: Literal['animal'] | None = None
+        type: Literal["animal"] | None = None
         number: Literal[1] = 1
         boolean: Literal[True] = True
 
@@ -6377,8 +6317,8 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 
 
     class Kind1(Enum):
-        snake = 'snake'
-        rabbit = 'rabbit'
+        snake = "snake"
+        rabbit = "rabbit"
 
 
     class Animal(BaseModel):
@@ -6391,8 +6331,8 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 
 
     class Type(Enum):
-        a = 'a'
-        b = 'b'
+        a = "a"
+        b = "b"
 
 
     class EnumObject(BaseModel):
@@ -6400,8 +6340,8 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 
 
     class EnumRoot(Enum):
-        a = 'a'
-        b = 'b'
+        a = "a"
+        b = "b"
 
 
     class IntEnum(Enum):
@@ -6416,55 +6356,51 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 
 
     class MultipleTypeEnum(Enum):
-        red = 'red'
-        amber = 'amber'
-        green = 'green'
+        red = "red"
+        amber = "amber"
+        green = "green"
         NoneType_None = None
         int_42 = 42
 
 
-    class SingleEnum(RootModel[Literal['pet']]):
-        root: Literal['pet'] = 'pet'
+    class SingleEnum(RootModel[Literal["pet"]]):
+        root: Literal["pet"] = "pet"
 
 
-    class ArrayEnum(RootModel[list[Literal['cat'] | Literal['dog']]]):
-        root: list[Literal['cat'] | Literal['dog']]
+    class ArrayEnum(RootModel[list[Literal["cat"] | Literal["dog"]]]):
+        root: list[Literal["cat"] | Literal["dog"]]
 
 
     class NestedVersionEnum(Enum):
-        RC1 = 'RC1'
-        RC1N = 'RC1N'
-        RC2 = 'RC2'
-        RC2N = 'RC2N'
-        RC3 = 'RC3'
-        RC4 = 'RC4'
+        RC1 = "RC1"
+        RC1N = "RC1N"
+        RC2 = "RC2"
+        RC2N = "RC2N"
+        RC3 = "RC3"
+        RC4 = "RC4"
 
 
     class NestedVersion(RootModel[NestedVersionEnum | None]):
-        root: NestedVersionEnum | None = Field(
-            'RC1', description='nullable enum', examples=['RC2']
-        )
+        root: NestedVersionEnum | None = Field("RC1", description="nullable enum", examples=["RC2"])
 
 
     class NestedNullableEnum(BaseModel):
         nested_version: NestedVersion | None = Field(
-            'RC1', description='nullable enum', examples=['RC2'], validate_default=True
+            "RC1", description="nullable enum", examples=["RC2"], validate_default=True
         )
 
 
     class VersionEnum(Enum):
-        RC1 = 'RC1'
-        RC1N = 'RC1N'
-        RC2 = 'RC2'
-        RC2N = 'RC2N'
-        RC3 = 'RC3'
-        RC4 = 'RC4'
+        RC1 = "RC1"
+        RC1N = "RC1N"
+        RC2 = "RC2"
+        RC2N = "RC2N"
+        RC3 = "RC3"
+        RC4 = "RC4"
 
 
     class Version(RootModel[VersionEnum | None]):
-        root: VersionEnum | None = Field(
-            'RC1', description='nullable enum', examples=['RC2']
-        )
+        root: VersionEnum | None = Field("RC1", description="nullable enum", examples=["RC2"])
     ```
 
 ---
@@ -6489,8 +6425,10 @@ first_pet: Pet = pets[0]
 selected_pets: list[Pet] = pets[:1]
 pet_names = [pet.name for pet in pets]
 
+
 def render_pet_names(pets: Sequence[Pet]) -> list[str]:
     return [pet.name for pet in pets]
+
 
 render_pet_names(pets)
 ```
@@ -6665,19 +6603,13 @@ polymorphic types and inheritance hierarchies.
 
 
     class AdminUser(User):
-        admin_level: int = Field(..., description='Admin permission level')
+        admin_level: int = Field(..., description="Admin permission level")
 
 
     class Container(BaseModel):
-        admin_user_field: AdminUser = Field(
-            ..., description='Field that should not use SerializeAsAny'
-        )
-        user_field: SerializeAsAny[User] = Field(
-            ..., description='Field that should use SerializeAsAny'
-        )
-        user_list: list[SerializeAsAny[User]] = Field(
-            ..., description='List of users that should use SerializeAsAny'
-        )
+        admin_user_field: AdminUser = Field(..., description="Field that should not use SerializeAsAny")
+        user_field: SerializeAsAny[User] = Field(..., description="Field that should use SerializeAsAny")
+        user_list: list[SerializeAsAny[User]] = Field(..., description="List of users that should use SerializeAsAny")
     ```
 
 ---
@@ -6748,9 +6680,9 @@ type, providing better type safety and IDE support.
 
 
     class Color(str, Enum):
-        BLUE = 'BLUE'
-        GREEN = 'GREEN'
-        RED = 'RED'
+        BLUE = "BLUE"
+        GREEN = "GREEN"
+        RED = "RED"
 
 
     class EmployeeShiftStatus(str, Enum):
@@ -6758,12 +6690,12 @@ type, providing better type safety and IDE support.
         Employee shift status
         """
 
-        NOT_ON_SHIFT = 'NOT_ON_SHIFT'
-        ON_SHIFT = 'ON_SHIFT'
+        NOT_ON_SHIFT = "NOT_ON_SHIFT"
+        ON_SHIFT = "ON_SHIFT"
 
 
     class EnumWithOneField(str, Enum):
-        FIELD = 'FIELD'
+        FIELD = "FIELD"
     ```
 
 ---

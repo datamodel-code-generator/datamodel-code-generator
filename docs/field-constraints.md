@@ -43,8 +43,8 @@ from __future__ import annotations
 from pydantic import BaseModel, constr
 
 
-class  Model(BaseModel):
-  name: constr(max_length=64)
+class Model(BaseModel):
+    name: constr(max_length=64)
 ```
 
 **🔴 Run mypy...**

@@ -130,10 +130,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class Species(StrEnum):
-    dog = 'dog'
-    cat = 'cat'
-    bird = 'bird'
-    fish = 'fish'
+    dog = "dog"
+    cat = "cat"
+    bird = "bird"
+    fish = "fish"
 
 
 class Pet(BaseModel):
@@ -142,7 +142,7 @@ class Pet(BaseModel):
     )
     name: Annotated[str, Field(description="The pet's name")]
     species: Species = Species.dog
-    age: Annotated[int | None, Field(description='Age in years', ge=0)] = None
+    age: Annotated[int | None, Field(description="Age in years", ge=0)] = None
     vaccinated: bool = False
 ```
 

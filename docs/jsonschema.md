@@ -65,7 +65,7 @@ class Person(BaseModel):
     age: Annotated[
         int | None,
         Field(
-            description='Age in years which must be equal to or greater than zero.',
+            description="Age in years which must be equal to or greater than zero.",
             ge=0,
         ),
     ] = None

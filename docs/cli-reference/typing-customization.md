@@ -307,7 +307,7 @@ even in multiple inheritance scenarios where two parent schemas define the same 
 
         class Entity(BaseModel):
             type: str
-            type_list: list[str] | None = ['playground:Entity']
+            type_list: list[str] | None = ["playground:Entity"]
 
 
         class Entity2(BaseModel):
@@ -317,16 +317,14 @@ even in multiple inheritance scenarios where two parent schemas define the same 
 
         class Thing(Entity):
             type: str
-            type_list: list[str] | None = ['playground:Thing']
-            name: constr(min_length=1) = Field(..., description='The things name')
+            type_list: list[str] | None = ["playground:Thing"]
+            name: constr(min_length=1) = Field(..., description="The things name")
 
 
         class Location(Entity2):
             type: str
             type_list: list[str]
-            address: constr(min_length=5) = Field(
-                ..., description='The address of the location'
-            )
+            address: constr(min_length=5) = Field(..., description="The address of the location")
 
 
         class Person(Thing, Location):
@@ -350,21 +348,19 @@ even in multiple inheritance scenarios where two parent schemas define the same 
 
 
         class Person(BaseModel):
-            name: constr(min_length=1) = Field(..., description='The things name')
-            type: Any | None = 'playground:Location'
+            name: constr(min_length=1) = Field(..., description="The things name")
+            type: Any | None = "playground:Location"
             type_list: list[Any] | None = [
-                'playground:Person',
-                'playground:Thing',
-                'playground:Location',
+                "playground:Person",
+                "playground:Thing",
+                "playground:Location",
             ]
-            address: constr(min_length=5) = Field(
-                ..., description='The address of the location'
-            )
+            address: constr(min_length=5) = Field(..., description="The address of the location")
 
 
         class Entity(BaseModel):
             type: str
-            type_list: list[str] | None = ['playground:Entity']
+            type_list: list[str] | None = ["playground:Entity"]
 
 
         class Entity2(BaseModel):
@@ -373,17 +369,15 @@ even in multiple inheritance scenarios where two parent schemas define the same 
 
 
         class Thing(Entity):
-            type: str | None = 'playground:Thing'
-            type_list: list[str] | None = ['playground:Thing']
-            name: constr(min_length=1) = Field(..., description='The things name')
+            type: str | None = "playground:Thing"
+            type_list: list[str] | None = ["playground:Thing"]
+            name: constr(min_length=1) = Field(..., description="The things name")
 
 
         class Location(Entity2):
-            type: str | None = 'playground:Location'
-            type_list: list[str] | None = ['playground:Location']
-            address: constr(min_length=5) = Field(
-                ..., description='The address of the location'
-            )
+            type: str | None = "playground:Location"
+            type_list: list[str] | None = ["playground:Location"]
+            address: constr(min_length=5) = Field(..., description="The address of the location")
         ```
 
 ---
@@ -453,12 +447,12 @@ other properties separate.
 
 
         class Parent(BaseModel):
-            name: constr(min_length=1) | None = 'parent_default'
+            name: constr(min_length=1) | None = "parent_default"
             count: conint(ge=0) | None = 10
 
 
         class Child(Parent):
-            name: constr(min_length=1, max_length=100) | None = 'parent_default'
+            name: constr(min_length=1, max_length=100) | None = "parent_default"
             count: conint(ge=0, le=1000) | None = 10
         ```
 
@@ -695,37 +689,35 @@ other properties separate.
             from pydantic import BaseModel, ConfigDict, EmailStr, Field, RootModel, conint, constr
 
 
-            class StringDatatype(RootModel[constr(pattern=r'^\S(.*\S)?$')]):
-                root: constr(pattern=r'^\S(.*\S)?$') = Field(..., description='A base string type.')
+            class StringDatatype(RootModel[constr(pattern=r"^\S(.*\S)?$")]):
+                root: constr(pattern=r"^\S(.*\S)?$") = Field(..., description="A base string type.")
 
 
             class ConstrainedStringDatatype(RootModel[str]):
                 model_config = ConfigDict(
                     regex_engine="python-re",
                 )
-                root: constr(pattern=r'(?=^\S(.*\S)?$)(?=^[A-Z].*)', min_length=1) = Field(
-                    ..., description='A constrained string.'
-                )
+                root: constr(pattern=r"(?=^\S(.*\S)?$)(?=^[A-Z].*)", min_length=1) = Field(..., description="A constrained string.")
 
 
             class IntegerDatatype(RootModel[int]):
-                root: int = Field(..., description='A whole number.')
+                root: int = Field(..., description="A whole number.")
 
 
             class NonNegativeIntegerDatatype(RootModel[conint(ge=0)]):
-                root: conint(ge=0) = Field(..., description='Non-negative integer.')
+                root: conint(ge=0) = Field(..., description="Non-negative integer.")
 
 
             class BoundedIntegerDatatype(RootModel[conint(ge=0, le=100)]):
-                root: conint(ge=0, le=100) = Field(..., description='Integer between 0 and 100.')
+                root: conint(ge=0, le=100) = Field(..., description="Integer between 0 and 100.")
 
 
             class EmailDatatype(RootModel[EmailStr]):
-                root: EmailStr = Field(..., description='Email with format.')
+                root: EmailStr = Field(..., description="Email with format.")
 
 
             class FormattedStringDatatype(RootModel[EmailStr]):
-                root: EmailStr = Field(..., description='A string with email format.')
+                root: EmailStr = Field(..., description="A string with email format.")
 
 
             class ObjectBase(BaseModel):
@@ -741,7 +733,7 @@ other properties separate.
 
 
             class NoConstraintAllOf(RootModel[StringDatatype]):
-                root: StringDatatype = Field(..., description='No constraints added.')
+                root: StringDatatype = Field(..., description="No constraints added.")
 
 
             class IncompatibleTypeAllOf(BaseModel):
@@ -757,14 +749,12 @@ other properties separate.
 
 
             class NumberIntegerCompatible(RootModel[conint(ge=0)]):
-                root: conint(ge=0) = Field(..., description='Number and integer are compatible.')
+                root: conint(ge=0) = Field(..., description="Number and integer are compatible.")
 
 
-            class RefWithSchemaKeywords(
-                RootModel[constr(pattern=r'^\S(.*\S)?$', min_length=5, max_length=100)]
-            ):
-                root: constr(pattern=r'^\S(.*\S)?$', min_length=5, max_length=100) = Field(
-                    ..., description='Ref with additional schema keywords.'
+            class RefWithSchemaKeywords(RootModel[constr(pattern=r"^\S(.*\S)?$", min_length=5, max_length=100)]):
+                root: constr(pattern=r"^\S(.*\S)?$", min_length=5, max_length=100) = Field(
+                    ..., description="Ref with additional schema keywords."
                 )
 
 
@@ -784,8 +774,8 @@ other properties separate.
                 pass
 
 
-            class PatternPropsDatatype(RootModel[dict[constr(pattern=r'^S_'), str]]):
-                root: dict[constr(pattern=r'^S_'), str]
+            class PatternPropsDatatype(RootModel[dict[constr(pattern=r"^S_"), str]]):
+                root: dict[constr(pattern=r"^S_"), str]
 
 
             class RefToPatternPropsAllOf(BaseModel):
@@ -801,25 +791,19 @@ other properties separate.
 
 
             class ConstraintsOnlyDatatype(RootModel[Any]):
-                root: Any = Field(..., description='Constraints only, no type.')
+                root: Any = Field(..., description="Constraints only, no type.")
 
 
             class RefToConstraintsOnlyAllOf(RootModel[Any]):
-                root: Any = Field(..., description='Ref to constraints-only schema.')
+                root: Any = Field(..., description="Ref to constraints-only schema.")
 
 
-            class NoDescriptionAllOf(RootModel[constr(pattern=r'^\S(.*\S)?$', min_length=5)]):
-                root: constr(pattern=r'^\S(.*\S)?$', min_length=5) = Field(
-                    ..., description='A base string type.'
-                )
+            class NoDescriptionAllOf(RootModel[constr(pattern=r"^\S(.*\S)?$", min_length=5)]):
+                root: constr(pattern=r"^\S(.*\S)?$", min_length=5) = Field(..., description="A base string type.")
 
 
-            class EmptyConstraintItemAllOf(
-                RootModel[constr(pattern=r'^\S(.*\S)?$', max_length=50)]
-            ):
-                root: constr(pattern=r'^\S(.*\S)?$', max_length=50) = Field(
-                    ..., description='AllOf with empty constraint item.'
-                )
+            class EmptyConstraintItemAllOf(RootModel[constr(pattern=r"^\S(.*\S)?$", max_length=50)]):
+                root: constr(pattern=r"^\S(.*\S)?$", max_length=50) = Field(..., description="AllOf with empty constraint item.")
 
 
             class ConflictingFormatAllOf(BaseModel):
@@ -863,34 +847,32 @@ other properties separate.
             from pydantic import BaseModel, EmailStr, Field, RootModel, conint, constr
 
 
-            class StringDatatype(RootModel[constr(pattern=r'^\S(.*\S)?$')]):
-                root: constr(pattern=r'^\S(.*\S)?$') = Field(..., description='A base string type.')
+            class StringDatatype(RootModel[constr(pattern=r"^\S(.*\S)?$")]):
+                root: constr(pattern=r"^\S(.*\S)?$") = Field(..., description="A base string type.")
 
 
-            class ConstrainedStringDatatype(RootModel[constr(pattern=r'^[A-Z].*', min_length=1)]):
-                root: constr(pattern=r'^[A-Z].*', min_length=1) = Field(
-                    ..., description='A constrained string.'
-                )
+            class ConstrainedStringDatatype(RootModel[constr(pattern=r"^[A-Z].*", min_length=1)]):
+                root: constr(pattern=r"^[A-Z].*", min_length=1) = Field(..., description="A constrained string.")
 
 
             class IntegerDatatype(RootModel[int]):
-                root: int = Field(..., description='A whole number.')
+                root: int = Field(..., description="A whole number.")
 
 
             class NonNegativeIntegerDatatype(RootModel[conint(ge=0)]):
-                root: conint(ge=0) = Field(..., description='Non-negative integer.')
+                root: conint(ge=0) = Field(..., description="Non-negative integer.")
 
 
             class BoundedIntegerDatatype(RootModel[conint(ge=0, le=100)]):
-                root: conint(ge=0, le=100) = Field(..., description='Integer between 0 and 100.')
+                root: conint(ge=0, le=100) = Field(..., description="Integer between 0 and 100.")
 
 
             class EmailDatatype(RootModel[EmailStr]):
-                root: EmailStr = Field(..., description='Email with format.')
+                root: EmailStr = Field(..., description="Email with format.")
 
 
             class FormattedStringDatatype(RootModel[EmailStr]):
-                root: EmailStr = Field(..., description='A string with email format.')
+                root: EmailStr = Field(..., description="A string with email format.")
 
 
             class ObjectBase(BaseModel):
@@ -906,7 +888,7 @@ other properties separate.
 
 
             class NoConstraintAllOf(RootModel[StringDatatype]):
-                root: StringDatatype = Field(..., description='No constraints added.')
+                root: StringDatatype = Field(..., description="No constraints added.")
 
 
             class IncompatibleTypeAllOf(BaseModel):
@@ -922,14 +904,12 @@ other properties separate.
 
 
             class NumberIntegerCompatible(RootModel[conint(ge=0)]):
-                root: conint(ge=0) = Field(..., description='Number and integer are compatible.')
+                root: conint(ge=0) = Field(..., description="Number and integer are compatible.")
 
 
-            class RefWithSchemaKeywords(
-                RootModel[constr(pattern=r'^\S(.*\S)?$', min_length=5, max_length=100)]
-            ):
-                root: constr(pattern=r'^\S(.*\S)?$', min_length=5, max_length=100) = Field(
-                    ..., description='Ref with additional schema keywords.'
+            class RefWithSchemaKeywords(RootModel[constr(pattern=r"^\S(.*\S)?$", min_length=5, max_length=100)]):
+                root: constr(pattern=r"^\S(.*\S)?$", min_length=5, max_length=100) = Field(
+                    ..., description="Ref with additional schema keywords."
                 )
 
 
@@ -949,8 +929,8 @@ other properties separate.
                 pass
 
 
-            class PatternPropsDatatype(RootModel[dict[constr(pattern=r'^S_'), str]]):
-                root: dict[constr(pattern=r'^S_'), str]
+            class PatternPropsDatatype(RootModel[dict[constr(pattern=r"^S_"), str]]):
+                root: dict[constr(pattern=r"^S_"), str]
 
 
             class RefToPatternPropsAllOf(BaseModel):
@@ -966,25 +946,19 @@ other properties separate.
 
 
             class ConstraintsOnlyDatatype(RootModel[Any]):
-                root: Any = Field(..., description='Constraints only, no type.')
+                root: Any = Field(..., description="Constraints only, no type.")
 
 
             class RefToConstraintsOnlyAllOf(RootModel[Any]):
-                root: Any = Field(..., description='Ref to constraints-only schema.')
+                root: Any = Field(..., description="Ref to constraints-only schema.")
 
 
-            class NoDescriptionAllOf(RootModel[constr(pattern=r'^\S(.*\S)?$', min_length=5)]):
-                root: constr(pattern=r'^\S(.*\S)?$', min_length=5) = Field(
-                    ..., description='A base string type.'
-                )
+            class NoDescriptionAllOf(RootModel[constr(pattern=r"^\S(.*\S)?$", min_length=5)]):
+                root: constr(pattern=r"^\S(.*\S)?$", min_length=5) = Field(..., description="A base string type.")
 
 
-            class EmptyConstraintItemAllOf(
-                RootModel[constr(pattern=r'^\S(.*\S)?$', max_length=50)]
-            ):
-                root: constr(pattern=r'^\S(.*\S)?$', max_length=50) = Field(
-                    ..., description='AllOf with empty constraint item.'
-                )
+            class EmptyConstraintItemAllOf(RootModel[constr(pattern=r"^\S(.*\S)?$", max_length=50)]):
+                root: constr(pattern=r"^\S(.*\S)?$", max_length=50) = Field(..., description="AllOf with empty constraint item.")
 
 
             class ConflictingFormatAllOf(BaseModel):
@@ -1281,8 +1255,8 @@ of Enum classes for all enumerations.
 
 
         class Kind(Enum):
-            dog = 'dog'
-            cat = 'cat'
+            dog = "dog"
+            cat = "cat"
 
 
         class Pet(BaseModel):
@@ -1290,7 +1264,7 @@ of Enum classes for all enumerations.
             name: str
             tag: str | None = None
             kind: Kind | None = None
-            type: Literal['animal'] | None = None
+            type: Literal["animal"] | None = None
             number: Literal[1]
             boolean: Literal[True]
 
@@ -1300,8 +1274,8 @@ of Enum classes for all enumerations.
 
 
         class Kind1(Enum):
-            snake = 'snake'
-            rabbit = 'rabbit'
+            snake = "snake"
+            rabbit = "rabbit"
 
 
         class Animal(BaseModel):
@@ -1314,8 +1288,8 @@ of Enum classes for all enumerations.
 
 
         class Type(Enum):
-            a = 'a'
-            b = 'b'
+            a = "a"
+            b = "b"
 
 
         class EnumObject(BaseModel):
@@ -1323,8 +1297,8 @@ of Enum classes for all enumerations.
 
 
         class EnumRoot(Enum):
-            a = 'a'
-            b = 'b'
+            a = "a"
+            b = "b"
 
 
         class IntEnum(Enum):
@@ -1339,55 +1313,51 @@ of Enum classes for all enumerations.
 
 
         class MultipleTypeEnum(Enum):
-            red = 'red'
-            amber = 'amber'
-            green = 'green'
+            red = "red"
+            amber = "amber"
+            green = "green"
             NoneType_None = None
             int_42 = 42
 
 
-        class SingleEnum(RootModel[Literal['pet']]):
-            root: Literal['pet']
+        class SingleEnum(RootModel[Literal["pet"]]):
+            root: Literal["pet"]
 
 
-        class ArrayEnum(RootModel[list[Literal['cat'] | Literal['dog']]]):
-            root: list[Literal['cat'] | Literal['dog']]
+        class ArrayEnum(RootModel[list[Literal["cat"] | Literal["dog"]]]):
+            root: list[Literal["cat"] | Literal["dog"]]
 
 
         class NestedVersionEnum(Enum):
-            RC1 = 'RC1'
-            RC1N = 'RC1N'
-            RC2 = 'RC2'
-            RC2N = 'RC2N'
-            RC3 = 'RC3'
-            RC4 = 'RC4'
+            RC1 = "RC1"
+            RC1N = "RC1N"
+            RC2 = "RC2"
+            RC2N = "RC2N"
+            RC3 = "RC3"
+            RC4 = "RC4"
 
 
         class NestedVersion(RootModel[NestedVersionEnum | None]):
-            root: NestedVersionEnum | None = Field(
-                'RC1', description='nullable enum', examples=['RC2']
-            )
+            root: NestedVersionEnum | None = Field("RC1", description="nullable enum", examples=["RC2"])
 
 
         class NestedNullableEnum(BaseModel):
             nested_version: NestedVersion | None = Field(
-                'RC1', description='nullable enum', examples=['RC2'], validate_default=True
+                "RC1", description="nullable enum", examples=["RC2"], validate_default=True
             )
 
 
         class VersionEnum(Enum):
-            RC1 = 'RC1'
-            RC1N = 'RC1N'
-            RC2 = 'RC2'
-            RC2N = 'RC2N'
-            RC3 = 'RC3'
-            RC4 = 'RC4'
+            RC1 = "RC1"
+            RC1N = "RC1N"
+            RC2 = "RC2"
+            RC2N = "RC2N"
+            RC3 = "RC3"
+            RC4 = "RC4"
 
 
         class Version(RootModel[VersionEnum | None]):
-            root: VersionEnum | None = Field(
-                'RC1', description='nullable enum', examples=['RC2']
-            )
+            root: VersionEnum | None = Field("RC1", description="nullable enum", examples=["RC2"])
         ```
 
     === "JSON Schema"
@@ -1431,8 +1401,8 @@ of Enum classes for all enumerations.
 
 
         class Config(BaseModel):
-            mode: Literal['fast', 'slow'] | None = Field(None, title='Mode')
-            modes: list[Literal['a', 'b']] | None = None
+            mode: Literal["fast", "slow"] | None = Field(None, title="Mode")
+            modes: list[Literal["a", "b"]] | None = None
         ```
 
     === "GraphQL"
@@ -1487,20 +1457,20 @@ of Enum classes for all enumerations.
             """
 
 
-            class Color(RootModel[Literal['BLUE', 'GREEN', 'RED']]):
-                root: Literal['BLUE', 'GREEN', 'RED']
+            class Color(RootModel[Literal["BLUE", "GREEN", "RED"]]):
+                root: Literal["BLUE", "GREEN", "RED"]
 
 
-            class EmployeeShiftStatus(RootModel[Literal['NOT_ON_SHIFT', 'ON_SHIFT']]):
+            class EmployeeShiftStatus(RootModel[Literal["NOT_ON_SHIFT", "ON_SHIFT"]]):
                 """
                 Employee shift status
                 """
 
-                root: Literal['NOT_ON_SHIFT', 'ON_SHIFT']
+                root: Literal["NOT_ON_SHIFT", "ON_SHIFT"]
 
 
-            class EnumWithOneField(RootModel[Literal['FIELD']]):
-                root: Literal['FIELD']
+            class EnumWithOneField(RootModel[Literal["FIELD"]]):
+                root: Literal["FIELD"]
             ```
 
         === "Without Option"
@@ -1529,9 +1499,9 @@ of Enum classes for all enumerations.
 
 
             class Color(Enum):
-                BLUE = 'BLUE'
-                GREEN = 'GREEN'
-                RED = 'RED'
+                BLUE = "BLUE"
+                GREEN = "GREEN"
+                RED = "RED"
 
 
             class EmployeeShiftStatus(Enum):
@@ -1539,12 +1509,12 @@ of Enum classes for all enumerations.
                 Employee shift status
                 """
 
-                NOT_ON_SHIFT = 'NOT_ON_SHIFT'
-                ON_SHIFT = 'ON_SHIFT'
+                NOT_ON_SHIFT = "NOT_ON_SHIFT"
+                ON_SHIFT = "ON_SHIFT"
 
 
             class EnumWithOneField(Enum):
-                FIELD = 'FIELD'
+                FIELD = "FIELD"
             ```
 
 ---
@@ -1611,23 +1581,21 @@ You can pass the mapping either inline as JSON or as a path to a JSON file.
 
 
     class Priority(Enum):
-        high = 'high'
-        medium = 'medium'
-        low = 'low'
+        high = "high"
+        medium = "medium"
+        low = "low"
 
 
     class Category(Enum):
-        a = 'a'
-        b = 'b'
-        c = 'c'
+        a = "a"
+        b = "b"
+        c = "c"
 
 
     class EnumFieldAsLiteralMap(BaseModel):
-        status: Literal['active', 'inactive', 'pending'] | None = Field(
-            None, title='Status'
-        )
-        priority: Priority | None = Field(None, title='Priority')
-        category: Category | None = Field(None, title='Category')
+        status: Literal["active", "inactive", "pending"] | None = Field(None, title="Status")
+        priority: Priority | None = Field(None, title="Priority")
+        category: Category | None = Field(None, title="Category")
     ```
 
 ---
@@ -1741,9 +1709,9 @@ defined enum members.
 
 
         class Color(Enum):
-            BLUE = 'BLUE'
-            GREEN = 'GREEN'
-            RED = 'RED'
+            BLUE = "BLUE"
+            GREEN = "GREEN"
+            RED = "RED"
 
 
         class EmployeeShiftStatus(Enum):
@@ -1751,12 +1719,12 @@ defined enum members.
             Employee shift status
             """
 
-            NOT_ON_SHIFT = 'NOT_ON_SHIFT'
-            ON_SHIFT = 'ON_SHIFT'
+            NOT_ON_SHIFT = "NOT_ON_SHIFT"
+            ON_SHIFT = "ON_SHIFT"
 
 
         class EnumWithOneField(Enum):
-            FIELD = 'FIELD'
+            FIELD = "FIELD"
         ```
 
 ---
@@ -1959,15 +1927,13 @@ Python 3.11+, falling back to standard Enum classes instead.
 
 
         class ProcessingStatus(Enum):
-            COMPLETED = 'COMPLETED'
-            PENDING = 'PENDING'
-            FAILED = 'FAILED'
+            COMPLETED = "COMPLETED"
+            PENDING = "PENDING"
+            FAILED = "FAILED"
 
 
         class ProcessingTask(BaseModel):
-            processing_status: ProcessingStatus | None = Field(
-                'COMPLETED', title='Status of the task'
-            )
+            processing_status: ProcessingStatus | None = Field("COMPLETED", title="Status of the task")
         ```
 
     === "JSON Schema"
@@ -2055,15 +2021,15 @@ Python 3.11+, falling back to standard Enum classes instead.
 
 
         class StrEnum(Enum):
-            field_1 = '1'
-            field_2 = '2'
-            field_3 = '3'
+            field_1 = "1"
+            field_2 = "2"
+            field_3 = "3"
 
 
         class NonTypedEnum(Enum):
-            field_1 = '1'
-            field_2 = '2'
-            field_3 = '3'
+            field_1 = "1"
+            field_2 = "2"
+            field_3 = "3"
 
 
         class BooleanEnum(Enum):
@@ -2072,17 +2038,17 @@ Python 3.11+, falling back to standard Enum classes instead.
 
 
         class UnknownEnum(Enum):
-            a = 'a'
-            b = 'b'
+            a = "a"
+            b = "b"
 
 
         class Model(BaseModel):
-            IntEnum_1: IntEnum | None = Field(None, alias='IntEnum')
-            FloatEnum_1: FloatEnum | None = Field(None, alias='FloatEnum')
-            StrEnum_1: StrEnum | None = Field(None, alias='StrEnum')
-            NonTypedEnum_1: NonTypedEnum | None = Field(None, alias='NonTypedEnum')
-            BooleanEnum_1: BooleanEnum | None = Field(None, alias='BooleanEnum')
-            UnknownEnum_1: UnknownEnum | None = Field(None, alias='UnknownEnum')
+            IntEnum_1: IntEnum | None = Field(None, alias="IntEnum")
+            FloatEnum_1: FloatEnum | None = Field(None, alias="FloatEnum")
+            StrEnum_1: StrEnum | None = Field(None, alias="StrEnum")
+            NonTypedEnum_1: NonTypedEnum | None = Field(None, alias="NonTypedEnum")
+            BooleanEnum_1: BooleanEnum | None = Field(None, alias="BooleanEnum")
+            UnknownEnum_1: UnknownEnum | None = Field(None, alias="UnknownEnum")
         ```
 
     === "GraphQL"
@@ -2135,9 +2101,9 @@ Python 3.11+, falling back to standard Enum classes instead.
 
 
         class Color(Enum):
-            BLUE = 'BLUE'
-            GREEN = 'GREEN'
-            RED = 'RED'
+            BLUE = "BLUE"
+            GREEN = "GREEN"
+            RED = "RED"
 
 
         class EmployeeShiftStatus(Enum):
@@ -2145,12 +2111,12 @@ Python 3.11+, falling back to standard Enum classes instead.
             Employee shift status
             """
 
-            NOT_ON_SHIFT = 'NOT_ON_SHIFT'
-            ON_SHIFT = 'ON_SHIFT'
+            NOT_ON_SHIFT = "NOT_ON_SHIFT"
+            ON_SHIFT = "ON_SHIFT"
 
 
         class EnumWithOneField(Enum):
-            FIELD = 'FIELD'
+            FIELD = "FIELD"
         ```
 
 ---
@@ -2327,8 +2293,8 @@ versions or when explicit typing imports are preferred.
 
 
     class NestedEnumResult(Enum):
-        red = 'red'
-        green = 'green'
+        red = "red"
+        green = "green"
 
 
     class OneOfResult(BaseModel):
@@ -2348,8 +2314,8 @@ versions or when explicit typing imports are preferred.
 
 
     class Model(BaseModel):
-        test_id: str = Field(..., description='test ID')
-        test_ip: str = Field(..., description='test IP')
+        test_id: str = Field(..., description="test ID")
+        test_ip: str = Field(..., description="test IP")
         result: Dict[str, int]
         nested_object_result: Dict[str, NestedObjectResult]
         nested_enum_result: Dict[str, NestedEnumResult]
@@ -2535,8 +2501,8 @@ for older Python versions or when explicit typing imports are preferred.
 
 
     class NestedEnumResult(Enum):
-        red = 'red'
-        green = 'green'
+        red = "red"
+        green = "green"
 
 
     class OneOfResult(BaseModel):
@@ -2556,8 +2522,8 @@ for older Python versions or when explicit typing imports are preferred.
 
 
     class Model(BaseModel):
-        test_id: str = Field(..., description='test ID')
-        test_ip: str = Field(..., description='test IP')
+        test_id: str = Field(..., description="test ID")
+        test_ip: str = Field(..., description="test IP")
         result: dict[str, int]
         nested_object_result: dict[str, NestedObjectResult]
         nested_enum_result: dict[str, NestedEnumResult]
@@ -2619,7 +2585,7 @@ or 'FutureDate' for future dates only. This is a Pydantic v2 only feature.
 
 
     class Event(BaseModel):
-        eventDate: PastDate = Field(..., examples=['2023-12-25'])
+        eventDate: PastDate = Field(..., examples=["2023-12-25"])
     ```
 
 ---
@@ -2683,7 +2649,7 @@ or 'datetime' for standard Python datetime objects.
 
 
     class InventoryItem(BaseModel):
-        releaseDate: AwareDatetime = Field(..., examples=['2016-08-29T09:12:33.001Z'])
+        releaseDate: AwareDatetime = Field(..., examples=["2016-08-29T09:12:33.001Z"])
     ```
 
 ---
@@ -2787,14 +2753,12 @@ in Pydantic models, ensuring values match exactly without automatic conversion.
 
 
     class User(BaseModel):
-        name: StrictStr | None = Field(None, examples=['ken'])
+        name: StrictStr | None = Field(None, examples=["ken"])
         age: StrictInt | None = None
         salary: conint(ge=0, strict=True) | None = None
         debt: conint(le=0, strict=True) | None = None
         loan: confloat(le=0.0, strict=True) | None = None
-        tel: constr(
-            pattern=r'^(\([0-9]{3}\))?[0-9]{3}-[0-9]{4}$', strict=True
-        ) | None = None
+        tel: constr(pattern=r"^(\([0-9]{3}\))?[0-9]{3}-[0-9]{4}$", strict=True) | None = None
         height: confloat(ge=0.0, strict=True) | None = None
         weight: confloat(ge=0.0, strict=True) | None = None
         score: confloat(ge=1e-08, strict=True) | None = None
@@ -2862,11 +2826,9 @@ The `--type-mappings` flag configures the code generation behavior.
 
 
     class BlobModel(BaseModel):
-        content: str = Field(
-            ..., description='Binary content that should be mapped to string'
-        )
-        data: Base64Str = Field(..., description='Base64 encoded data')
-        name: str = Field(..., description='Regular string field')
+        content: str = Field(..., description="Binary content that should be mapped to string")
+        data: Base64Str = Field(..., description="Base64 encoded data")
+        name: str = Field(..., description="Regular string field")
     ```
 
 ---
@@ -3286,18 +3248,10 @@ generated type to enforce uniqueness for array schemas.
 
 
         class Api(BaseModel):
-            apiKey: Annotated[
-                str | None, Field(description='To be used as a dataset parameter value')
-            ] = None
-            apiVersionNumber: Annotated[
-                str | None, Field(description='To be used as a version parameter value')
-            ] = None
-            apiUrl: Annotated[
-                AnyUrl | None, Field(description="The URL describing the dataset's fields")
-            ] = None
-            apiDocumentationUrl: Annotated[
-                AnyUrl | None, Field(description='A URL to the API console for each API')
-            ] = None
+            apiKey: Annotated[str | None, Field(description="To be used as a dataset parameter value")] = None
+            apiVersionNumber: Annotated[str | None, Field(description="To be used as a version parameter value")] = None
+            apiUrl: Annotated[AnyUrl | None, Field(description="The URL describing the dataset's fields")] = None
+            apiDocumentationUrl: Annotated[AnyUrl | None, Field(description="A URL to the API console for each API")] = None
 
 
         class Apis(RootModel[list[Api]]):
@@ -3362,7 +3316,7 @@ generated type to enforce uniqueness for array schemas.
             optionalField: String | None = None
             optionalListField: list[String] | None = None
             optionalListOptionalField: list[String | None] | None = None
-            typename__: Annotated[Literal['A'] | None, Field(alias='__typename')] = 'A'
+            typename__: Annotated[Literal["A"] | None, Field(alias="__typename")] = "A"
         ```
 
 ---
@@ -3481,15 +3435,9 @@ precise decimal arithmetic when validating values against the constraint.
 
 
     class Model(BaseModel):
-        price: (
-            condecimal(ge=Decimal('0'), le=Decimal('99999.99'), multiple_of=Decimal('0.01'))
-            | None
-        ) = None
-        quantity: condecimal(multiple_of=Decimal('0.1')) | None = None
-        rate: (
-            condecimal(multiple_of=Decimal('0.001'), lt=Decimal('1.0'), gt=Decimal('0.0'))
-            | None
-        ) = None
+        price: condecimal(ge=Decimal("0"), le=Decimal("99999.99"), multiple_of=Decimal("0.01")) | None = None
+        quantity: condecimal(multiple_of=Decimal("0.1")) | None = None
+        rate: condecimal(multiple_of=Decimal("0.001"), lt=Decimal("1.0"), gt=Decimal("0.0")) | None = None
         simple_float: confloat(ge=0.0, le=100.0) | None = None
     ```
 
@@ -3670,8 +3618,8 @@ otherwise imports from `typing`.
 
 
     class NestedEnumResult(Enum):
-        red = 'red'
-        green = 'green'
+        red = "red"
+        green = "green"
 
 
     class OneOfResult(BaseModel):
@@ -3691,8 +3639,8 @@ otherwise imports from `typing`.
 
 
     class Model(BaseModel):
-        test_id: str = Field(..., description='test ID')
-        test_ip: str = Field(..., description='test IP')
+        test_id: str = Field(..., description="test ID")
+        test_ip: str = Field(..., description="test IP")
         result: Mapping[str, int]
         nested_object_result: Mapping[str, NestedObjectResult]
         nested_enum_result: Mapping[str, NestedEnumResult]
@@ -3833,44 +3781,28 @@ conint/confloat with ge/le parameters.
 
 
     class NumberConstraints(BaseModel):
-        non_negative_int: NonNegativeInt | None = Field(
-            None, description='NonNegativeInt: minimum=0 only'
-        )
-        non_positive_int: NonPositiveInt | None = Field(
-            None, description='NonPositiveInt: maximum=0 only'
-        )
-        non_negative_float: NonNegativeFloat | None = Field(
-            None, description='NonNegativeFloat: minimum=0 only'
-        )
-        non_positive_float: NonPositiveFloat | None = Field(
-            None, description='NonPositiveFloat: maximum=0 only'
-        )
-        positive_int: PositiveInt | None = Field(
-            None, description='PositiveInt: exclusiveMinimum=0'
-        )
-        negative_int: NegativeInt | None = Field(
-            None, description='NegativeInt: exclusiveMaximum=0'
-        )
-        positive_float: PositiveFloat | None = Field(
-            None, description='PositiveFloat: exclusiveMinimum=0'
-        )
-        negative_float: NegativeFloat | None = Field(
-            None, description='NegativeFloat: exclusiveMaximum=0'
-        )
+        non_negative_int: NonNegativeInt | None = Field(None, description="NonNegativeInt: minimum=0 only")
+        non_positive_int: NonPositiveInt | None = Field(None, description="NonPositiveInt: maximum=0 only")
+        non_negative_float: NonNegativeFloat | None = Field(None, description="NonNegativeFloat: minimum=0 only")
+        non_positive_float: NonPositiveFloat | None = Field(None, description="NonPositiveFloat: maximum=0 only")
+        positive_int: PositiveInt | None = Field(None, description="PositiveInt: exclusiveMinimum=0")
+        negative_int: NegativeInt | None = Field(None, description="NegativeInt: exclusiveMaximum=0")
+        positive_float: PositiveFloat | None = Field(None, description="PositiveFloat: exclusiveMinimum=0")
+        negative_float: NegativeFloat | None = Field(None, description="NegativeFloat: exclusiveMaximum=0")
         bounded_non_negative_int: conint(ge=0, le=100) | None = Field(
-            None, description='NonNegativeInt with additional upper bound'
+            None, description="NonNegativeInt with additional upper bound"
         )
         bounded_non_positive_int: conint(ge=-100, le=0) | None = Field(
-            None, description='NonPositiveInt with additional lower bound'
+            None, description="NonPositiveInt with additional lower bound"
         )
         bounded_non_negative_float: confloat(ge=0.0, le=1.0) | None = Field(
-            None, description='NonNegativeFloat with additional upper bound'
+            None, description="NonNegativeFloat with additional upper bound"
         )
         bounded_non_positive_float: confloat(ge=-1.0, le=0.0) | None = Field(
-            None, description='NonPositiveFloat with additional lower bound'
+            None, description="NonPositiveFloat with additional lower bound"
         )
         plain_constrained_int: conint(ge=5, le=100) | None = Field(
-            None, description='No zero bound: should remain conint/Field'
+            None, description="No zero bound: should remain conint/Field"
         )
     ```
 
@@ -4187,15 +4119,15 @@ This is the default behavior for Python 3.11+ targets.
 
 
     class StrEnumModel(StrEnum):
-        field_1 = '1'
-        field_2 = '2'
-        field_3 = '3'
+        field_1 = "1"
+        field_2 = "2"
+        field_3 = "3"
 
 
     class NonTypedEnum(Enum):
-        field_1 = '1'
-        field_2 = '2'
-        field_3 = '3'
+        field_1 = "1"
+        field_2 = "2"
+        field_3 = "3"
 
 
     class BooleanEnum(Enum):
@@ -4204,17 +4136,17 @@ This is the default behavior for Python 3.11+ targets.
 
 
     class UnknownEnum(Enum):
-        a = 'a'
-        b = 'b'
+        a = "a"
+        b = "b"
 
 
     class Model(BaseModel):
         IntEnum: IntEnumModel | None = None
-        FloatEnum_1: FloatEnum | None = Field(None, alias='FloatEnum')
+        FloatEnum_1: FloatEnum | None = Field(None, alias="FloatEnum")
         StrEnum: StrEnumModel | None = None
-        NonTypedEnum_1: NonTypedEnum | None = Field(None, alias='NonTypedEnum')
-        BooleanEnum_1: BooleanEnum | None = Field(None, alias='BooleanEnum')
-        UnknownEnum_1: UnknownEnum | None = Field(None, alias='UnknownEnum')
+        NonTypedEnum_1: NonTypedEnum | None = Field(None, alias="NonTypedEnum")
+        BooleanEnum_1: BooleanEnum | None = Field(None, alias="BooleanEnum")
+        UnknownEnum_1: UnknownEnum | None = Field(None, alias="UnknownEnum")
     ```
 
 ---
@@ -4392,8 +4324,8 @@ code for Python 3.10+ where built-in types support subscripting.
 
 
     class NestedEnumResult(Enum):
-        red = 'red'
-        green = 'green'
+        red = "red"
+        green = "green"
 
 
     class OneOfResult(BaseModel):
@@ -4413,8 +4345,8 @@ code for Python 3.10+ where built-in types support subscripting.
 
 
     class Model(BaseModel):
-        test_id: str = Field(..., description='test ID')
-        test_ip: str = Field(..., description='test IP')
+        test_id: str = Field(..., description="test ID")
+        test_ip: str = Field(..., description="test IP")
         result: dict[str, int]
         nested_object_result: dict[str, NestedObjectResult]
         nested_enum_result: dict[str, NestedEnumResult]
@@ -4658,12 +4590,12 @@ are optional.
 
 
         FunctionalModel = TypedDict(
-            'FunctionalModel',
+            "FunctionalModel",
             {
-                'base_required': Required[str],
-                'base_optional': int,
-                'invalid-key': Required[str],
-                'child_optional': bool,
+                "base_required": Required[str],
+                "base_optional": int,
+                "invalid-key": Required[str],
+                "child_optional": bool,
             },
             total=False,
         )
@@ -4713,12 +4645,12 @@ are optional.
 
 
         FunctionalModel = TypedDict(
-            'FunctionalModel',
+            "FunctionalModel",
             {
-                'base_required': Required[str],
-                'base_optional': int,
-                'invalid-key': Required[str],
-                'child_optional': bool,
+                "base_required": Required[str],
+                "base_optional": int,
+                "invalid-key": Required[str],
+                "child_optional": bool,
             },
             total=False,
         )
@@ -5037,7 +4969,7 @@ syntax. This feature is experimental.
             "AnnotatedType",
             Annotated[
                 str | bool,
-                Field(..., description='An annotated union type', title='MyAnnotatedType'),
+                Field(..., description="An annotated union type", title="MyAnnotatedType"),
             ],
         )
 
@@ -5113,20 +5045,20 @@ syntax. This feature is experimental.
         class Person(BaseModel):
             age: Int
             name: String
-            typename__: Literal['Person'] | None = Field('Person', alias='__typename')
+            typename__: Literal["Person"] | None = Field("Person", alias="__typename")
 
 
         class Pet(BaseModel):
             name: String
             type: String
-            typename__: Literal['Pet'] | None = Field('Pet', alias='__typename')
+            typename__: Literal["Pet"] | None = Field("Pet", alias="__typename")
 
 
         UnionType = TypeAliasType(
             "UnionType",
             Union[
-                'Person',
-                'Pet',
+                "Person",
+                "Pet",
             ],
         )
 
@@ -5135,9 +5067,7 @@ syntax. This feature is experimental.
             simple_field: SimpleString | None = None
             string_field: String | None = None
             union_field: UnionType | None = None
-            typename__: Literal['ModelWithTypeAliasField'] | None = Field(
-                'ModelWithTypeAliasField', alias='__typename'
-            )
+            typename__: Literal["ModelWithTypeAliasField"] | None = Field("ModelWithTypeAliasField", alias="__typename")
         ```
 
 ---
@@ -5348,7 +5278,7 @@ This is the default behavior.
         optionalField: String | None = None
         optionalListField: list[String] | None = None
         optionalListOptionalField: list[String | None] | None = None
-        typename__: Annotated[Literal['A'] | None, Field(alias='__typename')] = 'A'
+        typename__: Annotated[Literal["A"] | None, Field(alias="__typename")] = "A"
     ```
 
 ---
@@ -5670,18 +5600,10 @@ to true, enforcing uniqueness at the type level.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(BaseModel):

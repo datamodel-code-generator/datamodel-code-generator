@@ -29,12 +29,14 @@ datamodel-codegen --input schema.json --output model.py
 ```python
 # Duplicate enums for animal and pet fields
 class Animal(Enum):
-    dog = 'dog'
-    cat = 'cat'
+    dog = "dog"
+    cat = "cat"
+
 
 class Pet(Enum):  # Duplicate!
-    dog = 'dog'
-    cat = 'cat'
+    dog = "dog"
+    cat = "cat"
+
 
 class User(BaseModel):
     animal: Optional[Animal] = None
@@ -57,27 +59,25 @@ from pydantic import BaseModel, Field, RootModel
 
 
 class Animal(Enum):
-    dog = 'dog'
-    cat = 'cat'
-    snake = 'snake'
+    dog = "dog"
+    cat = "cat"
+    snake = "snake"
 
 
 class RedistributeEnum(Enum):
-    static = 'static'
-    connected = 'connected'
+    static = "static"
+    connected = "connected"
 
 
 class User(BaseModel):
     name: str | None = None
-    animal: Animal | None = 'dog'
-    pet: Animal | None = 'cat'
+    animal: Animal | None = "dog"
+    pet: Animal | None = "cat"
     redistribute: list[RedistributeEnum] | None = None
 
 
 class Redistribute(RootModel[list[RedistributeEnum]]):
-    root: list[RedistributeEnum] = Field(
-        ..., description='Redistribute type for routes.'
-    )
+    root: list[RedistributeEnum] = Field(..., description="Redistribute type for routes.")
 ```
 <!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-model.output -->
 
@@ -210,6 +210,7 @@ Inline root model definitions instead of creating separate wrapper classes.
 class UserId(BaseModel):
     __root__: str
 
+
 class User(BaseModel):
     id: UserId
 ```
@@ -315,10 +316,11 @@ Without using `$ref`, each class gets its own inline field definition:
 
 ```python
 class ClassA(BaseModel):
-    place_name: Annotated[str, Field(alias='placeName')]  # Duplicate!
+    place_name: Annotated[str, Field(alias="placeName")]  # Duplicate!
+
 
 class ClassB(BaseModel):
-    place_name: Annotated[str, Field(alias='placeName')]  # Duplicate!
+    place_name: Annotated[str, Field(alias="placeName")]  # Duplicate!
 ```
 
 ### Solution: Use `$defs` with `--use-type-alias`
@@ -398,9 +400,9 @@ PlaceName = TypeAliasType(
         str,
         Field(
             ...,
-            description='A place name with alias',
-            examples=['Tokyo', 'New York'],
-            title='PlaceName',
+            description="A place name with alias",
+            examples=["Tokyo", "New York"],
+            title="PlaceName",
         ),
     ],
 )
@@ -416,7 +418,7 @@ class ClassB(BaseModel):
     description: str | None = None
 
 
-Model = TypeAliasType("Model", Annotated[ClassA | ClassB, Field(..., title='Model')])
+Model = TypeAliasType("Model", Annotated[ClassA | ClassB, Field(..., title="Model")])
 ```
 <!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.output -->
 
