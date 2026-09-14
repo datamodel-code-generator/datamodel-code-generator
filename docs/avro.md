@@ -70,13 +70,13 @@ from pydantic import BaseModel, Field
 
 
 class Role(Enum):
-    admin = 'admin'
-    member = 'member'
+    admin = "admin"
+    member = "member"
 
 
 class User(BaseModel):
     id: UUID
-    name: str = Field(..., description='Display name')
+    name: str = Field(..., description="Display name")
     email: Optional[str] = None
     roles: list[Role] = []
 ```

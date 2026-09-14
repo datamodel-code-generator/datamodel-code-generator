@@ -18,11 +18,8 @@ from datamodel_code_generator import GenerateConfig, generate_dynamic_models
 
 schema = {
     "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "age": {"type": "integer"}
-    },
-    "required": ["name"]
+    "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
+    "required": ["name"],
 }
 
 models = generate_dynamic_models(
@@ -89,22 +86,16 @@ schema = {
     "$defs": {
         "Address": {
             "type": "object",
-            "properties": {
-                "street": {"type": "string"},
-                "city": {"type": "string"}
-            },
-            "required": ["street", "city"]
+            "properties": {"street": {"type": "string"}, "city": {"type": "string"}},
+            "required": ["street", "city"],
         },
         "Person": {
             "type": "object",
-            "properties": {
-                "name": {"type": "string"},
-                "address": {"$ref": "#/$defs/Address"}
-            },
-            "required": ["name"]
-        }
+            "properties": {"name": {"type": "string"}, "address": {"$ref": "#/$defs/Address"}},
+            "required": ["name"],
+        },
     },
-    "$ref": "#/$defs/Person"
+    "$ref": "#/$defs/Person",
 }
 
 models = generate_dynamic_models(schema)
@@ -113,10 +104,7 @@ models = generate_dynamic_models(schema)
 Person = models["Person"]
 Address = models["Address"]
 
-person = Person(
-    name="Bob",
-    address={"street": "123 Main St", "city": "NYC"}
-)
+person = Person(name="Bob", address={"street": "123 Main St", "city": "NYC"})
 print(person.model_dump())
 # {'name': 'Bob', 'address': {'street': '123 Main St', 'city': 'NYC'}}
 ```
@@ -136,14 +124,11 @@ openapi_schema = {
         "schemas": {
             "User": {
                 "type": "object",
-                "properties": {
-                    "id": {"type": "integer"},
-                    "email": {"type": "string", "format": "email"}
-                },
-                "required": ["id", "email"]
+                "properties": {"id": {"type": "integer"}, "email": {"type": "string", "format": "email"}},
+                "required": ["id", "email"],
             }
         }
-    }
+    },
 }
 
 models = generate_dynamic_models(openapi_schema)
@@ -204,15 +189,7 @@ Order = models["Order"]
 ```python
 from datamodel_code_generator import generate_dynamic_models
 
-schema = {
-    "type": "object",
-    "properties": {
-        "status": {
-            "type": "string",
-            "enum": ["pending", "approved", "rejected"]
-        }
-    }
-}
+schema = {"type": "object", "properties": {"status": {"type": "string", "enum": ["pending", "approved", "rejected"]}}}
 
 models = generate_dynamic_models(schema)
 Model = models["Model"]
@@ -241,14 +218,11 @@ schema = {
             "type": "object",
             "properties": {
                 "value": {"type": "string"},
-                "children": {
-                    "type": "array",
-                    "items": {"$ref": "#/$defs/Node"}
-                }
-            }
+                "children": {"type": "array", "items": {"$ref": "#/$defs/Node"}},
+            },
         }
     },
-    "$ref": "#/$defs/Node"
+    "$ref": "#/$defs/Node",
 }
 
 models = generate_dynamic_models(schema)
@@ -258,10 +232,8 @@ tree = Node(
     value="root",
     children=[
         Node(value="child1", children=[]),
-        Node(value="child2", children=[
-            Node(value="grandchild", children=[])
-        ])
-    ]
+        Node(value="child2", children=[Node(value="grandchild", children=[])]),
+    ],
 )
 ```
 
@@ -302,9 +274,11 @@ from datamodel_code_generator import generate_dynamic_models
 schema = {"type": "object", "properties": {"x": {"type": "integer"}}}
 results = []
 
+
 def worker():
     models = generate_dynamic_models(schema)
     results.append(models)
+
 
 threads = [threading.Thread(target=worker) for _ in range(10)]
 for t in threads:

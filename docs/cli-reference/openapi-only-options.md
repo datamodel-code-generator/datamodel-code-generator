@@ -341,7 +341,7 @@ at build time or runtime.
 
     from pydantic import AnyUrl, BaseModel, Field, RootModel
 
-    OPENAPI_INFO_VERSION = '1.0.0'
+    OPENAPI_INFO_VERSION = "1.0.0"
 
 
     class Pet(BaseModel):
@@ -378,18 +378,10 @@ at build time or runtime.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -1611,18 +1603,10 @@ The `--use-operation-id-as-name` flag configures the code generation behavior.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -1985,18 +1969,10 @@ The `--validation` flag configures the code generation behavior.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):

@@ -138,7 +138,7 @@ json_schema: str = """{
 
 with TemporaryDirectory() as temporary_directory_name:
     temporary_directory = Path(temporary_directory_name)
-    output = Path(temporary_directory / 'model.py')
+    output = Path(temporary_directory / "model.py")
     config = GenerateConfig(
         input_file_type=InputFileType.JsonSchema,
         input_filename="example.json",
@@ -166,9 +166,9 @@ from pydantic import BaseModel
 
 
 class StreetType(Enum):
-    Street = 'Street'
-    Avenue = 'Avenue'
-    Boulevard = 'Boulevard'
+    Street = "Street"
+    Avenue = "Avenue"
+    Boulevard = "Boulevard"
 
 
 class Model(BaseModel):
@@ -202,10 +202,7 @@ json_schema: str = """{
     }
 }"""
 
-data_model_types = get_data_model_types(
-    DataModelType.PydanticV2BaseModel,
-    target_python_version=PythonVersion.PY_311
-)
+data_model_types = get_data_model_types(DataModelType.PydanticV2BaseModel, target_python_version=PythonVersion.PY_311)
 config = JSONSchemaParserConfig(
     data_model_type=data_model_types.data_model,
     data_model_root_type=data_model_types.root_model,
@@ -236,17 +233,14 @@ json_schema: str = """{
     }
 }"""
 
-data_model_types = get_data_model_types(
-    DataModelType.PydanticV2BaseModel,
-    target_python_version=PythonVersion.PY_311
-)
+data_model_types = get_data_model_types(DataModelType.PydanticV2BaseModel, target_python_version=PythonVersion.PY_311)
 parser = JsonSchemaParser(
-   json_schema,
-   data_model_type=data_model_types.data_model,
-   data_model_root_type=data_model_types.root_model,
-   data_model_field_type=data_model_types.field_model,
-   data_type_manager_type=data_model_types.data_type_manager,
-   dump_resolve_reference_action=data_model_types.dump_resolve_reference_action,
+    json_schema,
+    data_model_type=data_model_types.data_model,
+    data_model_root_type=data_model_types.root_model,
+    data_model_field_type=data_model_types.field_model,
+    data_type_manager_type=data_model_types.data_type_manager,
+    dump_resolve_reference_action=data_model_types.dump_resolve_reference_action,
 )
 result = parser.parse()
 print(result)
@@ -276,16 +270,15 @@ from pydantic import BaseModel
 
 
 class StreetType(Enum):
-    Street = 'Street'
-    Avenue = 'Avenue'
-    Boulevard = 'Boulevard'
+    Street = "Street"
+    Avenue = "Avenue"
+    Boulevard = "Boulevard"
 
 
 class Model(BaseModel):
     number: Optional[float] = None
     street_name: Optional[str] = None
     street_type: Optional[StreetType] = None
-
 ```
 
 ---

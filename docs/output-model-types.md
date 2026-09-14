@@ -29,10 +29,12 @@ datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel 
 ```python
 from pydantic import BaseModel, Field, RootModel
 
+
 class Pet(BaseModel):
     id: int = Field(..., ge=0)
     name: str = Field(..., max_length=256)
     tag: str | None = None
+
 
 class Pets(RootModel[list[Pet]]):
     root: list[Pet]
@@ -59,6 +61,7 @@ datamodel-codegen --input schema.json --output-model-type pydantic_v2.dataclass 
 ```python
 from pydantic.dataclasses import dataclass
 from typing import Optional
+
 
 @dataclass
 class Pet:
@@ -88,6 +91,7 @@ datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass 
 ```python
 from dataclasses import dataclass
 from typing import Optional
+
 
 @dataclass
 class Pet:
@@ -130,6 +134,7 @@ datamodel-codegen --input schema.json --output-model-type typing.TypedDict --out
 
 ```python
 from typing import TypedDict, NotRequired
+
 
 class Pet(TypedDict):
     id: int
@@ -182,6 +187,7 @@ datamodel-codegen --input user-patch.schema.json \
 from typing import NotRequired
 from typing_extensions import TypedDict
 
+
 class UserPatch(TypedDict, closed=True):
     id: str
     nickname: NotRequired[str | None]
@@ -208,6 +214,7 @@ datamodel-codegen --input user-patch.schema.json \
 ```python
 from typing import NotRequired, ReadOnly
 from typing_extensions import TypedDict
+
 
 class UserPatch(TypedDict, closed=True):
     id: ReadOnly[str]
@@ -243,6 +250,7 @@ datamodel-codegen --input schema.json --output-model-type msgspec.Struct --outpu
 
 ```python
 from msgspec import Struct, UNSET, UnsetType
+
 
 class Pet(Struct):
     id: int

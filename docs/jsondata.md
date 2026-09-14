@@ -61,7 +61,6 @@ class Pet(BaseModel):
 class Model(BaseModel):
     pets: list[Pet]
     status: int
-
 ```
 
 ## Supported Input Shapes

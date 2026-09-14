@@ -66,7 +66,6 @@ from pydantic import BaseModel
 class Model(BaseModel):
     name: Optional[str]
     age: Optional[int]
-
 ```
 
 ## 📚 Template Reference

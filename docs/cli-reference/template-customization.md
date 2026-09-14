@@ -132,7 +132,7 @@ is useful when using custom types defined in external modules (e.g.,
         a: Date
         b: DateTime
         c: MyCustomClass
-        typename__: Literal['A'] | None = Field('A', alias='__typename')
+        typename__: Literal["A"] | None = Field("A", alias="__typename")
     ```
 
 ---
@@ -265,8 +265,8 @@ headers, or other metadata to generated files.
 
 
         class Person(BaseModel):
-            first_name: str = Field(..., alias='first-name')
-            last_name: str = Field(..., alias='last-name')
+            first_name: str = Field(..., alias="first-name")
+            last_name: str = Field(..., alias="last-name")
             email_address: str | None = None
         ```
 
@@ -283,8 +283,8 @@ headers, or other metadata to generated files.
 
 
         class Person(BaseModel):
-            first_name: str = Field(..., alias='first-name')
-            last_name: str = Field(..., alias='last-name')
+            first_name: str = Field(..., alias="first-name")
+            last_name: str = Field(..., alias="last-name")
             email_address: str | None = None
         ```
 
@@ -592,18 +592,10 @@ to be inserted at the top of generated Python files.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -692,7 +684,7 @@ formatting rules beyond what black/isort provide.
     class A(BaseModel):
         duration: Long
         id: ID
-        typename__: Literal['A'] | None = Field('A', alias='__typename')
+        typename__: Literal["A"] | None = Field("A", alias="__typename")
     ```
 
 ---
@@ -1046,18 +1038,10 @@ to the templates.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -1390,18 +1374,10 @@ The `--disable-appending-item-suffix` flag configures the code generation behavi
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -1478,15 +1454,12 @@ The `--disable-timestamp` flag configures the code generation behavior.
     class Info(BaseModel):
         hostName: (
             constr(
-                pattern=r'^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$'
+                pattern=r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$"
             )
             | None
         ) = None
-        arn: (
-            constr(pattern=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}):(.+)$)|^\*$')
-            | None
-        ) = None
-        tel: constr(pattern=r'^(\([0-9]{3}\))?[0-9]{3}-[0-9]{4}$') | None = None
+        arn: constr(pattern=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}):(.+)$)|^\*$") | None = None
+        tel: constr(pattern=r"^(\([0-9]{3}\))?[0-9]{3}-[0-9]{4}$") | None = None
         comment: constr(pattern=r'[^\x08\f\n\r\t\\a+.?\'"|()]+$') | None = None
     ```
 
@@ -1740,18 +1713,10 @@ the file to the header, making it easy to reproduce the generation.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -2015,18 +1980,10 @@ recognize the `@generated` marker.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -2290,18 +2247,10 @@ The `--enable-version-header` flag configures the code generation behavior.
 
 
     class Api(BaseModel):
-        apiKey: str | None = Field(
-            None, description='To be used as a dataset parameter value'
-        )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -2574,18 +2523,10 @@ model settings like Config classes, enabling customization beyond standard optio
 
 
         class Api(BaseModel):
-            apiKey: str | None = Field(
-                None, description='To be used as a dataset parameter value'
-            )
-            apiVersionNumber: str | None = Field(
-                None, description='To be used as a version parameter value'
-            )
-            apiUrl: AnyUrl | None = Field(
-                None, description="The URL describing the dataset's fields"
-            )
-            apiDocumentationUrl: AnyUrl | None = Field(
-                None, description='A URL to the API console for each API'
-            )
+            apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+            apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+            apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+            apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
         class Apis(RootModel[list[Api]]):
@@ -2891,7 +2832,7 @@ are unsupported and generation fails fast.
         __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
         __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
 
-        @model_validator(mode='before')
+        @model_validator(mode="before")
         @classmethod
         def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
             data = cls._validate_json_schema_pattern_properties(data)
@@ -2917,17 +2858,13 @@ are unsupported and generation fails fast.
                 pattern_adapters = None
                 additional_adapter = None
                 for key, value in data.items():
-                    if key in rule['declared_properties']:
+                    if key in rule["declared_properties"]:
                         continue
-                    if any(
-                        re.search(pattern, key) for pattern in rule['rejected_patterns']
-                    ):
-                        raise ValueError(
-                            f'Property {key!r} is not allowed by patternProperties'
-                        )
+                    if any(re.search(pattern, key) for pattern in rule["rejected_patterns"]):
+                        raise ValueError(f"Property {key!r} is not allowed by patternProperties")
                     matched = False
                     for index, (pattern, value_type) in enumerate(
-                        rule['pattern_properties'],
+                        rule["pattern_properties"],
                     ):
                         if not re.search(pattern, key):
                             continue
@@ -2943,17 +2880,17 @@ are unsupported and generation fails fast.
                             values = dict(data)
                         values[key] = value
                         continue
-                    if rule['additional_property_type'] is not None:
+                    if rule["additional_property_type"] is not None:
                         if additional_adapter is None:
                             additional_adapter = TypeAdapter(
-                                rule['additional_property_type'],
+                                rule["additional_property_type"],
                             )
                         if values is data:
                             values = dict(data)
                         values[key] = additional_adapter.validate_python(value)
                         continue
-                    if not rule['allow_unmatched']:
-                        raise ValueError(f'Unexpected property {key!r}')
+                    if not rule["allow_unmatched"]:
+                        raise ValueError(f"Unexpected property {key!r}")
             return values
 
         @classmethod
@@ -2969,19 +2906,12 @@ are unsupported and generation fails fast.
             if not (isinstance(data, dict) or isinstance(data, _Mapping)):
                 return data
             for required_groups in required_group_rules:
-                matches = sum(
-                    all(any(name in data for name in names) for names in group)
-                    for group in required_groups
-                )
+                matches = sum(all(any(name in data for name in names) for names in group) for group in required_groups)
                 if require_exactly_one:
                     if matches != 1:
-                        raise ValueError(
-                            'Expected exactly one required property group to be present'
-                        )
+                        raise ValueError("Expected exactly one required property group to be present")
                 elif matches == 0:
-                    raise ValueError(
-                        'Expected at least one required property group to be present'
-                    )
+                    raise ValueError("Expected at least one required property group to be present")
             return data
 
         @classmethod
@@ -2990,18 +2920,13 @@ are unsupported and generation fails fast.
                 return data
             for rule in cls.__json_schema_conditional_required__:
                 condition_matches = all(
-                    any(name in data and data[name] in expected for name in names)
-                    for names, expected in rule['condition']
+                    any(name in data and data[name] in expected for name in names) for names, expected in rule["condition"]
                 )
-                required_groups = (
-                    rule['then_required_groups']
-                    if condition_matches
-                    else rule['else_required_groups']
-                )
+                required_groups = rule["then_required_groups"] if condition_matches else rule["else_required_groups"]
                 for group in required_groups:
                     if all(any(name in data for name in names) for names in group):
                         continue
-                    raise ValueError('Conditional required properties are missing')
+                    raise ValueError("Conditional required properties are missing")
             return data
 
 
@@ -3015,97 +2940,93 @@ are unsupported and generation fails fast.
 
     class PatternBag(_JsonSchemaRuntimeValidationBase):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': (),
-                'rejected_patterns': (),
-                'pattern_properties': (('^[A-Z][A-Za-z0-9_]*$', Second),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": (),
+                "rejected_patterns": (),
+                "pattern_properties": (("^[A-Z][A-Za-z0-9_]*$", Second),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class PatternTarget(First, PatternBag):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': ('first',),
-                'rejected_patterns': (),
-                'pattern_properties': (('^[A-Z][A-Za-z0-9_]*$', Second),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": ("first",),
+                "rejected_patterns": (),
+                "pattern_properties": (("^[A-Z][A-Za-z0-9_]*$", Second),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class DirectPatternBag(_JsonSchemaRuntimeValidationBase):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': (),
-                'rejected_patterns': (),
-                'pattern_properties': (('^item_[0-9]+$', int),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": (),
+                "rejected_patterns": (),
+                "pattern_properties": (("^item_[0-9]+$", int),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class ValidatorOnlyChild(_JsonSchemaRuntimeValidationBase, First):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': ('first',),
-                'rejected_patterns': (),
-                'pattern_properties': (('^extra_[A-Za-z]+$', int),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": ("first",),
+                "rejected_patterns": (),
+                "pattern_properties": (("^extra_[A-Za-z]+$", int),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class ValidatorOnlyPatternRef(_JsonSchemaRuntimeValidationBase, First):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': ('first',),
-                'rejected_patterns': (),
-                'pattern_properties': (('^ref_extra_[A-Za-z]+$', int),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": ("first",),
+                "rejected_patterns": (),
+                "pattern_properties": (("^ref_extra_[A-Za-z]+$", int),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class OneOfContact(_JsonSchemaRuntimeValidationBase):
-        __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
-            ((('email',),), (('phone',),)),
-        )
+        __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (((("email",),), (("phone",),)),)
 
         email: str | None = None
         phone: str | None = None
 
 
     class AnyOfContact(_JsonSchemaRuntimeValidationBase):
-        __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
-            ((('email',),), (('phone',),)),
-        )
+        __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (((("email",),), (("phone",),)),)
 
         email: str | None = None
         phone: str | None = None
@@ -3114,9 +3035,9 @@ are unsupported and generation fails fast.
     class ConditionalPayload(_JsonSchemaRuntimeValidationBase):
         __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
             {
-                'condition': ((('kind',), ('metric',)),),
-                'then_required_groups': ((('metric',),),),
-                'else_required_groups': ((('note',),),),
+                "condition": ((("kind",), ("metric",)),),
+                "then_required_groups": ((("metric",),),),
+                "else_required_groups": ((("note",),),),
             },
         )
 
@@ -3639,7 +3560,7 @@ shared base class that owns schema-derived runtime validators. It is only used w
     class SharedSchemaValidatorBase(BaseModel):
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = ()
 
-        @model_validator(mode='before')
+        @model_validator(mode="before")
         @classmethod
         def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
             data = cls._validate_json_schema_pattern_properties(data)
@@ -3654,17 +3575,13 @@ shared base class that owns schema-derived runtime validators. It is only used w
                 pattern_adapters = None
                 additional_adapter = None
                 for key, value in data.items():
-                    if key in rule['declared_properties']:
+                    if key in rule["declared_properties"]:
                         continue
-                    if any(
-                        re.search(pattern, key) for pattern in rule['rejected_patterns']
-                    ):
-                        raise ValueError(
-                            f'Property {key!r} is not allowed by patternProperties'
-                        )
+                    if any(re.search(pattern, key) for pattern in rule["rejected_patterns"]):
+                        raise ValueError(f"Property {key!r} is not allowed by patternProperties")
                     matched = False
                     for index, (pattern, value_type) in enumerate(
-                        rule['pattern_properties'],
+                        rule["pattern_properties"],
                     ):
                         if not re.search(pattern, key):
                             continue
@@ -3680,32 +3597,32 @@ shared base class that owns schema-derived runtime validators. It is only used w
                             values = dict(data)
                         values[key] = value
                         continue
-                    if rule['additional_property_type'] is not None:
+                    if rule["additional_property_type"] is not None:
                         if additional_adapter is None:
                             additional_adapter = TypeAdapter(
-                                rule['additional_property_type'],
+                                rule["additional_property_type"],
                             )
                         if values is data:
                             values = dict(data)
                         values[key] = additional_adapter.validate_python(value)
                         continue
-                    if not rule['allow_unmatched']:
-                        raise ValueError(f'Unexpected property {key!r}')
+                    if not rule["allow_unmatched"]:
+                        raise ValueError(f"Unexpected property {key!r}")
             return values
 
 
     class CustomBaseClassName(SharedSchemaValidatorBase):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': (),
-                'rejected_patterns': (),
-                'pattern_properties': (('^item_[0-9]+$', int),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": (),
+                "rejected_patterns": (),
+                "pattern_properties": (("^item_[0-9]+$", int),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
     ```
@@ -3924,7 +3841,7 @@ additional validator backends without adding them in this release.
         __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
         __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
 
-        @model_validator(mode='before')
+        @model_validator(mode="before")
         @classmethod
         def _validate_json_schema_runtime_rules(cls, data: Any) -> Any:
             data = cls._validate_json_schema_pattern_properties(data)
@@ -3950,17 +3867,13 @@ additional validator backends without adding them in this release.
                 pattern_adapters = None
                 additional_adapter = None
                 for key, value in data.items():
-                    if key in rule['declared_properties']:
+                    if key in rule["declared_properties"]:
                         continue
-                    if any(
-                        re.search(pattern, key) for pattern in rule['rejected_patterns']
-                    ):
-                        raise ValueError(
-                            f'Property {key!r} is not allowed by patternProperties'
-                        )
+                    if any(re.search(pattern, key) for pattern in rule["rejected_patterns"]):
+                        raise ValueError(f"Property {key!r} is not allowed by patternProperties")
                     matched = False
                     for index, (pattern, value_type) in enumerate(
-                        rule['pattern_properties'],
+                        rule["pattern_properties"],
                     ):
                         if not re.search(pattern, key):
                             continue
@@ -3976,17 +3889,17 @@ additional validator backends without adding them in this release.
                             values = dict(data)
                         values[key] = value
                         continue
-                    if rule['additional_property_type'] is not None:
+                    if rule["additional_property_type"] is not None:
                         if additional_adapter is None:
                             additional_adapter = TypeAdapter(
-                                rule['additional_property_type'],
+                                rule["additional_property_type"],
                             )
                         if values is data:
                             values = dict(data)
                         values[key] = additional_adapter.validate_python(value)
                         continue
-                    if not rule['allow_unmatched']:
-                        raise ValueError(f'Unexpected property {key!r}')
+                    if not rule["allow_unmatched"]:
+                        raise ValueError(f"Unexpected property {key!r}")
             return values
 
         @classmethod
@@ -4002,19 +3915,12 @@ additional validator backends without adding them in this release.
             if not (isinstance(data, dict) or isinstance(data, _Mapping)):
                 return data
             for required_groups in required_group_rules:
-                matches = sum(
-                    all(any(name in data for name in names) for names in group)
-                    for group in required_groups
-                )
+                matches = sum(all(any(name in data for name in names) for names in group) for group in required_groups)
                 if require_exactly_one:
                     if matches != 1:
-                        raise ValueError(
-                            'Expected exactly one required property group to be present'
-                        )
+                        raise ValueError("Expected exactly one required property group to be present")
                 elif matches == 0:
-                    raise ValueError(
-                        'Expected at least one required property group to be present'
-                    )
+                    raise ValueError("Expected at least one required property group to be present")
             return data
 
         @classmethod
@@ -4023,18 +3929,13 @@ additional validator backends without adding them in this release.
                 return data
             for rule in cls.__json_schema_conditional_required__:
                 condition_matches = all(
-                    any(name in data and data[name] in expected for name in names)
-                    for names, expected in rule['condition']
+                    any(name in data and data[name] in expected for name in names) for names, expected in rule["condition"]
                 )
-                required_groups = (
-                    rule['then_required_groups']
-                    if condition_matches
-                    else rule['else_required_groups']
-                )
+                required_groups = rule["then_required_groups"] if condition_matches else rule["else_required_groups"]
                 for group in required_groups:
                     if all(any(name in data for name in names) for names in group):
                         continue
-                    raise ValueError('Conditional required properties are missing')
+                    raise ValueError("Conditional required properties are missing")
             return data
 
 
@@ -4048,97 +3949,93 @@ additional validator backends without adding them in this release.
 
     class PatternBag(_JsonSchemaRuntimeValidationBase):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': (),
-                'rejected_patterns': (),
-                'pattern_properties': (('^[A-Z][A-Za-z0-9_]*$', Second),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": (),
+                "rejected_patterns": (),
+                "pattern_properties": (("^[A-Z][A-Za-z0-9_]*$", Second),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class PatternTarget(First, PatternBag):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': ('first',),
-                'rejected_patterns': (),
-                'pattern_properties': (('^[A-Z][A-Za-z0-9_]*$', Second),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": ("first",),
+                "rejected_patterns": (),
+                "pattern_properties": (("^[A-Z][A-Za-z0-9_]*$", Second),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class DirectPatternBag(_JsonSchemaRuntimeValidationBase):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': (),
-                'rejected_patterns': (),
-                'pattern_properties': (('^item_[0-9]+$', int),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": (),
+                "rejected_patterns": (),
+                "pattern_properties": (("^item_[0-9]+$", int),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class ValidatorOnlyChild(_JsonSchemaRuntimeValidationBase, First):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': ('first',),
-                'rejected_patterns': (),
-                'pattern_properties': (('^extra_[A-Za-z]+$', int),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": ("first",),
+                "rejected_patterns": (),
+                "pattern_properties": (("^extra_[A-Za-z]+$", int),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class ValidatorOnlyPatternRef(_JsonSchemaRuntimeValidationBase, First):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
 
         __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
             {
-                'declared_properties': ('first',),
-                'rejected_patterns': (),
-                'pattern_properties': (('^ref_extra_[A-Za-z]+$', int),),
-                'additional_property_type': None,
-                'allow_unmatched': False,
+                "declared_properties": ("first",),
+                "rejected_patterns": (),
+                "pattern_properties": (("^ref_extra_[A-Za-z]+$", int),),
+                "additional_property_type": None,
+                "allow_unmatched": False,
             },
         )
 
 
     class OneOfContact(_JsonSchemaRuntimeValidationBase):
-        __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (
-            ((('email',),), (('phone',),)),
-        )
+        __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = (((("email",),), (("phone",),)),)
 
         email: str | None = None
         phone: str | None = None
 
 
     class AnyOfContact(_JsonSchemaRuntimeValidationBase):
-        __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
-            ((('email',),), (('phone',),)),
-        )
+        __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (((("email",),), (("phone",),)),)
 
         email: str | None = None
         phone: str | None = None
@@ -4147,9 +4044,9 @@ additional validator backends without adding them in this release.
     class ConditionalPayload(_JsonSchemaRuntimeValidationBase):
         __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
             {
-                'condition': ((('kind',), ('metric',)),),
-                'then_required_groups': ((('metric',),),),
-                'else_required_groups': ((('note',),),),
+                "condition": ((("kind",), ("metric",)),),
+                "then_required_groups": ((("metric",),),),
+                "else_required_groups": ((("note",),),),
             },
         )
 
@@ -4988,12 +4885,12 @@ This allows injecting custom validation logic into generated models.
         email: EmailStr
         age: Annotated[int | None, Field(ge=0)] = None
 
-        @field_validator('name', mode='before')
+        @field_validator("name", mode="before")
         @classmethod
         def validate_name_validator(cls, v: Any, info: ValidationInfo) -> Any:
             return validate_name(v, info)
 
-        @field_validator('email', mode='after')
+        @field_validator("email", mode="after")
         @classmethod
         def validate_email_validator(cls, v: Any, info: ValidationInfo) -> Any:
             return validate_email(v, info)
@@ -5056,22 +4953,21 @@ single-line strings in the generated code.
 
 
     class LongDescription(BaseModel):
-        summary: str | None = Field(None, description='summary for object')
+        summary: str | None = Field(None, description="summary for object")
         description: str | None = Field(
             None,
             description=(
-                'datamodel-code-generator. This code generator creates pydantic model from'
-                ' an openapi file and others.'
+                "datamodel-code-generator. This code generator creates pydantic model from an openapi file and others."
             ),
         )
         multi_line: str | None = Field(
             None,
             description=(
-                'datamodel-code-generator\nThis code generator creates pydantic model from'
-                ' an openapi file and others.\n\n\nSupported source types\nOpenAPI 3'
-                ' (YAML/JSON, OpenAPI Data Type)\nJSON Schema (JSON Schema Core/JSON Schema'
-                ' Validation)\nJSON/YAML/CSV Data (it will be converted to JSON'
-                ' Schema)\nPython dictionary (it will be converted to JSON Schema)'
+                "datamodel-code-generator\nThis code generator creates pydantic model from"
+                " an openapi file and others.\n\n\nSupported source types\nOpenAPI 3"
+                " (YAML/JSON, OpenAPI Data Type)\nJSON Schema (JSON Schema Core/JSON Schema"
+                " Validation)\nJSON/YAML/CSV Data (it will be converted to JSON"
+                " Schema)\nPython dictionary (it will be converted to JSON Schema)"
             ),
         )
     ```

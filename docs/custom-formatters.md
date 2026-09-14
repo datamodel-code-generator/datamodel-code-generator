@@ -21,6 +21,7 @@ datamodel-codegen --input {your_input_file} --output {your_output_file} --custom
 ```python
 from datamodel_code_generator.format import CustomCodeFormatter
 
+
 class CodeFormatter(CustomCodeFormatter):
     def apply(self, code: str) -> str:
         # Apply your custom formatting here

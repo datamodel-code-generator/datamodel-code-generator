@@ -274,8 +274,8 @@ providing fine-grained control over generated names independent of schema defini
 
 
             class Pet(Struct):
-                id_: int = field(name='id')
-                name_: str = field(name='name')
+                id_: int = field(name="id")
+                name_: str = field(name="name")
                 tag: str | UnsetType = UNSET
 
 
@@ -283,8 +283,8 @@ providing fine-grained control over generated names independent of schema defini
 
 
             class User(Struct):
-                id_: int = field(name='id')
-                name_: str = field(name='name')
+                id_: int = field(name="id")
+                name_: str = field(name="name")
                 tag: str | UnsetType = UNSET
 
 
@@ -303,29 +303,17 @@ providing fine-grained control over generated names independent of schema defini
 
 
             class Api(Struct):
-                apiKey: (
-                    Annotated[str, Meta(description='To be used as a dataset parameter value')]
-                    | UnsetType
-                ) = UNSET
-                apiVersionNumber: (
-                    Annotated[str, Meta(description='To be used as a version parameter value')]
-                    | UnsetType
-                ) = UNSET
-                apiUrl: (
-                    Annotated[str, Meta(description="The URL describing the dataset's fields")]
-                    | UnsetType
-                ) = UNSET
-                apiDocumentationUrl: (
-                    Annotated[str, Meta(description='A URL to the API console for each API')]
-                    | UnsetType
-                ) = UNSET
+                apiKey: Annotated[str, Meta(description="To be used as a dataset parameter value")] | UnsetType = UNSET
+                apiVersionNumber: Annotated[str, Meta(description="To be used as a version parameter value")] | UnsetType = UNSET
+                apiUrl: Annotated[str, Meta(description="The URL describing the dataset's fields")] | UnsetType = UNSET
+                apiDocumentationUrl: Annotated[str, Meta(description="A URL to the API console for each API")] | UnsetType = UNSET
 
 
             Apis: TypeAlias = list[Api]
 
 
             class Event(Struct):
-                name_: str | UnsetType = field(name='name', default=UNSET)
+                name_: str | UnsetType = field(name="name", default=UNSET)
 
 
             class Result(Struct):
@@ -386,19 +374,19 @@ providing fine-grained control over generated names independent of schema defini
 
 
         class User(BaseModel):
-            user_name: str | None = Field(None, alias='name')
+            user_name: str | None = Field(None, alias="name")
             id: int | None = None
 
 
         class Address(BaseModel):
-            address_name: str | None = Field(None, alias='name')
+            address_name: str | None = Field(None, alias="name")
             city: str | None = None
 
 
         class Root(BaseModel):
-            root_name: str | None = Field(None, alias='name')
-            user: User | None = Field(None, title='User')
-            address: Address | None = Field(None, title='Address')
+            root_name: str | None = Field(None, alias="name")
+            user: User | None = Field(None, title="User")
+            address: Address | None = Field(None, title="Address")
         ```
 
     === "GraphQL"
@@ -444,11 +432,9 @@ providing fine-grained control over generated names independent of schema defini
 
 
         class DateTimePeriod(BaseModel):
-            periodFrom: DateTime = Field(..., alias='from')
-            periodTo: DateTime = Field(..., alias='to')
-            typename__: Literal['DateTimePeriod'] | None = Field(
-                'DateTimePeriod', alias='__typename'
-            )
+            periodFrom: DateTime = Field(..., alias="from")
+            periodTo: DateTime = Field(..., alias="to")
+            typename__: Literal["DateTimePeriod"] | None = Field("DateTimePeriod", alias="__typename")
         ```
 
 ---
@@ -501,10 +487,10 @@ naming conventions for constants.
 
 
     class Model(Enum):
-        SNAKE_CASE = 'snake_case'
-        CAP_CASE = 'CAP_CASE'
-        CAMEL_CASE = 'CamelCase'
-        UPPERCASE = 'UPPERCASE'
+        SNAKE_CASE = "snake_case"
+        CAP_CASE = "CAP_CASE"
+        CAMEL_CASE = "CamelCase"
+        UPPERCASE = "UPPERCASE"
     ```
 
 ---
@@ -571,7 +557,7 @@ Supports scoped format (ClassName.field) for hierarchical overrides.
 
     class User(BaseModel):
         name: str
-        status: str | None = 'active'
+        status: str | None = "active"
         page: int | None = 1
     ```
 
@@ -643,10 +629,10 @@ cannot be deserialized remain serialized so the generated module stays importabl
 
 
         class Invoice(BaseModel):
-            amount: Decimal | None = Decimal('12.340')
-            invalid_amount: Decimal | None = 'not-a-decimal'
+            amount: Decimal | None = Decimal("12.340")
+            invalid_amount: Decimal | None = "not-a-decimal"
             nullable_amount: Decimal | None = None
-            label: str | None = 'retail'
+            label: str | None = "retail"
         ```
 
     === "Pydantic v2 dataclass"
@@ -664,10 +650,10 @@ cannot be deserialized remain serialized so the generated module stays importabl
 
         @dataclass
         class Invoice:
-            amount: Decimal | None = Decimal('12.340')
-            invalid_amount: Decimal | None = 'not-a-decimal'
+            amount: Decimal | None = Decimal("12.340")
+            invalid_amount: Decimal | None = "not-a-decimal"
             nullable_amount: Decimal | None = None
-            label: str | None = 'retail'
+            label: str | None = "retail"
         ```
 
     === "dataclass"
@@ -684,10 +670,10 @@ cannot be deserialized remain serialized so the generated module stays importabl
 
         @dataclass
         class Invoice:
-            amount: Decimal | None = Decimal('12.340')
-            invalid_amount: Decimal | None = 'not-a-decimal'
+            amount: Decimal | None = Decimal("12.340")
+            invalid_amount: Decimal | None = "not-a-decimal"
             nullable_amount: Decimal | None = None
-            label: str | None = 'retail'
+            label: str | None = "retail"
         ```
 
     === "TypedDict"
@@ -725,10 +711,10 @@ cannot be deserialized remain serialized so the generated module stays importabl
 
 
         class Invoice(Struct):
-            amount: Decimal | UnsetType = Decimal('12.340')
-            invalid_amount: Decimal | UnsetType = 'not-a-decimal'
+            amount: Decimal | UnsetType = Decimal("12.340")
+            invalid_amount: Decimal | UnsetType = "not-a-decimal"
             nullable_amount: Decimal | None | UnsetType = UNSET
-            label: str | UnsetType = 'retail'
+            label: str | UnsetType = "retail"
         ```
 
 ---
@@ -786,12 +772,12 @@ The `--empty-enum-field-name` flag configures the code generation behavior.
     class ModelEnum(Enum):
         True_ = True
         False_ = False
-        empty = ''
-        field_ = '\n'
-        field__ = '\r\n'
-        field__1 = '\t'
-        field_x08 = '\\x08'
-        field__2 = '\\'
+        empty = ""
+        field_ = "\n"
+        field__ = "\r\n"
+        field__1 = "\t"
+        field_x08 = "\\x08"
+        field__2 = "\\"
 
 
     class Model(RootModel[ModelEnum | None]):
@@ -1005,7 +991,7 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
 
     class Film(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         characters: list[Person]
         characters_ids: list[ID]
@@ -1024,12 +1010,12 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         title: String
         vehicles: list[Vehicle]
         vehicles_ids: list[ID]
-        typename__: Literal['Film'] | None = Field('Film', alias='__typename')
+        typename__: Literal["Film"] | None = Field("Film", alias="__typename")
 
 
     class Person(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         birth_year: String | None = None
         eye_color: String | None = None
@@ -1050,12 +1036,12 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         starships_ids: list[ID]
         vehicles: list[Vehicle]
         vehicles_ids: list[ID]
-        typename__: Literal['Person'] | None = Field('Person', alias='__typename')
+        typename__: Literal["Person"] | None = Field("Person", alias="__typename")
 
 
     class Planet(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         climate: String | None = None
         diameter: String | None = None
@@ -1071,12 +1057,12 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         rotation_period: String | None = None
         surface_water: String | None = None
         terrain: String | None = None
-        typename__: Literal['Planet'] | None = Field('Planet', alias='__typename')
+        typename__: Literal["Planet"] | None = Field("Planet", alias="__typename")
 
 
     class Species(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         average_height: String | None = None
         average_lifespan: String | None = None
@@ -1092,12 +1078,12 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         people: list[Person]
         people_ids: list[ID]
         skin_colors: String | None = None
-        typename__: Literal['Species'] | None = Field('Species', alias='__typename')
+        typename__: Literal["Species"] | None = Field("Species", alias="__typename")
 
 
     class Starship(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         MGLT: String | None = None
         cargo_capacity: String | None = None
@@ -1117,12 +1103,12 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         pilots: list[Person]
         pilots_ids: list[ID]
         starship_class: String | None = None
-        typename__: Literal['Starship'] | None = Field('Starship', alias='__typename')
+        typename__: Literal["Starship"] | None = Field("Starship", alias="__typename")
 
 
     class Vehicle(BaseModel):
         model_config = ConfigDict(
-            extra='allow',
+            extra="allow",
         )
         cargo_capacity: String | None = None
         consumables: String | None = None
@@ -1140,7 +1126,7 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
         pilots: list[Person]
         pilots_ids: list[ID]
         vehicle_class: String | None = None
-        typename__: Literal['Vehicle'] | None = Field('Vehicle', alias='__typename')
+        typename__: Literal["Vehicle"] | None = Field("Vehicle", alias="__typename")
 
 
     Film.model_rebuild()
@@ -1473,18 +1459,10 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 
 
             class Api(BaseModel):
-                apiKey: str | None = Field(
-                    None, description='To be used as a dataset parameter value'
-                )
-                apiVersionNumber: str | None = Field(
-                    None, description='To be used as a version parameter value'
-                )
-                apiUrl: AnyUrl | None = Field(
-                    None, description="The URL describing the dataset's fields"
-                )
-                apiDocumentationUrl: AnyUrl | None = Field(
-                    None, description='A URL to the API console for each API'
-                )
+                apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+                apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+                apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+                apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
             class Apis(RootModel[list[Api]]):
@@ -1577,12 +1555,12 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 
 
         class User(BaseModel):
-            name: StrictStr | None = Field(None, examples=['ken'])
+            name: StrictStr | None = Field(None, examples=["ken"])
             age: StrictInt | None = None
             salary: StrictInt | None = Field(None, ge=0)
             debt: StrictInt | None = Field(None, le=0)
             loan: StrictFloat | None = Field(None, le=0.0)
-            tel: StrictStr | None = Field(None, pattern='^(\\([0-9]{3}\\))?[0-9]{3}-[0-9]{4}$')
+            tel: StrictStr | None = Field(None, pattern="^(\\([0-9]{3}\\))?[0-9]{3}-[0-9]{4}$")
             height: StrictFloat | None = Field(None, ge=0.0)
             weight: StrictFloat | None = Field(None, ge=0.0)
             score: StrictFloat | None = Field(None, ge=1e-08)
@@ -1669,13 +1647,13 @@ The `--field-extra-keys` flag configures the code generation behavior.
         class Extras(BaseModel):
             name: str | None = Field(
                 None,
-                description='normal key',
-                examples=['example'],
-                json_schema_extra={'key2': 456, 'invalid-key-1': 'abc'},
+                description="normal key",
+                examples=["example"],
+                json_schema_extra={"key2": 456, "invalid-key-1": "abc"},
                 repr=True,
             )
-            age: int | None = Field(None, examples=[13, 20], json_schema_extra={'example': 12})
-            status: str | None = Field(None, examples=['active'])
+            age: int | None = Field(None, examples=[13, 20], json_schema_extra={"example": 12})
+            status: str | None = Field(None, examples=["active"])
         ```
 
 ---
@@ -1760,26 +1738,24 @@ in Field(). This is useful for custom schema extensions and vendor-specific meta
         class Extras(BaseModel):
             name: str | None = Field(
                 None,
-                description='normal key',
-                examples=['example'],
+                description="normal key",
+                examples=["example"],
                 json_schema_extra={
-                    'key1': 123,
-                    'key2': 456,
-                    '$exclude': 123,
-                    'invalid-key-1': 'abc',
-                    '-invalid+key_2': 'efg',
-                    '$comment': 'comment',
-                    'register': 'hij',
-                    'schema': 'klm',
-                    'x-abc': True,
-                    'readOnly': True,
+                    "key1": 123,
+                    "key2": 456,
+                    "$exclude": 123,
+                    "invalid-key-1": "abc",
+                    "-invalid+key_2": "efg",
+                    "$comment": "comment",
+                    "register": "hij",
+                    "schema": "klm",
+                    "x-abc": True,
+                    "readOnly": True,
                 },
                 repr=True,
             )
-            age: int | None = Field(
-                None, examples=[13, 20], json_schema_extra={'example': 12, 'writeOnly': True}
-            )
-            status: str | None = Field(None, examples=['active'])
+            age: int | None = Field(None, examples=[13, 20], json_schema_extra={"example": 12, "writeOnly": True})
+            status: str | None = Field(None, examples=["active"])
         ```
 
 ---
@@ -1848,9 +1824,7 @@ The `--field-include-all-keys` flag configures the code generation behavior.
     class Person(BaseModel):
         firstName: str | None = Field(None, description="The person's first name.")
         lastName: str | None = Field(None, description="The person's last name.")
-        age: conint(ge=0) | None = Field(
-            None, description='Age in years which must be equal to or greater than zero.'
-        )
+        age: conint(ge=0) | None = Field(None, description="Age in years which must be equal to or greater than zero.")
         friends: list[Any] | None = None
         comment: None = Field(None)
     ```
@@ -1912,7 +1886,7 @@ to preserve the original field name, instead of renaming the field and adding an
 
 
     class Test(BaseModel):
-        TestObject: TestObject_1 | None = Field(None, title='TestObject')
+        TestObject: TestObject_1 | None = Field(None, title="TestObject")
     ```
 
 ---
@@ -1991,12 +1965,12 @@ Existing generated output is preserved unless this option is enabled.
 
 
         class EventMessageCreated(BaseModel):
-            type: Literal['message.created']
+            type: Literal["message.created"]
             id: str
 
 
         class EventMessageFailed(BaseModel):
-            type: Literal['message.failed']
+            type: Literal["message.failed"]
             reason: str
 
 
@@ -2019,12 +1993,12 @@ Existing generated output is preserved unless this option is enabled.
 
 
         class Event(BaseModel):
-            type: Literal['message.created']
+            type: Literal["message.created"]
             id: str
 
 
         class Event1(BaseModel):
-            type: Literal['message.failed']
+            type: Literal["message.failed"]
             reason: str
 
 
@@ -2110,8 +2084,8 @@ With this flag, only Python-safe names are used without aliases.
 
 
         class Person(BaseModel):
-            first_name: str = Field(..., alias='first-name')
-            last_name: str = Field(..., alias='last-name')
+            first_name: str = Field(..., alias="first-name")
+            last_name: str = Field(..., alias="last-name")
             email_address: str | None = None
         ```
 
@@ -2185,10 +2159,10 @@ match the generated Python type.
         model_config = ConfigDict(
             populate_by_name=True,
         )
-        amount: Decimal = '12.340'
-        invalid_amount: Decimal = 'not-a-decimal'
+        amount: Decimal = "12.340"
+        invalid_amount: Decimal = "not-a-decimal"
         nullable_amount: Decimal | None = None
-        label: str = 'retail'
+        label: str = "retail"
     ```
 
 ---
@@ -2253,11 +2227,11 @@ snake_case conversion.
 
 
     class SpaceIF(Enum):
-        space_field = 'Space Field'
+        space_field = "Space Field"
 
 
     class Model(BaseModel):
-        space_if: SpaceIF | None = Field(None, alias='SpaceIF')
+        space_if: SpaceIF | None = Field(None, alias="SpaceIF")
     ```
 
 ---
@@ -2315,10 +2289,10 @@ The `--remove-special-field-name-prefix` flag configures the code generation beh
 
 
     class Model(BaseModel):
-        id: AnyUrl = Field(..., alias='@id', title='Id must be presesnt and must be a URI')
-        type: str = Field(..., alias='@type')
-        type_1: str | None = Field(None, alias='@+!type')
-        type_2: str | None = Field(None, alias='@-!type')
+        id: AnyUrl = Field(..., alias="@id", title="Id must be presesnt and must be a URI")
+        type: str = Field(..., alias="@type")
+        type_1: str | None = Field(None, alias="@+!type")
+        type_2: str | None = Field(None, alias="@-!type")
         profile: str | None = None
     ```
 
@@ -2532,58 +2506,54 @@ or validation aliases while using separate output-only names for serialization.
     class SendMessageV2(BaseModel):
         message: str = Field(
             ...,
-            serialization_alias='messageText',
-            validation_alias=AliasChoices('textMessage', 'message', 'text'),
+            serialization_alias="messageText",
+            validation_alias=AliasChoices("textMessage", "message", "text"),
         )
 
 
     class OtherMessage(BaseModel):
-        other_name: str = Field(..., alias='other-name', serialization_alias='otherName')
+        other_name: str = Field(..., alias="other-name", serialization_alias="otherName")
 
 
     class SameNameMessage(BaseModel):
-        same_name: str = Field(..., alias='same-name', serialization_alias='same_name')
+        same_name: str = Field(..., alias="same-name", serialization_alias="same_name")
 
 
     class RequiredOnlyMessage(BaseModel):
-        known_name: str = Field(..., alias='known-name')
+        known_name: str = Field(..., alias="known-name")
         missingRequiredInput: Any = Field(
             ...,
-            serialization_alias='missingRequired',
-            validation_alias=AliasChoices('missing-required', 'missingRequiredInput'),
+            serialization_alias="missingRequired",
+            validation_alias=AliasChoices("missing-required", "missingRequiredInput"),
         )
-        plainMissingInput: Any = Field(
-            ..., alias='plain-missing', serialization_alias='plainMissing'
-        )
-        allof_unmapped: Any = Field(..., alias='allof-unmapped')
+        plainMissingInput: Any = Field(..., alias="plain-missing", serialization_alias="plainMissing")
+        allof_unmapped: Any = Field(..., alias="allof-unmapped")
 
 
     class RequiredOnlyGrandBase(BaseModel):
-        grand_name: int = Field(..., alias='grand-name')
-        bare_name: Any = Field(..., alias='bare-name')
+        grand_name: int = Field(..., alias="grand-name")
+        bare_name: Any = Field(..., alias="bare-name")
 
 
     class RequiredOnlyBase(RequiredOnlyGrandBase):
-        base_name: str = Field(..., alias='base-name')
+        base_name: str = Field(..., alias="base-name")
 
 
     class RequiredOnlyRefMessage(RequiredOnlyBase):
-        own_name: str = Field(..., alias='own-name')
+        own_name: str = Field(..., alias="own-name")
         grand_name: int = Field(
             ...,
-            serialization_alias='grandName',
-            validation_alias=AliasChoices('grand-name', 'grandInput'),
+            serialization_alias="grandName",
+            validation_alias=AliasChoices("grand-name", "grandInput"),
         )
-        bare_name: Any = Field(..., alias='bare-name', serialization_alias='bareName')
-        ignored_missing: Any = Field(..., alias='ignored-missing')
+        bare_name: Any = Field(..., alias="bare-name", serialization_alias="bareName")
+        ignored_missing: Any = Field(..., alias="ignored-missing")
         refMissingInput: Any = Field(
             ...,
-            serialization_alias='refMissingRequired',
-            validation_alias=AliasChoices('ref-missing-required', 'refMissingInput'),
+            serialization_alias="refMissingRequired",
+            validation_alias=AliasChoices("ref-missing-required", "refMissingInput"),
         )
-        refPlainMissingInput: Any = Field(
-            ..., alias='ref-plain-missing', serialization_alias='refPlainMissing'
-        )
+        refPlainMissingInput: Any = Field(..., alias="ref-plain-missing", serialization_alias="refPlainMissing")
 
 
     class RequiredOnlyEmptyAllOfBase(BaseModel):
@@ -2593,13 +2563,13 @@ or validation aliases while using separate output-only names for serialization.
     class RequiredOnlyEmptyAllOfMessage(RequiredOnlyEmptyAllOfBase):
         emptyMissingInput: Any = Field(
             ...,
-            serialization_alias='emptyMissing',
-            validation_alias=AliasChoices('empty-missing', 'emptyMissingInput'),
+            serialization_alias="emptyMissing",
+            validation_alias=AliasChoices("empty-missing", "emptyMissingInput"),
         )
 
 
     class RequiredOnlyRecursiveEmptyGrandBase(BaseModel):
-        unrelated_name: str | None = Field(None, alias='unrelated-name')
+        unrelated_name: str | None = Field(None, alias="unrelated-name")
 
 
     class RequiredOnlyRecursiveEmptyBase(RequiredOnlyRecursiveEmptyGrandBase):
@@ -2607,9 +2577,7 @@ or validation aliases while using separate output-only names for serialization.
 
 
     class RequiredOnlyRecursiveEmptyMessage(RequiredOnlyRecursiveEmptyBase):
-        recursiveMissingInput: Any = Field(
-            ..., alias='recursive-missing', serialization_alias='recursiveMissing'
-        )
+        recursiveMissingInput: Any = Field(..., alias="recursive-missing", serialization_alias="recursiveMissing")
 
 
     class Messaging(BaseModel):
@@ -2713,14 +2681,14 @@ The `--set-default-enum-member` flag is deprecated. Use `--deserialize-default-v
 
 
     class Animal(Enum):
-        dog = 'dog'
-        cat = 'cat'
-        snake = 'snake'
+        dog = "dog"
+        cat = "cat"
+        snake = "snake"
 
 
     class RedistributeEnum(Enum):
-        static = 'static'
-        connected = 'connected'
+        static = "static"
+        connected = "connected"
 
 
     class User(BaseModel):
@@ -2731,9 +2699,7 @@ The `--set-default-enum-member` flag is deprecated. Use `--deserialize-default-v
 
 
     class Redistribute(RootModel[list[RedistributeEnum]]):
-        root: list[RedistributeEnum] = Field(
-            ..., description='Redistribute type for routes.'
-        )
+        root: list[RedistributeEnum] = Field(..., description="Redistribute type for routes.")
     ```
 
 ---
@@ -2789,12 +2755,12 @@ conventions (PEP 8).
 
 
     class InvalidEnum(Enum):
-        field_1_value = '1 value'
-        field_space = ' space'
-        field___special = '*- special'
-        schema = 'schema'
-        mro_1 = 'MRO'
-        mro_ = 'mro'
+        field_1_value = "1 value"
+        field_space = " space"
+        field___special = "*- special"
+        schema = "schema"
+        mro_1 = "MRO"
+        mro_ = "mro"
     ```
 
 ---
@@ -2852,12 +2818,12 @@ The `--special-field-name-prefix` flag configures the code generation behavior.
     class ModelEnum(Enum):
         True_ = True
         False_ = False
-        special_ = ''
-        special__1 = '\n'
-        special__ = '\r\n'
-        special__2 = '\t'
-        special_x08 = '\\x08'
-        special__3 = '\\'
+        special_ = ""
+        special__1 = "\n"
+        special__ = "\r\n"
+        special__2 = "\t"
+        special_x08 = "\\x08"
+        special__3 = "\\"
 
 
     class Model(RootModel[ModelEnum | None]):
@@ -3013,8 +2979,8 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 
 
     class RequestVersionEnum(Enum):
-        v1 = 'v1'
-        v2 = 'v2'
+        v1 = "v1"
+        v2 = "v2"
 
 
     class RequestBase(BaseModel):
@@ -3022,7 +2988,7 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 
 
     class RequestV1(RequestBase):
-        request_id: str = Field(..., description='there is description', title='test title')
+        request_id: str = Field(..., description="there is description", title="test title")
         version: Literal[RequestVersionEnum.v1]
 
 
@@ -3031,7 +2997,7 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 
 
     class Request(RootModel[RequestV1 | RequestV2]):
-        root: RequestV1 | RequestV2 = Field(..., discriminator='version')
+        root: RequestV1 | RequestV2 = Field(..., discriminator="version")
     ```
 
 ---
@@ -3387,9 +3353,7 @@ generated models, preserving documentation from the original schema.
         ArrayType = TypeAliasType("ArrayType", list[str])
 
 
-        AnnotatedType = TypeAliasType(
-            "AnnotatedType", Annotated[str | bool, Field(..., title='MyAnnotatedType')]
-        )
+        AnnotatedType = TypeAliasType("AnnotatedType", Annotated[str | bool, Field(..., title="MyAnnotatedType")])
         """
         An annotated union type
         """
@@ -3481,17 +3445,17 @@ is visible in IDE intellisense.
 
 
     class Extras(BaseModel):
-        name: str | None = Field(None, description='normal key', examples=['example'])
+        name: str | None = Field(None, description="normal key", examples=["example"])
         """
         Example: 'example'
         """
-        age: int | None = Field(None, examples=[13, 20], json_schema_extra={'example': 12})
+        age: int | None = Field(None, examples=[13, 20], json_schema_extra={"example": 12})
         """
         Examples:
         - 13
         - 20
         """
-        status: str | None = Field(None, examples=['active'])
+        status: str | None = Field(None, examples=["active"])
         """
         Example: 'active'
         """
@@ -3753,26 +3717,20 @@ documentation without using Field() wrappers.
         class Api(BaseModel):
             apiKey: str | None = Field(
                 None,
-                description='To be used as a dataset parameter value.\nNow also with multi-line docstrings.',
+                description="To be used as a dataset parameter value.\nNow also with multi-line docstrings.",
             )
             """
             To be used as a dataset parameter value.
             Now also with multi-line docstrings.
             """
 
-            apiVersionNumber: str | None = Field(
-                None, description='To be used as a version parameter value'
-            )
+            apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
             """To be used as a version parameter value"""
 
-            apiUrl: AnyUrl | None = Field(
-                None, description="The URL describing the dataset's fields"
-            )
+            apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
             """The URL describing the dataset's fields"""
 
-            apiDocumentationUrl: AnyUrl | None = Field(
-                None, description='A URL to the API console for each API'
-            )
+            apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
             """A URL to the API console for each API"""
 
 
@@ -3822,8 +3780,8 @@ documentation without using Field() wrappers.
         class MultilineDescriptionWithExample(BaseModel):
             name: str | None = Field(
                 None,
-                description='User name.\nThis is a multi-line description.',
-                examples=['John Doe'],
+                description="User name.\nThis is a multi-line description.",
+                examples=["John Doe"],
             )
             """
             User name.
@@ -4092,17 +4050,11 @@ useful for preserving documentation from your schema in the generated code.
     class Api(BaseModel):
         apiKey: str | None = Field(
             None,
-            description='To be used as a dataset parameter value.\nNow also with multi-line docstrings.',
+            description="To be used as a dataset parameter value.\nNow also with multi-line docstrings.",
         )
-        apiVersionNumber: str | None = Field(
-            None, description='To be used as a version parameter value'
-        )
-        apiUrl: AnyUrl | None = Field(
-            None, description="The URL describing the dataset's fields"
-        )
-        apiDocumentationUrl: AnyUrl | None = Field(
-            None, description='A URL to the API console for each API'
-        )
+        apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+        apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+        apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
     class Apis(RootModel[list[Api]]):
@@ -4178,8 +4130,8 @@ serializing to the original JSON property name.
 
 
         class Person(BaseModel):
-            first_name: str = Field(..., serialization_alias='first-name')
-            last_name: str = Field(..., serialization_alias='last-name')
+            first_name: str = Field(..., serialization_alias="first-name")
+            last_name: str = Field(..., serialization_alias="last-name")
             email_address: str | None = None
         ```
 
@@ -4196,8 +4148,8 @@ serializing to the original JSON property name.
 
 
         class Person(BaseModel):
-            first_name: str = Field(..., alias='first-name')
-            last_name: str = Field(..., alias='last-name')
+            first_name: str = Field(..., alias="first-name")
+            last_name: str = Field(..., alias="last-name")
             email_address: str | None = None
         ```
 
@@ -4412,9 +4364,9 @@ This is useful when schemas have descriptive titles that should be preserved.
 
 
     class ProcessingStatusTitle(Enum):
-        COMPLETED = 'COMPLETED'
-        PENDING = 'PENDING'
-        FAILED = 'FAILED'
+        COMPLETED = "COMPLETED"
+        PENDING = "PENDING"
+        FAILED = "FAILED"
 
 
     class Kind(RootModel[str]):
@@ -4432,34 +4384,28 @@ This is useful when schemas have descriptive titles that should be preserved.
 
     class ProcessingTaskTitle(BaseModel):
         processing_status_union: ProcessingStatusUnionTitle | None = Field(
-            'COMPLETED', title='Processing Status Union Title', validate_default=True
+            "COMPLETED", title="Processing Status Union Title", validate_default=True
         )
-        processing_status: ProcessingStatusTitle | None = 'COMPLETED'
+        processing_status: ProcessingStatusTitle | None = "COMPLETED"
         name: str | None = None
         kind: Kind | None = None
 
 
     class ProcessingTasksTitle(RootModel[list[ProcessingTaskTitle]]):
-        root: list[ProcessingTaskTitle] = Field(..., title='Processing Tasks Title')
+        root: list[ProcessingTaskTitle] = Field(..., title="Processing Tasks Title")
 
 
     class ExtendedProcessingTask(RootModel[ProcessingTasksTitle | NestedCommentTitle]):
-        root: ProcessingTasksTitle | NestedCommentTitle = Field(
-            ..., title='Extended Processing Task Title'
-        )
+        root: ProcessingTasksTitle | NestedCommentTitle = Field(..., title="Extended Processing Task Title")
 
 
     class ExtendedProcessingTasksTitle(RootModel[list[ExtendedProcessingTask]]):
-        root: list[ExtendedProcessingTask] = Field(
-            ..., title='Extended Processing Tasks Title'
-        )
+        root: list[ExtendedProcessingTask] = Field(..., title="Extended Processing Tasks Title")
 
 
-    class ProcessingStatusUnionTitle(
-        RootModel[ProcessingStatusDetail | ExtendedProcessingTask | ProcessingStatusTitle]
-    ):
-        root: ProcessingStatusDetail | ExtendedProcessingTask | ProcessingStatusTitle = (
-            Field('COMPLETED', title='Processing Status Union Title', validate_default=True)
+    class ProcessingStatusUnionTitle(RootModel[ProcessingStatusDetail | ExtendedProcessingTask | ProcessingStatusTitle]):
+        root: ProcessingStatusDetail | ExtendedProcessingTask | ProcessingStatusTitle = Field(
+            "COMPLETED", title="Processing Status Union Title", validate_default=True
         )
 
 

@@ -245,18 +245,10 @@ class Error(BaseModel):
 
 
 class Api(BaseModel):
-    apiKey: str | None = Field(
-        None, description='To be used as a dataset parameter value'
-    )
-    apiVersionNumber: str | None = Field(
-        None, description='To be used as a version parameter value'
-    )
-    apiUrl: AnyUrl | None = Field(
-        None, description="The URL describing the dataset's fields"
-    )
-    apiDocumentationUrl: AnyUrl | None = Field(
-        None, description='A URL to the API console for each API'
-    )
+    apiKey: str | None = Field(None, description="To be used as a dataset parameter value")
+    apiVersionNumber: str | None = Field(None, description="To be used as a version parameter value")
+    apiUrl: AnyUrl | None = Field(None, description="The URL describing the dataset's fields")
+    apiDocumentationUrl: AnyUrl | None = Field(None, description="A URL to the API console for each API")
 
 
 class Apis(RootModel[list[Api]]):

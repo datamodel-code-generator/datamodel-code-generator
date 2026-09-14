@@ -73,11 +73,8 @@ Wrap validators receive a handler to call the next validator in the chain:
 ```python
 from pydantic import ValidationInfo, ValidatorFunctionWrapHandler
 
-def wrap_validate_name(
-    v: Any,
-    handler: ValidatorFunctionWrapHandler,
-    info: ValidationInfo
-) -> Any:
+
+def wrap_validate_name(v: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo) -> Any:
     # Pre-processing
     v = v.strip() if isinstance(v, str) else v
     # Call next validator
@@ -146,16 +143,19 @@ def plain_validate_name(v: Any) -> str:
 from typing import Any
 from pydantic import ValidationInfo
 
+
 def validate_name(v: Any, info: ValidationInfo) -> Any:
     if isinstance(v, str):
         return v.strip()
     return v
+
 
 def validate_email(v: Any, info: ValidationInfo) -> Any:
     if isinstance(v, str) and not v.endswith("@example.com"):
         # Custom email domain validation
         pass
     return v
+
 
 def validate_contact_info(v: Any, info: ValidationInfo) -> Any:
     # This runs for both name and email fields
@@ -178,17 +178,17 @@ class User(BaseModel):
     email: EmailStr
     age: Annotated[int | None, Field(ge=0)] = None
 
-    @field_validator('name', mode='before')
+    @field_validator("name", mode="before")
     @classmethod
     def validate_name_validator(cls, v: Any, info: ValidationInfo) -> Any:
         return validate_name(v, info)
 
-    @field_validator('email', mode='after')
+    @field_validator("email", mode="after")
     @classmethod
     def validate_email_validator(cls, v: Any, info: ValidationInfo) -> Any:
         return validate_email(v, info)
 
-    @field_validator('name', 'email', mode='after')
+    @field_validator("name", "email", mode="after")
     @classmethod
     def validate_contact_info_validator(cls, v: Any, info: ValidationInfo) -> Any:
         return validate_contact_info(v, info)

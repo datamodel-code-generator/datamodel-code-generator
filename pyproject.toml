@@ -154,7 +154,9 @@ version.source = "vcs"
 build.dev-mode-dirs = [ "src" ]
 build.hooks.vcs.template = "__version__ = {version!r}\n"
 build.hooks.vcs.version-file = "src/datamodel_code_generator/_version.py"
-build.targets.wheel.force-include."skills/datamodel-code-generator" = "datamodel_code_generator/resources/datamodel-code-generator"
+build.targets.wheel.force-include."skills/datamodel-code-generator" = """\
+  datamodel_code_generator/resources/datamodel-code-generator\
+  """
 build.targets.sdist.include = [
   "/scripts",
   "/skills/datamodel-code-generator",

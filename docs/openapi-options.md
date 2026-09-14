@@ -206,7 +206,7 @@ components:
 
 ```python
 class User(BaseModel):
-    id: Optional[int] = None      # Both included
+    id: Optional[int] = None  # Both included
     password: Optional[str] = None
     name: Optional[str] = None
 ```
@@ -221,11 +221,14 @@ datamodel-codegen --input openapi.yaml --output models.py \
 ```python
 class UserRequest(BaseModel):
     """For requests - excludes readOnly fields."""
+
     password: Optional[str] = None
     name: Optional[str] = None
 
+
 class UserResponse(BaseModel):
     """For responses - excludes writeOnly fields."""
+
     id: Optional[int] = None
     name: Optional[str] = None
 ```

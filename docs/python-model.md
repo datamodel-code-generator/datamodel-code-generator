@@ -101,6 +101,7 @@ datamodel-codegen --input-model schemas:USER_SCHEMA --input-file-type jsonschema
 ```python
 from pydantic import BaseModel
 
+
 class User(BaseModel):
     name: str
     age: int
@@ -146,6 +147,7 @@ class User(TypedDict):
 ```python
 from dataclasses import dataclass
 
+
 @dataclass
 class User:
     name: str
@@ -174,6 +176,7 @@ class User(BaseModel):
 ```python
 from typing import TypedDict
 
+
 class User(TypedDict):
     name: str
     age: int
@@ -191,8 +194,8 @@ from pydantic import BaseModel, Field
 
 
 class User(BaseModel):
-    name: str = Field(..., title='Name')
-    age: int = Field(..., title='Age')
+    name: str = Field(..., title="Name")
+    age: int = Field(..., title="Age")
 ```
 
 ### Dict Schema (JSON Schema) {#dict-jsonschema}
@@ -298,11 +301,15 @@ from collections import defaultdict
 from typing import Any, Annotated
 from pydantic import BaseModel, Field, WithJsonSchema
 
+
 class Config(BaseModel):
-    data: Annotated[
-        defaultdict[str, Annotated[dict[str, Any], Field(default_factory=dict)]],
-        WithJsonSchema({'type': 'object', 'x-python-type': 'defaultdict[str, dict[str, Any]]'})
-    ] | None = None
+    data: (
+        Annotated[
+            defaultdict[str, Annotated[dict[str, Any], Field(default_factory=dict)]],
+            WithJsonSchema({"type": "object", "x-python-type": "defaultdict[str, dict[str, Any]]"}),
+        ]
+        | None
+    ) = None
 ```
 
 ```bash
