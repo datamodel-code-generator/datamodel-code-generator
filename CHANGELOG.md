@@ -5,6 +5,41 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.81.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.81.0) - 2026-09-14
+
+## Breaking Changes
+
+
+### Code Generation Changes
+* Undeclared required keys now retained in variant runtime validation - When combining `--read-only-write-only-model-type` request/response variants with `--schema-validator-type` runtime validators, generated models now keep runtime validation rules for required keys that are not declared as properties (for example keys required via additionalProperties or if/then/else), whereas these rules were previously dropped from the variant models. Regenerated Request and Response models therefore enforce stricter validation and may reject payloads that the previously generated validators accepted (#4055)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Fix parser template data reuse by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4054
+* Fix required validation in request and response models by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4055
+* Share JSON Schema reference rewriting across inputs by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4057
+* Move output model decisions out of parsers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4058
+* Move output configuration out of parsers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4059
+* Guard output policy and private parser boundaries by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4060
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.80.0...0.81.0
+
+---
+
 ## [0.80.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.80.0) - 2026-09-12
 
 ## Breaking Changes
