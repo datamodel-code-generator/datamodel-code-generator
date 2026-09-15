@@ -6984,12 +6984,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return tuple(groups)
 
     def _get_not_required_groups(self, obj: JsonSchemaObject) -> tuple[tuple[str, ...], ...]:
+        """Return the required-only property group `not` forbids, or an empty tuple."""
         not_schema = self._get_conditional_schema(obj, "not")
         if not_schema is None or not self._is_required_only_schema(not_schema):
             return ()
         return (tuple(not_schema.required),)
 
     def _has_required_group_validators(self, obj: JsonSchemaObject) -> bool:
+        """Return whether obj has a oneOf, anyOf, or not required-property group."""
         return bool(
             self._get_required_groups(obj.oneOf)
             or self._get_required_groups(obj.anyOf)
@@ -7001,6 +7003,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         keyword: Literal["if", "then", "else", "not"],
     ) -> JsonSchemaObject | bool | None:
+        """Return the branch schema named by keyword, parsing it from extras on first use."""
         item = obj.extras.get(keyword)
         if isinstance(item, (JsonSchemaObject, bool)):
             return item
@@ -8137,6 +8140,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         groups: Sequence[Sequence[str]],
         names_by_property: dict[str, tuple[str, ...]],
     ) -> None:
+        """Register a required-property group runtime rule for keyword, deduplicated by value."""
         if not groups:
             return
 
@@ -8158,6 +8162,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self,
         obj: JsonSchemaObject,
     ) -> tuple[tuple[str, tuple[object, ...]], ...] | None:
+        """Return each if property with its allowed values, or an empty tuple for a property with none.
+
+        A required property with no schema, or no `const`/`enum` on it, is a presence-only condition:
+        it matches whenever the property is present, whatever value it holds.
+        """
         if_schema = self._get_conditional_schema(obj, "if")
         if not isinstance(if_schema, JsonSchemaObject) or not if_schema.required:
             return None
@@ -8224,6 +8233,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         include_property_count: bool = True,
     ) -> None:
+        """Register every runtime validation rule this schema and its allOf sources contribute."""
         if not self.generate_schema_validators:
             return
 
