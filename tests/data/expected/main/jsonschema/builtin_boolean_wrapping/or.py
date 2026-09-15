@@ -20,7 +20,9 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
-        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
+        if not cls.__json_schema_conditional_required__ or not (
+            isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)
+        ):
             return data
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(

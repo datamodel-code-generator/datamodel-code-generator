@@ -1757,9 +1757,15 @@ def _format_boolean_group(
     node: ast.BoolOp, source: bytes, indent: str, line_length: int, prefix: str = ""
 ) -> list[str]:
     """Wrap a boolean group and any nested groups exposed by the added indent."""
+    operand_indent = f"{indent}    "
+    single_line = f"{operand_indent}{source[node.col_offset : node.end_col_offset].decode()}"
     return [
         f"{indent}{prefix}(",
-        *_iter_boolean_operand_lines(node, source, f"{indent}    ", line_length),
+        *(
+            (single_line,)
+            if len(single_line) <= line_length
+            else _iter_boolean_operand_lines(node, source, operand_indent, line_length)
+        ),
         f"{indent})",
     ]
 
@@ -1786,9 +1792,10 @@ def _collect_function_boolean_replacements(
         before, after = source[: node.col_offset].strip(), source[node.end_col_offset :].strip()
         indent = _line_indent(line)
         match before, after:
-            case (b"(", b")") | (b"if not (", b"):"):
-                prefix = "if not " if before == b"if not (" else ""
-                formatted = _format_boolean_group(node, source, indent, line_length, prefix)
+            case _, b")" | b"):" if before == b"(" or (
+                after == b"):" and before.startswith(b"if ") and before.endswith(b"(")
+            ):
+                formatted = _format_boolean_group(node, source, indent, line_length, before[:-1].decode())
                 if after == b"):":
                     formatted[-1] += ":"
             case b"", b"" if (
