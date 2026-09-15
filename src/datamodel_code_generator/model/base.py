@@ -661,6 +661,10 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         self.__dict__["_self_reference_cache"] = result
         return result
 
+    def pin_self_reference(self, *, value: bool) -> None:
+        """Freeze self_reference() at `value` until the next cache invalidation."""
+        self.__dict__["_self_reference_cache"] = value
+
     @property
     def _use_union_operator(self) -> bool:
         """Get effective use_union_operator considering parent model's forward reference."""
