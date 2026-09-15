@@ -13609,6 +13609,37 @@ def test_main_jsonschema_collapse_root_models_container_field_constraints(output
     )
 
 
+def test_main_jsonschema_collapse_root_models_array_item_union_self_reference(output_file: Path) -> None:
+    """Keep an array field's own constraints when its items collapse into a self-referencing union."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_array_item_union_self_reference.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="collapse_root_models_array_item_union_self_reference.py",
+        extra_args=[
+            "--collapse-root-models",
+            "--use-annotated",
+            "--use-union-operator",
+            "--use-generic-container-types",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="output_array_item_union_self_reference",
+        model_name="All",
+        valid_json=(DATA_PATH / "payloads/collapse_root_array_valid.json").read_text(),
+        invalid_json=(DATA_PATH / "payloads/collapse_root_array_invalid.json").read_text(),
+        expected_error_type="too_short",
+    )
+
+
 def test_main_jsonschema_collapse_root_models_property_names_reference(output_file: Path) -> None:
     """Replace collapsed property-name references stored as mapping keys."""
     run_main_and_assert(
