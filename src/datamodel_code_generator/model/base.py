@@ -661,9 +661,28 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         self.__dict__["_self_reference_cache"] = result
         return result
 
-    def pin_self_reference(self, *, value: bool) -> None:
-        """Freeze self_reference() at `value` until the next cache invalidation."""
-        self.__dict__["_self_reference_cache"] = value
+    @property
+    def _can_apply_constraints(self) -> bool:
+        """Apply constraints to containers without suppressing recursive item types."""
+        data_type = self.data_type
+        if data_type.strict and data_type.kwargs:
+            return False
+        if not self.self_reference():
+            return True
+        while True:
+            if (
+                data_type.is_list  # noqa: PLR0916
+                or data_type.is_sequence
+                or data_type.is_dict
+                or data_type.is_mapping
+                or data_type.is_set
+                or data_type.is_frozen_set
+                or data_type.is_tuple
+            ):
+                return True
+            if data_type.alias or data_type.type or data_type.reference or len(data_type.data_types) != 1:
+                return False
+            data_type = data_type.data_types[0]
 
     @property
     def _use_union_operator(self) -> bool:

@@ -3712,12 +3712,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         scoped_model_resolver: ModelResolver,
         model_path_to_module_name: dict[str, str] | None = None,
     ) -> None:
-        """Collapse root models in place, keeping constraints a collapse-introduced self-reference would drop."""
         if not self.collapse_root_models:
             return
-
-        fields = [field for model in models for field in model.fields]
-        was_self_referencing = {id(field): field.self_reference() for field in fields}
 
         with self.generation_store._collapse_root_reference_scope():  # noqa: SLF001
             self.__collapse_root_models_in_scope(
@@ -3727,12 +3723,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 scoped_model_resolver,
                 model_path_to_module_name,
             )
-
-        # A self-reference introduced by collapsing (not present in the original schema)
-        # must not suppress a field's own constraints.
-        for field in fields:
-            if field.constraints is not None and not was_self_referencing[id(field)] and field.self_reference():
-                field.pin_self_reference(value=False)
 
     def __collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
         self,

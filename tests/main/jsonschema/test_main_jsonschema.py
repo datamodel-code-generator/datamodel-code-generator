@@ -13634,8 +13634,8 @@ def test_main_jsonschema_collapse_root_models_array_item_union_self_reference(ou
         output_file,
         module_name="output_array_item_union_self_reference",
         model_name="All",
-        valid_json='{"all":[{"value":1},{"value":2}]}',
-        invalid_json='{"all":[{"value":1}]}',
+        valid_json=(DATA_PATH / "payloads/collapse_root_array_valid.json").read_text(),
+        invalid_json=(DATA_PATH / "payloads/collapse_root_array_invalid.json").read_text(),
         expected_error_type="too_short",
     )
 

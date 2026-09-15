@@ -795,12 +795,7 @@ class DataModelField(DataModelFieldBase):
     def _get_meta_string(self) -> str | None:
         """Compute Meta(...) string if there are any meta constraints."""
         data: dict[str, Any] = {k: v for k, v in self.extras.items() if k in self._META_FIELD_KEYS}
-        has_type_constraints = self.data_type.kwargs is not None and len(self.data_type.kwargs) > 0
-        if (
-            self.constraints is not None
-            and not self.self_reference()
-            and not (self.data_type.strict and has_type_constraints)
-        ):
+        if self.constraints is not None and self._can_apply_constraints:
             dumped = self.constraints.model_dump()
             has_integer_constraints = any(dumped.get(key) is not None for key in self._COMPARE_EXPRESSIONS)
             is_float_type = has_integer_constraints and self._has_numeric_data_type("float")
