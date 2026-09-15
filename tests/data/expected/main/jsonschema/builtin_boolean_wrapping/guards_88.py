@@ -22,13 +22,10 @@ def top_level_boolean(value):
 
 async def async_boolean(value):
     return (
-        (
-            isinstance(value, dict)
-            or isinstance(value, _collections_abc.Mapping)
-            or isinstance(value, list)
-        )
-        and bool(value)
-    )
+        isinstance(value, dict)
+        or isinstance(value, _collections_abc.Mapping)
+        or isinstance(value, list)
+    ) and bool(value)
 
 
 class Model(BaseModel):
