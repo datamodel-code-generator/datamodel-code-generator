@@ -13519,6 +13519,14 @@ def test_main_jsonschema_collapse_root_models_array_item_union_self_reference(ou
         ],
         force_exec_validation=True,
     )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="output_array_item_union_self_reference",
+        model_name="All",
+        valid_json='{"all":[{"value":1},{"value":2}]}',
+        invalid_json='{"all":[{"value":1}]}',
+        expected_error_type="too_short",
+    )
 
 
 def test_main_jsonschema_collapse_root_models_property_names_reference(output_file: Path) -> None:
