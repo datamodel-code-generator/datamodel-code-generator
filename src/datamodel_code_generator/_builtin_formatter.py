@@ -1282,7 +1282,7 @@ def _format_generated_class_statement(
     if (len(line) <= line_length and not config_dict_needs_formatting) or _has_comment_token(line):
         return None
 
-    if isinstance(statement, ast.FunctionDef):
+    if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
         before_arguments, _, after_open = line.partition("(")
         arguments, _, suffix = after_open.rpartition(")")
         if arguments and suffix.endswith(":"):
