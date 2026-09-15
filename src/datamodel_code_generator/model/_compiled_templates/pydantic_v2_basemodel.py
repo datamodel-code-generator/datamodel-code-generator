@@ -19,12 +19,10 @@ from .pydantic_v2_schema_runtime_validation import render_with_scope as _include
 
 
 def render(**context: Any) -> str:
-    """Render this template with the given context."""
     return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
-    """Render this template using an already-built scope."""
     _context_base_class = _scope.get("base_class")
     _context_class_body_lines = _scope.get("class_body_lines")
     _context_class_name = _scope.get("class_name")

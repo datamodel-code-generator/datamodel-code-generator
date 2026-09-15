@@ -15,12 +15,10 @@ from .typealiastype import render_with_scope as _include_1
 
 
 def render(**context: Any) -> str:
-    """Render this template with the given context."""
     return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
-    """Render this template using an already-built scope."""
     _context_fields = _scope.get("fields")
     _parts: list[str] = []
     if _context_fields and _getattr(_getattr(_getitem(_context_fields, 0), "data_type"), "reference"):

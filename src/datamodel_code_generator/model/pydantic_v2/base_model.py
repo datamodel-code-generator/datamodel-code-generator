@@ -1687,6 +1687,18 @@ class BaseModel(BaseModelBase):
             if renderer := get_builtin_renderer(cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH):
                 return renderer(**context)
 
+        if (
+            (context["has_conditional_presence"] or context["has_not_required_groups"])
+            and custom_template_dir is not None
+            and custom_template_dir != TEMPLATE_DIR
+            and (custom_template_dir / cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH).is_file()
+        ):
+            msg = (
+                "Custom schema runtime validation helper overrides do not yet support generated presence-only "
+                "conditions or not-required groups. Remove the helper override or disable schema validators."
+            )
+            raise Error(msg)
+
         if context["has_unique_items"] and custom_template_dir is not None:
             custom_template_path = custom_template_dir / cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH
             if custom_template_path.is_file():

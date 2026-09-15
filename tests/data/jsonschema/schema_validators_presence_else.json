@@ -1,0 +1,31 @@
+{
+  "title": "PresenceRules",
+  "type": "object",
+  "properties": {
+    "guard": {
+      "type": "integer"
+    },
+    "a": {},
+    "b": {},
+    "c": {},
+    "d": {}
+  },
+  "required": [
+    "guard"
+  ],
+  "if": {
+    "required": [
+      "a"
+    ]
+  },
+  "then": {
+    "required": [
+      "c"
+    ]
+  },
+  "else": {
+    "required": [
+      "d"
+    ]
+  }
+}

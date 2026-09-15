@@ -11,12 +11,10 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 
 
 def render(**context: Any) -> str:
-    """Render this template with the given context."""
     return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
-    """Render this template using an already-built scope."""
     _context_has_conditional_json_equality = _scope.get("has_conditional_json_equality")
     _context_has_conditional_presence = _scope.get("has_conditional_presence")
     _context_has_conditional_required = _scope.get("has_conditional_required")

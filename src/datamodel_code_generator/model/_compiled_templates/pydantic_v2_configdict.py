@@ -11,12 +11,10 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 
 
 def render(**context: Any) -> str:
-    """Render this template with the given context."""
     return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
-    """Render this template using an already-built scope."""
     _context_config_items = _scope.get("config_items")
     _parts: list[str] = []
     _parts.append("model_config = ConfigDict(")

@@ -6956,11 +6956,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse oneOf schema into a list of data types."""
         return self.parse_combined_schema(name, obj, path, "oneOf")
 
-    def _is_required_only_schema(self, item: JsonSchemaObject | bool) -> TypeIs[JsonSchemaObject]:  # noqa: FBT001
+    def _is_required_only_schema(
+        self, item: JsonSchemaObject | bool, *, allow_empty: bool = False  # noqa: FBT001
+    ) -> TypeIs[JsonSchemaObject]:
         """Return whether a combined-schema branch is only a property presence rule."""
         if not isinstance(item, JsonSchemaObject):
             return False
-        if not item.required:
+        if not item.required and not (allow_empty and "required" in item.model_fields_set):
             return False
 
         schema_affecting_fields = (
@@ -6986,7 +6988,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_not_required_groups(self, obj: JsonSchemaObject) -> tuple[tuple[str, ...], ...]:
         """Return the required-only property group `not` forbids, or an empty tuple."""
         not_schema = self._get_conditional_schema(obj, "not")
-        if not_schema is None or not self._is_required_only_schema(not_schema):
+        if not_schema is None or not self._is_required_only_schema(not_schema, allow_empty=True):
             return ()
         return (tuple(not_schema.required),)
 
@@ -8162,20 +8164,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self,
         obj: JsonSchemaObject,
     ) -> tuple[tuple[str, tuple[object, ...]], ...] | None:
-        """Return each if property with its allowed values, or an empty tuple for a property with none.
-
-        A required property with no schema, an empty schema, or no `const`/`enum` on it, is a
-        presence-only condition: it matches whenever the property is present, whatever value it holds.
-        """
+        """Extract supported required-property predicates without dropping other conditions."""
         if_schema = self._get_conditional_schema(obj, "if")
         if not isinstance(if_schema, JsonSchemaObject) or not if_schema.required:
             return None
+        if (
+            if_schema.model_fields_set
+            - self.REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS
+            - if_schema.__metadata_only_fields__
+            - {"properties"}
+            or not _is_object_only_type(if_schema.type)
+            or any(
+                key not in if_schema.__metadata_only_fields__ and not key.startswith("x-") for key in if_schema.extras
+            )
+        ):
+            return None
 
         properties = if_schema.properties or {}
+        if any(
+            property_name not in if_schema.required
+            and property_schema is not True
+            and not (isinstance(property_schema, JsonSchemaObject) and self._is_empty_property_schema(property_schema))
+            for property_name, property_schema in properties.items()
+        ):
+            return None
         predicates: list[tuple[str, tuple[object, ...]]] = []
         for property_name in if_schema.required:
             property_schema = properties.get(property_name)
-            if property_schema is None:
+            if property_schema is None or property_schema is True:
                 predicates.append((property_name, ()))
                 continue
             if not isinstance(property_schema, JsonSchemaObject):
@@ -8192,9 +8208,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         return tuple(predicates)
 
-    def _is_empty_property_schema(self, item: JsonSchemaObject) -> bool:
+    @staticmethod
+    def _is_empty_property_schema(item: JsonSchemaObject) -> bool:
         """Return whether a property schema carries no keyword affecting validation, only metadata."""
-        other_fields = item.model_fields_set - item.__metadata_only_fields__
+        other_fields = item.model_fields_set - item.__metadata_only_fields__ - {"extras"}
         if other_fields:
             return False
         return not any(key not in item.__metadata_only_fields__ and not key.startswith("x-") for key in item.extras)
