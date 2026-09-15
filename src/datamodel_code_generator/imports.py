@@ -24,6 +24,8 @@ class Import:
     from_: str | None = None
     alias: str | None = None
     reference_path: str | None = None
+    # With `alias` set, keep the bare name bound too if something else imports it unaliased.
+    keep_unaliased: bool = False
 
     @property
     def is_future(self) -> bool:
@@ -57,16 +59,25 @@ class Imports(defaultdict[str | None, set[str]]):
         super().__init__(set)
         self.alias: defaultdict[str | None, dict[str, str]] = defaultdict(dict)
         self.counter: dict[tuple[str | None, str], int] = defaultdict(int)
+        self.aliased_counter: dict[tuple[str | None, str], int] = defaultdict(int)
+        self.dual_binding: set[tuple[str | None, str]] = set()
         self.reference_paths: dict[str, Import] = {}
         self.use_exact: bool = use_exact
         self._exports: set[str] | None = None
 
     def _set_alias(self, from_: str | None, imports: set[str]) -> list[str]:
         """Apply aliases to imports and return sorted list."""
-        return [
-            f"{i} as {self.alias[from_][i]}" if i in self.alias[from_] and i != self.alias[from_][i] else i
-            for i in sorted(imports)
-        ]
+        result: list[str] = []
+        for i in sorted(imports):
+            alias = self.alias[from_].get(i)
+            if not alias or alias == i:
+                result.append(i)
+                continue
+            key = (from_, i)
+            if key in self.dual_binding and self.aliased_counter.get(key, 0) < self.counter.get(key, 0):
+                result.append(i)
+            result.append(f"{i} as {alias}")
+        return result
 
     def create_line(self, from_: str | None, imports: set[str]) -> str:
         """Create a single import line from module and names."""
@@ -97,6 +108,9 @@ class Imports(defaultdict[str | None, set[str]]):
                 self.counter[key] += 1
                 if import_.alias:
                     self.alias[key[0]][key[1]] = import_.alias
+                    self.aliased_counter[key] += 1
+                    if import_.keep_unaliased:
+                        self.dual_binding.add(key)
 
     def remove(self, imports: Import | Iterable[Import]) -> None:
         """Remove one or more imports from the collection."""
@@ -107,6 +121,10 @@ class Imports(defaultdict[str | None, set[str]]):
             if self.counter.get(key, 0) <= 0:
                 continue
             self.counter[key] -= 1
+            if import_.alias and self.aliased_counter.get(key, 0) > 0:
+                self.aliased_counter[key] -= 1
+                if self.aliased_counter[key] == 0:
+                    del self.aliased_counter[key]
             if self.counter[key] == 0:
                 del self.counter[key]
                 if key[0] in self and key[1] in self[key[0]]:
@@ -147,6 +165,10 @@ class Imports(defaultdict[str | None, set[str]]):
             source_key = (source_module, source_import)
             target_key = (target_module, target_import)
             self.counter[target_key] += self.counter.pop(source_key)
+            self.aliased_counter[target_key] += self.aliased_counter.pop(source_key, 0)
+            if source_key in self.dual_binding:
+                self.dual_binding.discard(source_key)
+                self.dual_binding.add(target_key)
             self[source_module].remove(source_import)
             if not self[source_module]:
                 del self[source_module]
@@ -189,6 +211,13 @@ class Imports(defaultdict[str | None, set[str]]):
         for key in list(self.counter.keys()):
             if key[0] == module_key:
                 target.counter[key] = self.counter.pop(key)
+        for key in list(self.aliased_counter.keys()):
+            if key[0] == module_key:
+                target.aliased_counter[key] = self.aliased_counter.pop(key)
+        for key in list(self.dual_binding):
+            if key[0] == module_key:
+                self.dual_binding.discard(key)
+                target.dual_binding.add(key)
         if module_key in self.alias:
             target.alias[module_key] = self.alias.pop(module_key)
         for ref_path, import_ in list(self.reference_paths.items()):

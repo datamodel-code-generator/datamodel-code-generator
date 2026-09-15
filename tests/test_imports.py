@@ -395,6 +395,32 @@ def test_last_unaliased_remove_clears_existing_alias(
     assert str(imports) == expected
 
 
+def test_dump_emits_both_bindings_for_keep_unaliased_import() -> None:
+    """`keep_unaliased=True` binds both spellings when the bare name is also imported elsewhere."""
+    imports = Imports()
+    imports.append([
+        Import(from_="collections.abc", import_="Mapping"),
+        Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
+    ])
+
+    assert str(imports) == "from collections.abc import Mapping, Mapping as _Mapping"
+
+    imports.remove(Import(from_="collections.abc", import_="Mapping"))
+
+    assert str(imports) == "from collections.abc import Mapping as _Mapping"
+
+
+def test_dump_keeps_single_binding_without_keep_unaliased() -> None:
+    """An aliased import without `keep_unaliased` still collapses a same-name unaliased request."""
+    imports = Imports()
+    imports.append([
+        Import(from_="collections.abc", import_="Mapping"),
+        Import(from_="collections.abc", import_="Mapping", alias="_Mapping"),
+    ])
+
+    assert str(imports) == "from collections.abc import Mapping as _Mapping"
+
+
 def test_dump_all_uses_names_actually_bound_by_dotted_imports() -> None:
     """Exports use the package root unless a direct dotted import has an alias."""
     imports = Imports()
