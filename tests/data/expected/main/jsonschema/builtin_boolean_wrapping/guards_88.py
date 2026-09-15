@@ -100,6 +100,22 @@ class Model(BaseModel):
         return False
 
     @staticmethod
+    def trailing_guard(value):
+        if not (
+            isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)
+        ) and value is not None:
+            return False
+        return True
+
+    @staticmethod
+    def multiple_groups_guard(value):
+        if not (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)) and (
+            value is not None or value is False
+        ):
+            return False
+        return True
+
+    @staticmethod
     def unicode_names(日本語の長い入力フィールド名, expected):
         return (
             (
@@ -136,6 +152,8 @@ class Model(BaseModel):
             'groups': self.boolean_groups(value),
             'preserved': bool(self.preserve_groups(value)),
             'nested': self.nested_groups(value),
+            'trailing': self.trailing_guard(value),
+            'multiple': self.multiple_groups_guard(value),
             'unicode': self.unicode_names(value, {}),
             'commented': bool(self.commented(value)),
             'documented': self.documented(value),

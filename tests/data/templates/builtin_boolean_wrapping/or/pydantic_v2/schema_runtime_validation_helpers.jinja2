@@ -47,9 +47,7 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
             case dict():
                 if not (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)):
                     return False
-                if not (
-                    isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)
-                ) or len(value) != len(expected):
+                if not (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)) or len(value) != len(expected):
                     return False
                 return (
                     (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping))

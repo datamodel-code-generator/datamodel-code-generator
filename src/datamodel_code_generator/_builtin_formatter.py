@@ -1792,12 +1792,13 @@ def _collect_function_boolean_replacements(
         before, after = source[: node.col_offset].strip(), source[node.end_col_offset :].strip()
         indent = _line_indent(line)
         match before, after:
-            case _, b")" | b"):" if before == b"(" or (
-                after == b"):" and before.startswith(b"if ") and before.endswith(b"(")
+            case (b"(", b")") | (b"if not (", _) | (_, b"):") if (
+                before == b"("
+                or (after == b"):" and before.startswith(b"if ") and before.endswith(b"("))
+                or (after.startswith((b") or ", b") and ")) and after.endswith(b":"))
             ):
                 formatted = _format_boolean_group(node, source, indent, line_length, before[:-1].decode())
-                if after == b"):":
-                    formatted[-1] += ":"
+                formatted[-1] += after[1:].decode()
             case b"", b"" if (
                 1 < node.lineno < len(lines)
                 and lines[node.lineno - 2].endswith("(")
@@ -1807,6 +1808,7 @@ def _collect_function_boolean_replacements(
             case _:
                 continue
         replacements.append((node.lineno, node.lineno, formatted))
+        candidates.discard(node.lineno)
     return replacements
 
 
