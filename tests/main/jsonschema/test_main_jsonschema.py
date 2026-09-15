@@ -22484,8 +22484,11 @@ def test_schema_validator_generic_mapping_imports(
     custom_base: bool,
     formatter: str,
     modular: bool,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Keep generic Mapping annotations and runtime helper bindings usable together."""
+    # Existing unique-items helper call wrapping has separate formatter goldens.
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     source = JSON_SCHEMA_DATA_PATH / "schema_validator_generic_mapping.json"
     payloads = DATA_PATH / "payloads/schema_validator_generic_mapping"
     output = tmp_path / ("models" if modular else "model.py")
