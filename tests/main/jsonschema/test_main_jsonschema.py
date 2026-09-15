@@ -17730,6 +17730,40 @@ def test_main_jsonschema_generate_schema_validators_conditional_presence(
         _model_json_validator(model)("{}")
 
 
+def test_main_jsonschema_generate_schema_validators_conditional_presence_empty_schema(
+    output_file: Path,
+) -> None:
+    """Treat an explicit empty property schema on the if condition as presence-only, like an omitted one."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_conditional_presence_empty_schema.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--schema-validator-type",
+            "pydantic-v2",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="output_conditional_presence_empty_schema",
+        model_name="ConditionalPresenceEmptySchema",
+        valid_json='{"until":"2026-01-01","reviewBy":"2026-02-01"}',
+        invalid_json='{"until":"2026-01-01"}',
+        expected_error_type="value_error",
+        expected_attribute_path=("until",),
+        expected_attribute_value="2026-01-01",
+    )
+    with _generated_model(
+        output_file, "output_conditional_presence_empty_schema", "ConditionalPresenceEmptySchema"
+    ) as model:
+        # until absent means the if condition is false, so then's reviewBy requirement never applies.
+        _model_json_validator(model)("{}")
+
+
 def test_main_jsonschema_generate_schema_validators_parser_branch_runtime(
     output_file: Path,
 ) -> None:
