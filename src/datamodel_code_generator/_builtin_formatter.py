@@ -1283,8 +1283,16 @@ def _format_generated_class_statement(
         return None
 
     if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
-        before_arguments, _, after_open = line.partition("(")
+        signature = line
+        return_annotation = ""
+        if (returns := statement.returns) is not None:
+            if returns.lineno != statement.lineno or returns.end_lineno != statement.lineno:
+                return None
+            signature = line.encode()[: returns.col_offset].decode()
+            return_annotation = line[len(signature) :]
+        before_arguments, _, after_open = signature.partition("(")
         arguments, _, suffix = after_open.rpartition(")")
+        suffix += return_annotation
         if arguments and suffix.endswith(":"):
             return f"{before_arguments}(\n{indent}    {arguments}\n{indent}){suffix}"
 
