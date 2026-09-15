@@ -1345,6 +1345,14 @@ def _intersect_patterns(patterns: Sequence[str]) -> str:
     return result
 
 
+def _is_empty_property_schema(item: JsonSchemaObject) -> bool:
+    """Return whether a property schema carries no keyword affecting validation, only metadata."""
+    other_fields = item.model_fields_set - item.__metadata_only_fields__ - {"extras"}
+    if other_fields:
+        return False
+    return not any(key not in item.__metadata_only_fields__ and not key.startswith("x-") for key in item.extras)
+
+
 @snooper_to_methods()  # noqa: PLR0904
 class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     """Parser for JSON Schema, JSON, YAML, Dict, and CSV formats."""
@@ -6957,7 +6965,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.parse_combined_schema(name, obj, path, "oneOf")
 
     def _is_required_only_schema(
-        self, item: JsonSchemaObject | bool, *, allow_empty: bool = False  # noqa: FBT001
+        self,
+        item: JsonSchemaObject | bool,
+        *,
+        allow_empty: bool = False,  # noqa: FBT001
     ) -> TypeIs[JsonSchemaObject]:
         """Return whether a combined-schema branch is only a property presence rule."""
         if not isinstance(item, JsonSchemaObject):
@@ -8184,7 +8195,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if any(
             property_name not in if_schema.required
             and property_schema is not True
-            and not (isinstance(property_schema, JsonSchemaObject) and self._is_empty_property_schema(property_schema))
+            and not (isinstance(property_schema, JsonSchemaObject) and _is_empty_property_schema(property_schema))
             for property_name, property_schema in properties.items()
         ):
             return None
@@ -8202,19 +8213,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if property_schema.enum:
                 predicates.append((property_name, tuple(property_schema.enum)))
                 continue
-            if self._is_empty_property_schema(property_schema):
+            if _is_empty_property_schema(property_schema):
                 predicates.append((property_name, ()))
                 continue
             return None
         return tuple(predicates)
-
-    @staticmethod
-    def _is_empty_property_schema(item: JsonSchemaObject) -> bool:
-        """Return whether a property schema carries no keyword affecting validation, only metadata."""
-        other_fields = item.model_fields_set - item.__metadata_only_fields__ - {"extras"}
-        if other_fields:
-            return False
-        return not any(key not in item.__metadata_only_fields__ and not key.startswith("x-") for key in item.extras)
 
     def _add_conditional_validator(
         self,
