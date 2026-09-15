@@ -28,6 +28,7 @@ _CASES = json.loads((DATA_PATH / "payloads/schema_validators_presence_cases.json
 @pytest.mark.parametrize("template", ["compiled", "builtin_jinja", "custom_directory"])
 def test_schema_validators_presence(output_file: Path, tmp_path: Path, case_name: str, template: str) -> None:
     """Compare generated code and execute presence rules through each template path."""
+    case = _CASES[case_name]
     custom_dir = None
     if template == "builtin_jinja":
         custom_dir = TEMPLATE_DIR
@@ -44,8 +45,8 @@ def test_schema_validators_presence(output_file: Path, tmp_path: Path, case_name
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
         custom_template_dir=custom_dir,
+        **case.get("options", {}),
     )
-    case = _CASES[case_name]
     for valid in case["valid"]:
         assert_generated_model_json_validation(
             output_file,

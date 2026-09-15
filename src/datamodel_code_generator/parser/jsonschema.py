@@ -1345,12 +1345,46 @@ def _intersect_patterns(patterns: Sequence[str]) -> str:
     return result
 
 
-def _is_empty_property_schema(item: JsonSchemaObject) -> bool:
-    """Return whether a property schema carries no keyword affecting validation, only metadata."""
-    other_fields = item.model_fields_set - item.__metadata_only_fields__ - {"extras"}
+def _is_empty_property_schema(item: JsonSchemaObject, *, allowed_keywords: frozenset[str] = frozenset()) -> bool:
+    """Return whether a schema contains only metadata and explicitly handled keywords."""
+    if item.dynamicRef is not None or item.recursiveRef is not None:
+        return False
+    other_fields = item.model_fields_set - item.__metadata_only_fields__ - {"extras"} - allowed_keywords
     if other_fields:
         return False
-    return not any(key not in item.__metadata_only_fields__ and not key.startswith("x-") for key in item.extras)
+    return not any(
+        key not in item.__metadata_only_fields__ and key not in allowed_keywords and not key.startswith("x-")
+        for key in item.extras
+    )
+
+
+def _get_conditional_property_values(item: JsonSchemaObject | bool | None) -> tuple[object, ...] | None:  # noqa: FBT001
+    """Extract a presence predicate or literals without discarding property constraints."""
+    if item is None or item is True:
+        return ()
+    if not isinstance(item, JsonSchemaObject):
+        return None
+    if "const" in item.extras:
+        keyword, values = "const", (item.extras["const"],)
+    elif item.enum:
+        keyword, values = "enum", tuple(item.enum)
+    else:
+        return () if _is_empty_property_schema(item) else None
+    if not _is_empty_property_schema(item, allowed_keywords=frozenset({keyword, "type"})):
+        return None
+    if item.type is None:
+        return values
+    schema_types = (item.type,) if isinstance(item.type, str) else item.type
+    return (
+        tuple(
+            value
+            for value in values
+            if (value_type := _get_json_value_type(value)) in schema_types
+            or (value_type == "integer" and "number" in schema_types)
+            or (isinstance(value, float) and value.is_integer() and "integer" in schema_types)
+        )
+        or None
+    )
 
 
 @snooper_to_methods()  # noqa: PLR0904
@@ -1360,6 +1394,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     SCHEMA_PATHS: ClassVar[list[str]] = list(_DEFAULT_SCHEMA_PATHS)
     SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]] = JsonSchemaObject
     REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]] = frozenset({"required", "type", "extras"})
+    CONDITIONAL_SCHEMA_ALLOWED_FIELDS: ClassVar[frozenset[str]] = REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS | {"properties"}
     STRING_PROPERTY_NAME_FIELDS: ClassVar[frozenset[str]] = frozenset({
         "type",
         "anyOf",
@@ -2905,13 +2940,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             )
 
-        required_groups = [
-            RequiredGroupsRule(
-                keyword=rule.keyword,
-                groups=filter_groups(rule.groups),
+        required_groups: list[RequiredGroupsRule] = []
+        for rule in source.required_groups:
+            groups = (
+                tuple(group for group in rule.groups if all(keep_names(input_names) for input_names in group))
+                if rule.keyword == "not"
+                else filter_groups(rule.groups)
             )
-            for rule in source.required_groups
-        ]
+            if groups:
+                required_groups.append(RequiredGroupsRule(keyword=rule.keyword, groups=groups))
         conditional_required = [
             ConditionalRequiredRule(
                 condition=rule.condition,
@@ -6976,14 +7013,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not item.required and not (allow_empty and "required" in item.model_fields_set):
             return False
 
-        schema_affecting_fields = (
-            item.model_fields_set - self.REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS - item.__metadata_only_fields__
+        return _is_object_only_type(item.type) and _is_empty_property_schema(
+            item, allowed_keywords=self.REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS
         )
-        if schema_affecting_fields:
-            return False
-        if any(key not in item.__metadata_only_fields__ and not key.startswith("x-") for key in item.extras):
-            return False
-        return _is_object_only_type(item.type)
 
     def _get_required_groups(self, items: Sequence[JsonSchemaObject | bool]) -> tuple[tuple[str, ...], ...]:
         if not items:
@@ -8179,15 +8211,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if_schema = self._get_conditional_schema(obj, "if")
         if not isinstance(if_schema, JsonSchemaObject) or not if_schema.required:
             return None
-        if (
-            if_schema.model_fields_set
-            - self.REQUIRED_ONLY_SCHEMA_ALLOWED_FIELDS
-            - if_schema.__metadata_only_fields__
-            - {"properties"}
-            or not _is_object_only_type(if_schema.type)
-            or any(
-                key not in if_schema.__metadata_only_fields__ and not key.startswith("x-") for key in if_schema.extras
-            )
+        if not _is_object_only_type(if_schema.type) or not _is_empty_property_schema(
+            if_schema, allowed_keywords=self.CONDITIONAL_SCHEMA_ALLOWED_FIELDS
         ):
             return None
 
@@ -8201,22 +8226,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return None
         predicates: list[tuple[str, tuple[object, ...]]] = []
         for property_name in if_schema.required:
-            property_schema = properties.get(property_name)
-            if property_schema is None or property_schema is True:
-                predicates.append((property_name, ()))
-                continue
-            if not isinstance(property_schema, JsonSchemaObject):
+            if (values := _get_conditional_property_values(properties.get(property_name))) is None:
                 return None
-            if "const" in property_schema.extras:
-                predicates.append((property_name, (property_schema.extras["const"],)))
-                continue
-            if property_schema.enum:
-                predicates.append((property_name, tuple(property_schema.enum)))
-                continue
-            if _is_empty_property_schema(property_schema):
-                predicates.append((property_name, ()))
-                continue
-            return None
+            predicates.append((property_name, values))
         return tuple(predicates)
 
     def _add_conditional_validator(
