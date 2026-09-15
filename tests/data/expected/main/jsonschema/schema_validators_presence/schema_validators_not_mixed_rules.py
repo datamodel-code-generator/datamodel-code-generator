@@ -13,6 +13,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
     __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
     __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
     __json_schema_not_required_groups__: ClassVar[tuple[Any, ...]] = ()
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
 
     @model_validator(mode='before')
     @classmethod
@@ -28,6 +29,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
             require_exactly_one=False,
         )
         data = cls._validate_json_schema_not_required_groups(data)
+        data = cls._validate_json_schema_conditional_required(data)
         return data
 
     @classmethod
@@ -68,6 +70,33 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     raise ValueError('Expected required property group to be absent')
         return data
 
+    @classmethod
+    def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
+        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            return data
+        for rule in cls.__json_schema_conditional_required__:
+            condition_matches = all(
+                any(
+                    name in data
+                    and (
+                        not expected
+                        or data[name] in expected
+                    )
+                    for name in names
+                )
+                for names, expected in rule['condition']
+            )
+            required_groups = (
+                rule['then_required_groups']
+                if condition_matches
+                else rule['else_required_groups']
+            )
+            for group in required_groups:
+                if all(any(name in data for name in names) for names in group):
+                    continue
+                raise ValueError('Conditional required properties are missing')
+        return data
+
 
 class PresenceRules(_JsonSchemaRuntimeValidationBase):
     __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = (
@@ -76,6 +105,14 @@ class PresenceRules(_JsonSchemaRuntimeValidationBase):
 
     __json_schema_not_required_groups__: ClassVar[tuple[Any, ...]] = (
         ((('a',), ('b',)),),
+    )
+
+    __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = (
+        {
+            'condition': ((('a',), ()),),
+            'then_required_groups': ((('c',),),),
+            'else_required_groups': ((('d',),),),
+        },
     )
 
     guard: int

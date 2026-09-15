@@ -684,6 +684,16 @@
       },
       {
         "guard": 0
+      },
+      {
+        "guard": 0,
+        "a": 0,
+        "d": 0
+      },
+      {
+        "guard": 0,
+        "b": 0,
+        "c": 0
       }
     ],
     "error": "value_error"

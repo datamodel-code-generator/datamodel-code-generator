@@ -30,5 +30,20 @@
         "d"
       ]
     }
-  ]
+  ],
+  "if": {
+    "required": [
+      "a"
+    ]
+  },
+  "then": {
+    "required": [
+      "c"
+    ]
+  },
+  "else": {
+    "required": [
+      "d"
+    ]
+  }
 }
