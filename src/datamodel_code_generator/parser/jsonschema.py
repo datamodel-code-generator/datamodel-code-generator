@@ -6983,13 +6983,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             groups.append(tuple(item.required))
         return tuple(groups)
 
+    def _get_not_required_groups(self, obj: JsonSchemaObject) -> tuple[tuple[str, ...], ...]:
+        not_schema = self._get_conditional_schema(obj, "not")
+        if not_schema is None or not self._is_required_only_schema(not_schema):
+            return ()
+        return (tuple(not_schema.required),)
+
     def _has_required_group_validators(self, obj: JsonSchemaObject) -> bool:
-        return bool(self._get_required_groups(obj.oneOf) or self._get_required_groups(obj.anyOf))
+        return bool(
+            self._get_required_groups(obj.oneOf)
+            or self._get_required_groups(obj.anyOf)
+            or self._get_not_required_groups(obj)
+        )
 
     def _get_conditional_schema(
         self,
         obj: JsonSchemaObject,
-        keyword: Literal["if", "then", "else"],
+        keyword: Literal["if", "then", "else", "not"],
     ) -> JsonSchemaObject | bool | None:
         item = obj.extras.get(keyword)
         if isinstance(item, (JsonSchemaObject, bool)):
@@ -8123,7 +8133,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _add_required_groups_validator(
         self,
         reference_path: str,
-        keyword: Literal["anyOf", "oneOf"],
+        keyword: Literal["anyOf", "oneOf", "not"],
         groups: Sequence[Sequence[str]],
         names_by_property: dict[str, tuple[str, ...]],
     ) -> None:
@@ -8149,12 +8159,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
     ) -> tuple[tuple[str, tuple[object, ...]], ...] | None:
         if_schema = self._get_conditional_schema(obj, "if")
-        if not isinstance(if_schema, JsonSchemaObject) or not if_schema.properties or not if_schema.required:
+        if not isinstance(if_schema, JsonSchemaObject) or not if_schema.required:
             return None
 
+        properties = if_schema.properties or {}
         predicates: list[tuple[str, tuple[object, ...]]] = []
         for property_name in if_schema.required:
-            property_schema = if_schema.properties.get(property_name)
+            property_schema = properties.get(property_name)
+            if property_schema is None:
+                predicates.append((property_name, ()))
+                continue
             if not isinstance(property_schema, JsonSchemaObject):
                 return None
             if "const" in property_schema.extras:
@@ -8229,6 +8243,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._add_required_groups_validator(
             reference_path, "anyOf", self._get_required_groups(obj.anyOf), names_by_property
         )
+        self._add_required_groups_validator(
+            reference_path, "not", self._get_not_required_groups(obj), names_by_property
+        )
         self._add_conditional_validator(reference_path, obj, names_by_property)
         if include_property_count:
             self._add_property_count_validator(reference_path, obj)
@@ -8266,6 +8283,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     reference_path,
                     "anyOf",
                     self._get_required_groups(source.anyOf),
+                    names_by_property,
+                )
+                self._add_required_groups_validator(
+                    reference_path,
+                    "not",
+                    self._get_not_required_groups(source),
                     names_by_property,
                 )
                 self._add_conditional_validator(reference_path, source, names_by_property)

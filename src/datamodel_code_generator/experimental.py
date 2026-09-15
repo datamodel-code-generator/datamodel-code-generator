@@ -98,7 +98,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         since_version="0.66.1",
         note=(
             "The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as "
-            "patternProperties, required-only oneOf/anyOf groups, and simple if/then/else required-property conditions."
+            "patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property "
+            "conditions."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(

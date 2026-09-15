@@ -1638,10 +1638,23 @@ class BaseModel(BaseModelBase):
                 runtime_validation.pattern_properties for runtime_validation in runtime_validations
             ),
             "has_required_groups": any(
-                runtime_validation.required_groups for runtime_validation in runtime_validations
+                rule.keyword != "not"
+                for runtime_validation in runtime_validations
+                for rule in runtime_validation.required_groups
+            ),
+            "has_not_required_groups": any(
+                rule.keyword == "not"
+                for runtime_validation in runtime_validations
+                for rule in runtime_validation.required_groups
             ),
             "has_conditional_required": any(
                 runtime_validation.conditional_required for runtime_validation in runtime_validations
+            ),
+            "has_conditional_presence": any(
+                not expected
+                for runtime_validation in runtime_validations
+                for rule in runtime_validation.conditional_required
+                for _names, expected in rule.condition
             ),
             "has_conditional_json_equality": any(
                 conditional_value_uses_json_equality(value)
