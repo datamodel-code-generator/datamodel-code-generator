@@ -53,6 +53,16 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
             case int() | float():
                 return not isinstance(value, bool) and value == expected
             case dict():
+                if not (
+                    isinstance(value, dict)
+                    or isinstance(value, _collections_abc.Mapping)
+                ):
+                    return False
+                if not (
+                    isinstance(value, dict)
+                    or isinstance(value, _collections_abc.Mapping)
+                ) or len(value) != len(expected):
+                    return False
                 return (
                     (
                         isinstance(value, dict)

@@ -1730,41 +1730,38 @@ def _has_overlong_tuple_value(statement: ast.stmt, lines: list[str], line_length
     return False
 
 
-def _split_boolean_operands(expression: str, operator: str) -> list[str]:
-    """Split only the outer boolean operator, preserving operand parentheses."""
-    operands: list[str] = []
-    depth = start = 0
-    for token in tokenize.generate_tokens(StringIO(expression).readline):
-        match token.type, token.string:
-            case tokenize.OP, "(" | "[" | "{":
-                depth += 1
-            case tokenize.OP, ")" | "]" | "}":
-                depth -= 1
-            case tokenize.NAME, name if depth == 0 and name == operator:
-                operands.append(expression[start : token.start[1]].strip())
-                start = token.end[1]
-    operands.append(expression[start:].strip())
-    return operands
+def _iter_boolean_operand_lines(node: ast.BoolOp, source: bytes, indent: str, line_length: int) -> Iterator[str]:
+    """Split boolean operands, wrapping nested groups that exceed the line length."""
+    operator = "and" if isinstance(node.op, ast.And) else "or"
+    operator_bytes = operator.encode()
+    start = node.col_offset
+    last_index = len(node.values) - 1
+    for index, value in enumerate(node.values):
+        # The gap between AST operands contains only their parentheses and this operator.
+        end = (
+            source.index(operator_bytes, value.end_col_offset, node.values[index + 1].col_offset)
+            if index < last_index
+            else node.end_col_offset
+        )
+        operand = source[start:end].decode().strip()
+        start = (end or 0) + len(operator_bytes)
+        operand_prefix = f"{operator} " if index else ""
+        line = f"{indent}{operand_prefix}{operand}"
+        if len(line) > line_length and isinstance(value, ast.BoolOp):
+            yield from _format_boolean_group(value, source, indent, line_length, operand_prefix)
+        else:
+            yield line
 
 
 def _format_boolean_group(
     node: ast.BoolOp, source: bytes, indent: str, line_length: int, prefix: str = ""
 ) -> list[str]:
     """Wrap a boolean group and any nested groups exposed by the added indent."""
-    operator = "and" if isinstance(node.op, ast.And) else "or"
-    expression = source[node.col_offset : node.end_col_offset].decode()
-    operands = _split_boolean_operands(expression, operator)
-    continuation = f"{indent}    "
-    lines = [f"{indent}{prefix}("]
-    for index, (value, operand) in enumerate(zip(node.values, operands, strict=True)):
-        operand_prefix = f"{operator} " if index else ""
-        line = f"{continuation}{operand_prefix}{operand}"
-        if len(line) > line_length and isinstance(value, ast.BoolOp):
-            lines.extend(_format_boolean_group(value, source, continuation, line_length, operand_prefix))
-        else:
-            lines.append(line)
-    lines.append(f"{indent})")
-    return lines
+    return [
+        f"{indent}{prefix}(",
+        *_iter_boolean_operand_lines(node, source, f"{indent}    ", line_length),
+        f"{indent})",
+    ]
 
 
 def _collect_function_boolean_replacements(
@@ -1772,11 +1769,11 @@ def _collect_function_boolean_replacements(
     lines: list[str],
     line_length: int,
 ) -> list[_LineReplacement]:
-    """Wrap standalone parenthesized boolean lines inside generated methods."""
+    """Wrap parenthesized boolean groups and guards inside generated methods."""
     candidates = {
         number
         for number in range(function.lineno, (function.end_lineno or function.lineno) + 1)
-        if len(line := lines[number - 1]) > line_length and line.lstrip().startswith("(")
+        if len(line := lines[number - 1]) > line_length and (" and " in line or " or " in line)
     }
     if not candidates:
         return []
@@ -1786,13 +1783,23 @@ def _collect_function_boolean_replacements(
             continue
         line = lines[node.lineno - 1]
         source = line.encode()
-        if source[: node.col_offset].strip() != b"(" or source[node.end_col_offset :].strip() != b")":
-            continue
-        replacements.append((
-            node.lineno,
-            node.lineno,
-            _format_boolean_group(node, source, _line_indent(line), line_length),
-        ))
+        before, after = source[: node.col_offset].strip(), source[node.end_col_offset :].strip()
+        indent = _line_indent(line)
+        match before, after:
+            case (b"(", b")") | (b"if not (", b"):"):
+                prefix = "if not " if before == b"if not (" else ""
+                formatted = _format_boolean_group(node, source, indent, line_length, prefix)
+                if after == b"):":
+                    formatted[-1] += ":"
+            case b"", b"" if (
+                1 < node.lineno < len(lines)
+                and lines[node.lineno - 2].endswith("(")
+                and lines[node.lineno].lstrip().startswith(")")
+            ):
+                formatted = list(_iter_boolean_operand_lines(node, source, indent, line_length))
+            case _:
+                continue
+        replacements.append((node.lineno, node.lineno, formatted))
     return replacements
 
 
