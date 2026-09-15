@@ -17725,6 +17725,9 @@ def test_main_jsonschema_generate_schema_validators_conditional_presence(
         expected_attribute_path=("until",),
         expected_attribute_value="2026-01-01",
     )
+    with _generated_model(output_file, "output_conditional_presence", "ConditionalPresence") as model:
+        # until absent means the if condition is false, so then's reviewBy requirement never applies.
+        _model_json_validator(model)("{}")
 
 
 def test_main_jsonschema_generate_schema_validators_parser_branch_runtime(
