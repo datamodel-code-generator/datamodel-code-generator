@@ -21,7 +21,7 @@
     "id": "cli-option.generate-schema-validators",
     "kind": "cli-option",
     "message": "Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.",
-    "note": "The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf groups, and simple if/then/else required-property conditions.",
+    "note": "The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property conditions.",
     "since_version": "0.66.1",
     "target": "--generate-schema-validators",
     "tracking_issue": null

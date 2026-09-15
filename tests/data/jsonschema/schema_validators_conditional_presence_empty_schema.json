@@ -1,0 +1,23 @@
+{
+  "title": "ConditionalPresenceEmptySchema",
+  "type": "object",
+  "properties": {
+    "until": {},
+    "reviewBy": {
+      "type": "string"
+    }
+  },
+  "if": {
+    "required": [
+      "until"
+    ],
+    "properties": {
+      "until": {}
+    }
+  },
+  "then": {
+    "required": [
+      "reviewBy"
+    ]
+  }
+}

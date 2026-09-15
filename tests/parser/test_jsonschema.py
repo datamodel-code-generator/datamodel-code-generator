@@ -1368,12 +1368,9 @@ def test_schema_validator_conditional_predicate_helpers() -> None:
     """Test conditional predicate extraction accepts only mechanical cases."""
     parser = JsonSchemaParser("", generate_schema_validators=True)
 
-    assert (
-        parser._get_conditional_predicate(
-            JsonSchemaObject.model_validate({"if": {"required": ["kind"], "properties": {"kind": True}}})
-        )
-        is None
-    )
+    assert parser._get_conditional_predicate(
+        JsonSchemaObject.model_validate({"if": {"required": ["kind"], "properties": {"kind": True}}})
+    ) == (("kind", ()),)
     assert parser._get_conditional_predicate(
         JsonSchemaObject.model_validate({"if": {"required": ["kind"], "properties": {"kind": {"enum": ["a", "b"]}}}})
     ) == (("kind", ("a", "b")),)

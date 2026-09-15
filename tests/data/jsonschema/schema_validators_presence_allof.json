@@ -1,0 +1,30 @@
+{
+  "title": "PresenceRules",
+  "type": "object",
+  "properties": {
+    "guard": {
+      "type": "integer"
+    },
+    "a": {},
+    "b": {},
+    "c": {},
+    "d": {}
+  },
+  "required": [
+    "guard"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "a"
+        ]
+      },
+      "then": {
+        "required": [
+          "c"
+        ]
+      }
+    }
+  ]
+}

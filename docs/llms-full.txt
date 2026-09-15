@@ -41399,7 +41399,7 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 
 Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.
 
-The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf groups, and simple if/then/else required-property conditions.
+The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property conditions.
 
 ### `cli-option.install-skill`
 
