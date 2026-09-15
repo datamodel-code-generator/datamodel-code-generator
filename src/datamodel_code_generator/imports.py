@@ -7,7 +7,7 @@ Python import statements for generated data models.
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING
@@ -24,6 +24,8 @@ class Import:
     from_: str | None = None
     alias: str | None = None
     reference_path: str | None = None
+    # Track this alias independently from ordinary imports of the same symbol.
+    keep_unaliased: bool = False
 
     @property
     def is_future(self) -> bool:
@@ -64,7 +66,7 @@ class Imports(defaultdict[str | None, set[str]]):
     def _set_alias(self, from_: str | None, imports: set[str]) -> list[str]:
         """Apply aliases to imports and return sorted list."""
         return [
-            f"{i} as {self.alias[from_][i]}" if i in self.alias[from_] and i != self.alias[from_][i] else i
+            f"{i.partition(' as ')[0]} as {alias}" if (alias := self.alias[from_].get(i)) and i != alias else i
             for i in sorted(imports)
         ]
 
@@ -80,9 +82,10 @@ class Imports(defaultdict[str | None, set[str]]):
 
     @staticmethod
     def _storage_key(import_: Import) -> tuple[str | None, str]:
-        if "." in import_.import_:
-            return None, import_.import_
-        return import_.from_, import_.import_
+        # A helper alias has its own identity so ordinary imports can be renamed,
+        # removed and exported without changing the name used by the helper.
+        name = f"{import_.import_} as {import_.alias}" if import_.keep_unaliased and import_.alias else import_.import_
+        return (None if "." in import_.import_ else import_.from_), name
 
     def append(self, imports: Import | Iterable[Import] | None) -> None:
         """Add one or more imports to the collection."""
@@ -126,7 +129,7 @@ class Imports(defaultdict[str | None, set[str]]):
             source_key: (module, source_key[1])
             for source_key in self.counter
             if source_key[0] != "__future__"
-            and (module := import_overrides.get(source_key[1])) is not None
+            and (module := import_overrides.get(source_key[1].partition(" as ")[0])) is not None
             and source_key[0] != module
         }
         effective_names = {
@@ -164,12 +167,7 @@ class Imports(defaultdict[str | None, set[str]]):
                 and (module := import_overrides.get(import_.import_)) is not None
                 and import_.from_ != module
             ):
-                self.reference_paths[reference_path] = Import(
-                    import_=import_.import_,
-                    from_=module,
-                    alias=import_.alias,
-                    reference_path=import_.reference_path,
-                )
+                self.reference_paths[reference_path] = replace(import_, from_=module)
 
     def remove_referenced_imports(self, reference_path: str) -> None:
         """Remove imports associated with a reference path."""

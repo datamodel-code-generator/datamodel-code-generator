@@ -1388,7 +1388,9 @@ class BaseModel(BaseModelBase):
             or not cls._has_custom_schema_runtime_validation_helper(model)
             or model.custom_template_dir == TEMPLATE_DIR
         ):
-            helper_imports += (Import(from_="collections.abc", import_="Mapping", alias="_Mapping"),)
+            helper_imports += (
+                Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
+            )
         if not uses_generated_generic_base_class:
             helper_imports += (IMPORT_BASE_MODEL,)
         for import_ in helper_imports:
