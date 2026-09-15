@@ -121,6 +121,25 @@ def test_extract_future_with_alias() -> None:
     assert "__future__" not in imports.alias
 
 
+def test_extract_future_moves_dual_binding_entry() -> None:
+    """extract_future migrates a dual-binding entry to the extracted Imports, leaving others behind."""
+    imports = Imports()
+    imports.append([
+        Import(from_="__future__", import_="annotations"),
+        Import(from_="__future__", import_="annotations", alias="ann", keep_unaliased=True),
+        Import(from_="collections.abc", import_="Mapping"),
+        Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
+    ])
+
+    future = imports.extract_future()
+
+    assert str(future) == "from __future__ import annotations, annotations as ann"
+    assert ("__future__", "annotations") in future.dual_binding
+    assert ("collections.abc", "Mapping") not in future.dual_binding
+    assert imports.dual_binding == {("collections.abc", "Mapping")}
+    assert "__future__" not in imports
+
+
 def test_remove_nonexistent_import() -> None:
     """Test that removing non-existent import doesn't crash."""
     imports = Imports()
@@ -188,6 +207,21 @@ def test_remap_modules_preserves_aliases_and_reference_paths() -> None:
     assert str(imports) == "from source import Other as Other_1"
     assert ("target", "Model") not in imports.counter
     assert "/model" not in imports.reference_paths
+
+
+def test_remap_modules_moves_dual_binding_entry() -> None:
+    """remap_modules migrates a dual-binding entry to the remapped module key."""
+    imports = Imports()
+    imports.append([
+        Import(from_="collections.abc", import_="Mapping"),
+        Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
+    ])
+
+    imports.remap_modules({"Mapping": "my_project.compat"})
+
+    assert str(imports) == "from my_project.compat import Mapping, Mapping as _Mapping"
+    assert ("my_project.compat", "Mapping") in imports.dual_binding
+    assert ("collections.abc", "Mapping") not in imports.dual_binding
 
 
 def test_remap_modules_rejects_conflicting_aliases_without_mutation() -> None:

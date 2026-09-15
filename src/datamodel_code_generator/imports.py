@@ -207,6 +207,7 @@ class Imports(defaultdict[str | None, set[str]]):
         return future
 
     def _move_module_state(self, target: Imports, module_key: str | None) -> None:
+        """Move every import, counter, alias, dual-binding entry, and reference path for a module to target."""
         target[module_key] = self.pop(module_key)
         for key in list(self.counter.keys()):
             if key[0] == module_key:
