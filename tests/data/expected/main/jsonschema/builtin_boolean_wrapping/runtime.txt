@@ -1,0 +1,86 @@
+[
+  {
+    "top_level": false,
+    "mapping": false,
+    "groups": false,
+    "preserved": true,
+    "nested": false,
+    "unicode": false,
+    "commented": false,
+    "documented": false,
+    "short": false,
+    "async": false
+  },
+  {
+    "top_level": false,
+    "mapping": false,
+    "groups": false,
+    "preserved": false,
+    "nested": false,
+    "unicode": false,
+    "commented": false,
+    "documented": false,
+    "short": false,
+    "async": false
+  },
+  {
+    "top_level": false,
+    "mapping": false,
+    "groups": false,
+    "preserved": true,
+    "nested": false,
+    "unicode": false,
+    "commented": true,
+    "documented": true,
+    "short": true,
+    "async": false
+  },
+  {
+    "top_level": false,
+    "mapping": false,
+    "groups": false,
+    "preserved": false,
+    "nested": false,
+    "unicode": false,
+    "commented": false,
+    "documented": false,
+    "short": false,
+    "async": false
+  },
+  {
+    "top_level": true,
+    "mapping": false,
+    "groups": true,
+    "preserved": true,
+    "nested": false,
+    "unicode": false,
+    "commented": true,
+    "documented": true,
+    "short": true,
+    "async": true
+  },
+  {
+    "top_level": false,
+    "mapping": true,
+    "groups": false,
+    "preserved": false,
+    "nested": false,
+    "unicode": true,
+    "commented": false,
+    "documented": false,
+    "short": false,
+    "async": false
+  },
+  {
+    "top_level": true,
+    "mapping": false,
+    "groups": true,
+    "preserved": true,
+    "nested": true,
+    "unicode": false,
+    "commented": true,
+    "documented": true,
+    "short": true,
+    "async": true
+  }
+]

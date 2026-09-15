@@ -1730,6 +1730,72 @@ def _has_overlong_tuple_value(statement: ast.stmt, lines: list[str], line_length
     return False
 
 
+def _split_boolean_operands(expression: str, operator: str) -> list[str]:
+    """Split only the outer boolean operator, preserving operand parentheses."""
+    operands: list[str] = []
+    depth = start = 0
+    for token in tokenize.generate_tokens(StringIO(expression).readline):
+        match token.type, token.string:
+            case tokenize.OP, "(" | "[" | "{":
+                depth += 1
+            case tokenize.OP, ")" | "]" | "}":
+                depth -= 1
+            case tokenize.NAME, name if depth == 0 and name == operator:
+                operands.append(expression[start : token.start[1]].strip())
+                start = token.end[1]
+    operands.append(expression[start:].strip())
+    return operands
+
+
+def _format_boolean_group(
+    node: ast.BoolOp, source: bytes, indent: str, line_length: int, prefix: str = ""
+) -> list[str]:
+    """Wrap a boolean group and any nested groups exposed by the added indent."""
+    operator = "and" if isinstance(node.op, ast.And) else "or"
+    expression = source[node.col_offset : node.end_col_offset].decode()
+    operands = _split_boolean_operands(expression, operator)
+    continuation = f"{indent}    "
+    lines = [f"{indent}{prefix}("]
+    for index, (value, operand) in enumerate(zip(node.values, operands, strict=True)):
+        operand_prefix = f"{operator} " if index else ""
+        line = f"{continuation}{operand_prefix}{operand}"
+        if len(line) > line_length and isinstance(value, ast.BoolOp):
+            lines.extend(_format_boolean_group(value, source, continuation, line_length, operand_prefix))
+        else:
+            lines.append(line)
+    lines.append(f"{indent})")
+    return lines
+
+
+def _collect_function_boolean_replacements(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+    lines: list[str],
+    line_length: int,
+) -> list[_LineReplacement]:
+    """Wrap standalone parenthesized boolean lines inside generated methods."""
+    candidates = {
+        number
+        for number in range(function.lineno, (function.end_lineno or function.lineno) + 1)
+        if len(line := lines[number - 1]) > line_length and line.lstrip().startswith("(")
+    }
+    if not candidates:
+        return []
+    replacements: list[_LineReplacement] = []
+    for node in ast.walk(function):
+        if not isinstance(node, ast.BoolOp) or node.lineno not in candidates or node.lineno != node.end_lineno:
+            continue
+        line = lines[node.lineno - 1]
+        source = line.encode()
+        if source[: node.col_offset].strip() != b"(" or source[node.end_col_offset :].strip() != b")":
+            continue
+        replacements.append((
+            node.lineno,
+            node.lineno,
+            _format_boolean_group(node, source, _line_indent(line), line_length),
+        ))
+    return replacements
+
+
 def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
     tree: ast.Module,
     lines: list[str],
@@ -1741,6 +1807,8 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
 ) -> list[_LineReplacement]:
     replacements: list[_LineReplacement] = []
     for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            replacements.extend(_collect_function_boolean_replacements(node, lines, line_length))
         if _is_type_checking_if(node):
             formatted_type_checking = _format_type_checking_block(node, lines, line_length, known_first_party)
             if formatted_type_checking is not None:
@@ -1781,9 +1849,10 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
                 if previous_end + 2 < next_start:
                     replacements.append((previous_end + 1, next_start - 1, [""]))
             for statement in node.body:
-                is_long_function_definition = (
-                    isinstance(statement, ast.FunctionDef) and len(lines[statement.lineno - 1]) > line_length
-                )
+                is_long_function_definition = False
+                if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    replacements.extend(_collect_function_boolean_replacements(statement, lines, line_length))
+                    is_long_function_definition = len(lines[statement.lineno - 1]) > line_length
                 is_multiline_statement = statement.lineno != (statement.end_lineno or statement.lineno)
                 format_tuple_value = (
                     is_multiline_statement
@@ -2098,7 +2167,7 @@ def _apply_builtin_generated_formatter(  # noqa: PLR0913
     )
 
 
-def apply_builtin_formatter(  # noqa: PLR0913
+def apply_builtin_formatter(  # noqa: PLR0913, PLR0914
     code: str,
     *,
     line_length: int = DEFAULT_LINE_LENGTH,
@@ -2109,6 +2178,11 @@ def apply_builtin_formatter(  # noqa: PLR0913
 ) -> str:
     """Apply dependency-free formatting for generated Python code."""
     lines = [line.rstrip() for line in _split_python_lines(code)]
+    start = 0
+    while start < len(lines) and not lines[start]:
+        start += 1
+    if start:
+        del lines[:start]
     code = "\n".join(lines).strip("\n")
     if not code:
         return ""

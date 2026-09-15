@@ -1,0 +1,103 @@
+from collections import abc as _collections_abc
+from typing import Any
+
+from pydantic import BaseModel
+
+
+def top_level_boolean(value):
+    return (
+        (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping) or isinstance(value, list))
+        and bool(value)
+    )
+
+
+async def async_boolean(value):
+    return (
+        (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping) or isinstance(value, list))
+        and bool(value)
+    )
+
+
+class Model(BaseModel):
+    value: Any
+
+    @staticmethod
+    def mapping_equal(value, expected):
+        match expected:
+            case dict():
+                return (
+                    (isinstance(value, dict) or isinstance(value, _collections_abc.Mapping))
+                    and len(value) == len(expected)
+                )
+        return False
+
+    @staticmethod
+    def boolean_groups(value):
+        return (
+            (isinstance(value, dict) and isinstance(value, _collections_abc.Mapping) and bool(value))
+            or (
+                (isinstance(value, list) or isinstance(value, tuple) or isinstance(value, frozenset))
+                and len(value) > 0
+            )
+        )
+
+    @staticmethod
+    def preserve_groups(value):
+        return (
+            (((observed := value) and [observed]) or {'or': observed} == {} or (lambda: observed)() is None)
+            and observed is not False
+        )
+
+    @staticmethod
+    def nested_groups(value):
+        if value is not None:
+            return (
+                ((isinstance(value, dict) or isinstance(value, _collections_abc.Mapping)) and bool(value))
+                or (
+                    (bool(value) and (isinstance(value, _collections_abc.Mapping) or isinstance(value, dict)))
+                )
+            )
+        return False
+
+    @staticmethod
+    def unicode_names(日本語の長い入力フィールド名, expected):
+        return (
+            (isinstance(日本語の長い入力フィールド名, dict) or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping))
+            and 日本語の長い入力フィールド名 == expected
+        )
+
+    @staticmethod
+    def commented(value):
+        return (
+            (value or False)  # A deliberately long explanation whose boolean expression fits the configured line length.
+            and True
+        )
+
+    @staticmethod
+    def documented(value):
+        """Return truthiness.
+
+        (This long documentation line has and or tokens but must keep its original content unchanged.)
+        """
+        return bool(value)
+
+    @staticmethod
+    def short_boolean(value):
+        return (value or False) and True
+
+    def evaluate(self):
+        value = self.value
+        return {
+            'top_level': top_level_boolean(value),
+            'mapping': self.mapping_equal(value, {}),
+            'groups': self.boolean_groups(value),
+            'preserved': bool(self.preserve_groups(value)),
+            'nested': self.nested_groups(value),
+            'unicode': self.unicode_names(value, {}),
+            'commented': bool(self.commented(value)),
+            'documented': self.documented(value),
+            'short': bool(self.short_boolean(value)),
+        }
+
+    async def evaluate_async(self):
+        return await async_boolean(self.value)
