@@ -6966,9 +6966,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _is_required_only_schema(
         self,
-        item: JsonSchemaObject | bool,
+        item: JsonSchemaObject | bool,  # noqa: FBT001
         *,
-        allow_empty: bool = False,  # noqa: FBT001
+        allow_empty: bool = False,
     ) -> TypeIs[JsonSchemaObject]:
         """Return whether a combined-schema branch is only a property presence rule."""
         if not isinstance(item, JsonSchemaObject):
