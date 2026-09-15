@@ -3712,6 +3712,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         scoped_model_resolver: ModelResolver,
         model_path_to_module_name: dict[str, str] | None = None,
     ) -> None:
+        """Collapse root models in place, keeping constraints a collapse-introduced self-reference would drop."""
         if not self.collapse_root_models:
             return
 
