@@ -22,6 +22,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _validate_json_schema_unique_items(cls, data: Any) -> Any:
+        """Check every uniqueItems path registered on this model."""
         if not (unique_item_paths := cls.__json_schema_unique_items__):
             return data
         for path in unique_item_paths:
@@ -35,6 +36,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         path: tuple[object, ...],
         position: int,
     ) -> None:
+        """Walk a uniqueItems path to the array it targets, then validate that array."""
         if position == len(path):
             cls._validate_json_schema_unique_array(value)
             return
@@ -90,6 +92,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _validate_json_schema_unique_array(cls, value: Any) -> None:
+        """Raise if value is a list/tuple containing two structurally equal items."""
         if not isinstance(value, (list, tuple)) or len(value) < 2:
             return
 
@@ -167,6 +170,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _json_schema_unique_items_fingerprint(cls, value: Any) -> int | None:
+        """Return a hash grouping structurally equal values, or None if value can't be fingerprinted."""
         match value:
             case None:
                 return 0x17
@@ -195,6 +199,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _json_schema_unique_items_equal(cls, left: Any, right: Any) -> bool:
+        """Return whether left and right are structurally equal for uniqueItems comparison."""
         match left:
             case None:
                 return right is None
@@ -230,6 +235,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _json_schema_unique_items_safe_hash(cls, value: Any) -> int | None:
+        """Return hash(value), or None if value is unhashable."""
         try:
             return hash(value)
         except Exception:  # noqa: BLE001
@@ -237,6 +243,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _json_schema_unique_items_safe_equal(cls, left: Any, right: Any) -> bool:
+        """Return left == right, or False if that raises or doesn't return a bool."""
         try:
             comparison = left == right
         except Exception:  # noqa: BLE001
@@ -245,6 +252,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _json_schema_unique_items_equal_in_either_direction(cls, left: Any, right: Any) -> bool:
+        """Return whether left and right are equal, trying both operand orders."""
         return cls._json_schema_unique_items_equal(left, right) or cls._json_schema_unique_items_equal(right, left)
 
 

@@ -61,6 +61,8 @@ def test_main_jsonschema_generic_container_mapping_module_split(output_dir: Path
             "--module-split-mode",
             "single",
             "--disable-timestamp",
+            "--formatters",
+            "builtin",
         ],
     )
     for module_name, model_name in (("first", "First"), ("second", "Second")):
