@@ -60,6 +60,7 @@ class Imports(defaultdict[str | None, set[str]]):
         self.alias: defaultdict[str | None, dict[str, str]] = defaultdict(dict)
         self.counter: dict[tuple[str | None, str], int] = defaultdict(int)
         self.aliased_counter: dict[tuple[str | None, str], int] = defaultdict(int)
+        self.keep_unaliased_counter: dict[tuple[str | None, str], int] = defaultdict(int)
         self.dual_binding: set[tuple[str | None, str]] = set()
         self.reference_paths: dict[str, Import] = {}
         self.use_exact: bool = use_exact
@@ -110,6 +111,7 @@ class Imports(defaultdict[str | None, set[str]]):
                     self.alias[key[0]][key[1]] = import_.alias
                     self.aliased_counter[key] += 1
                     if import_.keep_unaliased:
+                        self.keep_unaliased_counter[key] += 1
                         self.dual_binding.add(key)
 
     def remove(self, imports: Import | Iterable[Import]) -> None:
@@ -123,18 +125,24 @@ class Imports(defaultdict[str | None, set[str]]):
             self.counter[key] -= 1
             if import_.alias and self.aliased_counter.get(key, 0) > 0:
                 self.aliased_counter[key] -= 1
+                if import_.keep_unaliased and self.keep_unaliased_counter.get(key, 0) > 0:
+                    self.keep_unaliased_counter[key] -= 1
+                    if self.keep_unaliased_counter[key] == 0:
+                        del self.keep_unaliased_counter[key]
+                        self.dual_binding.discard(key)
                 if self.aliased_counter[key] == 0:
                     del self.aliased_counter[key]
+                    # append() always pairs an aliased_counter increment with an alias entry, so
+                    # aliased_counter reaching 0 here means key[1] is still registered to delete.
+                    del self.alias[key[0]][key[1]]
+                    if not self.alias[key[0]]:
+                        del self.alias[key[0]]
             if self.counter[key] == 0:
                 del self.counter[key]
                 if key[0] in self and key[1] in self[key[0]]:
                     self[key[0]].remove(key[1])
                     if not self[key[0]]:
                         del self[key[0]]
-                if key[0] in self.alias and key[1] in self.alias[key[0]]:
-                    del self.alias[key[0]][key[1]]
-                    if not self.alias[key[0]]:
-                        del self.alias[key[0]]
             if import_.reference_path and import_.reference_path in self.reference_paths:
                 del self.reference_paths[import_.reference_path]
 
@@ -166,6 +174,7 @@ class Imports(defaultdict[str | None, set[str]]):
             target_key = (target_module, target_import)
             self.counter[target_key] += self.counter.pop(source_key)
             self.aliased_counter[target_key] += self.aliased_counter.pop(source_key, 0)
+            self.keep_unaliased_counter[target_key] += self.keep_unaliased_counter.pop(source_key, 0)
             if source_key in self.dual_binding:
                 self.dual_binding.discard(source_key)
                 self.dual_binding.add(target_key)
@@ -215,6 +224,9 @@ class Imports(defaultdict[str | None, set[str]]):
         for key in list(self.aliased_counter.keys()):
             if key[0] == module_key:
                 target.aliased_counter[key] = self.aliased_counter.pop(key)
+        for key in list(self.keep_unaliased_counter.keys()):
+            if key[0] == module_key:
+                target.keep_unaliased_counter[key] = self.keep_unaliased_counter.pop(key)
         for key in list(self.dual_binding):
             if key[0] == module_key:
                 self.dual_binding.discard(key)

@@ -444,6 +444,60 @@ def test_dump_emits_both_bindings_for_keep_unaliased_import() -> None:
     assert str(imports) == "from collections.abc import Mapping as _Mapping"
 
 
+def test_remove_aliased_keep_unaliased_import_clears_alias_and_dual_binding() -> None:
+    """Removing the aliased half of a dual-binding pair drops the alias, not just its own count."""
+    imports = Imports()
+    imports.append([
+        Import(from_="collections.abc", import_="Mapping"),
+        Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
+    ])
+
+    imports.remove(Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True))
+
+    assert str(imports) == "from collections.abc import Mapping"
+    assert ("collections.abc", "Mapping") not in imports.dual_binding
+    assert "Mapping" not in imports.alias["collections.abc"]
+
+
+def test_remove_one_of_two_keep_unaliased_registrations_keeps_dual_binding() -> None:
+    """dual_binding survives while another keep_unaliased registration for the same key remains."""
+    imports = Imports()
+    bare = Import(from_="collections.abc", import_="Mapping")
+    first = Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True)
+    second = Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True)
+    imports.append([bare, first, second])
+
+    imports.remove(first)
+
+    assert ("collections.abc", "Mapping") in imports.dual_binding
+    assert str(imports) == "from collections.abc import Mapping, Mapping as _Mapping"
+
+    imports.remove(second)
+
+    assert ("collections.abc", "Mapping") not in imports.dual_binding
+    assert str(imports) == "from collections.abc import Mapping"
+
+
+def test_reuse_key_after_complete_removal_of_dual_binding_import() -> None:
+    """A key fully removed and re-imported bare does not resurrect its former alias or dual binding."""
+    imports = Imports()
+    pair = [
+        Import(from_="collections.abc", import_="Mapping"),
+        Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
+    ]
+    imports.append(pair)
+    imports.remove(pair)
+
+    assert not imports.dual_binding
+    assert not imports.alias["collections.abc"]
+    assert not imports.aliased_counter
+    assert not imports.keep_unaliased_counter
+
+    imports.append(Import(from_="collections.abc", import_="Mapping"))
+
+    assert str(imports) == "from collections.abc import Mapping"
+
+
 def test_dump_keeps_single_binding_without_keep_unaliased() -> None:
     """An aliased import without `keep_unaliased` still collapses a same-name unaliased request."""
     imports = Imports()
