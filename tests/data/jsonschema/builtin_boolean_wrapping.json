@@ -1,0 +1,6 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {"value": {}},
+  "required": ["value"]
+}
