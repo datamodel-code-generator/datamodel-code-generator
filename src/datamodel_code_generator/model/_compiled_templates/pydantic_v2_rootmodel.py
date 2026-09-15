@@ -19,10 +19,13 @@ from .pydantic_v2_schema_runtime_validation import render_with_scope as _include
 
 
 def render(**context: Any) -> str:
+    """Render this template with the given context."""
     return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
+    """Render this template using an already-built scope."""
+
     def _macro_get_type_hint(_parent: _Scope, _fields: Any, use_base_type: Any) -> str:
         _parts: list[str] = []
         if _fields:

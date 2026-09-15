@@ -20,10 +20,12 @@ from datamodel_code_generator.model._compiled_template_runtime import (
 
 
 def render(**context: Any) -> str:
+    """Render this template with the given context."""
     return render_with_scope(_Scope(context))
 
 
 def render_with_scope(_scope: _Scope) -> str:
+    """Render this template using an already-built scope."""
     _context_class_body_lines = _scope.get("class_body_lines")
     _context_config = _scope.get("config")
     _context_description = _scope.get("description")
