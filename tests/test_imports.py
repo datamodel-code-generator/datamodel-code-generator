@@ -134,9 +134,7 @@ def test_extract_future_moves_dual_binding_entry() -> None:
     future = imports.extract_future()
 
     assert str(future) == "from __future__ import annotations, annotations as ann"
-    assert ("__future__", "annotations") in future.dual_binding
-    assert ("collections.abc", "Mapping") not in future.dual_binding
-    assert imports.dual_binding == {("collections.abc", "Mapping")}
+    assert str(imports) == "from collections.abc import Mapping, Mapping as _Mapping"
     assert "__future__" not in imports
 
 
@@ -220,8 +218,6 @@ def test_remap_modules_moves_dual_binding_entry() -> None:
     imports.remap_modules({"Mapping": "my_project.compat"})
 
     assert str(imports) == "from my_project.compat import Mapping, Mapping as _Mapping"
-    assert ("my_project.compat", "Mapping") in imports.dual_binding
-    assert ("collections.abc", "Mapping") not in imports.dual_binding
 
 
 def test_remap_modules_rejects_conflicting_aliases_without_mutation() -> None:
@@ -455,7 +451,6 @@ def test_remove_aliased_keep_unaliased_import_clears_alias_and_dual_binding() ->
     imports.remove(Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True))
 
     assert str(imports) == "from collections.abc import Mapping"
-    assert ("collections.abc", "Mapping") not in imports.dual_binding
     assert "Mapping" not in imports.alias["collections.abc"]
 
 
@@ -469,12 +464,10 @@ def test_remove_one_of_two_keep_unaliased_registrations_keeps_dual_binding() -> 
 
     imports.remove(first)
 
-    assert ("collections.abc", "Mapping") in imports.dual_binding
     assert str(imports) == "from collections.abc import Mapping, Mapping as _Mapping"
 
     imports.remove(second)
 
-    assert ("collections.abc", "Mapping") not in imports.dual_binding
     assert str(imports) == "from collections.abc import Mapping"
 
 
@@ -488,10 +481,7 @@ def test_reuse_key_after_complete_removal_of_dual_binding_import() -> None:
     imports.append(pair)
     imports.remove(pair)
 
-    assert not imports.dual_binding
     assert not imports.alias["collections.abc"]
-    assert not imports.aliased_counter
-    assert not imports.keep_unaliased_counter
 
     imports.append(Import(from_="collections.abc", import_="Mapping"))
 
@@ -548,3 +538,49 @@ def test_extract_future_moves_reference_paths() -> None:
     assert "/future/ref" not in imports.reference_paths
     assert "/typing/ref" in imports.reference_paths
     assert "/typing/ref" not in future.reference_paths
+
+
+def test_remove_unused_clears_applied_alias() -> None:
+    """An alias applied after registration must not survive removal of its import."""
+    imports = Imports()
+    plain = Import(from_="foo", import_="Bar")
+    imports.append(plain)
+    imports.apply_alias(Import(from_="foo", import_="Bar", alias="BarAlias"))
+    imports.remove_unused(set())
+    imports.append(plain)
+
+    assert str(imports) == "from foo import Bar"
+
+
+def test_independent_alias_lifecycle() -> None:
+    """Remapping and removing a helper leaves the ordinary binding independent."""
+    imports = Imports()
+    imports.append([
+        Import(from_="foo", import_="Bar"),
+        Import(from_="foo", import_="Bar", alias="HelperBar", keep_unaliased=True, reference_path="/helper"),
+    ])
+    imports.apply_alias(Import(from_="foo", import_="Bar", alias="FieldBar"))
+    imports.remap_modules({"Bar": "other"})
+
+    assert str(imports) == "from other import Bar as FieldBar, Bar as HelperBar"
+    assert imports.dump_all() == '__all__ = ["FieldBar", "HelperBar"]'
+    assert imports.reference_paths["/helper"].keep_unaliased
+
+    imports.remove_referenced_imports("/helper")
+    assert str(imports) == "from other import Bar as FieldBar"
+    imports.remove_unused(set())
+    imports.append(Import(from_="other", import_="Bar"))
+    assert str(imports) == "from other import Bar"
+
+
+@pytest.mark.parametrize("used", ["Bar", "HelperBar"])
+def test_remove_unused_independent_alias(used: str) -> None:
+    """Prune the unused binding while retaining the one generated code references."""
+    imports = Imports()
+    imports.append([
+        Import(from_="foo", import_="Bar"),
+        Import(from_="foo", import_="Bar", alias="HelperBar", keep_unaliased=True),
+    ])
+    imports.remove_unused({used})
+
+    assert str(imports) == ("from foo import Bar" if used == "Bar" else "from foo import Bar as HelperBar")

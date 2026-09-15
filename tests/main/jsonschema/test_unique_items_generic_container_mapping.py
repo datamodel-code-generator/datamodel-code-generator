@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator import DataModelType, Formatter, InputFileType, generate
+import pytest
+
+from datamodel_code_generator import DataModelType, Formatter, InputFileType
 from tests.main.conftest import (
     JSON_SCHEMA_DATA_PATH,
     assert_generated_model_json_validation,
@@ -18,12 +20,13 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def test_main_jsonschema_unique_items_generic_container_mapping(output_file: Path) -> None:
+@pytest.mark.parametrize("schema_name", ["unique_items_generic_container_mapping", "unique_items_mapping_collision"])
+def test_main_jsonschema_unique_items_generic_container_mapping(output_file: Path, schema_name: str) -> None:
     """Keep a Mapping field usable when the schema also needs the aliased runtime import."""
-    schema = json.loads((JSON_SCHEMA_DATA_PATH / "unique_items_generic_container_mapping.json").read_text())
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / f"{schema_name}.json").read_text())
     generate_kwargs = {
         "input_file_type": InputFileType.JsonSchema,
-        "input_filename": "unique_items_generic_container_mapping.json",
+        "input_filename": f"{schema_name}.json",
         "output_model_type": DataModelType.PydanticV2BaseModel,
         "generate_schema_validators": True,
         "use_generic_container_types": True,
@@ -32,16 +35,16 @@ def test_main_jsonschema_unique_items_generic_container_mapping(output_file: Pat
     }
     run_generate_and_assert(
         input_=schema,
-        expected_file=EXPECTED_JSON_SCHEMA_PATH / "unique_items_generic_container_mapping.py",
+        expected_file=EXPECTED_JSON_SCHEMA_PATH / f"{schema_name}.py",
+        output=output_file,
         **generate_kwargs,
     )
-    generate(input_=schema, output=output_file, **generate_kwargs)
     assert_generated_model_json_validation(
         output_file,
         module_name="unique_items_generic_container_mapping",
         model_name="ContainerMapping",
-        valid_json='{"tags":["a","b"],"labels":{"x":"y"}}',
-        invalid_json='{"tags":["a","a"],"labels":{"x":"y"}}',
+        valid_json=(JSON_SCHEMA_DATA_PATH.parent / "payloads/mapping_alias_valid.json").read_text(),
+        invalid_json=(JSON_SCHEMA_DATA_PATH.parent / "payloads/mapping_alias_invalid.json").read_text(),
         expected_error_type="value_error",
     )
 
@@ -61,6 +64,8 @@ def test_main_jsonschema_generic_container_mapping_module_split(output_dir: Path
             "--module-split-mode",
             "single",
             "--disable-timestamp",
+            "--formatters",
+            "builtin",
         ],
     )
     for module_name, model_name in (("first", "First"), ("second", "Second")):
@@ -68,7 +73,7 @@ def test_main_jsonschema_generic_container_mapping_module_split(output_dir: Path
             output_dir / f"{module_name}.py",
             module_name=module_name,
             model_name=model_name,
-            valid_json='{"tags":["a","b"],"labels":{"x":"y"}}',
-            invalid_json='{"tags":["a","a"],"labels":{"x":"y"}}',
+            valid_json=(JSON_SCHEMA_DATA_PATH.parent / "payloads/mapping_alias_valid.json").read_text(),
+            invalid_json=(JSON_SCHEMA_DATA_PATH.parent / "payloads/mapping_alias_invalid.json").read_text(),
             expected_error_type="value_error",
         )

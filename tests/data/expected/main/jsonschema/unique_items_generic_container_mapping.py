@@ -198,7 +198,9 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     )
                 )
             case dict() | _Mapping() as object_:
-                if not (isinstance(right, dict) or isinstance(right, _Mapping)) or len(object_) != len(right):
+                if not (
+                    isinstance(right, dict) or isinstance(right, _Mapping)
+                ) or len(object_) != len(right):
                     return False
                 return all(
                     key in right and cls._json_schema_unique_items_equal(item, right[key])
@@ -222,7 +224,9 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         return comparison if type(comparison) is bool else False
 
     @classmethod
-    def _json_schema_unique_items_equal_in_either_direction(cls, left: Any, right: Any) -> bool:
+    def _json_schema_unique_items_equal_in_either_direction(
+        cls, left: Any, right: Any
+    ) -> bool:
         return cls._json_schema_unique_items_equal(left, right) or cls._json_schema_unique_items_equal(right, left)
 
 
