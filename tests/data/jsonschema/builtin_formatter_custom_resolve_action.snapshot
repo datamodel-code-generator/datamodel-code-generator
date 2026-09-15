@@ -9,7 +9,7 @@ class Model(RootModel[Any]):
 
 class Pet(BaseModel):
     name: Optional[str] = Field(None, examples=['dog', 'cat'])
-    friends: Optional[List[Pet]] = None
+    friends: Optional[List[Pet]] = Field(None, min_length=1)
 
 
 BROKEN = (
