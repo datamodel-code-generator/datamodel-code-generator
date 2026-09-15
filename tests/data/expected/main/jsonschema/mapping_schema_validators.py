@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping as _Mapping
+from collections import abc as _collections_abc
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
@@ -37,7 +37,7 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
 
     @classmethod
     def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
-        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
             return data
         values = data
         for rule in cls.__json_schema_pattern_properties__:
@@ -93,7 +93,7 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
     ) -> Any:
         if not required_group_rules:
             return data
-        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
             return data
         for required_groups in required_group_rules:
             matches = sum(
@@ -113,7 +113,7 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
 
     @classmethod
     def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
-        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
             return data
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(
@@ -171,14 +171,20 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                         value[index], path, position + 1
                     )
             case '__json_schema_mapping_values__':
-                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                if not (
+                    isinstance(value, dict)
+                    or isinstance(value, _collections_abc.Mapping)
+                ):
                     return
                 for item in value.values():
                     cls._validate_json_schema_unique_items_path(
                         item, path, position + 1
                     )
             case ('__json_schema_mapping_pattern_values__', str() as pattern, None):
-                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                if not (
+                    isinstance(value, dict)
+                    or isinstance(value, _collections_abc.Mapping)
+                ):
                     return
                 for name, item in value.items():
                     if re.search(pattern, name):
@@ -190,7 +196,10 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                 tuple() as declared_name_groups,
                 tuple() as patterns,
             ):
-                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                if not (
+                    isinstance(value, dict)
+                    or isinstance(value, _collections_abc.Mapping)
+                ):
                     return
                 for name, item in value.items():
                     for input_names in declared_name_groups:
@@ -208,7 +217,10 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                             item, path, position + 1
                         )
             case tuple() as input_names:
-                if not (isinstance(value, dict) or isinstance(value, _Mapping)):
+                if not (
+                    isinstance(value, dict)
+                    or isinstance(value, _collections_abc.Mapping)
+                ):
                     return
                 for name in input_names:
                     if name in value:
@@ -260,7 +272,7 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                     ):
                         raise ValueError('Array items must be unique')
                     continue
-                case list() | tuple() | dict() | _Mapping():
+                case list() | tuple() | dict() | _collections_abc.Mapping():
                     fingerprint = cls._json_schema_unique_items_fingerprint(item)
                 case _:
                     if scalar_items is not None:
@@ -338,7 +350,7 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                         return None
                     fingerprint = hash((fingerprint * 1000003) ^ item_fingerprint)
                 return hash(fingerprint ^ len(array))
-            case dict() | _Mapping() as object_:
+            case dict() | _collections_abc.Mapping() as object_:
                 fingerprint = 0x61
                 for key, item in object_.items():
                     if (
@@ -378,10 +390,11 @@ class _JsonSchemaRuntimeValidationBaseCore(BaseModel):
                         for item, other in zip(array, right, strict=True)
                     )
                 )
-            case dict() | _Mapping() as object_:
-                if not (isinstance(right, dict) or isinstance(right, _Mapping)) or len(
-                    object_
-                ) != len(right):
+            case dict() | _collections_abc.Mapping() as object_:
+                if not (
+                    isinstance(right, dict)
+                    or isinstance(right, _collections_abc.Mapping)
+                ) or len(object_) != len(right):
                     return False
                 return all(
                     key in right
@@ -422,7 +435,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
     def _validate_json_schema_property_count(cls, data: Any) -> Any:
         if not (rule := cls.__json_schema_property_count_rule__):
             return data
-        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
             return data
         property_count = len(data)
         min_properties, max_properties = rule

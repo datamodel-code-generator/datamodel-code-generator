@@ -1228,6 +1228,13 @@ class BaseModel(BaseModelBase):
             )
             else cls.SCHEMA_RUNTIME_VALIDATION_BASE_CLASS_NAME
         )
+        if base_class_name == "_collections_abc":
+            base_class_name = cls._get_unique_schema_runtime_validation_base_class_name(
+                base_class_name,
+                "Base",
+                models,
+                {import_.binding_name for model in models for import_ in model.imports},
+            )
         runtime_validation_by_model = {
             id(model): runtime_validations[index] for index, model in enumerate(runtime_models)
         }
@@ -1387,6 +1394,12 @@ class BaseModel(BaseModelBase):
             has_local_property_count_helper
             or not cls._has_custom_schema_runtime_validation_helper(model)
             or model.custom_template_dir == TEMPLATE_DIR
+        ):
+            helper_imports += (Import(from_="collections", import_="abc", alias="_collections_abc"),)
+        if (
+            has_local_property_count_helper
+            and model.custom_template_dir != TEMPLATE_DIR
+            and cls._has_custom_schema_runtime_validation_helper(model)
         ):
             helper_imports += (Import(from_="collections.abc", import_="Mapping", alias="_Mapping"),)
         if not uses_generated_generic_base_class:

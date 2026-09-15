@@ -118,7 +118,7 @@ def render_property_count_validation_base(class_name: str, base_class_name: str)
     def _validate_json_schema_property_count(cls, data: Any) -> Any:
         if not (rule := cls.__json_schema_property_count_rule__):
             return data
-        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
             return data
         property_count = len(data)
         min_properties, max_properties = rule

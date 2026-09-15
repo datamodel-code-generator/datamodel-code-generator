@@ -2879,7 +2879,7 @@ are unsupported and generation fails fast.
     from __future__ import annotations
 
     import re
-    from collections.abc import Mapping as _Mapping
+    from collections import abc as _collections_abc
     from typing import Any, ClassVar
 
     from pydantic import BaseModel, ConfigDict, RootModel, TypeAdapter, model_validator
@@ -2910,7 +2910,7 @@ are unsupported and generation fails fast.
 
         @classmethod
         def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
-            if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
                 return data
             values = data
             for rule in cls.__json_schema_pattern_properties__:
@@ -2966,7 +2966,7 @@ are unsupported and generation fails fast.
         ) -> Any:
             if not required_group_rules:
                 return data
-            if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
                 return data
             for required_groups in required_group_rules:
                 matches = sum(
@@ -2986,7 +2986,7 @@ are unsupported and generation fails fast.
 
         @classmethod
         def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
-            if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
                 return data
             for rule in cls.__json_schema_conditional_required__:
                 condition_matches = all(
@@ -3630,7 +3630,7 @@ shared base class that owns schema-derived runtime validators. It is only used w
     from __future__ import annotations
 
     import re
-    from collections.abc import Mapping as _Mapping
+    from collections import abc as _collections_abc
     from typing import Any, ClassVar
 
     from pydantic import BaseModel, ConfigDict, TypeAdapter, model_validator
@@ -3647,7 +3647,7 @@ shared base class that owns schema-derived runtime validators. It is only used w
 
         @classmethod
         def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
-            if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
                 return data
             values = data
             for rule in cls.__json_schema_pattern_properties__:
@@ -3912,7 +3912,7 @@ additional validator backends without adding them in this release.
     from __future__ import annotations
 
     import re
-    from collections.abc import Mapping as _Mapping
+    from collections import abc as _collections_abc
     from typing import Any, ClassVar
 
     from pydantic import BaseModel, ConfigDict, RootModel, TypeAdapter, model_validator
@@ -3943,7 +3943,7 @@ additional validator backends without adding them in this release.
 
         @classmethod
         def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
-            if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
                 return data
             values = data
             for rule in cls.__json_schema_pattern_properties__:
@@ -3999,7 +3999,7 @@ additional validator backends without adding them in this release.
         ) -> Any:
             if not required_group_rules:
                 return data
-            if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
                 return data
             for required_groups in required_group_rules:
                 matches = sum(
@@ -4019,7 +4019,7 @@ additional validator backends without adding them in this release.
 
         @classmethod
         def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
-            if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
                 return data
             for rule in cls.__json_schema_conditional_required__:
                 condition_matches = all(

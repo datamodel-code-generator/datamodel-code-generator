@@ -4,9 +4,8 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
-from collections.abc import Mapping as _Mapping
-from collections.abc import Sequence
+from collections import abc as _collections_abc
+from collections.abc import Iterator, Sequence
 from typing import Any, ClassVar, SupportsIndex, overload
 
 from pydantic import (
@@ -30,7 +29,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _validate_json_schema_pattern_properties(cls, data: Any) -> Any:
-        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
             return data
         values = data
         for rule in cls.__json_schema_pattern_properties__:

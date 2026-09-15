@@ -55,6 +55,7 @@ from datamodel_code_generator import (
     GenerateConfig,
     InputFileType,
     InvalidFileFormatError,
+    ModuleSplitMode,
     PythonVersion,
     PythonVersionMin,
     SchemaValidatorType,
@@ -22415,14 +22416,18 @@ def test_schema_validator_mapping_inputs(
     [
         (DATA_PATH / "templates/mapping_legacy_helper", "mapping_schema_validators_legacy_helper.py"),
         (TEMPLATE_DIR, "inline_allof_validators/oneof.py"),
+        (DATA_PATH / "templates/mapping_legacy_helper_count", "mapping_schema_validators_legacy_count.py"),
     ],
-    ids=["legacy", "bundled"],
+    ids=["legacy", "bundled", "legacy-count"],
 )
 def test_schema_validator_legacy_custom_helper(
     output_file: Path, entrypoint: str, template_dir: Path, expected: str
 ) -> None:
     """Preserve complete output and runtime behavior of an existing helper override."""
-    source = JSON_SCHEMA_DATA_PATH / "inline_allof_validators/oneof.json"
+    legacy_count = template_dir.name == "mapping_legacy_helper_count"
+    source = JSON_SCHEMA_DATA_PATH / (
+        "schema_validator_legacy_mapping_count.json" if legacy_count else "inline_allof_validators/oneof.json"
+    )
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=source,
@@ -22451,10 +22456,110 @@ def test_schema_validator_legacy_custom_helper(
         )
     values = json.loads((DATA_PATH / "payloads/inline_allof_validators/oneof.json").read_text(encoding="utf-8"))
     with _generated_model(output_file, "mapping_legacy_helper", "Root") as model:
-        containers = (dict, UserDict, MappingProxyType) if template_dir == TEMPLATE_DIR else (dict,)
+        containers = (dict, UserDict, MappingProxyType) if template_dir == TEMPLATE_DIR or legacy_count else (dict,)
         for container in containers:
             model.model_validate(container(values["valid"]))
             _assert_model_json_invalid(model.model_validate, container(values["invalid"]), "value_error")
+
+
+@pytest.mark.parametrize(
+    ("entrypoint", "custom_class_name", "helper_class_name", "custom_base"),
+    [
+        ("cli", None, None, False),
+        ("api", None, None, False),
+        ("api", "_Mapping", None, False),
+        ("api", "_collections_abc", None, False),
+        ("cli", None, "_collections_abc", False),
+        ("api", None, "_collections_abc", False),
+        ("api", None, "_collections_abc", True),
+    ],
+)
+@pytest.mark.parametrize("formatter", ["builtin", "external"])
+@pytest.mark.parametrize("modular", [False, True], ids=["file", "package"])
+def test_schema_validator_generic_mapping_imports(
+    tmp_path: Path,
+    entrypoint: str,
+    custom_class_name: str | None,
+    helper_class_name: str | None,
+    custom_base: bool,
+    formatter: str,
+    modular: bool,
+) -> None:
+    """Keep generic Mapping annotations and runtime helper bindings usable together."""
+    source = JSON_SCHEMA_DATA_PATH / "schema_validator_generic_mapping.json"
+    payloads = DATA_PATH / "payloads/schema_validator_generic_mapping"
+    output = tmp_path / ("models" if modular else "model.py")
+    expected = f"schema_validator_generic_mapping/{formatter}"
+    if custom_class_name:
+        expected += custom_class_name
+    if helper_class_name:
+        expected += f"{helper_class_name}_helper"
+    base_class = "tests.data.python.schema_validator_mapping_base._collections_abcBase" if custom_base else ""
+    if custom_base:
+        expected += "_base"
+    comparison: dict[str, Any] = (
+        {"expected_directory": EXPECTED_JSON_SCHEMA_PATH / expected}
+        if modular
+        else {"assert_func": assert_file_content, "expected_file": f"{expected}.py"}
+    )
+    formatters = [Formatter.BUILTIN] if formatter == "builtin" else [Formatter.BLACK, Formatter.ISORT]
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=source,
+            output_path=output,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--generate-schema-validators",
+                "--use-generic-container-types",
+                "--disable-timestamp",
+                "--formatters",
+                *(value.value for value in formatters),
+                *(["--module-split-mode", "single"] if modular else []),
+                *(["--schema-validator-base-class-name", helper_class_name] if helper_class_name else []),
+            ],
+            **comparison,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=source,
+            output_path=output,
+            input_file_type=InputFileType.JsonSchema,
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            generate_schema_validators=True,
+            use_generic_container_types=True,
+            disable_timestamp=True,
+            formatters=formatters,
+            module_split_mode=ModuleSplitMode.Single if modular else None,
+            base_class=base_class,
+            schema_validator_base_class_name=helper_class_name or "_JsonSchemaRuntimeValidationBase",
+            custom_class_name_generator=(lambda _: custom_class_name) if custom_class_name else None,
+            **comparison,
+        )
+    valid = json.loads((payloads / "valid.txt").read_text(encoding="utf-8"))
+    invalid = json.loads((payloads / "invalid.json").read_text(encoding="utf-8"))
+    model_name = "FieldCollectionsAbc" if custom_class_name == "_collections_abc" else custom_class_name or "Thing"
+    generated = (
+        _generated_package_module(output, (custom_class_name or "Thing").lower())
+        if modular
+        else _generated_model(output, "generic_mapping_imports", model_name)
+    )
+    with generated as result:
+        model = getattr(result, model_name) if modular else result
+        for container in (dict, UserDict, MappingProxyType):
+            value = model.model_validate(container(valid))
+            assert_output(
+                json.dumps(value.model_dump(exclude_unset=True), sort_keys=True, indent=2) + "\n",
+                payloads / "valid.txt",
+            )
+            _assert_model_json_invalid(model.model_validate, container(invalid), "value_error")
+        assert_output(
+            json.dumps(
+                model.model_validate_json(json.dumps(valid)).model_dump(exclude_unset=True), sort_keys=True, indent=2
+            )
+            + "\n",
+            payloads / "valid.txt",
+        )
+        _assert_model_json_invalid(model.model_validate_json, json.dumps(invalid), "value_error")
 
 
 RESOURCES_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "nested_resources"

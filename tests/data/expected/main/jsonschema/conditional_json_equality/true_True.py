@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping as _Mapping
+from collections import abc as _collections_abc
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, model_validator
@@ -20,7 +20,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
     @classmethod
     def _validate_json_schema_conditional_required(cls, data: Any) -> Any:
-        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+        if not (isinstance(data, dict) or isinstance(data, _collections_abc.Mapping)):
             return data
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(
@@ -54,7 +54,10 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                 return not isinstance(value, bool) and value == expected
             case dict():
                 return (
-                    (isinstance(value, dict) or isinstance(value, _Mapping))
+                    (
+                        isinstance(value, dict)
+                        or isinstance(value, _collections_abc.Mapping)
+                    )
                     and len(value) == len(expected)
                     and all(
                         key in value
