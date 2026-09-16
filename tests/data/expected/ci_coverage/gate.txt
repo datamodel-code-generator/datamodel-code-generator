@@ -143,20 +143,5 @@
     "exit": 1,
     "results_match": true,
     "stderr": ""
-  },
-  "test:cancelled": {
-    "exit": 1,
-    "results_match": true,
-    "stderr": ""
-  },
-  "test:failure": {
-    "exit": 1,
-    "results_match": true,
-    "stderr": ""
-  },
-  "test:skipped": {
-    "exit": 1,
-    "results_match": true,
-    "stderr": ""
   }
 }

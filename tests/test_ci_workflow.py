@@ -25,8 +25,6 @@ def test_workflow_matrix_and_coverage_contract() -> None:
     names = []
     producers = []
     for name, entries in groups.items():
-        if name == "test":
-            continue
         for entry in entries:
             if entry.get("coverage", "true") != "true":
                 continue
@@ -39,8 +37,6 @@ def test_workflow_matrix_and_coverage_contract() -> None:
         for entries in groups.values()
         for entry in entries
     )
-    configs = jobs["test"]["strategy"]["matrix"]
-    configurations.extend(f"py{py}:macos-latest" for py in configs["py"])
     all_setup_steps = [step for job in jobs.values() for step in job["steps"] if "setup-uv@" in step.get("uses", "")]
     output = {
         "configurations": sorted(configurations),
