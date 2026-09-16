@@ -37,6 +37,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
           ref: ${{ github.workflow_sha }}
 
@@ -44,6 +45,7 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
+          TRUSTED_SHA: ${{ github.workflow_sha }}
           REQUESTED_PR: ${{ github.event.client_payload.pr_number || github.event.pull_request.number }}
         run: |
           set -euo pipefail
@@ -59,6 +61,7 @@ jobs:
             --pr-path "$pr_path" \
             --pr-number "$REQUESTED_PR" \
             --repository "$GITHUB_REPOSITORY" \
+            --trusted-sha "$TRUSTED_SHA" \
             --github-output-path "$GITHUB_OUTPUT"
 
   analyze:

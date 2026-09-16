@@ -1,0 +1,1 @@
+{"output": null, "returncode": 1, "stderr": "Expected a full pinned workflow commit SHA.\n"}

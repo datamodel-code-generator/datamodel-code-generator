@@ -37,6 +37,7 @@
         "name": "Checkout repository",
         "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
         "with": {
+          "fetch-depth": 0,
           "persist-credentials": false,
           "ref": "${{ github.workflow_sha }}"
         }
@@ -44,11 +45,12 @@
       {
         "env": {
           "GH_TOKEN": "${{ github.token }}",
-          "REQUESTED_PR": "${{ github.event.client_payload.pr_number || github.event.pull_request.number }}"
+          "REQUESTED_PR": "${{ github.event.client_payload.pr_number || github.event.pull_request.number }}",
+          "TRUSTED_SHA": "${{ github.workflow_sha }}"
         },
         "id": "pr",
         "name": "Resolve merged PR",
-        "run": "set -euo pipefail\nif [[ ! \"$REQUESTED_PR\" =~ ^[1-9][0-9]*$ ]]; then\n  echo \"Expected a positive PR number.\" >&2\n  exit 1\nfi\npr_path=\"$RUNNER_TEMP/release-draft-pr.json\"\ngh api \"/repos/$GITHUB_REPOSITORY/pulls/$REQUESTED_PR\" \\\n  --jq '{number, merged, merge_commit_sha, changed_files, base: {ref: .base.ref, repo: {full_name: .base.repo.full_name}}, labels: [.labels[] | {name}]}' \\\n  > \"$pr_path\"\npython3 scripts/resolve_release_draft_pr.py \\\n  --pr-path \"$pr_path\" \\\n  --pr-number \"$REQUESTED_PR\" \\\n  --repository \"$GITHUB_REPOSITORY\" \\\n  --github-output-path \"$GITHUB_OUTPUT\"\n"
+        "run": "set -euo pipefail\nif [[ ! \"$REQUESTED_PR\" =~ ^[1-9][0-9]*$ ]]; then\n  echo \"Expected a positive PR number.\" >&2\n  exit 1\nfi\npr_path=\"$RUNNER_TEMP/release-draft-pr.json\"\ngh api \"/repos/$GITHUB_REPOSITORY/pulls/$REQUESTED_PR\" \\\n  --jq '{number, merged, merge_commit_sha, changed_files, base: {ref: .base.ref, repo: {full_name: .base.repo.full_name}}, labels: [.labels[] | {name}]}' \\\n  > \"$pr_path\"\npython3 scripts/resolve_release_draft_pr.py \\\n  --pr-path \"$pr_path\" \\\n  --pr-number \"$REQUESTED_PR\" \\\n  --repository \"$GITHUB_REPOSITORY\" \\\n  --trusted-sha \"$TRUSTED_SHA\" \\\n  --github-output-path \"$GITHUB_OUTPUT\"\n"
       }
     ]
   },
