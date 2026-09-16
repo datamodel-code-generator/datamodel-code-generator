@@ -1,12 +1,10 @@
 name: Release Draft
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: Merged PR number whose release analysis has not completed
-        required: true
-        type: string
+  # Replay with: gh api repos/OWNER/REPO/dispatches -f event_type=release-draft-replay -F 'client_payload[pr_number]=4071'
+  # This event always loads the default-branch workflow; callers cannot select a ref.
+  repository_dispatch:
+    types: [release-draft-replay]
   # Use pull_request_target to always use the workflow file from main branch
   # This ensures new PRs from branches that don't have the latest workflow will still work
   # Security note: This is safe because we only run on merged PRs (code is already in main)
@@ -22,9 +20,9 @@ concurrency:
 
 jobs:
   resolve-pr:
-    # Manual runs must use the trusted workflow on main, never a caller-selected branch.
+    # Both events load trusted workflow code from the default branch.
     if: |
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'repository_dispatch' && github.event.action == 'release-draft-replay' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
@@ -46,7 +44,7 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PR: ${{ inputs.pr_number || github.event.pull_request.number }}
+          REQUESTED_PR: ${{ github.event.client_payload.pr_number || github.event.pull_request.number }}
         run: |
           set -euo pipefail
           if [[ ! "$REQUESTED_PR" =~ ^[1-9][0-9]*$ ]]; then

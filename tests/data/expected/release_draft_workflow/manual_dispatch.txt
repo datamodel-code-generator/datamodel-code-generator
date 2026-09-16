@@ -11,15 +11,6 @@
     "MERGE_SHA": "${{ needs.resolve-pr.outputs.merge_sha }}",
     "PR_NUMBER": "${{ needs.resolve-pr.outputs.pr_number }}"
   },
-  "dispatch": {
-    "inputs": {
-      "pr_number": {
-        "description": "Merged PR number whose release analysis has not completed",
-        "required": true,
-        "type": "string"
-      }
-    }
-  },
   "last_update_step": {
     "env": {
       "GH_TOKEN": "${{ github.token }}"
@@ -29,7 +20,7 @@
   },
   "prompt_pr_references": 2,
   "resolve": {
-    "if": "(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||\n(github.event_name == 'pull_request_target' && github.event.pull_request.merged == true)\n",
+    "if": "(github.event_name == 'repository_dispatch' && github.event.action == 'release-draft-replay' && github.ref == 'refs/heads/main') ||\n(github.event_name == 'pull_request_target' && github.event.pull_request.merged == true)\n",
     "outputs": {
       "changed_files": "${{ steps.pr.outputs.changed_files }}",
       "merge_sha": "${{ steps.pr.outputs.merge_sha }}",
@@ -53,7 +44,7 @@
       {
         "env": {
           "GH_TOKEN": "${{ github.token }}",
-          "REQUESTED_PR": "${{ inputs.pr_number || github.event.pull_request.number }}"
+          "REQUESTED_PR": "${{ github.event.client_payload.pr_number || github.event.pull_request.number }}"
         },
         "id": "pr",
         "name": "Resolve merged PR",
@@ -62,6 +53,21 @@
     ]
   },
   "route": "python3 scripts/prepare_release_draft_analysis.py \\\n  --changed-files-path \"${{ steps.pr-diff.outputs.trusted_changed_files_path }}\" \\\n  --expected-changed-files \"${{ needs.resolve-pr.outputs.changed_files }}\" \\\n  --analysis-path \"${{ steps.pr-diff.outputs.analysis_path }}\" \\\n  --github-output-path \"$GITHUB_OUTPUT\"\n",
+  "triggers": {
+    "pull_request_target": {
+      "branches": [
+        "main"
+      ],
+      "types": [
+        "closed"
+      ]
+    },
+    "repository_dispatch": {
+      "types": [
+        "release-draft-replay"
+      ]
+    }
+  },
   "update_env": {
     "PR_NUMBER": "${{ needs.resolve-pr.outputs.pr_number }}"
   },
