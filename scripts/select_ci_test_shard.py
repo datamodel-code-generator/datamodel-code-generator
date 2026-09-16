@@ -471,6 +471,7 @@ def _write_recipe(path: Path, items: list[dict[str, int | str]]) -> None:
 
 
 def _select_shard(items: list[dict[str, int | str]], shard_index: int, shard_total: int) -> list[str]:
+    """Assign items to shards heaviest-first and keep that order so xdist starts long tests early."""
     shards: list[list[str]] = [[] for _ in range(shard_total)]
     shard_weights = [0] * shard_total
     weighted_items = sorted(
@@ -486,7 +487,7 @@ def _select_shard(items: list[dict[str, int | str]], shard_index: int, shard_tot
         shards[target].append(item)
         shard_weights[target] += weight
 
-    return sorted(shards[shard_index - 1])
+    return shards[shard_index - 1]
 
 
 def main(argv: list[str] | None = None) -> None:
