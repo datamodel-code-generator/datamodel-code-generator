@@ -25,6 +25,7 @@ from tests.conftest import (
     assert_parser_results,
     create_assert_file_content,
     slow_test_durations,
+    worksteal_chunk_sizes,
 )
 from tests.main import _builtin_parity
 from tests.main import conftest as main_conftest
@@ -634,15 +635,22 @@ def test_builtin_generate_formatter_parity_preserves_warnings(monkeypatch: pytes
 
 
 def test_collection_runs_measured_slow_tests_first(request: pytest.FixtureRequest) -> None:
-    """Collected sessions keep measured slow tests ahead of unmeasured ones for xdist work stealing."""
+    """Every initial xdist chunk of the session starts with its measured slow tests, longest first."""
     durations = slow_test_durations()
-    ordered = [durations.get(item.nodeid, 0) for item in request.session.items]
+    items = request.session.items
+    workers = getattr(request.config, "workerinput", {}).get("workercount", 1)
+    chunks: list[list[int]] = []
+    start = 0
+    for size in worksteal_chunk_sizes(len(items), workers):
+        chunks.append([durations.get(item.nodeid, 0) for item in items[start : start + size]])
+        start += size
     assert_output(
         json.dumps(
             {
+                "chunks_cover_session": start == len(items),
                 "measured_files_exist": all(Path(nodeid.partition("::")[0]).is_file() for nodeid in durations),
                 "parity_measured": SLOWEST_NODEID in durations,
-                "slow_first": ordered == sorted(ordered, reverse=True),
+                "slow_first_per_chunk": all(chunk == sorted(chunk, reverse=True) for chunk in chunks),
             },
             sort_keys=True,
         )

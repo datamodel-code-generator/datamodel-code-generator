@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from itertools import starmap
+from itertools import islice, starmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
@@ -340,19 +340,51 @@ def slow_test_durations() -> dict[str, int]:
     return durations
 
 
+def worksteal_chunk_sizes(total: int, workers: int) -> list[int]:
+    """Mirror how the pytest-xdist work-stealing scheduler splits a collection into initial worker chunks."""
+    sizes: list[int] = []
+    pending = total
+    for remaining in range(workers, 0, -1):
+        size = pending // remaining
+        sizes.append(size)
+        pending -= size
+    return sizes
+
+
+def order_slow_tests_first(items: list[pytest.Item], durations: dict[str, int], workers: int) -> list[pytest.Item]:
+    """Start every worker chunk with a balanced share of the measured slow tests, longest first."""
+    slow = sorted(
+        (item for item in items if item.nodeid in durations),
+        key=lambda item: (-durations[item.nodeid], item.nodeid),
+    )
+    light = iter(item for item in items if item.nodeid not in durations)
+    groups: list[list[pytest.Item]] = [[] for _ in range(workers)]
+    loads = [0] * workers
+    for item in slow:
+        target = loads.index(min(loads))
+        groups[target].append(item)
+        loads[target] += durations[item.nodeid]
+    ordered: list[pytest.Item] = []
+    for group, size in zip(groups, worksteal_chunk_sizes(len(items), workers), strict=True):
+        ordered.extend(group)
+        ordered.extend(islice(light, max(0, size - len(group))))
+    ordered.extend(light)
+    return ordered
+
+
 def pytest_collection_modifyitems(
     session: pytest.Session,  # noqa: ARG001
     config: pytest.Config,
     items: list[pytest.Item],
 ) -> None:
-    """Collect CLI doc metadata from tests with cli_doc marker and run measured slow tests first.
+    """Collect CLI doc metadata from tests with cli_doc marker and start each worker with slow tests.
 
     Always collects metadata for use by test_cli_doc_coverage.py.
     Only validates markers when --collect-cli-docs is used.
-    Sorting slow tests first keeps xdist work stealing from ending on a long test.
+    Spreading measured slow tests over the initial xdist chunks keeps work stealing from ending on them.
     """
-    durations = slow_test_durations()
-    items.sort(key=lambda item: -durations.get(item.nodeid, 0))
+    workers = getattr(config, "workerinput", {}).get("workercount", 1)
+    items[:] = order_slow_tests_first(items, slow_test_durations(), workers)
     collect_cli_docs = config.getoption("--collect-cli-docs", default=False)
     validation_errors: list[tuple[str, list[str]]] = []
 
