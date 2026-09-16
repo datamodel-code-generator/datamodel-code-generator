@@ -36,7 +36,7 @@ def _resolve_pr(payload: Any, pr_number: int, repository: str) -> dict[str, str]
                 "changed_files": str(changed_files),
                 "should_analyze": str(not any(label["name"] == "breaking-change-analyzed" for label in labels)).lower(),
             }
-    message = "Expected the requested PR to be merged into this repository's main branch with valid metadata."
+    message = "Expected the requested PR to be merged into this repository with valid metadata."
     raise SystemExit(message)
 
 
