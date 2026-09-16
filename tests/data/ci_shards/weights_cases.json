@@ -44,7 +44,7 @@
   },
   "invalid-version": {
     "weights": {
-      "version": 2,
+      "version": 1,
       "profiles": {
         "default": {
           "files": {},
@@ -67,7 +67,7 @@
   },
   "missing-profile": {
     "weights": {
-      "version": 1,
+      "version": 2,
       "profiles": {
         "default": {
           "files": {},
@@ -85,7 +85,7 @@
   },
   "invalid-profile": {
     "weights": {
-      "version": 1,
+      "version": 2,
       "profiles": {
         "default": {
           "files": {},
@@ -121,7 +121,7 @@
   },
   "empty-maps": {
     "weights": {
-      "version": 1,
+      "version": 2,
       "profiles": {
         "default": {
           "files": {},

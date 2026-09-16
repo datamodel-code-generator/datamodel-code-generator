@@ -32,6 +32,8 @@ from tests.main import conftest as main_conftest
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
+SLOWEST_NODEID = "tests/test_format.py::test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files"
+
 
 @pytest.mark.parametrize(
     ("function_name", "expected_file"),
@@ -636,6 +638,14 @@ def test_collection_runs_measured_slow_tests_first(request: pytest.FixtureReques
     durations = slow_test_durations()
     ordered = [durations.get(item.nodeid, 0) for item in request.session.items]
     assert_output(
-        json.dumps({"measured": bool(durations), "slow_first": ordered == sorted(ordered, reverse=True)}) + "\n",
+        json.dumps(
+            {
+                "measured_files_exist": all(Path(nodeid.partition("::")[0]).is_file() for nodeid in durations),
+                "parity_measured": SLOWEST_NODEID in durations,
+                "slow_first": ordered == sorted(ordered, reverse=True),
+            },
+            sort_keys=True,
+        )
+        + "\n",
         Path(__file__).parent / "data/expected/ci_shards/slow-first.txt",
     )

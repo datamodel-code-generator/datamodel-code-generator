@@ -1,1 +1,1 @@
-{"measured": true, "slow_first": true}
+{"measured_files_exist": true, "parity_measured": true, "slow_first": true}
