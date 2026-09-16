@@ -1,0 +1,103 @@
+{
+  "record": {
+    "runs": [
+      [
+        "--profile",
+        "default",
+        "--junit",
+        "junit/default.xml",
+        "--run-id",
+        "42",
+        "--sha",
+        "abc123"
+      ],
+      [
+        "--profile",
+        "default",
+        "1",
+        "1"
+      ]
+    ],
+    "dump": "default"
+  },
+  "record-missing-provenance": {
+    "runs": [
+      [
+        "--junit",
+        "junit/default.xml"
+      ]
+    ]
+  },
+  "record-empty": {
+    "runs": [
+      [
+        "--profile",
+        "legacy",
+        "--junit",
+        "junit/empty.xml",
+        "--run-id",
+        "42",
+        "--sha",
+        "abc123"
+      ]
+    ]
+  },
+  "invalid-version": {
+    "weights": {
+      "version": 2,
+      "profiles": {
+        "default": {
+          "files": {},
+          "nodes": {}
+        },
+        "legacy": {
+          "files": {},
+          "nodes": {}
+        }
+      }
+    },
+    "runs": [
+      [
+        "1",
+        "2"
+      ]
+    ]
+  },
+  "missing-profile": {
+    "weights": {
+      "version": 1,
+      "profiles": {
+        "default": {
+          "files": {},
+          "nodes": {}
+        }
+      }
+    },
+    "runs": [
+      [
+        "1",
+        "2"
+      ]
+    ]
+  },
+  "invalid-profile": {
+    "weights": {
+      "version": 1,
+      "profiles": {
+        "default": {
+          "files": []
+        },
+        "legacy": {
+          "files": {},
+          "nodes": {}
+        }
+      }
+    },
+    "runs": [
+      [
+        "1",
+        "2"
+      ]
+    ]
+  }
+}

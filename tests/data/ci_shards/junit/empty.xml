@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+  <testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="5.0">
+    <testcase classname="tests.cli_doc.test_ignored" name="test_ignored" time="5.0" />
+  </testsuite>
+</testsuites>

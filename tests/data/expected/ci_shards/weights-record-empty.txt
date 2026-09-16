@@ -1,0 +1,1 @@
+error: no test durations found in JUnit reports
