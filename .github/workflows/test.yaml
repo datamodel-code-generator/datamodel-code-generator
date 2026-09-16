@@ -317,7 +317,7 @@ jobs:
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 2
+            shard_total: 3
             extra_tests: tests/cli_doc/test_cli_options_sync.py
           - tox_env: py314-parallel
             name: "3.14"
@@ -325,91 +325,126 @@ jobs:
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 2
+            shard_total: 3
+          - tox_env: py314-parallel
+            name: "3.14"
+            profile: "3.14"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 3
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 3
+            shard_total: 4
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 3
+            shard_total: 4
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 3
+            shard_total: 4
+          - tox_env: py313-parallel
+            name: "3.13"
+            profile: "3.13"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 4
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 3
+            shard_total: 4
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 3
+            shard_total: 4
           - tox_env: py312-parallel
             name: "3.12"
             profile: "3.12"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 3
+            shard_total: 4
+          - tox_env: py312-parallel
+            name: "3.12"
+            profile: "3.12"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 4
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 3
+            shard_total: 4
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 3
+            shard_total: 4
           - tox_env: py311-parallel
             name: "3.11"
             profile: "3.11"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 3
+            shard_total: 4
+          - tox_env: py311-parallel
+            name: "3.11"
+            profile: "3.11"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 4
           - tox_env: py310-parallel
             name: "3.10"
             profile: "3.10"
             os: ubuntu-24.04
             coverage: true
             shard: 1
-            shard_total: 3
+            shard_total: 4
           - tox_env: py310-parallel
             name: "3.10"
             profile: "3.10"
             os: ubuntu-24.04
             coverage: true
             shard: 2
-            shard_total: 3
+            shard_total: 4
           - tox_env: py310-parallel
             name: "3.10"
             profile: "3.10"
             os: ubuntu-24.04
             coverage: true
             shard: 3
-            shard_total: 3
+            shard_total: 4
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 4
     runs-on: ${{ matrix.os }}
     env: &test-shard-env
       OS: ${{ matrix.os }}
