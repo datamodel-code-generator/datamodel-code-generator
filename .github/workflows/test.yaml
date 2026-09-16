@@ -461,7 +461,10 @@ jobs:
       shell: bash
     - name: Run sharded test suite
       run: |
-        mapfile -t test_paths < .tox/ci-shard-tests.txt
+        test_paths=()
+        while IFS= read -r test_path; do
+          test_paths+=("$test_path")
+        done < .tox/ci-shard-tests.txt
         if [ "${#test_paths[@]}" -eq 0 ]; then
           echo "No tests selected for this shard." >&2
           exit 1
@@ -491,6 +494,7 @@ jobs:
       env:
         UV_PYTHON_PREFERENCE: "only-managed"
     - name: Upload test durations
+      if: ${{ !cancelled() }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         include-hidden-files: true
