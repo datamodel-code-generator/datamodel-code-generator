@@ -55,6 +55,16 @@
           "files": {},
           "nodes": {},
           "slow": {}
+        },
+        "windows": {
+          "files": {},
+          "nodes": {},
+          "slow": {}
+        },
+        "macos": {
+          "files": {},
+          "nodes": {},
+          "slow": {}
         }
       }
     },
@@ -95,6 +105,16 @@
           "files": {},
           "nodes": {},
           "slow": {}
+        },
+        "windows": {
+          "files": {},
+          "nodes": {},
+          "slow": {}
+        },
+        "macos": {
+          "files": {},
+          "nodes": {},
+          "slow": {}
         }
       }
     },
@@ -129,6 +149,24 @@
           "slow": {}
         },
         "legacy": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "windows": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "macos": {
           "files": {
             "tests/test_new.py": 1
           },

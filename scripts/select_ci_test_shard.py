@@ -18,7 +18,7 @@ SPLIT_NODE_FILES = frozenset({PAYLOAD_VALIDATION_FILE})
 RECIPE_VERSION = 1
 WEIGHTS_VERSION = 2
 SLOW_TEST_MS = 1000
-PROFILES = ("default", "legacy")
+PROFILES = ("default", "legacy", "windows", "macos")
 TESTS_ROOT = Path("tests")
 WEIGHTS_PATH = Path(__file__).with_name("ci_shard_weights.json")
 
