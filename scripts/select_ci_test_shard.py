@@ -78,7 +78,7 @@ def _median_weight(weights: dict[str, int]) -> int:
 
 def _is_profile(profile: object) -> bool:
     match profile:
-        case {"files": dict(), "nodes": dict()}:
+        case {"files": dict(files), "nodes": dict(nodes)} if files and nodes:
             return True
     return False
 
@@ -184,8 +184,8 @@ def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> Profile:
                 continue
             nodeid = "::".join(part for part in (file, classes, name) if part)
             node_totals[nodeid] = node_totals.get(nodeid, 0.0) + seconds
-    if not file_totals and not node_totals:
-        msg = "no test durations found in JUnit reports"
+    if not file_totals or not node_totals:
+        msg = "JUnit reports must include sharded module and split-file test durations"
         raise SystemExit(msg)
     return _milliseconds(file_totals), _milliseconds(node_totals)
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+  <testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.5">
+    <testcase classname="tests.test_new" name="test_new" time="0.5" />
+  </testsuite>
+</testsuites>

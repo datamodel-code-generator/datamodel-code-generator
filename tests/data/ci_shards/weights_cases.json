@@ -99,5 +99,44 @@
         "2"
       ]
     ]
+  },
+  "record-no-split": {
+    "runs": [
+      [
+        "--profile",
+        "default",
+        "--junit",
+        "junit/no-split.xml",
+        "--run-id",
+        "42",
+        "--sha",
+        "abc123"
+      ]
+    ]
+  },
+  "empty-maps": {
+    "weights": {
+      "version": 1,
+      "profiles": {
+        "default": {
+          "files": {},
+          "nodes": {}
+        },
+        "legacy": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          }
+        }
+      }
+    },
+    "runs": [
+      [
+        "1",
+        "2"
+      ]
+    ]
   }
 }
