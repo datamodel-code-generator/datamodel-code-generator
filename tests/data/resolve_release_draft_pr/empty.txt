@@ -1,0 +1,1 @@
+{"output": null, "returncode": 1, "stderr": "Expected the requested PR to be merged into this repository's main branch with valid metadata.\n"}

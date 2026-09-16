@@ -1,6 +1,12 @@
 name: Release Draft
 
 on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Merged PR number whose release analysis has not completed
+        required: true
+        type: string
   # Use pull_request_target to always use the workflow file from main branch
   # This ensures new PRs from branches that don't have the latest workflow will still work
   # Security note: This is safe because we only run on merged PRs (code is already in main)
@@ -15,11 +21,51 @@ concurrency:
   queue: max
 
 jobs:
-  analyze:
-    # Only run on merged PRs that haven't been analyzed yet
+  resolve-pr:
+    # Manual runs must use the trusted workflow on main, never a caller-selected branch.
     if: |
-      github.event.pull_request.merged == true &&
-      !contains(github.event.pull_request.labels.*.name, 'breaking-change-analyzed')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      pr_number: ${{ steps.pr.outputs.pr_number }}
+      merge_sha: ${{ steps.pr.outputs.merge_sha }}
+      changed_files: ${{ steps.pr.outputs.changed_files }}
+      should_analyze: ${{ steps.pr.outputs.should_analyze }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.workflow_sha }}
+
+      - name: Resolve merged PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_PR: ${{ inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$REQUESTED_PR" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Expected a positive PR number." >&2
+            exit 1
+          fi
+          pr_path="$RUNNER_TEMP/release-draft-pr.json"
+          gh api "/repos/$GITHUB_REPOSITORY/pulls/$REQUESTED_PR" \
+            --jq '{number, merged, merge_commit_sha, changed_files, base: {ref: .base.ref, repo: {full_name: .base.repo.full_name}}, labels: [.labels[] | {name}]}' \
+            > "$pr_path"
+          python3 scripts/resolve_release_draft_pr.py \
+            --pr-path "$pr_path" \
+            --pr-number "$REQUESTED_PR" \
+            --repository "$GITHUB_REPOSITORY" \
+            --github-output-path "$GITHUB_OUTPUT"
+
+  analyze:
+    needs: resolve-pr
+    if: needs.resolve-pr.outputs.should_analyze == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,14 +78,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: refs/heads/main
+          ref: ${{ github.workflow_sha }}
 
       - name: Prepare exact PR diff
         id: pr-diff
         env:
           GH_TOKEN: ${{ github.token }}
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGE_SHA: ${{ needs.resolve-pr.outputs.merge_sha }}
+          PR_NUMBER: ${{ needs.resolve-pr.outputs.pr_number }}
         run: |
           set -euo pipefail
 
@@ -133,7 +179,7 @@ jobs:
         run: |
           python3 scripts/prepare_release_draft_analysis.py \
             --changed-files-path "${{ steps.pr-diff.outputs.trusted_changed_files_path }}" \
-            --expected-changed-files "${{ github.event.pull_request.changed_files }}" \
+            --expected-changed-files "${{ needs.resolve-pr.outputs.changed_files }}" \
             --analysis-path "${{ steps.pr-diff.outputs.analysis_path }}" \
             --github-output-path "$GITHUB_OUTPUT"
 
@@ -152,7 +198,7 @@ jobs:
           # Execution content can include untrusted PR text and must remain private.
           show_full_output: false
           prompt: |
-            Analyze PR #${{ github.event.pull_request.number }} for breaking changes.
+            Analyze PR #${{ needs.resolve-pr.outputs.pr_number }} for breaking changes.
 
             Analyze the merged changes and determine if this PR contains breaking changes.
 
@@ -183,7 +229,7 @@ jobs:
             If breaking changes are found, format them EXACTLY like this CHANGELOG.md format:
 
             ### Category Name
-            * Description of breaking change - Detailed explanation (#${{ github.event.pull_request.number }})
+            * Description of breaking change - Detailed explanation (#${{ needs.resolve-pr.outputs.pr_number }})
 
             Rules:
             - Each category should be a ### heading (Code Generation Changes, Custom Template Update Required, etc.)
@@ -228,7 +274,7 @@ jobs:
           EXECUTION_PATH: ${{ steps.claude.outputs.execution_file }}
           ANALYSIS_CONTEXT_PATH: ${{ steps.pr-diff.outputs.analysis_context_path }}
           DIFF_PATH: ${{ steps.pr-diff.outputs.diff_path }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ needs.resolve-pr.outputs.pr_number }}
         run: |
           set -euo pipefail
           python3 scripts/validate_release_draft_analysis.py \
@@ -248,10 +294,9 @@ jobs:
           if-no-files-found: error
 
   update-draft:
-    needs: analyze
-    if: |
-      github.event.pull_request.merged == true &&
-      !contains(github.event.pull_request.labels.*.name, 'breaking-change-analyzed')
+    needs: [resolve-pr, analyze]
+    env:
+      PR_NUMBER: ${{ needs.resolve-pr.outputs.pr_number }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -288,17 +333,6 @@ jobs:
             echo "$DELIMITER"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Add breaking-change-analyzed label
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api \
-            --method POST \
-            -H "Accept: application/vnd.github+json" \
-            "/repos/$GITHUB_REPOSITORY/issues/${{ github.event.pull_request.number }}/labels" \
-            -f labels[]="breaking-change-analyzed" \
-            --silent
-
       - name: Add breaking-change label if applicable
         if: steps.analysis.outputs.has_breaking_changes == 'true'
         env:
@@ -307,7 +341,7 @@ jobs:
           gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
-            "/repos/$GITHUB_REPOSITORY/issues/${{ github.event.pull_request.number }}/labels" \
+            "/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
             -f labels[]="breaking-change" \
             --silent
 
@@ -319,7 +353,7 @@ jobs:
           gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
-            "/repos/$GITHUB_REPOSITORY/issues/${{ github.event.pull_request.number }}/labels" \
+            "/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
             -f labels[]="skip-changelog" \
             --silent
 
@@ -355,7 +389,7 @@ jobs:
           gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
-            "/repos/$GITHUB_REPOSITORY/issues/${{ github.event.pull_request.number }}/comments" \
+            "/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --input "$TMPJSON" \
             --silent
 
@@ -525,3 +559,14 @@ jobs:
           fi
 
           echo "Draft release updated: $NEXT_VERSION"
+
+      - name: Add breaking-change-analyzed label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+            -f labels[]="breaking-change-analyzed" \
+            --silent
