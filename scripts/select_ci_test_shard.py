@@ -72,14 +72,15 @@ def _collect_test_items(root: Path = TESTS_ROOT) -> list[str]:
 
 
 def _median_weight(weights: dict[str, int]) -> int:
-    ordered = sorted(weights.values())
+    if not (ordered := sorted(weights.values())):
+        return 1
     middle = len(ordered) // 2
     return (ordered[middle] + ordered[~middle]) // 2
 
 
 def _is_profile(profile: object) -> bool:
     match profile:
-        case {"files": dict(files), "nodes": dict(nodes), "slow": dict()} if files and nodes:
+        case {"files": dict(files), "nodes": dict(), "slow": dict()} if files:
             return True
     return False
 
@@ -106,9 +107,17 @@ def _item_weight(item: str, weights: Profile, fallback: tuple[int, int]) -> int:
     return weights[index].get(item, fallback[index])
 
 
-def _build_recipe_items(weights: Profile) -> list[dict[str, int | str]]:
+def _is_excluded(item: str, excluded: tuple[str, ...]) -> bool:
+    return any(item == path or item.startswith((f"{path}::", f"{path}/")) for path in excluded)
+
+
+def _build_recipe_items(weights: Profile, excluded: tuple[str, ...] = ()) -> list[dict[str, int | str]]:
     fallback = (_median_weight(weights[0]), _median_weight(weights[1]))
-    return [{"nodeid": item, "weight": _item_weight(item, weights, fallback)} for item in _collect_test_items()]
+    return [
+        {"nodeid": item, "weight": _item_weight(item, weights, fallback)}
+        for item in _collect_test_items()
+        if not _is_excluded(item, excluded)
+    ]
 
 
 def _validate_recipe_items(items: object) -> list[dict[str, int | str]]:
@@ -188,8 +197,8 @@ def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> tuple[Weights
                 continue
             nodeid = "::".join(part for part in (file, classes, name.partition("[")[0]) if part)
             node_totals[nodeid] = node_totals.get(nodeid, 0.0) + seconds
-    if not file_totals or not node_totals:
-        msg = "JUnit reports must include sharded module and split-file test durations"
+    if not file_totals:
+        msg = "no sharded module durations found in JUnit reports"
         raise SystemExit(msg)
     return _milliseconds(file_totals), _milliseconds(node_totals), _milliseconds(slow_tests)
 
@@ -236,6 +245,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--weights", type=Path, default=WEIGHTS_PATH)
     parser.add_argument("--recipe", type=Path)
     parser.add_argument("--write-recipe", type=Path)
+    parser.add_argument("--exclude", action="append", default=[], metavar="PATH")
     parser.add_argument("--junit", type=Path, nargs="+")
     parser.add_argument("--run-id")
     parser.add_argument("--sha")
@@ -250,7 +260,7 @@ def main(argv: list[str] | None = None) -> None:
     items = (
         _load_recipe_items(args.recipe)
         if args.recipe
-        else _build_recipe_items(_profile_weights(_read_weights(args.weights), args.profile))
+        else _build_recipe_items(_profile_weights(_read_weights(args.weights), args.profile), tuple(args.exclude))
     )
     if args.write_recipe:
         _write_json(args.write_recipe, {"version": RECIPE_VERSION, "items": items})

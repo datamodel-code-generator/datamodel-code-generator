@@ -52,6 +52,10 @@ def test_workflow_matrix_and_coverage_contract() -> None:
         ),
         "shard_profile_mapping": jobs["test-shard"]["env"]["SHARD_PROFILE"],
         "shard_profiles_known": all(entry.get("profile") in PROFILES for entry in shard_entries),
+        "exclude_tests": sorted({entry["exclude_tests"] for entry in shard_entries if entry.get("exclude_tests")}),
+        "exclude_only_without_coverage": all(
+            bool(entry.get("exclude_tests")) == (entry["coverage"] == "false") for entry in shard_entries
+        ),
         "shard_profiles_used": sorted({entry["profile"] for entry in shard_entries}),
         "coverage_count": len(names),
         "coverage_unique": len(set(names)),

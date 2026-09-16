@@ -221,8 +221,15 @@
         "42",
         "--sha",
         "abc123"
+      ],
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1"
       ]
-    ]
+    ],
+    "dump": "3.14"
   },
   "empty-maps": {
     "weights": {
@@ -293,6 +300,34 @@
       [
         "1",
         "2"
+      ]
+    ]
+  },
+  "exclude": {
+    "runs": [
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1",
+        "--exclude",
+        "tests/main/test_payload_validation.py"
+      ],
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1",
+        "--exclude",
+        "tests/main"
+      ],
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1",
+        "--exclude",
+        "tests"
       ]
     ]
   }

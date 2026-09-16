@@ -79,6 +79,10 @@
   "coverage_count": 29,
   "coverage_needs_only_producers": true,
   "coverage_unique": 29,
+  "exclude_only_without_coverage": true,
+  "exclude_tests": [
+    "tests/main/test_payload_validation.py"
+  ],
   "expected_names_match": true,
   "extra_tests": [
     "py310-nocov-parallel:shard1:tests/cli_doc/test_cli_options_sync.py",

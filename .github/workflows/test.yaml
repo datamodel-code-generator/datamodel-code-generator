@@ -452,6 +452,7 @@ jobs:
       SHARD_TOTAL: ${{ matrix.shard_total }}
       TOX_ENV: ${{ matrix.tox_env }}
       EXTRA_TESTS: ${{ matrix.extra_tests }}
+      EXCLUDE_TESTS: ${{ matrix.exclude_tests }}
       SHARD_PROFILE: ${{ matrix.profile }}
       WINDOWS_TOX_UV_VERSION: "1.35.2"
       WINDOWS_TOX_VERSION: "4.56.1"
@@ -501,7 +502,11 @@ jobs:
         UV_PYTHON_PREFERENCE: "only-managed"
     - name: Select test shard
       run: |
-        python scripts/select_ci_test_shard.py --profile "$SHARD_PROFILE" --write-recipe .tox/ci-shard-recipe.json
+        exclude_args=()
+        if [ -n "$EXCLUDE_TESTS" ]; then
+          exclude_args=(--exclude "$EXCLUDE_TESTS")
+        fi
+        python scripts/select_ci_test_shard.py --profile "$SHARD_PROFILE" "${exclude_args[@]}" --write-recipe .tox/ci-shard-recipe.json
         python scripts/select_ci_test_shard.py "$SHARD_INDEX" "$SHARD_TOTAL" \
           --recipe .tox/ci-shard-recipe.json | tee .tox/ci-shard-tests.txt
         if [ -n "$EXTRA_TESTS" ]; then
@@ -590,6 +595,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 3
           - tox_env: py314-nocov-parallel
@@ -598,6 +604,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 3
           - tox_env: py314-nocov-parallel
@@ -606,6 +613,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 3
           - tox_env: py313-nocov-parallel
@@ -614,6 +622,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 3
           - tox_env: py313-nocov-parallel
@@ -622,6 +631,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 3
           - tox_env: py313-nocov-parallel
@@ -630,6 +640,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 3
           - tox_env: py312-nocov-parallel
@@ -638,6 +649,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 3
           - tox_env: py312-nocov-parallel
@@ -646,6 +658,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 3
           - tox_env: py312-nocov-parallel
@@ -654,6 +667,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 3
           - tox_env: py311-nocov-parallel
@@ -662,6 +676,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 3
           - tox_env: py311-nocov-parallel
@@ -670,6 +685,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 3
           - tox_env: py311-nocov-parallel
@@ -678,6 +694,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 3
           - tox_env: py310-nocov-parallel
@@ -686,6 +703,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 3
           - tox_env: py310-nocov-parallel
@@ -694,6 +712,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 3
           - tox_env: py310-nocov-parallel
@@ -702,6 +721,7 @@ jobs:
             os: windows-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 3
           - tox_env: py314-nocov-parallel
@@ -710,6 +730,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 2
           - tox_env: py314-nocov-parallel
@@ -718,6 +739,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 2
           - tox_env: py313-nocov-parallel
@@ -726,6 +748,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 2
           - tox_env: py313-nocov-parallel
@@ -734,6 +757,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 2
           - tox_env: py312-nocov-parallel
@@ -742,6 +766,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 2
           - tox_env: py312-nocov-parallel
@@ -750,6 +775,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 2
           - tox_env: py311-nocov-parallel
@@ -758,6 +784,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 2
           - tox_env: py311-nocov-parallel
@@ -766,6 +793,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 2
           - tox_env: py310-nocov-parallel
@@ -774,6 +802,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 2
           - tox_env: py310-nocov-parallel
@@ -782,6 +811,7 @@ jobs:
             os: macos-latest
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 2
           - tox_env: py312-blacklatest-nocov-parallel
@@ -790,6 +820,7 @@ jobs:
             os: ubuntu-24.04
             coverage: false
             extra_tests: tests/cli_doc/test_cli_options_sync.py
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 1
             shard_total: 3
           - tox_env: py312-blacklatest-nocov-parallel
@@ -798,6 +829,7 @@ jobs:
             os: ubuntu-24.04
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 2
             shard_total: 3
           - tox_env: py312-blacklatest-nocov-parallel
@@ -806,6 +838,7 @@ jobs:
             os: ubuntu-24.04
             coverage: false
             extra_tests: ""
+            exclude_tests: tests/main/test_payload_validation.py
             shard: 3
             shard_total: 3
     runs-on: ${{ matrix.os }}

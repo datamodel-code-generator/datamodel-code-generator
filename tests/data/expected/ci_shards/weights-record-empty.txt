@@ -1,1 +1,1 @@
-error: JUnit reports must include sharded module and split-file test durations
+error: no sharded module durations found in JUnit reports

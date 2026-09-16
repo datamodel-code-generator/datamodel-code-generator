@@ -1,1 +1,17 @@
-error: JUnit reports must include sharded module and split-file test durations
+tests/test_new.py
+tests/main/test_payload_validation.py::TestNew::test_async_method
+tests/main/test_payload_validation.py::TestNew::test_method
+tests/main/test_payload_validation.py::test_async
+tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads
+tests/main/test_payload_validation.py::test_new
+{
+  "files": {
+    "tests/test_new.py": 500
+  },
+  "nodes": {},
+  "provenance": {
+    "run_id": "42",
+    "sha": "abc123"
+  },
+  "slow": {}
+}
