@@ -115,7 +115,7 @@
   "permissions": {
     "contents": "read"
   },
-  "shard_profile_mapping": "${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'macos-latest' && 'macos' || (matrix.name == '3.14' && 'default' || 'legacy')) }}",
+  "shard_profile_mapping": "${{ (matrix.os == 'windows-latest' && 'windows') || (matrix.os == 'macos-latest' && 'macos') || (startsWith(matrix.tox_env, 'py312-') && '3.12') || matrix.name }}",
   "shared_http_steps": true,
   "shared_shard_steps": true,
   "triggers": {

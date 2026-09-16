@@ -106,7 +106,7 @@ def test_recipe_cli_validates_external_cases(case: str, tmp_path: Path) -> None:
     assert_output(output.getvalue(), Path(__file__).parent / f"data/expected/ci_shards/{case}.txt")
 
 
-@pytest.mark.parametrize("profile", ["default", "legacy"])
+@pytest.mark.parametrize("profile", select_ci_test_shard.PROFILES)
 def test_discovery_includes_new_files_and_methods(tmp_path: Path, profile: str) -> None:
     """Discover unknown tests and keep deterministic recipes across enumeration order."""
     from contextlib import redirect_stdout

@@ -16,9 +16,9 @@ EXCLUDED_PARTS = frozenset({"__pycache__", "cli_doc", "data"})
 PAYLOAD_VALIDATION_FILE = "tests/main/test_payload_validation.py"
 SPLIT_NODE_FILES = frozenset({PAYLOAD_VALIDATION_FILE})
 RECIPE_VERSION = 1
-WEIGHTS_VERSION = 2
+WEIGHTS_VERSION = 3
 SLOW_TEST_MS = 1000
-PROFILES = ("default", "legacy", "windows", "macos")
+PROFILES = ("3.10", "3.11", "3.12", "3.13", "3.14", "windows", "macos")
 TESTS_ROOT = Path("tests")
 WEIGHTS_PATH = Path(__file__).with_name("ci_shard_weights.json")
 
@@ -232,7 +232,7 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("shard_index", type=int, nargs="?")
     parser.add_argument("shard_total", type=int, nargs="?")
-    parser.add_argument("--profile", choices=PROFILES, default="default")
+    parser.add_argument("--profile", choices=PROFILES, default="3.14")
     parser.add_argument("--weights", type=Path, default=WEIGHTS_PATH)
     parser.add_argument("--recipe", type=Path)
     parser.add_argument("--write-recipe", type=Path)

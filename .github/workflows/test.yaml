@@ -403,7 +403,7 @@ jobs:
       SHARD_TOTAL: ${{ matrix.shard_total }}
       TOX_ENV: ${{ matrix.tox_env }}
       EXTRA_TESTS: ${{ matrix.extra_tests }}
-      SHARD_PROFILE: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'macos-latest' && 'macos' || (matrix.name == '3.14' && 'default' || 'legacy')) }}
+      SHARD_PROFILE: ${{ (matrix.os == 'windows-latest' && 'windows') || (matrix.os == 'macos-latest' && 'macos') || (startsWith(matrix.tox_env, 'py312-') && '3.12') || matrix.name }}
       WINDOWS_TOX_UV_VERSION: "1.35.2"
       WINDOWS_TOX_VERSION: "4.56.1"
       WINDOWS_UV_VERSION: "0.11.26"
