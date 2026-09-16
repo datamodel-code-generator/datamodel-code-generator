@@ -1,0 +1,1 @@
+{"analysis": null, "returncode": 1, "stderr": "Claude output contains active Markdown; refusing to update the draft.\n"}

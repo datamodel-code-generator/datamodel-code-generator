@@ -1,0 +1,1 @@
+{"analysis": {"breaking_changes_content": "### Code Generation Changes\n* Generated annotations change compatibility - Use `NewType` instead (#42)", "has_breaking_changes": true, "reasoning": "Prepared diff was read."}, "returncode": 0, "stderr": ""}
