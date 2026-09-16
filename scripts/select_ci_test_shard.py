@@ -17,6 +17,7 @@ PAYLOAD_VALIDATION_FILE = "tests/main/test_payload_validation.py"
 SPLIT_NODE_FILES = frozenset({PAYLOAD_VALIDATION_FILE})
 RECIPE_VERSION = 1
 WEIGHTS_VERSION = 1
+SLOW_TEST_MS = 1000
 PROFILES = ("default", "legacy")
 TESTS_ROOT = Path("tests")
 WEIGHTS_PATH = Path(__file__).with_name("ci_shard_weights.json")
@@ -78,7 +79,7 @@ def _median_weight(weights: dict[str, int]) -> int:
 
 def _is_profile(profile: object) -> bool:
     match profile:
-        case {"files": dict(files), "nodes": dict(nodes)} if files and nodes:
+        case {"files": dict(files), "nodes": dict(nodes), "slow": dict()} if files and nodes:
             return True
     return False
 
@@ -161,40 +162,48 @@ def _milliseconds(totals: dict[str, float]) -> Weights:
     return {key: max(1, round(seconds * 1000)) for key, seconds in sorted(totals.items())}
 
 
-def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> Profile:
-    """Sum JUnit testcase durations per sharded module and per split-file test function."""
+def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> tuple[Weights, Weights, Weights]:
+    """Sum JUnit durations per sharded module, per split-file test function, and per slow test."""
     from xml.etree.ElementTree import iterparse  # noqa: PLC0415
 
     modules = {file[:-3].replace("/", "."): file for file in files}
     file_totals: dict[str, float] = {}
     node_totals: dict[str, float] = {}
+    slow_tests: dict[str, float] = {}
     for path in paths:
         for _, element in iterparse(path):
             if element.tag != "testcase":
                 continue
             located = _module_file(element.get("classname", ""), modules)
             seconds = float(element.get("time", "0"))
-            name = element.get("name", "").partition("[")[0]
+            name = element.get("name", "")
             element.clear()
             if located is None:
                 continue
             file, classes = located
+            if seconds * 1000 >= SLOW_TEST_MS:
+                slow_tests["::".join(part for part in (file, classes, name) if part)] = seconds
             if file not in SPLIT_NODE_FILES:
                 file_totals[file] = file_totals.get(file, 0.0) + seconds
                 continue
-            nodeid = "::".join(part for part in (file, classes, name) if part)
+            nodeid = "::".join(part for part in (file, classes, name.partition("[")[0]) if part)
             node_totals[nodeid] = node_totals.get(nodeid, 0.0) + seconds
     if not file_totals or not node_totals:
         msg = "JUnit reports must include sharded module and split-file test durations"
         raise SystemExit(msg)
-    return _milliseconds(file_totals), _milliseconds(node_totals)
+    return _milliseconds(file_totals), _milliseconds(node_totals), _milliseconds(slow_tests)
 
 
 def _record_weights(path: Path, profile: str, junit_paths: Iterable[Path], *, run_id: str, sha: str) -> None:
     """Replace one profile's measured weights with durations from CI JUnit reports."""
     document = _read_weights(path)
-    files, nodes = _junit_weights(junit_paths, _collect_test_files())
-    document["profiles"][profile] = {"files": files, "nodes": nodes, "provenance": {"run_id": run_id, "sha": sha}}
+    files, nodes, slow = _junit_weights(junit_paths, _collect_test_files())
+    document["profiles"][profile] = {
+        "files": files,
+        "nodes": nodes,
+        "provenance": {"run_id": run_id, "sha": sha},
+        "slow": slow,
+    }
     _write_json(path, document)
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,9 +20,11 @@ from tests.conftest import (
     _infer_expected_file,
     assert_exact_directory_content,
     assert_inputs_not_mutated,
+    assert_output,
     assert_parser_modules,
     assert_parser_results,
     create_assert_file_content,
+    slow_test_durations,
 )
 from tests.main import _builtin_parity
 from tests.main import conftest as main_conftest
@@ -626,3 +629,13 @@ def test_builtin_generate_formatter_parity_preserves_warnings(monkeypatch: pytes
     )
 
     assert not (tmp_path / "output.builtin-parity.py").exists()
+
+
+def test_collection_runs_measured_slow_tests_first(request: pytest.FixtureRequest) -> None:
+    """Collected sessions keep measured slow tests ahead of unmeasured ones for xdist work stealing."""
+    durations = slow_test_durations()
+    ordered = [durations.get(item.nodeid, 0) for item in request.session.items]
+    assert_output(
+        json.dumps({"measured": bool(durations), "slow_first": ordered == sorted(ordered, reverse=True)}) + "\n",
+        Path(__file__).parent / "data/expected/ci_shards/slow-first.txt",
+    )

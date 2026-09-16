@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     import warnings
 
 CLI_DOC_COLLECTION_OUTPUT = Path(__file__).parent / "cli_doc" / ".cli_doc_collection.json"
+CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weights.json"
 CLI_DOC_SCHEMA_VERSION = 1
 TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 BUILTIN_FORMATTER_VALUE = "builtin"
@@ -330,16 +331,28 @@ def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  
     return errors
 
 
+def slow_test_durations() -> dict[str, int]:
+    """Return the longest measured CI duration per slow test node id across shard weight profiles."""
+    durations: dict[str, int] = {}
+    for profile in json.loads(CI_SHARD_WEIGHTS_PATH.read_text(encoding="utf-8"))["profiles"].values():
+        for nodeid, duration in profile["slow"].items():
+            durations[nodeid] = max(duration, durations.get(nodeid, 0))
+    return durations
+
+
 def pytest_collection_modifyitems(
     session: pytest.Session,  # noqa: ARG001
     config: pytest.Config,
     items: list[pytest.Item],
 ) -> None:
-    """Collect CLI doc metadata from tests with cli_doc marker.
+    """Collect CLI doc metadata from tests with cli_doc marker and run measured slow tests first.
 
     Always collects metadata for use by test_cli_doc_coverage.py.
     Only validates markers when --collect-cli-docs is used.
+    Sorting slow tests first keeps xdist work stealing from ending on a long test.
     """
+    durations = slow_test_durations()
+    items.sort(key=lambda item: -durations.get(item.nodeid, 0))
     collect_cli_docs = config.getoption("--collect-cli-docs", default=False)
     validation_errors: list[tuple[str, list[str]]] = []
 

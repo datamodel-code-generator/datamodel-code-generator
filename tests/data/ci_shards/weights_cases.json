@@ -48,11 +48,13 @@
       "profiles": {
         "default": {
           "files": {},
-          "nodes": {}
+          "nodes": {},
+          "slow": {}
         },
         "legacy": {
           "files": {},
-          "nodes": {}
+          "nodes": {},
+          "slow": {}
         }
       }
     },
@@ -69,7 +71,8 @@
       "profiles": {
         "default": {
           "files": {},
-          "nodes": {}
+          "nodes": {},
+          "slow": {}
         }
       }
     },
@@ -85,11 +88,13 @@
       "version": 1,
       "profiles": {
         "default": {
-          "files": []
+          "files": {},
+          "nodes": {}
         },
         "legacy": {
           "files": {},
-          "nodes": {}
+          "nodes": {},
+          "slow": {}
         }
       }
     },
@@ -120,7 +125,8 @@
       "profiles": {
         "default": {
           "files": {},
-          "nodes": {}
+          "nodes": {},
+          "slow": {}
         },
         "legacy": {
           "files": {
@@ -128,7 +134,8 @@
           },
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
-          }
+          },
+          "slow": {}
         }
       }
     },
