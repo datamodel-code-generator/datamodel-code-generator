@@ -808,177 +808,72 @@ jobs:
             extra_tests: ""
             shard: 3
             shard_total: 3
-          - tox_env: py312-black24-nocov-parallel
-            name: "py312-black24"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            shard: 1
-            shard_total: 3
-          - tox_env: py312-black24-nocov-parallel
-            name: "py312-black24"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 2
-            shard_total: 3
-          - tox_env: py312-black24-nocov-parallel
-            name: "py312-black24"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 3
-            shard_total: 3
-          - tox_env: py312-black23-nocov-parallel
-            name: "py312-black23"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            shard: 1
-            shard_total: 3
-          - tox_env: py312-black23-nocov-parallel
-            name: "py312-black23"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 2
-            shard_total: 3
-          - tox_env: py312-black23-nocov-parallel
-            name: "py312-black23"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 3
-            shard_total: 3
-          - tox_env: py312-black22-nocov-parallel
-            name: "py312-black22"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            shard: 1
-            shard_total: 3
-          - tox_env: py312-black22-nocov-parallel
-            name: "py312-black22"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 2
-            shard_total: 3
-          - tox_env: py312-black22-nocov-parallel
-            name: "py312-black22"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 3
-            shard_total: 3
-          - tox_env: py312-isort8-nocov-parallel
-            name: "py312-isort8"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            shard: 1
-            shard_total: 3
-          - tox_env: py312-isort8-nocov-parallel
-            name: "py312-isort8"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 2
-            shard_total: 3
-          - tox_env: py312-isort8-nocov-parallel
-            name: "py312-isort8"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 3
-            shard_total: 3
-          - tox_env: py312-isort7-nocov-parallel
-            name: "py312-isort7"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            shard: 1
-            shard_total: 3
-          - tox_env: py312-isort7-nocov-parallel
-            name: "py312-isort7"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 2
-            shard_total: 3
-          - tox_env: py312-isort7-nocov-parallel
-            name: "py312-isort7"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 3
-            shard_total: 3
-          - tox_env: py312-isort6-nocov-parallel
-            name: "py312-isort6"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            shard: 1
-            shard_total: 3
-          - tox_env: py312-isort6-nocov-parallel
-            name: "py312-isort6"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 2
-            shard_total: 3
-          - tox_env: py312-isort6-nocov-parallel
-            name: "py312-isort6"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 3
-            shard_total: 3
-          - tox_env: py312-isort5-nocov-parallel
-            name: "py312-isort5"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: tests/cli_doc/test_cli_options_sync.py
-            shard: 1
-            shard_total: 3
-          - tox_env: py312-isort5-nocov-parallel
-            name: "py312-isort5"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 2
-            shard_total: 3
-          - tox_env: py312-isort5-nocov-parallel
-            name: "py312-isort5"
-            profile: "3.12"
-            os: ubuntu-24.04
-            coverage: false
-            extra_tests: ""
-            shard: 3
-            shard_total: 3
     runs-on: ${{ matrix.os }}
     env: *test-shard-env
     steps: *test-shard-steps
+
+  test-formatter-subset:
+    name: ${{ matrix.name }} subset on Ubuntu
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tox_env: py312-black24-nocov-parallel
+            name: py312-black24
+            coverage: false
+          - tox_env: py312-isort7-nocov-parallel
+            name: py312-isort7
+            coverage: false
+          - tox_env: py312-isort6-nocov-parallel
+            name: py312-isort6
+            coverage: false
+    runs-on: ubuntu-24.04
+    env:
+      OS: ubuntu-24.04
+      TOX_ENV: ${{ matrix.tox_env }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+    - name: Install the latest version of uv
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      with:
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "${{ matrix.tox_env }}-subset"
+    - name: Install tox
+      run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+    - name: Setup Python test environment
+      run: |
+        tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Run formatter subset
+      run: |
+        tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
+          -n auto \
+          --dist=worksteal \
+          --color=yes \
+          -m "not perf" \
+          tests/test_format.py \
+          tests/main/jsonschema/test_main_jsonschema.py \
+          tests/main/openapi \
+          tests/main/graphql \
+          tests/main/avro \
+          tests/main/protobuf \
+          tests/main/xmlschema \
+          tests/main/asyncapi \
+          tests/main/test_main_general.py \
+          tests/test_main_kr.py
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
 
   coverage:
     name: combine coverage
@@ -1347,6 +1242,7 @@ jobs:
       - test-http-backends-nocov
       - test-shard
       - test-shard-nocov
+      - test-formatter-subset
       - coverage
       - check
       - e2e

@@ -84,6 +84,21 @@
     "results_match": true,
     "stderr": ""
   },
+  "test-formatter-subset:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-formatter-subset:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-formatter-subset:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "test-http-backends-nocov:cancelled": {
     "exit": 1,
     "results_match": true,
