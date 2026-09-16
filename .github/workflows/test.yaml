@@ -609,7 +609,7 @@ jobs:
             name: "3.14"
             os: macos-latest
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 2
           - tox_env: py314-nocov-parallel
@@ -623,7 +623,7 @@ jobs:
             name: "3.13"
             os: macos-latest
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 2
           - tox_env: py313-nocov-parallel
@@ -637,7 +637,7 @@ jobs:
             name: "3.12"
             os: macos-latest
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 2
           - tox_env: py312-nocov-parallel
@@ -651,7 +651,7 @@ jobs:
             name: "3.11"
             os: macos-latest
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 2
           - tox_env: py311-nocov-parallel
@@ -665,7 +665,7 @@ jobs:
             name: "3.10"
             os: macos-latest
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 2
           - tox_env: py310-nocov-parallel
@@ -679,7 +679,7 @@ jobs:
             name: "py312-black-latest"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-blacklatest-nocov-parallel
@@ -700,7 +700,7 @@ jobs:
             name: "py312-black24"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-black24-nocov-parallel
@@ -721,7 +721,7 @@ jobs:
             name: "py312-black23"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-black23-nocov-parallel
@@ -742,7 +742,7 @@ jobs:
             name: "py312-black22"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-black22-nocov-parallel
@@ -763,7 +763,7 @@ jobs:
             name: "py312-isort8"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-isort8-nocov-parallel
@@ -784,7 +784,7 @@ jobs:
             name: "py312-isort7"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-isort7-nocov-parallel
@@ -805,7 +805,7 @@ jobs:
             name: "py312-isort6"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-isort6-nocov-parallel
@@ -826,7 +826,7 @@ jobs:
             name: "py312-isort5"
             os: ubuntu-24.04
             coverage: false
-            extra_tests: ""
+            extra_tests: tests/cli_doc/test_cli_options_sync.py
             shard: 1
             shard_total: 3
           - tox_env: py312-isort5-nocov-parallel
