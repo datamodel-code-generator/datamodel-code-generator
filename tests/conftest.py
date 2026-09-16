@@ -189,6 +189,7 @@ def pytest_configure(config: pytest.Config) -> None:
         "aliases: list of alternative option names (e.g., ['--capitalise-enum-members']).",
     )
     config._cli_doc_items: list[dict[str, Any]] = []
+    config.pluginmanager.register(SlowTestOrdering(), "slow-test-ordering")
 
 
 def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  # noqa: ARG001, PLR0912, PLR0914  # pragma: no cover
@@ -372,19 +373,26 @@ def order_slow_tests_first(items: list[pytest.Item], durations: dict[str, int], 
     return ordered
 
 
+class SlowTestOrdering:
+    """Reorder the final collection so every xdist worker chunk starts with measured slow tests."""
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_collection_modifyitems(self, config: pytest.Config, items: list[pytest.Item]) -> None:
+        """Run after marker and keyword deselection so chunk boundaries match what xdist distributes."""
+        workers = getattr(config, "workerinput", {}).get("workercount", 1)
+        items[:] = order_slow_tests_first(items, slow_test_durations(), workers)
+
+
 def pytest_collection_modifyitems(
     session: pytest.Session,  # noqa: ARG001
     config: pytest.Config,
     items: list[pytest.Item],
 ) -> None:
-    """Collect CLI doc metadata from tests with cli_doc marker and start each worker with slow tests.
+    """Collect CLI doc metadata from tests with cli_doc marker.
 
     Always collects metadata for use by test_cli_doc_coverage.py.
     Only validates markers when --collect-cli-docs is used.
-    Spreading measured slow tests over the initial xdist chunks keeps work stealing from ending on them.
     """
-    workers = getattr(config, "workerinput", {}).get("workercount", 1)
-    items[:] = order_slow_tests_first(items, slow_test_durations(), workers)
     collect_cli_docs = config.getoption("--collect-cli-docs", default=False)
     validation_errors: list[tuple[str, list[str]]] = []
 
