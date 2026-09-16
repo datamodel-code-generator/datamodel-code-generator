@@ -1,1 +1,1 @@
-{"returncode": 1, "stderr": "Expected a positive PR number.\n", "stdout": ""}
+{"created_files": [], "returncode": 1, "stderr": "Expected a positive PR number.\n", "stdout": ""}

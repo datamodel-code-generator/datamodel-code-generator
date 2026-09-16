@@ -147,7 +147,15 @@ def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tm
         text=True,
     )
     assert_output(
-        json.dumps({"returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}, sort_keys=True)
+        json.dumps(
+            {
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "created_files": sorted(path.name for path in tmp_path.iterdir()),
+            },
+            sort_keys=True,
+        )
         + "\n",
         root / "tests/data/expected/release_draft_workflow/invalid_pr_number.txt",
     )
