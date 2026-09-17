@@ -25,7 +25,8 @@ repos:
     exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/model/_compiled_templates/"
   - id: ruff
     exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/model/_compiled_templates/"
-    args: ["--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--extend-ignore", "D421,PLW0717,RUF067,RUF069,RUF074,RUF075,RUF105"]
+    # Autouse fixtures intentionally isolate shared state and block accidental network access.
+    args: ["--preview", "--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--extend-ignore", "D421,PLW0717,RUF067,RUF069,RUF074,RUF075,RUF105,pytest-fixture-autouse"]
 - repo: https://github.com/codespell-project/codespell
   rev: v2.4.3
   hooks:

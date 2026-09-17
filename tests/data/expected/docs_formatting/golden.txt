@@ -1,0 +1,28 @@
+An explanation before the generated example:
+
+```python
+name = "before"
+```
+
+    <!-- fmt: off -->
+
+    ```python
+    from pydantic import BaseModel, Field
+
+
+    class Pet(BaseModel):
+        name: str = Field(
+            'dog',
+            description='Pet name',
+        )
+    ```
+
+    <!-- fmt: on -->
+
+
+
+After the example:
+
+```python
+name = "after"
+```

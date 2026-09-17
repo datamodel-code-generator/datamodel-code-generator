@@ -10,11 +10,13 @@ lint.ignore = [
   "COM812",  # t-linter owns t-string formatting here
   "CPY",     # No copyright statements
   "D",       # this file is shipped as browser runtime code
+  "DOC",     # this file is shipped as browser runtime code
   "E501",    # t-strings often contain single-line HTML fragments
   "FBT",     # called from JavaScript/Pyodide bridge
   "I001",    # keep imports stable for Pyodide runtime readability
   "INP001",  # static browser asset, not a Python package
   "N802",    # tdom components use PascalCase names
+  "PLC1901", # empty form strings differ from valid False and 0 values
   "PLR0913", # tdom component props are explicit
   "PLR2004", # UI threshold constants are local to this file
 ]

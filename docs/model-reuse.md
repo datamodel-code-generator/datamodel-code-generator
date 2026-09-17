@@ -50,6 +50,8 @@ datamodel-codegen --input schema.json --output model.py --reuse-model
 ```
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-model.output -->
+<!-- fmt: off -->
+
 ```python
 from __future__ import annotations
 
@@ -59,26 +61,30 @@ from pydantic import BaseModel, Field, RootModel
 
 
 class Animal(Enum):
-    dog = "dog"
-    cat = "cat"
-    snake = "snake"
+    dog = 'dog'
+    cat = 'cat'
+    snake = 'snake'
 
 
 class RedistributeEnum(Enum):
-    static = "static"
-    connected = "connected"
+    static = 'static'
+    connected = 'connected'
 
 
 class User(BaseModel):
     name: str | None = None
-    animal: Animal | None = "dog"
-    pet: Animal | None = "cat"
+    animal: Animal | None = 'dog'
+    pet: Animal | None = 'cat'
     redistribute: list[RedistributeEnum] | None = None
 
 
 class Redistribute(RootModel[list[RedistributeEnum]]):
-    root: list[RedistributeEnum] = Field(..., description="Redistribute type for routes.")
+    root: list[RedistributeEnum] = Field(
+        ..., description='Redistribute type for routes.'
+    )
 ```
+
+<!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-model.output -->
 
 ### Benefits
@@ -121,6 +127,8 @@ schemas/
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-scope-tree.output -->
 **Output with `--reuse-scope tree`:**
 
+<!-- fmt: off -->
+
 ```text
 models/
 |-- __init__.py
@@ -129,10 +137,14 @@ models/
 `-- shared.py
 ```
 
+<!-- fmt: on -->
+
 **models/__init__.py:**
 _No code beyond the generated header._
 
 **models/schema_a.py:**
+
+<!-- fmt: off -->
 
 ```python
 from __future__ import annotations
@@ -150,7 +162,11 @@ class Model(BaseModel):
     data: SharedModel | None = None
 ```
 
+<!-- fmt: on -->
+
 **models/schema_b.py:**
+
+<!-- fmt: off -->
 
 ```python
 from __future__ import annotations
@@ -164,7 +180,11 @@ class Model(BaseModel):
     info: shared.SharedModel | None = None
 ```
 
+<!-- fmt: on -->
+
 **models/shared.py:**
+
+<!-- fmt: off -->
 
 ```python
 from __future__ import annotations
@@ -176,6 +196,8 @@ class SharedModel(BaseModel):
     id: int | None = None
     name: str | None = None
 ```
+
+<!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.reuse-scope-tree.output -->
 
 ---
@@ -328,6 +350,8 @@ class ClassB(BaseModel):
 **Step 1: Define the shared type in `$defs`**
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.schema -->
+<!-- fmt: off -->
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -372,6 +396,8 @@ class ClassB(BaseModel):
   ]
 }
 ```
+
+<!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.schema -->
 
 **Step 2: Generate with `--use-type-alias`**
@@ -386,6 +412,8 @@ datamodel-codegen \
 ### Result: Single TypeAlias reused across classes
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.output -->
+<!-- fmt: off -->
+
 ```python
 from __future__ import annotations
 
@@ -400,9 +428,9 @@ PlaceName = TypeAliasType(
         str,
         Field(
             ...,
-            description="A place name with alias",
-            examples=["Tokyo", "New York"],
-            title="PlaceName",
+            description='A place name with alias',
+            examples=['Tokyo', 'New York'],
+            title='PlaceName',
         ),
     ],
 )
@@ -418,8 +446,10 @@ class ClassB(BaseModel):
     description: str | None = None
 
 
-Model = TypeAliasType("Model", Annotated[ClassA | ClassB, Field(..., title="Model")])
+Model = TypeAliasType("Model", Annotated[ClassA | ClassB, Field(..., title='Model')])
 ```
+
+<!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: model-reuse.use-type-alias.output -->
 
 ### Benefits

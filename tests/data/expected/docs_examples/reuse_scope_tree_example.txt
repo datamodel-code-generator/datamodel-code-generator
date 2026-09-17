@@ -1,6 +1,8 @@
 
 **Output with `--reuse-scope tree`:**
 
+<!-- fmt: off -->
+
 ```text
 models/
 |-- __init__.py
@@ -9,10 +11,14 @@ models/
 `-- shared.py
 ```
 
+<!-- fmt: on -->
+
 **models/__init__.py:**
 _No code beyond the generated header._
 
 **models/schema_a.py:**
+
+<!-- fmt: off -->
 
 ```python
 from __future__ import annotations
@@ -30,7 +36,11 @@ class Model(BaseModel):
     data: SharedModel | None = None
 ```
 
+<!-- fmt: on -->
+
 **models/schema_b.py:**
+
+<!-- fmt: off -->
 
 ```python
 from __future__ import annotations
@@ -44,7 +54,11 @@ class Model(BaseModel):
     info: shared.SharedModel | None = None
 ```
 
+<!-- fmt: on -->
+
 **models/shared.py:**
+
+<!-- fmt: off -->
 
 ```python
 from __future__ import annotations
@@ -56,3 +70,5 @@ class SharedModel(BaseModel):
     id: int | None = None
     name: str | None = None
 ```
+
+<!-- fmt: on -->

@@ -83,6 +83,19 @@ are intentionally outside the generated-output helper policy. Use
 reasonably be expressed with the shared helpers, such as external-request mock
 checks or intermediate-state checks.
 
+## Documentation formatting
+
+Ruff formats Python code blocks in Markdown, including hand-written explanations.
+Documentation builders surround fixture-backed examples and generated output with
+`<!-- fmt: off -->` and `<!-- fmt: on -->` so the displayed code keeps the exact
+quote style and layout produced by the documented command. Keep these markers in
+the builders rather than editing generated Markdown directly.
+
+After changing documentation, regenerate the affected pages and then run
+`python scripts/build_llms_txt.py`. Run `tox run -e fix` and
+`tox run -e docs-check-all -- --check` to verify formatting and generated content
+agree.
+
 ## Release notes
 
 Release notes should describe changes that affect users: features, fixes,

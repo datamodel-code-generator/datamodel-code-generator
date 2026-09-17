@@ -65,8 +65,8 @@ def read_python_output(path: Path) -> str:
 
 
 def fenced(language: str, content: str) -> str:
-    """Render a Markdown fenced code block."""
-    return f"\n```{language}\n{content.rstrip()}\n```\n"
+    """Render a fixture verbatim, including its original formatting."""
+    return f"\n<!-- fmt: off -->\n\n```{language}\n{content.rstrip()}\n```\n\n<!-- fmt: on -->\n"
 
 
 def details(summary: str, language: str, content: str) -> str:

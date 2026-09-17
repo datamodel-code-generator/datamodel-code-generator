@@ -572,13 +572,13 @@ def read_expected_file(relative_path: str) -> str:
         return safe_read_file(EXPECTED_BASE_PATH, relative_path)
 
 
-def indent_code_block(content: str, prefix: str) -> str:
-    """Indent a code block for MkDocs Material tabs."""
+def indent_code_block(content: str, prefix: str, language: str = "python") -> str:
+    """Indent a fixture for MkDocs tabs and preserve its original formatting."""
     lines = content.strip().split("\n")
-    result = f"{prefix}```python\n"
+    result = f"{prefix}<!-- fmt: off -->\n\n{prefix}```{language}\n"
     for line in lines:
         result += f"{prefix}{line}\n" if line else "\n"
-    result += f"{prefix}```\n\n"
+    result += f"{prefix}```\n\n{prefix}<!-- fmt: on -->\n\n"
     return result
 
 
@@ -650,17 +650,11 @@ def _generate_single_example_output(example: CLIDocExample, prefix: str = "    "
         if "/" in stdout_value or stdout_value.endswith((".py", ".txt")):
             try:
                 content = read_expected_file(stdout_value)
-                md += f"{prefix}```\n"
-                for line in content.strip().split("\n"):
-                    md += f"{prefix}{line}\n" if line else "\n"
-                md += f"{prefix}```\n\n"
+                md += indent_code_block(content, prefix, language="")
             except (FileNotFoundError, ValueError) as e:
                 md += f"{prefix}> **Error:** {e}\n\n"
         else:
-            md += f"{prefix}```\n"
-            for line in stdout_value.strip().split("\n"):
-                md += f"{prefix}{line}\n" if line else "\n"
-            md += f"{prefix}```\n\n"
+            md += indent_code_block(stdout_value, prefix, language="")
     elif example.comparison_output and example.model_outputs:
         model_labels = dict(ORDERED_MODEL_OUTPUT_LABELS)
         for model_key, output_file in validated_model_outputs(example):
@@ -715,10 +709,7 @@ def _generate_single_example_output(example: CLIDocExample, prefix: str = "    "
     elif example.golden_output:
         try:
             content = read_expected_file(example.golden_output)
-            md += f"{prefix}```python\n"
-            for line in content.strip().split("\n"):
-                md += f"{prefix}{line}\n" if line else "\n"
-            md += f"{prefix}```\n\n"
+            md += indent_code_block(content, prefix)
         except (FileNotFoundError, ValueError) as e:
             md += f"{prefix}> **Error:** {e}\n\n"
     return md
@@ -738,10 +729,7 @@ def _generate_extra_outputs(example: CLIDocExample, prefix: str = "    ") -> str
         md += f"{prefix}**{title}:**\n\n"
         try:
             content = read_expected_file(output_path)
-            md += f"{prefix}```{language}\n"
-            for line in content.strip().split("\n"):
-                md += f"{prefix}{line}\n" if line else "\n"
-            md += f"{prefix}```\n\n"
+            md += indent_code_block(content, prefix, language=language)
         except (FileNotFoundError, ValueError) as e:
             md += f"{prefix}> **Error:** {e}\n\n"
     return md

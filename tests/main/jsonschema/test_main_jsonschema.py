@@ -5025,8 +5025,10 @@ first_pet: Pet = pets[0]
 selected_pets: list[Pet] = pets[:1]
 pet_names = [pet.name for pet in pets]
 
+
 def render_pet_names(pets: Sequence[Pet]) -> list[str]:
     return [pet.name for pet in pets]
+
 
 render_pet_names(pets)
 ```

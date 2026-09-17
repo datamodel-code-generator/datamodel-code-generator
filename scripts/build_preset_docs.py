@@ -397,9 +397,13 @@ documentation, use [`{practical_preset_name}`]({practical_preset_url}).
 
 **Output (`{QUICK_START_OUTPUT_NAME}`)**
 
+<!-- fmt: off -->
+
 ```python
 {model_output}
 ```
+
+<!-- fmt: on -->
 
 ### Choose a formatter
 
@@ -449,9 +453,13 @@ documentation, use [`{practical_preset_name}`]({practical_preset_link}).
 
 ### Output
 
+<!-- fmt: off -->
+
 ```python title="{QUICK_START_OUTPUT_NAME}"
 {model_output}
 ```
+
+<!-- fmt: on -->
 
 🎉 That's it! Your schema is now a fully-typed Python model.
 

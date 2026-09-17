@@ -2,34 +2,58 @@
 <details>
 <summary>schema.yaml</summary>
 
-```yaml
-name: User
-```
-</details>
+<!-- fmt: off -->
 
 ```yaml
 name: User
 ```
+
+<!-- fmt: on -->
+</details>
+
+<!-- fmt: off -->
+
+```yaml
+name: User
+```
+
+<!-- fmt: on -->
+
+<!-- fmt: off -->
 
 ```python
 class User:
     pass
 ```
 
+<!-- fmt: on -->
+
 ??? example "Examples"
 
     **Command:**
+    <!-- fmt: off -->
+
     ```bash
     datamodel-codegen --input schema.yaml --output model.py
     ```
 
+    <!-- fmt: on -->
+
     **Schema:**
+    <!-- fmt: off -->
+
     ```yaml
     name: User
     ```
 
+    <!-- fmt: on -->
+
     **Model:**
+    <!-- fmt: off -->
+
     ```python
     class User:
         pass
     ```
+
+    <!-- fmt: on -->
