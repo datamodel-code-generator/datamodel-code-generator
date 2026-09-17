@@ -41,7 +41,7 @@ def test_documentation_formatting_preserves_generated_examples(kind: str) -> Non
             rendered = build_cli_docs._generate_extra_outputs(example)
         case "readme":
             rendered = build_preset_docs._render_readme_quick_start("example", model.rstrip(), "practical")
-        case "quick_start":
+        case _:
             rendered = build_preset_docs._render_docs_quick_start("example", model.rstrip(), "practical")
     markdown = (DATA / "docs_formatting" / "explanation.md").read_text(encoding="utf-8")
     markdown = markdown.replace("<!-- generated-example -->", rendered)
