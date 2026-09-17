@@ -1,0 +1,3 @@
+tests/test_new.py
+tests/test_new.py
+error: No tests selected for shard 1/1

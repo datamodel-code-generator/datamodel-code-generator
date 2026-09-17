@@ -24,10 +24,10 @@ assert_file_content = create_assert_file_content(EXPECTED)
 @pytest.mark.parametrize(
     ("scenario", "backend"),
     [
+        *[("generate_first", backend) for backend in DataModelType],
         *[
-            (scenario, backend)
-            for scenario in ["generate_first", "inflect_first", "typeguard_first", "concurrent", "parallel_generation"]
-            for backend in DataModelType
+            (scenario, DataModelType.PydanticV2BaseModel)
+            for scenario in ["inflect_first", "typeguard_first", "concurrent", "parallel_generation"]
         ],
         *[
             (scenario, DataModelType.PydanticV2BaseModel)

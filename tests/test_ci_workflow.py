@@ -11,6 +11,7 @@ from pathlib import Path
 import yaml
 
 from scripts.ci_coverage import EXPECTED_NAMES
+from scripts.select_ci_test_shard import PROFILES
 from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,9 +35,11 @@ def test_workflow_matrix_and_coverage_contract() -> None:
             names.append(f".coverage.{env}{shard}-{entry.get('os', 'ubuntu-24.04')}")
     configurations = sorted(
         f"{entry['tox_env']}:{entry.get('os', 'ubuntu-24.04')}:{entry.get('shard', '')}/{entry.get('shard_total', '')}"
+        f":{entry.get('profile', '')}"
         for entries in groups.values()
         for entry in entries
     )
+    shard_entries = [entry for entries in groups.values() for entry in entries if "shard" in entry]
     all_setup_steps = [step for job in jobs.values() for step in job["steps"] if "setup-uv@" in step.get("uses", "")]
     output = {
         "configurations": sorted(configurations),
@@ -48,6 +51,12 @@ def test_workflow_matrix_and_coverage_contract() -> None:
             if entry.get("extra_tests")
         ),
         "shard_profile_mapping": jobs["test-shard"]["env"]["SHARD_PROFILE"],
+        "shard_profiles_known": all(entry.get("profile") in PROFILES for entry in shard_entries),
+        "exclude_tests": sorted({entry["exclude_tests"] for entry in shard_entries if entry.get("exclude_tests")}),
+        "exclude_only_without_coverage": all(
+            bool(entry.get("exclude_tests")) == (entry["coverage"] == "false") for entry in shard_entries
+        ),
+        "shard_profiles_used": sorted({entry["profile"] for entry in shard_entries}),
         "coverage_count": len(names),
         "coverage_unique": len(set(names)),
         "expected_names_match": set(names) == EXPECTED_NAMES,

@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-SHARD_COUNTS = {"py314": 2, "py313": 3, "py312": 3, "py311": 3, "py310": 3}
+SHARD_COUNTS = {"py314": 3, "py313": 4, "py312": 4, "py311": 4, "py310": 4}
 COVERAGE_ENVS = (
     "migration-legacy",
     "migration-boundary",

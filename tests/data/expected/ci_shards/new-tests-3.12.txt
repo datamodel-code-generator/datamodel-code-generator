@@ -1,0 +1,14 @@
+{
+  "measured_weight": 566740,
+  "nodeids": [
+    "tests/main/test_payload_validation.py::TestNew::test_async_method",
+    "tests/main/test_payload_validation.py::TestNew::test_method",
+    "tests/main/test_payload_validation.py::test_async",
+    "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads",
+    "tests/main/test_payload_validation.py::test_new",
+    "tests/test_new.py"
+  ],
+  "order_independent": true,
+  "positive_weights": true,
+  "source_size_independent": true
+}

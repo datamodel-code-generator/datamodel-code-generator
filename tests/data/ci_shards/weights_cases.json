@@ -3,7 +3,7 @@
     "runs": [
       [
         "--profile",
-        "default",
+        "3.14",
         "--junit",
         "junit/default.xml",
         "--run-id",
@@ -13,12 +13,12 @@
       ],
       [
         "--profile",
-        "default",
+        "3.14",
         "1",
         "1"
       ]
     ],
-    "dump": "default"
+    "dump": "3.14"
   },
   "record-missing-provenance": {
     "runs": [
@@ -32,7 +32,7 @@
     "runs": [
       [
         "--profile",
-        "legacy",
+        "3.10",
         "--junit",
         "junit/empty.xml",
         "--run-id",
@@ -44,26 +44,69 @@
   },
   "invalid-version": {
     "weights": {
-      "version": 1,
+      "version": 2,
       "profiles": {
-        "default": {
-          "files": {},
-          "nodes": {},
+        "3.10": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         },
-        "legacy": {
-          "files": {},
-          "nodes": {},
+        "3.11": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.12": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.13": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.14": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         },
         "windows": {
-          "files": {},
-          "nodes": {},
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         },
         "macos": {
-          "files": {},
-          "nodes": {},
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         }
       }
@@ -77,11 +120,15 @@
   },
   "missing-profile": {
     "weights": {
-      "version": 2,
+      "version": 3,
       "profiles": {
-        "default": {
-          "files": {},
-          "nodes": {},
+        "3.14": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         }
       }
@@ -95,25 +142,63 @@
   },
   "invalid-profile": {
     "weights": {
-      "version": 2,
+      "version": 3,
       "profiles": {
-        "default": {
-          "files": {},
-          "nodes": {}
-        },
-        "legacy": {
-          "files": {},
-          "nodes": {},
+        "3.10": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         },
+        "3.11": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.12": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.13": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.14": {
+          "files": []
+        },
         "windows": {
-          "files": {},
-          "nodes": {},
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         },
         "macos": {
-          "files": {},
-          "nodes": {},
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
           "slow": {}
         }
       }
@@ -129,32 +214,66 @@
     "runs": [
       [
         "--profile",
-        "default",
+        "3.14",
         "--junit",
         "junit/no-split.xml",
         "--run-id",
         "42",
         "--sha",
         "abc123"
+      ],
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1"
       ]
-    ]
+    ],
+    "dump": "3.14"
   },
   "empty-maps": {
     "weights": {
-      "version": 2,
+      "version": 3,
       "profiles": {
-        "default": {
-          "files": {},
-          "nodes": {},
-          "slow": {}
-        },
-        "legacy": {
+        "3.10": {
           "files": {
             "tests/test_new.py": 1
           },
           "nodes": {
             "tests/main/test_payload_validation.py::test_new": 1
           },
+          "slow": {}
+        },
+        "3.11": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.12": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.13": {
+          "files": {
+            "tests/test_new.py": 1
+          },
+          "nodes": {
+            "tests/main/test_payload_validation.py::test_new": 1
+          },
+          "slow": {}
+        },
+        "3.14": {
+          "files": {},
+          "nodes": {},
           "slow": {}
         },
         "windows": {
@@ -181,6 +300,34 @@
       [
         "1",
         "2"
+      ]
+    ]
+  },
+  "exclude": {
+    "runs": [
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1",
+        "--exclude",
+        "tests/main/test_payload_validation.py"
+      ],
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1",
+        "--exclude",
+        "tests/main"
+      ],
+      [
+        "--profile",
+        "3.14",
+        "1",
+        "1",
+        "--exclude",
+        "tests"
       ]
     ]
   }
