@@ -24,6 +24,7 @@ def test_documentation_formatting_preserves_generated_examples(kind: str) -> Non
     """Real Ruff formats surrounding prose examples while keeping generated fixtures verbatim."""
     model = (DATA / "expected" / "main" / MODEL_PATH).read_text(encoding="utf-8")
     example = build_cli_docs.CLIDocExample(node_id="formatting", option_description="")
+    rendered = ""
     match kind:
         case "fixture":
             rendered = build_docs_examples.fenced("python", model)
