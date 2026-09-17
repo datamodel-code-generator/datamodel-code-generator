@@ -1388,7 +1388,9 @@ class BaseModel(BaseModelBase):
             or not cls._has_custom_schema_runtime_validation_helper(model)
             or model.custom_template_dir == TEMPLATE_DIR
         ):
-            helper_imports += (Import(from_="collections.abc", import_="Mapping", alias="_Mapping"),)
+            helper_imports += (
+                Import(from_="collections.abc", import_="Mapping", alias="_Mapping", keep_unaliased=True),
+            )
         if not uses_generated_generic_base_class:
             helper_imports += (IMPORT_BASE_MODEL,)
         for import_ in helper_imports:
@@ -1638,10 +1640,23 @@ class BaseModel(BaseModelBase):
                 runtime_validation.pattern_properties for runtime_validation in runtime_validations
             ),
             "has_required_groups": any(
-                runtime_validation.required_groups for runtime_validation in runtime_validations
+                rule.keyword != "not"
+                for runtime_validation in runtime_validations
+                for rule in runtime_validation.required_groups
+            ),
+            "has_not_required_groups": any(
+                rule.keyword == "not"
+                for runtime_validation in runtime_validations
+                for rule in runtime_validation.required_groups
             ),
             "has_conditional_required": any(
                 runtime_validation.conditional_required for runtime_validation in runtime_validations
+            ),
+            "has_conditional_presence": any(
+                not expected
+                for runtime_validation in runtime_validations
+                for rule in runtime_validation.conditional_required
+                for _names, expected in rule.condition
             ),
             "has_conditional_json_equality": any(
                 conditional_value_uses_json_equality(value)
@@ -1673,6 +1688,18 @@ class BaseModel(BaseModelBase):
 
             if renderer := get_builtin_renderer(cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH):
                 return renderer(**context)
+
+        if (
+            (context["has_conditional_presence"] or context["has_not_required_groups"])
+            and custom_template_dir is not None
+            and custom_template_dir != TEMPLATE_DIR
+            and (custom_template_dir / cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH).is_file()
+        ):
+            msg = (
+                "Custom schema runtime validation helper overrides do not yet support generated presence-only "
+                "conditions or not-required groups. Remove the helper override or disable schema validators."
+            )
+            raise Error(msg)
 
         if context["has_unique_items"] and custom_template_dir is not None:
             custom_template_path = custom_template_dir / cls.SCHEMA_RUNTIME_VALIDATION_HELPERS_TEMPLATE_FILE_PATH

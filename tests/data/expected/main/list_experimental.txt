@@ -27,7 +27,7 @@ behavior.remote-reference-lock:
   explicit port—never a path, query, or request headers.
 cli-option.generate-schema-validators:
   The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules
-  such as patternProperties, required-only oneOf/anyOf groups, and simple if/then/else
+  such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else
   required-property conditions.
 cli-option.install-skill:
   Use --install-skill with codex or claude-code. --skill-scope selects a project or user

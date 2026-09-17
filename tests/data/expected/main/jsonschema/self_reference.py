@@ -15,7 +15,7 @@ class Model(RootModel[Any]):
 
 class Pet(BaseModel):
     name: str | None = Field(None, examples=['dog', 'cat'])
-    friends: list[Pet] | None = None
+    friends: list[Pet] | None = Field(None, min_length=1)
 
 
 Pet.model_rebuild()

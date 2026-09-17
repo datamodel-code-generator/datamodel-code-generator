@@ -1,0 +1,23 @@
+tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads
+tests/test_new.py
+tests/main/test_payload_validation.py::TestNew::test_async_method
+tests/main/test_payload_validation.py::test_async
+tests/main/test_payload_validation.py::test_new
+tests/main/test_payload_validation.py::TestNew::test_method
+{
+  "files": {
+    "tests/test_new.py": 31
+  },
+  "nodes": {
+    "tests/main/test_payload_validation.py::TestNew::test_method": 1,
+    "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads": 1750,
+    "tests/main/test_payload_validation.py::test_new": 2
+  },
+  "provenance": {
+    "run_id": "42",
+    "sha": "abc123"
+  },
+  "slow": {
+    "tests/main/test_payload_validation.py::test_generated_pydantic_v2_model_accepts_schema_derived_payloads[jsonschema/a.json]": 1500
+  }
+}

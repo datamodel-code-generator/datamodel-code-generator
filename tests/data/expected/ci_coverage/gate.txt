@@ -84,6 +84,21 @@
     "results_match": true,
     "stderr": ""
   },
+  "test-formatter-subset:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-formatter-subset:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "test-formatter-subset:skipped": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "test-http-backends-nocov:cancelled": {
     "exit": 1,
     "results_match": true,
@@ -140,21 +155,6 @@
     "stderr": ""
   },
   "test-shard:skipped": {
-    "exit": 1,
-    "results_match": true,
-    "stderr": ""
-  },
-  "test:cancelled": {
-    "exit": 1,
-    "results_match": true,
-    "stderr": ""
-  },
-  "test:failure": {
-    "exit": 1,
-    "results_match": true,
-    "stderr": ""
-  },
-  "test:skipped": {
     "exit": 1,
     "results_match": true,
     "stderr": ""

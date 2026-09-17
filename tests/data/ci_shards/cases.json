@@ -235,5 +235,29 @@
       }
     ],
     "args": []
+  },
+  "ordered": {
+    "items": [
+      {
+        "nodeid": "a",
+        "weight": 1
+      },
+      {
+        "nodeid": "d",
+        "weight": 3
+      },
+      {
+        "nodeid": "b",
+        "weight": 5
+      },
+      {
+        "nodeid": "c",
+        "weight": 3
+      }
+    ],
+    "args": [
+      "1",
+      "1"
+    ]
   }
 }

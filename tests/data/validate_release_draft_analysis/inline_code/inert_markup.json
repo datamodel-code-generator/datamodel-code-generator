@@ -1,0 +1,1 @@
+{"has_breaking_changes": true, "breaking_changes_content": "### Code Generation Changes\n* Generated annotations change compatibility - Render `[link](https://example.com)` and `<tag>` and `@name` literally (#42)", "reasoning": "Prepared diff was read."}

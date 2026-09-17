@@ -5,6 +5,33 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.82.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.82.0) - 2026-09-16
+
+## Breaking Changes
+
+
+### Code Generation Changes
+* Constraints are now emitted on recursive container fields - Previously any field that was a self reference had all of its constraints suppressed. The new `_can_apply_constraints` property in the base field model only suppresses constraints for direct self references, so a self referencing field whose type is a container such as `list`, `Sequence`, `dict`, `Mapping`, `set`, `frozenset`, or `tuple` now keeps its size constraints. Pydantic output gains `Field(min_length=..., max_length=...)` and msgspec output gains `Meta(min_length=..., max_length=...)` where the generated code previously had a bare default, for example `friends: list[Pet] | None = None` becomes `friends: list[Pet] | None = Field(None, min_length=1)` (#4071)
+* Stricter runtime validation of recursive container payloads - Because the recovered size constraints are now present in the generated models, input data that violates `minItems` or `maxItems` on a recursive array is rejected at validation time instead of being accepted. Existing code that relied on the previously unconstrained generated models may start raising pydantic `ValidationError` or `msgspec.ValidationError` for payloads that used to pass (#4071)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Fix builtin formatter wrapping of boolean expressions by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4073
+* Fix collapse-root-models dropping array constraints on self-referencing unions by @ysheikh2 in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4071
+* Generate validators for not-required groups and presence-only if conditions by @ysheikh2 in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4072
+* Fix bare Mapping import dropped when schema validators alias it by @ysheikh2 in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4076
+* Allow manual replay of failed release draft analysis by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4079
+
+## New Contributors
+* @ysheikh2 made their first contribution in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4071
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.81.0...0.82.0
+
+---
+
 ## [0.81.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.81.0) - 2026-09-14
 
 ## Breaking Changes

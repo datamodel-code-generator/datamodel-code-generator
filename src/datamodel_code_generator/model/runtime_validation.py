@@ -65,9 +65,9 @@ class IndependentModelPatternPropertiesRule(PatternPropertiesRule):
 
 @dataclass(frozen=True)
 class RequiredGroupsRule:
-    """Runtime rule for required-property oneOf/anyOf groups."""
+    """Runtime rule for required-property oneOf/anyOf groups and not-required groups."""
 
-    keyword: Literal["anyOf", "oneOf"]
+    keyword: Literal["anyOf", "oneOf", "not"]
     groups: RequiredGroups
 
 

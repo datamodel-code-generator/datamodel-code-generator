@@ -130,7 +130,6 @@ benchmark = [
   "pytest-codspeed>=2.2",
 ]
 black22 = [ "black==22.1" ]
-black23 = [ "black==23.12" ]
 black24 = [ "black==24.1" ]
 blacklatest = [ "black" ]
 coverage = [
@@ -139,10 +138,8 @@ coverage = [
   "diff-cover>=9.7.2",
 ]
 fix = [ "prek>=0.2.22" ]
-isort5 = [ "isort>=5,<6" ]
 isort6 = [ "isort>=6,<7" ]
 isort7 = [ "isort>=7,<8; python_version>='3.10'" ]
-isort8 = [ "isort>=8,<9; python_version>='3.10'" ]
 pkg-meta = [ "check-wheel-contents>=0.6.1", "twine>=7", "uv>=0.5.22" ]
 playground = [
   "t-linter>=0.8",

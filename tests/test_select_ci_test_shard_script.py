@@ -15,6 +15,8 @@ from scripts import select_ci_test_shard
 from tests.conftest import assert_output
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "select_ci_test_shard.py"
+DATA = Path(__file__).parent / "data/ci_shards"
+EXPECTED = Path(__file__).parent / "data/expected/ci_shards"
 PAYLOAD_VALIDATION_FILE = "tests/main/test_payload_validation.py"
 
 
@@ -104,7 +106,7 @@ def test_recipe_cli_validates_external_cases(case: str, tmp_path: Path) -> None:
     assert_output(output.getvalue(), Path(__file__).parent / f"data/expected/ci_shards/{case}.txt")
 
 
-@pytest.mark.parametrize("profile", ["default", "legacy"])
+@pytest.mark.parametrize("profile", select_ci_test_shard.PROFILES)
 def test_discovery_includes_new_files_and_methods(tmp_path: Path, profile: str) -> None:
     """Discover unknown tests and keep deterministic recipes across enumeration order."""
     from contextlib import redirect_stdout
@@ -155,3 +157,33 @@ def test_discovery_includes_new_files_and_methods(tmp_path: Path, profile: str) 
         + "\n",
         Path(__file__).parent / f"data/expected/ci_shards/new-tests-{profile}.txt",
     )
+
+
+@pytest.mark.parametrize("case", json.loads((DATA / "weights_cases.json").read_text(encoding="utf-8")))
+def test_weights_cli_validates_external_cases(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Record JUnit durations into measured weights and reject malformed weight documents."""
+    from contextlib import redirect_stdout
+    from io import StringIO
+
+    data = json.loads((DATA / "weights_cases.json").read_text(encoding="utf-8"))[case]
+    shutil.copytree(DATA / "tree", tmp_path, dirs_exist_ok=True)
+    shutil.copytree(DATA / "junit", tmp_path / "junit")
+    weights = tmp_path / "weights.json"
+    weights.write_text(
+        json.dumps(data["weights"])
+        if "weights" in data
+        else select_ci_test_shard.WEIGHTS_PATH.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    output = StringIO()
+    with redirect_stdout(output):
+        try:
+            for args in data["runs"]:
+                select_ci_test_shard.main([*args, "--weights", "weights.json"])
+        except SystemExit as error:
+            output.write(f"error: {error}\n")
+    if (profile := data.get("dump")) is not None:
+        recorded = json.loads(weights.read_text(encoding="utf-8"))["profiles"][profile]
+        output.write(json.dumps(recorded, indent=2, sort_keys=True) + "\n")
+    assert_output(output.getvalue(), EXPECTED / f"weights-{case}.txt")

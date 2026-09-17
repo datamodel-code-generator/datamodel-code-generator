@@ -48,6 +48,19 @@
 {{ '\n' }}
 {%- set schema_validator_state.has_prior = true %}
 {%- endif %}
+{%- set not_required_groups = schema_runtime_validation.required_groups|selectattr('keyword', 'equalto', 'not')|list %}
+{%- if not_required_groups %}
+{%- if schema_validator_state.has_prior %}
+{{ '\n' }}
+{%- endif %}
+    __json_schema_not_required_groups__: ClassVar[tuple[Any, ...]] = (
+{%- for rule in not_required_groups %}
+        {{ rule.groups|repr }},
+{%- endfor %}
+    )
+{{ '\n' }}
+{%- set schema_validator_state.has_prior = true %}
+{%- endif %}
 {%- if schema_runtime_validation.conditional_required %}
 {%- if schema_validator_state.has_prior %}
 {{ '\n' }}

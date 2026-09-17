@@ -1109,3 +1109,48 @@ def test_script_rejects_partial_artifact_read(tmp_path: Path) -> None:
         + "\n",
         EXPECTED_PATH / "partial_artifact_read.txt",
     )
+
+
+@pytest.mark.parametrize(
+    "input_path", sorted((EXPECTED_PATH / "inline_code").glob("*.json")), ids=lambda path: path.stem
+)
+def test_script_validates_inline_code(input_path: Path, tmp_path: Path) -> None:
+    """Exercise safe type expressions and surrounding Markdown attacks through the CLI."""
+    analysis_path = tmp_path / "analysis.json"
+    paths = {name: tmp_path / name for name in ("deleted-lines", "execution", "marker", "analysis-context", "diff")}
+    paths["deleted-lines"].write_text("", encoding="utf-8")
+    paths["marker"].write_text("read-boundary-marker\n", encoding="utf-8")
+    paths["analysis-context"].write_text("context\n", encoding="utf-8")
+    paths["diff"].write_text("diff\n", encoding="utf-8")
+    paths["execution"].write_text(
+        json.dumps(_execution_record(paths["marker"], paths["analysis-context"], paths["diff"])),
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/validate_release_draft_analysis.py",
+            "--analysis-path",
+            str(analysis_path),
+            "--pr-number",
+            "42",
+            *(argument for name, path in paths.items() for argument in (f"--{name}-path", str(path))),
+        ],
+        capture_output=True,
+        check=False,
+        cwd=Path(__file__).parents[1],
+        env={**os.environ, "CLAUDE_OUTPUT": input_path.read_text(encoding="utf-8")},
+        text=True,
+    )
+    assert_output(
+        json.dumps(
+            {
+                "analysis": json.loads(analysis_path.read_text(encoding="utf-8")) if analysis_path.exists() else None,
+                "returncode": result.returncode,
+                "stderr": result.stderr,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        input_path.with_suffix(".txt"),
+    )

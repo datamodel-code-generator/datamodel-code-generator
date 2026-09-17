@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,15 +20,20 @@ from tests.conftest import (
     _infer_expected_file,
     assert_exact_directory_content,
     assert_inputs_not_mutated,
+    assert_output,
     assert_parser_modules,
     assert_parser_results,
     create_assert_file_content,
+    slow_test_durations,
+    worksteal_chunk_sizes,
 )
 from tests.main import _builtin_parity
 from tests.main import conftest as main_conftest
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
+
+SLOWEST_NODEID = "tests/test_format.py::test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files"
 
 
 @pytest.mark.parametrize(
@@ -626,3 +632,28 @@ def test_builtin_generate_formatter_parity_preserves_warnings(monkeypatch: pytes
     )
 
     assert not (tmp_path / "output.builtin-parity.py").exists()
+
+
+def test_collection_runs_measured_slow_tests_first(request: pytest.FixtureRequest) -> None:
+    """Every initial xdist chunk of the session starts with its measured slow tests, longest first."""
+    durations = slow_test_durations()
+    items = request.session.items
+    workers = getattr(request.config, "workerinput", {}).get("workercount", 1)
+    chunks: list[list[int]] = []
+    start = 0
+    for size in worksteal_chunk_sizes(len(items), workers):
+        chunks.append([durations.get(item.nodeid, 0) for item in items[start : start + size]])
+        start += size
+    assert_output(
+        json.dumps(
+            {
+                "chunks_cover_session": start == len(items),
+                "measured_files_exist": all(Path(nodeid.partition("::")[0]).is_file() for nodeid in durations),
+                "parity_measured": SLOWEST_NODEID in durations,
+                "slow_first_per_chunk": all(chunk == sorted(chunk, reverse=True) for chunk in chunks),
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        Path(__file__).parent / "data/expected/ci_shards/slow-first.txt",
+    )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import importlib
 import importlib.util
 import itertools
@@ -68,7 +69,7 @@ from datamodel_code_generator import (
     load_data_from_path,
 )
 from datamodel_code_generator.__main__ import Exit
-from datamodel_code_generator.format import DatetimeClassType, Formatter, is_supported_in_black
+from datamodel_code_generator.format import DatetimeClassType, Formatter, apply_builtin_formatter, is_supported_in_black
 from datamodel_code_generator.model import base as model_base
 from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.model.base import TEMPLATE_DIR
@@ -5891,6 +5892,116 @@ def test_main_builtin_generated_formatter_fallbacks(
         expected_file=expected_name,
         extra_args=[*extra_args, "--formatters", "builtin"],
     )
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+@pytest.mark.parametrize("formatter", ["builtin", "external"])
+@pytest.mark.parametrize("operator", ["and", "or"])
+def test_main_builtin_boolean_wrapping(output_file: Path, entrypoint: str, formatter: str, operator: str) -> None:
+    """Match Black when a nested boolean group exceeds the configured line length."""
+    source = JSON_SCHEMA_DATA_PATH / "conditional_json_equality/object.json"
+    templates = DATA_PATH / "templates/builtin_boolean_wrapping" / operator
+    expected = f"builtin_boolean_wrapping/{operator}.py"
+    formatters = [Formatter.BUILTIN] if formatter == "builtin" else [Formatter.BLACK, Formatter.ISORT]
+    if entrypoint == "cli":
+        run_main_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--generate-schema-validators",
+                "--disable-timestamp",
+                "--custom-template-dir",
+                str(templates),
+                "--formatters",
+                *(value.value for value in formatters),
+            ],
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type=InputFileType.JsonSchema,
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            generate_schema_validators=True,
+            disable_timestamp=True,
+            custom_template_dir=templates,
+            formatters=formatters,
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    assert_output(
+        apply_builtin_formatter(output_file.read_text(encoding="utf-8")),
+        EXPECTED_JSON_SCHEMA_PATH / expected,
+    )
+    cases = json.loads((DATA_PATH / "payloads/conditional_json_equality.json").read_text(encoding="utf-8"))
+    payloads = next(case for case in cases if case["name"] == "object")
+    with _generated_model(output_file, "boolean_wrapping", "Root") as model:
+        for value in payloads["valid"]:
+            model.model_validate(value)
+            model.model_validate_json(json.dumps(value))
+        for value in payloads["invalid"]:
+            _assert_model_json_invalid(model.model_validate, value, "value_error")
+            _assert_model_json_invalid(model.model_validate_json, json.dumps(value), "value_error")
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+@pytest.mark.parametrize("line_length", [88, 120])
+def test_main_builtin_boolean_wrapping_preserves_expressions(
+    output_file: Path, entrypoint: str, line_length: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Preserve groups, assignment expressions, Unicode, comments and docstrings."""
+    source = JSON_SCHEMA_DATA_PATH / "builtin_boolean_wrapping.json"
+    templates = DATA_PATH / "templates/builtin_boolean_wrapping/guards"
+    expected = f"builtin_boolean_wrapping/guards_{line_length}.py"
+    if entrypoint == "cli":
+        config = DATA_PATH / f"templates/builtin_boolean_wrapping/{line_length}.toml"
+        (output_file.parent / "pyproject.toml").write_bytes(config.read_bytes())
+        monkeypatch.chdir(output_file.parent)
+        run_main_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                "--custom-template-dir",
+                str(templates),
+            ],
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    else:
+        run_generate_file_and_assert(
+            input_path=source,
+            output_path=output_file,
+            input_file_type=InputFileType.JsonSchema,
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            disable_timestamp=True,
+            custom_template_dir=templates,
+            formatters=[Formatter.BUILTIN],
+            builtin_format_line_length=line_length,
+            assert_func=assert_file_content,
+            expected_file=expected,
+        )
+    leading_blank_lines = (DATA_PATH / "templates/builtin_boolean_wrapping/leading_blank_lines.txt").read_text(
+        encoding="utf-8"
+    )
+    assert_output(
+        apply_builtin_formatter(leading_blank_lines + output_file.read_text(encoding="utf-8"), line_length=line_length),
+        EXPECTED_JSON_SCHEMA_PATH / expected,
+    )
+    payloads = json.loads((DATA_PATH / "payloads/builtin_boolean_wrapping.json").read_text(encoding="utf-8"))
+    with _generated_model(output_file, "boolean_wrapping_guards", "Model") as model:
+        values = [model(value=value) for value in payloads]
+        results = [{**value.evaluate(), "async": asyncio.run(value.evaluate_async())} for value in values]
+        assert_output(
+            json.dumps(results, indent=2) + "\n",
+            EXPECTED_JSON_SCHEMA_PATH / "builtin_boolean_wrapping/runtime.txt",
+        )
 
 
 @pytest.mark.allow_direct_assert
@@ -13495,6 +13606,37 @@ def test_main_jsonschema_collapse_root_models_container_field_constraints(output
             "builtin",
         ],
         force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_collapse_root_models_array_item_union_self_reference(output_file: Path) -> None:
+    """Keep an array field's own constraints when its items collapse into a self-referencing union."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_array_item_union_self_reference.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="collapse_root_models_array_item_union_self_reference.py",
+        extra_args=[
+            "--collapse-root-models",
+            "--use-annotated",
+            "--use-union-operator",
+            "--use-generic-container-types",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="output_array_item_union_self_reference",
+        model_name="All",
+        valid_json=(DATA_PATH / "payloads/collapse_root_array_valid.json").read_text(),
+        invalid_json=(DATA_PATH / "payloads/collapse_root_array_invalid.json").read_text(),
+        expected_error_type="too_short",
     )
 
 

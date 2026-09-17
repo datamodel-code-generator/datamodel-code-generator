@@ -1,0 +1,22 @@
+{
+  "title": "ConditionalPresence",
+  "type": "object",
+  "properties": {
+    "until": {
+      "type": "string"
+    },
+    "reviewBy": {
+      "type": "string"
+    }
+  },
+  "if": {
+    "required": [
+      "until"
+    ]
+  },
+  "then": {
+    "required": [
+      "reviewBy"
+    ]
+  }
+}

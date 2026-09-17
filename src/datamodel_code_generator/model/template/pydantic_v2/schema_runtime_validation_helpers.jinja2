@@ -6,6 +6,9 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
     __json_schema_one_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
     __json_schema_any_of_required_groups__: ClassVar[tuple[Any, ...]] = ()
 {%- endif %}
+{%- if has_not_required_groups %}
+    __json_schema_not_required_groups__: ClassVar[tuple[Any, ...]] = ()
+{%- endif %}
 {%- if has_conditional_required %}
     __json_schema_conditional_required__: ClassVar[tuple[Any, ...]] = ()
 {%- endif %}
@@ -33,6 +36,9 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
             required_group_rules=cls.__json_schema_any_of_required_groups__,
             require_exactly_one=False,
         )
+{%- endif %}
+{%- if has_not_required_groups %}
+        data = cls._validate_json_schema_not_required_groups(data)
 {%- endif %}
 {%- if has_conditional_required %}
         data = cls._validate_json_schema_conditional_required(data)
@@ -132,6 +138,18 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
                 )
         return data
 {%- endif %}
+{%- if has_not_required_groups %}
+
+    @classmethod
+    def _validate_json_schema_not_required_groups(cls, data: Any) -> Any:
+        if not (isinstance(data, dict) or isinstance(data, _Mapping)):
+            return data
+        for required_groups in cls.__json_schema_not_required_groups__:
+            for group in required_groups:
+                if all(any(name in data for name in names) for names in group):
+                    raise ValueError('Expected required property group to be absent')
+        return data
+{%- endif %}
 {%- if has_conditional_required %}
 
     @classmethod
@@ -140,7 +158,23 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
             return data
         for rule in cls.__json_schema_conditional_required__:
             condition_matches = all(
+{%- if has_conditional_presence %}
+                any(
+                    name in data
+                    and (
+                        not expected
 {%- if has_conditional_json_equality %}
+                        or any(
+                            cls._json_schema_conditional_equal(data[name], value)
+                            for value in expected
+                        )
+{%- else %}
+                        or data[name] in expected
+{%- endif %}
+                    )
+                    for name in names
+                )
+{%- elif has_conditional_json_equality %}
                 any(
                     name in data
                     and any(

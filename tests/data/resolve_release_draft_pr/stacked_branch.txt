@@ -1,0 +1,1 @@
+{"output": "pr_number=4071\nmerge_sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nchanged_files=4\nshould_analyze=true\n", "returncode": 0, "stderr": ""}

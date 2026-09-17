@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import shlex
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -38,7 +41,7 @@ def test_analysis_fast_path_only_skips_claude_and_validation() -> None:
     assert 'previous_path: (if .status == "renamed" then .previous_filename else null end)' in prepare_diff_script
     assert steps_by_name["Prepare release analysis route"]["id"] == "analysis-route"
     assert (
-        '--expected-changed-files "${{ github.event.pull_request.changed_files }}"'
+        '--expected-changed-files "${{ needs.resolve-pr.outputs.changed_files }}"'
         in steps_by_name["Prepare release analysis route"]["run"]
     )
     assert steps_by_name["Run Claude Code Analysis"]["if"] == ("steps.analysis-route.outputs.requires_claude == 'true'")
@@ -89,4 +92,72 @@ def test_claude_output_schema_rejects_invalid_reasoning() -> None:
     assert_output(
         json.dumps({name: validator.is_valid(output) for name, output in cases.items()}, indent=2) + "\n",
         root / "tests/data/expected/release_draft_workflow/reasoning.txt",
+    )
+
+
+def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
+    """Manual and event-driven runs share pinned code and validated PR identities."""
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
+    jobs = workflow["jobs"]
+    resolve = jobs["resolve-pr"]
+    analyze = jobs["analyze"]
+    update = jobs["update-draft"]
+    analysis_steps = {step["name"]: step for step in analyze["steps"]}
+    assert_output(
+        json.dumps(
+            {
+                "triggers": workflow[True],
+                "resolve": resolve,
+                "analyze_needs": analyze["needs"],
+                "analyze_if": analyze["if"],
+                "analyze_checkout": analysis_steps["Checkout repository"]["with"],
+                "diff_env": analysis_steps["Prepare exact PR diff"]["env"],
+                "route": analysis_steps["Prepare release analysis route"]["run"],
+                "validator_pr": analysis_steps["Parse Claude output"]["env"]["PR_NUMBER"],
+                "update_needs": update["needs"],
+                "update_env": update["env"],
+                "last_update_step": update["steps"][-1],
+                "prompt_pr_references": analysis_steps["Run Claude Code Analysis"]["with"]["prompt"].count(
+                    "${{ needs.resolve-pr.outputs.pr_number }}"
+                ),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        root / "tests/data/expected/release_draft_workflow/manual_dispatch.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "requested_pr",
+    json.loads((Path(__file__).parent / "data/release_draft_workflow/invalid_pr_numbers.json").read_text()),
+)
+@pytest.mark.skipif(sys.platform == "win32", reason="The workflow shell step runs on Ubuntu, not WSL.")
+def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tmp_path: Path) -> None:
+    """Invalid caller input exits the real shell step before any API or credential use."""
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
+    step = workflow["jobs"]["resolve-pr"]["steps"][-1]
+    result = subprocess.run(
+        ["bash", "-c", step["run"]],
+        cwd=tmp_path,
+        env={**os.environ, "REQUESTED_PR": requested_pr},
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    assert_output(
+        json.dumps(
+            {
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "created_files": sorted(path.name for path in tmp_path.iterdir()),
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        root / "tests/data/expected/release_draft_workflow/invalid_pr_number.txt",
     )

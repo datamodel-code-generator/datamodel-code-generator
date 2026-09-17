@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from itertools import starmap
+from itertools import islice, starmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     import warnings
 
 CLI_DOC_COLLECTION_OUTPUT = Path(__file__).parent / "cli_doc" / ".cli_doc_collection.json"
+CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weights.json"
 CLI_DOC_SCHEMA_VERSION = 1
 TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 BUILTIN_FORMATTER_VALUE = "builtin"
@@ -188,6 +189,7 @@ def pytest_configure(config: pytest.Config) -> None:
         "aliases: list of alternative option names (e.g., ['--capitalise-enum-members']).",
     )
     config._cli_doc_items: list[dict[str, Any]] = []
+    config.pluginmanager.register(SlowTestOrdering(), "slow-test-ordering")
 
 
 def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  # noqa: ARG001, PLR0912, PLR0914  # pragma: no cover
@@ -328,6 +330,57 @@ def _validate_cli_doc_marker(node_id: str, kwargs: CliDocKwargs) -> list[str]:  
                 errors.append("'aliases' must be a list of strings")
 
     return errors
+
+
+def slow_test_durations() -> dict[str, int]:
+    """Return the longest measured CI duration per slow test node id across shard weight profiles."""
+    durations: dict[str, int] = {}
+    for profile in json.loads(CI_SHARD_WEIGHTS_PATH.read_text(encoding="utf-8"))["profiles"].values():
+        for nodeid, duration in profile["slow"].items():
+            durations[nodeid] = max(duration, durations.get(nodeid, 0))
+    return durations
+
+
+def worksteal_chunk_sizes(total: int, workers: int) -> list[int]:
+    """Mirror how the pytest-xdist work-stealing scheduler splits a collection into initial worker chunks."""
+    sizes: list[int] = []
+    pending = total
+    for remaining in range(workers, 0, -1):
+        size = pending // remaining
+        sizes.append(size)
+        pending -= size
+    return sizes
+
+
+def order_slow_tests_first(items: list[pytest.Item], durations: dict[str, int], workers: int) -> list[pytest.Item]:
+    """Start every worker chunk with a balanced share of the measured slow tests, longest first."""
+    slow = sorted(
+        (item for item in items if item.nodeid in durations),
+        key=lambda item: (-durations[item.nodeid], item.nodeid),
+    )
+    light = iter(item for item in items if item.nodeid not in durations)
+    groups: list[list[pytest.Item]] = [[] for _ in range(workers)]
+    loads = [0] * workers
+    for item in slow:
+        target = loads.index(min(loads))
+        groups[target].append(item)
+        loads[target] += durations[item.nodeid]
+    ordered: list[pytest.Item] = []
+    for group, size in zip(groups, worksteal_chunk_sizes(len(items), workers), strict=True):
+        ordered.extend(group)
+        ordered.extend(islice(light, max(0, size - len(group))))
+    ordered.extend(light)
+    return ordered
+
+
+class SlowTestOrdering:
+    """Reorder the final collection so every xdist worker chunk starts with measured slow tests."""
+
+    @pytest.hookimpl(trylast=True)
+    def pytest_collection_modifyitems(self, config: pytest.Config, items: list[pytest.Item]) -> None:
+        """Run after marker and keyword deselection so chunk boundaries match what xdist distributes."""
+        workers = getattr(config, "workerinput", {}).get("workercount", 1)
+        items[:] = order_slow_tests_first(items, slow_test_durations(), workers)
 
 
 def pytest_collection_modifyitems(

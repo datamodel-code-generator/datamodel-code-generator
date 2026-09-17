@@ -1,0 +1,701 @@
+{
+  "schema_validators_not_required": {
+    "model": "NotRequired",
+    "valid": [
+      {
+        "rules": [
+          "a"
+        ]
+      },
+      {}
+    ],
+    "invalid": [
+      {
+        "rules": [
+          "a"
+        ],
+        "signals": [
+          "b"
+        ]
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_conditional_presence": {
+    "model": "ConditionalPresence",
+    "valid": [
+      {
+        "until": "2026-01-01",
+        "reviewBy": "2026-02-01"
+      },
+      {}
+    ],
+    "invalid": [
+      {
+        "until": "2026-01-01"
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_conditional_presence_empty_schema": {
+    "model": "ConditionalPresenceEmptySchema",
+    "valid": [
+      {
+        "until": "2026-01-01",
+        "reviewBy": "2026-02-01"
+      },
+      {}
+    ],
+    "invalid": [
+      {
+        "until": "2026-01-01"
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_presence_true": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0
+      },
+      {
+        "guard": 0,
+        "a": null,
+        "c": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": null
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_presence_else": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": null,
+        "c": 0
+      },
+      {
+        "guard": 0,
+        "d": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": null,
+        "d": 0
+      },
+      {
+        "guard": 0
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_presence_mixed_const": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": null,
+        "b": "y"
+      },
+      {
+        "guard": 0,
+        "a": null,
+        "b": "x",
+        "c": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": null,
+        "b": "x"
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_presence_mixed_enum": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": null,
+        "b": 1
+      },
+      {
+        "guard": 0,
+        "a": null,
+        "b": true,
+        "c": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": null,
+        "b": true
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_presence_metadata": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0
+      },
+      {
+        "guard": 0,
+        "a": null,
+        "c": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": null
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_presence_allof": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0
+      },
+      {
+        "guard": 0,
+        "a": null,
+        "c": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": null
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_not_empty": {
+    "model": "PresenceRules",
+    "valid": [],
+    "invalid": [
+      {
+        "guard": 0
+      },
+      {
+        "guard": 0,
+        "a": null
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_not_allof": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0
+      },
+      {
+        "guard": 0,
+        "a": null
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": null,
+        "b": null
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_if_optional_property": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_if_min_properties": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_if_extra_constraint": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_if_non_object_type": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_if_false_property": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_if_typed_property": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_if_property_extra": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_if_no_required_branch": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_not_typed_property": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_not_boolean_false": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 1,
+        "b": "y"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_const_constraint": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_enum_constraint": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_dynamic_property": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_dynamic_if": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_dynamic_not": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_recursive_property": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_const_type_mismatch": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_enum_and_const": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_typed_enum": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": 1
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": "x"
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_typed_number": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": 2
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": 1
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_typed_integer": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": 2
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": 1
+      }
+    ],
+    "error": "value_error"
+  },
+  "schema_validators_not_request": {
+    "model": "PresenceRulesRequest",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing",
+    "options": {
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "schema_validators_not_request_group": {
+    "model": "PresenceRulesRequest",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing",
+    "options": {
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "schema_validators_not_response": {
+    "model": "PresenceRulesResponse",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid"
+      }
+    ],
+    "error": "int_parsing",
+    "options": {
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "schema_validators_not_empty_variant": {
+    "model": "PresenceRulesRequest",
+    "valid": [],
+    "invalid": [
+      {
+        "guard": 0
+      }
+    ],
+    "error": "value_error",
+    "options": {
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "schema_validators_dynamic_empty": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid",
+        "a": 0
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_recursive_empty": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": "invalid",
+        "a": 0
+      }
+    ],
+    "error": "int_parsing"
+  },
+  "schema_validators_not_mixed_rules": {
+    "model": "PresenceRules",
+    "valid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "c": 0
+      },
+      {
+        "guard": 0,
+        "b": 0,
+        "d": 0
+      }
+    ],
+    "invalid": [
+      {
+        "guard": 0,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      {
+        "guard": 0
+      },
+      {
+        "guard": 0,
+        "a": 0,
+        "d": 0
+      },
+      {
+        "guard": 0,
+        "b": 0,
+        "c": 0
+      }
+    ],
+    "error": "value_error"
+  }
+}

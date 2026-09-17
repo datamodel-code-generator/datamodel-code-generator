@@ -45,6 +45,10 @@ ACTIVE_MARKDOWN_RE = re.compile(
     r"\[|\]|@|<|>|\b(?:https?|ftp)://|\bwww\.|(?<!:)//",
     re.IGNORECASE | re.MULTILINE,
 )
+INLINE_CODE_OR_ACTIVE_MARKDOWN_RE = re.compile(
+    rf"(?P<code>`[^`\n]+`)|{ACTIVE_MARKDOWN_RE.pattern}",
+    ACTIVE_MARKDOWN_RE.flags,
+)
 ITEM_TITLE_START_RE = re.compile(r"(?:[A-Za-z]|`[A-Za-z0-9_.:/-]+`)")
 PLAIN_TEXT_MARKDOWN_RE = re.compile(r"[\[\]<>@#]")
 
@@ -307,9 +311,12 @@ def _validate_text_characters(text: str, *, allowed_controls: frozenset[str]) ->
 
 
 def _validate_no_active_markdown(text: str) -> None:
-    """Reject active Markdown from every non-fenced release-note line."""
-    if ACTIVE_MARKDOWN_RE.search(text):
-        _fail_closed("Claude output contains active Markdown; refusing to update the draft.")
+    """Reject active Markdown outside already validated single-backtick code spans."""
+    if not ACTIVE_MARKDOWN_RE.search(text):
+        return
+    for match in INLINE_CODE_OR_ACTIVE_MARKDOWN_RE.finditer(text):
+        if match.group("code") is None:
+            _fail_closed("Claude output contains active Markdown; refusing to update the draft.")
 
 
 def _validate_inline_code(line: str) -> None:
