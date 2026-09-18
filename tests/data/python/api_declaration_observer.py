@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from types import FrameType
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
+
+if TYPE_CHECKING:
+    from types import FrameType
 
 
 class DeclarationObserver:
@@ -15,7 +18,7 @@ class DeclarationObserver:
         self.operation: dict[str, object] | None = None
         self.tags: list[list[str]] = []
 
-    def record(self, frame: FrameType, event: str, arg: object) -> None:
+    def record(self, frame: FrameType, event: str, _arg: object) -> None:
         """Record declaration identities and nonempty tags from real parser calls."""
         if event != "call" or not frame.f_globals.get("__name__", "").startswith("datamodel_code_generator.parser."):
             return
@@ -43,5 +46,7 @@ class DeclarationObserver:
             "copied_operation": effective is not original,
             "borrowed_security": effective["security"] is parser.raw_obj["security"],
             "borrowed_parameters": len(effective["parameters"]) == len(expected_parameters)
-            and all(actual is source for actual, source in zip(effective["parameters"], expected_parameters)),
+            and all(
+                actual is source for actual, source in zip(effective["parameters"], expected_parameters, strict=True)
+            ),
         }
