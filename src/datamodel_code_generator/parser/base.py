@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from collections import Counter, OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
-from functools import cache
+from functools import cache, partial
 from itertools import chain, groupby
 from pathlib import Path
 from typing import (
@@ -379,6 +379,22 @@ def _index_module_models(
             if module_split_mode == ModuleSplitMode.Single:
                 model_path_to_module_name[model.path] = ".".join(module)
     return model_to_module_models, model_path_to_module_name
+
+
+def _expand_result_module_path(input_tuple: tuple[str, ...]) -> tuple[str, ...]:
+    """Expand dotted result paths without changing result identity or ordering."""
+    r = []
+    for item in input_tuple:
+        p = item.split(".")
+        if len(p) > 1:
+            r.extend(p[:-1])
+            r.append(p[-1])
+        else:
+            r.append(item)
+
+    if len(r) >= 2:  # noqa: PLR2004
+        r = [*r[:-2], f"{r[-2]}.{r[-1]}"]
+    return tuple(r)
 
 
 def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bool | None) -> ModulePath:
@@ -2187,6 +2203,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         ...
 
+    _generation_store_factory = staticmethod(GenerationStore.create_with_results)
+    _model_resolver_factory = staticmethod(ModelResolver)
+    _copy_model_field = staticmethod(partial(_copy_data_model_field))
+    _copy_model_type = staticmethod(partial(_copy_data_type))
+    _copy_inherited_field = staticmethod(partial(_copy_resolved_inherited_field))
+
     _config_class_name: ClassVar[str] = "ParserConfig"
     _cache_local_sources_during_parse: ClassVar[bool] = False
     _cache_parsed_sources_from_path: ClassVar[bool] = False
@@ -2399,7 +2421,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.base_class_map: dict[str, str | list[str]] | None = config.base_class_map
         self.target_python_version: PythonVersion = config.target_python_version
         self.builtin_names: frozenset[str] = _get_builtin_names_for_target(self.target_python_version)
-        self.generation_store, self.results = GenerationStore.create_with_results()
+        self.generation_store, self.results = self._generation_store_factory()
         self.model_metadata: ModelMetadata | None = None
         self.invalid_dotted_stdout_repair_modules: tuple[ModulePath, ...] = ()
         self.generated_model_inventory: tuple[str, ...] | None = None
@@ -2511,7 +2533,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             generate_schema_validators=config.generate_schema_validators,
         )
 
-        self.model_resolver = ModelResolver(
+        self.model_resolver = self._model_resolver_factory(
             base_url=source.geturl() if isinstance(source, ParseResult) else None,
             singular_name_suffix="" if config.disable_appending_item_suffix else None,
             aliases=config.aliases,
@@ -3832,7 +3854,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     source_module_name = _get_model_module_name(root_type_model, model_path_to_module_name)
                     target_module_name = _get_model_module_name(model, model_path_to_module_name)
                     copied_data_type = (
-                        _copy_data_type(root_type_field.data_type)
+                        self._copy_model_type(root_type_field.data_type)
                         if source_module_name != target_module_name
                         else root_type_field.data_type.model_copy()
                     )
@@ -4300,7 +4322,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     changed = True
                     continue
                 if (
-                    copied_original_field := _copy_resolved_inherited_field(
+                    copied_original_field := self._copy_inherited_field(
                         model_field,
                         original_field,
                         force_optional=self.force_optional_for_required_fields,
@@ -4308,7 +4330,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         reserved_names=reserved_names,
                     )
                 ) is None:
-                    copied_original_field = _copy_data_model_field(original_field)
+                    copied_original_field = self._copy_model_field(original_field)
                     copied_original_field.name = model_field.name
                     copied_original_field.original_name = model_field.original_name
                     copied_original_field.alias = model_field.alias
@@ -4778,25 +4800,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 model.has_forward_reference = model.has_forward_reference or process_all_fields
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
+    @property
+    def _result_modules_postprocessor(self) -> Callable[..., dict[tuple[str, ...], Result]]:
+        """Resolve the legacy postprocessor dynamically for each render."""
+        return self.__postprocess_result_modules
+
     @classmethod
     def __postprocess_result_modules(
         cls, results: dict[tuple[str, ...], Result], *, empty_init: bool = False
     ) -> dict[tuple[str, ...], Result]:
-        def process(input_tuple: tuple[str, ...]) -> tuple[str, ...]:
-            r = []
-            for item in input_tuple:
-                p = item.split(".")
-                if len(p) > 1:
-                    r.extend(p[:-1])
-                    r.append(p[-1])
-                else:
-                    r.append(item)
 
-            if len(r) >= 2:  # noqa: PLR2004
-                r = [*r[:-2], f"{r[-2]}.{r[-1]}"]
-            return tuple(r)
-
-        results = {process(k): v for k, v in results.items()}
+        results = {_expand_result_module_path(k): v for k, v in results.items()}
 
         init_result = Result(body="") if empty_init else next(v for k, v in results.items() if k[-1] == "__init__.py")
         folders = {t[:-1] if t[-1].endswith(".py") else t for t in results}
@@ -6676,7 +6690,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for module, result in results.items()
         }
         if self.treat_dot_as_module:
-            results = self.__postprocess_result_modules(results, empty_init=config.all_exports_scope is not None)
+            results = self._result_modules_postprocessor(results, empty_init=config.all_exports_scope is not None)
             if config.all_exports_scope is not None:
                 self._generate_empty_init_exports(results, contexts, config, future_imports_str)
         return results

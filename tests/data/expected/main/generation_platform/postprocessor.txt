@@ -1,0 +1,44 @@
+{
+  "calls": 1,
+  "keys": [
+    [
+      "__init__.py"
+    ],
+    [
+      "woo",
+      "__init__.py"
+    ],
+    [
+      "nested",
+      "__init__.py"
+    ],
+    [
+      "foo",
+      "__init__.py"
+    ],
+    [
+      "_internal.py"
+    ],
+    [
+      "woo",
+      "boo.py"
+    ],
+    [
+      "nested",
+      "foo.py"
+    ],
+    [
+      "foo",
+      "bar.py"
+    ],
+    [
+      "models.py"
+    ],
+    [
+      "collections.py"
+    ],
+    [
+      "bar.py"
+    ]
+  ]
+}

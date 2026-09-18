@@ -1,0 +1,8 @@
+{
+  "field:True:False": 4,
+  "field:True:True": 8,
+  "inherited:True:False": 1,
+  "resolver": 1,
+  "store": 1,
+  "type:True:True": 3
+}

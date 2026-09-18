@@ -18,3 +18,12 @@ Environment: CPython 3.13.2, macOS, dependencies installed from `uv.lock` using 
 Performance procedure: existing startup cases and generation fixtures, independent processes, equal AB/BA ordering, fixed seed 4098, 30 A/A pairs and 60 A/B pairs per case, warmup before measurement, 99% bootstrap interval and two-sided sign test at 0.01.
 The temporary measurement runner and raw results are outside the repository under `/tmp/dcg-s01-evidence`.
 Measurements, mutation negative controls, cumulative coverage, independent PR review, and CI are pending; this record does not claim those gates passed.
+
+## S01-2: bounded factories and copies
+
+Added class-level store/resolver factories and three non-function partial copy callables, preserving original free helpers and their module exports. The same recursive helpers execute once with unchanged arguments. No store/model/reference fields, observers, backend classes, or runtime dependencies were added.
+Extracted the existing dotted result-path expansion unchanged and retained dynamic dispatch to the existing name-mangled classmethod through a property.
+A real parser/store/resolver consumer exercises constructor selection, registered/unregistered field copies, inherited copies, cross-module type copies, two-stage snooper decoration, and an operation callback replaced during traversal. Guarded methods remain inherited on the undecorated consumer.
+
+Validation: 321 tests passed across observations, integration consumers, parser/store regressions, public API signatures, and assertion-helper enforcement. Architecture/store checkers, Ruff, and ty passed.
+Performance: 30 A/A and 60 A/B pairs completed for 11 cases (six existing startup cases plus small/large/reference/multiple-module/builtin-format generation fixtures). No wall/CPU case met all predeclared regression conditions. This is not proof of zero overhead: builtin-format wall-time CI excluded zero but the sign test was 0.0135, and A/A multi-module RSS had directional drift. Memory and borderline timing conclusions remain inconclusive pending repeated cumulative measurements. Initial failed startup measurement was caused by an absent generated `_version.py` in the baseline checkout; both baselines were then given the identical generated version module before restarting all pairs.

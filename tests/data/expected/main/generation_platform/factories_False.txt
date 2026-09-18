@@ -1,0 +1,19 @@
+{
+  "factories": [
+    "store",
+    "resolver"
+  ],
+  "copies": {
+    "field:True:False": 4,
+    "field:True:True": 8,
+    "inherited:True:False": 1
+  },
+  "store": "RecordingStore",
+  "resolver": "RecordingResolver",
+  "results_are_store_models": true,
+  "guarded_methods": {
+    "_validate_schema_object": true,
+    "_get_ref_raw_schema": true,
+    "_load_ref_schema_object": true
+  }
+}

@@ -97,9 +97,9 @@ from datamodel_code_generator.parser.base import (
     SPECIAL_PATH_FORMAT,
     Parser,
     Source,
-    _copy_data_model_field,
-    _copy_data_type,
-    _copy_resolved_inherited_field,
+    _copy_data_model_field,  # noqa: F401  # Preserve the existing parser helper export.
+    _copy_data_type,  # noqa: F401  # Preserve the existing parser helper export.
+    _copy_resolved_inherited_field,  # noqa: F401  # Preserve the existing parser helper export.
     _detach_deferred_inherited_field_parents,
     _get_inherited_type_modifiers,
     get_special_path,
@@ -2303,12 +2303,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for data_type in field.data_type.all_data_types:
                 data_type.unregister_reference()
 
-    def _copy_unregistered_fields(  # noqa: PLR6301
+    def _copy_unregistered_fields(
         self,
         fields: Iterable[DataModelFieldBase],
     ) -> list[DataModelFieldBase]:
         """Copy fields for temporary inheritance work without registering reverse edges."""
-        return [_copy_data_model_field(field, register_references=False) for field in fields]
+        return [self._copy_model_field(field, register_references=False) for field in fields]
 
     def _clear_inherited_field_caches(self) -> None:
         """Release temporary inheritance state after parsing."""
@@ -2356,7 +2356,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if (
                 inherited_field is None
                 or (
-                    resolved_field := _copy_resolved_inherited_field(
+                    resolved_field := self._copy_inherited_field(
                         field,
                         inherited_field,
                         force_optional=self.force_optional_for_required_fields,
@@ -2922,11 +2922,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for rule in source.pattern_properties:
             copied_patterns: list[tuple[str, DataType]] = []
             for pattern, data_type in rule.pattern_properties:
-                copied_type = _copy_data_type(data_type)
+                copied_type = self._copy_model_type(data_type)
                 self._update_data_type_ref_for_variant(copied_type, suffix)
                 copied_patterns.append((pattern, copied_type))
             copied_additional_type = (
-                _copy_data_type(rule.additional_property_type) if rule.additional_property_type is not None else None
+                self._copy_model_type(rule.additional_property_type)
+                if rule.additional_property_type is not None
+                else None
             )
             if copied_additional_type is not None:
                 self._update_data_type_ref_for_variant(copied_additional_type, suffix)
@@ -2986,7 +2988,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Create a Request or Response model variant."""
         if not model_fields and self.read_only_write_only_model_type != ReadOnlyWriteOnlyModelType.RequestResponse:
             return
-        model_fields = [_copy_data_model_field(field) for field in model_fields]
+        model_fields = [self._copy_model_field(field) for field in model_fields]
         reference = self._get_rw_model_variant_reference(base_reference, suffix, loaded=True)
         self._update_field_refs_for_variant(model_fields, suffix)
         self._set_schema_metadata(reference.path, obj)
@@ -6281,7 +6283,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         doesn't have type information but the parent itself inherits from another schema.
         """
         if inherited_field := self._get_inherited_field(prop_name, base_classes):
-            return _copy_data_type(inherited_field.data_type)
+            return self._copy_model_type(inherited_field.data_type)
 
         if visited is None:
             visited = frozenset()
@@ -6420,7 +6422,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         serialization_alias = self.get_serialization_alias(required_field_name, field_name, class_name)
 
         if inherited_field is not None:
-            copied_field = _copy_data_model_field(inherited_field)
+            copied_field = self._copy_model_field(inherited_field)
             copied_field.name = field_name
             copied_field.required = True
             copied_field.original_name = required_field_name
@@ -8438,7 +8440,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         )
                     continue
                 if inherited_field is not None:
-                    resolved_field = _copy_resolved_inherited_field(
+                    resolved_field = self._copy_inherited_field(
                         field,
                         inherited_field,
                         force_optional=self.force_optional_for_required_fields,
@@ -8792,7 +8794,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._rw_model_field_facts_cache[reference.path] = self._get_rw_model_field_facts(fields)
             variants: list[DataModel] = []
             for suffix in ("Request", "Response"):
-                variant_fields = [_copy_data_model_field(field) for field in fields]
+                variant_fields = [self._copy_model_field(field) for field in fields]
                 variant_reference = self._get_rw_model_variant_reference(reference, suffix, loaded=True)
                 self._update_field_refs_for_variant(variant_fields, suffix)
                 self._set_schema_metadata(variant_reference.path, obj)
