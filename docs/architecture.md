@@ -127,7 +127,7 @@ classDiagram
 | Input file type | Parser route | Notes |
 | --- | --- | --- |
 | `auto` | `pre-parser inference` | Resolved before parser selection by content inference. |
-| `openapi` | `JsonSchemaParser` | Routed directly by `_build_parser()`. |
+| `openapi` | `OpenAPIParser` | Routed directly by `_build_parser()`. |
 | `asyncapi` | `AsyncAPIParser` | Routed directly by `_build_parser()`. |
 | `jsonschema` | `JsonSchemaParser` | Routed directly by `_build_parser()`. |
 | `mcp-tools` | `JsonSchemaParser after conversion` | MCP tool input/output schemas are hoisted into JSON Schema definitions first. |
