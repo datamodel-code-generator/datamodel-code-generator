@@ -1938,8 +1938,13 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
 ) -> Any:
     """Build one fresh parser using the caller's reference-resolution base."""
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
+    build_parser = _build_parser
+    if openapi_parser_factory is not None:
+        from functools import partial  # noqa: PLC0415
+
+        build_parser = partial(_build_parser, openapi_parser_factory=openapi_parser_factory)
     with _warn_on_input_string_path_failure(input_):
-        parser = _build_parser(
+        parser = build_parser(
             input_file_type,
             parser_source,
             config,
@@ -1951,7 +1956,6 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
             xmlschema_version=xmlschema_version,
             protobuf_version=protobuf_version,
             python_type_expressions=python_type_expressions,
-            openapi_parser_factory=openapi_parser_factory,
         )
     if reference_cache is not None and hasattr(parser, "remote_object_cache"):
         parser.remote_object_cache = reference_cache
