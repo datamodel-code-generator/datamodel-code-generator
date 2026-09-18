@@ -1,0 +1,25 @@
+{
+  "calls": {
+    "_cache_ref_data_type_facts": 3,
+    "_copy_data_model_field": 12,
+    "_copy_data_type": 52,
+    "_copy_resolved_inherited_field": 1,
+    "_generate_module_output": 1,
+    "_get_ref_raw_schema": 5,
+    "_load_ref_schema_object": 4,
+    "_validate_schema_object": 8,
+    "add_ref": 13,
+    "resolve_ref": 20
+  },
+  "phases": [
+    "_build_generation_parser",
+    "_parse_with_disposal",
+    "_emit_generation"
+  ],
+  "result": null,
+  "retained_parsers": 0,
+  "artifacts": {
+    "models.py": "1dc6ce39e19e797a3fe884d0cfc58fd0bcdb32379c0bab7910ab3aca910b1815"
+  },
+  "target_imports": []
+}

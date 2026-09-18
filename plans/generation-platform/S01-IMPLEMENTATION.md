@@ -1,0 +1,20 @@
+# S01 implementation record
+
+The authoritative design is [PR #4098](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4098), plan commit `4faddb35e6f5fd73ec79fef7f10216183d3bc9c8`.
+The implementation starts at main `4f96e22ea403a66faae96f3949d41dd61fc1186f`, identical to the pinned baseline; there are no intervening integration-point changes.
+The planning PR remains separate and unmerged. This stack implements S01 only and exposes no new public generation target or scope.
+
+## S01-1: comparison and observation
+
+The existing public API signatures, generated snapshots, architecture/store checks, retry tests, remote-lock tests, and startup/generation benchmarks remain the primary oracles.
+The additional end-to-end observation uses real generation across all five backends with inheritance, request/response variants, root collapse, and reuse.
+It records generated file inventory and SHA256 of complete bytes, actual copy/ref/validation/render call counts, phase order, return value, new target imports, and weak-reference parser retention after collection.
+Input mutation uses the existing assertion helper. Timestamps are explicitly disabled and formatters are explicitly empty; no output normalization is used before hashing.
+The snapshots were established before product changes. Existing snapshots and API baselines are unchanged.
+
+Initial verification: `pytest tests/main/test_generation_observation.py tests/main/test_public_api_signature_baseline.py tests/main/test_generation_determinism.py tests/test_architecture_boundaries.py tests/parser/test_generation_store_usage.py -q`: 80 passed.
+Environment: CPython 3.13.2, macOS, dependencies installed from `uv.lock` using `uv sync --frozen --all-extras --group test --group fix --python 3.13`.
+
+Performance procedure: existing startup cases and generation fixtures, independent processes, equal AB/BA ordering, fixed seed 4098, 30 A/A pairs and 60 A/B pairs per case, warmup before measurement, 99% bootstrap interval and two-sided sign test at 0.01.
+The temporary measurement runner and raw results are outside the repository under `/tmp/dcg-s01-evidence`.
+Measurements, mutation negative controls, cumulative coverage, independent PR review, and CI are pending; this record does not claim those gates passed.
