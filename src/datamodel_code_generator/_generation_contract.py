@@ -23,7 +23,6 @@ class OpenAPIParserFactory(Protocol):
 
     def __call__(self, *, source: _ParserSource, config: OpenAPIParserConfig) -> OpenAPIParser:
         """Create one fresh attempt using the existing effective parser config."""
-        ...
 
 
 class GenerationCaptureSession(Protocol[BatchT_co]):
@@ -40,28 +39,21 @@ class GenerationCaptureSession(Protocol[BatchT_co]):
     @property
     def parser_factory(self) -> OpenAPIParserFactory:
         """Return the same factory for initial and compatibility-retry construction."""
-        ...
 
     def freeze_attempt(self, parser: OpenAPIParser, results: str | dict[tuple[str, ...], Result]) -> AttemptId:
         """Freeze a provisional value candidate before the parser is disposed."""
-        ...
 
     def accept_attempt(self, attempt_id: AttemptId) -> None:
         """Accept exactly the attempt selected by the existing retry driver."""
-        ...
 
     def discard_attempt(self, parser: OpenAPIParser) -> None:
         """Release failed or rejected attempt state after existing parser cleanup."""
-        ...
 
     def raise_if_failed(self) -> None:
         """Re-raise the first fatal recording failure, including suppressed repairs."""
-        ...
 
     def take_accepted_batch(self) -> BatchT_co:
         """Transfer the accepted immutable values without exposing a live graph."""
-        ...
 
     def close(self) -> None:
         """Release all remaining owned capture resources, including failed attempts."""
-        ...

@@ -1395,7 +1395,9 @@ def _build_parser(  # noqa: PLR0911, PLR0913
                 **additional_options,
             }
             parser_config = _create_parser_config(config, openapi_additional_options)
-            return (openapi_parser_factory or OpenAPIParser)(source=source, config=parser_config)
+            if openapi_parser_factory is not None:
+                return openapi_parser_factory(source=source, config=parser_config)
+            return OpenAPIParser(source=source, config=parser_config)
         case InputFileType.AsyncAPI:
             from datamodel_code_generator.parser.asyncapi import AsyncAPIParser  # noqa: PLC0415
 
