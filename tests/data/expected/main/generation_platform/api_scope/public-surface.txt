@@ -1,0 +1,37 @@
+{
+  "scopes": [
+    "schemas",
+    "paths",
+    "tags",
+    "parameters",
+    "webhooks",
+    "requestbodies",
+    "api"
+  ],
+  "module": "datamodel_code_generator.parser.openapi_scope",
+  "constructor": "(source: 'str | Path | list[Path] | ParseResult | dict[str, YamlValue]', *, config: 'OpenAPIParserConfig | None' = None, **options: 'Unpack[OpenAPIParserConfigDict]') -> 'None'",
+  "constructor_hint_keys": [
+    "config",
+    "options",
+    "return",
+    "source"
+  ],
+  "frame_hint_keys": [
+    "candidate_name",
+    "declaration",
+    "effective_operation",
+    "effective_parameters",
+    "engine_path",
+    "original_parameters",
+    "phase",
+    "projection",
+    "raw_document",
+    "raw_operation",
+    "raw_schema",
+    "role",
+    "root_use_site",
+    "validated_schema"
+  ],
+  "private_alias_resolved": true,
+  "top_level_export": false
+}

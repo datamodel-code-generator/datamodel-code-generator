@@ -27,6 +27,7 @@ Controls which sections of the OpenAPI specification to generate models from.
 | Scope | Description |
 |-------|-------------|
 | `schemas` | Generate from `#/components/schemas` (default) |
+| `api` | Generate schema declarations throughout the API, including typed components, parameters, headers, callbacks, and webhooks |
 | `parameters` | Include parameter models for operations selected by `paths` or `webhooks` |
 | `paths` | Generate models from path operation request bodies and responses |
 | `webhooks` | Generate models from webhook operation request bodies and responses |
@@ -38,6 +39,36 @@ datamodel-codegen --input openapi.yaml --output models.py
 ```
 
 Generates models only from `#/components/schemas`.
+
+### Generate all API declarations
+
+```bash
+datamodel-codegen --input openapi.yaml --output models.py --openapi-scopes api
+```
+
+The `api` scope collects component schemas, typed parameter/request-body/response/header
+components, root paths, webhooks, reusable Path Items, and callbacks. It includes all
+request and response media, response headers, and applicable multipart encoding headers.
+OpenAPI version rules determine which declarations apply. Repeated references share
+one declaration's generated models, and callback cycles terminate without expanding
+models indefinitely.
+
+Parameters generate individual schema types, including path parameters regardless of
+`--include-path-parameters`. The legacy aggregate parameter wrapper is specific to the
+`parameters` scope without `api`. Adding other scopes alongside `api` does not repeat
+schema generation. `--openapi-include-paths` filters root paths and their reachable
+callbacks; webhooks and standalone components retain their declarations.
+
+Use standard JSON Pointer escaping in references: `~1` represents a slash in a key and
+`~0` represents a tilde. API scope rejects malformed or ambiguous pointer spellings.
+An API with no model declarations emits no model artifact and preserves an existing
+output file. Explicit model metadata can still describe an empty inventory.
+
+For Python generation, pass `openapi_scopes=[OpenAPIScope.Api]` to `generate()` or
+`GenerateConfig`. Direct parser consumers use
+`datamodel_code_generator.parser.openapi_scope.ApiOpenAPIParser` with an
+`OpenAPIParserConfig` that explicitly includes `OpenAPIScope.Api`. Existing scopes
+continue to use `OpenAPIParser`; the default remains `schemas`.
 
 ### Include operation schemas
 
