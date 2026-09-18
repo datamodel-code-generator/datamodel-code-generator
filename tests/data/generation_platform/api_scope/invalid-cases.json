@@ -24,5 +24,6 @@
   "reserved-additional-method": "fixed methods cannot appear",
   "invalid-component-schema": "ValidationError",
   "duplicate-header-identity": "duplicate parameter identity",
-  "pointer-external-ambiguous": "API_REF_NONCANONICAL_POINTER"
+  "pointer-external-ambiguous": "API_REF_NONCANONICAL_POINTER",
+  "reserved-additional-query": "fixed methods cannot appear in additionalOperations"
 }

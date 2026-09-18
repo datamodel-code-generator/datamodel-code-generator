@@ -561,16 +561,17 @@ def test_api_native_types_and_ref_siblings(backend: DataModelType) -> None:
     )
 
 
-def test_api_header_parameter_identity() -> None:
-    """Compare header identities without changing original names or query case sensitivity."""
+@pytest.mark.parametrize("case", ["header-identity", "method-case"])
+def test_api_case_sensitive_declarations(case: str) -> None:
+    """Preserve HTTP method casing, header spelling, and case-sensitive query identities."""
     assert_output(
         generate(
-            SOURCE / "header-identity.json",
+            SOURCE / f"{case}.json",
             input_file_type=InputFileType.OpenAPI,
             openapi_scopes=[OpenAPIScope.Api],
             use_operation_id_as_name=True,
             disable_timestamp=True,
             formatters=[Formatter.BLACK, Formatter.ISORT],
         ),
-        EXPECTED / "header-identity.py",
+        EXPECTED / f"{case}.py",
     )

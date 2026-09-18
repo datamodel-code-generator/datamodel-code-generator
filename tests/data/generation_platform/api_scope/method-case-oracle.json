@@ -1,0 +1,31 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "schemas": {
+      "FixedGetResponse": {
+        "type": "string",
+        "enum": [
+          "standard"
+        ]
+      },
+      "LowerGetResponse": {
+        "type": "string",
+        "enum": [
+          "lower"
+        ]
+      },
+      "MixedGetResponse": {
+        "type": "string",
+        "enum": [
+          "mixed"
+        ]
+      },
+      "LowerQueryResponse": {
+        "type": "string",
+        "enum": [
+          "querylower"
+        ]
+      }
+    }
+  }
+}

@@ -34,6 +34,8 @@ from datamodel_code_generator.parser.openapi_media import (
 from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import DataType  # noqa: TC001 - Public annotations support get_type_hints().
 
+_FIXED_HTTP_METHODS = frozenset(method.upper() for method in (*OPERATION_NAMES, "query"))
+
 
 def _mapping(value: YamlValue, path: Sequence[str]) -> dict[str, YamlValue]:
     """Validate a raw object at its declaration boundary without copying it."""
@@ -677,7 +679,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             if method != "additionalOperations" or not self.schema_features.media_item_schema:
                 continue
             for additional, operation in _mapping(value, [*target.path, method]).items():
-                if (method_name := additional.lower()) in OPERATION_NAMES or method_name == "query":
+                if additional in _FIXED_HTTP_METHODS:
                     msg = "API_INVALID_OBJECT: fixed methods cannot appear in additionalOperations"
                     raise SchemaParseError(msg, path=[*target.path, method, additional])
                 yield (method, additional), operation
