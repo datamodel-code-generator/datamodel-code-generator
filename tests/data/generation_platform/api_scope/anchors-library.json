@@ -1,0 +1,6 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "#named",
+  "type": "object",
+  "properties": {"self": {"$ref": "#named"}, "value": {"type": "string"}}
+}
