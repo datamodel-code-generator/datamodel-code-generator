@@ -36,24 +36,29 @@ class RecordingParser(OpenAPIParser):
         super().__init__(*args, **kwargs)
 
     def _generation_store_factory(self) -> tuple[GenerationStore, list[Any]]:
+        """Select the real store before constructor registrations."""
         self.events.append("store")
         return RecordingStore.create_with_results()
 
     def _model_resolver_factory(self, *args: Any, **kwargs: Any) -> ModelResolver:
+        """Select the real resolver and preserve constructor arguments."""
         self.events.append("resolver")
         return RecordingResolver(*args, **kwargs)
 
     def _copy_model_field(self, *args: Any, **kwargs: Any) -> Any:
+        """Observe the actual field copy without changing its registrations."""
         copied = super()._copy_model_field(*args, **kwargs)
         self.events.append(f"field:{copied is not args[0]}:{kwargs.get('register_references', True)}")
         return copied
 
     def _copy_model_type(self, *args: Any, **kwargs: Any) -> Any:
+        """Observe the actual type copy without adding recursive copies."""
         copied = super()._copy_model_type(*args, **kwargs)
         self.events.append(f"type:{copied is not args[0]}:{kwargs.get('register_references', True)}")
         return copied
 
     def _copy_inherited_field(self, *args: Any, **kwargs: Any) -> Any:
+        """Observe the inherited-field result returned by the engine."""
         copied = super()._copy_inherited_field(*args, **kwargs)
         self.events.append(f"inherited:{copied is not args[0]}:{kwargs.get('register_references', True)}")
         return copied
@@ -155,6 +160,7 @@ def test_operation_lookup_remains_dynamic() -> None:
             super().__init__(*args, **kwargs)
 
         def parse_operation(self, *args: Any, **kwargs: Any) -> Any:
+            """Replace the operation callback during the first traversal call."""
             self.events.append("first")
             self.parse_operation = self.later_operation
             return super().parse_operation(*args, **kwargs)
