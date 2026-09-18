@@ -17,11 +17,13 @@ class GenerationObserver:
     """Observe actual engine frames without changing methods or evaluating getters."""
 
     def __init__(self):
+        """Initialize call counts, phase order, and weak parser references."""
         self.calls = Counter()
         self.phases = []
         self.references = []
 
     def record(self, frame, event, arg):
+        """Record engine events without retaining live generation frames."""
         if not frame.f_globals.get("__name__", "").startswith("datamodel_code_generator"):
             return
         name = frame.f_code.co_name
