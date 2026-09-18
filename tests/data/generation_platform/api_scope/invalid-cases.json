@@ -23,5 +23,6 @@
   "missing-component-parameter-name": "parameter name/in required",
   "reserved-additional-method": "fixed methods cannot appear",
   "invalid-component-schema": "ValidationError",
-  "duplicate-header-identity": "duplicate parameter identity"
+  "duplicate-header-identity": "duplicate parameter identity",
+  "pointer-external-ambiguous": "API_REF_NONCANONICAL_POINTER"
 }
