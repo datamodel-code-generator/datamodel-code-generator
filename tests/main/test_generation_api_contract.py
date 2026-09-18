@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from datamodel_code_generator import GenerateConfig, OpenAPIScope, _prepare_generate_facade_config, _run_generation
+import datamodel_code_generator as dcg
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from tests.conftest import assert_output
 from tests.main.test_generation_api_scope import ApiAttemptConsumer
@@ -51,21 +51,20 @@ def test_api_public_surface_annotations() -> None:
     import inspect
     from typing import get_type_hints
 
-    import datamodel_code_generator
     from datamodel_code_generator.parser.openapi_scope import ApiDeclarationFrame
     from tests.data.generation_platform.api_scope.typing.annotations import identity
 
     assert_output(
         json.dumps(
             {
-                "scopes": [scope.value for scope in OpenAPIScope],
+                "scopes": [scope.value for scope in dcg.OpenAPIScope],
                 "module": ApiOpenAPIParser.__module__,
                 "constructor": str(inspect.signature(ApiOpenAPIParser)),
                 "constructor_hint_keys": sorted(get_type_hints(ApiOpenAPIParser.__init__, include_extras=True)),
                 "frame_hint_keys": sorted(get_type_hints(ApiDeclarationFrame, include_extras=True)),
                 "private_alias_resolved": get_type_hints(identity, include_extras=True)["return"]
                 == ApiOpenAPIParser | None,
-                "top_level_export": hasattr(datamodel_code_generator, "ApiOpenAPIParser"),
+                "top_level_export": hasattr(dcg, "ApiOpenAPIParser"),
             },
             indent=2,
         )
@@ -101,10 +100,10 @@ def test_api_capture_engine_parity(case: str) -> None:
     for capture in (None, consumer):
         observer = GenerationObserver()
         previous = sys.getprofile()
-        config = _prepare_generate_facade_config(
-            GenerateConfig(
+        config = dcg._prepare_generate_facade_config(
+            dcg.GenerateConfig(
                 input_file_type="openapi",
-                openapi_scopes=[OpenAPIScope.Api],
+                openapi_scopes=[dcg.OpenAPIScope.Api],
                 disable_timestamp=True,
                 formatters=[],
             )
@@ -112,7 +111,7 @@ def test_api_capture_engine_parity(case: str) -> None:
         try:
             sys.setprofile(observer.record)
             outputs.append(
-                _run_generation(SOURCE / f"{case}.json", config, Path.cwd(), use_output_cwd=False, capture=capture)
+                dcg._run_generation(SOURCE / f"{case}.json", config, Path.cwd(), use_output_cwd=False, capture=capture)
             )
         finally:
             sys.setprofile(previous)
