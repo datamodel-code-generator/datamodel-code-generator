@@ -131,3 +131,36 @@ def test_api_capture_engine_parity(case: str) -> None:
         + "\n",
         EXPECTED / "capture-parity.txt",
     )
+
+
+@pytest.mark.parametrize("tags", [False, True])
+def test_api_declaration_frame_origins(tags: bool) -> None:
+    """Observe original indices and inherited security without replacing engine hooks."""
+    import sys
+
+    from tests.conftest import assert_inputs_not_mutated
+    from tests.data.python.api_declaration_observer import DeclarationObserver
+
+    source = json.loads((SOURCE / "traversal.json").read_text())
+    observer = DeclarationObserver()
+    previous = sys.getprofile()
+    try:
+        sys.setprofile(observer.record)
+        with assert_inputs_not_mutated({"source": source}):
+            result = dcg.generate(
+                source,
+                input_file_type=dcg.InputFileType.OpenAPI,
+                input_filename="traversal.json",
+                openapi_scopes=[dcg.OpenAPIScope.Api, dcg.OpenAPIScope.Tags] if tags else [dcg.OpenAPIScope.Api],
+                use_title_as_name=True,
+                include_path_parameters=False,
+                disable_timestamp=True,
+                formatters=["black", "isort"],
+            )
+    finally:
+        sys.setprofile(previous)
+    assert_output(result, EXPECTED / "traversal.py")
+    assert_output(
+        json.dumps({"operation": observer.operation, "tags": observer.tags}, indent=2) + "\n",
+        EXPECTED / f"frame-origins-{tags}.txt",
+    )

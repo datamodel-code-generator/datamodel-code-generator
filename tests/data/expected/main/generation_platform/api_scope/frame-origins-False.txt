@@ -1,0 +1,69 @@
+{
+  "operation": {
+    "original_indices": [
+      [
+        [
+          "paths",
+          "parameters",
+          "0"
+        ]
+      ],
+      [
+        [
+          "paths",
+          "/root",
+          "parameters",
+          "0"
+        ]
+      ],
+      [
+        [
+          "paths",
+          "/root",
+          "post",
+          "parameters",
+          "0"
+        ],
+        [
+          "paths",
+          "/root",
+          "post",
+          "parameters",
+          "1"
+        ]
+      ]
+    ],
+    "effective_indices": [
+      [
+        "paths",
+        "/root",
+        "post",
+        "parameters",
+        "0"
+      ],
+      [
+        "paths",
+        "/root",
+        "post",
+        "parameters",
+        "1"
+      ],
+      [
+        "paths",
+        "/root",
+        "parameters",
+        "0"
+      ]
+    ],
+    "root_use": [
+      "paths",
+      "/root",
+      "post"
+    ],
+    "actual_original": true,
+    "copied_operation": true,
+    "borrowed_security": true,
+    "borrowed_parameters": true
+  },
+  "tags": []
+}
