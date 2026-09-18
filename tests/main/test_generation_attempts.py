@@ -7,6 +7,7 @@ import hashlib
 import json
 import operator
 import shutil
+import sys
 import weakref
 from pathlib import Path
 from typing import Any
@@ -189,4 +190,5 @@ def test_generation_attempt_lifetime(case: dict[str, str], tmp_path: Path) -> No
         ),
         "retained_parsers": sum(parser() is not None for parser in consumer.parsers),
     }
-    assert_output(json.dumps(observation, indent=2) + "\n", EXPECTED / f"attempt_{case['name']}.txt")
+    expected = EXPECTED / ("windows" if sys.platform == "win32" and consumer.failure == "emit" else "")
+    assert_output(json.dumps(observation, indent=2) + "\n", expected / f"attempt_{case['name']}.txt")
