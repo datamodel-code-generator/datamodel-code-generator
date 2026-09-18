@@ -1,0 +1,13 @@
+{
+  "$defs": {
+    "EventsRequestItem": {
+      "type": "integer"
+    },
+    "EventsRequest": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EventsRequestItem"
+      }
+    }
+  }
+}

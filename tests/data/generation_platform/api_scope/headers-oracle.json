@@ -1,0 +1,42 @@
+{
+  "$defs": {
+    "Free": true,
+    "Never": false,
+    "Normal": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "AllOfNoRef": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "number": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "Derived": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Normal"
+        }
+      ]
+    },
+    "SharedResponseXComponentHeader": {
+      "type": "string"
+    },
+    "FieldItemsGetResponse200XTraceHeader": {
+      "type": "boolean"
+    },
+    "FieldItemsGetResponse201XTraceHeader": {
+      "type": "integer"
+    }
+  }
+}

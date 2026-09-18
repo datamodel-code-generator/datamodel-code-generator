@@ -1,0 +1,139 @@
+[
+  {
+    "tokens": [
+      "components",
+      "parameters",
+      "Content",
+      "content",
+      "multipart/form-data",
+      "encoding"
+    ],
+    "reason": "oas_encoding_request_body_only",
+    "owner": "parameter",
+    "media": "multipart/form-data",
+    "wire_name": null,
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "parameters",
+      "Authorization"
+    ],
+    "reason": "oas_header_ignored",
+    "owner": "parameter",
+    "media": null,
+    "wire_name": "Authorization",
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "requestBodies",
+      "Json",
+      "content",
+      "application/json",
+      "encoding"
+    ],
+    "reason": "oas_encoding_media_not_applicable",
+    "owner": "request_body",
+    "media": "application/json",
+    "wire_name": null,
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "requestBodies",
+      "Form",
+      "content",
+      "application/x-www-form-urlencoded",
+      "encoding",
+      "part",
+      "headers",
+      "X-Ignored"
+    ],
+    "reason": "oas_non_multipart_encoding_headers",
+    "owner": "request_body",
+    "media": "application/x-www-form-urlencoded",
+    "wire_name": "X-Ignored",
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "requestBodies",
+      "Upload",
+      "content",
+      "multipart/form-data; boundary=example",
+      "encoding",
+      "part",
+      "headers",
+      "Content-Type"
+    ],
+    "reason": "oas_header_ignored",
+    "owner": "request_body",
+    "media": "multipart/form-data; boundary=example",
+    "wire_name": "Content-Type",
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "responses",
+      "Result",
+      "content",
+      "multipart/form-data",
+      "encoding"
+    ],
+    "reason": "oas_encoding_request_body_only",
+    "owner": "response",
+    "media": "multipart/form-data",
+    "wire_name": null,
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "responses",
+      "Result",
+      "content",
+      "application/json",
+      "encoding"
+    ],
+    "reason": "oas_encoding_request_body_only",
+    "owner": "response",
+    "media": "application/json",
+    "wire_name": null,
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "responses",
+      "Result",
+      "headers",
+      "Content-Type"
+    ],
+    "reason": "oas_header_ignored",
+    "owner": "header",
+    "media": null,
+    "wire_name": "Content-Type",
+    "has_operation_owner": false
+  },
+  {
+    "tokens": [
+      "components",
+      "headers",
+      "Content",
+      "content",
+      "multipart/form-data",
+      "encoding"
+    ],
+    "reason": "oas_encoding_request_body_only",
+    "owner": "header",
+    "media": "multipart/form-data",
+    "wire_name": null,
+    "has_operation_owner": false
+  }
+]

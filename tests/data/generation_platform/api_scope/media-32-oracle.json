@@ -1,0 +1,42 @@
+{
+  "$defs": {
+    "ContentParameterPartXParameterEncodingHeader": {
+      "type": "object",
+      "properties": {
+        "trace": {
+          "type": "string"
+        }
+      }
+    },
+    "UploadRequestPartXRequestEncodingHeader": {
+      "type": "object",
+      "properties": {
+        "trace": {
+          "type": "string"
+        }
+      }
+    },
+    "ResultResponsePartXResponseEncodingHeader": {
+      "type": "object",
+      "properties": {
+        "trace": {
+          "type": "string"
+        }
+      }
+    },
+    "SharedHeader": {
+      "type": "integer"
+    },
+    "ContentTypeHeader": {
+      "type": "string"
+    },
+    "ContentHeaderPartXHeaderEncodingHeader": {
+      "type": "object",
+      "properties": {
+        "trace": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

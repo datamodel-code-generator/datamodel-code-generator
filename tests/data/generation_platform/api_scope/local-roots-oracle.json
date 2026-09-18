@@ -1,0 +1,31 @@
+{
+  "$defs": {
+    "LocalRoots": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "string"
+        }
+      }
+    },
+    "Local": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "Uses": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/LocalRoots"
+        },
+        "local": {
+          "$ref": "#/$defs/Local"
+        }
+      }
+    }
+  }
+}

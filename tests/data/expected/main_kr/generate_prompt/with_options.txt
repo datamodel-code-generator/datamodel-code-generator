@@ -845,7 +845,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use wildcards: '*' matches any chars, '?' matches
                         single char. Example: '/users/*' '/products'. Requires
                         '--openapi-scopes' to include 'paths'.
-  --openapi-scopes {schemas,paths,tags,parameters,webhooks,requestbodies} [{schemas,paths,tags,parameters,webhooks,requestbodies} ...]
+  --openapi-scopes {schemas,paths,tags,parameters,webhooks,requestbodies,api} [{schemas,paths,tags,parameters,webhooks,requestbodies,api} ...]
                         Scopes of OpenAPI model generation (default: schemas)
   --read-only-write-only-model-type {request-response,all}
                         Model generation for readOnly/writeOnly fields:

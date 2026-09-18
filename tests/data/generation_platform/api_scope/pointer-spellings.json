@@ -1,0 +1,136 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "schemas": {
+      "Uses": {
+        "title": "Uses",
+        "type": "object",
+        "properties": {
+          "plain": {
+            "$ref": "#/components/schemas/Foo"
+          },
+          "percentslash": {
+            "$ref": "#/components/schemas/%252F"
+          },
+          "tildeone": {
+            "$ref": "#/components/schemas/~01"
+          },
+          "slash": {
+            "$ref": "#/components/schemas/~1"
+          },
+          "url": {
+            "$ref": "#/components/schemas/https%3A~1~1example.test~1x"
+          },
+          "identifier": {
+            "$ref": "#/components/schemas/%7Bid%7D"
+          },
+          "percent": {
+            "$ref": "#/components/schemas/raw%25"
+          },
+          "tilde": {
+            "$ref": "#/components/schemas/raw~0"
+          },
+          "alias": {
+            "$ref": "#%2Fcomponents/schemas/%46oo"
+          }
+        }
+      },
+      "Foo": {
+        "title": "Plain",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      },
+      "%2F": {
+        "title": "PercentSlash",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      },
+      "~1": {
+        "title": "TildeOne",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      },
+      "/": {
+        "title": "Slash",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      },
+      "https://example.test/x": {
+        "title": "Url",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      },
+      "{id}": {
+        "title": "Identifier",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      },
+      "raw%": {
+        "title": "Percent",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      },
+      "raw~": {
+        "title": "Tilde",
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

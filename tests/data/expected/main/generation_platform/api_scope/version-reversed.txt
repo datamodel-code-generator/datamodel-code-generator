@@ -1,0 +1,6 @@
+{
+  "media_item_schema": true,
+  "ref_siblings": true,
+  "frames": 0,
+  "result": {}
+}

@@ -1,0 +1,14 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "parameters": {
+      "Bad": {
+        "name": "q",
+        "in": "body",
+        "schema": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "media_item_schema": true,
+  "ref_siblings": false,
+  "root_version": "3.2.0",
+  "frames": 0
+}

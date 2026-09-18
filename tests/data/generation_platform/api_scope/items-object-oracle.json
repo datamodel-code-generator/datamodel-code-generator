@@ -1,0 +1,18 @@
+{
+  "$defs": {
+    "EventsRequestItem": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "EventsRequest": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EventsRequestItem"
+      }
+    }
+  }
+}

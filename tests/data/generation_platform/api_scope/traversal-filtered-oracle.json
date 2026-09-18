@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "OperationQuery": {
+      "title": "OperationQuery",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "OperationPath": {
+      "title": "OperationPath",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "CommonHeader": {
+      "title": "CommonHeader",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "RootRequest": {
+      "title": "RootRequest",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "RootResponse": {
+      "title": "RootResponse",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "CallbackRequest": {
+      "title": "CallbackRequest",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "WebhookX": {
+      "title": "WebhookX",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "WebhookSlashX": {
+      "title": "WebhookSlashX",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "UnusedPathItem": {
+      "title": "UnusedPathItem",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "UnusedCallback": {
+      "title": "UnusedCallback",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

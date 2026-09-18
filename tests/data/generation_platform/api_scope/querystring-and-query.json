@@ -1,0 +1,24 @@
+{
+  "openapi": "3.2.1",
+  "paths": {
+    "/": {
+      "get": {
+        "parameters": [
+          {
+            "in": "querystring",
+            "content": {
+              "application/json": {}
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,281 @@
+{
+  "openapi": "3.2.1",
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "parameters": [
+      {
+        "name": "q",
+        "in": "query",
+        "schema": {
+          "title": "OverriddenGlobal",
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "/root": {
+      "parameters": [
+        {
+          "name": "header",
+          "in": "header",
+          "schema": {
+            "title": "CommonHeader",
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ],
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "RootRequest",
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "RootResponse",
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "title": "OperationQuery",
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "title": "OperationPath",
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ],
+        "callbacks": {
+          "event": {
+            "$ref": "#/components/callbacks/Event"
+          }
+        },
+        "tags": [
+          "root",
+          "write"
+        ]
+      }
+    },
+    "/": {
+      "get": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "LiteralRoot",
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        }
+      }
+    },
+    "x-ignored": false
+  },
+  "webhooks": {
+    "x": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "WebhookX",
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        }
+      }
+    },
+    "/x": {
+      "get": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "WebhookSlashX",
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "pathItems": {
+      "Unused": {
+        "put": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "UnusedPathItem",
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "204": {
+              "description": "No content"
+            }
+          }
+        }
+      }
+    },
+    "callbacks": {
+      "Event": {
+        "{$request.body#/url}": {
+          "post": {
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "title": "CallbackRequest",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "204": {
+                "description": "No content"
+              }
+            },
+            "callbacks": {
+              "again": {
+                "$ref": "#/components/callbacks/Event"
+              }
+            }
+          }
+        }
+      },
+      "Unused": {
+        "{$request.query.url}": {
+          "post": {
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "title": "UnusedCallback",
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "204": {
+                "description": "No content"
+              }
+            }
+          }
+        },
+        "x-ignored": false
+      }
+    }
+  }
+}

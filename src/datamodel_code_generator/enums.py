@@ -104,6 +104,7 @@ class OpenAPIScope(Enum):
     Parameters = "parameters"
     Webhooks = "webhooks"
     RequestBodies = "requestbodies"
+    Api = "api"
 
 
 class AllExportsScope(Enum):

@@ -1395,6 +1395,10 @@ def _build_parser(  # noqa: PLR0911, PLR0913
                 **additional_options,
             }
             parser_config = _create_parser_config(config, openapi_additional_options)
+            if openapi_parser_factory is None and OpenAPIScope.Api in (config.openapi_scopes or ()):
+                from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser  # noqa: PLC0415
+
+                openapi_parser_factory = ApiOpenAPIParser
             if openapi_parser_factory is not None:
                 return openapi_parser_factory(source=source, config=parser_config)
             return OpenAPIParser(source=source, config=parser_config)
@@ -1603,6 +1607,7 @@ def _emit_results(  # noqa: PLR0913
     defer_formatting: bool,
     data_model_types: DataModelSet,
     settings_path: Path,
+    allow_empty_api: bool = False,
 ) -> str | GeneratedModules | None:
     if not input_filename:  # pragma: no cover
         match input_:
@@ -1616,6 +1621,8 @@ def _emit_results(  # noqa: PLR0913
                 # input_ might be a dict object provided directly, and missing a name field
                 input_filename = getattr(input_, "name", "<dict>")
     if not results:
+        if allow_empty_api:
+            return None
         msg = "Models not found in the input data"
         raise Error(msg)
 
@@ -2364,9 +2371,11 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     use_output_cwd: bool,
     output_context_path: Path,
     capture: GenerationCaptureSession[object] | None = None,
+    openapi_parser_factory: OpenAPIParserFactory | None = None,
 ) -> _ParsedGeneration:
     """Parse, dispose, and retry narrow compatibility failures inside the output cwd."""
-    openapi_parser_factory = capture.parser_factory if capture is not None else None
+    if openapi_parser_factory is None and capture is not None:
+        openapi_parser_factory = capture.parser_factory
     # Phase 3: build before chdir so initial reference resolution keeps the caller's cwd.
     parser = _build_generation_parser(
         input_,
@@ -2528,9 +2537,15 @@ def _emit_generation(  # noqa: PLR0913
     defer_formatting: bool,
     settings_path: Path,
     owned_remote_lock: RemoteReferenceLock | None,
+    allow_empty_api: bool = False,
 ) -> str | GeneratedModules | None:
     """Emit generated artifacts and commit a generation-owned remote lock."""
-    generated = _emit_results(
+    emit_results = _emit_results
+    if allow_empty_api:
+        from functools import partial  # noqa: PLC0415
+
+        emit_results = partial(_emit_results, allow_empty_api=True)
+    generated = emit_results(
         results,
         input_,
         input_filename,
@@ -2621,7 +2636,21 @@ def _run_generation(  # noqa: PLR0914
                 if use_output_cwd
                 else _settings_path_from(output_context_path, config.settings_path)
             )
-            results, model_metadata, data_model_types, defer_formatting = _parse_generation(
+            allow_empty_api = input_file_type is InputFileType.OpenAPI and OpenAPIScope.Api in (
+                config.openapi_scopes or ()
+            )
+            parse_generation = _parse_generation
+            emit_generation = _emit_generation
+            if allow_empty_api:
+                from functools import partial  # noqa: PLC0415
+
+                if capture is not None:
+                    parser_factory = capture.parser_factory
+                    parse_generation = partial(_parse_generation, openapi_parser_factory=parser_factory)
+                    allow_empty_api = getattr(parser_factory, "_supports_api_scope", False) is True
+                if allow_empty_api:
+                    emit_generation = partial(_emit_generation, allow_empty_api=True)
+            results, model_metadata, data_model_types, defer_formatting = parse_generation(
                 input_,
                 input_text,
                 input_file_type,
@@ -2644,7 +2673,7 @@ def _run_generation(  # noqa: PLR0914
                 capture=capture,
             )
             del additional_options, extra_template_data
-            return _emit_generation(
+            return emit_generation(
                 results,
                 input_,
                 config,

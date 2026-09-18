@@ -1,0 +1,18 @@
+{
+  "$defs": {
+    "UploadRequestPartXRequestEncodingHeader": {
+      "type": "object",
+      "properties": {
+        "trace": {
+          "type": "string"
+        }
+      }
+    },
+    "SharedHeader": {
+      "type": "integer"
+    },
+    "ContentTypeHeader": {
+      "type": "string"
+    }
+  }
+}

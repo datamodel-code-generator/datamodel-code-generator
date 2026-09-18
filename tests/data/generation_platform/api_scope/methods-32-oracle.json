@@ -1,0 +1,15 @@
+{
+  "$defs": {
+    "FieldSearchQueryQuerystring": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "FieldSearchCopyRequest": {
+      "type": "string"
+    }
+  }
+}

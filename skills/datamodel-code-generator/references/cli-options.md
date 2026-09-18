@@ -193,7 +193,7 @@ Formatting, custom templates, and generated file headers.
 
 OpenAPI-specific generation behavior.
 
-- `--openapi-scopes`: Scopes of OpenAPI model generation (default: schemas) Choices: `schemas`, `paths`, `tags`, `parameters`, `webhooks`, `requestbodies`.
+- `--openapi-scopes`: Scopes of OpenAPI model generation (default: schemas) Choices: `schemas`, `paths`, `tags`, `parameters`, `webhooks`, `requestbodies`, `api`.
 - `--use-operation-id-as-name`: use operation id of OpenAPI as class names of models
 - `--include-path-parameters`: Include path parameters in generated parameter models in addition to query parameters (Only OpenAPI)
 - `--openapi-include-paths`: Include only OpenAPI paths matching fnmatch patterns. Use wildcards: '*' matches any chars, '?' matches single char. Example: '/users/*' '/products'. Requires '--openapi-scopes' to include 'paths'.

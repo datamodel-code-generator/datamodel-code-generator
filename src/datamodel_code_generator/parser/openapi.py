@@ -225,6 +225,7 @@ class OpenAPIParser(JsonSchemaParser):
         return OpenAPISchemaFeatures.from_openapi_version(version)
 
     _config_class_name: ClassVar[str] = "OpenAPIParserConfig"
+    _supports_api_scope: ClassVar[bool] = False
 
     def __init__(
         self,
@@ -238,12 +239,19 @@ class OpenAPIParser(JsonSchemaParser):
             options["wrap_string_literal"] = False
         super().__init__(source=source, config=config, **options)
         self.open_api_scopes: list[OpenAPIScope] = self.config.openapi_scopes or [OpenAPIScope.Schemas]
+        if OpenAPIScope.Api in self.open_api_scopes and not self._supports_api_scope:
+            msg = "OpenAPIScope.Api requires ApiOpenAPIParser"
+            raise Error(msg)
         self.include_path_parameters: bool = self.config.include_path_parameters
         self.use_status_code_in_response_name: bool = self.config.use_status_code_in_response_name
         self.openapi_include_paths: list[str] | None = self.config.openapi_include_paths
         self.openapi_include_info_version: bool = self.config.openapi_include_info_version
         self.openapi_info_version: str | None = None
-        if self.openapi_include_paths and OpenAPIScope.Paths not in self.open_api_scopes:
+        if (
+            self.openapi_include_paths
+            and OpenAPIScope.Paths not in self.open_api_scopes
+            and OpenAPIScope.Api not in self.open_api_scopes
+        ):
             warn(
                 "--openapi-include-paths has no effect without --openapi-scopes paths",
                 stacklevel=2,

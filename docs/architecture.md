@@ -117,6 +117,7 @@ classDiagram
     JsonSchemaParser <|-- OpenAPIParser
     JsonSchemaParser <|-- ProtobufParser
     JsonSchemaParser <|-- XMLSchemaParser
+    OpenAPIParser <|-- ApiOpenAPIParser
     OpenAPIParser <|-- AsyncAPIParser
     Parser <|-- GraphQLParser
     Parser <|-- JsonSchemaParser

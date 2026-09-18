@@ -1,0 +1,133 @@
+{
+  "$defs": {
+    "Uses": {
+      "title": "Uses",
+      "type": "object",
+      "properties": {
+        "plain": {
+          "$ref": "#/$defs/Plain"
+        },
+        "percentslash": {
+          "$ref": "#/$defs/PercentSlash"
+        },
+        "tildeone": {
+          "$ref": "#/$defs/TildeOne"
+        },
+        "slash": {
+          "$ref": "#/$defs/Slash"
+        },
+        "url": {
+          "$ref": "#/$defs/Url"
+        },
+        "identifier": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "percent": {
+          "$ref": "#/$defs/Percent"
+        },
+        "tilde": {
+          "$ref": "#/$defs/Tilde"
+        },
+        "alias": {
+          "$ref": "#/$defs/Plain"
+        }
+      }
+    },
+    "Plain": {
+      "title": "Plain",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    },
+    "PercentSlash": {
+      "title": "PercentSlash",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    },
+    "TildeOne": {
+      "title": "TildeOne",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    },
+    "Slash": {
+      "title": "Slash",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    },
+    "Url": {
+      "title": "Url",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    },
+    "Identifier": {
+      "title": "Identifier",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    },
+    "Percent": {
+      "title": "Percent",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    },
+    "Tilde": {
+      "title": "Tilde",
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

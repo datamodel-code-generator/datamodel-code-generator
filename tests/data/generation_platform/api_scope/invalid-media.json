@@ -1,0 +1,14 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "requestBodies": {
+      "Bad": {
+        "content": {
+          "not a media": {
+            "encoding": {}
+          }
+        }
+      }
+    }
+  }
+}

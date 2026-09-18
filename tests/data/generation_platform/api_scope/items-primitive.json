@@ -1,0 +1,32 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "requestBodies": {
+      "Events": {
+        "content": {
+          "application/x-ndjson": {
+            "itemSchema": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/one": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Events"
+        }
+      }
+    },
+    "/two": {
+      "post": {
+        "requestBody": {
+          "$ref": "#/components/requestBodies/Events"
+        }
+      }
+    }
+  }
+}

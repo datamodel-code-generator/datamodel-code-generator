@@ -1,0 +1,55 @@
+{
+  "openapi": "3.2.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "components": {
+    "schemas": {
+      "Native": {
+        "x-python-import": {
+          "module": "uuid",
+          "name": "UUID"
+        }
+      },
+      "CustomType": {
+        "type": "string"
+      },
+      "Base": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "native": {
+            "$ref": "#/components/schemas/Native"
+          },
+          "custom": {
+            "$ref": "#/components/schemas/CustomType"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Base",
+                  "type": "object",
+                  "properties": {
+                    "extra": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

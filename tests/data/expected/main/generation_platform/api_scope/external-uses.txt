@@ -1,0 +1,28 @@
+[
+  {
+    "use": [
+      "external.json",
+      "paths",
+      "/one"
+    ],
+    "declaration": [
+      "library.json",
+      "components",
+      "pathItems",
+      "Shared"
+    ]
+  },
+  {
+    "use": [
+      "external.json",
+      "paths",
+      "/two"
+    ],
+    "declaration": [
+      "library.json",
+      "components",
+      "pathItems",
+      "Shared"
+    ]
+  }
+]

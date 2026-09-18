@@ -1,0 +1,23 @@
+{
+  "openapi": "3.0.3",
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/one": {
+      "$ref": "library.json#/components/pathItems/Shared"
+    },
+    "/two": {
+      "$ref": "library.json#/components/pathItems/Shared"
+    }
+  }
+}

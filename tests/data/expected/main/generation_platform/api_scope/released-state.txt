@@ -1,0 +1,5 @@
+{
+  "frames_before_dispose": 0,
+  "ignored_after_dispose": 0,
+  "documents_after_dispose": 0
+}

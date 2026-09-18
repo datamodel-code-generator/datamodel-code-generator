@@ -112,7 +112,7 @@ NamingStrategy: TypeAlias = Literal[
 
 
 OpenAPIScope: TypeAlias = Literal[
-    'schemas', 'paths', 'tags', 'parameters', 'webhooks', 'requestbodies'
+    'schemas', 'paths', 'tags', 'parameters', 'webhooks', 'requestbodies', 'api'
 ]
 
 
