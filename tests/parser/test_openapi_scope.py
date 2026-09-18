@@ -559,3 +559,18 @@ def test_api_native_types_and_ref_siblings(backend: DataModelType) -> None:
         ),
         EXPECTED / f"typed-reuse-{backend.name}.py",
     )
+
+
+def test_api_header_parameter_identity() -> None:
+    """Compare header identities without changing original names or query case sensitivity."""
+    assert_output(
+        generate(
+            SOURCE / "header-identity.json",
+            input_file_type=InputFileType.OpenAPI,
+            openapi_scopes=[OpenAPIScope.Api],
+            use_operation_id_as_name=True,
+            disable_timestamp=True,
+            formatters=[Formatter.BLACK, Formatter.ISORT],
+        ),
+        EXPECTED / "header-identity.py",
+    )

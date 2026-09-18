@@ -1,0 +1,65 @@
+{
+  "openapi": "3.2.1",
+  "paths": {
+    "/case": {
+      "parameters": [
+        {
+          "name": "X-CamelTrace",
+          "in": "header",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "ignored"
+            ]
+          }
+        },
+        {
+          "name": "q",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "lower"
+            ]
+          }
+        }
+      ],
+      "get": {
+        "parameters": [
+          {
+            "name": "x-CamelTrace",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active"
+              ]
+            }
+          },
+          {
+            "name": "anotherCamel",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "preserved"
+              ]
+            }
+          },
+          {
+            "name": "Q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upper"
+              ]
+            }
+          }
+        ],
+        "responses": {},
+        "operationId": "caseGet"
+      }
+    }
+  }
+}

@@ -22,5 +22,6 @@
   "empty-ref-token": "API_EMPTY_DECLARATION_TOKEN",
   "missing-component-parameter-name": "parameter name/in required",
   "reserved-additional-method": "fixed methods cannot appear",
-  "invalid-component-schema": "ValidationError"
+  "invalid-component-schema": "ValidationError",
+  "duplicate-header-identity": "duplicate parameter identity"
 }

@@ -1,0 +1,31 @@
+{
+  "openapi": "3.2.1",
+  "components": {
+    "schemas": {
+      "CaseGetHeaderXCamelTraceParameter": {
+        "type": "string",
+        "enum": [
+          "active"
+        ]
+      },
+      "CaseGetHeaderAnotherCamelParameter": {
+        "type": "string",
+        "enum": [
+          "preserved"
+        ]
+      },
+      "CaseGetQueryQParameter": {
+        "type": "string",
+        "enum": [
+          "upper"
+        ]
+      },
+      "CaseGetQueryQParameter1": {
+        "type": "string",
+        "enum": [
+          "lower"
+        ]
+      }
+    }
+  }
+}

@@ -96,6 +96,7 @@ class ApiParameterDeclaration:
     raw: dict[str, YamlValue]
     target: _ApiObject
     key: tuple[str, str]
+    name: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -599,11 +600,16 @@ class ApiOpenAPIParser(OpenAPIParser):
             if key is None:
                 msg = "API_INVALID_OBJECT: parameter name/in required"
                 raise SchemaParseError(msg, path=parameter.path)
+            name, location = key
+            if location == "header":
+                key = name.lower(), location
             if key in seen:
                 msg = "API_INVALID_OBJECT: duplicate parameter identity"
                 raise SchemaParseError(msg, path=parameter_path)
             seen.add(key)
-            declarations.append(ApiParameterDeclaration(self._declaration_id(parameter_path), declared, parameter, key))
+            declarations.append(
+                ApiParameterDeclaration(self._declaration_id(parameter_path), declared, parameter, key, name)
+            )
         return declarations
 
     def walk_api_path_items(
@@ -671,7 +677,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             if method != "additionalOperations" or not self.schema_features.media_item_schema:
                 continue
             for additional, operation in _mapping(value, [*target.path, method]).items():
-                if additional.lower() in {*OPERATION_NAMES, "query"}:
+                if (method_name := additional.lower()) in OPERATION_NAMES or method_name == "query":
                     msg = "API_INVALID_OBJECT: fixed methods cannot appear in additionalOperations"
                     raise SchemaParseError(msg, path=[*target.path, method, additional])
                 yield (method, additional), operation
@@ -753,7 +759,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         try:
             for entry in effective:
                 parameter = entry.target
-                wire_name, location = entry.key
+                wire_name, location = entry.name, entry.key[1]
                 candidate = (
                     name
                     + location.capitalize()
