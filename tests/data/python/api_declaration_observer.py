@@ -11,10 +11,12 @@ class DeclarationObserver:
     """Retain only scalar declaration facts from the selected real operation."""
 
     def __init__(self) -> None:
+        """Initialize bounded observations without retaining parser instances."""
         self.operation: dict[str, object] | None = None
         self.tags: list[list[str]] = []
 
     def record(self, frame: FrameType, event: str, arg: object) -> None:
+        """Record declaration identities and nonempty tags from real parser calls."""
         if event != "call" or not frame.f_globals.get("__name__", "").startswith("datamodel_code_generator.parser."):
             return
         if frame.f_code.co_name == "parse_tags":
