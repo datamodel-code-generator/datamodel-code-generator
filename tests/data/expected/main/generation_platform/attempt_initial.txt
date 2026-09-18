@@ -1,0 +1,17 @@
+{
+  "events": [
+    "construct:1",
+    "parse:1",
+    "freeze:1:True",
+    "dispose:1",
+    "accept:1",
+    "close"
+  ],
+  "error": null,
+  "batch": [
+    1,
+    "62e4537a8af00a79ff0d08aeefe4fe3d6d88ba60b26f5b4385c2b993283a0894"
+  ],
+  "result_sha256": "e1bbc8176788ea75723d0e0b111da0d921c167fe16a9c9858f7877d8c03ce6dc",
+  "retained_parsers": 0
+}

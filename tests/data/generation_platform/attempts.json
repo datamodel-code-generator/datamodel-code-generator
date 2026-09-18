@@ -1,0 +1,95 @@
+[
+  {
+    "name": "initial",
+    "input": "observation.json"
+  },
+  {
+    "name": "repair",
+    "input": "../openapi/usable_identical_invalid_dotted_models.yaml"
+  },
+  {
+    "name": "rejected",
+    "input": "../openapi/invalid_dotted_conflicting_models.yaml",
+    "failure": "source_change"
+  },
+  {
+    "name": "collapse",
+    "input": "observation.json",
+    "failure": "collapse_once"
+  },
+  {
+    "name": "collapse_failed",
+    "input": "observation.json",
+    "failure": "collapse_always"
+  },
+  {
+    "name": "parse_failed",
+    "input": "observation.json",
+    "failure": "parse"
+  },
+  {
+    "name": "parse_and_dispose_failed",
+    "input": "observation.json",
+    "failure": "parse_dispose"
+  },
+  {
+    "name": "freeze_failed",
+    "input": "observation.json",
+    "failure": "freeze"
+  },
+  {
+    "name": "freeze_and_dispose_failed",
+    "input": "observation.json",
+    "failure": "freeze_dispose"
+  },
+  {
+    "name": "dispose_failed",
+    "input": "observation.json",
+    "failure": "dispose"
+  },
+  {
+    "name": "repair_parse_failed",
+    "input": "../openapi/usable_identical_invalid_dotted_models.yaml",
+    "failure": "repair_parse"
+  },
+  {
+    "name": "repair_capture_failed",
+    "input": "../openapi/usable_identical_invalid_dotted_models.yaml",
+    "failure": "repair_capture"
+  },
+  {
+    "name": "repair_freeze_failed",
+    "input": "../openapi/usable_identical_invalid_dotted_models.yaml",
+    "failure": "repair_freeze"
+  },
+  {
+    "name": "repair_dispose_failed",
+    "input": "../openapi/usable_identical_invalid_dotted_models.yaml",
+    "failure": "repair_dispose"
+  },
+  {
+    "name": "discard_failed",
+    "input": "../openapi/invalid_dotted_conflicting_models.yaml",
+    "failure": "discard"
+  },
+  {
+    "name": "accept_failed",
+    "input": "observation.json",
+    "failure": "accept"
+  },
+  {
+    "name": "close_failed",
+    "input": "observation.json",
+    "failure": "close"
+  },
+  {
+    "name": "parse_and_close_failed",
+    "input": "observation.json",
+    "failure": "parse_close"
+  },
+  {
+    "name": "emit_failed",
+    "input": "observation.json",
+    "failure": "emit"
+  }
+]

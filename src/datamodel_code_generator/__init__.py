@@ -115,6 +115,7 @@ if TYPE_CHECKING:
         PythonVersion,
         PythonVersionMin,
     )
+    from datamodel_code_generator._generation_contract import GenerationCaptureSession, OpenAPIParserFactory
     from datamodel_code_generator._parser_context import ParserSourceContext
     from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
@@ -1382,6 +1383,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
     xmlschema_version: XMLSchemaVersion | None,
     protobuf_version: ProtobufVersion | None,
     python_type_expressions: _PythonTypeExpressions | None = None,
+    openapi_parser_factory: OpenAPIParserFactory | None = None,
 ) -> Any:
     match input_file_type:
         case InputFileType.OpenAPI:
@@ -1393,7 +1395,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
                 **additional_options,
             }
             parser_config = _create_parser_config(config, openapi_additional_options)
-            return OpenAPIParser(source=source, config=parser_config)
+            return (openapi_parser_factory or OpenAPIParser)(source=source, config=parser_config)
         case InputFileType.AsyncAPI:
             from datamodel_code_generator.parser.asyncapi import AsyncAPIParser  # noqa: PLC0415
 
@@ -1701,16 +1703,7 @@ def generate(
 
         _rebuild_generate_config()
         config = _GenerateConfig.model_validate(options)
-    from pydantic import VERSION as PYDANTIC_VERSION  # ruff: ignore[import-outside-top-level]
-
-    from datamodel_code_generator.deprecations import warn_legacy_dependency  # ruff: ignore[import-outside-top-level]
-
-    warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
-    config = _apply_generate_config_preset(config)
-    config = _apply_missing_sentinel_config(config)
-
-    if (metadata_path := config.emit_model_metadata) is not None:
-        _ensure_file_output_path(metadata_path, _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR)
+    config = _prepare_generate_facade_config(config)
 
     atomic_remote_update = (
         config.update_lock
@@ -1727,6 +1720,45 @@ def generate(
     return (_generate_with_atomic_remote_update if atomic_remote_update else _generate)(
         input_, config, caller_cwd, use_output_cwd=False
     )
+
+
+def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
+    """Apply existing facade warnings, presets, sentinels, and metadata checks in order."""
+    from pydantic import VERSION as PYDANTIC_VERSION  # ruff: ignore[import-outside-top-level]
+
+    from datamodel_code_generator.deprecations import warn_legacy_dependency  # ruff: ignore[import-outside-top-level]
+
+    warn_legacy_dependency("dependency.pydantic-runtime-minimum", PYDANTIC_VERSION, (2, 8, 2))
+    config = _apply_generate_config_preset(config)
+    config = _apply_missing_sentinel_config(config)
+
+    if (metadata_path := config.emit_model_metadata) is not None:
+        _ensure_file_output_path(metadata_path, _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR)
+
+    return config
+
+
+def _prepare_atomic_generation_remote_lock(
+    input_: _GenerationInput, config: GenerateConfig, caller_cwd: Path
+) -> tuple[GenerateConfig, Path, RemoteReferenceLock]:
+    """Prepare the existing atomic update policy without resolving the original config."""
+    from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
+
+    path_updates = {
+        field: absolute_path
+        for field in ("output", "emit_model_metadata")
+        if (absolute_path := _absolute_generation_path(getattr(config, field), caller_cwd))
+        is not getattr(config, field)
+    }
+    if path_updates:
+        config = config.model_copy(update=path_updates)
+    lockfile = config.lockfile.expanduser() if config.lockfile is not None else caller_cwd / "datamodel-codegen.lock"
+    if not lockfile.is_absolute():
+        lockfile = caller_cwd / lockfile
+    canonical_lockfile = lockfile.resolve(strict=False)
+    _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
+    remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
+    return config, canonical_lockfile, remote_lock
 
 
 def _generate_with_atomic_remote_update(  # noqa: PLR0912, PLR0914, PLR0915
@@ -1746,22 +1778,8 @@ def _generate_with_atomic_remote_update(  # noqa: PLR0912, PLR0914, PLR0915
         publication_anchor,
         publish_staged_files,
     )
-    from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
-    path_updates = {
-        field: absolute_path
-        for field in ("output", "emit_model_metadata")
-        if (absolute_path := _absolute_generation_path(getattr(config, field), caller_cwd))
-        is not getattr(config, field)
-    }
-    if path_updates:
-        config = config.model_copy(update=path_updates)
-    lockfile = config.lockfile.expanduser() if config.lockfile is not None else caller_cwd / "datamodel-codegen.lock"
-    if not lockfile.is_absolute():
-        lockfile = caller_cwd / lockfile
-    canonical_lockfile = lockfile.resolve(strict=False)
-    _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
-    remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
+    config, canonical_lockfile, remote_lock = _prepare_atomic_generation_remote_lock(input_, config, caller_cwd)
     contexts: list[tempfile.TemporaryDirectory[str]] = []
     anchors: list[PublicationAnchor] = []
     lock_anchor: PublicationAnchor | None = None
@@ -1916,6 +1934,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     suppress_parse_warnings: bool = False,
     reference_cache: Any | None = None,
     python_type_expressions: _PythonTypeExpressions | None = None,
+    openapi_parser_factory: OpenAPIParserFactory | None = None,
 ) -> Any:
     """Build one fresh parser using the caller's reference-resolution base."""
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
@@ -1932,6 +1951,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
             xmlschema_version=xmlschema_version,
             protobuf_version=protobuf_version,
             python_type_expressions=python_type_expressions,
+            openapi_parser_factory=openapi_parser_factory,
         )
     if reference_cache is not None and hasattr(parser, "remote_object_cache"):
         parser.remote_object_cache = reference_cache
@@ -1964,6 +1984,7 @@ def _build_generation_retry_parser(  # noqa: PLR0913, PLR0917
     formatter_cwd: Path | None = None,
     preserve_circular_root_models: bool = False,
     suppress_parse_warnings: bool = False,
+    openapi_parser_factory: OpenAPIParserFactory | None = None,
 ) -> tuple[Any, DataModelSet, bool]:
     """Build one fresh parser for an internal compatibility retry."""
     data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
@@ -1995,6 +2016,7 @@ def _build_generation_retry_parser(  # noqa: PLR0913, PLR0917
         suppress_parse_warnings=suppress_parse_warnings,
         reference_cache=reference_cache,
         python_type_expressions=python_type_expressions,
+        openapi_parser_factory=openapi_parser_factory,
     )
     return parser, data_model_types, defer_formatting
 
@@ -2055,6 +2077,43 @@ def _prepare_directory_input(input_: _GenerationInput, config: GenerateConfig) -
     return config
 
 
+def _resolve_generation_remote_lock(
+    input_: _GenerationInput, config: GenerateConfig, caller_cwd: Path
+) -> GenerateConfig:
+    """Resolve the ordinary remote-lock policy, retaining identity when inactive."""
+    remote_lock = config.remote_lock
+    if config.remote_lock_resolved:
+        _validate_generation_path_conflicts(
+            input_,
+            config.output,
+            config.emit_model_metadata,
+            getattr(remote_lock, "path", None),
+        )
+    else:
+        default_lockfile = caller_cwd / "datamodel-codegen.lock"
+        lockfile = config.lockfile.expanduser() if config.lockfile is not None else default_lockfile
+        if not lockfile.is_absolute():
+            lockfile = (caller_cwd / lockfile).resolve()
+        use_remote_lock = config.update_lock or config.locked or lockfile.is_file()
+        _validate_generation_path_conflicts(
+            input_,
+            config.output,
+            config.emit_model_metadata,
+            lockfile if use_remote_lock else None,
+        )
+        if use_remote_lock:
+            config = config.model_copy()
+            from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
+
+            remote_lock = RemoteReferenceLock.open(
+                lockfile,
+                update=config.update_lock,
+                locked=config.locked,
+            )
+            config.resolve_remote_lock(remote_lock)
+    return config
+
+
 def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     input_: _GenerationInput,
     config: GenerateConfig,
@@ -2085,38 +2144,10 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     path if path.is_absolute() else (caller_cwd / path.expanduser()).resolve() for path in input_paths
                 ]
 
+    remote_lock_resolved = config.remote_lock_resolved
+    config = _resolve_generation_remote_lock(input_, config, caller_cwd)
     remote_lock = config.remote_lock
-    owned_remote_lock: RemoteReferenceLock | None = None
-    if config.remote_lock_resolved:
-        _validate_generation_path_conflicts(
-            input_,
-            config.output,
-            config.emit_model_metadata,
-            getattr(remote_lock, "path", None),
-        )
-    else:
-        default_lockfile = caller_cwd / "datamodel-codegen.lock"
-        lockfile = config.lockfile.expanduser() if config.lockfile is not None else default_lockfile
-        if not lockfile.is_absolute():
-            lockfile = (caller_cwd / lockfile).resolve()
-        use_remote_lock = config.update_lock or config.locked or lockfile.is_file()
-        _validate_generation_path_conflicts(
-            input_,
-            config.output,
-            config.emit_model_metadata,
-            lockfile if use_remote_lock else None,
-        )
-        if use_remote_lock:
-            config = config.model_copy()
-            from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
-
-            owned_remote_lock = RemoteReferenceLock.open(
-                lockfile,
-                update=config.update_lock,
-                locked=config.locked,
-            )
-            remote_lock = owned_remote_lock
-            config.resolve_remote_lock(remote_lock)
+    owned_remote_lock = None if remote_lock_resolved else remote_lock
     response_observer = remote_lock.record_response if remote_lock is not None else None
     match input_:
         case str():
@@ -2232,6 +2263,7 @@ def _parse_with_disposal(
     config: GenerateConfig,
     *,
     parser_settings_path: Path | None,
+    capture: GenerationCaptureSession[object] | None = None,
 ) -> _ParserResults:
     """Parse with one parser and dispose it if parsing fails."""
     try:
@@ -2245,12 +2277,17 @@ def _parse_with_disposal(
                 collect_model_metadata=config.emit_model_metadata is not None,
             )
     except BaseException as exc:
-        match exc:
-            case _CollapseRootModelsRecursionError():
-                parser.dispose()
-            case _:
-                with contextlib.suppress(BaseException):
+        try:
+            match exc:
+                case _CollapseRootModelsRecursionError():
                     parser.dispose()
+                case _:
+                    with contextlib.suppress(BaseException):
+                        parser.dispose()
+        finally:
+            if capture is not None:
+                with contextlib.suppress(BaseException):
+                    capture.discard_attempt(parser)
         raise
     return results
 
@@ -2261,6 +2298,7 @@ def _parse_collapse_root_models_retry(
     config: GenerateConfig,
     *,
     parser_settings_path: Path | None,
+    capture: GenerationCaptureSession[object] | None = None,
 ) -> _ParserResults:
     """Parse the compatibility retry without repeating user-visible warnings."""
     try:
@@ -2269,6 +2307,7 @@ def _parse_collapse_root_models_retry(
             parser,
             config,
             parser_settings_path=parser_settings_path,
+            capture=capture,
         )
     except _CollapseRootModelsRecursionError as retry_exc:
         match retry_exc.__cause__:
@@ -2279,7 +2318,25 @@ def _parse_collapse_root_models_retry(
         raise public_error from None
 
 
-def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
+def _dispose_capture_parser(parser: Any, capture: GenerationCaptureSession[object], *, discard: bool) -> None:
+    """Release a capture parser without replacing an active primary failure."""
+    if sys.exc_info()[0] is not None:
+        with contextlib.suppress(BaseException):
+            parser.dispose()
+        with contextlib.suppress(BaseException):
+            capture.discard_attempt(parser)
+        return
+    try:
+        parser.dispose()
+    except BaseException:
+        with contextlib.suppress(BaseException):
+            capture.discard_attempt(parser)
+        raise
+    if discard:
+        capture.discard_attempt(parser)
+
+
+def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     input_: _GenerationInput,
     input_text: str | None,
     input_file_type: InputFileType,
@@ -2300,8 +2357,10 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
     parser_settings_path: Path | None,
     use_output_cwd: bool,
     output_context_path: Path,
+    capture: GenerationCaptureSession[object] | None = None,
 ) -> _ParsedGeneration:
     """Parse, dispose, and retry narrow compatibility failures inside the output cwd."""
+    openapi_parser_factory = capture.parser_factory if capture is not None else None
     # Phase 3: build before chdir so initial reference resolution keeps the caller's cwd.
     parser = _build_generation_parser(
         input_,
@@ -2315,15 +2374,17 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
         prefetched_source=prefetched_source,
         formatter_cwd=None if use_output_cwd else output_context_path,
         python_type_expressions=python_type_expressions,
+        openapi_parser_factory=openapi_parser_factory,
     )
     # Phase 4: initial parse, disposal, and the complete retry flow share the output cwd.
-    with chdir(output_context_path if use_output_cwd else None):
+    with chdir(output_context_path if use_output_cwd else None):  # noqa: PLR1702
         try:
             results = _parse_with_disposal(
                 input_,
                 parser,
                 config,
                 parser_settings_path=parser_settings_path,
+                capture=capture,
             )
         except _CollapseRootModelsRecursionError:
             retry_remote_text_cache = parser.remote_text_cache
@@ -2350,6 +2411,7 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
                 formatter_cwd=None if use_output_cwd else output_context_path,
                 preserve_circular_root_models=True,
                 suppress_parse_warnings=True,
+                openapi_parser_factory=openapi_parser_factory,
             )
             extra_template_data = retry_extra_template_data
             results = _parse_collapse_root_models_retry(
@@ -2357,6 +2419,7 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
                 parser,
                 config,
                 parser_settings_path=parser_settings_path,
+                capture=capture,
             )
         model_metadata = parser.model_metadata
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
@@ -2366,7 +2429,13 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
             retry_reference_cache = getattr(parser, "remote_object_cache", None)
             retry_base_path = parser.base_path
             preserve_circular_root_models = parser.run_context.preserve_circular_root_models
-        parser.dispose()
+        if capture is None:
+            parser.dispose()
+        else:
+            try:
+                candidate_attempt = capture.freeze_attempt(parser, results)
+            finally:
+                _dispose_capture_parser(parser, capture, discard=False)
         del parser
 
         if repair_modules:
@@ -2396,15 +2465,18 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
                     prefetched_source=prefetched_source,
                     formatter_cwd=None if use_output_cwd else output_context_path,
                     preserve_circular_root_models=preserve_circular_root_models,
+                    openapi_parser_factory=openapi_parser_factory,
                 )
                 retry_results = _parse_with_disposal(
                     input_,
                     retry_parser,
                     retry_config,
                     parser_settings_path=parser_settings_path,
+                    capture=capture,
                 )
                 retry_completed = True
 
+            retry_accepted = False
             if retry_completed:
                 # This is a compatibility repair: retain the completed legacy result if it cannot be proven safe.
                 try:
@@ -2415,15 +2487,26 @@ def _parse_generation(  # noqa: PLR0913, PLR0914, PLR0917
                         and retry_parser.generated_model_inventory == legacy_inventory
                         and retry_parser.source_data_fingerprint == legacy_source_fingerprint
                     ):
+                        if capture is not None:
+                            candidate_attempt = capture.freeze_attempt(retry_parser, retry_results)
+                        retry_accepted = True
                         results = retry_results
                         model_metadata = retry_parser.model_metadata
                         data_model_types = retry_data_model_types
                         defer_formatting = retry_defer_formatting
                 finally:
-                    retry_parser.dispose()
+                    if capture is None:
+                        retry_parser.dispose()
+                    else:
+                        _dispose_capture_parser(retry_parser, capture, discard=not retry_accepted)
                 del retry_parser
 
+            if capture is not None:
+                capture.raise_if_failed()
             del retry_reference_cache, retry_remote_text_cache
+    if capture is not None:
+        capture.raise_if_failed()
+        capture.accept_attempt(candidate_attempt)
     return results, model_metadata, data_model_types, defer_formatting
 
 
@@ -2458,7 +2541,7 @@ def _emit_generation(  # noqa: PLR0913
     return generated
 
 
-def _generate(  # noqa: PLR0914
+def _generate(
     input_: _GenerationInput,
     config: GenerateConfig,
     caller_cwd: Path,
@@ -2466,91 +2549,112 @@ def _generate(  # noqa: PLR0914
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate models after capturing all process-relative state."""
-    with _tuned_gc():
-        config, output_context_path, emit_settings_path = _prepare_generation_config(config, caller_cwd)
-        input_filename = config.input_filename
-        input_file_type = config.input_file_type
-        extra_template_data = _prepare_generation_extra_template_data(config)
-        dataclass_arguments = config.dataclass_arguments
-        skip_root_model = config.skip_root_model
-        remote_text_cache: DefaultPutDict[str, str] = DefaultPutDict()
-        (
-            config,
-            input_,
-            input_text,
-            input_file_type,
-            dataclass_arguments,
-            source_override,
-            diagnostic_source_path,
-            prefetched_source,
-            skip_root_model,
-            owned_remote_lock,
-        ) = _prepare_generation_input(
-            input_,
-            config,
-            caller_cwd,
-            remote_text_cache,
-            input_file_type=input_file_type,
-            dataclass_arguments=dataclass_arguments,
-            skip_root_model=skip_root_model,
-        )
-        data_model_types, source, defer_formatting, additional_options, python_type_expressions = (
-            _prepare_parser_common_options(
+    return _run_generation(input_, config, caller_cwd, use_output_cwd=use_output_cwd)
+
+
+def _run_generation(  # noqa: PLR0914
+    input_: _GenerationInput,
+    config: GenerateConfig,
+    caller_cwd: Path,
+    *,
+    use_output_cwd: bool,
+    capture: GenerationCaptureSession[object] | None = None,
+) -> str | GeneratedModules | None:
+    """Generate models after capturing all process-relative state."""
+    try:
+        with _tuned_gc():
+            config, output_context_path, emit_settings_path = _prepare_generation_config(config, caller_cwd)
+            input_filename = config.input_filename
+            input_file_type = config.input_file_type
+            extra_template_data = _prepare_generation_extra_template_data(config)
+            dataclass_arguments = config.dataclass_arguments
+            skip_root_model = config.skip_root_model
+            remote_text_cache: DefaultPutDict[str, str] = DefaultPutDict()
+            (
+                config,
+                input_,
+                input_text,
+                input_file_type,
+                dataclass_arguments,
+                source_override,
+                diagnostic_source_path,
+                prefetched_source,
+                skip_root_model,
+                owned_remote_lock,
+            ) = _prepare_generation_input(
+                input_,
+                config,
+                caller_cwd,
+                remote_text_cache,
+                input_file_type=input_file_type,
+                dataclass_arguments=dataclass_arguments,
+                skip_root_model=skip_root_model,
+            )
+            data_model_types, source, defer_formatting, additional_options, python_type_expressions = (
+                _prepare_parser_common_options(
+                    input_,
+                    input_text,
+                    input_file_type,
+                    source_override,
+                    config,
+                    extra_template_data,
+                    dataclass_arguments,
+                    skip_root_model=skip_root_model,
+                    remote_text_cache=remote_text_cache,
+                )
+            )
+            if additional_options["base_path"] is None and not isinstance(source, Path):
+                match input_:
+                    case [Path(), *_] as input_paths:
+                        additional_options["base_path"] = _path_list_base_path(input_paths, caller_cwd)
+                    case _:
+                        additional_options["base_path"] = caller_cwd
+            schema_versions = _resolve_schema_versions(input_file_type, config.schema_version)
+            parser_settings_path = (
+                config.settings_path
+                if use_output_cwd
+                else _settings_path_from(output_context_path, config.settings_path)
+            )
+            results, model_metadata, data_model_types, defer_formatting = _parse_generation(
                 input_,
                 input_text,
                 input_file_type,
                 source_override,
                 config,
+                source,
+                additional_options,
+                data_model_types,
+                defer_formatting,
                 extra_template_data,
                 dataclass_arguments,
+                python_type_expressions=python_type_expressions,
                 skip_root_model=skip_root_model,
-                remote_text_cache=remote_text_cache,
+                schema_versions=schema_versions,
+                diagnostic_source_path=diagnostic_source_path,
+                prefetched_source=prefetched_source,
+                parser_settings_path=parser_settings_path,
+                use_output_cwd=use_output_cwd,
+                output_context_path=output_context_path,
+                capture=capture,
             )
-        )
-        if additional_options["base_path"] is None and not isinstance(source, Path):
-            match input_:
-                case [Path(), *_] as input_paths:
-                    additional_options["base_path"] = _path_list_base_path(input_paths, caller_cwd)
-                case _:
-                    additional_options["base_path"] = caller_cwd
-        schema_versions = _resolve_schema_versions(input_file_type, config.schema_version)
-        parser_settings_path = (
-            config.settings_path if use_output_cwd else _settings_path_from(output_context_path, config.settings_path)
-        )
-        results, model_metadata, data_model_types, defer_formatting = _parse_generation(
-            input_,
-            input_text,
-            input_file_type,
-            source_override,
-            config,
-            source,
-            additional_options,
-            data_model_types,
-            defer_formatting,
-            extra_template_data,
-            dataclass_arguments,
-            python_type_expressions=python_type_expressions,
-            skip_root_model=skip_root_model,
-            schema_versions=schema_versions,
-            diagnostic_source_path=diagnostic_source_path,
-            prefetched_source=prefetched_source,
-            parser_settings_path=parser_settings_path,
-            use_output_cwd=use_output_cwd,
-            output_context_path=output_context_path,
-        )
-        del additional_options, extra_template_data
-        return _emit_generation(
-            results,
-            input_,
-            config,
-            model_metadata,
-            data_model_types,
-            input_filename=input_filename,
-            custom_file_header=config.custom_file_header,
-            defer_formatting=defer_formatting,
-            settings_path=emit_settings_path,
-            owned_remote_lock=owned_remote_lock,
-        )
+            del additional_options, extra_template_data
+            return _emit_generation(
+                results,
+                input_,
+                config,
+                model_metadata,
+                data_model_types,
+                input_filename=input_filename,
+                custom_file_header=config.custom_file_header,
+                defer_formatting=defer_formatting,
+                settings_path=emit_settings_path,
+                owned_remote_lock=owned_remote_lock,
+            )
+    except BaseException:
+        if capture is not None:
+            with contextlib.suppress(BaseException):
+                capture.close()
+        raise
 
 
 def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
