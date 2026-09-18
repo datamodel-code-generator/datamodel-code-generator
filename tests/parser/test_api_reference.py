@@ -61,7 +61,7 @@ def test_canonical_declaration_generation() -> None:
         parser.dispose()
 
 
-@pytest.mark.parametrize("case", ["percent", "utf8", "escape", "tilde", "ambiguous"])
+@pytest.mark.parametrize("case", ["percent", "utf8", "escape", "tilde", "ambiguous", "external-ambiguous"])
 def test_invalid_pointer_generation(case: str) -> None:
     """Reject invalid URI pointers during real reference acquisition."""
     parser = ReferenceParser(SOURCE / f"pointer-{case}.json", formatters=[])

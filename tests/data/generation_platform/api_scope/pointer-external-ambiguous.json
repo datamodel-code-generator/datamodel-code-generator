@@ -1,0 +1,1 @@
+{"openapi": "3.2.1", "components": {"schemas": {"Use": {"$ref": "pointer-external-library.json#/components/schemas/a%2Fb"}}}}
