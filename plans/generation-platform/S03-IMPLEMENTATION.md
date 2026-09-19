@@ -29,6 +29,16 @@ Typing exceptions are local: the existing snooper class decorator erases inherit
 
 Api operation/schema frames are observed only by the capture instance's list subclass. Ordinary Api retains its original list, append/pop calls, and traversal body. Observation preserves actual effective parameter/security mappings instead of recomputing them. Borrowed frame/type/reference anchors are cleared on parser disposal; the source lease is separately closed by its consumer.
 
+## Replacement capture checkpoint
+
+The capture parser now selects ContractGenerationStore at construction. Completed global/scoped reference redirects and field/nested-type replacements retain their actual owners and selected references. No capture query refreshes GenerationIndex. Root collapse saves the root's own structural recipe once per reference before removal, separately from consumer-field state. The context record distinguishes successful mutation at entry from successful exit. Actual field/type copies retain both inherited source fields and the actual merge mode; actual request/response variant returns survive the engine's normal cache cleanup. Disposal clears every ledger collection and removes both instance factory cycles.
+
+The cumulative selected suite passes 148 tests with 100% line and branch coverage across all four new/modified capture modules (632 statements, 50 branches). The binding tests account for 39 cases. Five builtins × three fixtures match fixed-main output fixtures and original model-engine call counts, including GenerationStore refreshes and copy helpers. Deferred inherited merges cover all three existing modes. Cross-module output matches the existing S01 golden. Fault injection covers missing root recipes, structural cycles, and exceptions after replacement entry; ordinary engine failures do not latch capture failures. Strict mypy/Pyright and architecture checks pass.
+
+Measurement correction: the existing process-wide DataModelFieldBase._field_imports_cache warms across parses. A same-process ordinary-versus-ordinary control reproduced the initial import-getter count difference. Comparison tests now clear that existing cache before each side, keeping identical cold-cache conditions. The paired counts then match; no engine cache behavior was changed. New output fixtures were generated using fixed main at `/Users/koudai/work/dcg-6/src`, never the candidate capture implementation.
+
+This checkpoint does not complete S03: final operation normalization, field provenance, structured projection, backend emitted facts, actual accepted-batch freezing, dry consumers, full acceptance, benchmarks, and remote CI/review remain outstanding. No public server/client feature is exposed.
+
 ## Contract hashes
 
 - `ACCEPTANCE.md`: `ab8138656f8013a23da95089abe110216270386f405be793c527254fa782276e`
@@ -55,4 +65,4 @@ Api operation/schema frames are observed only by the capture instance's list sub
 
 ## Handoff
 
-Working branch: `generation-platform-binding-uses`; isolated worktree: `/private/tmp/dcg-generation-platform-s03`. Next: retain completed store replacements, root-collapse recipes, copies and directional variants, then implement final-field integration. Operation normalization and final immutable values remain part of the cumulative S03 gate. No subagents are used. Do not start S04 or merge without authorization.
+First local commit: `cc4e0b36` (`generation-platform-binding-uses`). Working branch: `generation-platform-binding-replacements`; isolated worktree: `/private/tmp/dcg-generation-platform-s03`. Next: implement and independently verify final-field provenance, five-backend emitted facts, and pure structured type projection. Operation normalization and final immutable values remain part of the cumulative S03 gate. No subagents are used. Do not start S04 or merge without authorization.

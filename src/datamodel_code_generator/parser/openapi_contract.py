@@ -11,9 +11,17 @@ from typing_extensions import TypedDict, Unpack
 
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError, ReferenceResolution
 from datamodel_code_generator._openapi_generation import SourceLease
+from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.parser._api_reference import ApiDeclarationId, ApiModelResolver
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from datamodel_code_generator.parser.openapi_contract_store import BindingLedger, capture_errors
+from datamodel_code_generator.parser.openapi_contract_store import (
+    BindingLedger,
+    ContractGenerationStore,
+    FieldCopy,
+    TypeCopy,
+    Variant,
+    capture_errors,
+)
 from datamodel_code_generator.parser.openapi_scope import ApiDeclarationFrame, ApiOpenAPIParser
 from datamodel_code_generator.reference import FieldNameResolver, ModelResolver, ModelType, Reference
 
@@ -27,6 +35,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend, NamingStrategy
     from datamodel_code_generator.format import PythonVersion
+    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser.openapi import MediaSchema, ReferenceObject, RequestBodyObject, ResponseObject
     from datamodel_code_generator.parser.openapi_scope import _ApiObject  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator.types import DataType
@@ -303,12 +312,92 @@ class BindingCaptureMixin(OpenAPIParser):
         self.request_types: list[RequestTypesObservation] = []
         self.response_types: list[ResponseTypesObservation] = []
         self._model_resolver_factory = partial(self._create_binding_resolver)
+        self._generation_store_factory = partial(self._create_binding_store)
         # The existing parser accepts mappings; its constructor annotation omits them.
         super().__init__(  # pyright: ignore[reportUnknownMemberType]
             source,  # type: ignore[arg-type]
             config=config,
             **options,
         )
+
+    def _create_binding_store(self) -> tuple[ContractGenerationStore, list[DataModel]]:
+        """Create the capture store through the original constructor's factory call."""
+        store = ContractGenerationStore(self.binding_ledger)
+        return store, store.models
+
+    def _copy_model_field(
+        self, field: DataModelFieldBase, *, data_type: DataType | None = None, register_references: bool = True
+    ) -> DataModelFieldBase:
+        """Retain actual copy origins without intercepting the helper's recursion."""
+        result: DataModelFieldBase = super()._copy_model_field(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            field, data_type=data_type, register_references=register_references
+        )
+        return self._record_field_copy((field,), result, None)  # pyright: ignore[reportUnknownArgumentType]
+
+    def _copy_model_type(self, data_type: DataType, *, register_references: bool = True) -> DataType:
+        """Observe one original helper return with unchanged reference registration."""
+        result: DataType = super()._copy_model_type(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            data_type, register_references=register_references
+        )
+        return self._record_type_copy(data_type, result)  # pyright: ignore[reportUnknownArgumentType]
+
+    def _copy_inherited_field(  # ruff: ignore[too-many-arguments] -- Preserve the existing copy hook signature.
+        self,
+        field: DataModelFieldBase,
+        inherited_field: DataModelFieldBase,
+        *,
+        force_optional: bool = False,
+        partial_merge_mode: AllOfMergeMode = AllOfMergeMode.All,
+        register_references: bool = True,
+        reserved_names: set[str] | None = None,
+    ) -> DataModelFieldBase | None:
+        """Preserve both source fields and the actual inherited merge mode."""
+        result: DataModelFieldBase | None = super()._copy_inherited_field(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            field,
+            inherited_field,
+            force_optional=force_optional,
+            partial_merge_mode=partial_merge_mode,
+            register_references=register_references,
+            reserved_names=reserved_names,
+        )
+        if result is None:
+            return None
+        return self._record_field_copy(
+            (field, inherited_field),
+            result,  # pyright: ignore[reportUnknownArgumentType]
+            partial_merge_mode,
+        )
+
+    @capture_errors
+    def _record_field_copy(
+        self, sources: tuple[DataModelFieldBase, ...], target: DataModelFieldBase, mode: AllOfMergeMode | None
+    ) -> DataModelFieldBase:
+        identity = self.binding_ledger.identity
+        self.binding_ledger.copies.append(
+            FieldCopy(tuple(identity(source) for source in sources), identity(target), mode)
+        )
+        return target
+
+    @capture_errors
+    def _record_type_copy(self, source: DataType, target: DataType) -> DataType:
+        identity = self.binding_ledger.identity
+        self.binding_ledger.copies.append(TypeCopy(identity(source), identity(target)))
+        return target
+
+    def _get_rw_model_variant_reference(
+        self, base_reference: Reference, suffix: Literal["Request", "Response"], *, loaded: bool = False
+    ) -> Reference:
+        """Retain variants before the engine releases its per-parse caches."""
+        result: Reference = super()._get_rw_model_variant_reference(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            base_reference, suffix, loaded=loaded
+        )
+        return self._record_variant(base_reference, suffix, result)  # pyright: ignore[reportUnknownArgumentType]
+
+    @capture_errors
+    def _record_variant(self, base: Reference, suffix: Literal["Request", "Response"], result: Reference) -> Reference:
+        identity = self.binding_ledger.identity
+        self.binding_ledger.variants.append(Variant(identity(base), suffix, identity(result)))
+        return result
 
     def _create_binding_resolver(self, **options: Unpack[ResolverOptions]) -> BindingResolverMixin:
         """Construct the owned resolver once with unchanged parser keyword values."""
@@ -474,6 +563,7 @@ class BindingCaptureMixin(OpenAPIParser):
             super().dispose()  # pyright: ignore[reportUnknownMemberType]
         finally:
             self.__dict__.pop("_model_resolver_factory", None)
+            self.__dict__.pop("_generation_store_factory", None)
             self.request_types.clear()
             self.response_types.clear()
             self._legacy_operations.clear()
