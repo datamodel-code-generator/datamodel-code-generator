@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import OpenAPIScope
+from datamodel_code_generator import DataModelType, OpenAPIScope, PythonVersionMin
 from datamodel_code_generator._generation_contract import (
     AttemptId,
     BindingCaptureError,
@@ -16,6 +17,14 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser, ContractOpenAPIParser
 from tests.conftest import assert_output
+
+if TYPE_CHECKING:
+    from typing import Literal
+
+    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.parser.openapi_contract_store import RootCollapse
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/binding"
@@ -99,6 +108,8 @@ def test_api_capture_engine_calls(case: str) -> None:
     previous = sys.getprofile()
     try:
         for parser in (ordinary, captured):
+            # Match the existing process-wide field-import cache state for both runs.
+            parser.data_model_field_type._field_imports_cache.clear()
             observer = BindingEngineObserver()
             sys.setprofile(observer.record)
             try:
@@ -251,5 +262,251 @@ def test_source_lease_rejects_unobserved_locations(document: int, pointer: str) 
         with pytest.raises(BindingCaptureError, match=r"^Source location does not identify an observed node$"):
             parser.source_lease.borrow(SourceLocation(SourceDocumentId(document), pointer, "schema"))
     finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("case", ["observation", "replacements", "inherited-overrides"])
+def test_replacement_capture_engine_parity(backend: DataModelType, case: str) -> None:
+    """Preserve bytes and original engine calls across real copies and replacements."""
+    import sys
+
+    from datamodel_code_generator.enums import CollapseRootModelsNameStrategy, ReadOnlyWriteOnlyModelType
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
+    from tests.data.python.binding_engine_observer import BindingEngineObserver
+
+    source = DATA / "generation_platform/observation.json" if case == "observation" else SOURCE / f"{case}.json"
+    model_types = get_data_model_types(backend, target_python_version=PythonVersionMin)
+    options = {
+        "data_model_type": model_types.data_model,
+        "data_model_root_type": model_types.root_model,
+        "data_model_field_type": model_types.field_model,
+        "data_type_manager_type": model_types.data_type_manager,
+        "dump_resolve_reference_action": model_types.dump_resolve_reference_action,
+        "openapi_scopes": [OpenAPIScope.Api],
+        "collapse_root_models": True,
+        "collapse_root_models_name_strategy": CollapseRootModelsNameStrategy.Child,
+        "reuse_model": True,
+        "collapse_reuse_models": True,
+        "read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.All,
+        "formatters": [],
+    }
+    ordinary = ApiOpenAPIParser(source, **options)
+    captured = ContractApiOpenAPIParser(source, attempt_id=AttemptId(1), **options)
+    previous = sys.getprofile()
+    outputs, counts = [], []
+    try:
+        for parser in (ordinary, captured):
+            # Match the existing process-wide field-import cache state for both runs.
+            parser.data_model_field_type._field_imports_cache.clear()
+            observer = BindingEngineObserver()
+            sys.setprofile(observer.record)
+            try:
+                outputs.append(parser.parse())
+            finally:
+                sys.setprofile(previous)
+            counts.append(observer.calls)
+        for output in outputs:
+            assert_output(output, EXPECTED / f"{case}-{backend.name}.py")
+        assert_output(
+            json.dumps(
+                {"identical_model_bytes": outputs[0] == outputs[1], "identical_engine_calls": counts[0] == counts[1]},
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "engine-parity.txt",
+        )
+        assert_output(
+            json.dumps(
+                {
+                    "root_relations_completed": all(item.completed for item in captured.binding_ledger.collapses),
+                    "root_recipes_preserved": all(
+                        item.root_field.parent is item.reference.source for item in captured.binding_ledger.collapses
+                    ),
+                    "scoped_owners_preserved": all(
+                        bool(item.models)
+                        for item in captured.binding_ledger.replacements
+                        if item.kind == "scoped_reference"
+                    ),
+                    "copy_targets_distinct": all(
+                        item.target not in item.sources
+                        for item in captured.binding_ledger.copies
+                        if hasattr(item, "sources")
+                    ),
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "replacement-invariants.txt",
+        )
+    finally:
+        ordinary.dispose()
+        captured.dispose()
+        captured.source_lease.close()
+
+
+def test_capture_cross_module_type_copies() -> None:
+    """Preserve existing modular bytes and the actual nonrecursive copy count."""
+    from collections import Counter
+
+    from datamodel_code_generator import ModuleSplitMode
+    from tests.conftest import assert_parser_modules
+
+    parser = ContractOpenAPIParser(
+        DATA / "generation_platform/observation.json",
+        attempt_id=AttemptId(1),
+        formatters=[],
+        openapi_scopes=["schemas", "paths"],
+        read_only_write_only_model_type="all",
+        collapse_root_models=True,
+        reuse_model=True,
+    )
+    try:
+        assert_parser_modules(parser.parse(module_split_mode=ModuleSplitMode.Single), EXPECTED.parent / "split")
+        assert_output(
+            json.dumps(dict(sorted(Counter(type(item).__name__ for item in parser.binding_ledger.copies).items())))
+            + "\n",
+            EXPECTED / "split-copies.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+def test_capture_actual_deduplication_pair() -> None:
+    """Use a same-name duplicate chosen by the engine, without computing a dedup key."""
+    from datamodel_code_generator.parser.openapi import OpenAPIParser
+
+    source = DATA / "openapi/duplicate_model_simplify.yaml"
+    parser = ContractOpenAPIParser(source, attempt_id=AttemptId(1), formatters=[])
+    ordinary = OpenAPIParser(source, formatters=[])
+    try:
+        ordinary_result = ordinary.parse()
+        captured_result = parser.parse()
+        assert_output(
+            json.dumps(
+                {
+                    "identical_output": ordinary_result == captured_result,
+                    "global_redirects": sum(item.kind == "reference" for item in parser.binding_ledger.replacements),
+                    "distinct_identities": all(
+                        item.original != item.replacement
+                        for item in parser.binding_ledger.replacements
+                        if item.kind == "reference"
+                    ),
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "deduplication.txt",
+        )
+    finally:
+        ordinary.dispose()
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("failure", ["missing_root", "structural_cycle", "after_enter"])
+def test_capture_collapse_failures(failure: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reject malformed recipes and retain incomplete context entry on real parse failures."""
+    from datamodel_code_generator.parser import base
+    from datamodel_code_generator.parser.openapi_contract_store import ContractGenerationStore
+
+    parser = ContractApiOpenAPIParser(
+        SOURCE / "replacements.json",
+        attempt_id=AttemptId(1),
+        openapi_scopes=[OpenAPIScope.Api],
+        collapse_root_models=True,
+        formatters=[],
+    )
+    if failure == "after_enter":
+
+        def fail_import(*_args: object) -> None:
+            message = "injected import failure"
+            raise RuntimeError(message)
+
+        monkeypatch.setattr(base, "_register_data_type_import", fail_import)
+    else:
+        original = ContractGenerationStore._begin_collapse
+
+        def corrupt_root(
+            self: ContractGenerationStore,
+            data_type: DataType,
+            replacement: DataType | Reference,
+            owner: DataType | DataModelFieldBase,
+            kind: Literal["field", "nested", "reference"],
+        ) -> RootCollapse:
+            model = next(model for model in parser.results if model.reference is data_type.reference)
+            if failure == "missing_root":
+                fields = model.fields
+                model.fields = []
+                try:
+                    return original(self, data_type, replacement, owner, kind)
+                finally:
+                    model.fields = fields
+            root_type = model.fields[0].data_type
+            root_type.data_types.append(root_type)
+            try:
+                return original(self, data_type, replacement, owner, kind)
+            finally:
+                root_type.data_types.pop()
+
+        monkeypatch.setattr(ContractGenerationStore, "_begin_collapse", corrupt_root)
+    try:
+        with pytest.raises(RuntimeError):
+            parser.parse()
+        assert_output(
+            json.dumps(
+                {
+                    "latched_capture_failure": isinstance(parser.binding_ledger.failure, BindingCaptureError),
+                    "collapse_completion": [item.completed for item in parser.binding_ledger.collapses],
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / ("collapse-after-enter.txt" if failure == "after_enter" else "collapse-invalid-recipe.txt"),
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("mode", ["all", "constraints", "none"])
+def test_capture_inherited_merge_sources(mode: str) -> None:
+    """Retain both actual fields and merge mode for deferred inherited types."""
+    from datamodel_code_generator.enums import AllOfMergeMode, ReadOnlyWriteOnlyModelType
+    from datamodel_code_generator.parser.openapi import OpenAPIParser
+    from datamodel_code_generator.parser.openapi_contract_store import FieldCopy
+
+    source = DATA / "openapi/allof_partial_override_inherited_types.yaml"
+    options = {
+        "formatters": [],
+        "read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.All,
+        "allof_merge_mode": AllOfMergeMode(mode),
+    }
+    ordinary = OpenAPIParser(source, **options)
+    parser = ContractOpenAPIParser(source, attempt_id=AttemptId(1), **options)
+    try:
+        expected = ordinary.parse()
+        actual = parser.parse()
+        merges = [
+            item for item in parser.binding_ledger.copies if isinstance(item, FieldCopy) and item.merge_mode is not None
+        ]
+        assert_output(
+            json.dumps(
+                {
+                    "identical_output": expected == actual,
+                    "actual_merges": bool(merges),
+                    "preserved_pairs": all(len(item.sources) == 2 for item in merges),
+                    "preserved_mode": all(item.merge_mode == AllOfMergeMode(mode) for item in merges),
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "inherited-merge.txt",
+        )
+    finally:
+        ordinary.dispose()
         parser.dispose()
         parser.source_lease.close()

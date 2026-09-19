@@ -1,0 +1,6 @@
+{
+  "latched_capture_failure": false,
+  "collapse_completion": [
+    false
+  ]
+}

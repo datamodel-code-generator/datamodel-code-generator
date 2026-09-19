@@ -34,6 +34,15 @@ _ENGINE_CALLS = OBSERVED | frozenset({
     "_builtin_template_data",
     "all_fields",
     "iter_all_fields",
+    "refresh",
+    "refresh_now",
+    "current_facts",
+    "replace_data_type_ref",
+    "replace_field_type",
+    "replace_nested_data_type",
+    "redirect_reference_users",
+    "redirect_model_reference_users",
+    "_get_rw_model_variant_reference",
 })
 
 

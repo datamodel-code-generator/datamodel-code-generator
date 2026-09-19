@@ -1,0 +1,5 @@
+{
+  "identical_output": true,
+  "global_redirects": 1,
+  "distinct_identities": true
+}
