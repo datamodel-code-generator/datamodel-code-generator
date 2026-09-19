@@ -387,6 +387,7 @@ def test_capture_cross_module_type_copies() -> None:
 
     from datamodel_code_generator import ModuleSplitMode
     from tests.conftest import assert_parser_modules
+    from tests.data.python.binding_type_snapshot import field_source_snapshot
 
     parser = ContractOpenAPIParser(
         DATA / "generation_platform/observation.json",
@@ -403,6 +404,10 @@ def test_capture_cross_module_type_copies() -> None:
             json.dumps(dict(sorted(Counter(type(item).__name__ for item in parser.binding_ledger.copies).items())))
             + "\n",
             EXPECTED / "split-copies.txt",
+        )
+        assert_output(
+            json.dumps(field_source_snapshot(parser), indent=2) + "\n",
+            EXPECTED / "split-field-origins.txt",
         )
     finally:
         parser.dispose()
@@ -542,6 +547,91 @@ def test_capture_inherited_merge_sources(mode: str) -> None:
         )
     finally:
         ordinary.dispose()
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("mode", ["all", "constraints", "none"])
+def test_final_copied_field_sources(backend: DataModelType, mode: str) -> None:
+    """Preserve both inherited sources through two merges and directional copies."""
+    from datamodel_code_generator.enums import AllOfMergeMode, ReadOnlyWriteOnlyModelType
+    from tests.data.python.binding_inputs import builtin_binding_config
+    from tests.data.python.binding_type_snapshot import field_source_snapshot
+
+    config = builtin_binding_config(backend)
+    config.read_only_write_only_model_type = ReadOnlyWriteOnlyModelType.All
+    config.allof_merge_mode = AllOfMergeMode(mode)
+    parser = ContractApiOpenAPIParser(SOURCE / "copied-field-origins.json", attempt_id=AttemptId(1), config=config)
+    try:
+        assert_output(parser.parse(), EXPECTED / f"copied-field-origins-{mode}-{backend.name}.py")
+        assert_output(
+            json.dumps(field_source_snapshot(parser), indent=2) + "\n",
+            EXPECTED / "copied-field-origins.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+def test_inherited_default_producers_follow_final_copies() -> None:
+    """Retain equal None and derived-scope overrides through directional copies."""
+    from datamodel_code_generator.enums import ReadOnlyWriteOnlyModelType
+    from tests.data.python.binding_type_snapshot import inherited_default_snapshot
+
+    parser = ContractOpenAPIParser(
+        SOURCE / "copied-field-origins.json",
+        attempt_id=AttemptId(1),
+        formatters=[],
+        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.All,
+        default_value_overrides=json.loads((SOURCE / "copied-default-overrides.json").read_text()),
+    )
+    try:
+        assert_output(parser.parse(), EXPECTED / "copied-default-overrides.py")
+        assert_output(
+            json.dumps(inherited_default_snapshot(parser), indent=2) + "\n",
+            EXPECTED / "copied-default-overrides.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+def test_inherited_default_rejects_unmatched_resolution(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Latch a corrupt observer sequence during real inherited-field generation."""
+    from datamodel_code_generator.parser.openapi import OpenAPIParser
+
+    original = OpenAPIParser._apply_inherited_field_default
+
+    def duplicate_resolution(
+        parser: ContractOpenAPIParser,
+        field: DataModelFieldBase,
+        inherited_field: DataModelFieldBase,
+        *,
+        class_name: str,
+    ) -> None:
+        original(parser, field, inherited_field, class_name=class_name)
+        parser.binding_resolver.default_resolutions.append(parser.binding_resolver.default_resolutions[-1])
+
+    monkeypatch.setattr(OpenAPIParser, "_apply_inherited_field_default", duplicate_resolution)
+    parser = ContractOpenAPIParser(
+        SOURCE / "copied-field-origins.json",
+        attempt_id=AttemptId(1),
+        formatters=[],
+        default_value_overrides=json.loads((SOURCE / "copied-default-overrides.json").read_text()),
+    )
+    try:
+        with pytest.raises(BindingCaptureError, match="multiple unmatched resolver calls") as failure:
+            parser.parse()
+        assert_output(
+            json.dumps({
+                "latched_first": parser.binding_ledger.failure is failure.value,
+                "cause": type(failure.value.__cause__).__name__,
+            })
+            + "\n",
+            EXPECTED / "failure-capture.txt",
+        )
+    finally:
         parser.dispose()
         parser.source_lease.close()
 

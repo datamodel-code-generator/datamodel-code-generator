@@ -1,0 +1,116 @@
+{
+  "ChildRequest": {
+    "raw_note": {
+      "scopes": [
+        "Child"
+      ],
+      "schema_defaults": [
+        true
+      ],
+      "producers": [
+        "override"
+      ],
+      "selected": [
+        null
+      ],
+      "field_default": null
+    }
+  },
+  "ChildResponse": {
+    "raw_note": {
+      "scopes": [
+        "Child"
+      ],
+      "schema_defaults": [
+        true
+      ],
+      "producers": [
+        "override"
+      ],
+      "selected": [
+        null
+      ],
+      "field_default": null
+    }
+  },
+  "Child": {
+    "raw_note": {
+      "scopes": [
+        "Child"
+      ],
+      "schema_defaults": [
+        true
+      ],
+      "producers": [
+        "override"
+      ],
+      "selected": [
+        null
+      ],
+      "field_default": null
+    }
+  },
+  "GrandChildRequest": {
+    "raw_note": {
+      "scopes": [
+        "Child",
+        "GrandChild"
+      ],
+      "schema_defaults": [
+        true,
+        false
+      ],
+      "producers": [
+        "override",
+        "override"
+      ],
+      "selected": [
+        null,
+        "grand"
+      ],
+      "field_default": "grand"
+    }
+  },
+  "GrandChildResponse": {
+    "raw_note": {
+      "scopes": [
+        "Child",
+        "GrandChild"
+      ],
+      "schema_defaults": [
+        true,
+        false
+      ],
+      "producers": [
+        "override",
+        "override"
+      ],
+      "selected": [
+        null,
+        "grand"
+      ],
+      "field_default": "grand"
+    }
+  },
+  "GrandChild": {
+    "raw_note": {
+      "scopes": [
+        "Child",
+        "GrandChild"
+      ],
+      "schema_defaults": [
+        true,
+        false
+      ],
+      "producers": [
+        "override",
+        "override"
+      ],
+      "selected": [
+        null,
+        "grand"
+      ],
+      "field_default": "grand"
+    }
+  }
+}

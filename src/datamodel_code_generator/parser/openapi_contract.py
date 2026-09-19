@@ -403,6 +403,15 @@ class EffectiveDefaultObservation:
 
 
 @dataclass(frozen=True, slots=True)
+class InheritedDefaultObservation:
+    """Associate a derived-scope resolver return with its actual field pair."""
+
+    field: GraphObjectId
+    inherited: GraphObjectId
+    resolution: DefaultResolution
+
+
+@dataclass(frozen=True, slots=True)
 class PreexistingNullObservation:
     """Retain only top-level null evidence and unresolved reference identities."""
 
@@ -580,6 +589,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self._required_field_lists: list[tuple[list[str], ...]] = []
         self.field_constructions: dict[GraphObjectId, FieldConstructionObservation] = {}
         self.effective_defaults: list[EffectiveDefaultObservation] = []
+        self.inherited_defaults: dict[GraphObjectId, InheritedDefaultObservation] = {}
         self._conditional_merges: list[ConditionalMergeFrame] = []
         self._inherited_merges: list[InheritedMergeFrame] = []
         self._combined_branches: list[CombinedBranchFrame] = []
@@ -672,6 +682,56 @@ class BindingCaptureMixin(OpenAPIParser):
             FieldCopy(tuple(identity(source) for source in sources), identity(target), mode)
         )
         return target
+
+    @capture_errors
+    def _resolve_field_sources(self) -> dict[GraphObjectId, tuple[GraphObjectId, ...]]:
+        """Follow completed copies in producer order, preserving both inherited sources.
+
+        Original observations can be registered after an inner copy returns. Resolve
+        after parsing so those observations remain available without copying schemas
+        or conflating sources whose generated fields happen to look the same.
+        """
+        sources: dict[GraphObjectId, tuple[GraphObjectId, ...]] = {}
+        for copy in self.binding_ledger.copies:
+            if not isinstance(copy, FieldCopy):
+                continue
+            original_ids = dict.fromkeys(
+                original for source in copy.sources for original in sources.get(source, (source,))
+            )
+            if (
+                copy.target in self.field_origins
+                or copy.target in self.field_constructions
+                or copy.target in self.inherited_defaults
+            ):
+                original_ids[copy.target] = None
+            sources[copy.target] = tuple(original_ids)
+        return sources
+
+    def _apply_inherited_field_default(
+        self, field: DataModelFieldBase, inherited_field: DataModelFieldBase, *, class_name: str
+    ) -> None:
+        """Bind only resolver calls actually made by the existing inherited-default hook."""
+        start = len(self.binding_resolver.default_resolutions)
+        super()._apply_inherited_field_default(  # pyright: ignore[reportUnknownMemberType]
+            field, inherited_field, class_name=class_name
+        )
+        self._record_inherited_default(field, inherited_field, start)
+
+    @capture_errors
+    def _record_inherited_default(
+        self, field: DataModelFieldBase, inherited_field: DataModelFieldBase, start: int
+    ) -> None:
+        resolutions = self.binding_resolver.default_resolutions
+        if len(resolutions) == start:
+            return
+        if len(resolutions) != start + 1:
+            msg = "An inherited default has multiple unmatched resolver calls"
+            raise BindingCaptureError(msg)
+        identity = self.binding_ledger.identity
+        field_id = identity(field)
+        self.inherited_defaults[field_id] = InheritedDefaultObservation(
+            field_id, identity(inherited_field), resolutions[start]
+        )
 
     @capture_errors
     def _record_type_copy(self, source: DataType, target: DataType) -> DataType:
@@ -1957,6 +2017,7 @@ class BindingCaptureMixin(OpenAPIParser):
             self._required_field_lists.clear()
             self.field_constructions.clear()
             self.effective_defaults.clear()
+            self.inherited_defaults.clear()
             self._conditional_merges.clear()
             self._inherited_merges.clear()
             self._combined_branches.clear()
