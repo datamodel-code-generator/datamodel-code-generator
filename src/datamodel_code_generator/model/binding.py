@@ -1367,9 +1367,9 @@ def freeze_none_default_provenance(
     field: DataModelFieldBase, *, emitted: EmittedFieldFacts, projection: FieldProjectionContext
 ) -> NoneDefaultProvenance:
     """Prove ordinary None synthesis from producer facts and accepted syntax, never a getter."""
-    default_kind: Literal["absent", "none", "value", "factory", "missing", "opaque"]
+    default_kind: Literal["absent", "none", "value", "factory", "missing", "opaque"] = "opaque"
     match emitted.emitted_default_kind:
-        case "absent" | "none" | "factory" | "opaque" as kind:
+        case "absent" | "none" | "factory" as kind:
             default_kind = kind
         case "msgspec_unset" | "pydantic_missing":
             default_kind = "missing"
