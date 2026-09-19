@@ -242,6 +242,7 @@ class SchemaTypeObservation:
     schema: JsonSchemaObject | None
     data_type: DataType
     locations: tuple[SourceLocation, ...] = ()
+    root_value: GraphObjectId | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -1134,10 +1135,11 @@ class BindingCaptureMixin(OpenAPIParser):
     ) -> list[DataType]:
         """Verify occurrence correspondence before nested generated-item processing."""
         self._complete_combined_branch(name, obj, path, combined_schemas)
+        registrations = len(self.binding_ledger.registrations)
         result: list[DataType] = super()._parse_combined_schema_items(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             name, obj, path, combined_schemas, variant_names
         )
-        self._record_list_types(combined_schemas, result)  # pyright: ignore[reportUnknownArgumentType]
+        self._record_list_types(combined_schemas, result, registrations)  # pyright: ignore[reportUnknownArgumentType]
         return result  # pyright: ignore[reportUnknownVariableType]
 
     @capture_errors
@@ -1688,17 +1690,31 @@ class BindingCaptureMixin(OpenAPIParser):
         singular_name: bool = True,  # ruff: ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument] -- Preserve the existing producer signature.
     ) -> list[DataType]:
         """Retain actual element and union-branch returns without changing guarded item parsing."""
+        registrations = len(self.binding_ledger.registrations)
         result: list[DataType] = super().parse_list_item(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             name, target_items, path, parent, singular_name
         )
-        self._record_list_types(target_items, result)  # pyright: ignore[reportUnknownArgumentType]
+        self._record_list_types(target_items, result, registrations)  # pyright: ignore[reportUnknownArgumentType]
         return result  # pyright: ignore[reportUnknownVariableType]
 
     @capture_errors
-    def _record_list_types(self, schemas: Sequence[JsonSchemaObject | bool], results: list[DataType]) -> None:
+    def _record_list_types(
+        self, schemas: Sequence[JsonSchemaObject | bool], results: list[DataType], start: int
+    ) -> None:
+        references = {registration.reference for registration in self.binding_ledger.registrations[start:]}
         for schema, result in zip((schema for schema in schemas if schema is not False), results, strict=True):
             if isinstance(schema, JsonSchemaObject):
-                self.schema_types.append(SchemaTypeObservation(schema, result))
+                root_value = None
+                if (
+                    result.reference is not None
+                    and self.binding_ledger.identity(result.reference) in references
+                    and isinstance(model := result.reference.source, DataModel)
+                    and (model.IS_ROOT_MODEL or model.IS_ALIAS)
+                ):
+                    self._record_root_fields(schema, model.fields, model.reference.name)
+                    if len(model.fields) == 1:
+                        root_value = self.binding_ledger.identity(model.fields[0].data_type)
+                self.schema_types.append(SchemaTypeObservation(schema, result, root_value=root_value))
 
     def get_data_type(self, obj: JsonSchemaObject) -> DataType:
         """Retain a primitive producer's actual return for nested schema occurrences."""

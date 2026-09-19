@@ -325,7 +325,9 @@ def generate_product(
     return product, sum(node() is not None for node in (*observer.graph, *observer.parsers))
 
 
-def _exercise_session_protocol(source: Path, case: str, observer: GenerationSessionObserver) -> tuple[list[tuple[str, str]], int | None]:
+def _exercise_session_protocol(
+    source: Path, case: str, observer: GenerationSessionObserver
+) -> tuple[list[tuple[str, str]], int | None]:
     """Exercise invalid ownership and transfer requests around one real driver execution."""
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator.config import OpenAPIParserConfig
@@ -362,7 +364,9 @@ def _exercise_session_protocol(source: Path, case: str, observer: GenerationSess
             session(source=source, config=OpenAPIParserConfig(formatters=[]))
         result = _run_generation(
             source,
-            _prepare_generate_facade_config(GenerateConfig(input_file_type="openapi", formatters=[], disable_timestamp=True)),
+            _prepare_generate_facade_config(
+                GenerateConfig(input_file_type="openapi", formatters=[], disable_timestamp=True)
+            ),
             Path.cwd(),
             use_output_cwd=False,
             capture=session,
@@ -428,3 +432,85 @@ def session_protocol_failure(source: Path, case: str) -> dict[str, object]:
         "retained_graph": sum(node() is not None for node in observer.graph),
         "retained_parsers": sum(node() is not None for node in observer.parsers),
     }
+
+
+def session_cleanup_failures(source: Path, case: str, monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
+    """Check first-failure identity and resource release after the entire failed call returns."""
+    from datamodel_code_generator._openapi_generation import SourceLease
+    from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.parser import openapi_contract_freeze
+    from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
+
+    observer = GenerationSessionObserver()
+
+    def exercise() -> dict[str, object]:
+        session = OpenAPIGenerationSession(
+            output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
+        )
+        config = _prepare_generate_facade_config(
+            GenerateConfig(input_file_type="openapi", formatters=[], disable_timestamp=True)
+        )
+        first = ValueError("freeze projection failed") if case == "freeze" else RuntimeError("release:1")
+        ledger_close, lease_close = BindingLedger.close, SourceLease.close
+        closed = []
+        unused = None
+        result = {}
+
+        def fail_freeze(*args: Any, **kwargs: Any) -> None:
+            raise first
+
+        def fail_release(ledger: BindingLedger) -> None:
+            ledger_close(ledger)
+            if ledger.attempt_id == 1:
+                raise first
+            raise RuntimeError("release:2")
+
+        def release_lease(lease: SourceLease) -> None:
+            lease_close(lease)
+            closed.append(lease)
+            if case == "reentrant" and len(closed) == 1:
+                session.close()
+
+        previous = sys.getprofile()
+        sys.setprofile(observer.record)
+        try:
+            with monkeypatch.context() as fault:
+                if case == "freeze":
+                    fault.setattr(openapi_contract_freeze, "freeze_generation_attempt", fail_freeze)
+                try:
+                    _run_generation(source, config, Path.cwd(), use_output_cwd=False, capture=session)
+                    unused = session(source=source, config=OpenAPIParserConfig(formatters=[]))
+                    fault.setattr(BindingLedger, "close", fail_release)
+                    fault.setattr(SourceLease, "close", release_lease)
+                    session.close()
+                except (BindingCaptureError, RuntimeError) as error:
+                    result = {
+                        "error": str(error),
+                        "first_failure_preserved": error.__cause__ is first if case == "freeze" else error is first,
+                    }
+                    if case == "freeze":
+                        try:
+                            session.raise_if_failed()
+                        except BindingCaptureError as latched:
+                            result["latched"] = latched is error
+            if unused is not None:
+                unused.dispose()
+            result["closed_leases"] = len(closed)
+            for lease in closed:
+                try:
+                    lease.documents()
+                except RuntimeError:
+                    continue
+                raise AssertionError("A failed release left a source lease open")
+        finally:
+            session.close()
+            sys.setprofile(previous)
+        return result
+
+    result = exercise()
+    gc.collect()
+    result.update(
+        retained_graph=sum(node() is not None for node in observer.graph),
+        retained_parsers=sum(node() is not None for node in observer.parsers),
+    )
+    return result

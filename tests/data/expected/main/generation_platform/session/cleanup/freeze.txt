@@ -1,0 +1,8 @@
+{
+  "error": "Binding capture freeze failed",
+  "first_failure_preserved": true,
+  "latched": true,
+  "closed_leases": 0,
+  "retained_graph": 0,
+  "retained_parsers": 0
+}

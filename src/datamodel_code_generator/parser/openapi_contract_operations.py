@@ -154,9 +154,11 @@ class FinalOperationBuilder:
         self.operation_uses: dict[OperationId, ApiDeclarationId] = {}
         self.uses: dict[TypeUseId, TypeUseBinding] = {}
         self.diagnostics: list[BindingDiagnostic] = []
-        self.replaced_field_types = self._replaced_field_types(inventory)
+        self.replaced_field_types = self._replaced_field_types(inventory, fields)
 
-    def _replaced_field_types(self, inventory: FinalModelInventory) -> dict[GraphObjectId, list[TypeProjection]]:
+    def _replaced_field_types(
+        self, inventory: FinalModelInventory, fields: FinalFieldInventory
+    ) -> dict[GraphObjectId, list[TypeProjection]]:
         """Follow completed field replacements to their actual final owner projections."""
         final_field_types = {field.slot.field: field.projection for model in inventory.models for field in model.fields}
         projections: dict[GraphObjectId, list[TypeProjection]] = {}
@@ -168,6 +170,39 @@ class FinalOperationBuilder:
                 and (projected := final_field_types.get(replacement.owner)) is not None
             ):
                 projections.setdefault(replacement.original, []).append(projected)
+        for original, owner in fields.copied_type_sources:
+            projections.setdefault(original, []).append(final_field_types[owner])
+        nested = tuple(
+            replacement for replacement in self.parser.binding_ledger.replacements if replacement.kind == "nested_type"
+        )
+        if not nested:
+            return projections
+        targets = {replacement.replacement for replacement in nested}
+        pending = [
+            field.data_type
+            for output in self.parser.module_outputs
+            for model in output.models
+            for field in model.fields
+        ]
+        seen: set[GraphObjectId] = set()
+        while pending:
+            data_type = pending.pop()
+            node = self.parser.binding_ledger.identity(data_type)
+            if node in seen:
+                continue
+            seen.add(node)
+            if node in targets:
+                projections.setdefault(node, []).append(
+                    self.projector.project(_type_recipe(data_type, self.parser.binding_ledger, set()))
+                )
+            pending.extend(data_type.data_types)
+            if data_type.dict_key is not None:
+                pending.append(data_type.dict_key)
+        for replacement in reversed(nested):
+            if replacement.original is not None and replacement.replacement is not None:
+                projections.setdefault(replacement.original, []).extend(
+                    projections.get(replacement.replacement, (TypeProjection(None, "BND_SYMBOL_NOT_EMITTED"),))
+                )
         return projections
 
     def location(self, declaration: ApiDeclarationId, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
@@ -799,22 +834,39 @@ class FinalOperationBuilder:
             operations, tuple(self.uses.values()), tuple(self.diagnostics), self._security_schemes()
         )
 
+    def _schema_type_locations(self, observation: SchemaTypeObservation) -> tuple[tuple[SourceLocation, bool], ...]:
+        """Keep direct producers separate from inherited materialization occurrences."""
+        return (
+            tuple(
+                (origin.location, origin.relation == "inherited_materialization")
+                for origin in self.parser.schema_origins.origins(observation.schema)
+            )
+            if observation.schema is not None
+            else tuple((location, False) for location in observation.locations)
+        )
+
     def _schema_helpers(self) -> None:
-        """Expose only nested occurrences whose actual producer returned a captured type."""
+        """Expose actual final returns, treating surviving roots as terminals."""
+        root_values = {
+            (location, observation.root_value)
+            for observation in self.parser.schema_types
+            if observation.root_value is not None
+            and observation.data_type.reference is not None
+            and self.parser.binding_ledger.identity(observation.data_type.reference) in self.references
+            for location, _inherited in self._schema_type_locations(observation)
+        }
         candidates: dict[SourceLocation, list[TypeProjection]] = {}
         inherited_candidates: dict[SourceLocation, list[TypeProjection]] = {}
         for observation in self.parser.schema_types:
-            locations = (
-                tuple(
-                    (origin.location, origin.relation == "inherited_materialization")
-                    for origin in self.parser.schema_origins.origins(observation.schema)
-                )
-                if observation.schema is not None
-                else tuple((location, False) for location in observation.locations)
+            node = self.parser.binding_ledger.identity(observation.data_type)
+            locations = tuple(
+                (location, inherited)
+                for location, inherited in self._schema_type_locations(observation)
+                if (location, node) not in root_values
             )
             if not locations:
                 continue
-            projections = self.replaced_field_types.get(self.parser.binding_ledger.identity(observation.data_type))
+            projections = self.replaced_field_types.get(node)
             projected = tuple(
                 self.imports.project(projection)
                 for projection in projections
@@ -889,7 +941,11 @@ if TYPE_CHECKING:
         TypeUseRole,
     )
     from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, SchemaUseObservation
+    from datamodel_code_generator.parser.openapi_contract import (
+        BindingCaptureMixin,
+        SchemaTypeObservation,
+        SchemaUseObservation,
+    )
     from datamodel_code_generator.parser.openapi_contract_fields import FinalFieldInventory
     from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
     from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector

@@ -1,0 +1,22 @@
+[
+  "missing_binding",
+  "invalid_binding",
+  "member_attempt",
+  "excluded_member_attempt",
+  "missing_member",
+  "unknown_member_origin",
+  "helper_attempt",
+  "symbol_attempt",
+  "missing_symbol",
+  "missing_artifact",
+  "foreign_symbol",
+  "use_diagnostic",
+  "other_use_diagnostic",
+  "operation_diagnostic",
+  "other_operation_diagnostic",
+  "source_diagnostic",
+  "other_source_diagnostic",
+  "field_diagnostic",
+  "artifact_diagnostic",
+  "global_diagnostic"
+]

@@ -298,10 +298,8 @@ class FinalTypeProjector:
                     base = BuiltinType("list")
                 case "mapping" | "dict" if modifier == "mapping" or generic:
                     base = ImportedType(Import(import_="Mapping", from_=container_module))
-                case "dict":
-                    base = BuiltinType("dict")
                 case _:
-                    raise _UnsupportedTypeError(_TYPE_UNSUPPORTED)
+                    base = BuiltinType("dict")
             if modifier in {"mapping", "dict"} and (recipe.dict_key is not None or value is not None):
                 key = self._project(recipe.dict_key) if recipe.dict_key is not None else BuiltinType("str")
                 return GenericType(base, (key, value if value is not None else ImportedType(IMPORT_ANY)))
@@ -318,7 +316,7 @@ def _freeze_literal_atom(*, value: bool | int | str) -> LiteralScalar:
             return LiteralScalar("bool", value)
         case int():
             return LiteralScalar("int", value)
-        case str():
+        case _:
             return LiteralScalar("str", value)
 
 

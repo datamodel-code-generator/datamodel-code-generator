@@ -1644,7 +1644,7 @@ def _model_parameters(backend: BackendName) -> tuple[str, ...]:
             return _MSGSPEC_PARAMETERS
         case "typeddict":
             return ("total", "closed")
-        case "pydantic":
+        case _:
             return ()
 
 
@@ -1696,13 +1696,13 @@ def _model_parameter_values(  # ruff: ignore[too-many-return-statements] # Finit
             if (arguments := _raw_mapping(internal.get("typed_dict_kwargs", {}))) is None:
                 return None, False
             return {name: _syntax_value(value) for name, value in arguments.items()}, "extra_items" in arguments
-        case "pydantic":
+        case _:
             return {}, False
 
 
-def _model_configuration(model: DataModel, backend: BackendName) -> dict[str, BackendValue] | None:
-    if backend not in {"pydantic", "pydantic_dataclass"}:
-        return {}
+def _model_configuration(
+    model: DataModel, backend: Literal["pydantic", "pydantic_dataclass"]
+) -> dict[str, BackendValue] | None:
     key = "config_items" if backend == "pydantic" else "_safe_config_items"
     values: object = model._internal_template_data.get(key, ())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] # Already normalized by the renderer owner.
     if type(values) not in {tuple, list}:
@@ -1735,11 +1735,12 @@ def freeze_builtin_model_facts(model: DataModel, *, projection: ModelProjectionC
     if values is not None and extra_present != (projection.extra_items is not None):
         msg = "TypedDict extra_items does not match its captured final type"
         raise BindingCaptureError(msg)
-    configuration = (
-        _freeze_settings(_PYDANTIC_CONFIGURATION, _model_configuration(model, backend))
-        if backend in {"pydantic", "pydantic_dataclass"}
-        else ()
-    )
+    configuration: tuple[BackendSetting, ...] = ()
+    match backend:
+        case "pydantic" | "pydantic_dataclass":
+            configuration = _freeze_settings(_PYDANTIC_CONFIGURATION, _model_configuration(model, backend))
+        case _:
+            pass
     return BackendModelFacts(
         backend,
         _freeze_settings(_model_parameters(backend), values),

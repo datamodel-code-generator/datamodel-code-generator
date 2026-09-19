@@ -1,0 +1,2 @@
+/components/schemas/Envelope/properties/fresh/items: FreshItem
+/components/schemas/Envelope/properties/existing/items: Scalar

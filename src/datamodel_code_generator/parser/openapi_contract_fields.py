@@ -48,6 +48,7 @@ class FinalFieldInventory:
     artifacts: tuple[FinalArtifactBinding, ...]
     diagnostics: tuple[BindingDiagnostic, ...]
     source_bindings: tuple[tuple[GraphObjectId, tuple[FieldUseBinding, ...]], ...] = ()
+    copied_type_sources: tuple[tuple[GraphObjectId, GraphObjectId], ...] = ()
 
 
 class FinalFieldBuilder:
@@ -471,6 +472,17 @@ class FinalFieldBuilder:
             artifacts,
             tuple(self.diagnostics),
             self._source_bindings(bindings),
+            self._copied_type_sources(),
+        )
+
+    def _copied_type_sources(self) -> tuple[tuple[GraphObjectId, GraphObjectId], ...]:
+        """Join removed field producers to completed copies without overriding surviving owners."""
+        emitted = {slot.field for slot in self.field_nodes}
+        return tuple(
+            (self.parser.binding_ledger.identity(construction.data_type), slot.field)
+            for slot in self.field_nodes
+            for source in self.sources.get(slot.field, ())
+            if source not in emitted and (construction := self.parser.field_constructions.get(source)) is not None
         )
 
     def _source_bindings(

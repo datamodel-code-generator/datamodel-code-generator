@@ -277,7 +277,10 @@ def test_artifact_type_must_match_existing_projection(change: dict[str, str]) ->
     try:
         body = str(parser.parse())
         assert_output(body, EXPECTED / f"type-projection-{backend.name}.py")
-        with pytest.raises(BindingCaptureError, match="Accepted field annotation does not match its projected type"):
+        with pytest.raises(
+            BindingCaptureError,
+            match=change.get("error", "Accepted field annotation does not match its projected type"),
+        ):
             index_builtin_field_declarations(
                 body.replace(change["old"], change["new"]),
                 expected=projected_field_expectations(parser, "Types", backend),

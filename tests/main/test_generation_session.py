@@ -240,10 +240,11 @@ def test_final_discriminator_enum_members(backend: str) -> None:
 )
 @pytest.mark.parametrize("enum_values", [False, True])
 @pytest.mark.parametrize("alias", [False, True])
-def test_discriminator_override_helper(backend: str, *, enum_values: bool, alias: bool) -> None:
+@pytest.mark.parametrize("copied", [False, True])
+def test_discriminator_override_helper(backend: str, *, enum_values: bool, alias: bool, copied: bool) -> None:
     """Demand the actual replaced field type while preserving its original enum declaration."""
     product, retained = generate_product(
-        (SOURCE / "binding/session-discriminator-override.yaml").resolve(),
+        (SOURCE / f"binding/session-discriminator-{'copied' if copied else 'override'}.yaml").resolve(),
         GenerateConfig(
             input_file_type="openapi",
             openapi_scopes=[OpenAPIScope.Api],
@@ -263,8 +264,10 @@ def test_discriminator_override_helper(backend: str, *, enum_values: bool, alias
         "/components/schemas/RequestBase/properties/version",
         "/components/schemas/RequestV1/properties/version",
     }
+    if copied:
+        pointers.add("/components/schemas/Grandchild/properties/version")
     selected = tuple(use for use in product.batch.type_uses if use.id.schema_site.pointer in pointers)
-    expected = EXPECTED / "session-review/discriminator-override"
+    expected = EXPECTED / f"session-review/discriminator-{'copied' if copied else 'override'}"
     assert_output(
         json.dumps({use.id.schema_site.pointer: type_snapshot(use.type, names) for use in selected}, indent=2) + "\n",
         expected
@@ -275,6 +278,89 @@ def test_discriminator_override_helper(backend: str, *, enum_values: bool, alias
         EXPECTED / "session-review/no-diagnostics.txt",
     )
     assert_output(product.artifacts[0].content.decode(), expected / f"{backend}-{enum_values}-{alias}.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_divergent_discriminator_copy_helpers(backend: str) -> None:
+    """Keep divergent final copies ambiguous without rejecting their actual declaring model."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-discriminator-ambiguous.yaml").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="ambiguous.yaml",
+            formatters=[],
+            disable_timestamp=True,
+            use_enum_values_in_discriminator=True,
+            use_subclass_enum=True,
+            reuse_model=True,
+        ),
+    )
+    product.close()
+    selected = sorted(
+        (
+            use
+            for use in product.batch.type_uses
+            if use.id.schema_site.pointer
+            in {
+                "/components/schemas/Grandchild",
+                "/components/schemas/Grandchild/properties/version",
+            }
+        ),
+        key=lambda use: use.id.schema_site.pointer,
+    )
+    expected = EXPECTED / "session-review/discriminator-ambiguous"
+    assert_output(
+        "".join(
+            f"{use.id.schema_site.pointer}: "
+            f"{','.join(error.code for error in require_type_bindings(product.batch, (use.id,))) or use.state}\n"
+            for use in selected
+        ),
+        expected / ("equal.txt" if backend == "typing.TypedDict" else "ambiguous.txt"),
+    )
+    assert_output(product.artifacts[0].content.decode(), expected / f"{backend}.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_final_root_item_terminals(backend: str) -> None:
+    """Keep created root types terminal and existing root origins distinct from reference uses."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-root-items.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="items.json",
+            formatters=[],
+            disable_timestamp=True,
+            use_title_as_name=True,
+        ),
+    )
+    product.close()
+    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
+    selected = tuple(
+        use
+        for use in product.batch.type_uses
+        if use.id.schema_site.pointer.endswith("/items") and "/properties/" in use.id.schema_site.pointer
+    )
+    expected = EXPECTED / "session-review/root-items"
+    assert_output(
+        "".join(f"{use.id.schema_site.pointer}: {names[use.type.symbol]}\n" for use in selected), expected / "types.txt"
+    )
+    assert_output(
+        "\n".join(error.code for error in require_type_bindings(product.batch, tuple(use.id for use in selected))),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(product.artifacts[0].content.decode(), expected / f"{backend}.py")
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
@@ -308,6 +394,47 @@ def test_final_bound_import_overrides(backend: str, *, annotated: bool) -> None:
     )
     assert_output(
         product.artifacts[0].content.decode(), EXPECTED / "session-review/final-imports" / f"{backend}-{annotated}.py"
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "case", ["metadata-types", "container-types", "empty-fixed-tuple", "emitted-defaults", "synthetic-origins"]
+)
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("annotated", [False, True])
+@pytest.mark.parametrize("collapse", [False, True])
+def test_final_builtin_type_demands(case: str, backend: str, *, annotated: bool, collapse: bool) -> None:
+    """Demand complete final types after ordinary emission, including nested metadata and fixed tuples."""
+    product, retained = generate_product(
+        (SOURCE / f"binding/{case}.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="final-types.json",
+            formatters=[],
+            disable_timestamp=True,
+            use_annotated=annotated,
+            field_constraints=annotated,
+            field_extra_keys={"default_factory"},
+            collapse_root_models=collapse,
+        ),
+    )
+    product.close()
+    assert_output(
+        "\n".join(
+            error.code
+            for error in require_type_bindings(product.batch, tuple(use.id for use in product.batch.type_uses))
+        ),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(),
+        EXPECTED / "session-review/final-types" / f"{case}-{backend}-{annotated}{'-collapsed' if collapse else ''}.py",
     )
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
@@ -966,6 +1093,36 @@ def test_legacy_scope_type_demands(backend: str, scope: str) -> None:
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
+def test_unselected_legacy_declaration_boundaries() -> None:
+    """Keep unresolved wire declarations out of selected schema generation without fetching them."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-legacy-source.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Schemas],
+            input_filename="legacy-source.json",
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    product.close()
+    assert_output(
+        "".join(
+            f"{operation.id.use_site.pointer}: "
+            + (",".join(parameter.name for parameter in operation.parameters) or "-")
+            + "\n"
+            for operation in product.batch.operations
+        )
+        + "".join(
+            f"{diagnostic.code}: " + ",".join(source.pointer for source in diagnostic.source_locations) + "\n"
+            for diagnostic in product.batch.diagnostics
+        ),
+        EXPECTED / "session-review/legacy-source.txt",
+    )
+    assert_output(product.artifacts[0].content.decode(), EXPECTED / "session-review/legacy-source.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
 def test_artifact_imported_base_redefinition() -> None:
     """Reject replacement of a proven imported base before its generated subclass."""
     product, retained = generate_product(
@@ -1036,6 +1193,29 @@ def test_product_artifact_validation_exception() -> None:
         )
 
 
+@pytest.mark.parametrize("case", json.loads((SOURCE / "binding/batch-failures.json").read_text()))
+def test_invalid_batch_demand(case: str) -> None:
+    """Reject corrupt accepted identities and keep unrelated failures outside selected demands."""
+    from tests.data.python.binding_batch_failures import corrupt_batch
+
+    product, retained = generate_product(
+        (SOURCE / "binding/session-legacy.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi", openapi_scopes=[OpenAPIScope.Api], formatters=[], disable_timestamp=True
+        ),
+    )
+    product.close()
+    batch, requested = corrupt_batch(product.batch, case)
+    assert_output(
+        "".join(
+            f"{code}\n"
+            for code in sorted({error.code for error in require_type_bindings(batch, (requested, requested))})
+        ),
+        EXPECTED / "session/batch-failures" / f"{case}.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
 @pytest.mark.parametrize("constructor_failure", [False, True])
 def test_session_release_failure(constructor_failure: bool, monkeypatch: pytest.MonkeyPatch) -> None:
     """A failing ledger cleanup still releases sources and preserves any constructor error."""
@@ -1078,6 +1258,18 @@ def test_session_release_failure(constructor_failure: bool, monkeypatch: pytest.
     for lease in leases:
         with pytest.raises(RuntimeError, match="Source lease is closed"):
             lease.documents()
+
+
+@pytest.mark.parametrize("case", ["freeze", "multiple", "reentrant"])
+def test_session_cleanup_failure_identity(case: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Never replace the original failure while closing multiple or reentrant attempt owners."""
+    from tests.data.python.generation_session_inputs import session_cleanup_failures
+
+    assert_output(
+        json.dumps(session_cleanup_failures((SOURCE / "observation.json").resolve(), case, monkeypatch), indent=2)
+        + "\n",
+        EXPECTED / "session/cleanup" / f"{case}.txt",
+    )
 
 
 def test_parser_dispose_preserves_primary(monkeypatch: pytest.MonkeyPatch) -> None:
