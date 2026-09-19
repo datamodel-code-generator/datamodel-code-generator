@@ -16,18 +16,6 @@ from datamodel_code_generator._generation_contract import (
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser.generation import GenerationStore
 
-if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
-
-    from datamodel_code_generator._python_type_binding import BoundPythonType
-    from datamodel_code_generator.enums import AllOfMergeMode
-    from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.reference import Reference
-    from datamodel_code_generator.types import DataType
-
-    GraphNode: TypeAlias = DataModel | DataModelFieldBase | DataType | Reference
-
 
 class BindingLedger:
     """Retain observed graph identities only for the lifetime of one attempt."""
@@ -377,3 +365,16 @@ class ContractGenerationStore(GenerationStore):
         super().collapse_root_data_type(data_type, inner_reference)
         collapse.completed = True
         self._record_collapse(collapse)
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
+    from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator.enums import AllOfMergeMode
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+    GraphNode: TypeAlias = DataModel | DataModelFieldBase | DataType | Reference

@@ -13,10 +13,6 @@ from datamodel_code_generator.model.binding import (
     split_artifact_models,
 )
 
-if TYPE_CHECKING:
-    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch
-    from datamodel_code_generator.parser.openapi_contract_fields import FinalArtifactBinding
-
 
 @dataclass(frozen=True, slots=True)
 class ModelArtifact:
@@ -88,3 +84,8 @@ def validate_artifact_bindings(
                         )
                     )
     return tuple(diagnostics)
+
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch
+    from datamodel_code_generator.parser.openapi_contract_fields import FinalArtifactBinding

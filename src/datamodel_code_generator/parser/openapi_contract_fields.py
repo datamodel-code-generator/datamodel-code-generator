@@ -26,21 +26,6 @@ from datamodel_code_generator.model.binding_fields import DeclaredField, FieldOw
 from datamodel_code_generator.model.binding_policies import constructor_policy, freeze_model_policy
 from datamodel_code_generator.parser.openapi_contract_store import _type_recipe  # pyright: ignore[reportPrivateUsage]
 
-if TYPE_CHECKING:
-    from datamodel_code_generator._generation_contract import (
-        FieldSlot,
-        FinalPythonType,
-        GraphObjectId,
-        ModelArtifactAddress,
-        ModelFieldFacts,
-        SymbolId,
-    )
-    from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.model.binding import BackendModelFacts, BuiltinFieldArtifactIndex
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, SyntheticFieldObservation
-    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
-    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector
-
 
 @dataclass(frozen=True, slots=True)
 class FinalArtifactBinding:
@@ -467,3 +452,19 @@ class FinalFieldBuilder:
                 for member in by_symbol.get(terminal.symbol, ())
             )
         return tuple(sources.items())
+
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._generation_contract import (
+        FieldSlot,
+        FinalPythonType,
+        GraphObjectId,
+        ModelArtifactAddress,
+        ModelFieldFacts,
+        SymbolId,
+    )
+    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.model.binding import BackendModelFacts, BuiltinFieldArtifactIndex
+    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, SyntheticFieldObservation
+    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
+    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector

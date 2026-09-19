@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from typing_extensions import override
 
@@ -13,6 +13,7 @@ from datamodel_code_generator._generation_contract import (
     GeneratedSymbolType,
     TypeProjection,
 )
+from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._api_reference import ApiDeclarationId, pointer_tokens
 from datamodel_code_generator.parser.openapi import OPERATION_NAMES
 from datamodel_code_generator.parser.openapi_contract import OperationObservation
@@ -22,21 +23,7 @@ from datamodel_code_generator.parser.openapi_contract_operations import (
     wire_mapping,
 )
 from datamodel_code_generator.parser.openapi_contract_store import _type_recipe  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator.parser.openapi_scope import ApiDeclarationFrame
-
-if TYPE_CHECKING:
-    from datamodel_code_generator._generation_contract import (
-        FieldUseBinding,
-        GraphObjectId,
-        OperationId,
-        WireDeclaration,
-    )
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, LegacyOperationObservation
-    from datamodel_code_generator.parser.openapi_contract_fields import FinalFieldInventory
-    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
-    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector
-    from datamodel_code_generator.types import DataType
+from datamodel_code_generator.parser.openapi_scope import ApiDeclarationFrame, ApiIgnoredDeclaration
 
 
 class LegacyFinalOperationBuilder(FinalOperationBuilder):
@@ -64,7 +51,7 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
                 )
                 declaration = ApiDeclarationId(documents[origin.location.document], tokens)
                 self.schema_references.setdefault(declaration, set()).add(observation.reference)
-        self.legacy_types: dict[ApiDeclarationId, list[DataType]] = {}
+        self.legacy_types: dict[tuple[ApiDeclarationId, str], list[DataType]] = {}
         self.observations: dict[ApiDeclarationId, LegacyOperationObservation] = {}
         for observation in parser.legacy_operations:
             if observation.origin_state == "known":
@@ -79,6 +66,17 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
                     )
                 )
         self._observed_media()
+        for observation in parser.parameter_fields:
+            if (origin := parser.field_origins.get(parser.binding_ledger.identity(observation.field))) is None:
+                continue
+            for source in origin.origins:
+                declaration = ApiDeclarationId(
+                    documents[source.location.document],
+                    tuple(
+                        token.replace("~1", "/").replace("~0", "~") for token in source.location.pointer[1:].split("/")
+                    ),
+                )
+                self.legacy_types.setdefault((declaration, "value"), []).append(observation.field.data_type)
         for uri in parser.root_documents:
             root = wire_mapping(parser.source_lease.borrow(self.location(ApiDeclarationId(uri, ()), "declaration")))
             self._root_operations(uri, root)
@@ -89,11 +87,9 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
                 continue
             operation = observation.operation.candidates[0].declaration
             body = child_declaration(operation, "requestBody")
-            declaration, _ = self._resolve_object(body, observation.operation.candidates[0].raw.get("requestBody"))
+            declaration, raw = self._resolve_object(body, observation.operation.candidates[0].raw.get("requestBody"))
             for media, data_type in observation.types.items():
-                self.legacy_types.setdefault(child_declaration(declaration, "content", media, "schema"), []).append(
-                    data_type
-                )
+                self._record_media_type(declaration, media, raw, data_type)
         for observation in self.parser.response_types:
             if observation.operation is None or observation.operation.origin_state != "known":
                 continue
@@ -101,11 +97,48 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
             responses = wire_mapping(observation.operation.candidates[0].raw.get("responses"))
             for status, media_types in observation.types.items():
                 response = child_declaration(operation, "responses", str(status))
-                declaration, _ = self._resolve_object(response, responses.get(str(status)))
+                declaration, raw = self._resolve_object(response, responses.get(str(status)))
                 for media, data_type in media_types.items():
-                    self.legacy_types.setdefault(child_declaration(declaration, "content", media, "schema"), []).append(
-                        data_type
-                    )
+                    self._record_media_type(declaration, media, raw, data_type)
+
+    def _record_media_type(
+        self, declaration: ApiDeclarationId, media: str, raw: dict[str, YamlValue], data_type: DataType
+    ) -> None:
+        medium = wire_mapping(wire_mapping(raw.get("content")).get(media))
+        keyword = "schema" if "schema" in medium else "itemSchema"
+        if medium.get(keyword) is None:
+            return
+        schema = child_declaration(declaration, "content", media, keyword)
+        projection = "item_stream_array" if keyword == "itemSchema" else "value"
+        self.legacy_types.setdefault((schema, projection), []).append(data_type)
+        if keyword != "itemSchema":
+            return
+        container = data_type
+        if (
+            data_type.reference is not None
+            and isinstance(model := data_type.reference.source, DataModel)
+            and (model.IS_ALIAS or model.IS_ROOT_MODEL)
+            and len(model.fields) == 1
+        ):
+            container = model.fields[0].data_type
+        if container.is_list and len(container.data_types) == 1:
+            self.legacy_types.setdefault((schema, "value"), []).append(container.data_types[0])
+
+    @override
+    def _media_projections(
+        self,
+        media: dict[str, YamlValue],
+        declaration: ApiDeclarationId,
+    ) -> tuple[tuple[str, tuple[Literal["value", "item_stream_array"], ...]], ...]:
+        if "schema" in media:
+            return (("schema", ("value",)),) if media["schema"] is not None else ()
+        if media.get("itemSchema") is not None and self.parser.schema_features.media_item_schema:
+            schema = child_declaration(declaration, "itemSchema")
+            projections: tuple[Literal["value", "item_stream_array"], ...] = (
+                ("value", "item_stream_array") if (schema, "item_stream_array") in self.legacy_types else ("value",)
+            )
+            return (("itemSchema", projections),)
+        return ()
 
     def _root_operations(self, uri: str, root: dict[str, YamlValue]) -> None:
         scopes = self.parser.open_api_scopes
@@ -175,20 +208,39 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
         return declaration
 
     @override
+    def _schema_helpers(self) -> None:
+        super()._schema_helpers()
+        for declaration in self.schema_references:
+            source = self.location(declaration, "schema")
+            self._use(source, "schema", declaration, declaration, declaration, declaration)
+
+    @override
     def _project_schema_type(self, declaration: ApiDeclarationId, projection: str, direction: str) -> TypeProjection:
         projector = self.directional_projectors[direction]
-        if actual := self.legacy_types.get(declaration):
+        if actual := self.legacy_types.get((declaration, projection)):
             projections = tuple(
                 projector.project(_type_recipe(value, self.parser.binding_ledger, set())) for value in actual
             )
             if all(value == projections[0] for value in projections):
                 return projections[0]
             return TypeProjection(None, "BND_TYPE_EXPRESSION_UNSUPPORTED")
+        return self._component_type(declaration, direction)
+
+    def _component_type(self, declaration: ApiDeclarationId, direction: str) -> TypeProjection:
+        """Project only a uniquely captured component's adopted reference policy."""
+        projector = self.directional_projectors[direction]
         target = self._schema_target(declaration)
         references = self.schema_references.get(target, set())
         if len(references) != 1:
             return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
         reference = next(iter(references))
+        if target != declaration:
+            raw = wire_mapping(self.parser.source_lease.borrow(self.location(target, "schema")))
+            if raw.get("discriminator"):
+                return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
+            return projector.reference_use(
+                reference, serialize_as_any=self.parser.data_type_manager.use_serialize_as_any
+            )
         if (symbol := self.directional_references[direction].get(reference)) is not None:
             return TypeProjection(GeneratedSymbolType(symbol))
         if (recipe := self.parser.binding_ledger.root_recipes.get(reference)) is not None:
@@ -239,7 +291,8 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
                 if len(matches) != 1:
                     self.diagnostics.append(BindingDiagnostic("BND_OPERATION_ORIGIN_UNRESOLVED", operation=owner))
                     continue
-                parameters.append(self._parameter(raw, matches[0], matches[0], owner, "parameter"))
+                if self._parameter_allowed(matches[0], raw, owner):
+                    parameters.append(self._parameter(raw, matches[0], matches[0], owner, "parameter"))
             return tuple(parameters)
         operation = tuple(
             (declaration, raw)
@@ -261,4 +314,44 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
         return tuple(
             self._parameter(raw, declaration, declaration, owner, "parameter")
             for declaration, raw in (*operation, *common)
+            if self._parameter_allowed(declaration, raw, owner)
         )
+
+    def _parameter_allowed(self, declaration: ApiDeclarationId, raw: YamlValue, owner: OperationId) -> bool:
+        declared, value = self._resolve_object(declaration, raw)
+        if "$ref" in value:
+            self.diagnostics.append(
+                BindingDiagnostic(
+                    "BND_UNRESOLVED_REFERENCE",
+                    operation=owner,
+                    source_locations=(self.location(declaration, "declaration"),),
+                )
+            )
+            return False
+        if (
+            value.get("in") == "header"
+            and isinstance(name := value.get("name"), str)
+            and name.lower() in {"accept", "content-type", "authorization"}
+        ):
+            self.ignored.append(
+                ApiIgnoredDeclaration(
+                    declared, self.operation_uses[owner], "oas_header_ignored", "parameter", wire_name=name
+                )
+            )
+            return False
+        return True
+
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._generation_contract import (
+        FieldUseBinding,
+        GraphObjectId,
+        OperationId,
+        WireDeclaration,
+    )
+    from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, LegacyOperationObservation
+    from datamodel_code_generator.parser.openapi_contract_fields import FinalFieldInventory
+    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
+    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector
+    from datamodel_code_generator.types import DataType

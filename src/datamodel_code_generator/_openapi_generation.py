@@ -15,20 +15,6 @@ from datamodel_code_generator._generation_contract import (
     clear_capture_tracebacks,
 )
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, OpenAPIParserFactory
-    from datamodel_code_generator._openapi_artifacts import ModelArtifact
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.config import OpenAPIParserConfig
-    from datamodel_code_generator.parser.base import Result
-    from datamodel_code_generator.parser.openapi import OpenAPIParser
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
-    from datamodel_code_generator.parser.openapi_contract_freeze import FrozenGenerationAttempt
-    from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
-
 
 class SourceLease:
     """Borrow only documents obtained by the model engine, until planning finishes.
@@ -314,7 +300,7 @@ class OpenAPIGenerationSession:
         for attempt in tuple(self._attempts):
             try:
                 self._release(attempt)
-            except BaseException as error:  # ruff: ignore[blind-except, try-except-in-loop] -- Close every owner, then propagate the first release failure.
+            except BaseException as error:  # ruff: ignore[blind-except, try-except-in-loop] # lgtm [py/catch-base-exception] -- Close every owner, then propagate the first release failure below.
                 if failure is None:
                     failure = error
         clear_capture_tracebacks(self._failure)
@@ -334,3 +320,18 @@ class ModelGenerationProduct:
     def close(self) -> None:
         """Release borrowed source mappings without invalidating frozen values or bytes."""
         self.source_lease.close()
+
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, OpenAPIParserFactory
+    from datamodel_code_generator._openapi_artifacts import ModelArtifact
+    from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.parser.base import Result
+    from datamodel_code_generator.parser.openapi import OpenAPIParser
+    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
+    from datamodel_code_generator.parser.openapi_contract_freeze import FrozenGenerationAttempt
+    from datamodel_code_generator.parser.openapi_contract_store import BindingLedger

@@ -18,19 +18,11 @@ from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model.binding import freeze_reference_policy
 from datamodel_code_generator.model.binding_policies import final_field_name
 from datamodel_code_generator.model.enum import Enum
-from datamodel_code_generator.parser.openapi_contract_store import _type_recipe  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator.parser.openapi_contract_store import (
+    FieldCopy,
+    _type_recipe,  # pyright: ignore[reportPrivateUsage]
+)
 from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector, ReferenceTypeBinding
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from datamodel_code_generator._generation_contract import AttemptId, ModuleResultBinding, TypeProjection
-    from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.model.binding import FinalReferencePolicy
-    from datamodel_code_generator.parser.base import Result
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
-    from datamodel_code_generator.parser.openapi_contract_fields import FinalArtifactBinding, FinalFieldInventory
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,7 +209,57 @@ def _final_projector(
     for target, source in ledger.enum_copies.items():
         if source in members:
             members[target] = members[source]
-    return FinalTypeProjector(references, members, ledger.root_recipes), references
+    unresolved = frozenset(
+        ledger.identity(reference)
+        for key in parser.unresolved_references
+        if (reference := parser.model_resolver.references.get(key)) is not None
+    ) | frozenset(
+        ledger.identity(model.reference) for model in models if model.reference.path in parser.unresolved_references
+    )
+    return FinalTypeProjector(
+        references, members, ledger.root_recipes, unresolved, _unresolved_nodes(parser, unresolved)
+    ), references
+
+
+def _unresolved_nodes(parser: BindingCaptureMixin, unresolved: frozenset[GraphObjectId]) -> frozenset[GraphObjectId]:
+    """Propagate actual failed-reference identities through completed copy/collapse edges."""
+    if not unresolved:
+        return frozenset()
+    ledger = parser.binding_ledger
+    edges: dict[GraphObjectId, list[GraphObjectId]] = {}
+    for copy in ledger.copies:
+        for source in copy.sources if isinstance(copy, FieldCopy) else (copy.source,):
+            edges.setdefault(source, []).append(copy.target)
+    for collapse in ledger.collapses:
+        if not collapse.completed:
+            continue
+        targets = (collapse.owner, collapse.original, collapse.replacement)
+        edges.setdefault(ledger.identity(collapse.reference), []).extend(targets)
+        pending = [collapse.recipe]
+        while pending:
+            recipe = pending.pop()
+            edges.setdefault(recipe.node, []).extend(targets)
+            if recipe.reference is not None:
+                edges.setdefault(recipe.reference, []).extend(targets)
+            pending.extend(recipe.data_types)
+            if recipe.dict_key is not None:
+                pending.append(recipe.dict_key)
+    nodes: set[GraphObjectId] = set()
+    pending_nodes = [
+        *unresolved,
+        *(
+            ledger.identity(observation.data_type)
+            for observation in parser.type_observations
+            if any(reference in parser.unresolved_references for reference in observation.resolved_refs)
+        ),
+    ]
+    while pending_nodes:
+        node = pending_nodes.pop()
+        if node in nodes:
+            continue
+        nodes.add(node)
+        pending_nodes.extend(edges.get(node, ()))
+    return frozenset(nodes)
 
 
 def _freeze_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass joins final identities, namespaces, and own fields.
@@ -289,7 +331,9 @@ def _freeze_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass join
                         ),
                         field.original_name,
                         import_resolvers[symbol].project(
-                            projector.project(_type_recipe(field.data_type, ledger, set()))
+                            projector.project_field(
+                                ledger.identity(field), _type_recipe(field.data_type, ledger, set())
+                            )
                         ),
                     )
                     for index, field in enumerate(model.fields)
@@ -384,3 +428,15 @@ def freeze_generation_attempt(
         isinstance(parser, ContractApiOpenAPIParser),
     )
     return FrozenGenerationAttempt(batch, fields.artifacts)
+
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from datamodel_code_generator._generation_contract import AttemptId, ModuleResultBinding, TypeProjection
+    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.model.binding import FinalReferencePolicy
+    from datamodel_code_generator.parser.base import Result
+    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
+    from datamodel_code_generator.parser.openapi_contract_fields import FinalArtifactBinding, FinalFieldInventory

@@ -1,0 +1,66 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Missing reference reuse",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Anything": {},
+      "Bad": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/Missing"
+          }
+        }
+      },
+      "Good": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/Anything"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/bad": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Bad"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          }
+        }
+      }
+    },
+    "/good": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Good"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          }
+        }
+      }
+    }
+  }
+}

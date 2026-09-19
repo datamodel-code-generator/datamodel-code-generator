@@ -25,7 +25,7 @@ from datamodel_code_generator.parser.base import (
     _normalize_result_module_path,  # pyright: ignore[reportPrivateUsage]
 )
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, split_json_pointer
-from datamodel_code_generator.parser.openapi import OpenAPIParser
+from datamodel_code_generator.parser.openapi import OpenAPIParser, ParameterObject
 from datamodel_code_generator.parser.openapi_contract_origins import SchemaOrigin, ValidatedSchemaOriginIndex
 from datamodel_code_generator.parser.openapi_contract_store import (
     BindingLedger,
@@ -43,32 +43,6 @@ from datamodel_code_generator.reference import (
     ModelType,
     Reference,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
-    from pathlib import Path
-    from urllib.parse import ParseResult
-
-    from datamodel_code_generator._generation_contract import GraphObjectId, SourceDocumentId
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator._types import OpenAPIParserConfigDict
-    from datamodel_code_generator.config import OpenAPIParserConfig
-    from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend, NamingStrategy
-    from datamodel_code_generator.format import PythonVersion
-    from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.model.enum import Enum
-    from datamodel_code_generator.parser.base import (
-        DiscriminatorValue,
-        ForwarderMap,
-        ModuleContext,
-        ParseConfig,
-        Result,
-    )
-    from datamodel_code_generator.parser.openapi import MediaSchema, ReferenceObject, RequestBodyObject, ResponseObject
-    from datamodel_code_generator.parser.openapi_contract_origins import SchemaRelation
-    from datamodel_code_generator.parser.openapi_scope import _ApiObject  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator.types import DataType
 
 
 class ResolverOptions(TypedDict, total=False):
@@ -392,6 +366,25 @@ class ResponseTypesObservation:
     types: dict[str | int, dict[str, DataType]]
 
 
+@dataclass(slots=True)
+class LegacyParameterFrame:
+    """Join one real validated parameter sequence to the effective raw sequence."""
+
+    operation: LegacyOperationObservation
+    inputs: tuple[tuple[ReferenceObject | ParameterObject, YamlValue], ...]
+    path: tuple[str, ...]
+    current: ParameterObject | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ParameterFieldObservation:
+    """Retain the actual top-level parameter field even without an emitted parameter model."""
+
+    operation: LegacyOperationObservation
+    parameter: ParameterObject
+    field: DataModelFieldBase
+
+
 def _same_legacy_operation(original: dict[str, YamlValue], effective: dict[str, YamlValue]) -> bool:
     """Recognize only identity-preserving copies with original parameter prefixes."""
     if original is effective:
@@ -641,6 +634,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self.schema_types: list[SchemaTypeObservation] = []
         self.schema_references: list[SchemaReferenceObservation] = []
         self.root_documents: list[str] = []
+        self.unresolved_references: set[str] = set()
         self.variant_fields: list[VariantFieldsObservation] = []
         self._variant_references: dict[GraphObjectId, dict[GraphObjectId, Reference]] = {}
         self._array_sources: list[JsonSchemaObject] = []
@@ -670,6 +664,8 @@ class BindingCaptureMixin(OpenAPIParser):
         self._legacy_operations: list[LegacyOperationObservation] = []
         self.request_types: list[RequestTypesObservation] = []
         self.response_types: list[ResponseTypesObservation] = []
+        self.parameter_fields: list[ParameterFieldObservation] = []
+        self._parameter_frames: list[LegacyParameterFrame] = []
         self._model_resolver_factory = partial(self._create_binding_resolver)
         self._generation_store_factory = partial(self._create_binding_store)
         # The existing parser accepts mappings; its constructor annotation omits them.
@@ -832,8 +828,7 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         return self._record_variant(base_reference, suffix, result)  # pyright: ignore[reportUnknownArgumentType]
 
-    @override
-    def _create_variant_model(
+    def _create_variant_model(  # ruff: ignore[too-many-arguments] -- Preserve the existing producer signature.
         self,
         base_reference: Reference,
         suffix: Literal["Request", "Response"],
@@ -897,6 +892,18 @@ class BindingCaptureMixin(OpenAPIParser):
             raw: dict[str, YamlValue] = super()._get_ref_body(resolved_ref)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         self._borrow_source(resolved_ref, raw)  # pyright: ignore[reportUnknownArgumentType]
         return raw  # pyright: ignore[reportUnknownVariableType]
+
+    def _get_model_by_json_pointer(self, raw: dict[str, YamlValue], object_paths: list[str], ref: str) -> YamlValue:
+        """Retain actual missing-pointer decisions without repeating lookup or diagnostics."""
+        before = len(self._dangling_refs)
+        result: YamlValue = super()._get_model_by_json_pointer(raw, object_paths, ref)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        self._record_unresolved_reference(ref, before)
+        return result  # pyright: ignore[reportUnknownVariableType]
+
+    @capture_errors
+    def _record_unresolved_reference(self, ref: str, before: int) -> None:
+        if len(self._dangling_refs) > before:
+            self.unresolved_references.add(ref)
 
     @capture_errors
     def _borrow_source(self, uri: str, raw: dict[str, YamlValue]) -> None:
@@ -1327,6 +1334,8 @@ class BindingCaptureMixin(OpenAPIParser):
     @capture_errors
     def _borrow_resolved_schema(self, resolved_ref: str, relation: SchemaRelation) -> SchemaOrigin | None:
         """Decode an actual resolved key against a document the engine already borrowed."""
+        if resolved_ref in self.unresolved_references:
+            return None
         document_uri, marker, fragment = resolved_ref.partition("#")
         if not marker or SPECIAL_PATH_MARKER in resolved_ref:
             return None
@@ -1706,14 +1715,13 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         return self._record_schema_type(additional_properties, result)  # pyright: ignore[reportUnknownArgumentType]
 
-    @override
     def parse_array_fields(
         self,
         name: str,
         obj: JsonSchemaObject,
         path: list[str],
-        singular_name: bool = True,
-        use_annotated: bool | None = None,
+        singular_name: bool = True,  # ruff: ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument] -- Preserve the producer signature.
+        use_annotated: bool | None = None,  # ruff: ignore[boolean-type-hint-positional-argument] -- Preserve the producer signature.
     ) -> DataModelFieldBase:
         """Keep the current array source only while its ordinary fallback producer runs."""
         self._array_sources.append(obj)
@@ -2084,6 +2092,15 @@ class BindingCaptureMixin(OpenAPIParser):
             default_policy,
             preexisting_null,
         )
+        if self._parameter_frames:
+            frame = self._parameter_frames[-1]
+            reference = self.model_resolver.references.get(self.model_resolver.join_path(frame.path))
+            if frame.current is not None and reference is not None and class_name == reference.name:
+                self.parameter_fields.append(ParameterFieldObservation(frame.operation, frame.current, field))
+                if schema is not None:
+                    self.field_origins[identity] = FieldOriginObservation(
+                        identity, original_name or "", self.schema_origins.origins(schema), required
+                    )
         return field
 
     def parse_object_fields(
@@ -2223,6 +2240,123 @@ class BindingCaptureMixin(OpenAPIParser):
         self._observe_type(result, path=path)  # pyright: ignore[reportUnknownArgumentType]
         return result  # pyright: ignore[reportUnknownVariableType]
 
+    def parse_all_parameters(
+        self, name: str, parameters: list[ReferenceObject | ParameterObject], path: list[str]
+    ) -> DataType | None:
+        """Observe the real parameter producer without adding a Parameters scope."""
+        if not self._legacy_operations:
+            return super().parse_all_parameters(name, parameters, path)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        operation = self._legacy_operations[-1]
+        raw = operation.effective.get("parameters", [])
+        inputs = (
+            tuple(zip(parameters, raw, strict=True)) if isinstance(raw, list) and len(raw) == len(parameters) else ()
+        )
+        self._parameter_frames.append(LegacyParameterFrame(operation, inputs, tuple(path)))
+        try:
+            return super().parse_all_parameters(name, parameters, path)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        finally:
+            self._parameter_frames.pop()
+
+    def resolve_object(self, obj: ReferenceObject | BaseModelT, object_type: type[BaseModelT]) -> BaseModelT:
+        """Keep the actual resolved parameter schema and original declaration together."""
+        if object_type is not ParameterObject or not self._parameter_frames:
+            return super().resolve_object(obj, object_type)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        producer = ReferenceProducerFrame([])
+        with self._resolution_producer(producer):
+            result = super().resolve_object(obj, object_type)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        self._record_resolved_parameter(obj, result, producer)  # pyright: ignore[reportUnknownArgumentType]
+        return result  # pyright: ignore[reportUnknownVariableType]
+
+    @capture_errors
+    def _record_resolved_parameter(self, original: object, result: object, producer: ReferenceProducerFrame) -> None:
+        if isinstance(result, ParameterObject):
+            self._record_parameter_schema(original, result, producer)
+
+    @capture_errors
+    def _record_parameter_schema(
+        self, original: object, parameter: ParameterObject, producer: ReferenceProducerFrame
+    ) -> None:
+        frame = self._parameter_frames[-1]
+        frame.current = parameter
+        raws = tuple(raw for validated, raw in frame.inputs if validated is original)
+        if len(raws) != 1 or not isinstance(raw := raws[0], dict):
+            return
+        origins: list[SchemaOrigin] = []
+        if isinstance(ref := raw.get("$ref"), str):
+            origins.extend(
+                origin
+                for event in producer.resolutions
+                if event.input == ref
+                and (origin := self._borrow_resolved_schema(event.output, "validated_child")) is not None
+            )
+        else:
+            origins.extend(self._direct_parameter_origins(frame, raw))
+        for origin in dict.fromkeys(origin.location for origin in origins):
+            raw_parameter = self.source_lease.borrow(origin)
+            if not isinstance(raw_parameter, dict):
+                continue
+            if parameter.schema_ is not None and isinstance(schema := raw_parameter.get("schema"), (dict, bool)):
+                self.schema_origins.pair(
+                    raw=schema,
+                    obj=parameter.schema_,
+                    location=SourceLocation(origin.document, origin.pointer + "/schema", "schema"),
+                    relation="validated_child",
+                )
+            content = raw_parameter.get("content")
+            if not isinstance(content, dict):
+                continue
+            for media, value in parameter.content.items():
+                raw_media = content.get(media)
+                if not isinstance(raw_media, dict):
+                    continue
+                if isinstance(value.schema_, JsonSchemaObject) and isinstance(
+                    schema := raw_media.get("schema"), (dict, bool)
+                ):
+                    self.schema_origins.pair(
+                        raw=schema,
+                        obj=value.schema_,
+                        location=SourceLocation(
+                            origin.document,
+                            origin.pointer + "/content/" + media.replace("~", "~0").replace("/", "~1") + "/schema",
+                            "schema",
+                        ),
+                        relation="validated_child",
+                    )
+
+    def _direct_parameter_origins(
+        self, frame: LegacyParameterFrame, raw: dict[str, YamlValue]
+    ) -> tuple[SchemaOrigin, ...]:
+        """Find original occurrences by identity inside the actual legacy operation frame."""
+        if frame.operation.origin_state != "known":
+            return ()
+        origins: list[SchemaOrigin] = []
+        declaration = frame.operation.candidates[0].declaration
+        document = self.source_lease.document_id(declaration.document)
+        if document is None:
+            return ()
+        root = self.source_lease.borrow(SourceLocation(document, "", "schema"))
+        if not isinstance(root, dict):
+            return ()
+        scope = root.get(declaration.tokens[0])
+        if not isinstance(scope, dict):
+            return ()
+        path_item = scope.get(declaration.tokens[1])
+        groups = (
+            (declaration.tokens, frame.operation.candidates[0].raw.get("parameters")),
+            (declaration.tokens[:-1], path_item.get("parameters") if isinstance(path_item, dict) else None),
+            (declaration.tokens[:1], scope.get("parameters")),
+        )
+        for parent, values in groups:
+            if not isinstance(values, list):
+                continue
+            for index, candidate in enumerate(values):
+                if candidate is raw:
+                    pointer = "/" + "/".join(
+                        token.replace("~", "~0").replace("/", "~1") for token in (*parent, "parameters", str(index))
+                    )
+                    origins.append(SchemaOrigin(SourceLocation(document, pointer, "schema"), raw, "validated_child"))
+        return tuple(origins)
+
     def get_ref_data_type(self, ref: str) -> DataType:
         """Observe actual reference type creation without calling a resolver again."""
         producer = ReferenceProducerFrame([])
@@ -2354,6 +2488,8 @@ class BindingCaptureMixin(OpenAPIParser):
         self.__dict__.pop("_generation_store_factory", None)
         self.request_types.clear()
         self.response_types.clear()
+        self.parameter_fields.clear()
+        self._parameter_frames.clear()
         self._legacy_operations.clear()
         self.legacy_operations.clear()
         self.legacy_scopes.clear()
@@ -2367,6 +2503,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self.schema_types.clear()
         self.schema_references.clear()
         self.root_documents.clear()
+        self.unresolved_references.clear()
         self.variant_fields.clear()
         self._variant_references.clear()
         self._array_sources.clear()
@@ -2536,3 +2673,36 @@ class ContractApiOpenAPIParser(BindingCaptureMixin, ApiOpenAPIParser):
             self.schema_observations.clear()
             self._object_uses.clear()
             self._object_contexts.clear()
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+    from pathlib import Path
+    from urllib.parse import ParseResult
+
+    from datamodel_code_generator._generation_contract import GraphObjectId, SourceDocumentId
+    from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator._types import OpenAPIParserConfigDict
+    from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend, NamingStrategy
+    from datamodel_code_generator.format import PythonVersion
+    from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.model.enum import Enum
+    from datamodel_code_generator.parser.base import (
+        DiscriminatorValue,
+        ForwarderMap,
+        ModuleContext,
+        ParseConfig,
+        Result,
+    )
+    from datamodel_code_generator.parser.openapi import (
+        BaseModelT,
+        MediaSchema,
+        ReferenceObject,
+        RequestBodyObject,
+        ResponseObject,
+    )
+    from datamodel_code_generator.parser.openapi_contract_origins import SchemaRelation
+    from datamodel_code_generator.parser.openapi_scope import _ApiObject  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator.types import DataType

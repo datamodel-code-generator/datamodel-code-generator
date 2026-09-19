@@ -14,11 +14,6 @@ from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum
 from datamodel_code_generator.model.pydantic_v2 import dataclass as pydantic_dataclass
 from datamodel_code_generator.model.type_alias import TypeAlias, TypeAliasTypeBackport, TypeStatement
 
-if TYPE_CHECKING:
-    from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.model.binding import BackendModelFacts, BackendName
-
-
 _BACKENDS: dict[type[DataModel], BackendName] = {
     pydantic_v2.BaseModel: "pydantic",
     pydantic_dataclass.DataClass: "pydantic_dataclass",
@@ -42,15 +37,16 @@ class BuiltinModelPolicy:
 def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> BuiltinModelPolicy:
     """Inspect stored state and exact builtin types without invoking model properties."""
     backend = _BACKENDS.get(configured_model)
+    kind: Literal["model", "root", "alias", "enum", "custom"] = "model" if type(model) in _BACKENDS else "custom"
     match type(model):
         case value if value in {Enum, IntEnum, StrEnum}:
-            kind: Literal["model", "root", "alias", "enum", "custom"] = "enum"
+            kind = "enum"
         case value if value in {TypeAlias, TypeAliasTypeBackport, TypeStatement}:
             kind = "alias"
         case value if value is pydantic_v2.RootModel:
             kind = "root"
         case _:
-            kind = "model" if type(model) in _BACKENDS else "custom"
+            pass
     builtin = (
         backend is not None
         and kind != "custom"
@@ -94,3 +90,8 @@ def constructor_policy(facts: BackendModelFacts, name: Literal["init", "kw_only"
                 case _:
                     return None
     return name == "init" or facts.backend == "pydantic"
+
+
+if TYPE_CHECKING:
+    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.model.binding import BackendModelFacts, BackendName

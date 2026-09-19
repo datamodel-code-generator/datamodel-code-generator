@@ -26,13 +26,6 @@ from datamodel_code_generator._python_type_binding import BoundPythonType
 
 _UNSUPPORTED: Final = "BND_TYPE_EXPRESSION_UNSUPPORTED"
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
-
-    from datamodel_code_generator._generation_contract import FinalPythonType, TypeArgument
-    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
-    from datamodel_code_generator.imports import Import
-
 
 class FinalImportResolver:
     """Resolve retained producer imports against one actual final module namespace."""
@@ -139,4 +132,13 @@ class FinalImportResolver:
                     ),
                 )
             case _:
-                return value
+                pass
+        return value
+
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
+    from datamodel_code_generator._generation_contract import FinalPythonType, TypeArgument
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
+    from datamodel_code_generator.imports import Import

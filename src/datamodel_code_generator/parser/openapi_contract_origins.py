@@ -9,13 +9,6 @@ from datamodel_code_generator._generation_contract import BindingCaptureError, S
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger, capture_errors
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
-
-    from datamodel_code_generator._generation_contract import SourceDocumentId
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.enums import AllOfMergeMode
-
 SchemaRelation: TypeAlias = Literal[
     "validated_child",
     "ref_sibling",
@@ -465,3 +458,11 @@ class ValidatedSchemaOriginIndex:
         self.edges.clear()
         self.projections.clear()
         self._incoming.clear()
+
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+
+    from datamodel_code_generator._generation_contract import SourceDocumentId
+    from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator.enums import AllOfMergeMode

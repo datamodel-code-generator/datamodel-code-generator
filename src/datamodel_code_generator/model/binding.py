@@ -46,23 +46,6 @@ from datamodel_code_generator._python_type_annotation import (
 )
 from datamodel_code_generator.model.base import DataModel
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
-
-    from datamodel_code_generator._generation_contract import (
-        AttemptId,
-        FieldSlot,
-        FinalPythonType,
-        FrozenLiteral,
-        MetadataCall,
-        SymbolId,
-        TypeArgument,
-        UnannotatedPythonType,
-    )
-    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
-    from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.base import DataModelFieldBase
-
 Tokens: TypeAlias = tuple[tokenize.TokenInfo, ...]
 _PAIR_SIZE: Final = 2
 _ANNOTATED_FIELD_MIN_TOKENS: Final = 3
@@ -1875,3 +1858,21 @@ def freeze_reference_policy(model: DataModel, *, serialize_as_any: bool) -> Fina
         model.IS_ALIAS,
         serialize_as_any and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
     )
+
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+
+    from datamodel_code_generator._generation_contract import (
+        AttemptId,
+        FieldSlot,
+        FinalPythonType,
+        FrozenLiteral,
+        MetadataCall,
+        SymbolId,
+        TypeArgument,
+        UnannotatedPythonType,
+    )
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model.base import DataModelFieldBase

@@ -42,6 +42,7 @@ class GenerationSessionObserver:
         self.parsers: list[weakref.ReferenceType[OpenAPIParser]] = []
         self.graph: list[weakref.ReferenceType[object]] = []
         self.hashes: dict[int, str] = {}
+        self.factory_reads = 0
 
     def record(self, frame: FrameType, event: str, value: Any) -> None:
         """Observe real driver boundaries without modifying return values."""
@@ -51,6 +52,8 @@ class GenerationSessionObserver:
             self.parsers.append(weakref.ref(value))
         if event != "call":
             return
+        if code is OpenAPIGenerationSession.parser_factory.fget.__code__:
+            self.factory_reads += 1
         if code is OpenAPIGenerationSession.__call__.__code__:
             self.events.append(f"construct:{local['self']._next_attempt + 1}")
         elif code is OpenAPIParser.parse.__code__:
@@ -116,6 +119,74 @@ def run_generation_session(
         "retained_parsers": sum(parser() is not None for parser in observer.parsers),
     }
     return observation, sum(node() is not None for node in observer.graph)
+
+
+def observe_api_session(
+    source: Path, config: GenerateConfig, *, failure: str = "", monkeypatch: pytest.MonkeyPatch | None = None
+) -> tuple[Any, dict[str, object]]:
+    """Observe real API factory selection, acceptance, and disposal against the S02 oracle."""
+    observer = GenerationSessionObserver()
+    session = OpenAPIGenerationSession(
+        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
+    )
+    if failure and monkeypatch is not None:
+        _inject_session_failure(monkeypatch, failure, source)
+    previous = sys.getprofile()
+    sys.setprofile(observer.record)
+    try:
+        result = _run_generation(
+            source, _prepare_generate_facade_config(config), Path.cwd(), use_output_cwd=False, capture=session
+        )
+        accepted = session.take_accepted_batch().attempt
+    finally:
+        session.close()
+        sys.setprofile(previous)
+    gc.collect()
+    return result, {
+        "empty_result": None,
+        "factory_reads": observer.factory_reads,
+        "accepted_attempt": accepted,
+        "retained_parsers": sum(parser() is not None for parser in observer.parsers),
+    }
+
+
+def compare_api_session(source: Path, config: GenerateConfig) -> dict[str, object]:
+    """Compare ordinary API generation with real capture without replacing engine methods."""
+    from tests.data.python.generation_observer import GenerationObserver
+
+    session = OpenAPIGenerationSession(
+        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
+    )
+    lifetime = GenerationSessionObserver()
+    outputs = []
+    calls = []
+    previous = sys.getprofile()
+    try:
+        for capture in (None, session):
+            observer = GenerationObserver()
+
+            def observe(frame: FrameType, event: str, value: Any) -> None:
+                observer.record(frame, event, value)
+                if capture is not None:
+                    lifetime.record(frame, event, value)
+
+            sys.setprofile(observe)
+            outputs.append(
+                _run_generation(
+                    source, _prepare_generate_facade_config(config), Path.cwd(), use_output_cwd=False, capture=capture
+                )
+            )
+            calls.append(observer.calls)
+    finally:
+        session.close()
+        sys.setprofile(previous)
+    gc.collect()
+    return {
+        "outputs_equal": outputs[0] == outputs[1],
+        "engine_calls_equal": calls[0] == calls[1],
+        "factory_reads": lifetime.factory_reads,
+        "retained_parsers": sum(parser() is not None for parser in lifetime.parsers),
+    }
 
 
 def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, source: Path) -> None:

@@ -9,7 +9,13 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import GenerateConfig, OpenAPIScope, _prepare_generate_facade_config, _run_generation
+from datamodel_code_generator import (
+    DanglingRefWarning,
+    GenerateConfig,
+    OpenAPIScope,
+    _prepare_generate_facade_config,
+    _run_generation,
+)
 from datamodel_code_generator._generation_contract import GeneratedSymbolType, ImportedType
 from datamodel_code_generator._openapi_generation import OpenAPIGenerationSession, SourceLease
 from datamodel_code_generator._openapi_type_binding import require_type_bindings
@@ -179,6 +185,153 @@ def test_helper_property_and_item_demands(backend: str) -> None:
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_nested_helper_producers(backend: str) -> None:
+    """Keep true, filtered union ordinals, dictionary values and pattern occurrences usable."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-helper-producers.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="helper-producers.json",
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    product.close()
+    expected = EXPECTED / "session-review/helper-producers.txt"
+    wanted = json.loads(expected.read_text())
+    uses = tuple(
+        use for use in product.batch.type_uses if use.id.role == "schema" and use.id.schema_site.pointer in wanted
+    )
+    assert_output(
+        json.dumps({use.id.schema_site.pointer: type_snapshot(use.type) for use in uses}, indent=2, sort_keys=True)
+        + "\n",
+        expected,
+    )
+    assert_output(
+        "\n".join(item.code for item in require_type_bindings(product.batch, tuple(use.id for use in uses))),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(product.artifacts[0].content.decode(), EXPECTED / "session-review/helper-producers" / f"{backend}.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_missing_reference_does_not_accept_any_fallback(backend: str) -> None:
+    """Preserve the real warning and model bytes while rejecting unresolved required bindings."""
+    with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref '#/components/schemas/Missing'"):
+        product, retained = generate_product(
+            (SOURCE / "binding/session-missing-reference.json").resolve(),
+            GenerateConfig(
+                input_file_type="openapi",
+                openapi_scopes=[OpenAPIScope.Api],
+                output_model_type=backend,
+                input_filename="missing-reference.json",
+                formatters=[],
+                disable_timestamp=True,
+            ),
+        )
+    product.close()
+    assert_output(
+        "".join(
+            f"{use.id.schema_site.pointer}: "
+            + ",".join(item.code for item in require_type_bindings(product.batch, (use.id,)))
+            + "\n"
+            for use in product.batch.type_uses
+            if use.id.role == "request_body"
+            or use.id.schema_site.pointer == "/components/schemas/Record/properties/bad"
+        ),
+        EXPECTED / "session-review/missing-reference.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(), EXPECTED / "session-review/missing-reference" / f"{backend}.py"
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize("scope", [OpenAPIScope.Schemas, OpenAPIScope.Paths, OpenAPIScope.Api])
+@pytest.mark.parametrize("collapse", [False, True])
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_unresolved_reference_after_collapse(scope: OpenAPIScope, collapse: bool, backend: str) -> None:
+    """A removed Any fallback never validates its containing model or leaks a phantom origin."""
+    with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref '#/components/schemas/Missing'"):
+        product, retained = generate_product(
+            (SOURCE / "binding/session-missing-reference.json").resolve(),
+            GenerateConfig(
+                input_file_type="openapi",
+                openapi_scopes=[scope],
+                output_model_type=backend,
+                collapse_root_models=collapse,
+                input_filename="missing-reference.json",
+                formatters=[],
+                disable_timestamp=True,
+            ),
+        )
+    product.close()
+    facts = {}
+    for use in product.batch.type_uses:
+        if use.id.role == "request_body" or use.id.schema_site.pointer in {
+            "/components/schemas/Record",
+            "/components/schemas/Record/properties/bad",
+        }:
+            facts[use.id.schema_site.pointer] = sorted({
+                item.code for item in require_type_bindings(product.batch, (use.id,))
+            })
+    assert_output(
+        json.dumps(facts, indent=2, sort_keys=True) + "\n", EXPECTED / f"session-review/unresolved-{scope.value}.txt"
+    )
+    assert_output(
+        product.artifacts[0].content.decode(),
+        EXPECTED / "session-review/unresolved" / f"{scope.value}-{collapse}-{backend}.py",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize("scope", [OpenAPIScope.Schemas, OpenAPIScope.Paths, OpenAPIScope.Api])
+@pytest.mark.parametrize("case", ["legacy-discriminator", "legacy-nullable"])
+def test_legacy_reference_use_policy(scope: OpenAPIScope, case: str) -> None:
+    """A use keeps adopted nullability and cannot substitute a base for an unobserved discriminator union."""
+    product, retained = generate_product(
+        (SOURCE / f"binding/session-{case}.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[scope],
+            input_filename="legacy-use.json",
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    product.close()
+    use = next(use for use in product.batch.type_uses if use.id.role == "request_body")
+    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
+    assert_output(
+        json.dumps(
+            {
+                "type": type_snapshot(use.type, names) if use.type is not None else None,
+                "diagnostics": [item.code for item in require_type_bindings(product.batch, (use.id,))],
+            },
+            indent=2,
+        )
+        + "\n",
+        EXPECTED / f"session-review/{case}-{scope.value}.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(), EXPECTED / "session-review/legacy-use" / f"{case}-{scope.value}.py"
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
 def test_contentless_api_product() -> None:
     """The actual selected factory permits an accepted operation with zero model artifacts."""
     product, retained = generate_product(
@@ -206,6 +359,81 @@ def test_contentless_api_product() -> None:
         product.close()
     with pytest.raises(RuntimeError, match="Source lease is closed"):
         product.source_lease.documents()
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("scope", ["paths", "parameters", "api"])
+def test_legacy_parameter_field_capture(backend: str, scope: str) -> None:
+    """Capture actual primitive parameter fields with and without a parameter model."""
+    scopes = [OpenAPIScope.Paths, OpenAPIScope.Parameters] if scope == "parameters" else [OpenAPIScope(scope)]
+    product, retained = generate_product(
+        (SOURCE / "binding/session-legacy-parameters.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=scopes,
+            output_model_type=backend,
+            input_filename="parameters.json",
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    product.close()
+    assert_output(
+        "".join(
+            f"{use.id.name}: {use.state}; diagnostics="
+            f"{','.join(item.code for item in require_type_bindings(product.batch, (use.id,))) or 'none'}; "
+            f"{use.id.schema_site.pointer}\n"
+            for use in product.batch.type_uses
+            if use.id.role == "parameter"
+        ),
+        EXPECTED / "session-review/legacy-parameters.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(), EXPECTED / "session-review/legacy-parameters" / f"{scope}-{backend}.py"
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("reuse", [False, True])
+@pytest.mark.parametrize("collapse", [False, True])
+def test_missing_reference_reuse_preserves_valid_any(backend: str, reuse: bool, collapse: bool) -> None:
+    """Actual redirects retain failure on the missing use without poisoning a real Any schema."""
+    with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref '#/components/schemas/Missing'"):
+        product, retained = generate_product(
+            (SOURCE / "binding/session-missing-reuse.json").resolve(),
+            GenerateConfig(
+                input_file_type="openapi",
+                openapi_scopes=[OpenAPIScope.Api],
+                output_model_type=backend,
+                reuse_model=reuse,
+                collapse_root_models=collapse,
+                input_filename="missing-reuse.json",
+                formatters=[],
+                disable_timestamp=True,
+            ),
+        )
+    product.close()
+    assert_output(
+        "".join(
+            f"{use.id.owner.use_site.pointer}: "
+            f"{','.join(sorted({item.code for item in require_type_bindings(product.batch, (use.id,))})) or 'bound'}\n"
+            for use in product.batch.type_uses
+            if use.id.role == "request_body"
+        ),
+        EXPECTED / "session-review/missing-reuse.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(),
+        EXPECTED / "session-review/missing-reuse" / f"{reuse}-{collapse}-{backend}.py",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
 def test_collapsed_operation_keeps_final_import_override() -> None:

@@ -6,6 +6,8 @@ from dataclasses import fields, is_dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._generation_contract import GeneratedSymbolType
+
 if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import SymbolId
     from datamodel_code_generator.model.binding_fields import FieldOwnershipProjection
@@ -14,15 +16,17 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
 
 
-def type_snapshot(value: object) -> object:
+def type_snapshot(value: object, names: dict[SymbolId, str] | None = None) -> object:
     """Keep node kinds and literal kinds distinct without rendering model annotations."""
+    if names is not None and isinstance(value, GeneratedSymbolType):
+        return {"node": "GeneratedSymbolType", "symbol": names[value.symbol]}
     if is_dataclass(value) and not isinstance(value, type):
         return {
             "node": type(value).__name__,
-            **{field.name: type_snapshot(getattr(value, field.name)) for field in fields(value)},
+            **{field.name: type_snapshot(getattr(value, field.name), names) for field in fields(value)},
         }
     if isinstance(value, tuple):
-        return [type_snapshot(item) for item in value]
+        return [type_snapshot(item, names) for item in value]
     if isinstance(value, Decimal):
         return {"decimal": str(value)}
     if isinstance(value, bytes):

@@ -25,23 +25,8 @@ from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._api_reference import ApiDeclarationId
 from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser
 from datamodel_code_generator.parser.openapi_contract_store import _type_recipe  # pyright: ignore[reportPrivateUsage]
-
-if TYPE_CHECKING:
-    from datamodel_code_generator._generation_contract import (
-        FieldSlot,
-        FieldUseBinding,
-        FrozenLiteral,
-        SourceDocumentId,
-        TypeUseRole,
-    )
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, SchemaUseObservation
-    from datamodel_code_generator.parser.openapi_contract_fields import FinalFieldInventory
-    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
-    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector
-    from datamodel_code_generator.parser.openapi_scope import ApiDeclarationFrame
-    from datamodel_code_generator.types import DataType
-
+from datamodel_code_generator.parser.openapi_media import encoding_media
+from datamodel_code_generator.parser.openapi_scope import ApiIgnoredDeclaration
 
 _PARAMETER_FACTS = (
     "name",
@@ -134,6 +119,9 @@ class FinalOperationBuilder:
         )
         self.ignored = list(parser.ignored_declarations) if isinstance(parser, ContractApiOpenAPIParser) else []
         self.api_scope = isinstance(parser, ContractApiOpenAPIParser)
+        self.unresolved_symbols = {
+            model.symbol for model in inventory.models if model.reference_path in parser.unresolved_references
+        }
         self.type_results = {
             id(observation.declaration): observation.data_type
             for observation in parser.type_observations
@@ -159,6 +147,7 @@ class FinalOperationBuilder:
         for binding in fields.bindings:
             self.members.setdefault(binding.consumer, []).append(binding)
         self.operations: dict[int, OperationId] = {}
+        self.operation_uses: dict[OperationId, ApiDeclarationId] = {}
         self.uses: dict[TypeUseId, TypeUseBinding] = {}
         self.diagnostics: list[BindingDiagnostic] = []
 
@@ -184,7 +173,10 @@ class FinalOperationBuilder:
     def _project_schema(
         self, declaration: ApiDeclarationId, projection: str, direction: str = "neutral"
     ) -> TypeProjection:
-        return self.imports.project(self._project_schema_type(declaration, projection, direction))
+        projected = self.imports.project(self._project_schema_type(declaration, projection, direction))
+        if isinstance(projected.value, GeneratedSymbolType) and projected.value.symbol in self.unresolved_symbols:
+            return TypeProjection(None, "BND_UNRESOLVED_REFERENCE")
+        return projected
 
     def _project_schema_type(self, declaration: ApiDeclarationId, projection: str, direction: str) -> TypeProjection:
         projector = self.directional_projectors[direction]
@@ -269,6 +261,7 @@ class FinalOperationBuilder:
             projected.value,
             projected.reason,
             members,
+            self._helper_producers(self.location(schema, "schema")),
         )
         return use
 
@@ -307,15 +300,8 @@ class FinalOperationBuilder:
                 child_declaration(use_site, "content", name),
             )
             uses: list[TypeUseId] = []
-            for keyword in ("schema", "itemSchema"):
-                if keyword not in media:
-                    continue
+            for keyword, projections in self._media_projections(media, media_decl):
                 schema, schema_use = child_declaration(media_decl, keyword), child_declaration(media_use, keyword)
-                if self.api_scope and (schema, "value") not in self.schemas:
-                    continue
-                projections: tuple[Literal["value", "item_stream_array"], ...] = (
-                    ("value", "item_stream_array") if (schema, "item_stream_array") in self.schemas else ("value",)
-                )
                 uses.extend(
                     self._use(
                         owner,
@@ -334,7 +320,7 @@ class FinalOperationBuilder:
                 )
             encodings: list[WireDeclaration] = []
             encoding_decl = child_declaration(media_decl, "encoding")
-            if not any(item.declaration == encoding_decl for item in self.ignored):
+            if self._encoding_allowed(media, name, encoding_decl, owner, role):
                 for property_name, encoding_value in wire_mapping(media.get("encoding")).items():
                     encoding = wire_mapping(encoding_value)
                     declared = child_declaration(encoding_decl, property_name)
@@ -373,6 +359,58 @@ class FinalOperationBuilder:
                 )
             )
         return tuple(media_values)
+
+    def _media_projections(
+        self,
+        media: dict[str, YamlValue],
+        declaration: ApiDeclarationId,
+    ) -> tuple[tuple[str, tuple[Literal["value", "item_stream_array"], ...]], ...]:
+        return tuple(
+            (keyword, ("value", "item_stream_array") if (schema, "item_stream_array") in self.schemas else ("value",))
+            for keyword in ("schema", "itemSchema")
+            if keyword in media and (schema := child_declaration(declaration, keyword), "value") in self.schemas
+        )
+
+    def _encoding_allowed(
+        self,
+        medium: dict[str, YamlValue],
+        media: str,
+        declaration: ApiDeclarationId,
+        operation: OperationId,
+        role: TypeUseRole,
+    ) -> bool:
+        if "encoding" not in medium:
+            return False
+        if self.api_scope:
+            return not any(item.declaration == declaration for item in self.ignored)
+        owner: MediaOwner = (
+            "request_body"
+            if role == "request_body"
+            else "response"
+            if role == "response_body"
+            else "parameter"
+            if role == "parameter"
+            else "header"
+        )
+        use = self.operation_uses[operation]
+        parsed = encoding_media(media, owner, openapi_32=self.parser.schema_features.media_item_schema)
+        if isinstance(parsed, str):
+            self.ignored.append(ApiIgnoredDeclaration(declaration, use, parsed, owner, media))
+            return False
+        if parsed.type != "multipart":
+            for property_name, encoding in wire_mapping(medium["encoding"]).items():
+                for name in wire_mapping(wire_mapping(encoding).get("headers")):
+                    self.ignored.append(
+                        ApiIgnoredDeclaration(
+                            child_declaration(declaration, property_name, "headers", name),
+                            use,
+                            "oas_non_multipart_encoding_headers",
+                            owner,
+                            media,
+                            name,
+                        )
+                    )
+        return True
 
     def _parameter(  # ruff: ignore[too-many-arguments] -- Preserve independent owner, declaration, use-site, and wire identities.
         self,
@@ -441,6 +479,27 @@ class FinalOperationBuilder:
         ignored = {item.declaration for item in self.ignored}
         if declaration in ignored:
             return ()
+        if not self.api_scope:
+            for name, value in wire_mapping(raw).items():
+                occurrence = child_declaration(declaration, name)
+                if occurrence in ignored:
+                    continue
+                declared, resolved = self._resolve_object(occurrence, value)
+                if "$ref" in resolved:
+                    self.diagnostics.append(
+                        BindingDiagnostic(
+                            "BND_UNRESOLVED_REFERENCE",
+                            operation=owner,
+                            source_locations=(self.location(occurrence, "declaration"),),
+                        )
+                    )
+                elif name.lower() == "content-type":
+                    self.ignored.append(
+                        ApiIgnoredDeclaration(
+                            declared, self.operation_uses[owner], "oas_header_ignored", "header", media, name
+                        )
+                    )
+                    ignored.add(occurrence)
         return tuple(
             self._parameter(
                 value,
@@ -564,6 +623,8 @@ class FinalOperationBuilder:
             else None,
         )
         self.operations[id(frame)] = identity
+        self.operation_uses[identity] = use_site
+        parameters = self._parameters(frame, identity)
         body: WireDeclaration | None = None
         if "requestBody" in raw:
             used = child_declaration(use_site, "requestBody")
@@ -621,7 +682,7 @@ class FinalOperationBuilder:
             "servers" in raw,
             order,
             self._operation_facts(frame),
-            self._parameters(frame, identity),
+            parameters,
             body,
             responses,
             callbacks,
@@ -732,3 +793,21 @@ class FinalOperationBuilder:
                     )
                 )
         return tuple(declarations)
+
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._generation_contract import (
+        FieldSlot,
+        FieldUseBinding,
+        FrozenLiteral,
+        SourceDocumentId,
+        TypeUseRole,
+    )
+    from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, SchemaUseObservation
+    from datamodel_code_generator.parser.openapi_contract_fields import FinalFieldInventory
+    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
+    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector
+    from datamodel_code_generator.parser.openapi_media import MediaOwner
+    from datamodel_code_generator.parser.openapi_scope import ApiDeclarationFrame
+    from datamodel_code_generator.types import DataType

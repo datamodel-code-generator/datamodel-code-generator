@@ -16,19 +16,6 @@ from datamodel_code_generator._generation_contract import (
     UnionType,
 )
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-
-    from datamodel_code_generator._generation_contract import (
-        FieldUseBinding,
-        FinalModelSymbol,
-        FinalPythonType,
-        GeneratedTypeContractBatch,
-        SymbolId,
-        TypeUseBinding,
-        TypeUseId,
-    )
-
 
 def _type_symbols(value: FinalPythonType) -> Iterator[SymbolId]:
     match value:
@@ -172,3 +159,17 @@ def require_type_bindings(
             for diagnostic in failures
         )
     return tuple(dict.fromkeys(diagnostics))
+
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from datamodel_code_generator._generation_contract import (
+        FieldUseBinding,
+        FinalModelSymbol,
+        FinalPythonType,
+        GeneratedTypeContractBatch,
+        SymbolId,
+        TypeUseBinding,
+        TypeUseId,
+    )

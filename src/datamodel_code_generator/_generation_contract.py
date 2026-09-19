@@ -5,17 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, NewType, Protocol, TypeAlias, TypeVar
 
-if TYPE_CHECKING:
-    from decimal import Decimal
-
-    from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._python_type_binding import BoundPythonType
-    from datamodel_code_generator.config import OpenAPIParserConfig
-    from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.binding import BackendFieldFacts, BackendModelFacts, BackendName
-    from datamodel_code_generator.parser.base import Result
-    from datamodel_code_generator.parser.openapi import OpenAPIParser
-
 AttemptId = NewType("AttemptId", int)
 BatchT_co = TypeVar("BatchT_co", covariant=True)
 
@@ -368,7 +357,11 @@ FinalPythonType: TypeAlias = UnannotatedPythonType | AnnotatedType
 
 
 TypeProjectionReason: TypeAlias = Literal[
-    "BND_TYPE_EXPRESSION_UNSUPPORTED", "BND_CUSTOM_BINDING_REQUIRED", "BND_SYMBOL_NOT_EMITTED"
+    "BND_TYPE_EXPRESSION_UNSUPPORTED",
+    "BND_CUSTOM_BINDING_REQUIRED",
+    "BND_SYMBOL_NOT_EMITTED",
+    "BND_UNRESOLVED_REFERENCE",
+    "BND_AMBIGUOUS_REPLACEMENT",
 ]
 
 
@@ -377,9 +370,7 @@ class TypeProjection:
     """Keep unsupported final-type forms as finite consumer diagnostics."""
 
     value: FinalPythonType | None
-    reason: (
-        Literal["BND_TYPE_EXPRESSION_UNSUPPORTED", "BND_CUSTOM_BINDING_REQUIRED", "BND_SYMBOL_NOT_EMITTED"] | None
-    ) = None
+    reason: TypeProjectionReason | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -564,3 +555,15 @@ class GeneratedTypeContractBatch:
     diagnostics: tuple[BindingDiagnostic, ...]
     security_schemes: tuple[WireDeclaration, ...] = ()
     api_scope: bool = False
+
+
+if TYPE_CHECKING:
+    from decimal import Decimal
+
+    from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model.binding import BackendFieldFacts, BackendModelFacts, BackendName
+    from datamodel_code_generator.parser.base import Result
+    from datamodel_code_generator.parser.openapi import OpenAPIParser

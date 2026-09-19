@@ -24,22 +24,9 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from datamodel_code_generator._generation_contract import (
-        FinalPythonType,
-        GeneratedEnumMember,
-        GraphObjectId,
-        SymbolId,
-        TypeProjectionReason,
-    )
-    from datamodel_code_generator.parser.openapi_contract import PreexistingNullObservation
-    from datamodel_code_generator.parser.openapi_contract_store import TypeRecipe
-
-
 _TYPE_UNSUPPORTED: Final = "BND_TYPE_EXPRESSION_UNSUPPORTED"
 _SYMBOL_NOT_EMITTED: Final = "BND_SYMBOL_NOT_EMITTED"
+_UNRESOLVED_REFERENCE: Final = "BND_UNRESOLVED_REFERENCE"
 
 
 class _UnsupportedTypeError(Exception):
@@ -124,16 +111,39 @@ class FinalTypeProjector:
         references: Mapping[GraphObjectId, ReferenceTypeBinding],
         enum_members: Mapping[GraphObjectId, tuple[GeneratedEnumMember, ...]],
         root_recipes: Mapping[GraphObjectId, TypeRecipe] | None = None,
+        unresolved: frozenset[GraphObjectId] = frozenset(),
+        unresolved_nodes: frozenset[GraphObjectId] = frozenset(),
     ) -> None:
         """Borrow only value mappings established from actual final reference ownership."""
         self._references = references
         self._enum_members = enum_members
         self._root_recipes = root_recipes or {}
+        self._unresolved = unresolved
+        self._unresolved_nodes = unresolved_nodes
         self._active: set[GraphObjectId] = set()
 
     def with_references(self, references: Mapping[GraphObjectId, ReferenceTypeBinding]) -> FinalTypeProjector:
         """Use declaration-owned terminals without changing final field/module resolution."""
-        return FinalTypeProjector(references, self._enum_members, self._root_recipes)
+        return FinalTypeProjector(
+            references, self._enum_members, self._root_recipes, self._unresolved, self._unresolved_nodes
+        )
+
+    def project_field(self, field: GraphObjectId, recipe: TypeRecipe) -> TypeProjection:
+        """Preserve unresolved roots through actual field copies and completed collapses."""
+        if field in self._unresolved_nodes:
+            return TypeProjection(None, "BND_UNRESOLVED_REFERENCE")
+        return self.project(recipe)
+
+    def reference_use(self, reference: GraphObjectId, *, serialize_as_any: bool) -> TypeProjection:
+        """Project a captured component reference with its adopted nullable/use policy."""
+        try:
+            value = self._reference_value(reference, serialize_as_any=serialize_as_any)
+        except _UnsupportedTypeError as error:
+            return TypeProjection(None, error.reason)
+        binding = self._references.get(reference)
+        if binding is not None and binding.nullable and not binding.is_alias:
+            value = _ordered_union((value, NoneType()), preserve_order=False)
+        return TypeProjection(value)
 
     def project(self, recipe: TypeRecipe) -> TypeProjection:
         """Return a finite unsupported-type diagnostic without changing model acceptance."""
@@ -157,6 +167,8 @@ class FinalTypeProjector:
         return None if unknown else False
 
     def _project(self, recipe: TypeRecipe) -> FinalPythonType:
+        if recipe.node in self._unresolved_nodes:
+            raise _UnsupportedTypeError(_UNRESOLVED_REFERENCE)
         if recipe.node in self._active:
             msg = "A final type recipe contains a structural cycle"
             raise BindingCaptureError(msg)
@@ -188,12 +200,19 @@ class FinalTypeProjector:
         return self._project_atomic(recipe), False
 
     def _project_reference(self, reference: GraphObjectId, recipe: TypeRecipe) -> FinalPythonType:
+        return self._reference_value(
+            reference, serialize_as_any="serialize_as_any" in recipe.modifiers and recipe.alias is None
+        )
+
+    def _reference_value(self, reference: GraphObjectId, *, serialize_as_any: bool) -> FinalPythonType:
+        if reference in self._unresolved:
+            raise _UnsupportedTypeError(_UNRESOLVED_REFERENCE)
         if (binding := self._references.get(reference)) is None:
             if (root := self._root_recipes.get(reference)) is not None:
                 return self._project(root)
             raise _UnsupportedTypeError(_SYMBOL_NOT_EMITTED)
         result: FinalPythonType = GeneratedSymbolType(binding.symbol)
-        if "serialize_as_any" in recipe.modifiers and binding.serialize_as_any and recipe.alias is None:
+        if serialize_as_any and binding.serialize_as_any:
             result = GenericType(ImportedType(Import(import_="SerializeAsAny", from_="pydantic")), (result,))
         return result
 
@@ -294,3 +313,17 @@ def _freeze_literal_atom(*, value: bool | int | str) -> LiteralScalar:
             return LiteralScalar("int", value)
         case str():
             return LiteralScalar("str", value)
+
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from datamodel_code_generator._generation_contract import (
+        FinalPythonType,
+        GeneratedEnumMember,
+        GraphObjectId,
+        SymbolId,
+        TypeProjectionReason,
+    )
+    from datamodel_code_generator.parser.openapi_contract import PreexistingNullObservation
+    from datamodel_code_generator.parser.openapi_contract_store import TypeRecipe
