@@ -1,0 +1,108 @@
+{
+  "node": "BackendModelFacts",
+  "backend": "pydantic",
+  "parameters": [],
+  "configuration": [
+    {
+      "node": "BackendSetting",
+      "name": "extra",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "str",
+          "value": "forbid"
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "strict",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "validate_by_name",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "populate_by_name",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": true
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "validate_by_alias",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "frozen",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "alias_generator",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    }
+  ],
+  "functional_typeddict": false,
+  "extra_items_present": false,
+  "extra_items": null
+}

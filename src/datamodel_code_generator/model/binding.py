@@ -4,17 +4,33 @@ from __future__ import annotations
 
 import ast
 import tokenize
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
 from io import StringIO
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, NoReturn, TypeAlias, cast
 
-from datamodel_code_generator._binding_literals import UnsupportedBindingValueError, freeze_literal
+from datamodel_code_generator._binding_literals import UnsupportedBindingValueError, freeze_argument, freeze_literal
 from datamodel_code_generator._generation_contract import (
+    AnnotatedType,
     BindingCaptureError,
+    BoundType,
+    BuiltinType,
+    ConstructorType,
+    GeneratedSymbolType,
+    GenericType,
+    ImportedType,
     LiteralScalar,
+    LiteralType,
     NoneDefaultProvenance,
+    NoneType,
     SourceExpression,
+    UnionType,
+)
+from datamodel_code_generator._python_type_annotation import (
+    PythonTypeBoundName,
+    PythonTypeName,
+    PythonTypeQualifiedName,
+    PythonTypeRuntimeSymbol,
 )
 
 if TYPE_CHECKING:
@@ -26,14 +42,16 @@ if TYPE_CHECKING:
         FinalPythonType,
         FrozenLiteral,
         SymbolId,
+        TypeArgument,
     )
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
 
 Tokens: TypeAlias = tuple[tokenize.TokenInfo, ...]
 _PAIR_SIZE: Final = 2
 _ANNOTATED_FIELD_MIN_TOKENS: Final = 3
 
+BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 EmissionForm: TypeAlias = Literal["class_field", "typeddict_entry"]
 
 
@@ -42,6 +60,7 @@ class FrozenImportBindings:
     """Keep actual imports from the final module, including independent alias identity."""
 
     values: tuple[Import, ...]
+    symbols: tuple[tuple[SymbolId, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +72,7 @@ class ExpectedFieldDeclaration:
     slot: FieldSlot
     model_name: str
     native_name: str
-    backend: Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
+    backend: BackendName
     type: FinalPythonType
     excluded_by_tag: bool = False
     form: EmissionForm = "class_field"
@@ -64,6 +83,17 @@ class ExpectedFieldDeclaration:
 DefaultKind: TypeAlias = Literal[
     "absent", "none", "literal", "expression", "factory", "msgspec_unset", "pydantic_missing", "opaque"
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class MetaLayer:
+    """Locate emitted metadata on an already projected structural type node."""
+
+    node_path: tuple[int, ...]
+    ordinal: int
+    keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...]
+    line: int
+    column: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +110,7 @@ class EmittedFieldFacts:
     null_type_in_annotation: bool
     qualifiers: tuple[str, ...]
     constructor_keywords: tuple[tuple[str, FrozenLiteral | SourceExpression], ...]
+    meta_layers: tuple[MetaLayer, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,10 +118,10 @@ class FieldArtifactDeclaration:
     """Retain a matched statement's unexecuted source and exact artifact location."""
 
     expected: ExpectedFieldDeclaration
-    annotation: str
+    annotation: str | None
     assignment: str | None
-    line: int
-    column: int
+    line: int | None
+    column: int | None
     facts: EmittedFieldFacts
 
 
@@ -211,7 +242,7 @@ def _import_identity(import_: Import) -> tuple[str, str]:
     return import_.alias or import_.import_, f"{import_.from_}.{import_.import_}"
 
 
-def _import_names(tokens: Tokens) -> tuple[tuple[str, str], ...]:
+def _import_names(tokens: Tokens) -> tuple[tuple[str, str, str], ...]:
     """Read actual top-level imports, including parenthesized import lists."""
     names = tuple(token.string for token in tokens)
     if names[0] == "from" and "import" in names:
@@ -225,7 +256,7 @@ def _import_names(tokens: Tokens) -> tuple[tuple[str, str], ...]:
         members = tokens[1:]
     else:
         return ()
-    result: list[tuple[str, str]] = []
+    result: list[tuple[str, str, str]] = []
     for part in _split(members, ","):
         if not part:
             continue
@@ -239,7 +270,9 @@ def _import_names(tokens: Tokens) -> tuple[tuple[str, str], ...]:
             alias = target if module else target.partition(".")[0] if target is not None else None
         if target is None or alias is None:
             continue
-        result.append((alias, f"{module}.{target}" if module else target))
+        identity = f"{module}.{target}" if module else target
+        resolution_base = identity if module or "as" in words else target.partition(".")[0]
+        result.append((alias, identity, resolution_base))
     return tuple(result)
 
 
@@ -485,6 +518,242 @@ def _class_field(tokens: Tokens) -> tuple[str, Tokens, Tokens | None] | None:
     return tokens[0].string, parts[0], parts[1] if len(parts) == _PAIR_SIZE else None
 
 
+def _expression_tokens(text: str) -> Tokens:
+    statements = tuple(_statements(text + "\n"))
+    return statements[0].tokens if len(statements) == 1 else ()
+
+
+def _union_parts(tokens: Tokens) -> tuple[Tokens | None, ...] | None:
+    """Preserve source order; the implicit Optional null has no source token."""
+    parts = _split(_unparenthesized(tokens), "|")
+    return parts if len(parts) > 1 else None
+
+
+class _TypePlacementMatcher:
+    """Corroborate projected identities; source tokens never create type identities."""
+
+    def __init__(self, bindings: dict[str, str], symbols: dict[SymbolId, str]) -> None:
+        self.bindings = bindings
+        self.symbols = symbols
+        self.layers: list[MetaLayer] = []
+        self.layer_counts: dict[tuple[int, ...], int] = {}
+
+    def _union(self, tokens: Tokens) -> tuple[Tokens | None, ...] | None:
+        if (parts := _union_parts(tokens)) is not None:
+            return self._flatten_unions(parts)
+        if (application := _application(tokens, "[")) is None:
+            return None
+        callee, arguments = application
+        match _resolved_name(callee, self.bindings):
+            case "typing.Union" | "typing_extensions.Union":
+                return self._flatten_unions(arguments)
+            case "typing.Optional" | "typing_extensions.Optional" if len(arguments) == 1:
+                return (*(self._union(arguments[0]) or arguments), None)
+            case _:
+                return None
+
+    def _flatten_unions(self, children: tuple[Tokens | None, ...]) -> tuple[Tokens | None, ...]:
+        return tuple(
+            nested
+            for child in children
+            for nested in ((self._union(child) or (child,)) if child is not None else (None,))
+        )
+
+    def _metadata(self, tokens: Tokens, path: tuple[int, ...]) -> Tokens:
+        while (application := _application(tokens, "[")) is not None:
+            callee, arguments = application
+            if _resolved_name(callee, self.bindings) not in {"typing.Annotated", "typing_extensions.Annotated"}:
+                break
+            if len(arguments) < _PAIR_SIZE:
+                self._mismatch()
+            for metadata in arguments[1:]:
+                if (call := _application(metadata, "(")) is None:
+                    continue
+                if _resolved_name(call[0], self.bindings) != "msgspec.Meta":
+                    continue
+                keywords: list[tuple[str, FrozenLiteral | SourceExpression]] = []
+                for argument in call[1]:
+                    pair = _split(argument, "=")
+                    if len(pair) != _PAIR_SIZE or len(pair[0]) != 1 or pair[0][0].type != tokenize.NAME:
+                        self._mismatch()
+                    keywords.append((pair[0][0].string, _literal_or_syntax(pair[1])))
+                ordinal = self.layer_counts.get(path, 0)
+                self.layer_counts[path] = ordinal + 1
+                self.layers.append(
+                    MetaLayer(path, ordinal, tuple(keywords), metadata[0].start[0], metadata[0].start[1])
+                )
+            tokens = arguments[0]
+        return tokens
+
+    def match_field(self, expected: FinalPythonType, tokens: Tokens) -> None:
+        """Separate field policy wrappers from the existing data-type skeleton."""
+        tokens = self._metadata(tokens, ())
+        while (application := _application(tokens, "[")) is not None:
+            callee, arguments = application
+            if (
+                _resolved_name(callee, self.bindings)
+                not in {
+                    "typing.Required",
+                    "typing_extensions.Required",
+                    "typing.NotRequired",
+                    "typing_extensions.NotRequired",
+                    "typing.ReadOnly",
+                    "typing_extensions.ReadOnly",
+                    "typing.ClassVar",
+                    "typing_extensions.ClassVar",
+                }
+                or len(arguments) != 1
+            ):
+                break
+            tokens = self._metadata(arguments[0], ())
+        expected_members = expected.members if isinstance(expected, UnionType) else (expected,)
+        if (actual := self._union(tokens)) is None:
+            self._match(expected, tokens, ())
+            return
+        has_null = any(isinstance(member, NoneType) for member in expected_members)
+        actual = tuple(member for member in actual if not (member is None or _text(member) == "None") or has_null)
+        actual = tuple(
+            member
+            for member in actual
+            if member is None
+            or _resolved_name(member, self.bindings)
+            not in {
+                "msgspec.UnsetType",
+                "pydantic.experimental.missing_sentinel.MISSING",
+            }
+        )
+        if len(expected_members) != len(actual):
+            # Field-level Optional can enclose a complete union rather than flatten it.
+            if len(actual) == 1 and actual[0] is not None:
+                self._match(expected, actual[0], ())
+                return
+            self._mismatch()
+        for index, (member, annotation) in enumerate(zip(expected_members, actual, strict=True)):
+            self._match(member, annotation, (index,) if isinstance(expected, UnionType) else ())
+
+    @staticmethod
+    def _mismatch() -> NoReturn:
+        msg = "Accepted field annotation does not match its projected type"
+        raise BindingCaptureError(msg)
+
+    def _match(  # ruff: ignore[too-many-branches] # Exhaustive finite type alternatives.
+        self, expected: FinalPythonType, tokens: Tokens | None, path: tuple[int, ...]
+    ) -> None:
+        if tokens is None:
+            if not isinstance(expected, NoneType):
+                self._mismatch()
+            return
+        tokens = self._metadata(tokens, path)
+        match expected:
+            case BuiltinType(name):
+                matched = _dotted_name(tokens) == name and name not in self.bindings
+            case NoneType():
+                matched = _text(tokens) == "None"
+            case ImportedType(import_, suffix):
+                identity = _import_identity(import_)[1]
+                matched = _resolved_name(tokens, self.bindings) == ".".join((identity, *suffix))
+            case GeneratedSymbolType(symbol):
+                matched = _dotted_name(tokens) == self.symbols.get(symbol)
+            case BoundType():
+                matched = self._match_bound(expected, tokens)
+            case GenericType():
+                self._match_generic(expected, tokens, path)
+                return
+            case UnionType(members, _):
+                if (children := self._union(tokens)) is None or len(children) != len(members):
+                    self._mismatch()
+                for index, (member, child) in enumerate(zip(members, children, strict=True)):
+                    self._match(member, child, (*path, index))
+                return
+            case LiteralType():
+                matched = self._match_literal(expected, tokens)
+            case ConstructorType():
+                matched = self._match_constructor(expected, tokens, path)
+            case AnnotatedType(base, _):
+                self._match(base, tokens, path)
+                return
+        if not matched:
+            self._mismatch()
+
+    def _match_bound(self, expected: BoundType, tokens: Tokens) -> bool:
+        match expected.binding.expression:
+            case PythonTypeRuntimeSymbol(module, parts):
+                matched = _resolved_name(tokens, self.bindings) == ".".join((module, *parts))
+            case PythonTypeBoundName(_, module, name):
+                matched = (
+                    _resolved_name(tokens, self.bindings) == f"{module}.{name}"
+                    if module
+                    else _dotted_name(tokens) == name
+                )
+            case PythonTypeName(name):
+                matched = _dotted_name(tokens) == name
+            case PythonTypeQualifiedName(parts):
+                matched = _dotted_name(tokens) == ".".join(parts)
+            case _:
+                matched = False
+        return matched
+
+    def _match_generic(self, expected: GenericType, tokens: Tokens, path: tuple[int, ...]) -> None:
+        base, arguments, tuple_form = expected.base, expected.arguments, expected.tuple_form
+        if (application := _application(tokens, "[")) is None:
+            self._mismatch()
+        callee, children = application
+        if tuple_form == "ellipsis":
+            if not children or _text(children[-1]) != "...":
+                self._mismatch()
+            children = children[:-1]
+        if (
+            isinstance(base, BuiltinType)
+            and _resolved_name(callee, self.bindings) == f"typing.{base.name.capitalize()}"
+        ):
+            pass
+        else:
+            self._match(base, callee, (*path, -1))
+        if len(children) != len(arguments):
+            self._mismatch()
+        for index, (argument, child) in enumerate(zip(arguments, children, strict=True)):
+            self._match(argument, child, (*path, index))
+
+    def _match_literal(self, expected: LiteralType, tokens: Tokens) -> bool:
+        values = expected.values
+        application = _application(tokens, "[")
+        matched = (
+            application is not None
+            and _resolved_name(application[0], self.bindings)
+            in {
+                "typing.Literal",
+                "typing_extensions.Literal",
+            }
+            and len(application[1]) == len(values)
+        )
+        if matched and application is not None:
+            for value, child in zip(values, application[1], strict=True):
+                if isinstance(value, LiteralScalar):
+                    matched = matched and _literal_or_syntax(child) == value
+                else:
+                    matched = matched and _dotted_name(child) == f"{self.symbols.get(value.symbol)}.{value.name}"
+        return matched
+
+    def _match_constructor(self, expected: ConstructorType, tokens: Tokens, path: tuple[int, ...]) -> bool:
+        callee, keywords = expected.callable, expected.keywords
+        if (application := _application(tokens, "(")) is None:
+            self._mismatch()
+        self._match(callee, application[0], path)
+        actual_keywords = tuple(_split(argument, "=") for argument in application[1])
+        matched = len(actual_keywords) == len(keywords)
+        if matched:
+            for (name, value), pair in zip(keywords, actual_keywords, strict=True):
+                if len(pair) != _PAIR_SIZE or _text(pair[0]) != name:
+                    matched = False
+                    break
+                matched = matched and (
+                    _text(pair[1]) == _text(_expression_tokens(value.text))
+                    if isinstance(value, SourceExpression)
+                    else _literal_or_syntax(pair[1]) == value
+                )
+        return matched
+
+
 class _ArtifactIndexBuilder:
     """Keep statement lookup linear in final fields and artifact tokens."""
 
@@ -494,14 +763,15 @@ class _ArtifactIndexBuilder:
             if field.attempt != field.slot.attempt:
                 msg = "A field expectation mixes capture attempts"
                 raise BindingCaptureError(msg)
-            if not field.excluded_by_tag:
-                fields = self.wanted.setdefault(field.model_name, {})
-                if field.native_name in fields:
-                    msg = "Duplicate field expectation in one consumer"
-                    raise BindingCaptureError(msg)
-                fields[field.native_name] = field
+            fields = self.wanted.setdefault(field.model_name, {})
+            if field.native_name in fields:
+                msg = "Duplicate field expectation in one consumer"
+                raise BindingCaptureError(msg)
+            fields[field.native_name] = field
         self.bindings: dict[str, str] = {}
-        self.allowed = dict(_import_identity(import_) for import_ in imports.values)
+        self.allowed = {_import_identity(import_) for import_ in imports.values}
+        self.symbols = dict(imports.symbols)
+        self.symbols.update((field.consumer, field.model_name) for field in expected)
         self.definitions: list[ArtifactDefinition] = []
         self.found: dict[tuple[str, str], FieldArtifactDeclaration] = {}
         self.defined: set[str] = set()
@@ -516,9 +786,9 @@ class _ArtifactIndexBuilder:
 
     def top_level(self, tokens: Tokens) -> str | None:
         """Read only top-level definitions, preserving actual import binding order."""
-        for alias, identity in _import_names(tokens):
-            if self.allowed.get(alias) == identity:
-                self.bindings[alias] = identity
+        for alias, identity, resolution_base in _import_names(tokens):
+            if (alias, identity) in self.allowed:
+                self.bindings[alias] = resolution_base
             else:
                 self.bindings.pop(alias, None)
             self.definitions.append(ArtifactDefinition(alias, "import", tokens[0].start[0]))
@@ -553,7 +823,7 @@ class _ArtifactIndexBuilder:
                 None,
                 annotation[0].start[0],
                 annotation[0].start[1],
-                _emitted_facts(field, annotation, None, self.bindings),
+                self._field_facts(field, annotation, None),
             )
 
     def class_field(self, current_class: str, tokens: Tokens) -> None:
@@ -563,6 +833,9 @@ class _ArtifactIndexBuilder:
         name, annotation, assignment = parsed
         if (field := fields.get(name)) is None or field.form != "class_field":
             return
+        if field.excluded_by_tag:
+            msg = "A tag-excluded field is declared in its accepted artifact"
+            raise BindingCaptureError(msg)
         key = current_class, name
         if key in self.found:
             msg = "An accepted class declares the same expected field more than once"
@@ -573,14 +846,45 @@ class _ArtifactIndexBuilder:
             _text(assignment) if assignment is not None else None,
             tokens[0].start[0],
             tokens[0].start[1],
-            _emitted_facts(field, annotation, assignment, self.bindings),
+            self._field_facts(field, annotation, assignment),
         )
+
+    def _field_facts(
+        self, field: ExpectedFieldDeclaration, annotation: Tokens, assignment: Tokens | None
+    ) -> EmittedFieldFacts:
+        matcher = _TypePlacementMatcher(self.bindings, self.symbols)
+        matcher.match_field(field.type, annotation)
+        return replace(_emitted_facts(field, annotation, assignment, self.bindings), meta_layers=tuple(matcher.layers))
 
     def finish(self, body: str, expected: tuple[ExpectedFieldDeclaration, ...]) -> BuiltinFieldArtifactIndex:
         """Freeze in expected consumer order after proving each requested declaration exists."""
         ordered: list[FieldArtifactDeclaration] = []
         for field in expected:
             if field.excluded_by_tag:
+                if field.model_name not in self.defined:
+                    msg = "A tag-excluded field's final symbol is absent from its accepted artifact"
+                    raise BindingCaptureError(msg)
+                ordered.append(
+                    FieldArtifactDeclaration(
+                        field,
+                        None,
+                        None,
+                        None,
+                        None,
+                        EmittedFieldFacts(
+                            emitted=False,
+                            emitted_default_kind="absent",
+                            emitted_default_value=None,
+                            factory_present=False,
+                            factory_expression=None,
+                            unset_default=False,
+                            unset_type_in_annotation=False,
+                            null_type_in_annotation=False,
+                            qualifiers=(),
+                            constructor_keywords=(),
+                        ),
+                    )
+                )
                 continue
             if (declaration := self.found.get((field.model_name, field.native_name))) is None:
                 msg = "An expected final field is absent from its accepted artifact"
@@ -614,6 +918,296 @@ class FieldProjectionContext:
     preexisting_null: bool | None
     configuration_nullable: bool
     builtin_semantics: bool
+    backend: BackendName | None = None
+    constructor_init: bool | None = None
+    kw_only: bool | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class KnownBackendValue:
+    """Retain a finite declaration, including explicit None and False."""
+
+    value: TypeArgument
+    state: Literal["known"] = "known"
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeBackendValue:
+    """Identify an effect that generation must never execute to discover."""
+
+    reason: Literal["factory_result", "fields_set", "expression"]
+    state: Literal["runtime"] = "runtime"
+
+
+@dataclass(frozen=True, slots=True)
+class OpaqueBackendValue:
+    """Keep unavailable semantics distinct from builtin defaults."""
+
+    reason: Literal["custom_origin", "unsupported_value", "model_policy_required"]
+    state: Literal["opaque"] = "opaque"
+
+
+BackendValue: TypeAlias = KnownBackendValue | RuntimeBackendValue | OpaqueBackendValue
+
+
+@dataclass(frozen=True, slots=True)
+class BackendFieldFacts:
+    """Freeze builtin field declarations separately from their runtime effects."""
+
+    backend: BackendName
+    declarations: tuple[tuple[str, BackendValue], ...]
+    emitted: EmittedFieldFacts
+    constructor_init: BackendValue
+    init_var: BackendValue
+    kw_only: BackendValue
+    factory_result: BackendValue
+    fields_set: BackendValue
+
+
+def _backend_value(value: object) -> BackendValue:
+    try:
+        return KnownBackendValue(freeze_argument(value))
+    except UnsupportedBindingValueError:
+        return OpaqueBackendValue("unsupported_value")
+
+
+def _constructor_setting(name: str, emitted: EmittedFieldFacts, *, fallback: bool | None) -> BackendValue:
+    for key, value in reversed(emitted.constructor_keywords):
+        if key == name:
+            return (
+                RuntimeBackendValue("expression") if isinstance(value, SourceExpression) else KnownBackendValue(value)
+            )
+    return _backend_value(fallback) if fallback is not None else OpaqueBackendValue("model_policy_required")
+
+
+def freeze_builtin_field_facts(
+    field: DataModelFieldBase, *, emitted: EmittedFieldFacts, projection: FieldProjectionContext
+) -> BackendFieldFacts:
+    """Read finite raw declarations and accepted syntax, without backend getter calls."""
+    if (backend := projection.backend) is None:
+        msg = "A builtin field projection requires its established backend"
+        raise BindingCaptureError(msg)
+    names = (
+        "name",
+        "original_name",
+        "alias",
+        "validation_aliases",
+        "serialization_alias",
+        "use_serialization_alias",
+    )
+    if not projection.builtin_semantics:
+        opaque = OpaqueBackendValue("custom_origin")
+        return BackendFieldFacts(
+            backend, tuple((name, opaque) for name in names), emitted, opaque, opaque, opaque, opaque, opaque
+        )
+    # These are declared data attributes. Constraint/default rendering is owned by
+    # emitted, not reconstructed from raw extras or another field getter.
+    declarations = (
+        ("name", _backend_value(field.name)),
+        ("original_name", _backend_value(field.original_name)),
+        ("alias", _backend_value(field.alias)),
+        ("validation_aliases", _backend_value(field.validation_aliases)),
+        ("serialization_alias", _backend_value(field.serialization_alias)),
+        ("use_serialization_alias", _backend_value(field.use_serialization_alias)),
+    )
+    if backend == "typeddict":
+        constructor_init = init_var = kw_only = _backend_value(None)
+    else:
+        constructor_init = (
+            _backend_value(value=False)
+            if not emitted.emitted or "ClassVar" in emitted.qualifiers
+            else _constructor_setting("init", emitted, fallback=projection.constructor_init)
+        )
+        init_var = _constructor_setting("init_var", emitted, fallback="InitVar" in emitted.qualifiers)
+        kw_only = _constructor_setting("kw_only", emitted, fallback=projection.kw_only)
+    return BackendFieldFacts(
+        backend,
+        declarations,
+        emitted,
+        constructor_init,
+        init_var,
+        kw_only,
+        RuntimeBackendValue("factory_result") if emitted.factory_present else _backend_value(None),
+        RuntimeBackendValue("fields_set") if backend == "pydantic" else _backend_value(None),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class BackendSetting:
+    """Distinguish an omitted declaration from explicit None and unknown presence."""
+
+    name: str
+    present: bool | None
+    value: BackendValue
+
+
+@dataclass(frozen=True, slots=True)
+class ModelProjectionContext:
+    """Carry final backend and type identities without invoking model callbacks."""
+
+    backend: BackendName
+    builtin_semantics: bool
+    functional_typeddict: bool = False
+    extra_items: FinalPythonType | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class BackendModelFacts:
+    """Keep finite adopted model declarations independently of runtime defaults."""
+
+    backend: BackendName
+    parameters: tuple[BackendSetting, ...]
+    configuration: tuple[BackendSetting, ...]
+    functional_typeddict: bool
+    extra_items_present: bool | None
+    extra_items: FinalPythonType | None
+
+
+_DATACLASS_PARAMETERS: Final = (
+    "init",
+    "repr",
+    "eq",
+    "order",
+    "unsafe_hash",
+    "frozen",
+    "match_args",
+    "kw_only",
+    "slots",
+    "weakref_slot",
+)
+_MSGSPEC_PARAMETERS: Final = (
+    "tag",
+    "tag_field",
+    "array_like",
+    "forbid_unknown_fields",
+    "omit_defaults",
+    "kw_only",
+    "frozen",
+    "rename",
+)
+_PYDANTIC_CONFIGURATION: Final = (
+    "extra",
+    "strict",
+    "validate_by_name",
+    "populate_by_name",
+    "validate_by_alias",
+    "frozen",
+    "alias_generator",
+)
+
+
+def _model_parameters(backend: BackendName) -> tuple[str, ...]:
+    match backend:
+        case "dataclass" | "pydantic_dataclass":
+            return _DATACLASS_PARAMETERS
+        case "msgspec":
+            return _MSGSPEC_PARAMETERS
+        case "typeddict":
+            return ("total", "closed")
+        case "pydantic":
+            return ()
+
+
+def _raw_mapping(value: object) -> dict[str, object] | None:
+    if type(value) is dict and all(type(key) is str for key in cast("dict[object, object]", value)):
+        return cast("dict[str, object]", value)
+    return None
+
+
+def _syntax_value(value: object) -> BackendValue:
+    if type(value) is not str:
+        return OpaqueBackendValue("unsupported_value")
+    return KnownBackendValue(_literal_or_syntax(_expression_tokens(value)))
+
+
+def _freeze_settings(names: tuple[str, ...], values: dict[str, BackendValue] | None) -> tuple[BackendSetting, ...]:
+    if values is None:
+        return tuple(BackendSetting(name, None, OpaqueBackendValue("custom_origin")) for name in names)
+    return tuple(
+        BackendSetting(name, name in values, values[name] if name in values else _backend_value(None)) for name in names
+    )
+
+
+def _model_parameter_values(  # ruff: ignore[too-many-return-statements] # Finite backend alternatives.
+    model: DataModel, backend: BackendName
+) -> tuple[dict[str, BackendValue] | None, bool]:
+    internal: dict[str, object] = model._internal_template_data  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] # Read-only builtin-owned keys.
+    match backend:
+        case "dataclass" | "pydantic_dataclass":
+            if (arguments := _raw_mapping(model.dataclass_arguments)) is None:
+                return None, False
+            # Both builtin dataclass templates omit False/None decorator arguments.
+            return {
+                name: _backend_value(value)
+                for name, value in arguments.items()
+                if value is not False and value is not None
+            }, False
+        case "msgspec":
+            if (raw := _raw_mapping(model.extra_template_data.get("base_class_kwargs", {}))) is None:
+                return None, False
+            if (adopted := _raw_mapping(internal.get("base_class_kwargs", {}))) is None:
+                return None, False
+            values = {name: _backend_value(value) for name, value in raw.items() if name in _MSGSPEC_PARAMETERS}
+            values.update(
+                (name, _syntax_value(value)) for name, value in adopted.items() if name in _MSGSPEC_PARAMETERS
+            )
+            return values, False
+        case "typeddict":
+            if (arguments := _raw_mapping(internal.get("typed_dict_kwargs", {}))) is None:
+                return None, False
+            return {name: _syntax_value(value) for name, value in arguments.items()}, "extra_items" in arguments
+        case "pydantic":
+            return {}, False
+
+
+def _model_configuration(model: DataModel, backend: BackendName) -> dict[str, BackendValue] | None:
+    if backend not in {"pydantic", "pydantic_dataclass"}:
+        return {}
+    key = "config_items" if backend == "pydantic" else "_safe_config_items"
+    values: object = model._internal_template_data.get(key, ())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] # Already normalized by the renderer owner.
+    if type(values) not in {tuple, list}:
+        return None
+    settings: dict[str, BackendValue] = {}
+    for item in cast("tuple[object, ...] | list[object]", values):
+        if type(item) is not tuple:
+            return None
+        pair = cast("tuple[object, ...]", item)
+        if len(pair) != _PAIR_SIZE or type(pair[0]) is not str:
+            return None
+        if pair[0] in _PYDANTIC_CONFIGURATION:
+            settings[pair[0]] = _syntax_value(pair[1])
+    return settings
+
+
+def freeze_builtin_model_facts(model: DataModel, *, projection: ModelProjectionContext) -> BackendModelFacts:
+    """Read final finite template inputs without rendering or recomputing configuration."""
+    backend = projection.backend
+    if not projection.builtin_semantics:
+        return BackendModelFacts(
+            backend,
+            _freeze_settings(_model_parameters(backend), None),
+            _freeze_settings(_PYDANTIC_CONFIGURATION, None) if backend in {"pydantic", "pydantic_dataclass"} else (),
+            projection.functional_typeddict,
+            None,
+            None,
+        )
+    values, extra_present = _model_parameter_values(model, backend)
+    if values is not None and extra_present != (projection.extra_items is not None):
+        msg = "TypedDict extra_items does not match its captured final type"
+        raise BindingCaptureError(msg)
+    configuration = (
+        _freeze_settings(_PYDANTIC_CONFIGURATION, _model_configuration(model, backend))
+        if backend in {"pydantic", "pydantic_dataclass"}
+        else ()
+    )
+    return BackendModelFacts(
+        backend,
+        _freeze_settings(_model_parameters(backend), values),
+        configuration,
+        projection.functional_typeddict,
+        extra_present if values is not None else None,
+        projection.extra_items,
+    )
 
 
 def freeze_none_default_provenance(

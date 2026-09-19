@@ -244,6 +244,50 @@
         ]
       },
       "reason": null
+    },
+    "native": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "UUID",
+          "from_": "uuid",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      },
+      "reason": null
+    },
+    "bound_native": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "BoundType",
+        "binding": {
+          "node": "BoundPythonType",
+          "expression": {
+            "node": "PythonTypeRuntimeSymbol",
+            "module": "argparse",
+            "qualname_parts": [
+              "HelpFormatter",
+              "_Section"
+            ]
+          },
+          "imports": [
+            {
+              "node": "Import",
+              "import_": "argparse",
+              "from_": null,
+              "alias": null,
+              "reference_path": null,
+              "keep_unaliased": false
+            }
+          ]
+        }
+      },
+      "reason": null
     }
   },
   "Child": {

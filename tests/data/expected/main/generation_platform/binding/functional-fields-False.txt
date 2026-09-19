@@ -15,7 +15,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": false,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -36,7 +37,8 @@
       "qualifiers": [
         "ReadOnly"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -57,7 +59,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -78,7 +81,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -99,7 +103,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -120,7 +125,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   }
 ]

@@ -1,0 +1,150 @@
+{
+  "node": "BackendModelFacts",
+  "backend": "dataclass",
+  "parameters": [
+    {
+      "node": "BackendSetting",
+      "name": "init",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "repr",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "eq",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "order",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "unsafe_hash",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "frozen",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "match_args",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "kw_only",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "slots",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "weakref_slot",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    }
+  ],
+  "configuration": [],
+  "functional_typeddict": false,
+  "extra_items_present": false,
+  "extra_items": null
+}

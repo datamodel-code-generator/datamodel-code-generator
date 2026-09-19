@@ -1,0 +1,122 @@
+{
+  "node": "BackendModelFacts",
+  "backend": "msgspec",
+  "parameters": [
+    {
+      "node": "BackendSetting",
+      "name": "tag",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "tag_field",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "array_like",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "forbid_unknown_fields",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "omit_defaults",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "kw_only",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "frozen",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "rename",
+      "present": false,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "none",
+          "value": null
+        },
+        "state": "known"
+      }
+    }
+  ],
+  "configuration": [],
+  "functional_typeddict": false,
+  "extra_items_present": false,
+  "extra_items": null
+}

@@ -1,0 +1,12 @@
+{
+  "init": true,
+  "frozen": true,
+  "slots": true,
+  "fields": [
+    {
+      "name": "wireName",
+      "init": true,
+      "kw_only": true
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+
+
+    """missing: Optional[str] = None is documentation, not a declaration."""
+
+    def _binding_example(self):
+        missing: str = "local only"
+        return missing
+
+    class Nested:
+        missing: str = "nested only"
+
+class Unrelated:
+    missing: str = "unrelated only"

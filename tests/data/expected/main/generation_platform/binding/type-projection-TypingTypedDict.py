@@ -1,6 +1,9 @@
 from __future__ import annotations
+from uuid import UUID
 from typing_extensions import NotRequired
 from typing import Dict, List, Literal, Optional, Set, TypedDict, Union
+from uuid import UUID
+import argparse
 
 
 
@@ -25,3 +28,5 @@ class Types(TypedDict):
     nullable_items: NotRequired[List[Optional[Union[int, str]]]]
     external: NotRequired[str]
     literal: NotRequired[Literal[True, 1, 'one']]
+    native: NotRequired[UUID]
+    bound_native: NotRequired[argparse.HelpFormatter._Section]

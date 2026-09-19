@@ -1,0 +1,38 @@
+{
+  "node": "BackendModelFacts",
+  "backend": "typeddict",
+  "parameters": [
+    {
+      "node": "BackendSetting",
+      "name": "total",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": false
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "closed",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": true
+        },
+        "state": "known"
+      }
+    }
+  ],
+  "configuration": [],
+  "functional_typeddict": false,
+  "extra_items_present": false,
+  "extra_items": null
+}

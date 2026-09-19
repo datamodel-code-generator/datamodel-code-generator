@@ -1,0 +1,64 @@
+[
+  {
+    "model": "StartedEvent",
+    "name": "type",
+    "annotation": null,
+    "assignment": null,
+    "line": null,
+    "column": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": false,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    }
+  },
+  {
+    "model": "StoppedEvent",
+    "name": "type",
+    "annotation": null,
+    "assignment": null,
+    "line": null,
+    "column": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": false,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    }
+  }
+]
