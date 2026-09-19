@@ -16,7 +16,7 @@ import threading
 import types
 from enum import Enum
 from pathlib import PurePath
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pydantic
 from pydantic import BaseModel
@@ -197,7 +197,7 @@ def _execute_multi_module(
             if previous_module is _MISSING_MODULE:
                 sys.modules.pop(created_module_name, None)
             else:
-                sys.modules[created_module_name] = previous_module
+                sys.modules[created_module_name] = cast("types.ModuleType", previous_module)
 
 
 def _should_extract_model_name(name: str, *, include_private: bool = False) -> bool:
@@ -398,7 +398,7 @@ def generate_dynamic_models(
         if use_cache:
             if (excess := len(_dynamic_models_cache) - cache_size + 1) > 0:
                 _evict_dynamic_models_cache_entries(excess)
-            _dynamic_models_cache[cache_key] = models  # ty: ignore[invalid-assignment]
+            _dynamic_models_cache[cache_key] = models
 
         return _filter_target_models(models, normalized_target_model_names)
 

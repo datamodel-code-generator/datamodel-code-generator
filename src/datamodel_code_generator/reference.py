@@ -142,7 +142,10 @@ if TYPE_CHECKING:
     class _ReferenceSource(ReferenceChild, Protocol):
         """Protocol for objects that can be assigned to Reference.source."""
 
-        fields: Sequence[Any]
+        @property
+        def fields(self) -> Sequence[Any]:
+            """The source fields, without requiring a writable sequence."""
+            raise NotImplementedError
 
         @property
         def is_alias(self) -> bool:
@@ -1051,7 +1054,7 @@ class ModelResolver:  # noqa: PLR0904
         """Temporarily set the current base path within a context."""
         if base_path:
             base_path = (self._base_path / base_path).resolve()
-        with context_variable(self.set_current_base_path, self.current_base_path, base_path):  # ty: ignore[invalid-argument-type]
+        with context_variable(self.set_current_base_path, self.current_base_path, base_path):
             yield
 
     @contextmanager
@@ -1065,7 +1068,7 @@ class ModelResolver:  # noqa: PLR0904
         this method was previously a no-op.
         """
         if self._base_url or (base_url and is_url(base_url)):
-            with context_variable(self.set_base_url, self.base_url, base_url):  # ty: ignore[invalid-argument-type]
+            with context_variable(self.set_base_url, self.base_url, base_url):
                 yield
         else:
             yield
@@ -1082,7 +1085,7 @@ class ModelResolver:  # noqa: PLR0904
     @contextmanager
     def current_root_context(self, current_root: Sequence[str]) -> Generator[None, None, None]:
         """Temporarily set the current root path within a context."""
-        with context_variable(self.set_current_root, self.current_root, current_root):  # ty: ignore[invalid-argument-type]
+        with context_variable(self.set_current_root, self.current_root, current_root):
             yield
 
     @property

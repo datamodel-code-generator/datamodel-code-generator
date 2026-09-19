@@ -140,6 +140,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
+    from datamodel_code_generator.parser._scc import ModuleGraph
 
 
 # Preserve the existing parser.base export while sharing one canonical escape table.
@@ -2362,7 +2363,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             raise ValueError(msg)
 
         if config is None:
-            config = self._create_default_config(options)  # ty: ignore[invalid-argument-type]
+            config = self._create_default_config(options)
 
         self.config = config
         self._source_context = getattr(config, "_source_context", None) or _source_context_from_config(config)
@@ -3978,7 +3979,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for model in models
             if isinstance(model, self.data_model_root_type)
         }
-        graph = {
+        graph: ModuleGraph = {
             (path,): {
                 (reference_path,)
                 for reference_path in self.generation_store.index.reference_classes_for_model_including_dict_keys(model)
@@ -6208,7 +6209,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if require_update_action_models:
             models = [model for ctx in contexts for model in ctx.models]
             live_paths = {model.path for model in models}
-            graph = {
+            graph: ModuleGraph = {
                 (model.path,): {
                     (reference_path,)
                     for reference_path in self.generation_store.index.reference_classes_for_model(model)

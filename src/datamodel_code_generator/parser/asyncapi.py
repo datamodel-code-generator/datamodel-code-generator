@@ -10,7 +10,7 @@ import re
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from pydantic import Field, StrictStr, ValidationError
 from typing_extensions import Unpack
@@ -241,7 +241,7 @@ class AsyncAPIParser(OpenAPIParser):
         **options: Unpack[AsyncAPIParserConfigDict],
     ) -> None:
         """Initialize the AsyncAPI parser."""
-        super().__init__(source=source, config=config, **options)  # ty: ignore[invalid-argument-type]
+        super().__init__(source=source, config=config, **options)
 
     @property
     def schema_features(self) -> OpenAPISchemaFeatures:
@@ -357,7 +357,7 @@ class AsyncAPIParser(OpenAPIParser):
                 context,
             )
             for schema_name, component_schema in _iter_mapping_items(
-                converted_schema.get("components", {}).get("schemas", {})
+                cast("dict[str, YamlValue]", converted_schema.get("components", {})).get("schemas", {})
             )
             if isinstance(component_schema, (dict, bool))
         )

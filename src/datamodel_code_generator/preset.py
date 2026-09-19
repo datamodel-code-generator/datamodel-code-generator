@@ -6,7 +6,7 @@ from argparse import Namespace
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 from pydantic import ConfigDict, PrivateAttr
 from typing_extensions import TypedDict
@@ -206,7 +206,9 @@ class PresetConfig(BaseGenerateConfig):
 
         items: list[PresetConfigItem] = []
         for field_name, raw_value in values.items():
-            value = _normalize_preset_config_value(field_name, raw_value, getattr(self, field_name))
+            value = _normalize_preset_config_value(
+                field_name, cast("PresetRawConfigValue", raw_value), getattr(self, field_name)
+            )
             items.append(PresetConfigItem(field_name=field_name, value=value))
 
         self._items = tuple(items)
@@ -958,7 +960,7 @@ def _copyable_config_data(info: PresetInfo) -> dict[str, TomlValue]:
         "target_python_version": info.target_python_version.value,
     }
     for item in _resolve_preset_info(info, context):
-        config_data[item.field_name] = item.pyproject_value
+        config_data[item.field_name] = cast("TomlValue", item.pyproject_value)
     return dict(sorted(config_data.items()))
 
 

@@ -856,7 +856,7 @@ def _construct_parser_simple_field(**data: Unpack[_ParserSimpleFieldData]) -> Da
         case (None, None | {} as extras, False) if not extras and "data_type" in data:
             pass
         case _:
-            return DataModelField(**data)
+            return DataModelField(**cast("dict[str, Any]", data))
 
     # Keep Pydantic's private instance layout in this one compatibility boundary.
     values = _PARSER_SIMPLE_FIELD_DEFAULTS.copy()

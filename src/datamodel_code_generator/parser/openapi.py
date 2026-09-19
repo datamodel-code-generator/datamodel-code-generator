@@ -264,7 +264,7 @@ class OpenAPIParser(JsonSchemaParser):
         """Resolve a reference to its model definition."""
         ref_file, ref_path = self.model_resolver.resolve_ref(ref).split("#", 1)
         ref_body = self._get_ref_body(ref_file) if ref_file else self.raw_obj
-        return get_model_by_path(ref_body, ref_path.split("/")[1:])
+        return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
 
     @contextmanager
     def openapi_self_context(self, specification: dict[str, Any]) -> Generator[None, None, None]:
@@ -532,7 +532,7 @@ class OpenAPIParser(JsonSchemaParser):
 
         result_fields: list[DataModelFieldBase] = []
         for field_obj in fields:
-            field = properties.get(field_obj.original_name)  # ty: ignore[invalid-argument-type]
+            field = properties.get(field_obj.original_name)
 
             if (
                 isinstance(field, JsonSchemaObject)
@@ -549,7 +549,7 @@ class OpenAPIParser(JsonSchemaParser):
                     result_fields.append(field_obj)
                     continue
                 normalized_discriminator = self._normalize_discriminator(discriminator)
-                field_obj = self.data_model_field_type(**{  # noqa: PLW2901  # ty: ignore[invalid-argument-type]
+                field_obj = self.data_model_field_type(**{  # ruff: ignore[redefined-loop-name]
                     **field_obj.__dict__,
                     "data_type": new_field_type,
                     "extras": {**field_obj.extras, "discriminator": normalized_discriminator},
