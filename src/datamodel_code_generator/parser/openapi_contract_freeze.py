@@ -9,11 +9,14 @@ from datamodel_code_generator._binding_imports import FinalImportResolver
 from datamodel_code_generator._generation_contract import (
     FieldSlot,
     GeneratedEnumMember,
+    GeneratedTypeContractBatch,
     GraphObjectId,
+    ModelArtifactAddress,
     SymbolId,
 )
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model.binding import freeze_reference_policy
+from datamodel_code_generator.model.binding_policies import final_field_name
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser.openapi_contract_store import _type_recipe  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector, ReferenceTypeBinding
@@ -23,18 +26,11 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._generation_contract import AttemptId, ModuleResultBinding, TypeProjection
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model.base import DataModel
+    from datamodel_code_generator.model.binding import FinalReferencePolicy
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
-
-
-@dataclass(frozen=True, slots=True)
-class ModelArtifactAddress:
-    """Locate real primary and secondary definitions beneath the explicit output anchor."""
-
-    result_key: tuple[str, ...] | Literal["single"]
-    relative_path: tuple[str, ...]
-    model_package: str
-    secondary_definitions: tuple[tuple[str, ...], ...]
+    from datamodel_code_generator.parser.openapi_contract_fields import FinalArtifactBinding, FinalFieldInventory
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +68,7 @@ class FinalModuleImports:
 
     models: tuple[SymbolId, ...]
     values: tuple[Import, ...]
+    symbol_names: tuple[tuple[SymbolId, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +78,8 @@ class FinalModelInventory:
     attempt: AttemptId
     models: tuple[FinalModelIdentity, ...]
     imports: tuple[FinalModuleImports, ...]
+    references: tuple[tuple[GraphObjectId, ReferenceTypeBinding], ...]
+    declaration_references: tuple[tuple[GraphObjectId, ReferenceTypeBinding], ...] = ()
 
 
 def _freeze_imports(collections: tuple[Imports, Imports]) -> tuple[Import, ...]:
@@ -112,13 +111,122 @@ def _artifact_address(binding: ModuleResultBinding, output: Path, model_package:
     )
 
 
-def freeze_model_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass joins final identities, namespaces, and own fields.
+def _module_symbol_names(
+    parser: BindingCaptureMixin,
+    models: tuple[DataModel, ...],
+    symbols: dict[GraphObjectId, SymbolId],
+    references: dict[GraphObjectId, ReferenceTypeBinding],
+) -> tuple[tuple[SymbolId, str], ...]:
+    """Keep the actual final aliases used for generated references in this module."""
+    ledger = parser.binding_ledger
+    names = dict.fromkeys(
+        (symbols[ledger.identity(model)], model.reference.name.rsplit(".", 1)[-1]) for model in models
+    )
+    pending = [field.data_type for model in models for field in model.fields]
+    seen: set[int] = set()
+    while pending:
+        data_type = pending.pop()
+        if id(data_type) in seen:
+            continue
+        seen.add(id(data_type))
+        if (reference := data_type.reference) is not None and (
+            binding := references.get(ledger.identity(reference))
+        ) is not None:
+            name = data_type.alias or reference.name.rsplit(".", 1)[-1]
+            if len(name) > 1 and name[0] == name[-1] and name[0] in {"'", '"'}:
+                name = name[1:-1]
+            names[binding.symbol, name] = None
+        pending.extend(data_type.data_types)
+        if data_type.dict_key is not None:
+            pending.append(data_type.dict_key)
+    return tuple(names)
+
+
+def _reference_terminals(
+    parser: BindingCaptureMixin, emitted: set[GraphObjectId], *, declarations: bool = False
+) -> dict[GraphObjectId, GraphObjectId]:
+    """Follow completed global redirects; contextual or ambiguous edges never guess a winner."""
+    redirects: dict[GraphObjectId, set[GraphObjectId]] = {}
+    owners = {registration.model: registration.reference for registration in parser.binding_ledger.registrations}
+    for replacement in parser.binding_ledger.replacements:
+        declaration_owner = (
+            declarations
+            and replacement.kind == "scoped_reference"
+            and replacement.owner is not None
+            and owners.get(replacement.owner) == replacement.original
+        )
+        if (
+            (replacement.kind == "reference" or declaration_owner)
+            and replacement.original is not None
+            and replacement.replacement is not None
+        ):
+            redirects.setdefault(replacement.original, set()).add(replacement.replacement)
+    resolved: dict[GraphObjectId, GraphObjectId] = {reference: reference for reference in emitted}
+    for original in redirects:
+        pending = [original]
+        seen: set[GraphObjectId] = set()
+        terminals: set[GraphObjectId] = set()
+        while pending:
+            current = pending.pop()
+            if current in seen:
+                continue
+            seen.add(current)
+            if current in emitted:
+                terminals.add(current)
+            else:
+                pending.extend(redirects.get(current, ()))
+        if len(terminals) == 1:
+            resolved[original] = next(iter(terminals))
+    return resolved
+
+
+def _final_projector(
+    parser: BindingCaptureMixin,
+    models: tuple[DataModel, ...],
+    symbols: dict[GraphObjectId, SymbolId],
+    policies: dict[GraphObjectId, FinalReferencePolicy],
+) -> tuple[FinalTypeProjector, dict[GraphObjectId, ReferenceTypeBinding]]:
+    ledger = parser.binding_ledger
+    references = {
+        ledger.identity(model.reference): ReferenceTypeBinding(
+            symbols[ledger.identity(model)],
+            policies[ledger.identity(model)].nullable,
+            policies[ledger.identity(model)].is_alias,
+            policies[ledger.identity(model)].serialize_as_any,
+        )
+        for model in models
+    }
+    terminals = _reference_terminals(parser, set(references))
+    references.update((original, references[terminal]) for original, terminal in terminals.items())
+    enum_fields = {
+        ledger.identity(model.reference): {
+            field.name: GeneratedEnumMember(symbols[ledger.identity(model)], ledger.identity(field), field.name or "")
+            for field in model.fields
+        }
+        for model in models
+        if isinstance(model, Enum)
+    }
+    members: dict[GraphObjectId, tuple[GeneratedEnumMember, ...]] = {}
+    for observation in parser.discriminator_types:
+        if observation.reference is None or (terminal := terminals.get(observation.reference)) is None:
+            continue
+        actual = enum_fields.get(terminal, {})
+        names = tuple(name for _, name in observation.data_type.enum_member_literals)
+        if names and all(name in actual for name in names):
+            members[ledger.identity(observation.data_type)] = tuple(actual[name] for name in names)
+    for target, source in ledger.enum_copies.items():
+        if source in members:
+            members[target] = members[source]
+    return FinalTypeProjector(references, members, ledger.root_recipes), references
+
+
+def _freeze_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass joins final identities, namespaces, and own fields.
     parser: BindingCaptureMixin,
     results: str | dict[tuple[str, ...], Result],
     *,
     output: Path,
     model_package: str,
-) -> FinalModelInventory:
+) -> tuple[FinalModelInventory, FinalTypeProjector]:
     """Freeze only models belonging to actual module returns, after ordinary rendering."""
     ledger = parser.binding_ledger
     outputs = tuple(observation for observation in parser.module_outputs if observation.models)
@@ -130,24 +238,7 @@ def freeze_model_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass
         )
         for model in models
     }
-    references = {
-        ledger.identity(model.reference): ReferenceTypeBinding(
-            symbols[ledger.identity(model)],
-            policies[ledger.identity(model)].nullable,
-            policies[ledger.identity(model)].is_alias,
-            policies[ledger.identity(model)].serialize_as_any,
-        )
-        for model in models
-    }
-    members = {
-        ledger.identity(model.reference): tuple(
-            GeneratedEnumMember(symbols[ledger.identity(model)], ledger.identity(field), field.name or "")
-            for field in model.fields
-        )
-        for model in models
-        if isinstance(model, Enum)
-    }
-    projector = FinalTypeProjector(references, members)
+    projector, references = _final_projector(parser, models, symbols, policies)
     addresses: dict[
         GraphObjectId,
         tuple[ModelArtifactAddress | None, Literal["BND_ARTIFACT_AMBIGUOUS", "BND_SYMBOL_NOT_EMITTED"] | None],
@@ -161,6 +252,7 @@ def freeze_model_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass
         FinalModuleImports(
             tuple(symbols[ledger.identity(model)] for model in observation.models),
             _freeze_imports(observation.imports),
+            _module_symbol_names(parser, observation.models, symbols, references),
         )
         for observation in outputs
     )
@@ -188,7 +280,13 @@ def freeze_model_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass
                 tuple(base for base in bases if base not in references),
                 tuple(
                     FinalFieldType(
-                        FieldSlot(ledger.attempt_id, symbol, ledger.identity(field), index, field.name or ""),
+                        FieldSlot(
+                            ledger.attempt_id,
+                            symbol,
+                            ledger.identity(field),
+                            index,
+                            final_field_name(model, field.name),
+                        ),
                         field.original_name,
                         import_resolvers[symbol].project(
                             projector.project(_type_recipe(field.data_type, ledger, set()))
@@ -203,8 +301,86 @@ def freeze_model_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass
                 reason,
             )
         )
+    declaration_references = {
+        original: references[terminal]
+        for original, terminal in _reference_terminals(
+            parser, {ledger.identity(model.reference) for model in models}, declarations=True
+        ).items()
+    }
     return FinalModelInventory(
         ledger.attempt_id,
         tuple(frozen),
         module_imports,
+        tuple(references.items()),
+        tuple(declaration_references.items()),
+    ), projector
+
+
+def freeze_model_inventory(
+    parser: BindingCaptureMixin,
+    results: str | dict[tuple[str, ...], Result],
+    *,
+    output: Path,
+    model_package: str,
+) -> FinalModelInventory:
+    """Freeze real emitted identities independently of later field and use demands."""
+    return _freeze_inventory(parser, results, output=output, model_package=model_package)[0]
+
+
+def freeze_final_fields(
+    parser: BindingCaptureMixin,
+    results: str | dict[tuple[str, ...], Result],
+    *,
+    output: Path,
+    model_package: str,
+) -> FinalFieldInventory:
+    """Join actual final types, field ownership, source occurrences, and accepted syntax."""
+    from datamodel_code_generator.parser.openapi_contract_fields import FinalFieldBuilder  # noqa: PLC0415
+
+    inventory, projector = _freeze_inventory(parser, results, output=output, model_package=model_package)
+    return FinalFieldBuilder(parser, inventory, projector).freeze()
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenGenerationAttempt:
+    """Retain completed value contracts and accepted-artifact evidence outside the graph."""
+
+    batch: GeneratedTypeContractBatch
+    artifacts: tuple[FinalArtifactBinding, ...]
+
+
+def freeze_generation_attempt(
+    parser: BindingCaptureMixin,
+    results: str | dict[tuple[str, ...], Result],
+    *,
+    output: Path,
+    model_package: str,
+    root_selector_document: str,
+) -> FrozenGenerationAttempt:
+    """Freeze one completed ordinary parse without deciding which retry the driver accepts."""
+    from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser  # noqa: PLC0415
+    from datamodel_code_generator.parser.openapi_contract_fields import FinalFieldBuilder  # noqa: PLC0415
+    from datamodel_code_generator.parser.openapi_contract_legacy import LegacyFinalOperationBuilder  # noqa: PLC0415
+    from datamodel_code_generator.parser.openapi_contract_operations import FinalOperationBuilder  # noqa: PLC0415
+
+    inventory, projector = _freeze_inventory(parser, results, output=output, model_package=model_package)
+    fields = FinalFieldBuilder(parser, inventory, projector).freeze()
+    operations = (
+        FinalOperationBuilder(parser, inventory, fields, projector).freeze()
+        if isinstance(parser, ContractApiOpenAPIParser)
+        else LegacyFinalOperationBuilder(parser, inventory, fields, projector).freeze()
     )
+    batch = GeneratedTypeContractBatch(
+        inventory.attempt,
+        root_selector_document,
+        parser.source_lease.documents(),
+        operations.operations,
+        operations.uses,
+        fields.symbols,
+        tuple(artifact.address for artifact in fields.artifacts),
+        fields.bindings,
+        (*fields.diagnostics, *operations.diagnostics),
+        operations.security_schemes,
+        isinstance(parser, ContractApiOpenAPIParser),
+    )
+    return FrozenGenerationAttempt(batch, fields.artifacts)

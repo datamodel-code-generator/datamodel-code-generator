@@ -1,0 +1,67 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Reuse provenance",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "First": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "readOnly": false
+          }
+        }
+      },
+      "Second": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "readOnly": true
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/first": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/First"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/second": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Second"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    }
+  }
+}

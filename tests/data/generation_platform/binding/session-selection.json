@@ -1,0 +1,12 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Independent selection and artifact regression", "version": "1"},
+  "paths": {
+    "/good": {"post": {"requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Good"}}}}, "responses": {"204": {"description": "accepted"}}}},
+    "/bad": {"post": {"requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Bad"}}}}, "responses": {"204": {"description": "accepted"}}}}
+  },
+  "components": {"schemas": {
+    "Good": {"type": "object", "required": ["good"], "properties": {"good": {"type": "string"}}},
+    "Bad": {"type": "object", "required": ["bad"], "properties": {"bad": {"type": "string"}}}
+  }}
+}

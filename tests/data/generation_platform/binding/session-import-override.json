@@ -1,0 +1,43 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Independent binding regressions",
+    "version": "1"
+  },
+  "paths": {
+    "/time": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "accepted"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Timestamp": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "Record": {
+        "type": "object",
+        "properties": {
+          "when": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      }
+    }
+  }
+}

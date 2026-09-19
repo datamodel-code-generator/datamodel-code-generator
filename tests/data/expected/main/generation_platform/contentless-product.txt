@@ -1,0 +1,9 @@
+{
+  "attempt": 1,
+  "operations": 1,
+  "artifacts": 0,
+  "symbols": 0,
+  "diagnostics": [],
+  "retained_graph": 0,
+  "documents": 1
+}

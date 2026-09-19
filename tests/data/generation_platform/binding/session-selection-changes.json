@@ -1,0 +1,27 @@
+[
+  {
+    "name": "field",
+    "replacement": "bad: int",
+    "expected": "selection-field"
+  },
+  {
+    "name": "function",
+    "replacement": "bad: str\n\ndef Bad():\n    return 1\n",
+    "expected": "selection-symbol"
+  },
+  {
+    "name": "delete",
+    "replacement": "bad: str\n\ndel Bad\n",
+    "expected": "selection-symbol"
+  },
+  {
+    "name": "unpack",
+    "replacement": "bad: str\n\nBad, other = int, str\n",
+    "expected": "selection-symbol"
+  },
+  {
+    "name": "augmented",
+    "replacement": "bad: str\n\nBad |= int\n",
+    "expected": "selection-symbol"
+  }
+]

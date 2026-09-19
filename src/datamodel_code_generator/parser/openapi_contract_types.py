@@ -123,11 +123,17 @@ class FinalTypeProjector:
         self,
         references: Mapping[GraphObjectId, ReferenceTypeBinding],
         enum_members: Mapping[GraphObjectId, tuple[GeneratedEnumMember, ...]],
+        root_recipes: Mapping[GraphObjectId, TypeRecipe] | None = None,
     ) -> None:
         """Borrow only value mappings established from actual final reference ownership."""
         self._references = references
         self._enum_members = enum_members
+        self._root_recipes = root_recipes or {}
         self._active: set[GraphObjectId] = set()
+
+    def with_references(self, references: Mapping[GraphObjectId, ReferenceTypeBinding]) -> FinalTypeProjector:
+        """Use declaration-owned terminals without changing final field/module resolution."""
+        return FinalTypeProjector(references, self._enum_members, self._root_recipes)
 
     def project(self, recipe: TypeRecipe) -> TypeProjection:
         """Return a finite unsupported-type diagnostic without changing model acceptance."""
@@ -183,6 +189,8 @@ class FinalTypeProjector:
 
     def _project_reference(self, reference: GraphObjectId, recipe: TypeRecipe) -> FinalPythonType:
         if (binding := self._references.get(reference)) is None:
+            if (root := self._root_recipes.get(reference)) is not None:
+                return self._project(root)
             raise _UnsupportedTypeError(_SYMBOL_NOT_EMITTED)
         result: FinalPythonType = GeneratedSymbolType(binding.symbol)
         if "serialize_as_any" in recipe.modifiers and binding.serialize_as_any and recipe.alias is None:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar, Literal
@@ -18,6 +18,7 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator._openapi_generation import SourceLease
 from datamodel_code_generator.enums import AllOfMergeMode
+from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._api_reference import ApiDeclarationId, ApiModelResolver
 from datamodel_code_generator.parser.base import (
     _expand_result_module_path,  # pyright: ignore[reportPrivateUsage]
@@ -55,7 +56,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend, NamingStrategy
     from datamodel_code_generator.format import PythonVersion
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.model.enum import Enum
     from datamodel_code_generator.parser.base import (
         DiscriminatorValue,
@@ -253,6 +254,34 @@ class TypeObservation:
     ref: str | None
     declaration: ApiDeclarationFrame | None
     operation: LegacyOperationObservation | None
+    resolved_refs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SchemaTypeObservation:
+    """Borrow an actual schema producer's returned type for nested helper demands."""
+
+    schema: JsonSchemaObject | None
+    data_type: DataType
+    locations: tuple[SourceLocation, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SchemaReferenceObservation:
+    """Connect an actual parsed declaration to its existing resolver identity."""
+
+    schema: JsonSchemaObject
+    reference: GraphObjectId
+
+
+@dataclass(frozen=True, slots=True)
+class VariantFieldsObservation:
+    """Retain the actual fields omitted by one directional model producer."""
+
+    base: GraphObjectId
+    suffix: Literal["Request", "Response"]
+    fields: tuple[GraphObjectId, ...]
+    excluded: tuple[tuple[GraphObjectId, Literal["read_only", "write_only"]], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -509,6 +538,7 @@ class DiscriminatorTypeObservation:
     members: tuple[tuple[str | None, GraphObjectId], ...]
     model: GraphObjectId
     data_type: DataType
+    reference: GraphObjectId | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -593,15 +623,27 @@ class BindingCaptureMixin(OpenAPIParser):
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
         attempt_id: AttemptId,
+        binding_ledger: BindingLedger | None = None,
+        source_lease: SourceLease | None = None,
         config: OpenAPIParserConfig | None = None,
         **options: Unpack[OpenAPIParserConfigDict],
     ) -> None:
         """Keep state on capture subclasses without adding fields to default parsers."""
-        self.binding_ledger = BindingLedger(attempt_id)
-        self.source_lease = SourceLease()
+        self.binding_ledger = binding_ledger if binding_ledger is not None else BindingLedger(attempt_id)
+        self.source_lease = source_lease if source_lease is not None else SourceLease()
+        if self.binding_ledger.attempt_id != attempt_id:
+            msg = "BND_ATTEMPT_MISMATCH: parser and ledger identities differ"
+            raise BindingCaptureError(msg)
         self.schema_origins = ValidatedSchemaOriginIndex(self.binding_ledger)
         self.field_origins: dict[GraphObjectId, FieldOriginObservation] = {}
         self.synthetic_fields: list[SyntheticFieldObservation] = []
+        self._additional_root_fields: set[GraphObjectId] = set()
+        self.schema_types: list[SchemaTypeObservation] = []
+        self.schema_references: list[SchemaReferenceObservation] = []
+        self.root_documents: list[str] = []
+        self.variant_fields: list[VariantFieldsObservation] = []
+        self._variant_references: dict[GraphObjectId, dict[GraphObjectId, Reference]] = {}
+        self._array_sources: list[JsonSchemaObject] = []
         self._additional_type_frames: list[AdditionalTypeFrame] = []
         self.additional_types: list[AdditionalTypeObservation] = []
         self.pattern_types: list[PatternTypeObservation] = []
@@ -659,6 +701,8 @@ class BindingCaptureMixin(OpenAPIParser):
         result: DataModelFieldBase = super()._copy_model_field(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             field, data_type=data_type, register_references=register_references
         )
+        if data_type is None and self.discriminator_types:
+            self._record_enum_copies(field.data_type, result.data_type)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
         return self._record_field_copy((field,), result, None)  # pyright: ignore[reportUnknownArgumentType]
 
     def _copy_model_type(self, data_type: DataType, *, register_references: bool = True) -> DataType:
@@ -689,6 +733,8 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         if result is None:
             return None
+        if self.discriminator_types:
+            self._record_enum_copies(inherited_field.data_type, result.data_type)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
         return self._record_field_copy(
             (field, inherited_field),
             result,  # pyright: ignore[reportUnknownArgumentType]
@@ -759,7 +805,23 @@ class BindingCaptureMixin(OpenAPIParser):
     def _record_type_copy(self, source: DataType, target: DataType) -> DataType:
         identity = self.binding_ledger.identity
         self.binding_ledger.copies.append(TypeCopy(identity(source), identity(target)))
+        if self.discriminator_types:
+            self._record_enum_copies(source, target)
         return target
+
+    @capture_errors
+    def _record_enum_copies(self, source: DataType, target: DataType) -> None:
+        """Preserve enum producer identity through actual helper copies, without recopying."""
+        pending = [(source, target)]
+        identity = self.binding_ledger.identity
+        while pending:
+            original, copied = pending.pop()
+            if original.enum_member_literals and copied.enum_member_literals == original.enum_member_literals:
+                self.binding_ledger.enum_copies[identity(copied)] = identity(original)
+            if len(original.data_types) == len(copied.data_types):
+                pending.extend(zip(original.data_types, copied.data_types, strict=True))
+            if original.dict_key is not None and copied.dict_key is not None:
+                pending.append((original.dict_key, copied.dict_key))
 
     def _get_rw_model_variant_reference(
         self, base_reference: Reference, suffix: Literal["Request", "Response"], *, loaded: bool = False
@@ -770,10 +832,52 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         return self._record_variant(base_reference, suffix, result)  # pyright: ignore[reportUnknownArgumentType]
 
+    @override
+    def _create_variant_model(
+        self,
+        base_reference: Reference,
+        suffix: Literal["Request", "Response"],
+        model_fields: list[DataModelFieldBase],
+        obj: JsonSchemaObject,
+        data_model_type_class: type[DataModel],
+        *,
+        source_fields: Sequence[DataModelFieldBase] = (),
+    ) -> None:
+        """Capture actual exclusions after the ordinary producer has created its variant."""
+        super()._create_variant_model(  # pyright: ignore[reportUnknownMemberType]
+            base_reference, suffix, model_fields, obj, data_model_type_class, source_fields=source_fields
+        )
+        self._record_variant_fields(base_reference, suffix, model_fields, source_fields)
+
+    @capture_errors
+    def _record_variant_fields(
+        self,
+        base: Reference,
+        suffix: Literal["Request", "Response"],
+        included: list[DataModelFieldBase],
+        source: Sequence[DataModelFieldBase],
+    ) -> None:
+        identity = self.binding_ledger.identity
+        selected = {identity(field) for field in included}
+        excluded: list[tuple[GraphObjectId, Literal["read_only", "write_only"]]] = []
+        for field in source:
+            if (field_id := identity(field)) in selected:
+                continue
+            if suffix == "Request" and field.read_only:
+                excluded.append((field_id, "read_only"))
+            elif suffix == "Response" and field.write_only:
+                excluded.append((field_id, "write_only"))
+        self.variant_fields.append(
+            VariantFieldsObservation(
+                identity(base), suffix, tuple(identity(field) for field in source), tuple(excluded)
+            )
+        )
+
     @capture_errors
     def _record_variant(self, base: Reference, suffix: Literal["Request", "Response"], result: Reference) -> Reference:
         identity = self.binding_ledger.identity
         self.binding_ledger.variants.append(Variant(identity(base), suffix, identity(result)))
+        self._variant_references.setdefault(identity(base), {})[identity(result)] = result
         return result
 
     def _create_binding_resolver(self, **options: Unpack[ResolverOptions]) -> BindingResolverMixin:
@@ -784,6 +888,7 @@ class BindingCaptureMixin(OpenAPIParser):
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
         """Borrow the actual root mapping before the existing engine visits it."""
         self._borrow_source("/".join(path_parts), specification)
+        self.root_documents.append("/".join(path_parts))
         super()._parse_specification(specification, path_parts)  # pyright: ignore[reportUnknownMemberType]
 
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
@@ -815,15 +920,37 @@ class BindingCaptureMixin(OpenAPIParser):
         """Connect the actual validated object before ordinary dispatch transforms it."""
         self._pair_validated_source(name, obj, path)
         super().parse_obj(name, obj, path)  # pyright: ignore[reportUnknownMemberType]
+        self._record_declared_root(obj, path)
+
+    @capture_errors
+    def _record_declared_root(self, obj: JsonSchemaObject, path: list[str]) -> None:
+        reference = self.model_resolver.references.get(self.model_resolver.join_path(tuple(path)))
+        if reference is None:
+            return
+        identity = self.binding_ledger.identity(reference)
+        self.schema_references.append(SchemaReferenceObservation(obj, identity))
+        for candidate in (reference, *self._variant_references.get(identity, {}).values()):
+            if isinstance(model := candidate.source, DataModel) and (model.IS_ROOT_MODEL or model.IS_ALIAS):
+                self._record_root_fields(obj, model.fields, model.reference.name)
 
     @capture_errors
     def _pair_validated_source(self, name: str, obj: JsonSchemaObject, path: list[str]) -> None:
         if not self._raw_validation_frames:
+            if (
+                reference := self.model_resolver.references.get(self.model_resolver.join_path(tuple(path)))
+            ) is not None:
+                self._pair_inherited_declaration(reference.path, obj, relation="validated_child")
             return
         frame = self._raw_validation_frames[-1]
         if frame.name != name or frame.path != tuple(path) or not isinstance(frame.raw, (dict, bool)):
             return
         locations = self._validation_locations(frame)
+        if (
+            not locations
+            and (reference := self.model_resolver.references.get(self.model_resolver.join_path(tuple(path))))
+            is not None
+        ):
+            self._pair_inherited_declaration(reference.path, obj, relation="validated_child")
         for location in locations:
             self.schema_origins.pair(raw=frame.raw, obj=obj, location=location)
 
@@ -998,6 +1125,7 @@ class BindingCaptureMixin(OpenAPIParser):
         result: list[DataType] = super()._parse_combined_schema_items(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             name, obj, path, combined_schemas, variant_names
         )
+        self._record_list_types(combined_schemas, result)  # pyright: ignore[reportUnknownArgumentType]
         return result  # pyright: ignore[reportUnknownVariableType]
 
     @capture_errors
@@ -1495,18 +1623,120 @@ class BindingCaptureMixin(OpenAPIParser):
         return self._record_additional_field(obj, result, "root_value")  # pyright: ignore[reportUnknownArgumentType]
 
     @capture_errors
+    def _record_root_fields(self, obj: JsonSchemaObject, fields: list[DataModelFieldBase], class_name: str) -> None:
+        locations = tuple(origin.location for origin in self.schema_origins.origins(obj))
+        for field in fields:
+            identity = self.binding_ledger.identity(field)
+            if identity not in self._additional_root_fields:
+                self.synthetic_fields.append(SyntheticFieldObservation(identity, "root_value", locations, None))
+            if identity not in self.field_constructions:
+                self.field_constructions[identity] = FieldConstructionObservation(
+                    identity,
+                    obj,
+                    field.required,
+                    field.default,
+                    field.has_default,
+                    field.use_default_with_required,
+                    field.original_name,
+                    class_name,
+                    None,
+                    self._observe_preexisting_null(field.data_type),
+                )
+
+    @capture_errors
     def _record_additional_field(
         self, obj: JsonSchemaObject, result: DataModelFieldBase, kind: Literal["additional_properties", "root_value"]
     ) -> DataModelFieldBase:
+        identity = self.binding_ledger.identity(result)
+        if kind == "root_value":
+            self._additional_root_fields.add(identity)
         self.synthetic_fields.append(
             SyntheticFieldObservation(
-                self.binding_ledger.identity(result),
+                identity,
                 kind,
                 self.schema_origins.keyword_locations(obj, "additionalProperties"),
                 None,
             )
         )
         return result
+
+    def parse_list_item(
+        self,
+        name: str,
+        target_items: Sequence[JsonSchemaObject | bool],
+        path: list[str],
+        parent: JsonSchemaObject,
+        singular_name: bool = True,  # ruff: ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument] -- Preserve the existing producer signature.
+    ) -> list[DataType]:
+        """Retain actual element and union-branch returns without changing guarded item parsing."""
+        result: list[DataType] = super().parse_list_item(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            name, target_items, path, parent, singular_name
+        )
+        self._record_list_types(target_items, result)  # pyright: ignore[reportUnknownArgumentType]
+        return result  # pyright: ignore[reportUnknownVariableType]
+
+    @capture_errors
+    def _record_list_types(self, schemas: Sequence[JsonSchemaObject | bool], results: list[DataType]) -> None:
+        for schema, result in zip((schema for schema in schemas if schema is not False), results, strict=True):
+            if isinstance(schema, JsonSchemaObject):
+                self.schema_types.append(SchemaTypeObservation(schema, result))
+
+    def get_data_type(self, obj: JsonSchemaObject) -> DataType:
+        """Retain a primitive producer's actual return for nested schema occurrences."""
+        result: DataType = super().get_data_type(obj)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return self._record_schema_type(obj, result)  # pyright: ignore[reportUnknownArgumentType]
+
+    @capture_errors
+    def _record_schema_type(self, schema: JsonSchemaObject, result: DataType) -> DataType:
+        self.schema_types.append(SchemaTypeObservation(schema, result))
+        return result
+
+    def _parse_additional_properties_value(
+        self,
+        name: str,
+        path: list[str],
+        parent: JsonSchemaObject,
+        *,
+        additional_properties: JsonSchemaObject,
+        constrained_name: str | None = None,
+    ) -> DataType:
+        """Observe the original additional-property value without overriding its guarded helpers."""
+        result: DataType = super()._parse_additional_properties_value(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            name, path, parent, additional_properties=additional_properties, constrained_name=constrained_name
+        )
+        return self._record_schema_type(additional_properties, result)  # pyright: ignore[reportUnknownArgumentType]
+
+    @override
+    def parse_array_fields(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+        singular_name: bool = True,
+        use_annotated: bool | None = None,
+    ) -> DataModelFieldBase:
+        """Keep the current array source only while its ordinary fallback producer runs."""
+        self._array_sources.append(obj)
+        try:
+            return super().parse_array_fields(name, obj, path, singular_name, use_annotated)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        finally:
+            self._array_sources.pop()
+
+    def _fallback_array_item_data_types(self) -> list[DataType]:
+        """Bind an explicit true items occurrence to the real fallback Any return."""
+        result: list[DataType] = super()._fallback_array_item_data_types()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        self._record_array_fallback(result)  # pyright: ignore[reportUnknownArgumentType]
+        return result  # pyright: ignore[reportUnknownVariableType]
+
+    @capture_errors
+    def _record_array_fallback(self, result: list[DataType]) -> None:
+        if not self._array_sources or len(result) != 1:
+            return
+        obj = self._array_sources[-1]
+        if obj.items is True:
+            self.schema_types.append(
+                SchemaTypeObservation(None, result[0], self.schema_origins.keyword_locations(obj, "items"))
+            )
 
     def _create_synthetic_enum_obj(  # ruff: ignore[too-many-arguments, too-many-positional-arguments] -- Preserve the original producer signature.
         self,
@@ -1626,6 +1856,7 @@ class BindingCaptureMixin(OpenAPIParser):
                 else (),
                 self.binding_ledger.identity(model),
                 result,
+                self.binding_ledger.identity(enum.reference) if enum is not None else None,
             )
         )
         return result
@@ -1751,6 +1982,10 @@ class BindingCaptureMixin(OpenAPIParser):
         if policy is not None and (policy.field_name != original_name or policy.class_name != class_name):
             msg = "A field construction does not match its pending default producer"
             raise BindingCaptureError(msg)
+        return policy, self._observe_preexisting_null(field_type)
+
+    def _observe_preexisting_null(self, field_type: DataType) -> PreexistingNullObservation:
+        """Read stored type flags before ordinary rendering can introduce optionality."""
         pending = [field_type]
         seen: set[int] = set()
         references: dict[GraphObjectId, None] = {}
@@ -1761,7 +1996,7 @@ class BindingCaptureMixin(OpenAPIParser):
                 continue
             seen.add(id(current))
             if current.is_optional or current.type == "None":
-                return policy, PreexistingNullObservation(explicit=True, references=(), opaque=False)
+                return PreexistingNullObservation(explicit=True, references=(), opaque=False)
             if any((
                 current.is_list,
                 current.is_dict,
@@ -1776,7 +2011,7 @@ class BindingCaptureMixin(OpenAPIParser):
                 references[self.binding_ledger.identity(current.reference)] = None
             opaque |= current.python_type is not None
             pending.extend(current.data_types)
-        return policy, PreexistingNullObservation(explicit=False, references=tuple(references), opaque=opaque)
+        return PreexistingNullObservation(explicit=False, references=tuple(references), opaque=opaque)
 
     def get_object_field(  # ruff: ignore[too-many-arguments] -- Preserve the existing field producer signature.
         self,
@@ -1835,6 +2070,8 @@ class BindingCaptureMixin(OpenAPIParser):
         preexisting_null: PreexistingNullObservation,
     ) -> DataModelFieldBase:
         identity = self.binding_ledger.identity(field)
+        if schema is not None:
+            self.schema_types.append(SchemaTypeObservation(schema, field.data_type))
         self.field_constructions[identity] = FieldConstructionObservation(
             identity,
             schema,
@@ -1873,9 +2110,14 @@ class BindingCaptureMixin(OpenAPIParser):
             if (wire_name := field.original_name) is None or wire_name not in obj.properties:
                 continue
             identity = self.binding_ledger.identity(field)
+            origins = self.schema_origins.property_origins(obj, wire_name)
             self.field_origins[identity] = FieldOriginObservation(
-                identity, wire_name, self.schema_origins.property_origins(obj, wire_name), wire_name in obj.required
+                identity, wire_name, origins, wire_name in obj.required
             )
+            if isinstance(obj.properties[wire_name], bool):
+                self.schema_types.append(
+                    SchemaTypeObservation(None, field.data_type, tuple(origin.location for origin in origins))
+                )
         return fields
 
     def _process_path_items(  # ruff: ignore[too-many-arguments] -- Preserve the existing hook signature.
@@ -1953,7 +2195,14 @@ class BindingCaptureMixin(OpenAPIParser):
         self._legacy_operations.append(observation)
 
     @capture_errors
-    def _observe_type(self, data_type: DataType, *, path: list[str] | None = None, ref: str | None = None) -> None:
+    def _observe_type(
+        self,
+        data_type: DataType,
+        *,
+        path: list[str] | None = None,
+        ref: str | None = None,
+        resolutions: tuple[str, ...] = (),
+    ) -> None:
         """Attach only an existing return to its active declaration occurrence."""
         frame = self.declaration_frames[-1] if isinstance(self, ApiOpenAPIParser) and self.declaration_frames else None
         self.binding_ledger.identity(data_type)
@@ -1964,6 +2213,7 @@ class BindingCaptureMixin(OpenAPIParser):
                 ref,
                 frame,
                 self._legacy_operations[-1] if self._legacy_operations else None,
+                resolutions,
             )
         )
 
@@ -1975,8 +2225,14 @@ class BindingCaptureMixin(OpenAPIParser):
 
     def get_ref_data_type(self, ref: str) -> DataType:
         """Observe actual reference type creation without calling a resolver again."""
-        result: DataType = super().get_ref_data_type(ref)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        self._observe_type(result, ref=ref)  # pyright: ignore[reportUnknownArgumentType]
+        producer = ReferenceProducerFrame([])
+        with self._resolution_producer(producer):
+            result: DataType = super().get_ref_data_type(ref)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        self._observe_type(
+            result,  # pyright: ignore[reportUnknownArgumentType]
+            ref=ref,
+            resolutions=tuple(dict.fromkeys(event.output for event in producer.resolutions if event.input == ref)),
+        )
         return result  # pyright: ignore[reportUnknownVariableType]
 
     def parse_request_body(self, name: str, request_body: RequestBodyObject, path: list[str]) -> dict[str, DataType]:
@@ -2083,43 +2339,62 @@ class BindingCaptureMixin(OpenAPIParser):
         return tuple(bindings)
 
     def dispose(self) -> None:
-        """Release graph anchors even when ordinary disposal raises."""
+        """Release graph anchors without replacing an ordinary disposal failure."""
         try:
             super().dispose()  # pyright: ignore[reportUnknownMemberType]
-        finally:
-            self.__dict__.pop("_model_resolver_factory", None)
-            self.__dict__.pop("_generation_store_factory", None)
-            self.request_types.clear()
-            self.response_types.clear()
-            self._legacy_operations.clear()
-            self.legacy_operations.clear()
-            self.legacy_scopes.clear()
-            self._legacy_scopes.clear()
-            self.type_observations.clear()
-            self._raw_validation_frames.clear()
-            self.schema_origins.close()
-            self.field_origins.clear()
-            self.synthetic_fields.clear()
-            self._additional_type_frames.clear()
-            self.additional_types.clear()
-            self.pattern_types.clear()
-            self.pattern_validators.clear()
-            self.discriminator_types.clear()
-            self._required_field_lists.clear()
-            self.field_constructions.clear()
-            self.effective_defaults.clear()
-            self.inherited_defaults.clear()
-            self.module_outputs.clear()
-            self._conditional_merges.clear()
-            self._inherited_merges.clear()
-            self._combined_branches.clear()
-            self._allof_refs.clear()
-            self._root_schema_frames.clear()
-            self._root_value_children.clear()
-            self._pending_field_default = None
-            self.root_materializations.clear()
+        except BaseException:
+            with suppress(BaseException):
+                self._release_capture()
+            raise
+        self._release_capture()
+
+    def _release_capture(self) -> None:
+        """Release every capture owner even when an earlier owner fails to close."""
+        self.__dict__.pop("_model_resolver_factory", None)
+        self.__dict__.pop("_generation_store_factory", None)
+        self.request_types.clear()
+        self.response_types.clear()
+        self._legacy_operations.clear()
+        self.legacy_operations.clear()
+        self.legacy_scopes.clear()
+        self._legacy_scopes.clear()
+        self.type_observations.clear()
+        self._raw_validation_frames.clear()
+        self.schema_origins.close()
+        self.field_origins.clear()
+        self.synthetic_fields.clear()
+        self._additional_root_fields.clear()
+        self.schema_types.clear()
+        self.schema_references.clear()
+        self.root_documents.clear()
+        self.variant_fields.clear()
+        self._variant_references.clear()
+        self._array_sources.clear()
+        self._additional_type_frames.clear()
+        self.additional_types.clear()
+        self.pattern_types.clear()
+        self.pattern_validators.clear()
+        self.discriminator_types.clear()
+        self._required_field_lists.clear()
+        self.field_constructions.clear()
+        self.effective_defaults.clear()
+        self.inherited_defaults.clear()
+        self.module_outputs.clear()
+        self._conditional_merges.clear()
+        self._inherited_merges.clear()
+        self._combined_branches.clear()
+        self._allof_refs.clear()
+        self._root_schema_frames.clear()
+        self._root_value_children.clear()
+        self._pending_field_default = None
+        self.root_materializations.clear()
+        try:
             self.binding_ledger.close()
-            self.binding_resolver.close_capture()
+        except BaseException:
+            with suppress(BaseException):
+                self.binding_resolver.close_capture()
+            raise
+        self.binding_resolver.close_capture()
 
 
 class ContractOpenAPIParser(BindingCaptureMixin, OpenAPIParser):
@@ -2136,6 +2411,8 @@ class ContractApiOpenAPIParser(BindingCaptureMixin, ApiOpenAPIParser):
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
         attempt_id: AttemptId,
+        binding_ledger: BindingLedger | None = None,
+        source_lease: SourceLease | None = None,
         config: OpenAPIParserConfig | None = None,
         **options: Unpack[OpenAPIParserConfigDict],
     ) -> None:
@@ -2144,7 +2421,14 @@ class ContractApiOpenAPIParser(BindingCaptureMixin, ApiOpenAPIParser):
         self.schema_observations: list[SchemaUseObservation] = []
         self._object_uses: dict[int, ObjectUseObservation] = {}
         self._object_contexts: list[ObjectUseObservation] = []
-        super().__init__(source, attempt_id=attempt_id, config=config, **options)
+        super().__init__(
+            source,
+            attempt_id=attempt_id,
+            binding_ledger=binding_ledger,
+            source_lease=source_lease,
+            config=config,
+            **options,
+        )
         self.binding_frames = _ObservedDeclarationFrames(
             self.source_lease, self._record_schema_use, self.binding_ledger
         )
