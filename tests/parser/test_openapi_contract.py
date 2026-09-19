@@ -410,7 +410,6 @@ def test_capture_actual_deduplication_pair() -> None:
 @pytest.mark.parametrize("failure", ["missing_root", "structural_cycle", "after_enter"])
 def test_capture_collapse_failures(failure: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """Reject malformed recipes and retain incomplete context entry on real parse failures."""
-    from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.parser import base
     from datamodel_code_generator.parser.openapi_contract_store import ContractGenerationStore
 
@@ -438,8 +437,7 @@ def test_capture_collapse_failures(failure: str, monkeypatch: pytest.MonkeyPatch
             owner: DataType | DataModelFieldBase,
             kind: Literal["field", "nested", "reference"],
         ) -> RootCollapse:
-            if (reference := data_type.reference) is None or not isinstance(model := reference.source, DataModel):
-                pytest.fail("Expected an actual root model at the collapse boundary")
+            model = next(model for model in parser.results if model.reference is data_type.reference)
             if failure == "missing_root":
                 fields = model.fields
                 model.fields = []
