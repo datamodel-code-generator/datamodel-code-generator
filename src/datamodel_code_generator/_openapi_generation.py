@@ -73,7 +73,7 @@ class SourceLease:
             raise BindingCaptureError(msg)
         for token in location.pointer[1:].split("/"):
             key = token.replace("~1", "/").replace("~0", "~")
-            try:  # ruff: ignore[too-many-statements-in-try-clause] # Share lookup error conversion.
+            try:  # Share lookup error conversion.
                 match value:
                     case dict():
                         value = value[key]
