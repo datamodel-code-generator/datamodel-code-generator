@@ -7,6 +7,7 @@ import tokenize
 from dataclasses import dataclass, replace
 from hashlib import sha256
 from io import StringIO
+from itertools import starmap
 from typing import TYPE_CHECKING, Final, Literal, NoReturn, TypeAlias, cast
 
 from datamodel_code_generator._binding_literals import UnsupportedBindingValueError, freeze_argument, freeze_literal
@@ -28,9 +29,17 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator._python_type_annotation import (
     PythonTypeBoundName,
+    PythonTypeEllipsis,
+    PythonTypeLiteralValue,
+    PythonTypeModelField,
     PythonTypeName,
+    PythonTypeParameterList,
     PythonTypeQualifiedName,
     PythonTypeRuntimeSymbol,
+    PythonTypeStarred,
+    PythonTypeSubscript,
+    PythonTypeTuple,
+    PythonTypeUnion,
 )
 
 if TYPE_CHECKING:
@@ -46,6 +55,7 @@ if TYPE_CHECKING:
         TypeArgument,
         UnannotatedPythonType,
     )
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
 
@@ -635,11 +645,29 @@ class _TypePlacementMatcher:
             ):
                 break
             tokens = self._metadata(arguments[0], ())
-        expected_members = expected.members if isinstance(expected, UnionType) else (expected,)
+        if isinstance(expected, BoundType) and self._match_bound(expected, tokens):
+            return
+        expected_members = (
+            expected.members
+            if isinstance(expected, UnionType)
+            else tuple(
+                BoundType(replace(expected.binding, expression=item)) for item in expected.binding.expression.items
+            )
+            if isinstance(expected, BoundType) and isinstance(expected.binding.expression, PythonTypeUnion)
+            else (expected,)
+        )
         if (actual := self._union(tokens)) is None:
             self._match(expected, tokens, ())
             return
-        has_null = any(isinstance(member, NoneType) for member in expected_members)
+        has_null = any(
+            isinstance(member, NoneType)
+            or (
+                isinstance(member, BoundType)
+                and isinstance(member.binding.expression, PythonTypeName)
+                and member.binding.expression.value == "None"
+            )
+            for member in expected_members
+        )
         actual = tuple(member for member in actual if not (member is None or _text(member) == "None") or has_null)
         actual = tuple(
             member
@@ -702,22 +730,102 @@ class _TypePlacementMatcher:
             self._mismatch()
 
     def _match_bound(self, expected: BoundType, tokens: Tokens) -> bool:
-        match expected.binding.expression:
+        return self._match_python_expression(expected.binding.expression, tokens)
+
+    def _match_python_expression(  # ruff: ignore[too-many-branches] -- One case per retained expression kind.
+        self, expected: PythonTypeExpr, tokens: Tokens
+    ) -> bool:
+        tokens = _unparenthesized(tokens)
+        match expected:
             case PythonTypeRuntimeSymbol(module, parts):
-                matched = _resolved_name(tokens, self.bindings) == ".".join((module, *parts))
+                identity = (*((self.bindings.get(module, module),) if module else ()), *parts)
+                matched = _resolved_name(tokens, self.bindings) == ".".join(identity)
             case PythonTypeBoundName(_, module, name):
                 matched = (
                     _resolved_name(tokens, self.bindings) == f"{module}.{name}"
                     if module
-                    else _dotted_name(tokens) == name
+                    else _resolved_name(tokens, self.bindings) == name
                 )
             case PythonTypeName(name):
                 matched = _dotted_name(tokens) == name
             case PythonTypeQualifiedName(parts):
                 matched = _dotted_name(tokens) == ".".join(parts)
+            case PythonTypeSubscript(base, arguments):
+                matched = (
+                    (application := _application(tokens, "[")) is not None
+                    and self._match_python_expression(base, application[0])
+                    and self._match_python_arguments(arguments, application[1])
+                )
+            case PythonTypeModelField():
+                matched = self._match_native_field(expected, tokens)
+            case PythonTypeUnion(items):
+                children = self._union(tokens)
+                matched = (
+                    children is not None
+                    and len(children) == len(items)
+                    and all(
+                        self._match_python_expression(item, child)
+                        if child is not None
+                        else isinstance(item, PythonTypeName) and item.value == "None"
+                        for item, child in zip(items, children, strict=True)
+                    )
+                )
+            case PythonTypeParameterList(items):
+                matched = (
+                    bool(tokens)
+                    and tokens[0].string == "["
+                    and tokens[-1].string == "]"
+                    and self._match_python_arguments(items, tuple(part for part in _split(tokens[1:-1], ",") if part))
+                )
+            case PythonTypeTuple(items):
+                matched = self._match_python_arguments(items, tuple(part for part in _split(tokens, ",") if part))
+            case PythonTypeStarred(value):
+                matched = bool(tokens) and tokens[0].string == "*" and self._match_python_expression(value, tokens[1:])
+            case PythonTypeLiteralValue(value):
+                matched = _literal_or_syntax(tokens) == freeze_literal(value, set())
+            case PythonTypeEllipsis():
+                matched = _text(tokens) == "..."
             case _:
                 matched = False
         return matched
+
+    def _match_native_field(self, expected: PythonTypeModelField, tokens: Tokens) -> bool:
+        for index in reversed(expected.arguments):
+            suffix = (".", "__args__", "[", str(index), "]")
+            width = len(suffix)
+            if len(tokens) < width or tuple(token.string for token in tokens[-width:]) != suffix:
+                return False
+            tokens = tokens[:-width]
+        if expected.pydantic:
+            if tuple(token.string for token in tokens[-2:]) != (".", "annotation"):
+                return False
+            tokens = tokens[:-2]
+        if not tokens or tokens[-1].string != "]":
+            return False
+        depth = 0
+        for index in range(len(tokens) - 1, -1, -1):
+            token = tokens[index]
+            if token.type != tokenize.OP:
+                continue
+            if token.string == "]":
+                depth += 1
+            elif token.string == "[":
+                depth -= 1
+                if depth == 0:
+                    member = "model_fields" if expected.pydantic else "__annotations__"
+                    return (
+                        tuple(token.string for token in tokens[max(0, index - 2) : index]) == (".", member)
+                        and _string_literal(tokens[index + 1 : -1]) == expected.field_name
+                        and self._match_python_expression(expected.model, tokens[: index - 2])
+                    )
+        return False
+
+    def _match_python_arguments(self, expected: tuple[PythonTypeExpr, ...], children: tuple[Tokens, ...]) -> bool:
+        if not expected:
+            return not children or (len(children) == 1 and not _unparenthesized(children[0]))
+        return len(expected) == len(children) and all(
+            starmap(self._match_python_expression, zip(expected, children, strict=True))
+        )
 
     def _match_generic(self, expected: GenericType, tokens: Tokens, path: tuple[int, ...]) -> None:
         base, arguments, tuple_form = expected.base, expected.arguments, expected.tuple_form
