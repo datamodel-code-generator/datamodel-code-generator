@@ -154,6 +154,21 @@ class FinalOperationBuilder:
         self.operation_uses: dict[OperationId, ApiDeclarationId] = {}
         self.uses: dict[TypeUseId, TypeUseBinding] = {}
         self.diagnostics: list[BindingDiagnostic] = []
+        self.replaced_field_types = self._replaced_field_types(inventory)
+
+    def _replaced_field_types(self, inventory: FinalModelInventory) -> dict[GraphObjectId, list[TypeProjection]]:
+        """Follow completed field replacements to their actual final owner projections."""
+        final_field_types = {field.slot.field: field.projection for model in inventory.models for field in model.fields}
+        projections: dict[GraphObjectId, list[TypeProjection]] = {}
+        for replacement in self.parser.binding_ledger.replacements:
+            if (
+                replacement.kind == "field_type"
+                and replacement.original is not None
+                and replacement.owner is not None
+                and (projected := final_field_types.get(replacement.owner)) is not None
+            ):
+                projections.setdefault(replacement.original, []).append(projected)
+        return projections
 
     def location(self, declaration: ApiDeclarationId, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Translate an actual declaration into its leased plain-pointer identity."""
@@ -787,19 +802,28 @@ class FinalOperationBuilder:
     def _schema_helpers(self) -> None:
         """Expose only nested occurrences whose actual producer returned a captured type."""
         candidates: dict[SourceLocation, list[TypeProjection]] = {}
+        inherited_candidates: dict[SourceLocation, list[TypeProjection]] = {}
         for observation in self.parser.schema_types:
             locations = (
-                tuple(origin.location for origin in self.parser.schema_origins.origins(observation.schema))
+                tuple(
+                    (origin.location, origin.relation == "inherited_materialization")
+                    for origin in self.parser.schema_origins.origins(observation.schema)
+                )
                 if observation.schema is not None
-                else observation.locations
+                else tuple((location, False) for location in observation.locations)
             )
             if not locations:
                 continue
-            projected = self.imports.project(
-                self.projector.project(_type_recipe(observation.data_type, self.parser.binding_ledger, set()))
+            projections = self.replaced_field_types.get(self.parser.binding_ledger.identity(observation.data_type))
+            projected = tuple(
+                self.imports.project(projection)
+                for projection in projections
+                or (self.projector.project(_type_recipe(observation.data_type, self.parser.binding_ledger, set())),)
             )
-            for location in locations:
-                candidates.setdefault(location, []).append(projected)
+            for location, inherited in locations:
+                (inherited_candidates if inherited else candidates).setdefault(location, []).extend(projected)
+        for location, projections in inherited_candidates.items():
+            candidates.setdefault(location, projections)
         for location, projections in candidates.items():
             use = TypeUseId(
                 location,
@@ -860,6 +884,7 @@ if TYPE_CHECKING:
         FieldSlot,
         FieldUseBinding,
         FrozenLiteral,
+        GraphObjectId,
         SourceDocumentId,
         TypeUseRole,
     )

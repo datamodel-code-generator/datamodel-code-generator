@@ -1,0 +1,9 @@
+moment: 
+external: 
+native: custom_uuid.UUID
+bound_native: custom_runtime.argparse
+  expression: custom_runtime.argparse.HelpFormatter._Section
+handler: collections.abc.Callable,custom_models.Bar,custom_models.Qux,typing.Literal
+  expression: Callable[[Bar, Bar, Literal['foo.Bar']], Qux]
+record: typing_extensions.NamedTuple
+  expression: NamedTuple

@@ -16,14 +16,19 @@ from datamodel_code_generator import (
     _prepare_generate_facade_config,
     _run_generation,
 )
-from datamodel_code_generator._generation_contract import GeneratedSymbolType, ImportedType
+from datamodel_code_generator._generation_contract import (
+    GeneratedEnumMember,
+    GeneratedSymbolType,
+    ImportedType,
+    LiteralType,
+)
 from datamodel_code_generator._openapi_generation import OpenAPIGenerationSession, SourceLease
 from datamodel_code_generator._openapi_type_binding import require_type_bindings
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.openapi_contract import BindingResolverMixin
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
 from tests.conftest import assert_output
-from tests.data.python.binding_type_snapshot import type_snapshot
+from tests.data.python.binding_type_snapshot import final_import_snapshot, type_snapshot
 from tests.data.python.generation_contract_consumers import (
     client_plan,
     metadata_snapshot,
@@ -169,6 +174,146 @@ def test_referenced_callback_parameter_locations(scope: OpenAPIScope) -> None:
             for parameter in operation.parameters
         ),
         EXPECTED / "session/callback/parameter-locations.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_final_discriminator_enum_members(backend: str) -> None:
+    """Keep adopted enum member identities through discriminator replacement and inherited copies."""
+    product, retained = generate_product(
+        (DATA / "openapi/discriminator_enum.yaml").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="enum.json",
+            formatters=[],
+            disable_timestamp=True,
+            use_enum_values_in_discriminator=True,
+            use_subclass_enum=True,
+            use_serialize_as_any=True,
+            reuse_model=True,
+        ),
+    )
+    product.close()
+    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
+    assert_output(
+        "".join(
+            f"{names[field.consumer]}.{field.slot.name}: "
+            + (
+                f"{names[value.symbol]}.{value.name}"
+                if isinstance(value, GeneratedEnumMember)
+                else json.dumps(value.value)
+            )
+            + "\n"
+            for field in product.batch.fields
+            if names[field.consumer] in {"RequestV1", "RequestV2"}
+            and field.slot is not None
+            and field.model_facts is not None
+            and isinstance(field.model_facts.type, LiteralType)
+            for value in field.model_facts.type.values
+        ),
+        EXPECTED / "session-review/no-diagnostics.txt"
+        if backend == "typing.TypedDict"
+        else EXPECTED
+        / "session-review/final-enum"
+        / ("literals.txt" if backend == "pydantic_v2.dataclass" else "members.txt"),
+    )
+    assert_output(
+        "\n".join(
+            error.code
+            for error in require_type_bindings(product.batch, tuple(use.id for use in product.batch.type_uses))
+        ),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(product.artifacts[0].content.decode(), EXPECTED / "session-review/final-enum" / f"{backend}.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("enum_values", [False, True])
+@pytest.mark.parametrize("alias", [False, True])
+def test_discriminator_override_helper(backend: str, *, enum_values: bool, alias: bool) -> None:
+    """Demand the actual replaced field type while preserving its original enum declaration."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-discriminator-override.yaml").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="override.yaml",
+            formatters=[],
+            disable_timestamp=True,
+            use_enum_values_in_discriminator=enum_values,
+            use_subclass_enum=True,
+            reuse_model=True,
+            aliases={"version": "kind"} if alias else None,
+        ),
+    )
+    product.close()
+    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
+    pointers = {
+        "/components/schemas/RequestBase/properties/version",
+        "/components/schemas/RequestV1/properties/version",
+    }
+    selected = tuple(use for use in product.batch.type_uses if use.id.schema_site.pointer in pointers)
+    expected = EXPECTED / "session-review/discriminator-override"
+    assert_output(
+        json.dumps({use.id.schema_site.pointer: type_snapshot(use.type, names) for use in selected}, indent=2) + "\n",
+        expected
+        / (
+            "inherited.txt"
+            if backend == "typing.TypedDict"
+            else "members.txt"
+            if enum_values
+            else "literals.txt"
+        ),
+    )
+    assert_output(
+        "\n".join(error.code for error in require_type_bindings(product.batch, tuple(use.id for use in selected))),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(product.artifacts[0].content.decode(), expected / f"{backend}-{enum_values}-{alias}.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("annotated", [False, True])
+def test_final_bound_import_overrides(backend: str, *, annotated: bool) -> None:
+    """Retain overridden imports within nested bound expressions, constraints and containers."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-final-imports.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="imports.json",
+            formatters=[],
+            disable_timestamp=True,
+            use_annotated=annotated,
+            field_constraints=annotated,
+            import_overrides=json.loads((SOURCE / "binding/session-final-import-overrides.json").read_text()),
+        ),
+    )
+    product.close()
+    assert_output(
+        final_import_snapshot(product.batch),
+        EXPECTED
+        / "session-review/final-imports"
+        / ("pydantic-imports.txt" if backend.startswith("pydantic") else "builtin-imports.txt"),
+    )
+    assert_output(
+        product.artifacts[0].content.decode(), EXPECTED / "session-review/final-imports" / f"{backend}-{annotated}.py"
     )
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 

@@ -96,6 +96,30 @@ class FinalFieldBuilder:
         self.synthetics: dict[GraphObjectId, list[openapi_contract.SyntheticFieldObservation]] = {}
         for observation in parser.synthetic_fields:
             self.synthetics.setdefault(observation.field, []).append(observation)
+        self.discriminator_fields: dict[GraphObjectId, tuple[SourceLocation, ...]] = {}
+        if parser.discriminator_types:
+            reference_sources: dict[GraphObjectId, list[SourceLocation]] = {}
+            for source in parser.schema_references:
+                reference_sources.setdefault(source.reference, []).extend(
+                    origin.location for origin in parser.schema_origins.origins(source.schema)
+                )
+            produced_types = {
+                parser.binding_ledger.identity(item.data_type): item for item in parser.discriminator_types
+            }
+            for target, original in parser.binding_ledger.enum_copies.items():
+                if (produced := produced_types.get(original)) is not None:
+                    produced_types[target] = produced
+            for slot, field in self.field_nodes.items():
+                if slot.field in parser.field_origins or slot.field in parser.field_constructions:
+                    continue
+                if (produced := produced_types.get(parser.binding_ledger.identity(field.data_type))) is None:
+                    continue
+                reference = produced.reference
+                if reference is None and (model := self.model_nodes.get(produced.model)) is not None:
+                    reference = parser.binding_ledger.identity(model.reference)
+                self.discriminator_fields[slot.field] = tuple(
+                    dict.fromkeys(reference_sources.get(reference, ())) if reference is not None else ()
+                )
 
     def _extra_items(self, model: DataModel) -> FinalPythonType | None:
         for observation in reversed(self.parser.additional_types):
@@ -272,6 +296,19 @@ class FinalFieldBuilder:
             for declared in projection.value.fields:
                 slot = declared.slot
                 original_ids = self.sources.get(slot.field, (slot.field,))
+                discriminator = any(source in self.discriminator_fields for source in original_ids)
+                if discriminator:
+                    original_ids = tuple(
+                        dict.fromkeys((
+                            *original_ids,
+                            *(
+                                source
+                                for override in projection.value.overrides
+                                if override.replacement == slot
+                                for source in self.sources.get(override.original.field, (override.original.field,))
+                            ),
+                        ))
+                    )
                 origins = tuple(
                     dict.fromkeys(
                         FieldSourceOrigin(origin.location, origin.relation)
@@ -294,14 +331,40 @@ class FinalFieldBuilder:
                             ),
                         ))
                     )
+                if discriminator:
+                    origins = tuple(
+                        dict.fromkeys((
+                            *origins,
+                            *(
+                                FieldSourceOrigin(location, "discriminator_synthetic")
+                                for source in original_ids
+                                for location in self.discriminator_fields.get(source, ())
+                            ),
+                        ))
+                    )
+                wire_name = declared.wire_name
+                if discriminator:
+                    wire_names = {
+                        observed.wire_name
+                        for source in original_ids
+                        if (observed := self.parser.field_origins.get(source)) is not None
+                    }
+                    if len(wire_names) == 1:
+                        wire_name = next(iter(wire_names))
                 facts = self.facts.get(slot)
                 bindings.append(
                     FieldUseBinding(
                         "known" if origins else "unavailable",
                         None if origins else "producer_unobserved",
-                        synthetic[-1].kind if synthetic else "root_value" if identity.is_alias else "property",
+                        "discriminator_synthetic"
+                        if discriminator
+                        else synthetic[-1].kind
+                        if synthetic
+                        else "root_value"
+                        if identity.is_alias
+                        else "property",
                         origins,
-                        None if synthetic and synthetic[-1].kind == "root_value" else declared.wire_name,
+                        None if synthetic and synthetic[-1].kind == "root_value" else wire_name,
                         identity.symbol,
                         slot,
                         facts,
@@ -464,6 +527,7 @@ if TYPE_CHECKING:
         GraphObjectId,
         ModelArtifactAddress,
         ModelFieldFacts,
+        SourceLocation,
         SymbolId,
     )
     from datamodel_code_generator.model.base import DataModel
