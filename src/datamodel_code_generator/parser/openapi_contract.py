@@ -1176,6 +1176,8 @@ class BindingCaptureMixin(OpenAPIParser):
         frame = self._allof_refs[-1]
         if self.binding_resolver.resolution_owner is not frame.producer:
             return
+        if any(obj is inline for inline in frame.obj.allOf):
+            return
         if frame.name != name or frame.path != tuple(path) or not frame.producer.resolutions:
             msg = "An allOf union does not match its direct loader frame"
             raise BindingCaptureError(msg)
@@ -1185,7 +1187,7 @@ class BindingCaptureMixin(OpenAPIParser):
             raise BindingCaptureError(msg)
         _, node = frame.direct_refs[occurrence]
         event = frame.producer.resolutions[occurrence]
-        if event.input != node.ref or any(obj is inline for inline in frame.obj.allOf):
+        if event.input != node.ref:
             msg = "An allOf union is not the observed referenced declaration"
             raise BindingCaptureError(msg)
         if (prior := frame.materialized_parents.get(occurrence)) is not None and prior is not obj:

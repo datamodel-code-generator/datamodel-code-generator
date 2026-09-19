@@ -1,0 +1,34 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Final import identities",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Record": {
+        "type": "object",
+        "required": [
+          "value",
+          "color"
+        ],
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "color": {
+            "$ref": "#/components/schemas/NativeColor"
+          }
+        }
+      },
+      "NativeColor": {
+        "type": "string",
+        "x-python-import": {
+          "module": "colors",
+          "name": "Color"
+        }
+      }
+    }
+  }
+}

@@ -580,3 +580,60 @@ def test_bound_expression_matches_actual_structure(change: dict[str, str | bool]
     finally:
         parser.dispose()
         parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("standard", [False, True])
+def test_empty_fixed_tuple_matches_actual_emission(backend: DataModelType, *, standard: bool) -> None:
+    """Accept the builtin empty-tuple spelling and reject a changed element type."""
+    from datamodel_code_generator.parser.openapi_contract_freeze import freeze_model_inventory
+    from tests.data.python.binding_inputs import builtin_binding_config, projected_field_expectations
+    from tests.data.python.binding_type_snapshot import inventory_tuple_snapshot
+
+    config = builtin_binding_config(backend)
+    config.use_tuple_for_fixed_length_arrays = True
+    config.use_standard_collections = standard
+    parser = ContractApiOpenAPIParser(SOURCE / "empty-fixed-tuple.json", attempt_id=AttemptId(7), config=config)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"empty-fixed-tuple-{backend.name}-{standard}.py")
+        inventory = freeze_model_inventory(parser, body, output=Path("models.py"), model_package="example.models")
+        expected = projected_field_expectations(parser, "Record", backend)
+        imports = FrozenImportBindings(inventory.imports[0].values)
+        index_builtin_field_declarations(body, expected=expected, imports=imports)
+        assert_output(
+            json.dumps(inventory_tuple_snapshot(inventory), indent=2) + "\n", EXPECTED / "empty-fixed-tuple.txt"
+        )
+        with pytest.raises(BindingCaptureError, match="Accepted field annotation does not match its projected type"):
+            index_builtin_field_declarations(body.replace("[()]", "[str]"), expected=expected, imports=imports)
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("declaration", json.loads((SOURCE / "builtin-shadow-artifacts.json").read_text()))
+@pytest.mark.parametrize("case", ["builtin-shadow", "builtin-bound-shadow"])
+def test_changed_artifact_cannot_shadow_a_projected_builtin(declaration: str, case: str) -> None:
+    """Treat unverified top-level names as shadowing, never as builtin fallback."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        builtin_field_imports,
+        projected_field_expectations,
+    )
+
+    backend = DataModelType.PydanticV2BaseModel
+    parser = ContractApiOpenAPIParser(
+        SOURCE / f"{case}.json", attempt_id=AttemptId(1), config=builtin_binding_config(backend)
+    )
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"{case}.py")
+        with pytest.raises(BindingCaptureError, match="Accepted field annotation does not match its projected type"):
+            index_builtin_field_declarations(
+                body.replace("class Record", declaration + "\n\nclass Record"),
+                expected=projected_field_expectations(parser, "Record", backend),
+                imports=FrozenImportBindings(builtin_field_imports()),
+            )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()

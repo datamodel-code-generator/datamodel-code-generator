@@ -43,6 +43,7 @@ from datamodel_code_generator._python_type_annotation import (
     PythonTypeTuple,
     PythonTypeUnion,
 )
+from datamodel_code_generator.model.base import DataModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -59,7 +60,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+    from datamodel_code_generator.model.base import DataModelFieldBase
 
 Tokens: TypeAlias = tuple[tokenize.TokenInfo, ...]
 _PAIR_SIZE: Final = 2
@@ -318,7 +319,7 @@ def _resolved_name(tokens: Tokens, bindings: dict[str, str]) -> str | None:
     if (name := _dotted_name(_unparenthesized(tokens))) is None:
         return None
     prefix, separator, suffix = name.partition(".")
-    if (module := bindings.get(prefix)) is None:
+    if not (module := bindings.get(prefix)):
         return None
     return module + (separator + suffix if separator else "")
 
@@ -498,6 +499,25 @@ def _emitted_facts(
         null_type_in_annotation=_has_top_marker(annotation, bindings, "None"),
         qualifiers=qualifiers,
         constructor_keywords=tuple((name, _literal_or_syntax(value)) for name, value in keywords),
+    )
+
+
+def _same_expression(left: Tokens, right: Tokens) -> bool:
+    """Allow literal quote/wrapping changes without evaluating arbitrary expressions."""
+    same_length = len(left) == len(right)
+    if same_length and all(
+        first.type == second.type and first.string == second.string for first, second in zip(left, right, strict=True)
+    ):
+        return True
+    if not isinstance(value := _literal_or_syntax(left), SourceExpression):
+        return value == _literal_or_syntax(right)
+    return same_length and all(
+        first.type == second.type
+        and (
+            first.string == second.string
+            or (first.type == tokenize.STRING and _literal_or_syntax((first,)) == _literal_or_syntax((second,)))
+        )
+        for first, second in zip(left, right, strict=True)
     )
 
 
@@ -749,7 +769,7 @@ class _TypePlacementMatcher:
                     else _resolved_name(tokens, self.bindings) == name
                 )
             case PythonTypeName(name):
-                matched = _dotted_name(tokens) == name
+                matched = _dotted_name(tokens) == name and name not in self.bindings
             case PythonTypeQualifiedName(parts):
                 matched = _dotted_name(tokens) == ".".join(parts)
             case PythonTypeSubscript(base, arguments):
@@ -834,6 +854,8 @@ class _TypePlacementMatcher:
         if (application := _application(tokens, "[")) is None:
             self._mismatch()
         callee, children = application
+        if tuple_form == "fixed" and not arguments and len(children) == 1 and _text(children[0]) == "()":
+            children = ()
         if tuple_form == "ellipsis":
             if not children or _text(children[-1]) != "...":
                 self._mismatch()
@@ -894,11 +916,19 @@ class _TypePlacementMatcher:
         if len(positions) != 1:
             return False
         start = positions[0]
-        end = len(tokens) - (len(expression) - start - 1)
+        end = start
+        while end < len(tokens):
+            token = tokens[end]
+            if (end - start) % 2:
+                if token.string != ".":
+                    break
+            elif token.type != tokenize.NAME:
+                break
+            end += 1
         return (
             end > start
-            and _text(tokens[:start]) == _text(expression[:start])
-            and _text(tokens[end:]) == _text(expression[start + 1 :])
+            and _same_expression(tokens[:start], expression[:start])
+            and _same_expression(tokens[end:], expression[start + 1 :])
             and _resolved_name(tokens[start:end], self.bindings) == _import_identity(import_)[1]
         )
 
@@ -907,7 +937,7 @@ class _TypePlacementMatcher:
             case ImportedExpression(import_, prefix, suffix):
                 return self._match_imported_expression(import_, prefix, suffix, tokens)
             case SourceExpression(text):
-                return _text(tokens) == _text(_expression_tokens(text))
+                return _same_expression(tokens, _expression_tokens(text))
             case LiteralScalar("decimal", Decimal() as value):
                 application = _application(tokens, "(")
                 if (
@@ -930,22 +960,23 @@ class _ArtifactIndexBuilder:
     """Keep statement lookup linear in final fields and artifact tokens."""
 
     def __init__(self, expected: tuple[ExpectedFieldDeclaration, ...], imports: FrozenImportBindings) -> None:
-        self.wanted: dict[str, dict[str, ExpectedFieldDeclaration]] = {}
+        self.wanted: dict[str, dict[str | int | None, ExpectedFieldDeclaration]] = {}
         for field in expected:
             if field.attempt != field.slot.attempt:
                 msg = "A field expectation mixes capture attempts"
                 raise BindingCaptureError(msg)
             fields = self.wanted.setdefault(field.model_name, {})
-            if field.native_name in fields:
+            key = field.entry_ordinal if field.form == "typeddict_entry" else field.native_name
+            if key in fields:
                 msg = "Duplicate field expectation in one consumer"
                 raise BindingCaptureError(msg)
-            fields[field.native_name] = field
+            fields[key] = field
         self.bindings: dict[str, str] = {}
         self.allowed = {_import_identity(import_) for import_ in imports.values}
         self.symbols = dict(imports.symbols)
         self.symbols.update((field.consumer, field.model_name) for field in expected)
         self.definitions: list[ArtifactDefinition] = []
-        self.found: dict[tuple[str, str], FieldArtifactDeclaration] = {}
+        self.found: dict[tuple[str, str | int | None], FieldArtifactDeclaration] = {}
         self.defined: set[str] = set()
 
     def _definition(self, name: str, kind: Literal["class", "type_alias", "assignment"], line: int) -> None:
@@ -953,7 +984,7 @@ class _ArtifactIndexBuilder:
             msg = "A final symbol is declared more than once in its accepted artifact"
             raise BindingCaptureError(msg)
         self.defined.add(name)
-        self.bindings.pop(name, None)
+        self.bindings[name] = ""
         self.definitions.append(ArtifactDefinition(name, kind, line))
 
     def top_level(self, tokens: Tokens) -> str | None:
@@ -962,7 +993,7 @@ class _ArtifactIndexBuilder:
             if (alias, identity) in self.allowed:
                 self.bindings[alias] = resolution_base
             else:
-                self.bindings.pop(alias, None)
+                self.bindings[alias] = ""
             self.definitions.append(ArtifactDefinition(alias, "import", tokens[0].start[0]))
         match tokens:
             case (head, second, _, *_) if second.type == tokenize.NAME and head.string == "class":
@@ -989,7 +1020,7 @@ class _ArtifactIndexBuilder:
             if field.form != "typeddict_entry" or field.entry_key != key or field.entry_ordinal != ordinal:
                 msg = "Functional TypedDict entry order differs from final field ownership"
                 raise BindingCaptureError(msg)
-            self.found[name, field.native_name] = FieldArtifactDeclaration(
+            self.found[name, ordinal] = FieldArtifactDeclaration(
                 field,
                 _text(annotation),
                 None,
@@ -1058,7 +1089,8 @@ class _ArtifactIndexBuilder:
                     )
                 )
                 continue
-            if (declaration := self.found.get((field.model_name, field.native_name))) is None:
+            key = field.entry_ordinal if field.form == "typeddict_entry" else field.native_name
+            if (declaration := self.found.get((field.model_name, key))) is None:
                 msg = "An expected final field is absent from its accepted artifact"
                 raise BindingCaptureError(msg)
             ordered.append(declaration)
@@ -1472,3 +1504,21 @@ def _annotation_null_origin(
     else:
         annotation = "opaque"
     return annotation
+
+
+@dataclass(frozen=True, slots=True)
+class FinalReferencePolicy:
+    """Read the final nullable/alias policy without evaluating reference getters."""
+
+    nullable: bool
+    is_alias: bool
+    serialize_as_any: bool
+
+
+def freeze_reference_policy(model: DataModel, *, serialize_as_any: bool) -> FinalReferencePolicy:
+    """Project raw builtin state for a final reference; never compute a type hint."""
+    return FinalReferencePolicy(
+        model._nullable,  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] -- Read the stored flag without invoking its property.
+        model.IS_ALIAS,
+        serialize_as_any and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
+    )

@@ -1,0 +1,12 @@
+[
+  [
+    "Record",
+    "value",
+    "StrictStr"
+  ],
+  [
+    "Record",
+    "color",
+    "Color"
+  ]
+]

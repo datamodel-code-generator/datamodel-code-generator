@@ -1,0 +1,3 @@
+[
+  "/components/schemas/Record/properties/value/allOf/0/oneOf/0/properties/label"
+]
