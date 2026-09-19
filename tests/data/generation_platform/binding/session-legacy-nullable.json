@@ -1,0 +1,42 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Legacy use",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/adopt": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    }
+  }
+}

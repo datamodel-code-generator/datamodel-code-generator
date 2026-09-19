@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Module bindings
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Foo:
+      type: object
+      properties:
+        value:
+          type: string

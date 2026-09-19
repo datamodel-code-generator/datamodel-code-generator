@@ -1,0 +1,4 @@
+security_scheme Key: {"$ref":"#/components/securitySchemes/ActualKey"}
+  #/components/securitySchemes/ActualKey: invalid_target -> session-metadata-nonobject.json#/components/securitySchemes/ActualKey
+link next: {"operationId":"readItem","parameters":{"id":"$response.body#/id"}}
+  #/components/links/Next: resolved -> session-metadata-nonobject.json#/components/links/Next

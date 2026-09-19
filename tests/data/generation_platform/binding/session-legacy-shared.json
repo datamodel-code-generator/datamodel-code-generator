@@ -1,0 +1,27 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "Shared media producers", "version": "1"},
+  "paths": {
+    "/a": {"post": {
+      "operationId": "first",
+      "requestBody": {"$ref": "#/components/requestBodies/Shared"},
+      "responses": {
+        "200": {"$ref": "#/components/responses/Shared"},
+        "201": {"$ref": "#/components/responses/Shared"}
+      }
+    }},
+    "/b": {"post": {
+      "operationId": "second",
+      "requestBody": {"$ref": "#/components/requestBodies/Shared"},
+      "responses": {"200": {"$ref": "#/components/responses/Shared"}}
+    }}
+  },
+  "components": {
+    "requestBodies": {"Shared": {"content": {
+      "application/json": {"schema": {"type": "object", "properties": {"value": {"type": "integer"}}, "required": ["value"]}}
+    }}},
+    "responses": {"Shared": {"description": "Shared object", "content": {
+      "application/json": {"schema": {"type": "object", "properties": {"value": {"type": "integer"}}, "required": ["value"]}}
+    }}}
+  }
+}

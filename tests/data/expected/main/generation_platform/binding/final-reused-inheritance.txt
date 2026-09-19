@@ -1,0 +1,17 @@
+[
+  [
+    "Base",
+    "value",
+    "Optional [str ]"
+  ],
+  [
+    "Holder",
+    "base",
+    "Optional [ForwardBase ]"
+  ],
+  [
+    "ForwardDerived",
+    "value",
+    "str"
+  ]
+]

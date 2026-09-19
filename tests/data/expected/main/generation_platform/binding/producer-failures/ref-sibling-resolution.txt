@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A ref sibling merge has no matching direct loader resolution"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

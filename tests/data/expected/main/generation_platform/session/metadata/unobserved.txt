@@ -1,0 +1,4 @@
+security_scheme Key: {"$ref":"session-metadata-library.json#/components/securitySchemes/Key"}
+  session-metadata-library.json#/components/securitySchemes/Key: document_not_observed -> -
+link next: {"$ref":"session-metadata-library.json#/components/links/Next"}
+  session-metadata-library.json#/components/links/Next: document_not_observed -> -

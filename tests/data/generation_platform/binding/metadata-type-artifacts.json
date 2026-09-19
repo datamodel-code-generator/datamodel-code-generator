@@ -34,5 +34,23 @@
     "old": "Field(discriminator='kind')",
     "new": "Field('kind')",
     "error": true
+  },
+  {
+    "id": "short-annotated",
+    "old": "Annotated[Union[A, B], Field(discriminator='kind')]",
+    "new": "Annotated[Union[A, B]]",
+    "error": true
+  },
+  {
+    "id": "literal-metadata",
+    "old": "Field(discriminator='kind')",
+    "new": "'kind'",
+    "error": true
+  },
+  {
+    "id": "metadata-unpack",
+    "old": "Field(discriminator='kind')",
+    "new": "Field(**settings)",
+    "error": true
   }
 ]

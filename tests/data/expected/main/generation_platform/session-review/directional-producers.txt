@@ -1,0 +1,28 @@
+/paths/~1a/post request_body
+  property id: read_only <- /components/schemas/A/properties/id
+  property name: emitted <- /components/schemas/A/properties/name
+  property secret: emitted <- /components/schemas/A/properties/secret
+/paths/~1a/post response_body
+  property id: emitted <- /components/schemas/A/properties/id
+  property name: emitted <- /components/schemas/A/properties/name
+  property secret: write_only <- /components/schemas/A/properties/secret
+/paths/~1b/post request_body
+  property id: read_only <- /components/schemas/B/properties/id
+  property name: emitted <- /components/schemas/B/properties/name
+  property secret: emitted <- /components/schemas/B/properties/secret
+/paths/~1b/post response_body
+  property id: emitted <- /components/schemas/B/properties/id
+  property name: emitted <- /components/schemas/B/properties/name
+  property secret: write_only <- /components/schemas/B/properties/secret
+/paths/~1array/post request_body
+  root_value -: emitted <- /components/schemas/Array
+/paths/~1array/post response_body
+  root_value -: emitted <- /components/schemas/Array
+/paths/~1child/post request_body
+  property id: read_only <- /components/schemas/Base/properties/id
+  property secret: emitted <- /components/schemas/Base/properties/secret
+  property name: emitted <- /components/schemas/Child/allOf/1/properties/name
+/paths/~1child/post response_body
+  property id: emitted <- /components/schemas/Base/properties/id
+  property secret: write_only <- /components/schemas/Base/properties/secret
+  property name: emitted <- /components/schemas/Child/allOf/1/properties/name

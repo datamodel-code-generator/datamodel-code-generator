@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gc
 import json
 from pathlib import Path
 
@@ -11,7 +10,7 @@ import pytest
 import datamodel_code_generator as dcg
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from tests.conftest import assert_output
-from tests.main.test_generation_api_scope import ApiAttemptConsumer
+from tests.data.python.generation_session_inputs import compare_api_session
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
@@ -90,47 +89,16 @@ def test_api_public_surface_annotations() -> None:
 )
 def test_api_capture_engine_parity(case: str) -> None:
     """Compare real output and engine call counts with the bounded capture consumer."""
-    import sys
-
-    from tests.data.python.generation_observer import GenerationObserver
-
-    consumer = ApiAttemptConsumer("none")
-    outputs = []
-    calls = []
-    for capture in (None, consumer):
-        observer = GenerationObserver()
-        previous = sys.getprofile()
-        config = dcg._prepare_generate_facade_config(
-            dcg.GenerateConfig(
-                input_file_type="openapi",
-                openapi_scopes=[dcg.OpenAPIScope.Api],
-                disable_timestamp=True,
-                formatters=[],
-            )
-        )
-        try:
-            sys.setprofile(observer.record)
-            outputs.append(
-                dcg._run_generation(SOURCE / f"{case}.json", config, Path.cwd(), use_output_cwd=False, capture=capture)
-            )
-        finally:
-            sys.setprofile(previous)
-        calls.append(observer.calls)
-    consumer.close()
-    gc.collect()
-    assert_output(
-        json.dumps(
-            {
-                "outputs_equal": outputs[0] == outputs[1],
-                "engine_calls_equal": calls[0] == calls[1],
-                "factory_reads": consumer.factory_reads,
-                "retained_parsers": sum(parser() is not None for parser in consumer.parsers),
-            },
-            indent=2,
-        )
-        + "\n",
-        EXPECTED / "capture-parity.txt",
+    observation = compare_api_session(
+        SOURCE / f"{case}.json",
+        dcg.GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[dcg.OpenAPIScope.Api],
+            disable_timestamp=True,
+            formatters=[],
+        ),
     )
+    assert_output(json.dumps(observation, indent=2) + "\n", EXPECTED / "capture-parity.txt")
 
 
 @pytest.mark.parametrize("tags", [False, True])

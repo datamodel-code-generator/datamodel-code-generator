@@ -1,0 +1,17 @@
+[
+  [
+    "foo-bar",
+    "foo_bar",
+    "str"
+  ],
+  [
+    "foo_bar",
+    "foo_bar",
+    "int"
+  ],
+  [
+    "leaf-key",
+    "leaf_key",
+    "bool"
+  ]
+]

@@ -1,0 +1,10 @@
+any_chain: none / runtime_or_opaque / opaque
+any_value: none / runtime_or_opaque / opaque
+chain: none / runtime_or_opaque / opaque
+imported_none: none / runtime_or_opaque / opaque
+items: none / runtime_or_opaque / opaque
+nullable: none / runtime_or_opaque / opaque
+plain: none / runtime_or_opaque / opaque
+required_any: absent / not_applicable / opaque
+required_nullable: absent / not_applicable / opaque
+union: none / runtime_or_opaque / opaque

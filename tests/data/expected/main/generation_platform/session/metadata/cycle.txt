@@ -1,0 +1,5 @@
+security_scheme Key: {"$ref":"#/components/securitySchemes/Key"}
+  #/components/securitySchemes/ActualKey: resolved -> session-metadata-cycle.json#/components/securitySchemes/ActualKey
+  #/components/securitySchemes/Key: cycle -> session-metadata-cycle.json#/components/securitySchemes/Key
+link next: {"operationId":"readItem","parameters":{"id":"$response.body#/id"}}
+  #/components/links/Next: resolved -> session-metadata-cycle.json#/components/links/Next

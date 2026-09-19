@@ -9,13 +9,6 @@ from datamodel_code_generator._generation_contract import BindingCaptureError, S
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger, capture_errors
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
-
-    from datamodel_code_generator._generation_contract import SourceDocumentId
-    from datamodel_code_generator._source import YamlValue
-    from datamodel_code_generator.enums import AllOfMergeMode
-
 SchemaRelation: TypeAlias = Literal[
     "validated_child",
     "ref_sibling",
@@ -56,7 +49,7 @@ class SyntheticSchemaProjection:
 
     source: SourceLocation
     target: JsonSchemaObject
-    item_reference: JsonSchemaObject
+    item_reference: JsonSchemaObject | bool
     kind: Literal["item_stream_array"] = "item_stream_array"
 
 
@@ -225,10 +218,19 @@ class ValidatedSchemaOriginIndex:
 
     @capture_errors
     def pair_item_projection(
-        self, *, raw: dict[str, YamlValue] | bool, obj: JsonSchemaObject, location: SourceLocation
+        self,
+        *,
+        raw: dict[str, YamlValue] | bool,
+        obj: JsonSchemaObject,
+        location: SourceLocation,
+        reference: bool = True,
     ) -> None:
         """Bind an observed synthetic array and its item reference to the real item declaration."""
-        if obj.type != "array" or not isinstance(item := obj.items, JsonSchemaObject) or item.ref is None:
+        if (
+            obj.type != "array"
+            or not isinstance(item := obj.items, (JsonSchemaObject, bool))
+            or (reference and (not isinstance(item, JsonSchemaObject) or item.ref is None))
+        ):
             msg = "An item-stream projection did not produce the expected array reference"
             raise BindingCaptureError(msg)
         key: tuple[int, SourceLocation, SchemaRelation] = id(obj), location, "synthetic_value"
@@ -237,7 +239,8 @@ class ValidatedSchemaOriginIndex:
         self._paired.add(key)
         self._validated_anchors[id(obj)] = obj
         self._origins.setdefault(id(obj), []).append(SchemaOrigin(location, raw, "synthetic_value"))
-        self.pair(raw=raw, obj=item, location=location, relation="synthetic_value")
+        if isinstance(item, JsonSchemaObject):
+            self.pair(raw=raw, obj=item, location=location, relation="synthetic_value")
         self.projections.append(SyntheticSchemaProjection(location, obj, item))
 
     @capture_errors
@@ -430,6 +433,10 @@ class ValidatedSchemaOriginIndex:
 
     def keyword_locations(self, obj: JsonSchemaObject, keyword: str) -> tuple[SourceLocation, ...]:
         """Retain only keyword occurrences actually present in borrowed declarations."""
+        if keyword == "items" and (
+            projections := tuple(item.source for item in self.projections if item.target is obj)
+        ):
+            return projections
         return tuple(
             dict.fromkeys(
                 _child_location(origin.location, keyword)
@@ -465,3 +472,11 @@ class ValidatedSchemaOriginIndex:
         self.edges.clear()
         self.projections.clear()
         self._incoming.clear()
+
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+
+    from datamodel_code_generator._generation_contract import SourceDocumentId
+    from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator.enums import AllOfMergeMode

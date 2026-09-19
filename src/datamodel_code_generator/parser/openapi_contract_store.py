@@ -16,18 +16,6 @@ from datamodel_code_generator._generation_contract import (
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser.generation import GenerationStore
 
-if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
-
-    from datamodel_code_generator._python_type_binding import BoundPythonType
-    from datamodel_code_generator.enums import AllOfMergeMode
-    from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.reference import Reference
-    from datamodel_code_generator.types import DataType
-
-    GraphNode: TypeAlias = DataModel | DataModelFieldBase | DataType | Reference
-
 
 class BindingLedger:
     """Retain observed graph identities only for the lifetime of one attempt."""
@@ -44,6 +32,8 @@ class BindingLedger:
         self.variants: list[Variant] = []
         self.collapses: list[RootCollapse] = []
         self.root_recipes: dict[GraphObjectId, TypeRecipe] = {}
+        self.registrations: list[ModelRegistration] = []
+        self.enum_copies: dict[GraphObjectId, GraphObjectId] = {}
 
     def identity(self, node: GraphNode) -> GraphObjectId:
         """Assign IDs by object identity, retaining anchors to prevent address reuse."""
@@ -72,6 +62,8 @@ class BindingLedger:
         self.variants.clear()
         self.collapses.clear()
         self.root_recipes.clear()
+        self.registrations.clear()
+        self.enum_copies.clear()
         clear_capture_tracebacks(self.failure)
 
 
@@ -144,6 +136,15 @@ class Variant:
     base: GraphObjectId
     suffix: Literal["Request", "Response"]
     reference: GraphObjectId
+
+
+@dataclass(frozen=True, slots=True)
+class ModelRegistration:
+    """Keep original declaring slots before reuse, collapse, or directional removal."""
+
+    model: GraphObjectId
+    reference: GraphObjectId
+    fields: tuple[GraphObjectId, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,6 +240,20 @@ class ContractGenerationStore(GenerationStore):
         """Own the ledger before the original store allocates its model list."""
         self.binding_ledger = ledger
         super().__init__()
+
+    def register_model(self, model: DataModel) -> None:
+        """Observe the original registration once without refreshing derived facts."""
+        super().register_model(model)
+        self._record_registration(model)
+
+    @capture_errors
+    def _record_registration(self, model: DataModel) -> None:
+        identity = self.binding_ledger.identity
+        self.binding_ledger.registrations.append(
+            ModelRegistration(
+                identity(model), identity(model.reference), tuple(identity(field) for field in model.fields)
+            )
+        )
 
     @capture_errors
     def _record_replacement(
@@ -350,3 +365,16 @@ class ContractGenerationStore(GenerationStore):
         super().collapse_root_data_type(data_type, inner_reference)
         collapse.completed = True
         self._record_collapse(collapse)
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
+    from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator.enums import AllOfMergeMode
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+    GraphNode: TypeAlias = DataModel | DataModelFieldBase | DataType | Reference

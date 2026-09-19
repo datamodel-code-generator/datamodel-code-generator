@@ -1,0 +1,6 @@
+{
+  "/paths/~1bad/post": [
+    "BND_UNRESOLVED_REFERENCE"
+  ],
+  "/paths/~1good/post": []
+}

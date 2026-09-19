@@ -1,0 +1,17 @@
+path post /items
+  security: []
+  servers: []
+  responses: [["200","emit"]]
+  encode response_body - 200 application/json: models.py:Item
+    id -> id: required=True, nullable=False
+  callback onDone
+helper decode /components/schemas/Item/properties/id: builtins.int
+documentation post {$request.body#/callbackUrl}
+  parameter q
+  parameter path-token
+  request_body -
+  media application/json
+  response 204
+  schema /components/callbacks/Event/{$request.body#~1callbackUrl}/post/parameters/0/schema: {"type":"integer"}
+  schema /components/callbacks/Event/{$request.body#~1callbackUrl}/parameters/0/schema: {"type":"string"}
+  schema /components/callbacks/Event/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema: {"type":"object","required":["event"],"properties":{"event":"string"}}

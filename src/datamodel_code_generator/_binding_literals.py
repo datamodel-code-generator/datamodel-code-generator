@@ -17,9 +17,6 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 
-if TYPE_CHECKING:
-    from datamodel_code_generator._generation_contract import FrozenLiteral, TypeArgument, TypeProjectionReason
-
 _CUSTOM_BINDING_REQUIRED: Final = "BND_CUSTOM_BINDING_REQUIRED"
 
 
@@ -81,7 +78,7 @@ def freeze_literal(value: object, active: set[int]) -> FrozenLiteral:
                     kind = "tuple"
                 case set():
                     kind = "set"
-                case frozenset():
+                case _:
                     kind = "frozenset"
             return LiteralSequence(kind, tuple(freeze_literal(item, active) for item in value))
         raise UnsupportedBindingValueError(_CUSTOM_BINDING_REQUIRED)
@@ -95,3 +92,7 @@ def freeze_argument(value: object) -> TypeArgument:
     if type(value) is PythonRuntimeExpression:
         return ImportedExpression(value.import_, value.prefix, value.suffix)
     return freeze_literal(value, set())
+
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._generation_contract import FrozenLiteral, TypeArgument, TypeProjectionReason

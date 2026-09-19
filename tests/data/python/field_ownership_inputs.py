@@ -8,6 +8,7 @@ from datamodel_code_generator._generation_contract import AttemptId, FieldSlot, 
 from datamodel_code_generator.model.binding_fields import DeclaredField, FieldOwner
 
 if TYPE_CHECKING:
+    from datamodel_code_generator.model.binding import ExpectedFieldDeclaration
     from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser
 
 
@@ -32,3 +33,21 @@ def field_owners(parser: ContractApiOpenAPIParser) -> tuple[dict[SymbolId, Field
             ),
         )
     return owners, names
+
+
+def functional_leaf_expectations(parser: ContractApiOpenAPIParser) -> tuple[ExpectedFieldDeclaration, ...]:
+    """Prepare real inherited field ownership without merging by normalized identifier."""
+    from datamodel_code_generator import DataModelType
+    from datamodel_code_generator.model.binding_fields import FieldOwnershipIndex
+    from tests.data.python.binding_inputs import projected_field_expectations
+
+    owners, names = field_owners(parser)
+    declarations = {
+        declaration.slot: declaration
+        for name in names.values()
+        for declaration in projected_field_expectations(parser, name, DataModelType.TypingTypedDict)
+    }
+    leaf = next(symbol for symbol, name in names.items() if name == "Leaf")
+    projection = FieldOwnershipIndex(owners).project(leaf, functional_typeddict=True)
+    view = next(value for value in (projection.value,) if value is not None)
+    return view.functional_declarations("Leaf", declarations)

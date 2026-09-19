@@ -1,0 +1,94 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Schema-only callback facts",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "callbacks": {
+      "Event": {
+        "{$request.body#/callbackUrl}": {
+          "post": {
+            "requestBody": {
+              "required": true,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "required": [
+                      "event"
+                    ],
+                    "properties": {
+                      "event": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "204": {
+                "description": "Acknowledged"
+              }
+            },
+            "parameters": [
+              {
+                "name": "q",
+                "in": "query",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            ]
+          },
+          "parameters": [
+            {
+              "name": "path-token",
+              "in": "header",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "paths": {
+    "/items": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {
+          "onDone": {
+            "$ref": "#/components/callbacks/Event"
+          }
+        }
+      }
+    }
+  }
+}

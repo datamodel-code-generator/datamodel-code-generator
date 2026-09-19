@@ -5,16 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, NewType, Protocol, TypeAlias, TypeVar
 
-if TYPE_CHECKING:
-    from decimal import Decimal
-
-    from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._python_type_binding import BoundPythonType
-    from datamodel_code_generator.config import OpenAPIParserConfig
-    from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.parser.base import Result
-    from datamodel_code_generator.parser.openapi import OpenAPIParser
-
 AttemptId = NewType("AttemptId", int)
 BatchT_co = TypeVar("BatchT_co", covariant=True)
 
@@ -102,6 +92,16 @@ class FieldSlot:
     field: GraphObjectId
     index: int
     name: str
+
+
+@dataclass(frozen=True, slots=True)
+class ModuleResultBinding:
+    """Match declaring models to actual parser returns without retaining the graph."""
+
+    models: tuple[GraphObjectId, ...]
+    primary: tuple[str, ...] | Literal["single"] | None
+    secondary: tuple[tuple[str, ...], ...] = ()
+    reason: Literal["BND_ARTIFACT_AMBIGUOUS", "BND_SYMBOL_NOT_EMITTED"] | None = None
 
 
 Direction: TypeAlias = Literal["request", "response", "neutral"]
@@ -357,7 +357,11 @@ FinalPythonType: TypeAlias = UnannotatedPythonType | AnnotatedType
 
 
 TypeProjectionReason: TypeAlias = Literal[
-    "BND_TYPE_EXPRESSION_UNSUPPORTED", "BND_CUSTOM_BINDING_REQUIRED", "BND_SYMBOL_NOT_EMITTED"
+    "BND_TYPE_EXPRESSION_UNSUPPORTED",
+    "BND_CUSTOM_BINDING_REQUIRED",
+    "BND_SYMBOL_NOT_EMITTED",
+    "BND_UNRESOLVED_REFERENCE",
+    "BND_AMBIGUOUS_REPLACEMENT",
 ]
 
 
@@ -366,6 +370,212 @@ class TypeProjection:
     """Keep unsupported final-type forms as finite consumer diagnostics."""
 
     value: FinalPythonType | None
-    reason: (
-        Literal["BND_TYPE_EXPRESSION_UNSUPPORTED", "BND_CUSTOM_BINDING_REQUIRED", "BND_SYMBOL_NOT_EMITTED"] | None
-    ) = None
+    reason: TypeProjectionReason | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ModelArtifactAddress:
+    """Locate actual definitions beneath the caller's explicit model-package anchor."""
+
+    result_key: tuple[str, ...] | Literal["single"]
+    relative_path: tuple[str, ...]
+    model_package: str
+    secondary_definitions: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ModelFieldFacts:
+    """Keep adopted model semantics separate from each original wire occurrence."""
+
+    required: bool
+    nullable: bool | None
+    has_default: bool
+    explicit_default_factory: bool
+    type_has_null: bool | None
+    read_only: bool
+    write_only: bool
+    alias: str | None
+    validation_aliases: tuple[str, ...] | None
+    serialization_alias: str | None
+    use_serialization_alias: bool
+    type: FinalPythonType
+    backend: binding.BackendFieldFacts
+    none_default_provenance: NoneDefaultProvenance
+
+
+@dataclass(frozen=True, slots=True)
+class FinalModelSymbol:
+    """Identify a real emitted declaration without retaining its generation graph."""
+
+    id: SymbolId
+    model: GraphObjectId
+    reference: GraphObjectId
+    backend: binding.BackendName | None
+    kind: Literal["model", "root", "alias", "enum", "custom"]
+    name: str
+    artifact: ModelArtifactAddress | None
+    order: int
+    bases: tuple[SymbolId, ...]
+    fields: tuple[FieldSlot, ...]
+    is_alias: bool
+    nullable: bool
+    facts: binding.BackendModelFacts | None
+
+
+BindingReason: TypeAlias = Literal[
+    "BND_MODEL_SCOPE_REQUIRED",
+    "BND_OPERATION_ORIGIN_UNRESOLVED",
+    "BND_FIELD_ORIGIN_UNRESOLVED",
+    "BND_UNRESOLVED_REFERENCE",
+    "BND_AMBIGUOUS_REPLACEMENT",
+    "BND_FIELD_UNRESOLVED",
+    "BND_FIELD_AMBIGUOUS",
+    "BND_TYPE_EXPRESSION_UNSUPPORTED",
+    "BND_CUSTOM_BINDING_REQUIRED",
+    "BND_ARTIFACT_AMBIGUOUS",
+    "BND_SYMBOL_NOT_EMITTED",
+    "BND_ATTEMPT_MISMATCH",
+]
+
+
+@dataclass(frozen=True, slots=True)
+class BindingDiagnostic:
+    """Describe one finite binding failure using immutable identities and values."""
+
+    code: BindingReason
+    operation: OperationId | None = None
+    type_use: TypeUseId | None = None
+    source_locations: tuple[SourceLocation, ...] = ()
+    details: tuple[tuple[str, str | int | bool | None], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class FieldSourceOrigin:
+    """Retain every producer's original occurrence without retaining schema nodes."""
+
+    location: SourceLocation
+    relation: str
+
+
+@dataclass(frozen=True, slots=True)
+class FieldUseBinding:
+    """Join a consumer's wire member to its real declaring slot or explicit exclusion."""
+
+    origin_state: Literal["known", "unavailable", "ambiguous"]
+    origin_reason: str | None
+    member_kind: Literal[
+        "property",
+        "required_only",
+        "additional_properties",
+        "pattern_properties",
+        "root_value",
+        "discriminator_synthetic",
+    ]
+    occurrences: tuple[FieldSourceOrigin, ...]
+    wire_name: str | None
+    consumer: SymbolId
+    slot: FieldSlot | None
+    model_facts: ModelFieldFacts | None
+    schema: SourceLocation | None
+    direction: Direction
+    exclusion: Literal["read_only", "write_only", "tag"] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class TypeUseBinding:
+    """Bind one actual source occurrence without inventing an unavailable type."""
+
+    id: TypeUseId
+    state: Literal["bound", "not_generated", "invalid"]
+    type: FinalPythonType | None
+    reason: BindingReason | None
+    members: tuple[FieldUseBinding, ...] = ()
+    producers: tuple[FieldSlot, ...] = ()
+    schema: SourceLocation | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SourceReference:
+    """Retain a metadata reference without acquiring another source for observation."""
+
+    source: SourceLocation
+    reference: str
+    target: SourceLocation | None
+    state: Literal["resolved", "document_not_observed", "pointer_missing", "invalid_pointer", "invalid_target", "cycle"]
+
+
+@dataclass(frozen=True, slots=True)
+class WireDeclaration:
+    """Freeze non-schema wire facts while retaining original source/schema locations."""
+
+    kind: Literal[
+        "parameter", "request_body", "response", "header", "media", "encoding", "link", "callback", "security_scheme"
+    ]
+    name: str | None
+    declaration: DeclarationId
+    use_site: SourceLocation
+    facts: tuple[tuple[str, FrozenLiteral], ...]
+    schemas: tuple[TypeUseId, ...] = ()
+    children: tuple[WireDeclaration, ...] = ()
+    references: tuple[SourceReference, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class IgnoredDeclaration:
+    """Describe one semantic exclusion at its actual source and original use site."""
+
+    source: SourceLocation
+    use_site: SourceLocation
+    owner: str
+    media: str | None
+    wire_name: str | None
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class OperationContract:
+    """Retain effective ordered wire values independently from parser naming paths."""
+
+    id: OperationId
+    declaration: DeclarationId
+    method: str
+    path: str
+    explicit_operation_id: bool
+    security_declared: bool
+    servers_declared: bool
+    order: int
+    facts: tuple[tuple[str, FrozenLiteral], ...]
+    parameters: tuple[WireDeclaration, ...]
+    request_body: WireDeclaration | None
+    responses: tuple[WireDeclaration, ...]
+    callbacks: tuple[WireDeclaration, ...]
+    ignored: tuple[IgnoredDeclaration, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedTypeContractBatch:
+    """Own one accepted attempt's immutable contracts, with no parser or source mappings."""
+
+    attempt: AttemptId
+    root_selector_document: str
+    documents: tuple[SourceDocument, ...]
+    operations: tuple[OperationContract, ...]
+    type_uses: tuple[TypeUseBinding, ...]
+    symbols: tuple[FinalModelSymbol, ...]
+    artifacts: tuple[ModelArtifactAddress, ...]
+    fields: tuple[FieldUseBinding, ...]
+    diagnostics: tuple[BindingDiagnostic, ...]
+    security_schemes: tuple[WireDeclaration, ...] = ()
+    api_scope: bool = False
+
+
+if TYPE_CHECKING:
+    from decimal import Decimal
+
+    from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model import binding
+    from datamodel_code_generator.parser.base import Result
+    from datamodel_code_generator.parser.openapi import OpenAPIParser

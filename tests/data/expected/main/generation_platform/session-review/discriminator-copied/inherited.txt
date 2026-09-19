@@ -1,0 +1,14 @@
+{
+  "/components/schemas/RequestBase/properties/version": {
+    "node": "GeneratedSymbolType",
+    "symbol": "RequestVersionEnum"
+  },
+  "/components/schemas/RequestV1/properties/version": {
+    "node": "GeneratedSymbolType",
+    "symbol": "RequestVersionEnum"
+  },
+  "/components/schemas/Grandchild/properties/version": {
+    "node": "GeneratedSymbolType",
+    "symbol": "RequestVersionEnum"
+  }
+}

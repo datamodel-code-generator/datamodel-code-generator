@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "Direct allOf loader resolutions are out of occurrence order"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

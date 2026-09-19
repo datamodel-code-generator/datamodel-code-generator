@@ -1,0 +1,11 @@
+[
+  {
+    "node": "GenericType",
+    "base": {
+      "node": "BuiltinType",
+      "name": "list"
+    },
+    "arguments": [],
+    "tuple_form": "not_tuple"
+  }
+]

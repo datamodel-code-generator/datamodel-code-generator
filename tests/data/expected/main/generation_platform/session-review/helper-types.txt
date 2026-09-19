@@ -1,0 +1,18 @@
+{
+  "/components/schemas/Record/properties/id": {
+    "node": "BuiltinType",
+    "name": "int"
+  },
+  "/components/schemas/Record/properties/wire-name": {
+    "node": "BuiltinType",
+    "name": "str"
+  },
+  "/components/schemas/Record/properties/items/items": {
+    "node": "BuiltinType",
+    "name": "int"
+  },
+  "/paths/~1records~1{id}/post/parameters/1/content/application~1json/schema/properties/active": {
+    "node": "BuiltinType",
+    "name": "bool"
+  }
+}

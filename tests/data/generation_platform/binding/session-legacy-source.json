@@ -1,0 +1,46 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Unselected legacy declarations", "version": "1"},
+  "security": [{"key": []}],
+  "paths": {
+    "x-ignored": {"get": {"responses": {}}},
+    "parameters": [{"name": "root", "in": "query", "schema": {"type": "string"}}],
+    "/reference": {"$ref": "#/components/pathItems/Item"},
+    "/items": {
+      "parameters": [{"name": "common", "in": "query", "schema": {"type": "string"}}],
+      "get": {
+        "parameters": [
+          {"name": "common", "in": "query", "schema": {"$ref": "#/components/schemas/Text"}},
+          {"name": "Authorization", "in": "header", "schema": {"type": "string"}},
+          {"$ref": "#/components/parameters/Cycle"},
+          {"$ref": "#/components/parameters/Missing"},
+          {"$ref": "#anchor"},
+          {"$ref": "#/%ZZ"},
+          {"$ref": "#/components/parameters/Number"},
+          {"$ref": "not-loaded.json#/Parameter"}
+        ],
+        "callbacks": {"event": {"$ref": "#/components/callbacks/Event"}},
+        "responses": {"204": {"description": "Done"}}
+      }
+    }
+  },
+  "components": {
+    "schemas": {"Text": {"type": "string"}},
+    "parameters": {"Cycle": {"$ref": "#/components/parameters/Cycle"}, "Number": 1},
+    "pathItems": {"Item": {"get": {"responses": {"204": {"description": "Done"}}}}},
+    "callbacks": {
+      "Event": {
+        "x-ignored": {},
+        "invalid": 1,
+        "{$request.body#/url}": {
+          "description": "A callback path item",
+          "post": {
+            "callbacks": {"again": {"$ref": "#/components/callbacks/Event"}},
+            "responses": {"204": {"description": "Done"}}
+          }
+        }
+      }
+    },
+    "securitySchemes": {"key": {"type": "apiKey", "in": "header", "name": "X-Key"}}
+  }
+}

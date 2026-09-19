@@ -1,0 +1,16 @@
+{
+  "/components/schemas/RequestBase/properties/version": {
+    "node": "GeneratedSymbolType",
+    "symbol": "RequestVersionEnum"
+  },
+  "/components/schemas/RequestV1/properties/version": {
+    "node": "LiteralType",
+    "values": [
+      {
+        "node": "LiteralScalar",
+        "kind": "str",
+        "value": "v1"
+      }
+    ]
+  }
+}

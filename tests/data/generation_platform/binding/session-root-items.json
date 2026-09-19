@@ -1,0 +1,37 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Final item terminals",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Envelope": {
+        "type": "object",
+        "properties": {
+          "fresh": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "title": "FreshItem"
+            }
+          },
+          "existing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Scalar"
+            }
+          }
+        },
+        "required": [
+          "fresh",
+          "existing"
+        ]
+      },
+      "Scalar": {
+        "type": "integer"
+      }
+    }
+  }
+}

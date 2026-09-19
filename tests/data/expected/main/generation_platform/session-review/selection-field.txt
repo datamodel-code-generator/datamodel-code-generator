@@ -1,0 +1,3 @@
+/paths/~1good/post/requestBody/content/application~1json/schema: bound
+/paths/~1bad/post/requestBody/content/application~1json/schema: BND_TYPE_EXPRESSION_UNSUPPORTED
+/components/schemas/Bad/properties/bad: BND_TYPE_EXPRESSION_UNSUPPORTED

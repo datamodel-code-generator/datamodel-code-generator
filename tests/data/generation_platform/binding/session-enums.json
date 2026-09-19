@@ -1,0 +1,26 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Independent binding regressions",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Code": {
+        "type": "integer",
+        "enum": [
+          1,
+          2
+        ]
+      },
+      "Label": {
+        "type": "string",
+        "enum": [
+          "alpha",
+          "beta"
+        ]
+      }
+    }
+  }
+}

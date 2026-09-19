@@ -20,9 +20,11 @@ from datamodel_code_generator._generation_contract import (
     ConstructorType,
     GeneratedSymbolType,
     GenericType,
+    ImportedExpression,
     ImportedType,
     LiteralScalar,
     LiteralType,
+    ModelFieldFacts,
     NoneDefaultProvenance,
     NoneType,
     SourceExpression,
@@ -42,23 +44,7 @@ from datamodel_code_generator._python_type_annotation import (
     PythonTypeTuple,
     PythonTypeUnion,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
-
-    from datamodel_code_generator._generation_contract import (
-        AttemptId,
-        FieldSlot,
-        FinalPythonType,
-        FrozenLiteral,
-        MetadataCall,
-        SymbolId,
-        TypeArgument,
-        UnannotatedPythonType,
-    )
-    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
-    from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
+from datamodel_code_generator.model.base import DataModel
 
 Tokens: TypeAlias = tuple[tokenize.TokenInfo, ...]
 _PAIR_SIZE: Final = 2
@@ -72,7 +58,7 @@ _TYPING_CONTAINER_NAMES: Final = {
 }
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
-EmissionForm: TypeAlias = Literal["class_field", "typeddict_entry"]
+EmissionForm: TypeAlias = Literal["class_field", "typeddict_entry", "alias_value", "root_alias_value"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,8 +136,19 @@ class ArtifactDefinition:
     """Index a top-level static definition without parsing a whole Python grammar."""
 
     name: str
-    kind: Literal["class", "type_alias", "assignment", "import"]
+    kind: Literal["class", "type_alias", "assignment", "import", "unverified"]
     line: int
+    signature: SourceExpression | None = None
+    decorators: tuple[SourceExpression, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ArtifactModelDeclaration:
+    """Retain own field inventory and class settings from the accepted builtin syntax."""
+
+    name: str
+    fields: tuple[str, ...]
+    settings: tuple[SourceExpression, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,6 +158,9 @@ class BuiltinFieldArtifactIndex:
     digest: str
     definitions: tuple[ArtifactDefinition, ...]
     fields: tuple[FieldArtifactDeclaration, ...]
+    models: tuple[ArtifactModelDeclaration, ...] = ()
+    namespace: tuple[tuple[str, str], ...] = ()
+    invalid_models: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -317,7 +317,7 @@ def _resolved_name(tokens: Tokens, bindings: dict[str, str]) -> str | None:
     if (name := _dotted_name(_unparenthesized(tokens))) is None:
         return None
     prefix, separator, suffix = name.partition(".")
-    if (module := bindings.get(prefix)) is None:
+    if not (module := bindings.get(prefix)):
         return None
     return module + (separator + suffix if separator else "")
 
@@ -500,6 +500,25 @@ def _emitted_facts(
     )
 
 
+def _same_expression(left: Tokens, right: Tokens) -> bool:
+    """Allow literal quote/wrapping changes without evaluating arbitrary expressions."""
+    same_length = len(left) == len(right)
+    if same_length and all(
+        first.type == second.type and first.string == second.string for first, second in zip(left, right, strict=True)
+    ):
+        return True
+    if not isinstance(value := _literal_or_syntax(left), SourceExpression):
+        return value == _literal_or_syntax(right)
+    return same_length and all(
+        first.type == second.type
+        and (
+            first.string == second.string
+            or (first.type == tokenize.STRING and _literal_or_syntax((first,)) == _literal_or_syntax((second,)))
+        )
+        for first, second in zip(left, right, strict=True)
+    )
+
+
 def _functional_entries(tokens: Tokens, name: str, bindings: dict[str, str]) -> tuple[tuple[str, Tokens], ...]:
     """Read only the builtin functional TypedDict literal dictionary form."""
     if (call := _application(tokens, "(")) is None:
@@ -512,9 +531,13 @@ def _functional_entries(tokens: Tokens, name: str, bindings: dict[str, str]) -> 
     if len(arguments) < _PAIR_SIZE or _string_literal(arguments[0]) != name:
         msg = "Functional TypedDict name does not match its final symbol"
         raise BindingCaptureError(msg)
-    fields = arguments[1]
+    return _annotation_entries(arguments[1], "Functional TypedDict")
+
+
+def _annotation_entries(fields: Tokens, context: str) -> tuple[tuple[str, Tokens], ...]:
+    """Read only literal string keys and retained annotation tokens."""
     if not fields or fields[0].string != "{" or fields[-1].string != "}":
-        msg = "Functional TypedDict fields must be a literal dictionary"
+        msg = f"{context} fields must be a literal dictionary"
         raise BindingCaptureError(msg)
     entries: list[tuple[str, Tokens]] = []
     for part in _split(fields[1:-1], ","):
@@ -522,7 +545,7 @@ def _functional_entries(tokens: Tokens, name: str, bindings: dict[str, str]) -> 
             continue
         pair = _split(part, ":")
         if len(pair) != _PAIR_SIZE or (key := _string_literal(pair[0])) is None or not pair[1]:
-            msg = "Functional TypedDict contains a nonliteral entry"
+            msg = f"{context} contains a nonliteral entry"
             raise BindingCaptureError(msg)
         entries.append((key, pair[1]))
     return tuple(entries)
@@ -552,9 +575,12 @@ def _union_parts(tokens: Tokens) -> tuple[Tokens | None, ...] | None:
 class _TypePlacementMatcher:
     """Corroborate projected identities; source tokens never create type identities."""
 
-    def __init__(self, bindings: dict[str, str], symbols: dict[SymbolId, str]) -> None:
+    def __init__(
+        self, bindings: dict[str, str], symbols: dict[SymbolId, set[str]], expected_bindings: dict[str, str]
+    ) -> None:
         self.bindings = bindings
         self.symbols = symbols
+        self.expected_bindings = expected_bindings
         self.layers: list[MetaLayer] = []
         self.layer_counts: dict[tuple[int, ...], int] = {}
 
@@ -701,17 +727,29 @@ class _TypePlacementMatcher:
             if not isinstance(expected, NoneType):
                 self._mismatch()
             return
+        if len(tokens) == 1 and tokens[0].type == tokenize.STRING and (forward := _string_literal(tokens)) is not None:
+            statements = tuple(_statements(forward))
+            if len(statements) != 1:
+                self._mismatch()
+            tokens = statements[0].tokens
         skeleton, tokens = self._projected_metadata(expected, tokens, path)
         match skeleton:
             case BuiltinType(name):
-                matched = _dotted_name(tokens) == name and name not in self.bindings
+                actual = _dotted_name(tokens)
+                matched = actual is not None and (
+                    (actual == name and name not in self.bindings)
+                    or (
+                        actual.partition(".")[0] in self.bindings
+                        and _resolved_name(tokens, self.bindings) == f"builtins.{name}"
+                    )
+                )
             case NoneType():
                 matched = _text(tokens) == "None"
             case ImportedType(import_, suffix):
                 identity = _import_identity(import_)[1]
                 matched = _resolved_name(tokens, self.bindings) == ".".join((identity, *suffix))
             case GeneratedSymbolType(symbol):
-                matched = _dotted_name(tokens) == self.symbols.get(symbol)
+                matched = self._symbol_name(symbol, _dotted_name(tokens))
             case BoundType():
                 matched = self._match_bound(skeleton, tokens)
             case GenericType():
@@ -729,6 +767,14 @@ class _TypePlacementMatcher:
                 matched = self._match_constructor(skeleton, tokens, path)
         if not matched:
             self._mismatch()
+
+    def _symbol_name(self, symbol: SymbolId, name: str | None) -> bool:
+        if name is None or name not in self.symbols.get(symbol, ()):
+            return False
+        prefix = name.partition(".")[0]
+        if (expected := self.expected_bindings.get(prefix)) is not None:
+            return self.bindings.get(prefix) == expected
+        return True
 
     def _match_bound(self, expected: BoundType, tokens: Tokens) -> bool:
         return self._match_python_expression(expected.binding.expression, tokens)
@@ -748,7 +794,7 @@ class _TypePlacementMatcher:
                     else _resolved_name(tokens, self.bindings) == name
                 )
             case PythonTypeName(name):
-                matched = _dotted_name(tokens) == name
+                matched = _dotted_name(tokens) == name and name not in self.bindings
             case PythonTypeQualifiedName(parts):
                 matched = _dotted_name(tokens) == ".".join(parts)
             case PythonTypeSubscript(base, arguments):
@@ -830,9 +876,14 @@ class _TypePlacementMatcher:
 
     def _match_generic(self, expected: GenericType, tokens: Tokens, path: tuple[int, ...]) -> None:
         base, arguments, tuple_form = expected.base, expected.arguments, expected.tuple_form
-        if (application := _application(tokens, "[")) is None:
+        if not arguments and tuple_form == "not_tuple":
+            callee, children = tokens, ()
+        elif (application := _application(tokens, "[")) is not None:
+            callee, children = application
+        else:
             self._mismatch()
-        callee, children = application
+        if tuple_form == "fixed" and not arguments and len(children) == 1 and _text(children[0]) == "()":
+            children = ()
         if tuple_form == "ellipsis":
             if not children or _text(children[-1]) != "...":
                 self._mismatch()
@@ -865,7 +916,13 @@ class _TypePlacementMatcher:
                 if isinstance(value, LiteralScalar):
                     matched = matched and _literal_or_syntax(child) == value
                 else:
-                    matched = matched and _dotted_name(child) == f"{self.symbols.get(value.symbol)}.{value.name}"
+                    name = _dotted_name(child)
+                    matched = (
+                        matched
+                        and name is not None
+                        and name.endswith("." + value.name)
+                        and self._symbol_name(value.symbol, name[: -(len(value.name) + 1)])
+                    )
         return matched
 
     def _match_constructor(self, expected: ConstructorType, tokens: Tokens, path: tuple[int, ...]) -> bool:
@@ -886,10 +943,35 @@ class _TypePlacementMatcher:
                 matched = matched and self._match_argument(value, pair[1])
         return matched
 
+    def _match_imported_expression(self, import_: Import, prefix: str, suffix: str, tokens: Tokens) -> bool:
+        marker = "__dcg_import_binding__"
+        expression = _expression_tokens(f"{prefix}{marker}{suffix}")
+        positions = tuple(index for index, token in enumerate(expression) if token.string == marker)
+        if len(positions) != 1:
+            return False
+        start = positions[0]
+        end = start
+        while end < len(tokens):
+            token = tokens[end]
+            if (end - start) % 2:
+                if token.string != ".":
+                    break
+            elif token.type != tokenize.NAME:
+                break
+            end += 1
+        return (
+            end > start
+            and _same_expression(tokens[:start], expression[:start])
+            and _same_expression(tokens[end:], expression[start + 1 :])
+            and _resolved_name(tokens[start:end], self.bindings) == _import_identity(import_)[1]
+        )
+
     def _match_argument(self, expected: TypeArgument, tokens: Tokens) -> bool:
         match expected:
+            case ImportedExpression(import_, prefix, suffix):
+                return self._match_imported_expression(import_, prefix, suffix, tokens)
             case SourceExpression(text):
-                return _text(tokens) == _text(_expression_tokens(text))
+                return _same_expression(tokens, _expression_tokens(text))
             case LiteralScalar("decimal", Decimal() as value):
                 application = _application(tokens, "(")
                 if (
@@ -912,54 +994,138 @@ class _ArtifactIndexBuilder:
     """Keep statement lookup linear in final fields and artifact tokens."""
 
     def __init__(self, expected: tuple[ExpectedFieldDeclaration, ...], imports: FrozenImportBindings) -> None:
-        self.wanted: dict[str, dict[str, ExpectedFieldDeclaration]] = {}
+        self.wanted: dict[str, dict[str | int | None, ExpectedFieldDeclaration]] = {}
         for field in expected:
             if field.attempt != field.slot.attempt:
                 msg = "A field expectation mixes capture attempts"
                 raise BindingCaptureError(msg)
             fields = self.wanted.setdefault(field.model_name, {})
-            if field.native_name in fields:
+            key = field.entry_ordinal if field.form == "typeddict_entry" else field.native_name
+            if key in fields:
                 msg = "Duplicate field expectation in one consumer"
                 raise BindingCaptureError(msg)
-            fields[field.native_name] = field
+            fields[key] = field
         self.bindings: dict[str, str] = {}
         self.allowed = {_import_identity(import_) for import_ in imports.values}
-        self.symbols = dict(imports.symbols)
-        self.symbols.update((field.consumer, field.model_name) for field in expected)
+        self.symbols: dict[SymbolId, set[str]] = {}
+        for symbol, name in (*imports.symbols, *((field.consumer, field.model_name) for field in expected)):
+            self.symbols.setdefault(symbol, set()).add(name)
+        self.expected_bindings = {
+            alias: identity for value in imports.values for alias, identity in (_import_identity(value),)
+        }
         self.definitions: list[ArtifactDefinition] = []
-        self.found: dict[tuple[str, str], FieldArtifactDeclaration] = {}
+        self.found: dict[tuple[str, str | int | None], FieldArtifactDeclaration] = {}
         self.defined: set[str] = set()
+        self.decorators: list[SourceExpression] = []
+        self.own_fields: dict[str, list[str]] = {}
+        self.settings: dict[str, list[SourceExpression]] = {}
+        self.current_symbol: str | None = None
+        self.invalid_models: dict[str, None] = {}
+        self.generated_names = {name for names in self.symbols.values() for name in names}
+        self.proven_names = self.generated_names | self.expected_bindings.keys()
 
-    def _definition(self, name: str, kind: Literal["class", "type_alias", "assignment"], line: int) -> None:
+    def _definition(self, name: str, kind: Literal["class", "type_alias", "assignment"], tokens: Tokens) -> None:
+        self.current_symbol = name
         if name in self.wanted and name in self.defined:
             msg = "A final symbol is declared more than once in its accepted artifact"
             raise BindingCaptureError(msg)
         self.defined.add(name)
-        self.bindings.pop(name, None)
-        self.definitions.append(ArtifactDefinition(name, kind, line))
+        self.bindings[name] = ""
+        self.definitions.append(
+            ArtifactDefinition(name, kind, tokens[0].start[0], SourceExpression(_text(tokens)), tuple(self.decorators))
+        )
+        self.decorators.clear()
 
     def top_level(self, tokens: Tokens) -> str | None:
         """Read only top-level definitions, preserving actual import binding order."""
+        self.current_symbol = None
+        if tokens[0].string == "@":
+            self.decorators.append(SourceExpression(_text(tokens)))
+            return None
         for alias, identity, resolution_base in _import_names(tokens):
             if (alias, identity) in self.allowed:
                 self.bindings[alias] = resolution_base
             else:
-                self.bindings.pop(alias, None)
+                self.bindings[alias] = ""
             self.definitions.append(ArtifactDefinition(alias, "import", tokens[0].start[0]))
         match tokens:
             case (head, second, _, *_) if second.type == tokenize.NAME and head.string == "class":
-                self._definition(second.string, "class", head.start[0])
+                self._definition(second.string, "class", tokens)
+                self.own_fields.setdefault(second.string, [])
+                self.settings.setdefault(second.string, [])
                 return second.string
             case (head, second, _, *_) if second.type == tokenize.NAME and head.string == "type":
-                self._definition(second.string, "type_alias", head.start[0])
+                self._definition(second.string, "type_alias", tokens)
+                self._alias_value(second.string, tokens)
             case (head, second, _, *_) if head.type == tokenize.NAME and second.string in {"=", ":"}:
                 name = head.string
-                self._definition(name, "assignment", head.start[0])
+                self._definition(name, "assignment", tokens)
                 if (fields := self.wanted.get(name)) and next(iter(fields.values())).form == "typeddict_entry":
                     self._functional_fields(tokens[2:], name, tuple(fields.values()))
+                else:
+                    self._alias_value(name, tokens)
             case _:
-                pass
+                self._unverified_writes(tokens)
         return None
+
+    def _unverified_writes(self, tokens: Tokens) -> None:
+        names: tuple[str, ...] = ()
+        words = tuple(token.string for token in tokens)
+        match words:
+            case ("def", name, *_) | ("async", "def", name, *_):
+                names = (name,)
+            case ("del", *rest):
+                names = tuple(rest)
+            case (name, operator, *_) if operator in {
+                "+=",
+                "-=",
+                "*=",
+                "/=",
+                "//=",
+                "%=",
+                "**=",
+                "@=",
+                "&=",
+                "|=",
+                "^=",
+                ">>=",
+                "<<=",
+            }:
+                names = (name,)
+            case _:
+                if len(parts := _split(tokens, "=")) > 1:
+                    names = tuple(token.string for token in parts[0] if token.type == tokenize.NAME)
+        for name in names:
+            if name in self.proven_names:
+                self.bindings[name] = ""
+                self.definitions.append(ArtifactDefinition(name, "unverified", tokens[0].start[0]))
+
+    def _alias_value(self, name: str, tokens: Tokens) -> None:
+        fields = self.wanted.get(name)
+        if not fields or (field := next(iter(fields.values()))).form not in {"alias_value", "root_alias_value"}:
+            return
+        parts = _split(tokens, "=")
+        if len(parts) != _PAIR_SIZE or not (annotation := parts[1]):
+            msg = "A builtin alias has no unique value expression"
+            raise BindingCaptureError(msg)
+        if field.form == "root_alias_value":
+            if (
+                (application := _application(annotation, "[")) is None
+                or _resolved_name(application[0], self.bindings) != "pydantic.RootModel"
+                or len(application[1]) != 1
+            ):
+                msg = "A builtin root alias does not match its RootModel value"
+                raise BindingCaptureError(msg)
+            annotation = application[1][0]
+        elif (call := _application(annotation, "(")) is not None and _resolved_name(call[0], self.bindings) in {
+            "typing.TypeAliasType",
+            "typing_extensions.TypeAliasType",
+        }:
+            if len(call[1]) != _PAIR_SIZE or _string_literal(call[1][0]) != name:
+                msg = "A builtin TypeAliasType value does not match its symbol"
+                raise BindingCaptureError(msg)
+            annotation = call[1][1]
+        self._class_declaration(name, field, annotation, None, tokens)
 
     def _functional_fields(self, tokens: Tokens, name: str, fields: tuple[ExpectedFieldDeclaration, ...]) -> None:
         entries = _functional_entries(tokens, name, self.bindings)
@@ -971,7 +1137,7 @@ class _ArtifactIndexBuilder:
             if field.form != "typeddict_entry" or field.entry_key != key or field.entry_ordinal != ordinal:
                 msg = "Functional TypedDict entry order differs from final field ownership"
                 raise BindingCaptureError(msg)
-            self.found[name, field.native_name] = FieldArtifactDeclaration(
+            self.found[name, ordinal] = FieldArtifactDeclaration(
                 field,
                 _text(annotation),
                 None,
@@ -982,15 +1148,41 @@ class _ArtifactIndexBuilder:
 
     def class_field(self, current_class: str, tokens: Tokens) -> None:
         """Match only own annotated statements; function and nested-class bodies are skipped."""
-        if (fields := self.wanted.get(current_class)) is None or (parsed := _class_field(tokens)) is None:
+        if (parsed := _class_field(tokens)) is not None:
+            self.own_fields[current_class].append(parsed[0])
+        elif len(tokens) > _PAIR_SIZE and tokens[0].type == tokenize.NAME and tokens[1].string == "=":
+            self.settings[current_class].append(SourceExpression(_text(tokens)))
+        if (fields := self.wanted.get(current_class)) is None:
+            return
+        if (
+            (extra := fields.get("__pydantic_extra__")) is not None
+            and extra.backend == "pydantic"
+            and len(tokens) > _PAIR_SIZE
+            and tuple(token.string for token in tokens[:2]) == ("__annotations__", "=")
+        ):
+            for key, annotation in _annotation_entries(tokens[2:], "Pydantic extra annotations"):
+                if key == extra.native_name:
+                    self._class_declaration(current_class, extra, annotation, None, tokens)
+            return
+        if parsed is None:
             return
         name, annotation, assignment = parsed
         if (field := fields.get(name)) is None or field.form != "class_field":
             return
+        self._class_declaration(current_class, field, annotation, assignment, tokens)
+
+    def _class_declaration(
+        self,
+        current_class: str,
+        field: ExpectedFieldDeclaration,
+        annotation: Tokens,
+        assignment: Tokens | None,
+        tokens: Tokens,
+    ) -> None:
         if field.excluded_by_tag:
             msg = "A tag-excluded field is declared in its accepted artifact"
             raise BindingCaptureError(msg)
-        key = current_class, name
+        key = current_class, field.native_name
         if key in self.found:
             msg = "An accepted class declares the same expected field more than once"
             raise BindingCaptureError(msg)
@@ -1006,16 +1198,21 @@ class _ArtifactIndexBuilder:
     def _field_facts(
         self, field: ExpectedFieldDeclaration, annotation: Tokens, assignment: Tokens | None
     ) -> EmittedFieldFacts:
-        matcher = _TypePlacementMatcher(self.bindings, self.symbols)
+        matcher = _TypePlacementMatcher(self.bindings, self.symbols, self.expected_bindings)
         matcher.match_field(field.type, annotation)
         return replace(_emitted_facts(field, annotation, assignment, self.bindings), meta_layers=tuple(matcher.layers))
 
-    def finish(self, body: str, expected: tuple[ExpectedFieldDeclaration, ...]) -> BuiltinFieldArtifactIndex:
+    def finish(
+        self, body: str, expected: tuple[ExpectedFieldDeclaration, ...], *, collect_errors: bool
+    ) -> BuiltinFieldArtifactIndex:
         """Freeze in expected consumer order after proving each requested declaration exists."""
         ordered: list[FieldArtifactDeclaration] = []
         for field in expected:
             if field.excluded_by_tag:
                 if field.model_name not in self.defined:
+                    if collect_errors:
+                        self.invalid_models[field.model_name] = None
+                        continue
                     msg = "A tag-excluded field's final symbol is absent from its accepted artifact"
                     raise BindingCaptureError(msg)
                 ordered.append(
@@ -1040,25 +1237,200 @@ class _ArtifactIndexBuilder:
                     )
                 )
                 continue
-            if (declaration := self.found.get((field.model_name, field.native_name))) is None:
+            key = field.entry_ordinal if field.form == "typeddict_entry" else field.native_name
+            if (declaration := self.found.get((field.model_name, key))) is None:
+                if collect_errors:
+                    self.invalid_models[field.model_name] = None
+                    continue
                 msg = "An expected final field is absent from its accepted artifact"
                 raise BindingCaptureError(msg)
             ordered.append(declaration)
-        return BuiltinFieldArtifactIndex(sha256(body.encode()).hexdigest(), tuple(self.definitions), tuple(ordered))
+        return BuiltinFieldArtifactIndex(
+            sha256(body.encode()).hexdigest(),
+            tuple(self.definitions),
+            tuple(ordered),
+            tuple(
+                ArtifactModelDeclaration(name, tuple(fields), tuple(self.settings[name]))
+                for name, fields in self.own_fields.items()
+            ),
+            tuple(self.bindings.items()),
+            tuple(self.invalid_models),
+        )
 
 
 def index_builtin_field_declarations(
-    body: str, *, expected: tuple[ExpectedFieldDeclaration, ...], imports: FrozenImportBindings
+    body: str,
+    *,
+    expected: tuple[ExpectedFieldDeclaration, ...],
+    imports: FrozenImportBindings,
+    collect_errors: bool = False,
 ) -> BuiltinFieldArtifactIndex:
     """Associate known fields with their actual class or functional declarations."""
     builder = _ArtifactIndexBuilder(expected, imports)
     current_class: str | None = None
     for statement in _statements(body):
-        if statement.indent == 0:
-            current_class = builder.top_level(statement.tokens)
-        elif statement.indent == 1 and current_class is not None:
-            builder.class_field(current_class, statement.tokens)
-    return builder.finish(body, expected)
+        try:
+            if statement.indent == 0:
+                current_class = builder.top_level(statement.tokens)
+            elif statement.indent == 1 and current_class is not None:
+                builder.class_field(current_class, statement.tokens)
+        except BindingCaptureError:  # ruff: ignore[try-except-in-loop] -- Continue independent models after a malformed declaration.
+            model = builder.current_symbol if statement.indent == 0 else current_class
+            if not collect_errors or model is None:
+                raise
+            builder.invalid_models[model] = None
+    return builder.finish(body, expected, collect_errors=collect_errors)
+
+
+def same_emitted_field_facts(expected: EmittedFieldFacts, actual: EmittedFieldFacts) -> bool:
+    """Compare accepted semantic values while allowing formatter-only token locations."""
+
+    def same_value(
+        left: FrozenLiteral | SourceExpression | None, right: FrozenLiteral | SourceExpression | None
+    ) -> bool:
+        if isinstance(left, SourceExpression) and isinstance(right, SourceExpression):
+            return _same_expression(_expression_tokens(left.text), _expression_tokens(right.text))
+        return left == right
+
+    def same_keywords(
+        left: tuple[tuple[str, FrozenLiteral | SourceExpression], ...],
+        right: tuple[tuple[str, FrozenLiteral | SourceExpression], ...],
+    ) -> bool:
+        return len(left) == len(right) and all(
+            left_key == right_key and same_value(left_value, right_value)
+            for (left_key, left_value), (right_key, right_value) in zip(left, right, strict=True)
+        )
+
+    if (
+        not same_value(expected.emitted_default_value, actual.emitted_default_value)
+        or not same_value(expected.factory_expression, actual.factory_expression)
+        or not same_keywords(expected.constructor_keywords, actual.constructor_keywords)
+        or len(expected.meta_layers) != len(actual.meta_layers)
+    ):
+        return False
+    if any(
+        left.node_path != right.node_path
+        or left.ordinal != right.ordinal
+        or not same_keywords(left.keywords, right.keywords)
+        for left, right in zip(expected.meta_layers, actual.meta_layers, strict=True)
+    ):
+        return False
+    return expected == replace(
+        actual,
+        emitted_default_value=expected.emitted_default_value,
+        factory_expression=expected.factory_expression,
+        constructor_keywords=expected.constructor_keywords,
+        meta_layers=expected.meta_layers,
+    )
+
+
+def split_artifact_models(index: BuiltinFieldArtifactIndex) -> dict[str, BuiltinFieldArtifactIndex]:
+    """Partition module evidence once so per-model validation stays linear in output size."""
+    definitions: dict[str, list[ArtifactDefinition]] = {}
+    fields: dict[str, list[FieldArtifactDeclaration]] = {}
+    models: dict[str, list[ArtifactModelDeclaration]] = {}
+    for definition in index.definitions:
+        if definition.kind != "import":
+            definitions.setdefault(definition.name, []).append(definition)
+    for field in index.fields:
+        fields.setdefault(field.expected.model_name, []).append(field)
+    for model in index.models:
+        models.setdefault(model.name, []).append(model)
+    namespace = dict(index.namespace)
+    invalid = set(index.invalid_models)
+    result: dict[str, BuiltinFieldArtifactIndex] = {}
+    for name in definitions.keys() | fields.keys() | models.keys():
+        own_definitions, own_fields, own_models = (
+            tuple(definitions.get(name, ())),
+            tuple(fields.get(name, ())),
+            tuple(models.get(name, ())),
+        )
+        sources = (
+            *(
+                source.text
+                for definition in own_definitions
+                for source in (definition.signature, *definition.decorators)
+                if source is not None
+            ),
+            *(source.text for model in own_models for source in model.settings),
+            *(text for field in own_fields for text in (field.annotation, field.assignment) if text is not None),
+        )
+        names = dict.fromkeys(
+            token.string for text in sources for token in _expression_tokens(text) if token.type == tokenize.NAME
+        )
+        result[name] = replace(
+            index,
+            definitions=own_definitions,
+            fields=own_fields,
+            models=own_models,
+            namespace=tuple((name, namespace[name]) for name in names if name in namespace),
+            invalid_models=(name,) if name in invalid else (),
+        )
+    return result
+
+
+def same_artifact_model_facts(
+    expected: BuiltinFieldArtifactIndex, actual: BuiltinFieldArtifactIndex, *, model_name: str | None = None
+) -> bool:
+    """Corroborate bases, decorators, enum values, own fields, and adopted class settings."""
+
+    def same_source(left: SourceExpression | None, right: SourceExpression | None) -> bool:
+        if left is None or right is None:
+            return left is right
+        return _same_expression(_expression_tokens(left.text), _expression_tokens(right.text))
+
+    def same_sequence(left: tuple[SourceExpression, ...], right: tuple[SourceExpression, ...]) -> bool:
+        return len(left) == len(right) and all(starmap(same_source, zip(left, right, strict=True)))
+
+    left_definitions = tuple(
+        value
+        for value in expected.definitions
+        if value.kind != "import" and (model_name is None or value.name == model_name)
+    )
+    right_definitions = tuple(
+        value
+        for value in actual.definitions
+        if value.kind != "import" and (model_name is None or value.name == model_name)
+    )
+    left_models = tuple(value for value in expected.models if model_name is None or value.name == model_name)
+    right_models = tuple(value for value in actual.models if model_name is None or value.name == model_name)
+    if len(left_definitions) != len(right_definitions) or len(left_models) != len(right_models):
+        return False
+    namespace = dict(actual.namespace)
+    sources = (
+        *(
+            source.text
+            for definition in left_definitions
+            for source in (definition.signature, *definition.decorators)
+            if source is not None
+        ),
+        *(source.text for model in left_models for source in model.settings),
+        *(
+            text
+            for field in expected.fields
+            if model_name is None or field.expected.model_name == model_name
+            for text in (field.annotation, field.assignment)
+            if text is not None
+        ),
+    )
+    used = {token.string for text in sources for token in _expression_tokens(text) if token.type == tokenize.NAME}
+    if any(
+        identity and (model_name is None or name in used) and namespace.get(name) != identity
+        for name, identity in expected.namespace
+    ):
+        return False
+    if any(
+        left.name != right.name
+        or left.kind != right.kind
+        or not same_source(left.signature, right.signature)
+        or not same_sequence(left.decorators, right.decorators)
+        for left, right in zip(left_definitions, right_definitions, strict=True)
+    ):
+        return False
+    return all(
+        left.name == right.name and left.fields == right.fields and same_sequence(left.settings, right.settings)
+        for left, right in zip(left_models, right_models, strict=True)
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -1186,6 +1558,32 @@ def freeze_builtin_field_facts(
     )
 
 
+def freeze_model_field_facts(
+    field: DataModelFieldBase,
+    *,
+    type_value: FinalPythonType,
+    emitted: EmittedFieldFacts,
+    projection: FieldProjectionContext,
+) -> ModelFieldFacts:
+    """Read final data attributes once, using the same accepted default observation."""
+    return ModelFieldFacts(
+        field.required,
+        field.nullable,
+        field.has_default,
+        "default_factory" in field.extras,
+        field.type_has_null,
+        field.read_only,
+        field.write_only,
+        field.alias,
+        tuple(field.validation_aliases) if field.validation_aliases is not None else None,
+        field.serialization_alias,
+        field.use_serialization_alias,
+        type_value,
+        freeze_builtin_field_facts(field, emitted=emitted, projection=projection),
+        freeze_none_default_provenance(field, emitted=emitted, projection=projection),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class BackendSetting:
     """Distinguish an omitted declaration from explicit None and unknown presence."""
@@ -1258,7 +1656,7 @@ def _model_parameters(backend: BackendName) -> tuple[str, ...]:
             return _MSGSPEC_PARAMETERS
         case "typeddict":
             return ("total", "closed")
-        case "pydantic":
+        case _:
             return ()
 
 
@@ -1310,13 +1708,13 @@ def _model_parameter_values(  # ruff: ignore[too-many-return-statements] # Finit
             if (arguments := _raw_mapping(internal.get("typed_dict_kwargs", {}))) is None:
                 return None, False
             return {name: _syntax_value(value) for name, value in arguments.items()}, "extra_items" in arguments
-        case "pydantic":
+        case _:
             return {}, False
 
 
-def _model_configuration(model: DataModel, backend: BackendName) -> dict[str, BackendValue] | None:
-    if backend not in {"pydantic", "pydantic_dataclass"}:
-        return {}
+def _model_configuration(
+    model: DataModel, backend: Literal["pydantic", "pydantic_dataclass"]
+) -> dict[str, BackendValue] | None:
     key = "config_items" if backend == "pydantic" else "_safe_config_items"
     values: object = model._internal_template_data.get(key, ())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] # Already normalized by the renderer owner.
     if type(values) not in {tuple, list}:
@@ -1349,11 +1747,12 @@ def freeze_builtin_model_facts(model: DataModel, *, projection: ModelProjectionC
     if values is not None and extra_present != (projection.extra_items is not None):
         msg = "TypedDict extra_items does not match its captured final type"
         raise BindingCaptureError(msg)
-    configuration = (
-        _freeze_settings(_PYDANTIC_CONFIGURATION, _model_configuration(model, backend))
-        if backend in {"pydantic", "pydantic_dataclass"}
-        else ()
-    )
+    configuration: tuple[BackendSetting, ...] = ()
+    match backend:
+        case "pydantic" | "pydantic_dataclass":
+            configuration = _freeze_settings(_PYDANTIC_CONFIGURATION, _model_configuration(model, backend))
+        case _:
+            pass
     return BackendModelFacts(
         backend,
         _freeze_settings(_model_parameters(backend), values),
@@ -1430,6 +1829,38 @@ def freeze_none_default_provenance(
     return NoneDefaultProvenance(default_kind, origin, annotation)
 
 
+def freeze_alias_nullability(
+    field: DataModelFieldBase,
+    *,
+    type_value: FinalPythonType,
+    emitted: EmittedFieldFacts,
+    aliases: Container[SymbolId],
+    opaque_type: bool,
+) -> tuple[bool | None, set[SymbolId]]:
+    """Corroborate top-level alias null producers without traversing container items or getters."""
+    direct = field.nullable is True or (field.nullable is None and field.required and field.type_has_null)
+    unknown = opaque_type
+    references: set[SymbolId] = set()
+    pending = [type_value]
+    while pending:
+        match pending.pop():
+            case NoneType():
+                direct = True
+            case AnnotatedType(value, _):
+                pending.append(value)
+            case UnionType(members, _):
+                pending.extend(members)
+            case GeneratedSymbolType(reference) if reference in aliases:
+                references.add(reference)
+            case BoundType():
+                unknown = True
+    if direct and emitted.null_type_in_annotation:
+        return True, references
+    if unknown or bool(direct) != emitted.null_type_in_annotation:
+        return None, references
+    return False, references
+
+
 def _annotation_null_origin(
     field: DataModelFieldBase,
     *,
@@ -1439,7 +1870,7 @@ def _annotation_null_origin(
     fallback: bool,
 ) -> Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]:
     annotation: Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]
-    if not emitted.null_type_in_annotation:
+    if not emitted.null_type_in_annotation and projection.preexisting_null is False:
         annotation = "none"
     elif unknown:
         annotation = "opaque"
@@ -1454,3 +1885,39 @@ def _annotation_null_origin(
     else:
         annotation = "opaque"
     return annotation
+
+
+@dataclass(frozen=True, slots=True)
+class FinalReferencePolicy:
+    """Read the final nullable/alias policy without evaluating reference getters."""
+
+    nullable: bool
+    is_alias: bool
+    serialize_as_any: bool
+
+
+def freeze_reference_policy(model: DataModel, *, serialize_as_any: bool) -> FinalReferencePolicy:
+    """Project raw builtin state for a final reference; never compute a type hint."""
+    return FinalReferencePolicy(
+        model._nullable,  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] -- Read the stored flag without invoking its property.
+        model.IS_ALIAS,
+        serialize_as_any and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
+    )
+
+
+if TYPE_CHECKING:
+    from collections.abc import Container, Iterator, Sequence
+
+    from datamodel_code_generator._generation_contract import (
+        AttemptId,
+        FieldSlot,
+        FinalPythonType,
+        FrozenLiteral,
+        MetadataCall,
+        SymbolId,
+        TypeArgument,
+        UnannotatedPythonType,
+    )
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model.base import DataModelFieldBase

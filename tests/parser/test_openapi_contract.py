@@ -754,7 +754,7 @@ def test_default_producer_and_preexisting_null_are_bound_to_fields() -> None:
                     entry.original_name: {
                         "producer": entry.default_policy.resolution.producer,
                         "original_has_default": entry.default_policy.has_default,
-                        "preexisting_null": projector.preexisting_null(entry.preexisting_null),
+                        "preexisting_null": projector.preexisting_null(entry.preexisting_null, alias_nullable={}),
                     }
                     for entry in parser.field_constructions.values()
                     if entry.class_name == "Defaults" and entry.default_policy is not None

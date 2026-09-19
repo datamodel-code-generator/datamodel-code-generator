@@ -1,0 +1,7 @@
+[
+  "list[object]",
+  "list[()]",
+  "list[]",
+  "tuple[()]",
+  "dict"
+]

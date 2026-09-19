@@ -1,0 +1,65 @@
+path post /records/{id}
+  security: [[["Key",[]]],[["OAuth",["read"]],["Key",[]]],[]]
+  servers: [["https://{region}.example.test",[["region","us"]]]]
+  responses: [["201","exact"],["4XX","class"],["default","fallback"]]
+  encode parameter trace - -: models.py:FieldRecordsIdPostHeaderTraceParameter
+  encode parameter filter - application/json: models.py:FieldRecordsIdPostQueryFilterParameter
+    active -> active: required=False, nullable=False
+  encode parameter id - -: models.py:FieldRecordsIdPostPathIdParameter
+  encode parameter page - -: models.py:PageParameter
+  encode request_body - - application/json: models.py:Record
+    id -> id: required=True, nullable=False
+    wire-name -> wire_name: required=False, nullable=False
+    nullable -> nullable: required=False, nullable=True
+    items -> items: required=False, nullable=False
+  encode request_body - - application/vnd.acme+json: models.py:Record
+    id -> id: required=True, nullable=False
+    wire-name -> wire_name: required=False, nullable=False
+    nullable -> nullable: required=False, nullable=True
+    items -> items: required=False, nullable=False
+  encode request_body - - multipart/form-data: models.py:Record
+    id -> id: required=True, nullable=False
+    wire-name -> wire_name: required=False, nullable=False
+    nullable -> nullable: required=False, nullable=True
+    items -> items: required=False, nullable=False
+  encode request_encoding_header X-Part - multipart/form-data: models.py:FieldRecordsIdPostRequestItemsXPartEncodingHeader
+  decode response_body - 201 application/json: models.py:Record
+    id -> id: required=True, nullable=False
+    wire-name -> wire_name: required=False, nullable=False
+    nullable -> nullable: required=False, nullable=True
+    items -> items: required=False, nullable=False
+  decode response_header Location 201 -: models.py:FieldRecordsIdPostResponse201LocationHeader
+  decode response_header X-Limit 201 -: models.py:FieldRecordsIdPostResponse201XLimitHeader
+  decode response_body - 4XX application/problem+json: models.py:Problem
+    message -> message: required=True, nullable=False
+  link self: {"operationRef":"#/paths/~1records~1{id}/get","parameters":{"id":"$response.body#/id"}}
+  callback onDone
+callback post {$request.body#/callbackUrl}
+  security: [[["Key",[]]],[["OAuth",["read"]],["Key",[]]],[]]
+  servers: [["https://{region}.example.test",[["region","us"]]]]
+  responses: [["204","exact"]]
+  encode request_body - - application/json: models.py:Record
+    id -> id: required=True, nullable=False
+    wire-name -> wire_name: required=False, nullable=False
+    nullable -> nullable: required=False, nullable=True
+    items -> items: required=False, nullable=False
+path get /records/{id}
+  security: []
+  servers: []
+  responses: [["200","exact"]]
+  encode parameter id - -: models.py:FieldRecordsIdPostPathIdParameter
+  encode parameter page - -: models.py:PageParameter
+  decode response_body - 200 application/json: models.py:Record
+    id -> id: required=True, nullable=False
+    wire-name -> wire_name: required=False, nullable=False
+    nullable -> nullable: required=False, nullable=True
+    items -> items: required=False, nullable=False
+webhook post record.created
+  security: []
+  servers: [["https://{region}.example.test",[["region","us"]]]]
+  responses: [["204","exact"]]
+  encode request_body - - application/json: models.py:Record
+    id -> id: required=True, nullable=False
+    wire-name -> wire_name: required=False, nullable=False
+    nullable -> nullable: required=False, nullable=True
+    items -> items: required=False, nullable=False

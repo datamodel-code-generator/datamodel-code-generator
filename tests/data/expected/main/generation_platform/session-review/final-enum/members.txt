@@ -1,0 +1,2 @@
+RequestV1.version: RequestVersionEnum.v1
+RequestV2.version: RequestVersionEnum.v2

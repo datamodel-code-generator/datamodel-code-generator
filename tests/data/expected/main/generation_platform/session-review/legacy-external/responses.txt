@@ -1,0 +1,30 @@
+[
+  [
+    "200",
+    "/components/responses/object",
+    [
+      [
+        "description",
+        {
+          "node": "LiteralScalar",
+          "kind": "str",
+          "value": "Done"
+        }
+      ]
+    ]
+  ],
+  [
+    "204",
+    "/paths/~1items/post/responses/204",
+    [
+      [
+        "description",
+        {
+          "node": "LiteralScalar",
+          "kind": "str",
+          "value": "done"
+        }
+      ]
+    ]
+  ]
+]
