@@ -1,0 +1,16 @@
+[
+  {
+    "module": [
+      "__init__.py"
+    ],
+    "models": [
+      "BaseRequest",
+      "Base",
+      "ItemRequest",
+      "ItemResponse",
+      "Item"
+    ],
+    "actual_return": true,
+    "global_imports": true
+  }
+]

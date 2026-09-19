@@ -52,7 +52,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
     from datamodel_code_generator.model.enum import Enum
-    from datamodel_code_generator.parser.base import DiscriminatorValue
+    from datamodel_code_generator.parser.base import (
+        DiscriminatorValue,
+        ForwarderMap,
+        ModuleContext,
+        ParseConfig,
+        Result,
+    )
     from datamodel_code_generator.parser.openapi import MediaSchema, ReferenceObject, RequestBodyObject, ResponseObject
     from datamodel_code_generator.parser.openapi_contract_origins import SchemaRelation
     from datamodel_code_generator.parser.openapi_scope import _ApiObject  # pyright: ignore[reportPrivateUsage]
@@ -436,6 +442,16 @@ class FieldConstructionObservation:
     preexisting_null: PreexistingNullObservation
 
 
+@dataclass(frozen=True, slots=True)
+class ModuleOutputObservation:
+    """Borrow the actual completed module output and its declaring models until freeze."""
+
+    module: tuple[str, ...]
+    models: tuple[DataModel, ...]
+    result: Result
+    imports: tuple[Imports, Imports]
+
+
 @dataclass(slots=True)
 class ConditionalMergeFrame:
     """Observe only branch reads made for the current original merge call."""
@@ -590,6 +606,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self.field_constructions: dict[GraphObjectId, FieldConstructionObservation] = {}
         self.effective_defaults: list[EffectiveDefaultObservation] = []
         self.inherited_defaults: dict[GraphObjectId, InheritedDefaultObservation] = {}
+        self.module_outputs: list[ModuleOutputObservation] = []
         self._conditional_merges: list[ConditionalMergeFrame] = []
         self._inherited_merges: list[InheritedMergeFrame] = []
         self._combined_branches: list[CombinedBranchFrame] = []
@@ -1991,6 +2008,29 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         return types
 
+    def _generate_module_output(  # ruff: ignore[too-many-arguments, too-many-positional-arguments] -- Preserve the existing module producer signature.
+        self,
+        ctx: ModuleContext,
+        config: ParseConfig,
+        contexts: list[ModuleContext],
+        forwarder_map: ForwarderMap,
+        require_update_action_models: list[str],
+        future_imports_str: str,
+    ) -> Result | None:
+        """Observe the single ordinary render return without freezing inside parse."""
+        result: Result | None = super()._generate_module_output(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            ctx, config, contexts, forwarder_map, require_update_action_models, future_imports_str
+        )
+        return self._record_module_output(ctx, result)  # pyright: ignore[reportUnknownArgumentType]
+
+    @capture_errors
+    def _record_module_output(self, ctx: ModuleContext, result: Result | None) -> Result | None:
+        if result is not None:
+            self.module_outputs.append(
+                ModuleOutputObservation(ctx.module, tuple(ctx.models), result, (self.imports, ctx.imports))
+            )
+        return result
+
     def dispose(self) -> None:
         """Release graph anchors even when ordinary disposal raises."""
         try:
@@ -2018,6 +2058,7 @@ class BindingCaptureMixin(OpenAPIParser):
             self.field_constructions.clear()
             self.effective_defaults.clear()
             self.inherited_defaults.clear()
+            self.module_outputs.clear()
             self._conditional_merges.clear()
             self._inherited_merges.clear()
             self._combined_branches.clear()

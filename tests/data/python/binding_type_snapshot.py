@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import SymbolId
     from datamodel_code_generator.model.binding_fields import FieldOwnershipProjection
+    from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi_contract import ContractOpenAPIParser
 
 
@@ -105,3 +106,20 @@ def inherited_default_snapshot(parser: ContractOpenAPIParser) -> dict[str, objec
         if model_fields:
             result[model.name] = model_fields
     return result
+
+
+def module_output_snapshot(
+    parser: ContractOpenAPIParser, results: str | dict[tuple[str, ...], Result]
+) -> list[dict[str, object]]:
+    """Keep actual result identity separate from generated model names."""
+    return [
+        {
+            "module": list(output.module),
+            "models": [model.name for model in output.models],
+            "actual_return": output.result.body is results
+            if isinstance(results, str)
+            else any(result is output.result for result in results.values()),
+            "global_imports": output.imports[0] is parser.imports,
+        }
+        for output in parser.module_outputs
+    ]
