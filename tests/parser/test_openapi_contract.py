@@ -636,6 +636,47 @@ def test_actual_default_producers() -> None:
         parser.source_lease.close()
 
 
+def test_default_producer_and_preexisting_null_are_bound_to_fields() -> None:
+    """Distinguish nested item null, whole-field null, references and explicit equal overrides."""
+    from datamodel_code_generator._generation_contract import SymbolId
+    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector, ReferenceTypeBinding
+    from tests.data.python.binding_inputs import builtin_binding_config
+
+    config = builtin_binding_config(DataModelType.PydanticV2BaseModel)
+    config.default_value_overrides = json.loads((SOURCE / "default-overrides.json").read_text())
+    parser = ContractApiOpenAPIParser(SOURCE / "default-inputs.json", attempt_id=AttemptId(1), config=config)
+    try:
+        assert_output(str(parser.parse()), EXPECTED / "default-inputs.py")
+        projector = FinalTypeProjector(
+            {
+                parser.binding_ledger.identity(model.reference): ReferenceTypeBinding(
+                    SymbolId(index), bool(model.nullable), model.is_alias, False
+                )
+                for index, model in enumerate(parser.results)
+            },
+            {},
+        )
+        assert_output(
+            json.dumps(
+                {
+                    entry.original_name: {
+                        "producer": entry.default_policy.resolution.producer,
+                        "original_has_default": entry.default_policy.has_default,
+                        "preexisting_null": projector.preexisting_null(entry.preexisting_null),
+                    }
+                    for entry in parser.field_constructions.values()
+                    if entry.class_name == "Defaults" and entry.default_policy is not None
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "default-inputs.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
 def test_actual_conditional_property_origins() -> None:
     """Preserve branch pointers when ordinary validation materializes new properties."""
     import sys
