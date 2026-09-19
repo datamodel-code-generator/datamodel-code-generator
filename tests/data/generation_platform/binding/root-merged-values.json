@@ -1,0 +1,158 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Root merged values",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "BaseArray": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ship-to": {
+              "type": "string"
+            },
+            "base-value": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "Array": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseArray",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ship-to": {
+                  "type": "string",
+                  "minLength": 2
+                },
+                "extra-value": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BaseTuple": {
+        "type": "array",
+        "items": [
+          {
+            "type": "object",
+            "properties": {
+              "first-key": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "additionalItems": {
+          "type": "object",
+          "properties": {
+            "tail-key": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "TupleValue": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseTuple",
+            "items": [
+              {
+                "type": "object",
+                "properties": {
+                  "first-key": {
+                    "type": "string"
+                  },
+                  "first-extra": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "second-key": {
+                    "type": "number"
+                  }
+                }
+              }
+            ],
+            "additionalItems": false
+          }
+        ]
+      },
+      "BaseClosed": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "kept": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "ClosedValue": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseClosed",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kept": {
+                  "type": "string"
+                },
+                "forbidden": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ObjectValue": {
+        "type": "object",
+        "properties": {
+          "nested-key": {
+            "type": "string"
+          }
+        }
+      },
+      "BaseReferenced": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ObjectValue"
+        }
+      },
+      "ReferencedValue": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseReferenced",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nested-key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sibling-key": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

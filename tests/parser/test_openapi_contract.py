@@ -692,6 +692,7 @@ def test_actual_conditional_property_origins() -> None:
         "allof-union-origins",
         "merged-origins",
         "root-origins",
+        "root-merged-values",
         "synthetic-origins",
     ],
 )
@@ -699,7 +700,7 @@ def test_materialized_property_origins(backend: DataModelType, case: str) -> Non
     """Preserve original keys through forward inheritance and filtered combined branches."""
     import sys
 
-    from datamodel_code_generator.enums import ReadOnlyWriteOnlyModelType
+    from datamodel_code_generator.enums import JsonSchemaVersion, ReadOnlyWriteOnlyModelType
     from datamodel_code_generator.model import get_data_model_types
     from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
     from tests.data.python.binding_engine_observer import BindingEngineObserver
@@ -716,6 +717,8 @@ def test_materialized_property_origins(backend: DataModelType, case: str) -> Non
         "read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.RequestResponse,
         "formatters": [],
     }
+    if case == "root-merged-values":
+        options["jsonschema_version"] = JsonSchemaVersion.Draft202012
     ordinary = ApiOpenAPIParser(SOURCE / f"{case}.json", **options)
     captured = ContractApiOpenAPIParser(SOURCE / f"{case}.json", attempt_id=AttemptId(1), **options)
     previous = sys.getprofile()
@@ -753,7 +756,8 @@ def test_materialized_property_origins(backend: DataModelType, case: str) -> Non
             pointers.extend(
                 origin.location.pointer for origin in entry.origins if origin.location.pointer not in pointers
             )
-        assert_output(json.dumps(locations, indent=2) + "\n", EXPECTED / f"{case}.txt")
+        origin_case = f"{case}-{backend.name}" if case == "root-merged-values" else case
+        assert_output(json.dumps(locations, indent=2) + "\n", EXPECTED / f"{origin_case}.txt")
         if case == "synthetic-origins":
             assert_output(
                 json.dumps(

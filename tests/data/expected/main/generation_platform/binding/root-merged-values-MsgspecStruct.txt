@@ -1,0 +1,20 @@
+{
+  "ship-to": [
+    "/components/schemas/BaseArray/items/properties/ship-to"
+  ],
+  "base-value": [
+    "/components/schemas/BaseArray/items/properties/base-value"
+  ],
+  "first-key": [
+    "/components/schemas/BaseTuple/items/0/properties/first-key"
+  ],
+  "tail-key": [
+    "/components/schemas/BaseTuple/additionalItems/properties/tail-key"
+  ],
+  "kept": [
+    "/components/schemas/BaseClosed/items/properties/kept"
+  ],
+  "nested-key": [
+    "/components/schemas/ObjectValue/properties/nested-key"
+  ]
+}

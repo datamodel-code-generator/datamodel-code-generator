@@ -501,6 +501,15 @@ class RootSchemaFrame:
 
 
 @dataclass(slots=True)
+class RootValueChildrenFrame:
+    """Own the actual ref expansion feeding one root-value child merge."""
+
+    sources: tuple[JsonSchemaObject | bool, ...]
+    references: ReferenceProducerFrame
+    bound: bool = False
+
+
+@dataclass(slots=True)
 class AllOfRefFrame:
     """Match direct allOf ref occurrences to their actual loader resolutions."""
 
@@ -570,6 +579,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self._combined_branches: list[CombinedBranchFrame] = []
         self._allof_refs: list[AllOfRefFrame] = []
         self._root_schema_frames: list[RootSchemaFrame] = []
+        self._root_value_children: list[RootValueChildrenFrame] = []
         self.root_materializations: list[tuple[RootSchemaFrame, JsonSchemaObject]] = []
         self._raw_validation_frames: list[RawValidationFrame] = []
         self.type_observations: list[TypeObservation] = []
@@ -974,6 +984,12 @@ class BindingCaptureMixin(OpenAPIParser):
             )
         return result  # pyright: ignore[reportUnknownVariableType]
 
+    def _resolve_inherited_child_ref(self, ref: str, parent_ref: str) -> str:
+        """Separate copied child-ref normalization from the containing loader's resolution."""
+        with self._resolution_producer():
+            result: str = super()._resolve_inherited_child_ref(ref, parent_ref)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return result  # pyright: ignore[reportUnknownVariableType]
+
     def _get_deferred_inherited_property_names(
         self, source_obj: JsonSchemaObject, parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]]
     ) -> frozenset[str]:
@@ -1203,7 +1219,41 @@ class BindingCaptureMixin(OpenAPIParser):
             and not source.ref
         ):
             self.schema_origins.derive_preserved_shape(source, result, "allof_root_materialization")
+        self._record_root_value_materializations(frame, result)
         return result
+
+    def _record_root_value_materializations(self, frame: RootSchemaFrame, result: JsonSchemaObject) -> None:
+        """Connect the actual merged mapping before ordinary array/root parsing starts."""
+        roots = [
+            event
+            for event in frame.values
+            if event.producer == "validation_keywords" and any(source is frame.source for source in event.sources)
+        ]
+        if not roots:
+            return
+        if len(roots) != 1 or not isinstance(raw := roots[0].result, dict):
+            msg = "A root materialization has ambiguous validation producers"
+            raise BindingCaptureError(msg)
+        match frame.source.allOf, roots[0].sources, frame.references.resolutions:
+            case (
+                [JsonSchemaObject(ref=str() as ref) as branch],
+                (JsonSchemaObject() as referenced, sibling, parent),
+                [loader, context],
+            ) if sibling is branch and parent is frame.source and loader.input == ref and context.input == ref:
+                if (origin := self._borrow_resolved_schema(loader.output, "allof_root_materialization")) is not None:
+                    self.schema_origins.pair(
+                        raw=origin.raw, obj=referenced, location=origin.location, relation="allof_root_materialization"
+                    )
+            case _:
+                msg = "A root materialization has no matching reference producer"
+                raise BindingCaptureError(msg)
+        producers: dict[int, dict[int, JsonSchemaObject | bool]] = {}
+        for event in frame.values:
+            if isinstance(event.result, dict):
+                producers.setdefault(id(event.result), {}).update((id(source), source) for source in event.sources)
+        self.schema_origins.pair_root_materialization(
+            raw, result, {identity: tuple(sources.values()) for identity, sources in producers.items()}
+        )
 
     def _merge_all_of_root_value_nodes(self, nodes: list[JsonSchemaObject | bool]) -> dict[str, object] | bool:
         """Capture the real raw-value return without reconstructing its intersection."""
@@ -1213,17 +1263,58 @@ class BindingCaptureMixin(OpenAPIParser):
 
     def _merge_all_of_root_value_children(self, nodes: list[JsonSchemaObject | bool]) -> dict[str, object] | bool:
         """Keep actual child-source order and actual raw output from the engine."""
-        with self._resolution_producer():
-            result: dict[str, object] | bool = super()._merge_all_of_root_value_children(nodes)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        frame = RootValueChildrenFrame(tuple(nodes), ReferenceProducerFrame([]))
+        self._root_value_children.append(frame)
+        try:
+            with self._resolution_producer(frame.references):
+                result: dict[str, object] | bool = super()._merge_all_of_root_value_children(nodes)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        finally:
+            self._root_value_children.pop()
         return self._record_root_value(nodes, "children", result=result)  # pyright: ignore[reportUnknownArgumentType]
 
     def _merge_all_of_root_validation_keywords(
         self, merged: dict[str, object], sources: list[JsonSchemaObject]
     ) -> None:
         """Observe the actual in-place mapping after the existing validation merge."""
+        self._record_root_child_inputs(sources)
         with self._resolution_producer():
             super()._merge_all_of_root_validation_keywords(merged, sources)  # pyright: ignore[reportUnknownMemberType]
         self._record_root_value(sources, "validation_keywords", result=merged)
+
+    @capture_errors
+    def _record_root_child_inputs(self, children: list[JsonSchemaObject]) -> None:
+        if not self._root_value_children or (frame := self._root_value_children[-1]).bound:
+            return
+        frame.bound = True
+        completed = iter(children)
+        resolutions = iter(frame.references.resolutions)
+        for source in frame.sources:
+            if isinstance(source, bool):
+                continue
+            if (child := next(completed, None)) is None:
+                msg = "A root-value child merge lost an input occurrence"
+                raise BindingCaptureError(msg)
+            if not source.ref:
+                if child is not source:
+                    msg = "A root-value inline child changed identity before merging"
+                    raise BindingCaptureError(msg)
+                continue
+            loader, context = next(resolutions, None), next(resolutions, None)
+            sibling = next(completed, None)
+            if loader is None or context is None or loader.input != source.ref or context.input != source.ref:
+                msg = "A root-value child has no matching loader resolution"
+                raise BindingCaptureError(msg)
+            if sibling is None or sibling is source or sibling.ref is not None:
+                msg = "A root-value reference has no actual sibling copy"
+                raise BindingCaptureError(msg)
+            if (origin := self._borrow_resolved_schema(loader.output, "allof_root_materialization")) is not None:
+                self.schema_origins.pair(
+                    raw=origin.raw, obj=child, location=origin.location, relation="allof_root_materialization"
+                )
+            self.schema_origins.derive_preserved_shape(source, sibling, "allof_root_materialization")
+        if next(completed, None) is not None or next(resolutions, None) is not None:
+            msg = "A root-value child merge has unowned inputs or resolutions"
+            raise BindingCaptureError(msg)
 
     @capture_errors
     def _record_root_value(
@@ -1789,6 +1880,7 @@ class BindingCaptureMixin(OpenAPIParser):
             self._combined_branches.clear()
             self._allof_refs.clear()
             self._root_schema_frames.clear()
+            self._root_value_children.clear()
             self.root_materializations.clear()
             self.binding_ledger.close()
             self.binding_resolver.close_capture()

@@ -41,8 +41,10 @@ if TYPE_CHECKING:
         FieldSlot,
         FinalPythonType,
         FrozenLiteral,
+        MetadataCall,
         SymbolId,
         TypeArgument,
+        UnannotatedPythonType,
     )
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
@@ -50,6 +52,13 @@ if TYPE_CHECKING:
 Tokens: TypeAlias = tuple[tokenize.TokenInfo, ...]
 _PAIR_SIZE: Final = 2
 _ANNOTATED_FIELD_MIN_TOKENS: Final = 3
+_TYPING_CONTAINER_NAMES: Final = {
+    "list": "typing.List",
+    "dict": "typing.Dict",
+    "set": "typing.Set",
+    "frozenset": "typing.FrozenSet",
+    "tuple": "typing.Tuple",
+}
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 EmissionForm: TypeAlias = Literal["class_field", "typeddict_entry"]
@@ -559,7 +568,8 @@ class _TypePlacementMatcher:
             for nested in ((self._union(child) or (child,)) if child is not None else (None,))
         )
 
-    def _metadata(self, tokens: Tokens, path: tuple[int, ...]) -> Tokens:
+    def _metadata(self, tokens: Tokens, path: tuple[int, ...], required: tuple[MetadataCall, ...] = ()) -> Tokens:
+        matched = 0
         while (application := _application(tokens, "[")) is not None:
             callee, arguments = application
             if _resolved_name(callee, self.bindings) not in {"typing.Annotated", "typing_extensions.Annotated"}:
@@ -569,7 +579,12 @@ class _TypePlacementMatcher:
             for metadata in arguments[1:]:
                 if (call := _application(metadata, "(")) is None:
                     continue
-                if _resolved_name(call[0], self.bindings) != "msgspec.Meta":
+                identity = _resolved_name(call[0], self.bindings)
+                if matched < len(required) and identity == _import_identity(required[matched].import_)[1]:
+                    if not self._match_keywords(required[matched].keywords, call[1]):
+                        self._mismatch()
+                    matched += 1
+                if identity != "msgspec.Meta":
                     continue
                 keywords: list[tuple[str, FrozenLiteral | SourceExpression]] = []
                 for argument in call[1]:
@@ -583,11 +598,25 @@ class _TypePlacementMatcher:
                     MetaLayer(path, ordinal, tuple(keywords), metadata[0].start[0], metadata[0].start[1])
                 )
             tokens = arguments[0]
+        if matched != len(required):
+            self._mismatch()
         return tokens
+
+    def _projected_metadata(
+        self, expected: FinalPythonType, tokens: Tokens, path: tuple[int, ...]
+    ) -> tuple[UnannotatedPythonType, Tokens]:
+        if not isinstance(expected, AnnotatedType):
+            return expected, self._metadata(tokens, path)
+        required = expected.metadata
+        expected = expected.base
+        while isinstance(expected, AnnotatedType):
+            required += expected.metadata
+            expected = expected.base
+        return expected, self._metadata(tokens, path, required)
 
     def match_field(self, expected: FinalPythonType, tokens: Tokens) -> None:
         """Separate field policy wrappers from the existing data-type skeleton."""
-        tokens = self._metadata(tokens, ())
+        expected, tokens = self._projected_metadata(expected, tokens, ())
         while (application := _application(tokens, "[")) is not None:
             callee, arguments = application
             if (
@@ -643,8 +672,8 @@ class _TypePlacementMatcher:
             if not isinstance(expected, NoneType):
                 self._mismatch()
             return
-        tokens = self._metadata(tokens, path)
-        match expected:
+        skeleton, tokens = self._projected_metadata(expected, tokens, path)
+        match skeleton:
             case BuiltinType(name):
                 matched = _dotted_name(tokens) == name and name not in self.bindings
             case NoneType():
@@ -655,9 +684,9 @@ class _TypePlacementMatcher:
             case GeneratedSymbolType(symbol):
                 matched = _dotted_name(tokens) == self.symbols.get(symbol)
             case BoundType():
-                matched = self._match_bound(expected, tokens)
+                matched = self._match_bound(skeleton, tokens)
             case GenericType():
-                self._match_generic(expected, tokens, path)
+                self._match_generic(skeleton, tokens, path)
                 return
             case UnionType(members, _):
                 if (children := self._union(tokens)) is None or len(children) != len(members):
@@ -666,12 +695,9 @@ class _TypePlacementMatcher:
                     self._match(member, child, (*path, index))
                 return
             case LiteralType():
-                matched = self._match_literal(expected, tokens)
+                matched = self._match_literal(skeleton, tokens)
             case ConstructorType():
-                matched = self._match_constructor(expected, tokens, path)
-            case AnnotatedType(base, _):
-                self._match(base, tokens, path)
-                return
+                matched = self._match_constructor(skeleton, tokens, path)
         if not matched:
             self._mismatch()
 
@@ -702,9 +728,8 @@ class _TypePlacementMatcher:
             if not children or _text(children[-1]) != "...":
                 self._mismatch()
             children = children[:-1]
-        if (
-            isinstance(base, BuiltinType)
-            and _resolved_name(callee, self.bindings) == f"typing.{base.name.capitalize()}"
+        if isinstance(base, BuiltinType) and _resolved_name(callee, self.bindings) == _TYPING_CONTAINER_NAMES.get(
+            base.name, ""
         ):
             pass
         else:
@@ -739,7 +764,11 @@ class _TypePlacementMatcher:
         if (application := _application(tokens, "(")) is None:
             self._mismatch()
         self._match(callee, application[0], path)
-        actual_keywords = tuple(_split(argument, "=") for argument in application[1])
+        return self._match_keywords(keywords, application[1])
+
+    @staticmethod
+    def _match_keywords(keywords: tuple[tuple[str, TypeArgument], ...], arguments: tuple[Tokens, ...]) -> bool:
+        actual_keywords = tuple(_split(argument, "=") for argument in arguments)
         matched = len(actual_keywords) == len(keywords)
         if matched:
             for (name, value), pair in zip(keywords, actual_keywords, strict=True):
