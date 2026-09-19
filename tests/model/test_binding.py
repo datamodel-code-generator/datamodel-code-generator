@@ -492,6 +492,47 @@ def test_container_projection_preserves_actual_imports(*, standard: bool) -> Non
         parser.source_lease.close()
 
 
+@pytest.mark.parametrize(
+    "change", json.loads((SOURCE / "decimal-type-artifacts.json").read_text()), ids=itemgetter("id")
+)
+def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool]) -> None:
+    """Corroborate actual Decimal constraints without evaluating annotation calls."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        builtin_field_imports,
+        projected_field_expectations,
+    )
+
+    backend = DataModelType.PydanticV2BaseModel
+    config = builtin_binding_config(backend)
+    config.use_decimal_for_multiple_of = True
+    parser = ContractApiOpenAPIParser(SOURCE / "decimal-types.json", attempt_id=AttemptId(1), config=config)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / "decimal-types.py")
+        expected = projected_field_expectations(parser, "Prices", backend)
+        imports = FrozenImportBindings((
+            *builtin_field_imports(),
+            Import(import_="condecimal", from_="pydantic"),
+            Import(import_="Decimal", from_="decimal"),
+        ))
+        body = body.replace(str(change["old"]), str(change["new"]))
+        if change["error"]:
+            with pytest.raises(
+                BindingCaptureError, match="Accepted field annotation does not match its projected type"
+            ):
+                index_builtin_field_declarations(body, expected=expected, imports=imports)
+            return
+        index = index_builtin_field_declarations(body, expected=expected, imports=imports)
+        assert_output(
+            json.dumps([field.expected.native_name for field in index.fields], indent=2) + "\n",
+            EXPECTED / "decimal-type-fields.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
 @pytest.mark.parametrize("change", json.loads((SOURCE / "bound-type-artifacts.json").read_text()), ids=itemgetter("id"))
 def test_bound_expression_matches_actual_structure(change: dict[str, str | bool]) -> None:
     """Use retained semantic expressions for callables, literal values, tuples and unions."""
