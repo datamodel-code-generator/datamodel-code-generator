@@ -268,13 +268,7 @@ def test_discriminator_override_helper(backend: str, *, enum_values: bool, alias
     assert_output(
         json.dumps({use.id.schema_site.pointer: type_snapshot(use.type, names) for use in selected}, indent=2) + "\n",
         expected
-        / (
-            "inherited.txt"
-            if backend == "typing.TypedDict"
-            else "members.txt"
-            if enum_values
-            else "literals.txt"
-        ),
+        / ("inherited.txt" if backend == "typing.TypedDict" else "members.txt" if enum_values else "literals.txt"),
     )
     assert_output(
         "\n".join(error.code for error in require_type_bindings(product.batch, tuple(use.id for use in selected))),
