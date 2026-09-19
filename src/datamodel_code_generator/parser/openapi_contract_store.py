@@ -154,7 +154,7 @@ class TypeRecipe:
     alias: str | None
     import_: Import | None
     bound: BoundPythonType | None
-    children: tuple[TypeRecipe, ...]
+    data_types: tuple[TypeRecipe, ...]
     dict_key: TypeRecipe | None
     literals: tuple[bool | int | str, ...]
     enum_members: tuple[tuple[str, str], ...]
@@ -178,7 +178,7 @@ def _type_recipe(data_type: DataType, ledger: BindingLedger, active: set[int]) -
         alias=data_type.alias,
         import_=data_type.import_,
         bound=data_type.python_type,
-        children=tuple(_type_recipe(child, ledger, active) for child in data_type.data_types),
+        data_types=tuple(_type_recipe(child, ledger, active) for child in data_type.data_types),
         dict_key=_type_recipe(key, ledger, active) if (key := data_type.dict_key) is not None else None,
         literals=tuple(data_type.literals),
         enum_members=tuple(data_type.enum_member_literals),

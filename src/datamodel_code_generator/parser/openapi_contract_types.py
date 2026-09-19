@@ -175,7 +175,7 @@ class FinalTypeProjector:
             return BoundType(recipe.bound), False
         if recipe.atom is not None:
             return self._project_atomic(recipe), False
-        if recipe.children or "tuple" in recipe.modifiers:
+        if recipe.data_types or "tuple" in recipe.modifiers:
             return self._project_structural(recipe)
         if recipe.reference is not None and not (recipe.enum_members or recipe.literals):
             return self._project_reference(recipe.reference, recipe), False
@@ -207,21 +207,23 @@ class FinalTypeProjector:
 
     def _project_structural(self, recipe: TypeRecipe) -> tuple[FinalPythonType, bool]:
         if "tuple" in recipe.modifiers:
-            if recipe.children and recipe.children[-1].atom == "...":
+            if recipe.data_types and recipe.data_types[-1].atom == "...":
                 return (
                     GenericType(
-                        BuiltinType("tuple"), tuple(self._project(child) for child in recipe.children[:-1]), "ellipsis"
+                        BuiltinType("tuple"),
+                        tuple(self._project(child) for child in recipe.data_types[:-1]),
+                        "ellipsis",
                     ),
                     False,
                 )
-            arguments = tuple(self._project(child) for child in recipe.children)
+            arguments = tuple(self._project(child) for child in recipe.data_types)
             if recipe.tuple_item_count is not None:
                 arguments = (arguments[0] if arguments else ImportedType(IMPORT_ANY),) * recipe.tuple_item_count
             return GenericType(BuiltinType("tuple"), arguments, "fixed"), False
-        if len(recipe.children) == 1:
-            return self._project(recipe.children[0]), False
+        if len(recipe.data_types) == 1:
+            return self._project(recipe.data_types[0]), False
         preserve_order = "preserve_union_order" in recipe.modifiers
-        members = tuple(self._project(child) for child in recipe.children)
+        members = tuple(self._project(child) for child in recipe.data_types)
         inferred_optional = False
         if not preserve_order:
             flattened = tuple(
