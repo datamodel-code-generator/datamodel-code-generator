@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "An allOf object merge has additional unowned resolutions"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

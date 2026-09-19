@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING, Concatenate, Literal, ParamSpec, Protocol, TypeAlias, TypeVar
 
-from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError, GraphObjectId
+from datamodel_code_generator._generation_contract import (
+    AttemptId,
+    BindingCaptureError,
+    GraphObjectId,
+    clear_capture_tracebacks,
+)
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser.generation import GenerationStore
 
@@ -67,6 +72,7 @@ class BindingLedger:
         self.variants.clear()
         self.collapses.clear()
         self.root_recipes.clear()
+        clear_capture_tracebacks(self.failure)
 
 
 class _CaptureOwner(Protocol):

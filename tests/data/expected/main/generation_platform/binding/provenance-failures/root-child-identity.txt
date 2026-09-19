@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A root-value inline child changed identity before merging"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}
