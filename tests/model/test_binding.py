@@ -495,7 +495,8 @@ def test_container_projection_preserves_actual_imports(*, standard: bool) -> Non
 @pytest.mark.parametrize(
     "change", json.loads((SOURCE / "decimal-type-artifacts.json").read_text()), ids=itemgetter("id")
 )
-def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool]) -> None:
+@pytest.mark.parametrize("deserialize", [False, True])
+def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool], *, deserialize: bool) -> None:
     """Corroborate actual Decimal constraints without evaluating annotation calls."""
     from tests.data.python.binding_inputs import (
         builtin_binding_config,
@@ -506,10 +507,18 @@ def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool]) 
     backend = DataModelType.PydanticV2BaseModel
     config = builtin_binding_config(backend)
     config.use_decimal_for_multiple_of = True
-    parser = ContractApiOpenAPIParser(SOURCE / "decimal-types.json", attempt_id=AttemptId(1), config=config)
+    if deserialize:
+        from datamodel_code_generator.enums import DefaultValueType
+
+        config.deserialize_default_values = [DefaultValueType.Decimal]
+    parser = ContractApiOpenAPIParser(
+        SOURCE / ("decimal-default-types.json" if deserialize else "decimal-types.json"),
+        attempt_id=AttemptId(1),
+        config=config,
+    )
     try:
         body = str(parser.parse())
-        assert_output(body, EXPECTED / "decimal-types.py")
+        assert_output(body, EXPECTED / ("decimal-default-types.py" if deserialize else "decimal-types.py"))
         expected = projected_field_expectations(parser, "Prices", backend)
         imports = FrozenImportBindings((
             *builtin_field_imports(),
@@ -517,7 +526,7 @@ def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool]) 
             Import(import_="Decimal", from_="decimal"),
         ))
         body = body.replace(str(change["old"]), str(change["new"]))
-        if change["error"]:
+        if change["error"] or (deserialize and change["id"] == "equivalent-exponent"):
             with pytest.raises(
                 BindingCaptureError, match="Accepted field annotation does not match its projected type"
             ):

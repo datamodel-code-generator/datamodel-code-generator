@@ -20,6 +20,7 @@ from datamodel_code_generator._generation_contract import (
     ConstructorType,
     GeneratedSymbolType,
     GenericType,
+    ImportedExpression,
     ImportedType,
     LiteralScalar,
     LiteralType,
@@ -886,8 +887,25 @@ class _TypePlacementMatcher:
                 matched = matched and self._match_argument(value, pair[1])
         return matched
 
+    def _match_imported_expression(self, import_: Import, prefix: str, suffix: str, tokens: Tokens) -> bool:
+        marker = "__dcg_import_binding__"
+        expression = _expression_tokens(f"{prefix}{marker}{suffix}")
+        positions = tuple(index for index, token in enumerate(expression) if token.string == marker)
+        if len(positions) != 1:
+            return False
+        start = positions[0]
+        end = len(tokens) - (len(expression) - start - 1)
+        return (
+            end > start
+            and _text(tokens[:start]) == _text(expression[:start])
+            and _text(tokens[end:]) == _text(expression[start + 1 :])
+            and _resolved_name(tokens[start:end], self.bindings) == _import_identity(import_)[1]
+        )
+
     def _match_argument(self, expected: TypeArgument, tokens: Tokens) -> bool:
         match expected:
+            case ImportedExpression(import_, prefix, suffix):
+                return self._match_imported_expression(import_, prefix, suffix, tokens)
             case SourceExpression(text):
                 return _text(tokens) == _text(_expression_tokens(text))
             case LiteralScalar("decimal", Decimal() as value):
