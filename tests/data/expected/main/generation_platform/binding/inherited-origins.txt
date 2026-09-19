@@ -1,0 +1,15 @@
+{
+  "note": [
+    "/components/schemas/Child/allOf/1/properties/note",
+    "/components/schemas/Parent/properties/note"
+  ],
+  "postal-code": [
+    "/components/schemas/Parent/properties/ship-to/properties/postal-code"
+  ],
+  "ship-to": [
+    "/components/schemas/Parent/properties/ship-to"
+  ],
+  "id": [
+    "/components/schemas/Parent/properties/id"
+  ]
+}

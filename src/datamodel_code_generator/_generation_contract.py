@@ -6,8 +6,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, NewType, Protocol, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
+    from decimal import Decimal
+
     from datamodel_code_generator import _ParserSource  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.imports import Import
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi import OpenAPIParser
 
@@ -71,6 +75,17 @@ class GenerationCaptureSession(Protocol[BatchT_co]):
 SourceDocumentId = NewType("SourceDocumentId", int)
 GraphObjectId = NewType("GraphObjectId", int)
 SymbolId = NewType("SymbolId", int)
+
+
+@dataclass(frozen=True, slots=True)
+class FieldSlot:
+    """Identify an actual declaring field independently from inheriting consumers."""
+
+    attempt: AttemptId
+    symbol: SymbolId
+    field: GraphObjectId
+
+
 Direction: TypeAlias = Literal["request", "response", "neutral"]
 TypeUseRole: TypeAlias = Literal[
     "schema",
@@ -168,3 +183,170 @@ class NoneDefaultProvenance:
         "none",
         "opaque",
     ]
+
+
+@dataclass(frozen=True, slots=True)
+class LiteralScalar:
+    """Retain a builtin literal's exact type, including the bool/int distinction."""
+
+    kind: Literal["none", "bool", "int", "float", "str", "bytes", "decimal"]
+    value: bool | int | float | str | bytes | Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
+class LiteralSequence:
+    """Freeze a literal container without conflating its Python constructor."""
+
+    kind: Literal["list", "tuple", "set", "frozenset"]
+    items: tuple[FrozenLiteral, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class LiteralMapping:
+    """Keep ordered literal key/value pairs without retaining a mutable mapping."""
+
+    entries: tuple[tuple[FrozenLiteral, FrozenLiteral], ...]
+
+
+FrozenLiteral: TypeAlias = LiteralScalar | LiteralSequence | LiteralMapping
+
+
+@dataclass(frozen=True, slots=True)
+class SourceExpression:
+    """Retain unexecuted source explicitly supplied by an existing code producer."""
+
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class ImportedExpression:
+    """Preserve an existing runtime expression's import identity and source parts."""
+
+    import_: Import
+    prefix: str
+    suffix: str
+
+
+TypeArgument: TypeAlias = FrozenLiteral | SourceExpression | ImportedExpression
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedSymbolType:
+    """Stop traversal of generated model references at the final symbol identity."""
+
+    symbol: SymbolId
+
+
+@dataclass(frozen=True, slots=True)
+class BuiltinType:
+    """Name one recognized Python builtin independently of its rendered spelling."""
+
+    name: Literal[
+        "bool", "bytes", "complex", "float", "int", "str", "object", "list", "set", "frozenset", "dict", "tuple"
+    ]
+
+
+@dataclass(frozen=True, slots=True)
+class NoneType:
+    """Represent the null type without confusing it with unavailable projection."""
+
+
+@dataclass(frozen=True, slots=True)
+class ImportedType:
+    """Keep the actual immutable Import, including independent alias ownership."""
+
+    import_: Import
+    qualified_suffix: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class BoundType:
+    """Reuse an existing immutable semantic Python annotation without reparsing it."""
+
+    binding: BoundPythonType
+
+
+@dataclass(frozen=True, slots=True)
+class GenericType:
+    """Preserve ordered container arguments and fixed versus variadic tuple shape."""
+
+    base: FinalPythonType
+    arguments: tuple[FinalPythonType, ...]
+    tuple_form: Literal["not_tuple", "fixed", "ellipsis"] = "not_tuple"
+
+
+@dataclass(frozen=True, slots=True)
+class UnionType:
+    """Retain the final engine's ordered member types and ordering policy."""
+
+    members: tuple[FinalPythonType, ...]
+    preserve_order: bool
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedEnumMember:
+    """Bind an actual enum member field to its final declaring symbol."""
+
+    symbol: SymbolId
+    field: GraphObjectId
+    name: str
+
+
+@dataclass(frozen=True, slots=True)
+class LiteralType:
+    """Keep type-sensitive literals and actual enum member identities."""
+
+    values: tuple[LiteralScalar | GeneratedEnumMember, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ConstructorType:
+    """Preserve a constrained type constructor and its actual ordered arguments."""
+
+    callable: ImportedType | BoundType
+    keywords: tuple[tuple[str, TypeArgument], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MetadataCall:
+    """Keep a type metadata constructor without invoking it or normalizing its values."""
+
+    import_: Import
+    keywords: tuple[tuple[str, TypeArgument], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class AnnotatedType:
+    """Retain metadata layer placement around an already projected Python type."""
+
+    base: FinalPythonType
+    metadata: tuple[MetadataCall, ...]
+
+
+FinalPythonType: TypeAlias = (
+    GeneratedSymbolType
+    | BuiltinType
+    | NoneType
+    | ImportedType
+    | BoundType
+    | GenericType
+    | UnionType
+    | LiteralType
+    | ConstructorType
+    | AnnotatedType
+)
+
+
+TypeProjectionReason: TypeAlias = Literal[
+    "BND_TYPE_EXPRESSION_UNSUPPORTED", "BND_CUSTOM_BINDING_REQUIRED", "BND_SYMBOL_NOT_EMITTED"
+]
+
+
+@dataclass(frozen=True, slots=True)
+class TypeProjection:
+    """Keep unsupported final-type forms as finite consumer diagnostics."""
+
+    value: FinalPythonType | None
+    reason: (
+        Literal["BND_TYPE_EXPRESSION_UNSUPPORTED", "BND_CUSTOM_BINDING_REQUIRED", "BND_SYMBOL_NOT_EMITTED"] | None
+    ) = None

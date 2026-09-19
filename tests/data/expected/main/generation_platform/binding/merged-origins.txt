@@ -1,0 +1,12 @@
+{
+  "nested-key": [
+    "/components/schemas/RefUse/anyOf/0/properties/side-key/properties/nested-key"
+  ],
+  "shared-key": [
+    "/components/schemas/Base/properties/shared-key",
+    "/components/schemas/Other/properties/shared-key"
+  ],
+  "side-key": [
+    "/components/schemas/RefUse/anyOf/0/properties/side-key"
+  ]
+}

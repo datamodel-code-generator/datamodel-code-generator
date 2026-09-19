@@ -161,6 +161,7 @@ class TypeRecipe:
     kwargs: tuple[tuple[str, object], ...]
     modifiers: tuple[str, ...]
     tuple_item_count: int | None
+    discriminator: str | None
 
 
 def _type_recipe(data_type: DataType, ledger: BindingLedger, active: set[int]) -> TypeRecipe:
@@ -205,6 +206,7 @@ def _type_recipe(data_type: DataType, ledger: BindingLedger, active: set[int]) -
             if enabled
         ),
         tuple_item_count=data_type.tuple_item_count,
+        discriminator=data_type.discriminator,
     )
     active.remove(node)
     return result

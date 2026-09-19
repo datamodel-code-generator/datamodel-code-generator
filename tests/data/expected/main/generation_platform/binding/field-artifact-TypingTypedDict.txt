@@ -1,0 +1,338 @@
+[
+  {
+    "model": "Types",
+    "field": "flag",
+    "annotation": "NotRequired [bool ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "count",
+    "annotation": "NotRequired [int ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "name",
+    "annotation": "NotRequired [str ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "moment",
+    "annotation": "NotRequired [str ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable",
+    "annotation": "NotRequired [Optional [str ]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "items",
+    "annotation": "NotRequired [List [int ]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "unique",
+    "annotation": "NotRequired [Set [str ]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "dictionary",
+    "annotation": "NotRequired [Dict [str ,bool ]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "choice",
+    "annotation": "NotRequired [Union [str ,int ]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "position",
+    "annotation": "NotRequired [List [Union [str ,int ]]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "child",
+    "annotation": "NotRequired [Child ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable_choice",
+    "annotation": "NotRequired [Optional [Union [int ,str ]]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable_items",
+    "annotation": "NotRequired [List [Optional [Union [int ,str ]]]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "external",
+    "annotation": "NotRequired [str ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "literal",
+    "annotation": "NotRequired [Literal [True ,1 ,'one']]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Child",
+    "field": "value",
+    "annotation": "NotRequired [str ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": []
+    }
+  }
+]

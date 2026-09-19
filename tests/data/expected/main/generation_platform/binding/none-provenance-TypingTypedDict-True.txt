@@ -1,0 +1,44 @@
+{
+  "missing": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  },
+  "explicit_null": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  },
+  "literal": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  },
+  "items": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  },
+  "mapping": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  },
+  "factory": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  },
+  "required": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  }
+}

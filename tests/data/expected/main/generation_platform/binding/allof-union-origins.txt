@@ -1,0 +1,11 @@
+{
+  "ship-to": [
+    "/components/schemas/Variants/anyOf/1/properties/ship-to"
+  ],
+  "other-key": [
+    "/components/schemas/Variants/oneOf/0/properties/other-key"
+  ],
+  "nested": [
+    "/components/schemas/Envelope/allOf/1/properties/nested"
+  ]
+}

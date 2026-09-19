@@ -1,0 +1,105 @@
+{
+  "missing": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [
+      "NotRequired"
+    ],
+    "constructor_keywords": []
+  },
+  "explicit_null": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [
+      "NotRequired"
+    ],
+    "constructor_keywords": []
+  },
+  "literal": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [
+      "NotRequired"
+    ],
+    "constructor_keywords": []
+  },
+  "items": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [
+      "NotRequired"
+    ],
+    "constructor_keywords": []
+  },
+  "mapping": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [
+      "NotRequired"
+    ],
+    "constructor_keywords": []
+  },
+  "factory": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [
+      "NotRequired"
+    ],
+    "constructor_keywords": []
+  },
+  "required": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [],
+    "constructor_keywords": []
+  }
+}
