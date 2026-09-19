@@ -1123,6 +1123,253 @@ def test_unselected_legacy_declaration_boundaries() -> None:
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("collapse", [False, True])
+def test_legacy_media_producer_types(backend: str, *, collapse: bool) -> None:
+    """Bind real legacy body/response producers and both views of each item stream."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-legacy-media.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Paths],
+            output_model_type=backend,
+            input_filename="legacy-media.json",
+            collapse_root_models=collapse,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    for field in product.batch.fields:
+        if field.schema is not None:
+            product.source_lease.borrow(field.schema)
+    product.close()
+    uses = tuple(use for use in product.batch.type_uses if use.id.role in {"request_body", "response_body"})
+    assert_output(
+        "\n".join(error.code for error in require_type_bindings(product.batch, tuple(use.id for use in uses))),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
+    assert_output(
+        json.dumps(
+            {
+                use.id.schema_site.pointer: type_snapshot(use.type, names)
+                for use in uses
+                if use.id.projection == "value" and use.id.media == "application/json"
+            },
+            indent=2,
+        )
+        + "\n",
+        EXPECTED / "session-review/legacy-media" / ("literals.txt" if backend == "typing.TypedDict" else "types.txt"),
+    )
+    assert_output(
+        product.artifacts[0].content.decode(),
+        EXPECTED / "session-review/legacy-media" / f"{backend}-{collapse}.py",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize(("case", "status_names"), [("shared", False), ("shared", True), ("external", False)])
+def test_legacy_media_use_identity(backend: str, case: str, *, status_names: bool) -> None:
+    """Keep each real body/status return and borrowed external declaration independent."""
+    product, retained = generate_product(
+        (SOURCE / f"binding/session-legacy-{case}.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Paths],
+            output_model_type=backend,
+            input_filename=f"legacy-{case}.json",
+            use_status_code_in_response_name=status_names,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    for field in product.batch.fields:
+        if field.schema is not None:
+            product.source_lease.borrow(field.schema)
+    uses = tuple(use for use in product.batch.type_uses if use.id.role in {"request_body", "response_body"})
+    for use in uses:
+        if use.schema is not None:
+            product.source_lease.borrow(use.schema)
+    if case == "external":
+        responses = product.batch.operations[0].responses
+        for response in responses:
+            product.source_lease.borrow(response.declaration.location)
+        assert_output(
+            json.dumps(
+                [
+                    [response.name, response.declaration.location.pointer, type_snapshot(response.facts)]
+                    for response in responses
+                ],
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "session-review/legacy-external/responses.txt",
+        )
+    product.close()
+    expected = EXPECTED / f"session-review/legacy-{case}"
+    assert_output(
+        "\n".join(error.code for error in require_type_bindings(product.batch, tuple(use.id for use in uses))),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
+    assert_output(
+        json.dumps(
+            [
+                {
+                    "use": use.id.schema_site.pointer,
+                    "projection": use.id.projection,
+                    "type": type_snapshot(use.type, names),
+                    "schema": use.schema.pointer if use.schema is not None else None,
+                    "members": [
+                        [names[member.consumer], member.wire_name, member.schema.pointer if member.schema else None]
+                        for member in use.members
+                    ],
+                }
+                for use in uses
+            ],
+            indent=2,
+        )
+        + "\n",
+        expected / f"types-{status_names}.txt",
+    )
+    assert_output(product.artifacts[0].content.decode(), expected / f"{backend}-{status_names}.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_legacy_shared_stream_types(backend: str) -> None:
+    """Bind shared item declarations to actual independent roots and item models."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-legacy-shared-stream.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Paths],
+            output_model_type=backend,
+            input_filename="legacy-shared-stream.json",
+            use_status_code_in_response_name=True,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    for field in product.batch.fields:
+        if field.schema is not None:
+            product.source_lease.borrow(field.schema)
+    product.close()
+    uses = tuple(use.id for use in product.batch.type_uses if use.id.role in {"request_body", "response_body"})
+    assert_output(
+        "\n".join(error.code for error in require_type_bindings(product.batch, uses)),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(), EXPECTED / "session-review/legacy-shared-stream" / f"{backend}-paths.py"
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize("corrupt_root", [False, True])
+def test_legacy_shared_stream_artifact_dependencies(*, corrupt_root: bool) -> None:
+    """A corrupt stream root or item invalidates only its actual operation's two projections."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-legacy-shared-stream.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Paths],
+            input_filename="legacy-shared-stream.json",
+            use_status_code_in_response_name=True,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+        artifact_rewrite=(
+            ("root: list[BPostRequestItem]", "root: list[str]")
+            if corrupt_root
+            else (
+                "class BPostRequestItem(BaseModel):\n    value: int",
+                "class BPostRequestItem(BaseModel):\n    value: str",
+            )
+        ),
+    )
+    product.close()
+    assert_output(
+        "".join(
+            f"{use.id.schema_site.pointer} {use.id.projection}: "
+            + (
+                ",".join(dict.fromkeys(error.code for error in require_type_bindings(product.batch, (use.id,))))
+                or "bound"
+            )
+            + "\n"
+            for use in product.batch.type_uses
+            if use.id.role in {"request_body", "response_body"}
+        ),
+        EXPECTED / "session-review/legacy-shared-stream/corrupt-artifact.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("scope", ["paths", "api"])
+def test_integer_yaml_response_status(backend: str, scope: str) -> None:
+    """Borrow actual integer YAML status keys through their unambiguous textual pointers."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-integer-status.yaml").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope(scope)],
+            output_model_type=backend,
+            input_filename="integer-status.yaml",
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    for operation in product.batch.operations:
+        for response in operation.responses:
+            product.source_lease.borrow(response.declaration.location)
+    uses = tuple(use for use in product.batch.type_uses if use.id.role == "response_body")
+    for use in uses:
+        if use.schema is not None:
+            product.source_lease.borrow(use.schema)
+    product.close()
+    assert_output(
+        "\n".join(error.code for error in require_type_bindings(product.batch, tuple(use.id for use in uses))),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(
+        "".join(
+            f"{use.id.status} {use.id.projection} {use.schema.pointer if use.schema else 'missing'}\n" for use in uses
+        ),
+        EXPECTED / "session-review/integer-status/uses.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(), EXPECTED / "session-review/integer-status" / f"{backend}-{scope}.py"
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+def test_ambiguous_yaml_response_status() -> None:
+    """Reject competing string/integer source identities instead of binding the wrong declaration."""
+    from datamodel_code_generator._generation_contract import BindingCaptureError
+
+    with pytest.raises(BindingCaptureError, match="Source pointer is ambiguous between string and integer keys"):
+        generate_product(
+            (SOURCE / "binding/session-ambiguous-status.yaml").resolve(),
+            GenerateConfig(
+                input_file_type="openapi", openapi_scopes=[OpenAPIScope.Paths], formatters=[], disable_timestamp=True
+            ),
+        )
+
+
 def test_artifact_imported_base_redefinition() -> None:
     """Reject replacement of a proven imported base before its generated subclass."""
     product, retained = generate_product(
@@ -1269,6 +1516,29 @@ def test_session_cleanup_failure_identity(case: str, monkeypatch: pytest.MonkeyP
         json.dumps(session_cleanup_failures((SOURCE / "observation.json").resolve(), case, monkeypatch), indent=2)
         + "\n",
         EXPECTED / "session/cleanup" / f"{case}.txt",
+    )
+
+
+def test_session_cyclic_metadata_cleanup() -> None:
+    """Reject recursive source metadata and release the real failed attempt without fault injection."""
+    import yaml
+
+    from tests.data.python.generation_session_inputs import run_generation_session
+
+    source = (SOURCE / "binding/session-cyclic-metadata.yaml").resolve()
+    actual, retained = run_generation_session(source, document=yaml.safe_load(source.read_text()))
+    assert_output(
+        json.dumps(
+            {
+                "error": actual["error"],
+                "batch": actual["batch"],
+                "retained_parsers": actual["retained_parsers"],
+                "retained_graph": retained,
+            },
+            indent=2,
+        )
+        + "\n",
+        EXPECTED / "session/cleanup/cyclic-metadata.txt",
     )
 
 

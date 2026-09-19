@@ -1,6 +1,6 @@
 # S03 implementation record
 
-Status: implementing. All four PRs are published in native GitHub stack #4110; none has been merged. Completion gates remain open.
+Status: verifying S03-3 and S03-4. All four PRs are published in native GitHub stack #4110; none has been merged. Coverage, CI and final performance gates remain incomplete.
 
 Repository: datamodel-code-generator/datamodel-code-generator. Fixed main baseline: `149d933d927ca12f2e0e45fc18f8a4cf772046d7`. S01 and S02 are merged. The planning PR #4098 remains open at `8e6f0d4a8a64b71e5a049ad8d108507b2fe164ca`; contracts are read from its separate checkout. The original worktree's untracked `1.tmp` is preserved.
 
@@ -238,3 +238,21 @@ Current implementation-side checks: 471 selected tests pass (model bindings, own
 Remaining gates are explicit: complete nested helper/directional/default/provenance acceptance, legacy semantic exclusion and ambiguous-origin coverage, separate substantive server/client codec-plan consumers including supplementary references, owned E2E line/branch coverage of 100%, final full-suite/CI runs and complete-feature/ordinary-path performance measurements. The last owned coverage measurement before these additions was 88% (4507 statements, 401 missing, 1546 branches, 242 partial); it is not a passing result. PR4111 at 65b16efe still fails combine coverage, codecov/patch and dependent test-gate; its other checks pass or intentionally skip. No S04 work has started and no merge is authorized.
 
 Raw evidence remains in /private/tmp/dcg-s03-evidence/. The immediate next actions are publishing this fourth native-stack draft with an empty body, then closing the remaining acceptance gaps and obtaining the final cumulative Max recheck. Repository and external content remain English.
+
+## Legacy media review and source identity checkpoint
+
+An independent Astra Max review of cumulative `440b2f38` plus the media corrections found and verified fixes for four boundaries: shared request/response declarations returning different types at different operation/status uses; external RequestBody/Response destinations, including contentless response metadata; shared item-stream artifact dependencies; and integer YAML response keys. Capture now joins each actual media return to its exact schema use and projection. Original resolver observations identify external objects without another resolver/loader call. Only the actual stream root contributes producer dependencies to that operation's demands. A corrupted unrelated operation no longer invalidates intact types, while unscoped shared helpers retain explicit ambiguity.
+
+Source borrowing recognizes canonical textual pointers to integer YAML keys without copying or normalizing the source. Competing string/integer keys are rejected explicitly rather than selecting a different declaration. Both Paths and Api retain existing model bytes and source objects. Item-created root fields and compact primitive arrays retain both stream projections, including boolean item schemas. Cyclic supplementary metadata fails capture and releases the failed attempt; this test supplies a real PyYAML-loaded Mapping so the oracle does not depend on the optional ryaml backend's separate cyclic-YAML rejection.
+
+New normal-path model fixtures were generated independently from fixed main `149d933d`, with explicit filenames/settings and no output normalization. Model/type/member/source expectations are separate literal fixtures. Normal generation uses no mocks; staged-artifact mutation is confined to abnormal dependency tests.
+
+Verification at this checkpoint:
+
+- Full Python 3.13.2 suite: **20,216 passed, 15 skipped**, 158.60 seconds. Raw log: `/private/tmp/dcg-s03-evidence/full-media.log`.
+- Focused media/source/cleanup regressions: **44 passed** on Python 3.13.2 and **44 passed** on Python 3.10.16. Logs: `legacy-media-identity.log`, `py310-media.log` in the same evidence directory.
+- Independent reviewer: **45** ordinary/capture comparisons across five backends, identical bytes/warnings/original engine calls, borrowable source/member pointers, and zero retained graph. Five separate artifact-mutation comparisons verify that corrupting operation B rejects B while A remains usable. Both scopes reject ambiguous integer/string status pointers and release graphs with the exception retained. No remaining finding in this bounded review.
+- Warning-strict whole-source ty 0.0.82, strict Pyright, Ruff, architecture boundaries, and store-usage guards pass.
+- Additional real-generation artifact comparisons: **29 passed**. Additional abnormal producer-correspondence cases: **15 passed**. These additions follow the full-suite run and require their own final coverage run.
+
+This is not S03 completion. The full-suite coverage report has 435 uncovered source statements, including 122 in the capture parser; overall rounded coverage is 99%, below the required owned 100% line/branch gate. The published top PR at `440b2f38` has 78 successful checks, one intentional skip, and three failures: combine coverage, dependent test-gate, and codecov/patch. PR4111 also requires its own coverage checks and review-comment resolution. Final ordinary-path and complete-product performance revalidation remains pending. Main is still `149d933d`; no stack PR has merged, and S04 has not started.

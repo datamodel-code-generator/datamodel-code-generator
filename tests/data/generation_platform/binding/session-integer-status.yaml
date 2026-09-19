@@ -1,0 +1,18 @@
+openapi: 3.2.0
+info:
+  title: Integer YAML status
+  version: '1'
+paths:
+  /items:
+    post:
+      responses:
+        200:
+          description: Items
+          content:
+            application/json:
+              itemSchema:
+                type: integer
+        '404':
+          description: Missing
+        default:
+          description: Other

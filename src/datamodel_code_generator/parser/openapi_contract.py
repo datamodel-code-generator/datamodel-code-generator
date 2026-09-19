@@ -16,7 +16,7 @@ from datamodel_code_generator._generation_contract import (
     ReferenceResolution,
     SourceLocation,
 )
-from datamodel_code_generator._openapi_generation import SourceLease
+from datamodel_code_generator._openapi_generation import SourceLease, borrow_source_member
 from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._api_reference import ApiDeclarationId, ApiModelResolver
@@ -339,6 +339,7 @@ class LegacyOperationObservation:
     effective: dict[str, YamlValue]
     candidates: tuple[LegacyOperationCandidate, ...]
     origin_state: Literal["known", "unavailable", "ambiguous"]
+    engine_path: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -668,6 +669,8 @@ class BindingCaptureMixin(OpenAPIParser):
         self.legacy_scopes: list[LegacyPathItemsFrame] = []
         self._legacy_scopes: list[LegacyPathItemsFrame] = []
         self._legacy_operations: list[LegacyOperationObservation] = []
+        self.legacy_ref_objects: dict[tuple[int, str], SchemaOrigin] = {}
+        self._media_paths: dict[tuple[str, ...], tuple[tuple[str, ...], bool]] = {}
         self.request_types: list[RequestTypesObservation] = []
         self.response_types: list[ResponseTypesObservation] = []
         self.parameter_fields: list[ParameterFieldObservation] = []
@@ -2234,7 +2237,7 @@ class BindingCaptureMixin(OpenAPIParser):
         state: Literal["known", "unavailable", "ambiguous"] = (
             "known" if len(candidates) == 1 else "ambiguous" if candidates else "unavailable"
         )
-        observation = LegacyOperationObservation(raw_operation, candidates, state)
+        observation = LegacyOperationObservation(raw_operation, candidates, state, tuple(path))
         self.legacy_operations.append(observation)
         self._legacy_operations.append(observation)
 
@@ -2263,9 +2266,118 @@ class BindingCaptureMixin(OpenAPIParser):
 
     def _parse_schema_or_ref(self, name: str, schema: MediaSchema, path: list[str]) -> DataType:
         """Keep the actual schema-use return, including discriminator-expanded types."""
+        self._pair_legacy_media_schema(schema, path)
+        registrations = len(self.binding_ledger.registrations)
         result: DataType = super()._parse_schema_or_ref(name, schema, path)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        self._record_media_root(schema, result, registrations)  # pyright: ignore[reportUnknownArgumentType]
         self._observe_type(result, path=path)  # pyright: ignore[reportUnknownArgumentType]
         return result  # pyright: ignore[reportUnknownVariableType]
+
+    def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
+        """Borrow the actual legacy object-resolution return without another lookup."""
+        start = len(self.binding_resolver.resolutions)
+        result: dict[str, YamlValue] = super().get_ref_model(ref)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return self._record_legacy_ref_object(ref, result, start)  # pyright: ignore[reportUnknownArgumentType]
+
+    @capture_errors
+    def _record_legacy_ref_object(self, ref: str, result: dict[str, YamlValue], start: int) -> dict[str, YamlValue]:
+        if not self._legacy_operations:
+            return result
+        for event in self.binding_resolver.resolutions[start:]:
+            if (
+                event.input == ref
+                and event.operation == "resolve_ref"
+                and (origin := self._borrow_resolved_schema(event.output, "validated_child")) is not None
+                and origin.raw is result
+            ):
+                self.legacy_ref_objects[id(self._legacy_operations[-1]), ref] = origin
+                break
+        return result
+
+    def _media_schema_path(self, path: list[str], *, from_item_schema: bool) -> list[str]:
+        """Retain the actual media path before the engine adds its synthetic suffix."""
+        result: list[str] = super()._media_schema_path(path, from_item_schema=from_item_schema)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return self._record_media_path(path, result, from_item_schema=from_item_schema)  # pyright: ignore[reportUnknownArgumentType]
+
+    @capture_errors
+    def _record_media_path(self, path: list[str], result: list[str], *, from_item_schema: bool) -> list[str]:
+        if self._legacy_operations:
+            self._media_paths[tuple(result)] = (tuple(path), from_item_schema)
+        return result
+
+    @capture_errors
+    def _pair_legacy_media_schema(self, schema: MediaSchema, path: list[str]) -> None:
+        if (
+            not self._legacy_operations
+            or not isinstance(schema, JsonSchemaObject)
+            or (media_path := self._media_paths.get(tuple(path))) is None
+            or (operation := self._legacy_operations[-1]).origin_state != "known"
+        ):
+            return
+        original_path, projected = media_path
+        keyword = "itemSchema" if projected else "schema"
+        if (origin := self._legacy_media_source(operation, original_path, keyword)) is None:
+            return
+        if projected:
+            self.schema_origins.pair_item_projection(
+                raw=origin.raw, obj=schema, location=origin.location, reference=False
+            )
+        else:
+            self.schema_origins.pair(raw=origin.raw, obj=schema, location=origin.location)
+
+    def _legacy_media_source(
+        self, operation: LegacyOperationObservation, path: tuple[str, ...], keyword: str
+    ) -> SchemaOrigin | None:
+        """Join the original use to its direct or actually resolved media occurrence."""
+        declaration = operation.candidates[0]
+        raw: YamlValue
+        match path[len(operation.engine_path) :]:
+            case ("requestBody", media):
+                raw = declaration.raw.get("requestBody")
+                owner = (*declaration.declaration.tokens, "requestBody")
+            case ("responses", status, media):
+                responses = declaration.raw.get("responses")
+                raw = borrow_source_member(responses, status) if isinstance(responses, dict) else None
+                owner = (*declaration.declaration.tokens, "responses", status)
+            case _:
+                return None
+        if not isinstance(raw, dict):
+            return None
+        if isinstance(ref := raw.get("$ref"), str):
+            if (origin := self.legacy_ref_objects.get((id(operation), ref))) is None:
+                return None
+            raw, parent = origin.raw, origin.location
+        else:
+            if (document := self.source_lease.document_id(declaration.declaration.document)) is None:
+                return None
+            parent = SourceLocation(
+                document, "/" + "/".join(token.replace("~", "~0").replace("/", "~1") for token in owner), "schema"
+            )
+        if (
+            not isinstance(raw, dict)
+            or not isinstance(content := raw.get("content"), dict)
+            or not isinstance(medium := content.get(media), dict)
+            or not isinstance(original := medium.get(keyword), (dict, bool))
+        ):
+            return None
+        location = SourceLocation(
+            parent.document,
+            parent.pointer + "/content/" + media.replace("~", "~0").replace("/", "~1") + "/" + keyword,
+            "schema",
+        )
+        return SchemaOrigin(location, original, "validated_child")
+
+    @capture_errors
+    def _record_media_root(self, schema: MediaSchema, result: DataType, start: int) -> None:
+        if not isinstance(schema, JsonSchemaObject) or result.reference is None:
+            return
+        if (
+            self.binding_ledger.identity(result.reference)
+            in {registration.reference for registration in self.binding_ledger.registrations[start:]}
+            and isinstance(model := result.reference.source, DataModel)
+            and (model.IS_ROOT_MODEL or model.IS_ALIAS)
+        ):
+            self._record_root_fields(schema, model.fields, model.reference.name)
 
     def parse_all_parameters(
         self, name: str, parameters: list[ReferenceObject | ParameterObject], path: list[str]
@@ -2517,10 +2629,15 @@ class BindingCaptureMixin(OpenAPIParser):
         self.response_types.clear()
         self.parameter_fields.clear()
         self._parameter_frames.clear()
-        self._legacy_operations.clear()
-        self.legacy_operations.clear()
-        self.legacy_scopes.clear()
-        self._legacy_scopes.clear()
+        for observations in (
+            self._legacy_operations,
+            self.legacy_ref_objects,
+            self._media_paths,
+            self.legacy_operations,
+            self.legacy_scopes,
+            self._legacy_scopes,
+        ):
+            observations.clear()
         self.type_observations.clear()
         self._raw_validation_frames.clear()
         self.schema_origins.close()

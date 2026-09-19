@@ -90,7 +90,12 @@ class GenerationSessionObserver:
 
 
 def run_generation_session(
-    source: Path, *, failure: str = "", monkeypatch: pytest.MonkeyPatch | None = None, output: Path | None = None
+    source: Path,
+    *,
+    failure: str = "",
+    monkeypatch: pytest.MonkeyPatch | None = None,
+    output: Path | None = None,
+    document: dict[str, Any] | None = None,
 ) -> tuple[dict[str, object], int]:
     """Use the real accepted batch while preserving the independent S01 trace oracle."""
     observer = GenerationSessionObserver()
@@ -110,7 +115,9 @@ def run_generation_session(
     accepted = None
     error = None
     try:
-        result = _run_generation(source, config, Path.cwd(), use_output_cwd=False, capture=session)
+        result = _run_generation(
+            document if document is not None else source, config, Path.cwd(), use_output_cwd=False, capture=session
+        )
         batch = session.take_accepted_batch()
         accepted = (batch.attempt, observer.hashes[batch.attempt])
         session.close()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from datamodel_code_generator._generation_contract import (
     AttemptId,
@@ -14,6 +14,18 @@ from datamodel_code_generator._generation_contract import (
     SourceLocation,
     clear_capture_tracebacks,
 )
+
+
+def borrow_source_member(value: dict[str, YamlValue], key: str) -> YamlValue:
+    """Read textual source keys, including integer YAML statuses, without copying the mapping."""
+    if key.isascii() and key.isdecimal() and str(number := int(key)) == key:
+        numeric = cast("dict[str | int, YamlValue]", value)
+        if number in numeric:
+            if key in value:
+                msg = "Source pointer is ambiguous between string and integer keys"
+                raise BindingCaptureError(msg)
+            return numeric[number]
+    return value[key]
 
 
 class SourceLease:
@@ -83,7 +95,7 @@ class SourceLease:
                 case _:
                     raise BindingCaptureError(msg)
             try:
-                value = value[key] if isinstance(value, dict) else value[int(key)]
+                value = borrow_source_member(value, key) if isinstance(value, dict) else value[int(key)]
             except (KeyError, IndexError, ValueError):
                 raise BindingCaptureError(msg) from None
         return value

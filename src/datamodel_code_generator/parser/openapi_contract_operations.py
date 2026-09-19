@@ -292,18 +292,16 @@ class FinalOperationBuilder:
             references=references,
         )
 
-    def _project_schema(
-        self, declaration: ApiDeclarationId, projection: str, direction: str = "neutral"
-    ) -> TypeProjection:
-        projected = self.imports.project(self._project_schema_type(declaration, projection, direction))
+    def _project_schema(self, declaration: ApiDeclarationId, use: TypeUseId) -> TypeProjection:
+        projected = self.imports.project(self._project_schema_type(declaration, use))
         if isinstance(projected.value, GeneratedSymbolType) and projected.value.symbol in self.unresolved_symbols:
             return TypeProjection(None, "BND_UNRESOLVED_REFERENCE")
         return projected
 
-    def _project_schema_type(self, declaration: ApiDeclarationId, projection: str, direction: str) -> TypeProjection:
-        projector = self.directional_projectors[direction]
-        references = self.directional_references[direction]
-        observations = self.schemas.get((declaration, projection), ())
+    def _project_schema_type(self, declaration: ApiDeclarationId, use: TypeUseId) -> TypeProjection:
+        projector = self.directional_projectors[use.direction]
+        references = self.directional_references[use.direction]
+        observations = self.schemas.get((declaration, use.projection), ())
         for observation in reversed(observations):
             if (data_type := self.type_results.get(id(observation.frame))) is not None:
                 return projector.project(_type_recipe(data_type, self.parser.binding_ledger, set()))
@@ -364,7 +362,7 @@ class FinalOperationBuilder:
         )
         if use in self.uses:
             return use
-        projected = self._project_schema(schema, projection, direction)
+        projected = self._project_schema(schema, use)
         members = (
             tuple(
                 replace(member, direction=direction)
@@ -383,7 +381,7 @@ class FinalOperationBuilder:
             projected.value,
             projected.reason,
             members,
-            self._helper_producers(self.location(schema, "schema")),
+            self._helper_producers(self.location(schema, "schema"), use),
             self.location(schema, "schema"),
         )
         return use
@@ -903,7 +901,7 @@ class FinalOperationBuilder:
                 location,
             )
 
-    def _helper_producers(self, location: SourceLocation) -> tuple[FieldSlot, ...]:
+    def _helper_producers(self, location: SourceLocation, _use: TypeUseId | None = None) -> tuple[FieldSlot, ...]:
         pointer = location.pointer
         while True:
             if (slots := self.member_sources.get((location.document, pointer))) is not None:

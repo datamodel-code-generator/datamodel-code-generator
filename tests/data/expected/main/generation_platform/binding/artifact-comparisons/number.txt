@@ -1,0 +1,7 @@
+{
+  "changed_fields": [
+    "number"
+  ],
+  "same_models": true,
+  "same_partitioned_models": true
+}

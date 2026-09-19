@@ -1,0 +1,2 @@
+200 value /paths/~1items/post/responses/200/content/application~1json/itemSchema
+200 item_stream_array /paths/~1items/post/responses/200/content/application~1json/itemSchema

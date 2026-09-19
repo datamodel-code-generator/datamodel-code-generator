@@ -1,0 +1,86 @@
+[
+  {
+    "use": "/paths/~1external/post/requestBody/content/application~1json/itemSchema",
+    "projection": "value",
+    "type": {
+      "node": "BuiltinType",
+      "name": "int"
+    },
+    "schema": "/components/requestBodies/scalar/content/application~1json/itemSchema",
+    "members": []
+  },
+  {
+    "use": "/paths/~1external/post/requestBody/content/application~1json/itemSchema",
+    "projection": "item_stream_array",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "ExternalPostRequest"
+    },
+    "schema": "/components/requestBodies/scalar/content/application~1json/itemSchema",
+    "members": [
+      [
+        "ExternalPostRequest",
+        null,
+        "/components/requestBodies/scalar/content/application~1json/itemSchema"
+      ]
+    ]
+  },
+  {
+    "use": "/paths/~1external/post/requestBody/content/application~1custom/schema",
+    "projection": "value",
+    "type": {
+      "node": "BuiltinType",
+      "name": "int"
+    },
+    "schema": "/components/requestBodies/scalar/content/application~1custom/schema",
+    "members": []
+  },
+  {
+    "use": "/paths/~1external/post/responses/200/content/application~1json/itemSchema",
+    "projection": "value",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "ExternalPostResponseItem"
+    },
+    "schema": "/components/responses/object/content/application~1json/itemSchema",
+    "members": [
+      [
+        "ExternalPostResponseItem",
+        "wire-name",
+        "/components/responses/object/content/application~1json/itemSchema/properties/wire-name"
+      ]
+    ]
+  },
+  {
+    "use": "/paths/~1external/post/responses/200/content/application~1json/itemSchema",
+    "projection": "item_stream_array",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "ExternalPostResponse"
+    },
+    "schema": "/components/responses/object/content/application~1json/itemSchema",
+    "members": [
+      [
+        "ExternalPostResponse",
+        null,
+        "/components/responses/object/content/application~1json/itemSchema"
+      ]
+    ]
+  },
+  {
+    "use": "/paths/~1external/post/responses/200/content/application~1custom/schema",
+    "projection": "value",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "ExternalPostResponse1"
+    },
+    "schema": "/components/responses/object/content/application~1custom/schema",
+    "members": [
+      [
+        "ExternalPostResponse1",
+        "wire-name",
+        "/components/responses/object/content/application~1custom/schema/properties/wire-name"
+      ]
+    ]
+  }
+]
