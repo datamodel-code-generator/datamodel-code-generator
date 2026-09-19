@@ -24,14 +24,20 @@ from datamodel_code_generator.parser.openapi_contract import BindingResolverMixi
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
 from tests.conftest import assert_output
 from tests.data.python.binding_type_snapshot import type_snapshot
-from tests.data.python.generation_contract_consumers import client_plan, plan_snapshot, server_plan, wire_plan
+from tests.data.python.generation_contract_consumers import (
+    client_plan,
+    metadata_snapshot,
+    plan_snapshot,
+    server_plan,
+    wire_plan,
+)
 from tests.data.python.generation_session_inputs import generate_product, session_protocol_failure
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch
-    from tests.data.python.generation_contract_consumers import RoutePlan
+    from tests.data.python.generation_contract_consumers import TargetPlan
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform"
@@ -45,7 +51,7 @@ EXPECTED = DATA / "expected/main/generation_platform"
 @pytest.mark.parametrize("consumer", [server_plan, client_plan], ids=["server", "client"])
 def test_accepted_product_dry_consumer(
     backend: str,
-    consumer: Callable[[GeneratedTypeContractBatch, SourceLease], tuple[RoutePlan, ...]],
+    consumer: Callable[[GeneratedTypeContractBatch, SourceLease], TargetPlan],
 ) -> None:
     """Run each target separately, compare fixed-main bytes, and plan after all sources close."""
     product, retained = generate_product(
@@ -71,6 +77,100 @@ def test_accepted_product_dry_consumer(
         f"unavailable field facts: {sum(field.model_facts is None for field in product.batch.fields)}\n",
         EXPECTED / "session/lifetime.txt",
     )
+
+
+@pytest.mark.parametrize(
+    "case", ["local", "loaded", "shadow", "unobserved", "missing", "cycle", "invalid", "anchor", "nonobject"]
+)
+@pytest.mark.parametrize("consumer", [server_plan, client_plan], ids=["server", "client"])
+def test_dry_consumer_metadata_references(case: str, consumer: Callable[..., TargetPlan]) -> None:
+    """Resolve only borrowed metadata and reject required unavailable targets without fetching."""
+    product, retained = generate_product(
+        (SOURCE / f"binding/session-metadata-{case}.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            input_filename="metadata.json",
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    if case in {"local", "loaded", "shadow"}:
+        plan = consumer(product.batch, product.source_lease)
+        product.close()
+        assert_output(plan_snapshot(plan), EXPECTED / "session/metadata" / f"{consumer.__name__}.txt")
+    else:
+        with pytest.raises(
+            ValueError, match=r"document_not_observed|pointer_missing|invalid_pointer|invalid_target|cycle"
+        ) as failure:
+            consumer(product.batch, product.source_lease)
+        product.close()
+        assert_output(str(failure.value) + "\n", EXPECTED / "session/metadata" / f"{case}-failure.txt")
+    assert_output(metadata_snapshot(product.batch), EXPECTED / "session/metadata" / f"{case}.txt")
+    for artifact in product.artifacts:
+        assert_output(artifact.content.decode(), EXPECTED / "session/metadata" / case / Path(*artifact.path))
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("consumer", [server_plan, client_plan], ids=["server", "client"])
+@pytest.mark.parametrize("referenced", [False, True])
+def test_schema_only_callback_and_helper_plan(
+    backend: str, consumer: Callable[..., TargetPlan], *, referenced: bool
+) -> None:
+    """Plan a selected route and primitive helper while retaining ungenerated callback schemas."""
+    suffix = "-referenced" if referenced else ""
+    product, retained = generate_product(
+        (SOURCE / f"binding/session-schema-callback{suffix}.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Schemas],
+            output_model_type=backend,
+            input_filename="callback.json",
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    selected = tuple(operation.id for operation in product.batch.operations if operation.id.kind == "path")
+    helpers = tuple(
+        use.id
+        for use in product.batch.type_uses
+        if use.id.schema_site.pointer == "/components/schemas/Item/properties/id"
+    )
+    plan = consumer(product.batch, product.source_lease, selected=selected, helpers=helpers)
+    callback_uses = tuple(use.id for use in product.batch.type_uses if use.id.role == "request_body")
+    product.close()
+    assert_output(plan_snapshot(plan), EXPECTED / "session/callback" / f"{consumer.__name__}{suffix}.txt")
+    assert_output(
+        "\n".join(error.code for error in require_type_bindings(product.batch, callback_uses)) + "\n",
+        EXPECTED / "session/callback/required.txt",
+    )
+    assert_output(product.artifacts[0].content.decode(), EXPECTED / "session/callback" / f"{backend}.py")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize("scope", [OpenAPIScope.Schemas, OpenAPIScope.Api])
+def test_referenced_callback_parameter_locations(scope: OpenAPIScope) -> None:
+    """Retain independent declaration and root-use pointers in both explicit scopes."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-schema-callback-referenced.json").resolve(),
+        GenerateConfig(input_file_type="openapi", openapi_scopes=[scope], formatters=[], disable_timestamp=True),
+    )
+    product.close()
+    assert_output(
+        "".join(
+            f"{parameter.name}\n  declaration: {parameter.declaration.location.pointer}\n"
+            f"  use: {parameter.use_site.pointer}\n"
+            for operation in product.batch.operations
+            if operation.id.kind == "callback"
+            for parameter in operation.parameters
+        ),
+        EXPECTED / "session/callback/parameter-locations.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
 @pytest.mark.parametrize(

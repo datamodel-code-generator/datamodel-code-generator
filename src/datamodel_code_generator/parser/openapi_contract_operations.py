@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
+from urllib.parse import urljoin
 
+from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator._binding_imports import FinalImportResolver
 from datamodel_code_generator._binding_literals import freeze_literal
 from datamodel_code_generator._generation_contract import (
@@ -16,13 +18,14 @@ from datamodel_code_generator._generation_contract import (
     OperationContract,
     OperationId,
     SourceLocation,
+    SourceReference,
     TypeProjection,
     TypeUseBinding,
     TypeUseId,
     WireDeclaration,
 )
 from datamodel_code_generator.model.base import DataModel
-from datamodel_code_generator.parser._api_reference import ApiDeclarationId
+from datamodel_code_generator.parser._api_reference import ApiDeclarationId, pointer_tokens
 from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser
 from datamodel_code_generator.parser.openapi_contract_store import _type_recipe  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator.parser.openapi_media import encoding_media
@@ -52,6 +55,7 @@ _OPERATION_FACTS = (
     "servers",
 )
 _LINK_FACTS = ("operationRef", "operationId", "parameters", "requestBody", "description", "server")
+_SECURITY_FACTS = ("type", "description", "name", "in", "scheme", "bearerFormat", "flows", "openIdConnectUrl")
 
 
 def _facts(raw: dict[str, YamlValue], keys: tuple[str, ...]) -> tuple[tuple[str, FrozenLiteral], ...]:
@@ -170,6 +174,74 @@ class FinalOperationBuilder:
             return observed.target.declaration, observed.target.value
         return declaration, wire_mapping(raw)
 
+    def _metadata_target(
+        self, declaration: ApiDeclarationId, raw: YamlValue
+    ) -> tuple[ApiDeclarationId, dict[str, YamlValue], tuple[SourceReference, ...]]:
+        """Read metadata pointers only in documents the accepted engine already loaded."""
+        value = wire_mapping(raw)
+        seen = {declaration}
+        references: list[SourceReference] = []
+        while isinstance(ref := value.get("$ref"), str):
+            source = self.location(declaration, "declaration")
+            document = (
+                urljoin(declaration.document, ref.partition("#")[0])
+                if not ref.startswith("#")
+                else declaration.document
+            )
+            if self.parser.source_lease.document_id(document) is None:
+                references.append(SourceReference(source, ref, None, "document_not_observed"))
+                break
+            try:
+                tokens = pointer_tokens(ref)
+            except SchemaParseError:
+                tokens = None
+            if tokens is None:
+                references.append(SourceReference(source, ref, None, "invalid_pointer"))
+                break
+            target = ApiDeclarationId(document, tokens)
+            location = self.location(target, "declaration")
+            if target in seen:
+                references.append(SourceReference(source, ref, location, "cycle"))
+                break
+            try:
+                borrowed = self.parser.source_lease.borrow(location)
+            except BindingCaptureError:
+                references.append(SourceReference(source, ref, location, "pointer_missing"))
+                break
+            if not isinstance(borrowed, dict):
+                references.append(SourceReference(source, ref, location, "invalid_target"))
+                break
+            references.append(SourceReference(source, ref, location, "resolved"))
+            seen.add(target)
+            declaration, value = target, borrowed
+        return declaration, value, tuple(references)
+
+    def _metadata(
+        self,
+        kind: Literal["link", "callback", "security_scheme"],
+        name: str,
+        declaration: ApiDeclarationId,
+        use_site: ApiDeclarationId,
+        raw: YamlValue,
+    ) -> WireDeclaration:
+        """Freeze selected metadata values and preserve every borrowed reference edge."""
+        target, value, references = self._metadata_target(declaration, raw)
+        match kind:
+            case "link":
+                keys = _LINK_FACTS
+            case "security_scheme":
+                keys = _SECURITY_FACTS
+            case _:
+                keys = ()
+        return WireDeclaration(
+            kind,
+            name,
+            DeclarationId(self.location(target, "declaration")),
+            self.location(use_site, "use"),
+            _facts(value, ("$ref", *keys)),
+            references=references,
+        )
+
     def _project_schema(
         self, declaration: ApiDeclarationId, projection: str, direction: str = "neutral"
     ) -> TypeProjection:
@@ -262,6 +334,7 @@ class FinalOperationBuilder:
             projected.reason,
             members,
             self._helper_producers(self.location(schema, "schema")),
+            self.location(schema, "schema"),
         )
         return use
 
@@ -536,12 +609,12 @@ class FinalOperationBuilder:
             status=status,
         )
         links = tuple(
-            WireDeclaration(
+            self._metadata(
                 "link",
                 name,
-                DeclarationId(self.location(child_declaration(declared, "links", name), "declaration")),
-                self.location(child_declaration(use_site, "links", name), "use"),
-                _facts(wire_mapping(link), _LINK_FACTS),
+                child_declaration(declared, "links", name),
+                child_declaration(use_site, "links", name),
+                link,
             )
             for name, link in wire_mapping(value.get("links")).items()
         )
@@ -651,14 +724,14 @@ class FinalOperationBuilder:
             for status, value in wire_mapping(raw.get("responses")).items()
         )
         callbacks = tuple(
-            WireDeclaration(
+            self._metadata(
                 "callback",
                 name,
-                DeclarationId(self.location(child_declaration(frame.declaration, "callbacks", name), "declaration")),
-                self.location(child_declaration(use_site, "callbacks", name), "use"),
-                (),
+                child_declaration(frame.declaration, "callbacks", name),
+                child_declaration(use_site, "callbacks", name),
+                callback,
             )
-            for name in wire_mapping(raw.get("callbacks"))
+            for name, callback in wire_mapping(raw.get("callbacks")).items()
         )
         ignored_values = tuple(
             IgnoredDeclaration(
@@ -740,7 +813,7 @@ class FinalOperationBuilder:
                 continue
             selected = projections[0]
             if any(projection != selected for projection in projections[1:]):
-                self.uses[use] = TypeUseBinding(use, "invalid", None, "BND_AMBIGUOUS_REPLACEMENT")
+                self.uses[use] = TypeUseBinding(use, "invalid", None, "BND_AMBIGUOUS_REPLACEMENT", schema=location)
                 continue
             self.uses[use] = TypeUseBinding(
                 use,
@@ -751,6 +824,7 @@ class FinalOperationBuilder:
                 if isinstance(selected.value, GeneratedSymbolType)
                 else (),
                 self._helper_producers(location),
+                location,
             )
 
     def _helper_producers(self, location: SourceLocation) -> tuple[FieldSlot, ...]:
@@ -769,27 +843,13 @@ class FinalOperationBuilder:
             schemes = wire_mapping(wire_mapping(root.get("components")).get("securitySchemes"))
             for name, raw in schemes.items():
                 use = ApiDeclarationId(document.uri, ("components", "securitySchemes", name))
-                declaration, value = self._resolve_object(use, raw)
                 declarations.append(
-                    WireDeclaration(
+                    self._metadata(
                         "security_scheme",
                         name,
-                        DeclarationId(self.location(declaration, "declaration")),
-                        self.location(use, "use"),
-                        _facts(
-                            value,
-                            (
-                                "$ref",
-                                "type",
-                                "description",
-                                "name",
-                                "in",
-                                "scheme",
-                                "bearerFormat",
-                                "flows",
-                                "openIdConnectUrl",
-                            ),
-                        ),
+                        use,
+                        use,
+                        raw,
                     )
                 )
         return tuple(declarations)

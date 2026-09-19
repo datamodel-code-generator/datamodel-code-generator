@@ -47,11 +47,22 @@ class GenerationSessionObserver:
     def record(self, frame: FrameType, event: str, value: Any) -> None:
         """Observe real driver boundaries without modifying return values."""
         code = frame.f_code
-        local = frame.f_locals
         if event == "return" and code is OpenAPIGenerationSession.__call__.__code__ and value is not None:
             self.parsers.append(weakref.ref(value))
         if event != "call":
             return
+        if code not in {
+            OpenAPIGenerationSession.parser_factory.fget.__code__,
+            OpenAPIGenerationSession.__call__.__code__,
+            OpenAPIParser.parse.__code__,
+            BindingCaptureMixin.dispose.__code__,
+            OpenAPIGenerationSession.freeze_attempt.__code__,
+            OpenAPIGenerationSession.accept_attempt.__code__,
+            OpenAPIGenerationSession.discard_attempt.__code__,
+            OpenAPIGenerationSession.close.__code__,
+        }:
+            return
+        local = frame.f_locals
         if code is OpenAPIGenerationSession.parser_factory.fget.__code__:
             self.factory_reads += 1
         if code is OpenAPIGenerationSession.__call__.__code__:
@@ -314,12 +325,11 @@ def generate_product(
     return product, sum(node() is not None for node in (*observer.graph, *observer.parsers))
 
 
-def session_protocol_failure(source: Path, case: str) -> dict[str, object]:
+def _exercise_session_protocol(source: Path, case: str, observer: GenerationSessionObserver) -> tuple[list[tuple[str, str]], int | None]:
     """Exercise invalid ownership and transfer requests around one real driver execution."""
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator.config import OpenAPIParserConfig
 
-    observer = GenerationSessionObserver()
     session = OpenAPIGenerationSession(
         output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
     )
@@ -404,6 +414,13 @@ def session_protocol_failure(source: Path, case: str) -> dict[str, object]:
         parser = None
         session.close()
         other.close()
+    return errors, accepted
+
+
+def session_protocol_failure(source: Path, case: str) -> dict[str, object]:
+    """Measure retained graphs after the complete failing ownership call returns."""
+    observer = GenerationSessionObserver()
+    errors, accepted = _exercise_session_protocol(source, case, observer)
     gc.collect()
     return {
         "errors": errors,

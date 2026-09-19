@@ -491,6 +491,17 @@ class TypeUseBinding:
     reason: BindingReason | None
     members: tuple[FieldUseBinding, ...] = ()
     producers: tuple[FieldSlot, ...] = ()
+    schema: SourceLocation | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SourceReference:
+    """Retain a metadata reference without acquiring another source for observation."""
+
+    source: SourceLocation
+    reference: str
+    target: SourceLocation | None
+    state: Literal["resolved", "document_not_observed", "pointer_missing", "invalid_pointer", "invalid_target", "cycle"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -506,6 +517,7 @@ class WireDeclaration:
     facts: tuple[tuple[str, FrozenLiteral], ...]
     schemas: tuple[TypeUseId, ...] = ()
     children: tuple[WireDeclaration, ...] = ()
+    references: tuple[SourceReference, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

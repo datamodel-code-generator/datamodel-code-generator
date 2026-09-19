@@ -176,7 +176,49 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
                         raw_operation=raw,
                         effective_operation=effective,
                     )
-                    self.operation_frames.append(OperationObservation(frame, None))
+                    self._source_operation(frame, None, set())
+
+    def _source_operation(
+        self, frame: ApiDeclarationFrame, parent: ApiDeclarationFrame | None, active: set[ApiDeclarationId]
+    ) -> None:
+        """Retain callback declarations without parsing schemas or demanding their codecs."""
+        self.operation_frames.append(OperationObservation(frame, parent))
+        for name, callback in wire_mapping((frame.raw_operation or {}).get("callbacks")).items():
+            declaration = child_declaration(frame.declaration, "callbacks", name)
+            declared, value, _references = self._metadata_target(declaration, callback)
+            if declared in active:
+                continue
+            active.add(declared)
+            for expression, path_item in value.items():
+                if expression.startswith(("$", "x-")) or not isinstance(path_item, dict):
+                    continue
+                item, raw_item, _references = self._metadata_target(child_declaration(declared, expression), path_item)
+                document = wire_mapping(
+                    self.parser.source_lease.borrow(self.location(ApiDeclarationId(item.document, ()), "declaration"))
+                )
+                root = wire_mapping(
+                    self.parser.source_lease.borrow(
+                        self.location(ApiDeclarationId(frame.root_use_site.document, ()), "declaration")
+                    )
+                )
+                for method, raw in raw_item.items():
+                    if method not in OPERATION_NAMES or not isinstance(raw, dict):
+                        continue
+                    effective = (
+                        {**raw, "security": root["security"]} if "security" not in raw and "security" in root else raw
+                    )
+                    child = ApiDeclarationFrame(
+                        child_declaration(item, method),
+                        document,
+                        "",
+                        child_declaration(frame.root_use_site, "callbacks", name, expression, method),
+                        "schema",
+                        "operation",
+                        raw_operation=raw,
+                        effective_operation=effective,
+                    )
+                    self._source_operation(child, frame, active)
+            active.remove(declared)
 
     def _resolve_object(
         self, declaration: ApiDeclarationId, raw: YamlValue
@@ -292,7 +334,9 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
                     self.diagnostics.append(BindingDiagnostic("BND_OPERATION_ORIGIN_UNRESOLVED", operation=owner))
                     continue
                 if self._parameter_allowed(matches[0], raw, owner):
-                    parameters.append(self._parameter(raw, matches[0], matches[0], owner, "parameter"))
+                    parameters.append(
+                        self._parameter(raw, matches[0], self._parameter_use(frame, matches[0]), owner, "parameter")
+                    )
             return tuple(parameters)
         operation = tuple(
             (declaration, raw)
@@ -312,10 +356,21 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
             and (value.get("name"), value.get("in")) not in keys
         )
         return tuple(
-            self._parameter(raw, declaration, declaration, owner, "parameter")
+            self._parameter(raw, declaration, self._parameter_use(frame, declaration), owner, "parameter")
             for declaration, raw in (*operation, *common)
             if self._parameter_allowed(declaration, raw, owner)
         )
+
+    def _parameter_use(self, frame: ApiDeclarationFrame, declaration: ApiDeclarationId) -> ApiDeclarationId:
+        """Keep a referenced operation's source declaration separate from its root use."""
+        for original, use in (
+            (frame.declaration, frame.root_use_site),
+            (self._path_item(frame.declaration), self._path_item(frame.root_use_site)),
+        ):
+            length = len(original.tokens)
+            if declaration.document == original.document and declaration.tokens[:length] == original.tokens:
+                return child_declaration(use, *declaration.tokens[length:])
+        return declaration
 
     def _parameter_allowed(self, declaration: ApiDeclarationId, raw: YamlValue, owner: OperationId) -> bool:
         declared, value = self._resolve_object(declaration, raw)

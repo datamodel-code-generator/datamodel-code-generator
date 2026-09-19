@@ -1,0 +1,4 @@
+security_scheme Key: {"$ref":"#/components/securitySchemes/Missing"}
+  #/components/securitySchemes/Missing: pointer_missing -> session-metadata-missing.json#/components/securitySchemes/Missing
+link next: {"operationId":"readItem","parameters":{"id":"$response.body#/id"}}
+  #/components/links/Next: resolved -> session-metadata-missing.json#/components/links/Next
