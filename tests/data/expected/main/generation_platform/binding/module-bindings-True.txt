@@ -1,0 +1,52 @@
+[
+  {
+    "models": [
+      "ItemResponse"
+    ],
+    "primary": [
+      "item_response.py"
+    ],
+    "secondary": [],
+    "reason": null
+  },
+  {
+    "models": [
+      "ItemRequest"
+    ],
+    "primary": [
+      "item_request.py"
+    ],
+    "secondary": [],
+    "reason": null
+  },
+  {
+    "models": [
+      "Item"
+    ],
+    "primary": [
+      "item.py"
+    ],
+    "secondary": [],
+    "reason": null
+  },
+  {
+    "models": [
+      "BaseRequest"
+    ],
+    "primary": [
+      "base_request.py"
+    ],
+    "secondary": [],
+    "reason": null
+  },
+  {
+    "models": [
+      "Base"
+    ],
+    "primary": [
+      "base.py"
+    ],
+    "secondary": [],
+    "reason": null
+  }
+]

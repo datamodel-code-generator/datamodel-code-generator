@@ -12,12 +12,17 @@ from typing_extensions import TypedDict, Unpack, override
 from datamodel_code_generator._generation_contract import (
     AttemptId,
     BindingCaptureError,
+    ModuleResultBinding,
     ReferenceResolution,
     SourceLocation,
 )
 from datamodel_code_generator._openapi_generation import SourceLease
 from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.parser._api_reference import ApiDeclarationId, ApiModelResolver
+from datamodel_code_generator.parser.base import (
+    _expand_result_module_path,  # pyright: ignore[reportPrivateUsage]
+    _normalize_result_module_path,  # pyright: ignore[reportPrivateUsage]
+)
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, split_json_pointer
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.openapi_contract_origins import SchemaOrigin, ValidatedSchemaOriginIndex
@@ -2030,6 +2035,50 @@ class BindingCaptureMixin(OpenAPIParser):
                 ModuleOutputObservation(ctx.module, tuple(ctx.models), result, (self.imports, ctx.imports))
             )
         return result
+
+    @capture_errors
+    def resolve_module_results(self, results: str | dict[tuple[str, ...], Result]) -> tuple[ModuleResultBinding, ...]:
+        """Match original contexts using the same path helpers as the ordinary renderer."""
+        outputs = [output for output in self.module_outputs if output.models]
+        if isinstance(results, str):
+            return tuple(
+                ModuleResultBinding(
+                    tuple(self.binding_ledger.identity(model) for model in output.models),
+                    "single" if len(outputs) == 1 and output.module == ("__init__.py",) else None,
+                    reason=None
+                    if len(outputs) == 1 and output.module == ("__init__.py",)
+                    else "BND_ARTIFACT_AMBIGUOUS",
+                )
+                for output in outputs
+            )
+
+        keys_by_result: dict[int, list[tuple[str, ...]]] = {}
+        for key, result in results.items():
+            keys_by_result.setdefault(id(result), []).append(key)
+        primary_keys: list[tuple[str, ...]] = []
+        claims: dict[tuple[str, ...], int] = {}
+        for output in outputs:
+            key = _normalize_result_module_path(output.module, treat_dot_as_module=self.treat_dot_as_module)
+            if self.treat_dot_as_module:
+                key = _expand_result_module_path(key)
+            primary_keys.append(key)
+            claims[key] = claims.get(key, 0) + 1
+
+        bindings: list[ModuleResultBinding] = []
+        for output, key in zip(outputs, primary_keys, strict=True):
+            models = tuple(self.binding_ledger.identity(model) for model in output.models)
+            if claims[key] > 1:
+                bindings.append(ModuleResultBinding(models, None, reason="BND_ARTIFACT_AMBIGUOUS"))
+                continue
+            if results.get(key) is not output.result:
+                bindings.append(ModuleResultBinding(models, None, reason="BND_SYMBOL_NOT_EMITTED"))
+                continue
+            bindings.append(
+                ModuleResultBinding(
+                    models, key, tuple(other for other in keys_by_result[id(output.result)] if other != key)
+                )
+            )
+        return tuple(bindings)
 
     def dispose(self) -> None:
         """Release graph anchors even when ordinary disposal raises."""

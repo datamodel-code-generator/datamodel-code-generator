@@ -104,6 +104,16 @@ class FieldSlot:
     name: str
 
 
+@dataclass(frozen=True, slots=True)
+class ModuleResultBinding:
+    """Match declaring models to actual parser returns without retaining the graph."""
+
+    models: tuple[GraphObjectId, ...]
+    primary: tuple[str, ...] | Literal["single"] | None
+    secondary: tuple[tuple[str, ...], ...] = ()
+    reason: Literal["BND_ARTIFACT_AMBIGUOUS", "BND_SYMBOL_NOT_EMITTED"] | None = None
+
+
 Direction: TypeAlias = Literal["request", "response", "neutral"]
 TypeUseRole: TypeAlias = Literal[
     "schema",

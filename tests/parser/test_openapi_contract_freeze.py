@@ -13,7 +13,7 @@ from datamodel_code_generator import ModuleSplitMode
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator.parser.openapi_contract import ContractOpenAPIParser
 from tests.conftest import assert_output, assert_parser_modules
-from tests.data.python.binding_type_snapshot import module_output_snapshot
+from tests.data.python.binding_type_snapshot import module_output_snapshot, module_result_snapshot
 
 DATA = Path(__file__).parents[1] / "data"
 EXPECTED = DATA / "expected/main/generation_platform/binding"
@@ -41,6 +41,10 @@ def test_actual_module_output_and_release(*, split: bool) -> None:
             json.dumps(module_output_snapshot(parser, results), indent=2) + "\n",
             EXPECTED / f"module-outputs-{split}.txt",
         )
+        assert_output(
+            json.dumps(module_result_snapshot(parser, results), indent=2) + "\n",
+            EXPECTED / f"module-bindings-{split}.txt",
+        )
         models = [weakref.ref(model) for output in parser.module_outputs for model in output.models]
     finally:
         parser.dispose()
@@ -54,3 +58,24 @@ def test_actual_module_output_and_release(*, split: bool) -> None:
         + "\n",
         EXPECTED / "module-outputs-released.txt",
     )
+
+
+@pytest.mark.parametrize("dotted", [False, True])
+def test_actual_module_addresses(*, dotted: bool) -> None:
+    """Preserve ordinary normalization and distinguish real definitions from init copies."""
+    parser = ContractOpenAPIParser(
+        DATA / "generation_platform/binding/module-layout",
+        attempt_id=AttemptId(1),
+        formatters=[],
+        treat_dot_as_module=dotted,
+    )
+    try:
+        results = parser.parse()
+        assert_parser_modules(results, EXPECTED / f"module-layout-{dotted}")
+        assert_output(
+            json.dumps(module_result_snapshot(parser, results), indent=2) + "\n",
+            EXPECTED / f"module-layout-{dotted}.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()

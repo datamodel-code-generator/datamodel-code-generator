@@ -123,3 +123,21 @@ def module_output_snapshot(
         }
         for output in parser.module_outputs
     ]
+
+
+def module_result_snapshot(
+    parser: ContractOpenAPIParser, results: str | dict[tuple[str, ...], Result]
+) -> list[dict[str, object]]:
+    """Present frozen result addresses using names from actual declaring objects."""
+    names = {
+        parser.binding_ledger.identity(model): model.name for output in parser.module_outputs for model in output.models
+    }
+    return [
+        {
+            "models": [names[model] for model in binding.models],
+            "primary": binding.primary,
+            "secondary": binding.secondary,
+            "reason": binding.reason,
+        }
+        for binding in parser.resolve_module_results(results)
+    ]

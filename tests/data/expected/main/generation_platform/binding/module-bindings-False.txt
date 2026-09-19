@@ -1,0 +1,14 @@
+[
+  {
+    "models": [
+      "BaseRequest",
+      "Base",
+      "ItemRequest",
+      "ItemResponse",
+      "Item"
+    ],
+    "primary": "single",
+    "secondary": [],
+    "reason": null
+  }
+]
