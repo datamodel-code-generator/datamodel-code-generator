@@ -399,6 +399,16 @@ class EffectiveDefaultObservation:
     has_default: bool
     required: bool
     result: tuple[object, bool, bool]
+    resolution: DefaultResolution
+
+
+@dataclass(frozen=True, slots=True)
+class PreexistingNullObservation:
+    """Retain only top-level null evidence and unresolved reference identities."""
+
+    explicit: bool
+    references: tuple[GraphObjectId, ...]
+    opaque: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -413,6 +423,8 @@ class FieldConstructionObservation:
     use_default_with_required: bool
     original_name: str | None
     class_name: str | None
+    default_policy: EffectiveDefaultObservation | None
+    preexisting_null: PreexistingNullObservation
 
 
 @dataclass(slots=True)
@@ -574,6 +586,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self._allof_refs: list[AllOfRefFrame] = []
         self._root_schema_frames: list[RootSchemaFrame] = []
         self._root_value_children: list[RootValueChildrenFrame] = []
+        self._pending_field_default: EffectiveDefaultObservation | None = None
         self.root_materializations: list[tuple[RootSchemaFrame, JsonSchemaObject]] = []
         self._raw_validation_frames: list[RawValidationFrame] = []
         self.type_observations: list[TypeObservation] = []
@@ -1606,13 +1619,80 @@ class BindingCaptureMixin(OpenAPIParser):
             field_name, default, has_default=has_default, required=required, class_name=class_name
         )
         return self._record_effective_default(
-            EffectiveDefaultObservation(field_name, class_name, default, has_default, required, result)  # pyright: ignore[reportUnknownArgumentType]
+            field_name,
+            class_name,
+            default,
+            has_default=has_default,
+            required=required,
+            result=result,  # pyright: ignore[reportUnknownArgumentType]
         )
 
     @capture_errors
-    def _record_effective_default(self, observation: EffectiveDefaultObservation) -> tuple[object, bool, bool]:
+    def _record_effective_default(  # ruff: ignore[too-many-arguments] -- Preserve the actual default-policy inputs and return.
+        self,
+        field_name: str,
+        class_name: str | None,
+        default: object,
+        *,
+        has_default: bool,
+        required: bool,
+        result: tuple[object, bool, bool],
+    ) -> tuple[object, bool, bool]:
+        if not self.binding_resolver.default_resolutions:
+            msg = "An effective field default has no actual resolver result"
+            raise BindingCaptureError(msg)
+        resolution = self.binding_resolver.default_resolutions[-1]
+        if (
+            resolution.field_name != field_name
+            or resolution.class_name != class_name
+            or resolution.original is not default
+        ):
+            msg = "An effective field default does not match its actual resolver call"
+            raise BindingCaptureError(msg)
+        observation = EffectiveDefaultObservation(
+            field_name, class_name, default, has_default, required, result, resolution
+        )
         self.effective_defaults.append(observation)
+        self._pending_field_default = observation
         return observation.result
+
+    @capture_errors
+    def _field_construction_inputs(
+        self,
+        field_type: DataType,
+        original_name: str | None,
+        class_name: str | None,
+    ) -> tuple[EffectiveDefaultObservation | None, PreexistingNullObservation]:
+        policy, self._pending_field_default = self._pending_field_default, None
+        if policy is not None and (policy.field_name != original_name or policy.class_name != class_name):
+            msg = "A field construction does not match its pending default producer"
+            raise BindingCaptureError(msg)
+        pending = [field_type]
+        seen: set[int] = set()
+        references: dict[GraphObjectId, None] = {}
+        opaque = False
+        while pending:
+            current = pending.pop()
+            if id(current) in seen:
+                continue
+            seen.add(id(current))
+            if current.is_optional or current.type == "None":
+                return policy, PreexistingNullObservation(explicit=True, references=(), opaque=False)
+            if any((
+                current.is_list,
+                current.is_dict,
+                current.is_set,
+                current.is_frozen_set,
+                current.is_mapping,
+                current.is_sequence,
+                current.is_tuple,
+            )):
+                continue
+            if current.reference is not None:
+                references[self.binding_ledger.identity(current.reference)] = None
+            opaque |= current.python_type is not None
+            pending.extend(current.data_types)
+        return policy, PreexistingNullObservation(explicit=False, references=tuple(references), opaque=opaque)
 
     def get_object_field(  # ruff: ignore[too-many-arguments] -- Preserve the existing field producer signature.
         self,
@@ -1629,6 +1709,7 @@ class BindingCaptureMixin(OpenAPIParser):
         class_name: str | None = None,
     ) -> DataModelFieldBase:
         """Retain the real field producer before copy/inheritance and rendering."""
+        default_policy, preexisting_null = self._field_construction_inputs(field_type, original_field_name, class_name)
         result: DataModelFieldBase = super().get_object_field(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             field_name=field_name,
             field=field,
@@ -1650,6 +1731,8 @@ class BindingCaptureMixin(OpenAPIParser):
             class_name=class_name,
             required=required,
             use_default_with_required=use_default_with_required,
+            default_policy=default_policy,
+            preexisting_null=preexisting_null,
         )
 
     @capture_errors
@@ -1664,6 +1747,8 @@ class BindingCaptureMixin(OpenAPIParser):
         class_name: str | None,
         required: bool,
         use_default_with_required: bool,
+        default_policy: EffectiveDefaultObservation | None,
+        preexisting_null: PreexistingNullObservation,
     ) -> DataModelFieldBase:
         identity = self.binding_ledger.identity(field)
         self.field_constructions[identity] = FieldConstructionObservation(
@@ -1675,6 +1760,8 @@ class BindingCaptureMixin(OpenAPIParser):
             use_default_with_required,
             original_name,
             class_name,
+            default_policy,
+            preexisting_null,
         )
         return field
 
@@ -1876,6 +1963,7 @@ class BindingCaptureMixin(OpenAPIParser):
             self._allof_refs.clear()
             self._root_schema_frames.clear()
             self._root_value_children.clear()
+            self._pending_field_default = None
             self.root_materializations.clear()
             self.binding_ledger.close()
             self.binding_resolver.close_capture()

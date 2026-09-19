@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         SymbolId,
         TypeProjectionReason,
     )
+    from datamodel_code_generator.parser.openapi_contract import PreexistingNullObservation
     from datamodel_code_generator.parser.openapi_contract_store import TypeRecipe
 
 
@@ -134,6 +135,20 @@ class FinalTypeProjector:
             return TypeProjection(self._project(recipe))
         except (_UnsupportedTypeError, UnsupportedBindingValueError) as error:
             return TypeProjection(None, error.reason)
+
+    def preexisting_null(self, observation: PreexistingNullObservation) -> bool | None:
+        """Resolve only captured top-level null evidence against final reference policy."""
+        if observation.explicit:
+            return True
+        unknown = observation.opaque
+        for reference in observation.references:
+            if (binding := self._references.get(reference)) is None:
+                unknown = True
+            elif binding.nullable:
+                if not binding.is_alias:
+                    return True
+                unknown = True
+        return None if unknown else False
 
     def _project(self, recipe: TypeRecipe) -> FinalPythonType:
         if recipe.node in self._active:
