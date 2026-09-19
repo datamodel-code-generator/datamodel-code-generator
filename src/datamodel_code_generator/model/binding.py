@@ -58,7 +58,7 @@ _TYPING_CONTAINER_NAMES: Final = {
 }
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
-EmissionForm: TypeAlias = Literal["class_field", "typeddict_entry", "alias_value"]
+EmissionForm: TypeAlias = Literal["class_field", "typeddict_entry", "alias_value", "root_alias_value"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -1102,13 +1102,22 @@ class _ArtifactIndexBuilder:
 
     def _alias_value(self, name: str, tokens: Tokens) -> None:
         fields = self.wanted.get(name)
-        if not fields or (field := next(iter(fields.values()))).form != "alias_value":
+        if not fields or (field := next(iter(fields.values()))).form not in {"alias_value", "root_alias_value"}:
             return
         parts = _split(tokens, "=")
         if len(parts) != _PAIR_SIZE or not (annotation := parts[1]):
             msg = "A builtin alias has no unique value expression"
             raise BindingCaptureError(msg)
-        if (call := _application(annotation, "(")) is not None and _resolved_name(call[0], self.bindings) in {
+        if field.form == "root_alias_value":
+            if (
+                (application := _application(annotation, "[")) is None
+                or _resolved_name(application[0], self.bindings) != "pydantic.RootModel"
+                or len(application[1]) != 1
+            ):
+                msg = "A builtin root alias does not match its RootModel value"
+                raise BindingCaptureError(msg)
+            annotation = application[1][0]
+        elif (call := _application(annotation, "(")) is not None and _resolved_name(call[0], self.bindings) in {
             "typing.TypeAliasType",
             "typing_extensions.TypeAliasType",
         }:
@@ -1826,10 +1835,11 @@ def freeze_alias_nullability(
     type_value: FinalPythonType,
     emitted: EmittedFieldFacts,
     aliases: Container[SymbolId],
+    opaque_type: bool,
 ) -> tuple[bool | None, set[SymbolId]]:
     """Corroborate top-level alias null producers without traversing container items or getters."""
     direct = field.nullable is True or (field.nullable is None and field.required and field.type_has_null)
-    unknown = False
+    unknown = opaque_type
     references: set[SymbolId] = set()
     pending = [type_value]
     while pending:
@@ -1843,8 +1853,6 @@ def freeze_alias_nullability(
             case GeneratedSymbolType(reference) if reference in aliases:
                 references.add(reference)
             case BoundType():
-                unknown = True
-            case ImportedType(import_) if import_.from_ == "typing" and import_.import_ == "Any":
                 unknown = True
     if direct and emitted.null_type_in_annotation:
         return True, references

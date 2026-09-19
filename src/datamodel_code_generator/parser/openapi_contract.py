@@ -2046,7 +2046,16 @@ class BindingCaptureMixin(OpenAPIParser):
                 continue
             if current.reference is not None:
                 references[self.binding_ledger.identity(current.reference)] = None
-            opaque |= current.python_type is not None
+            opaque |= (
+                current.python_type is not None
+                or current.is_custom_type
+                or current.type == "Any"
+                or (
+                    (import_ := current.import_) is not None
+                    and self._python_imports is not None
+                    and self._python_imports[0].get(f"{import_.from_}.{import_.import_}") is import_
+                )
+            )
             pending.extend(current.data_types)
         return PreexistingNullObservation(explicit=False, references=tuple(references), opaque=opaque)
 

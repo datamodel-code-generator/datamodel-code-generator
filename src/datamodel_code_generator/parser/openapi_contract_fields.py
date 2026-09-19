@@ -180,7 +180,11 @@ class FinalFieldBuilder:
                     projected,
                     excluded_by_tag=policy.backend == "msgspec"
                     and self.field_nodes[field.slot].extras.get("is_classvar") is True,
-                    form="alias_value" if policy.kind == "alias" else "class_field",
+                    form="alias_value"
+                    if policy.kind == "alias"
+                    else "root_alias_value"
+                    if policy.kind == "root" and model.is_alias
+                    else "class_field",
                 )
         declarations: dict[SymbolId, tuple[ExpectedFieldDeclaration, ...]] = {}
         for model in self.inventory.models:
@@ -200,13 +204,16 @@ class FinalFieldBuilder:
                 declarations[model.symbol] = tuple(own[field.slot] for field in model.fields if field.slot in own)
         return declarations
 
-    def _field_projection(self, slot: FieldSlot, alias_nullable: dict[SymbolId, bool | None]) -> FieldProjectionContext:
-        original_ids = self.sources.get(slot.field, (slot.field,))
-        constructions = tuple(
+    def _field_constructions(self, slot: FieldSlot) -> tuple[openapi_contract.FieldConstructionObservation, ...]:
+        return tuple(
             construction
-            for source in original_ids
+            for source in self.sources.get(slot.field, (slot.field,))
             if (construction := self.parser.field_constructions.get(source)) is not None
         )
+
+    def _field_projection(self, slot: FieldSlot, alias_nullable: dict[SymbolId, bool | None]) -> FieldProjectionContext:
+        original_ids = self.sources.get(slot.field, (slot.field,))
+        constructions = self._field_constructions(slot)
         origins = tuple(
             origin for source in original_ids if (origin := self.parser.field_origins.get(source)) is not None
         )
@@ -239,7 +246,9 @@ class FinalFieldBuilder:
             constructor_policy(facts, "kw_only") if facts is not None else None,
         )
 
-    def _alias_nulls(self, artifacts: list[FinalArtifactBinding]) -> dict[SymbolId, bool | None]:
+    def _alias_nulls(  # ruff: ignore[too-many-branches] -- Resolve tri-state dependencies without recursion.
+        self, artifacts: list[FinalArtifactBinding]
+    ) -> dict[SymbolId, bool | None]:
         """Resolve producer-owned alias nulls in linear time, leaving opaque cycles unknown."""
         nullable: dict[SymbolId, bool | None] = {
             model.symbol: None for model in self.inventory.models if model.is_alias
@@ -254,14 +263,20 @@ class FinalFieldBuilder:
             declaration.expected.consumer: declaration
             for artifact in artifacts
             for declaration in artifact.index.fields
-            if declaration.expected.form == "alias_value"
+            if declaration.expected.form in {"alias_value", "root_alias_value"}
         }
         for symbol, declaration in declarations.items():
+            if declaration.expected.form == "root_alias_value":
+                nullable[symbol] = False
+                ready.append(symbol)
+                continue
+            constructions = self._field_constructions(declaration.expected.slot)
             value, references = freeze_alias_nullability(
                 self.field_nodes[declaration.expected.slot],
                 type_value=declaration.expected.type,
                 emitted=declaration.facts,
                 aliases=nullable,
+                opaque_type=not constructions or any(item.preexisting_null.opaque for item in constructions),
             )
             if value is True or not references:
                 nullable[symbol] = value

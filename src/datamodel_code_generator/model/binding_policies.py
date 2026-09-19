@@ -43,7 +43,7 @@ def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> 
             kind = "enum"
         case value if value in {TypeAlias, TypeAliasTypeBackport, TypeStatement}:
             kind = "alias"
-        case value if value is pydantic_v2.RootModel:
+        case value if value in {pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias}:
             kind = "root"
         case _:
             pass
@@ -73,7 +73,7 @@ def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> 
 
 def final_field_name(model: DataModel, field_name: str | None) -> str:
     """Use the builtin root template's fixed slot without renaming the live field."""
-    return "root" if type(model) is pydantic_v2.RootModel else field_name or ""
+    return "root" if type(model) in {pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias} else field_name or ""
 
 
 def constructor_policy(facts: BackendModelFacts, name: Literal["init", "kw_only"]) -> bool | None:

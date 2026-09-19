@@ -1,0 +1,7 @@
+[
+  "Nullable = str | None",
+  "Nullable = list[str | None]",
+  "Nullable = RootModel[str, None]",
+  "Nullable = RootModel[]",
+  "Nullable = RootModel[str]"
+]

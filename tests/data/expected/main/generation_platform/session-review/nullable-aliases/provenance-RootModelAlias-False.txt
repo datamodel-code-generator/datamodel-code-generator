@@ -7,4 +7,4 @@ nullable: none / synthesized_optional_fallback / optional_fallback
 plain: none / synthesized_optional_fallback / optional_fallback
 required_any: absent / not_applicable / none
 required_nullable: absent / not_applicable / none
-union: none / runtime_or_opaque / preexisting_type
+union: none / synthesized_optional_fallback / optional_fallback

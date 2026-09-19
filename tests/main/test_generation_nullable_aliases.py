@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -16,10 +17,16 @@ SOURCE = DATA / "generation_platform/binding"
 EXPECTED = DATA / "expected/main/generation_platform"
 
 
-@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize(
+    ("backend", "root_alias"),
+    [*((backend, False) for backend in DataModelType), (DataModelType.PydanticV2BaseModel, True)],
+)
 @pytest.mark.parametrize("collapse", [False, True])
 @pytest.mark.parametrize("annotated", [False, True])
-def test_nullable_alias_provenance(backend: DataModelType, *, collapse: bool, annotated: bool) -> None:
+@pytest.mark.parametrize("remapped", [False, True])
+def test_nullable_alias_provenance(
+    backend: DataModelType, *, root_alias: bool, collapse: bool, annotated: bool, remapped: bool
+) -> None:
     """Compare literal omission proofs and fixed-main bytes through the real driver and disposal."""
     product, retained = generate_product(
         (SOURCE / "session-nullable-aliases.json").resolve(),
@@ -31,14 +38,17 @@ def test_nullable_alias_provenance(backend: DataModelType, *, collapse: bool, an
             collapse_root_models=collapse,
             use_annotated=annotated,
             field_constraints=annotated,
+            use_root_model_type_alias=root_alias,
+            import_overrides={"Any": "typing_extensions"} if remapped else None,
             formatters=[],
             disable_timestamp=True,
         ),
     )
     product.close()
+    variant = "RootModelAlias" if root_alias else backend.name
     assert_output(
         product.artifacts[0].content.decode(),
-        EXPECTED / "session-review/nullable-aliases" / f"{backend.name}-{collapse}-{annotated}.py",
+        EXPECTED / "session-review/nullable-aliases" / f"{variant}-{collapse}-{annotated}-{remapped}.py",
     )
     names = {symbol.id: symbol.name for symbol in product.batch.symbols}
     fields = sorted(
@@ -52,7 +62,7 @@ def test_nullable_alias_provenance(backend: DataModelType, *, collapse: bool, an
             for field in fields
             for provenance in (field.model_facts.none_default_provenance,)
         ),
-        EXPECTED / "session-review/nullable-aliases" / f"provenance-{backend.name}-{collapse}.txt",
+        EXPECTED / "session-review/nullable-aliases" / f"provenance-{variant}-{collapse}.txt",
     )
     assert_output(
         "\n".join(
@@ -60,5 +70,28 @@ def test_nullable_alias_provenance(backend: DataModelType, *, collapse: bool, an
             for error in require_type_bindings(product.batch, tuple(use.id for use in product.batch.type_uses))
         ),
         EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize("replacement", json.loads((SOURCE / "root-alias-artifacts.json").read_text()))
+def test_root_alias_rejects_changed_wrapper(replacement: str) -> None:
+    """Reject removed, replaced, or malformed RootModel applications after ordinary emission."""
+    product, retained = generate_product(
+        (SOURCE / "session-nullable-aliases.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            use_root_model_type_alias=True,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+        artifact_rewrite=("Nullable = RootModel[str | None]", replacement),
+    )
+    product.close()
+    errors = require_type_bindings(product.batch, tuple(use.id for use in product.batch.type_uses))
+    assert_output(
+        "\n".join(sorted({error.code for error in errors})) + "\n",
+        EXPECTED / "session-review/unsupported-artifact.txt",
     )
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
