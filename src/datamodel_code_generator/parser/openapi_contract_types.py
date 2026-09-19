@@ -145,6 +145,13 @@ class FinalTypeProjector:
             value = _ordered_union((value, NoneType()), preserve_order=False)
         return TypeProjection(value)
 
+    def declaration_type(self, reference: GraphObjectId) -> TypeProjection:
+        """Project an actual declaration without adding reference-use nullability."""
+        try:
+            return TypeProjection(self._reference_value(reference, serialize_as_any=False))
+        except _UnsupportedTypeError as error:
+            return TypeProjection(None, error.reason)
+
     def project(self, recipe: TypeRecipe) -> TypeProjection:
         """Return a finite unsupported-type diagnostic without changing model acceptance."""
         try:
@@ -152,7 +159,7 @@ class FinalTypeProjector:
         except (_UnsupportedTypeError, UnsupportedBindingValueError) as error:
             return TypeProjection(None, error.reason)
 
-    def preexisting_null(self, observation: PreexistingNullObservation) -> bool | None:
+    def preexisting_null(self, observation: openapi_contract.PreexistingNullObservation) -> bool | None:
         """Resolve only captured top-level null evidence against final reference policy."""
         if observation.explicit:
             return True
@@ -205,7 +212,7 @@ class FinalTypeProjector:
         )
 
     def _reference_value(self, reference: GraphObjectId, *, serialize_as_any: bool) -> FinalPythonType:
-        if reference in self._unresolved:
+        if reference in self._unresolved or reference in self._unresolved_nodes:
             raise _UnsupportedTypeError(_UNRESOLVED_REFERENCE)
         if (binding := self._references.get(reference)) is None:
             if (root := self._root_recipes.get(reference)) is not None:
@@ -325,5 +332,5 @@ if TYPE_CHECKING:
         SymbolId,
         TypeProjectionReason,
     )
-    from datamodel_code_generator.parser.openapi_contract import PreexistingNullObservation
+    from datamodel_code_generator.parser import openapi_contract
     from datamodel_code_generator.parser.openapi_contract_store import TypeRecipe

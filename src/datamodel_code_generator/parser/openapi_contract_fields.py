@@ -54,7 +54,10 @@ class FinalFieldBuilder:
     """Own temporary graph lookups only until the enclosing attempt freeze returns."""
 
     def __init__(
-        self, parser: BindingCaptureMixin, inventory: FinalModelInventory, projector: FinalTypeProjector
+        self,
+        parser: openapi_contract.BindingCaptureMixin,
+        inventory: openapi_contract_freeze.FinalModelInventory,
+        projector: FinalTypeProjector,
     ) -> None:
         """Build bounded identity indexes without reading derived model getters."""
         self.parser = parser
@@ -90,7 +93,7 @@ class FinalFieldBuilder:
         self.facts: dict[FieldSlot, ModelFieldFacts] = {}
         self.model_facts: dict[SymbolId, BackendModelFacts] = {}
         self.diagnostics: list[BindingDiagnostic] = []
-        self.synthetics: dict[GraphObjectId, list[SyntheticFieldObservation]] = {}
+        self.synthetics: dict[GraphObjectId, list[openapi_contract.SyntheticFieldObservation]] = {}
         for observation in parser.synthetic_fields:
             self.synthetics.setdefault(observation.field, []).append(observation)
 
@@ -465,6 +468,5 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.model.binding import BackendModelFacts, BuiltinFieldArtifactIndex
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, SyntheticFieldObservation
-    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
+    from datamodel_code_generator.parser import openapi_contract, openapi_contract_freeze
     from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector

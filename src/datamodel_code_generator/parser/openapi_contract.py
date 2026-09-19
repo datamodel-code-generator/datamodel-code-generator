@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 from typing_extensions import TypedDict, Unpack, override
 
@@ -24,7 +24,11 @@ from datamodel_code_generator.parser.base import (
     _expand_result_module_path,  # pyright: ignore[reportPrivateUsage]
     _normalize_result_module_path,  # pyright: ignore[reportPrivateUsage]
 )
-from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, split_json_pointer
+from datamodel_code_generator.parser.jsonschema import (
+    JsonSchemaObject,
+    _get_model_by_path_or_missing,  # pyright: ignore[reportPrivateUsage]
+    split_json_pointer,
+)
 from datamodel_code_generator.parser.openapi import OpenAPIParser, ParameterObject
 from datamodel_code_generator.parser.openapi_contract_origins import SchemaOrigin, ValidatedSchemaOriginIndex
 from datamodel_code_generator.parser.openapi_contract_store import (
@@ -467,6 +471,7 @@ class FieldConstructionObservation:
     class_name: str | None
     default_policy: EffectiveDefaultObservation | None
     preexisting_null: PreexistingNullObservation
+    data_type: DataType
 
 
 @dataclass(frozen=True, slots=True)
@@ -1347,8 +1352,12 @@ class BindingCaptureMixin(OpenAPIParser):
         tokens = split_json_pointer(root, fragment)
         pointer = "/" + "/".join(token.replace("~", "~0").replace("/", "~1") for token in tokens) if tokens else ""
         location = SourceLocation(document, pointer, "schema")
-        raw = self.source_lease.borrow(location)
-        return SchemaOrigin(location, raw, relation) if isinstance(raw, (dict, bool)) else None
+        raw = _get_model_by_path_or_missing(root, tokens) if tokens else root
+        return (
+            SchemaOrigin(location, cast("dict[str, YamlValue] | bool", raw), relation)
+            if isinstance(raw, (dict, bool))
+            else None
+        )
 
     @capture_errors
     def _pair_inherited_declaration(
@@ -1650,6 +1659,7 @@ class BindingCaptureMixin(OpenAPIParser):
                     class_name,
                     None,
                     self._observe_preexisting_null(field.data_type),
+                    field.data_type,
                 )
 
     @capture_errors
@@ -2091,6 +2101,7 @@ class BindingCaptureMixin(OpenAPIParser):
             class_name,
             default_policy,
             preexisting_null,
+            field.data_type,
         )
         if self._parameter_frames:
             frame = self._parameter_frames[-1]

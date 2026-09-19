@@ -24,13 +24,14 @@ from datamodel_code_generator.parser.openapi_contract import BindingResolverMixi
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
 from tests.conftest import assert_output
 from tests.data.python.binding_type_snapshot import type_snapshot
-from tests.data.python.generation_contract_consumers import client_plan, server_plan
-from tests.data.python.generation_session_inputs import generate_product
+from tests.data.python.generation_contract_consumers import client_plan, plan_snapshot, server_plan, wire_plan
+from tests.data.python.generation_session_inputs import generate_product, session_protocol_failure
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch
+    from tests.data.python.generation_contract_consumers import RoutePlan
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform"
@@ -42,7 +43,10 @@ EXPECTED = DATA / "expected/main/generation_platform"
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
 )
 @pytest.mark.parametrize("consumer", [server_plan, client_plan], ids=["server", "client"])
-def test_accepted_product_dry_consumer(backend: str, consumer: Callable[[GeneratedTypeContractBatch], str]) -> None:
+def test_accepted_product_dry_consumer(
+    backend: str,
+    consumer: Callable[[GeneratedTypeContractBatch, SourceLease], tuple[RoutePlan, ...]],
+) -> None:
     """Run each target separately, compare fixed-main bytes, and plan after all sources close."""
     product, retained = generate_product(
         (SOURCE / "binding/session-contract.json").resolve(),
@@ -55,9 +59,12 @@ def test_accepted_product_dry_consumer(backend: str, consumer: Callable[[Generat
             disable_timestamp=True,
         ),
     )
+    plan = consumer(product.batch, product.source_lease)
     product.close()
     assert_output(product.artifacts[0].content.decode(), EXPECTED / "session" / (backend.replace(".", "_") + ".py"))
-    assert_output(consumer(product.batch), EXPECTED / "session/wire-plan.txt")
+    assert_output(wire_plan(product.batch), EXPECTED / "session/wire-plan.txt")
+    suffix = "-typeddict" if backend == "typing.TypedDict" else ""
+    assert_output(plan_snapshot(plan), EXPECTED / "session" / f"{consumer.__name__.replace('_', '-')}{suffix}.txt")
     assert_output(
         f"retained graph: {retained}\n"
         f"unavailable origins: {sum(field.origin_state != 'known' for field in product.batch.fields)}\n"
@@ -436,6 +443,51 @@ def test_missing_reference_reuse_preserves_valid_any(backend: str, reuse: bool, 
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
+@pytest.mark.parametrize(
+    "backend",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+@pytest.mark.parametrize("case", ["collapsed-reuse", "inherited-array", "directional-array"])
+def test_removed_missing_reference_preserves_valid_model(backend: str, case: str) -> None:
+    """Keep failed source uses distinct after reuse, inherited copies, and directional inspection."""
+    source = "reuse" if case == "collapsed-reuse" else case
+    with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref '#/components/schemas/Missing'"):
+        product, retained = generate_product(
+            (SOURCE / f"binding/session-missing-{source}.json").resolve(),
+            GenerateConfig(
+                input_file_type="openapi",
+                openapi_scopes=[OpenAPIScope.Api],
+                output_model_type=backend,
+                reuse_model=True,
+                collapse_reuse_models=True,
+                read_only_write_only_model_type="request-response" if case == "directional-array" else "all",
+                input_filename="missing-reuse.json",
+                formatters=[],
+                disable_timestamp=True,
+            ),
+        )
+    product.close()
+    assert_output(
+        json.dumps(
+            {
+                use.id.owner.use_site.pointer: sorted({
+                    item.code for item in require_type_bindings(product.batch, (use.id,))
+                })
+                for use in product.batch.type_uses
+                if use.id.role == "request_body"
+            },
+            indent=2,
+        )
+        + "\n",
+        EXPECTED / f"session-review/missing-{case}.txt",
+    )
+    assert_output(
+        product.artifacts[0].content.decode(),
+        EXPECTED / "session-review/missing-removed" / f"{case}-{backend}.py",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
 def test_collapsed_operation_keeps_final_import_override() -> None:
     """Bind a removed root through the import identity actually emitted by ordinary generation."""
     product, retained = generate_product(
@@ -705,6 +757,44 @@ def test_artifact_imported_base_redefinition() -> None:
         EXPECTED / "session-review/unsupported-artifact.txt",
     )
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize("case", sorted(path.stem for path in (EXPECTED / "session/protocol").glob("*.txt")))
+def test_session_protocol_ownership_and_transfer(case: str) -> None:
+    """Reject foreign or repeated transfers and release every real attempt's graph."""
+    actual = session_protocol_failure((SOURCE / "observation.json").resolve(), case)
+    assert_output(json.dumps(actual, indent=2) + "\n", EXPECTED / "session/protocol" / f"{case}.txt")
+
+
+@pytest.mark.parametrize("case", sorted(path.stem for path in (EXPECTED / "session/artifacts").glob("*.txt")))
+def test_product_artifact_integrity(case: str) -> None:
+    """Demand final types only from unique, present, decodable, well-formed ordinary artifacts."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-selection.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi", openapi_scopes=[OpenAPIScope.Api], formatters=[], disable_timestamp=True
+        ),
+        artifact_failure=case,
+    )
+    product.close()
+    codes = sorted({
+        item.code
+        for use in product.batch.type_uses
+        if use.id.role == "request_body"
+        for item in require_type_bindings(product.batch, (use.id,))
+    })
+    assert_output(json.dumps(codes, indent=2) + "\n", EXPECTED / "session/artifacts" / f"{case}.txt")
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+def test_product_artifact_validation_exception() -> None:
+    """Propagate an invalid writer encoding after model disposal instead of accepting a product."""
+    with pytest.raises(LookupError, match="unknown encoding: unknown-artifact-encoding"):
+        generate_product(
+            (SOURCE / "observation.json").resolve(),
+            GenerateConfig(input_file_type="openapi", formatters=[], disable_timestamp=True),
+            artifact_failure="unknown_encoding",
+        )
 
 
 @pytest.mark.parametrize("constructor_failure", [False, True])

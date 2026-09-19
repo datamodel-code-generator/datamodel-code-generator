@@ -399,7 +399,7 @@ class ModelFieldFacts:
     serialization_alias: str | None
     use_serialization_alias: bool
     type: FinalPythonType
-    backend: BackendFieldFacts
+    backend: binding.BackendFieldFacts
     none_default_provenance: NoneDefaultProvenance
 
 
@@ -410,7 +410,7 @@ class FinalModelSymbol:
     id: SymbolId
     model: GraphObjectId
     reference: GraphObjectId
-    backend: BackendName | None
+    backend: binding.BackendName | None
     kind: Literal["model", "root", "alias", "enum", "custom"]
     name: str
     artifact: ModelArtifactAddress | None
@@ -419,7 +419,7 @@ class FinalModelSymbol:
     fields: tuple[FieldSlot, ...]
     is_alias: bool
     nullable: bool
-    facts: BackendModelFacts | None
+    facts: binding.BackendModelFacts | None
 
 
 BindingReason: TypeAlias = Literal[
@@ -564,6 +564,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model.binding import BackendFieldFacts, BackendModelFacts, BackendName
+    from datamodel_code_generator.model import binding
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi import OpenAPIParser

@@ -104,7 +104,7 @@ def _artifact_address(binding: ModuleResultBinding, output: Path, model_package:
 
 
 def _module_symbol_names(
-    parser: BindingCaptureMixin,
+    parser: openapi_contract.BindingCaptureMixin,
     models: tuple[DataModel, ...],
     symbols: dict[GraphObjectId, SymbolId],
     references: dict[GraphObjectId, ReferenceTypeBinding],
@@ -135,7 +135,7 @@ def _module_symbol_names(
 
 
 def _reference_terminals(
-    parser: BindingCaptureMixin, emitted: set[GraphObjectId], *, declarations: bool = False
+    parser: openapi_contract.BindingCaptureMixin, emitted: set[GraphObjectId], *, declarations: bool = False
 ) -> dict[GraphObjectId, GraphObjectId]:
     """Follow completed global redirects; contextual or ambiguous edges never guess a winner."""
     redirects: dict[GraphObjectId, set[GraphObjectId]] = {}
@@ -173,7 +173,7 @@ def _reference_terminals(
 
 
 def _final_projector(
-    parser: BindingCaptureMixin,
+    parser: openapi_contract.BindingCaptureMixin,
     models: tuple[DataModel, ...],
     symbols: dict[GraphObjectId, SymbolId],
     policies: dict[GraphObjectId, FinalReferencePolicy],
@@ -188,7 +188,8 @@ def _final_projector(
         )
         for model in models
     }
-    terminals = _reference_terminals(parser, set(references))
+    emitted = set(references)
+    terminals = _reference_terminals(parser, emitted)
     references.update((original, references[terminal]) for original, terminal in terminals.items())
     enum_fields = {
         ledger.identity(model.reference): {
@@ -217,16 +218,50 @@ def _final_projector(
         ledger.identity(model.reference) for model in models if model.reference.path in parser.unresolved_references
     )
     return FinalTypeProjector(
-        references, members, ledger.root_recipes, unresolved, _unresolved_nodes(parser, unresolved)
+        references, members, ledger.root_recipes, unresolved, _unresolved_nodes(parser, unresolved, emitted)
     ), references
 
 
-def _unresolved_nodes(parser: BindingCaptureMixin, unresolved: frozenset[GraphObjectId]) -> frozenset[GraphObjectId]:
+def _field_dependencies(
+    parser: openapi_contract.BindingCaptureMixin, emitted: set[GraphObjectId]
+) -> dict[GraphObjectId, list[GraphObjectId]]:
+    """Connect observed nested types to original fields and removed declarations."""
+    ledger = parser.binding_ledger
+    edges: dict[GraphObjectId, list[GraphObjectId]] = {}
+    pending_types = [observation.data_type for observation in parser.type_observations]
+    for construction in parser.field_constructions.values():
+        edges.setdefault(ledger.identity(construction.data_type), []).append(construction.field)
+        pending_types.append(construction.data_type)
+    seen_types: set[GraphObjectId] = set()
+    while pending_types:
+        data_type = pending_types.pop()
+        node = ledger.identity(data_type)
+        if node in seen_types:
+            continue
+        seen_types.add(node)
+        if data_type.reference is not None:
+            edges.setdefault(ledger.identity(data_type.reference), []).append(node)
+        children = (
+            (*data_type.data_types, data_type.dict_key) if data_type.dict_key is not None else data_type.data_types
+        )
+        for child in children:
+            edges.setdefault(ledger.identity(child), []).append(node)
+        pending_types.extend(children)
+    for registration in ledger.registrations:
+        if registration.reference not in emitted:
+            for field in registration.fields:
+                edges.setdefault(field, []).append(registration.reference)
+    return edges
+
+
+def _unresolved_nodes(
+    parser: openapi_contract.BindingCaptureMixin, unresolved: frozenset[GraphObjectId], emitted: set[GraphObjectId]
+) -> frozenset[GraphObjectId]:
     """Propagate actual failed-reference identities through completed copy/collapse edges."""
     if not unresolved:
         return frozenset()
     ledger = parser.binding_ledger
-    edges: dict[GraphObjectId, list[GraphObjectId]] = {}
+    edges = _field_dependencies(parser, emitted)
     for copy in ledger.copies:
         for source in copy.sources if isinstance(copy, FieldCopy) else (copy.source,):
             edges.setdefault(source, []).append(copy.target)
@@ -263,7 +298,7 @@ def _unresolved_nodes(parser: BindingCaptureMixin, unresolved: frozenset[GraphOb
 
 
 def _freeze_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass joins final identities, namespaces, and own fields.
-    parser: BindingCaptureMixin,
+    parser: openapi_contract.BindingCaptureMixin,
     results: str | dict[tuple[str, ...], Result],
     *,
     output: Path,
@@ -361,7 +396,7 @@ def _freeze_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass join
 
 
 def freeze_model_inventory(
-    parser: BindingCaptureMixin,
+    parser: openapi_contract.BindingCaptureMixin,
     results: str | dict[tuple[str, ...], Result],
     *,
     output: Path,
@@ -372,7 +407,7 @@ def freeze_model_inventory(
 
 
 def freeze_final_fields(
-    parser: BindingCaptureMixin,
+    parser: openapi_contract.BindingCaptureMixin,
     results: str | dict[tuple[str, ...], Result],
     *,
     output: Path,
@@ -394,7 +429,7 @@ class FrozenGenerationAttempt:
 
 
 def freeze_generation_attempt(
-    parser: BindingCaptureMixin,
+    parser: openapi_contract.BindingCaptureMixin,
     results: str | dict[tuple[str, ...], Result],
     *,
     output: Path,
@@ -437,6 +472,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.model.binding import FinalReferencePolicy
+    from datamodel_code_generator.parser import openapi_contract
     from datamodel_code_generator.parser.base import Result
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
     from datamodel_code_generator.parser.openapi_contract_fields import FinalArtifactBinding, FinalFieldInventory

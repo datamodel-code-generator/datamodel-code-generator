@@ -62,6 +62,8 @@ class GenerationSessionObserver:
             self.events.append(f"dispose:{local['self'].binding_ledger.attempt_id}")
         elif code is OpenAPIGenerationSession.freeze_attempt.__code__:
             parser, results = local["parser"], local["results"]
+            if not isinstance(parser, BindingCaptureMixin):
+                return
             attempt = parser.binding_ledger.attempt_id
             self.events.append(f"freeze:{attempt}:{bool(parser.results)}")
             body = results if isinstance(results, str) else "\n".join(result.body for result in results.values())
@@ -70,7 +72,8 @@ class GenerationSessionObserver:
         elif code is OpenAPIGenerationSession.accept_attempt.__code__:
             self.events.append(f"accept:{local['attempt_id']}")
         elif code is OpenAPIGenerationSession.discard_attempt.__code__:
-            self.events.append(f"discard:{local['parser'].binding_ledger.attempt_id}")
+            if isinstance(parser := local["parser"], BindingCaptureMixin):
+                self.events.append(f"discard:{parser.binding_ledger.attempt_id}")
         elif code is OpenAPIGenerationSession.close.__code__:
             self.events.append("close")
 
@@ -262,7 +265,11 @@ def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, sourc
 
 
 def generate_product(
-    source: Path, config: GenerateConfig, *, artifact_rewrite: tuple[str, str] | None = None
+    source: Path,
+    config: GenerateConfig,
+    *,
+    artifact_rewrite: tuple[str, str] | None = None,
+    artifact_failure: str = "",
 ) -> tuple[ModelGenerationProduct, int]:
     """Finish ordinary emission, then transfer real immutable values and borrowed sources."""
     observer = GenerationSessionObserver()
@@ -288,9 +295,119 @@ def generate_product(
                 replace(artifact, content=artifact.content.decode().replace(original, replacement).encode())
                 for artifact in artifacts
             )
+        match artifact_failure:
+            case "duplicate":
+                artifacts = (*artifacts, artifacts[0])
+            case "missing":
+                artifacts = ()
+            case "encoding":
+                artifacts = (replace(artifacts[0], content=b"\xff"),)
+            case "syntax":
+                artifacts = (replace(artifacts[0], content=b'"""'),)
+            case "unknown_encoding":
+                artifacts = (replace(artifacts[0], encoding="unknown-artifact-encoding"),)
         product = session.take_product(artifacts, allow_empty_api=True)
     finally:
         session.close()
         sys.setprofile(previous)
     gc.collect()
     return product, sum(node() is not None for node in (*observer.graph, *observer.parsers))
+
+
+def session_protocol_failure(source: Path, case: str) -> dict[str, object]:
+    """Exercise invalid ownership and transfer requests around one real driver execution."""
+    from datamodel_code_generator._generation_contract import AttemptId
+    from datamodel_code_generator.config import OpenAPIParserConfig
+
+    observer = GenerationSessionObserver()
+    session = OpenAPIGenerationSession(
+        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
+    )
+    other = OpenAPIGenerationSession(
+        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
+    )
+    parsers = []
+    errors = []
+    accepted = None
+    previous = sys.getprofile()
+
+    def record(frame: FrameType, event: str, value: Any) -> None:
+        observer.record(frame, event, value)
+        if event == "return" and frame.f_code is OpenAPIGenerationSession.__call__.__code__ and value is not None:
+            parsers.append(value)
+
+    sys.setprofile(record)
+    try:
+        if case in {"batch_before_generation", "lease_before_generation", "product_before_generation"}:
+            try:
+                if case == "batch_before_generation":
+                    session.take_accepted_batch()
+                elif case == "lease_before_generation":
+                    session.source_lease
+                else:
+                    session.take_product((), allow_empty_api=True)
+            except RuntimeError as error:
+                errors.append((type(error).__name__, str(error)))
+        if case == "unused_attempt":
+            session(source=source, config=OpenAPIParserConfig(formatters=[]))
+        result = _run_generation(
+            source,
+            _prepare_generate_facade_config(GenerateConfig(input_file_type="openapi", formatters=[], disable_timestamp=True)),
+            Path.cwd(),
+            use_output_cwd=False,
+            capture=session,
+        )
+        if not isinstance(result, str):
+            raise TypeError(type(result))
+        match case:
+            case "closed_session":
+                session.close()
+                session.take_accepted_batch()
+            case "duplicate_transfer":
+                accepted = session.take_accepted_batch().attempt
+                session.take_accepted_batch()
+            case "discard_accepted":
+                session.discard_attempt(parsers[-1])
+                session.discard_attempt(parsers[-1])
+                session.source_lease
+            case "foreign_freeze":
+                foreign = other(source=source, config=OpenAPIParserConfig(formatters=[]))
+                session.freeze_attempt(foreign, result)
+            case "ordinary_freeze":
+                foreign = OpenAPIParser(source, config=OpenAPIParserConfig(formatters=[]))
+                parsers.append(foreign)
+                session.freeze_attempt(foreign, result)
+            case "foreign_discard":
+                foreign = other(source=source, config=OpenAPIParserConfig(formatters=[]))
+                session.discard_attempt(foreign)
+                accepted = session.take_accepted_batch().attempt
+            case "ordinary_discard":
+                foreign = OpenAPIParser(source, config=OpenAPIParserConfig(formatters=[]))
+                parsers.append(foreign)
+                session.discard_attempt(foreign)
+                accepted = session.take_accepted_batch().attempt
+            case "wrong_accept":
+                session.accept_attempt(AttemptId(99))
+            case "product_after_transfer":
+                accepted = session.take_accepted_batch().attempt
+                session.take_product((ModelArtifact(("models.py",), result.encode()),), allow_empty_api=True)
+            case _:
+                accepted = session.take_accepted_batch().attempt
+    except RuntimeError as error:
+        errors.append((type(error).__name__, str(error)))
+    finally:
+        sys.setprofile(previous)
+        for parser in parsers:
+            parser.dispose()
+        parsers.clear()
+        foreign = None
+        parser = None
+        session.close()
+        other.close()
+    gc.collect()
+    return {
+        "errors": errors,
+        "accepted": accepted,
+        "retained_graph": sum(node() is not None for node in observer.graph),
+        "retained_parsers": sum(node() is not None for node in observer.parsers),
+    }

@@ -187,8 +187,8 @@ class FinalOperationBuilder:
                 return projector.project(_type_recipe(data_type, self.parser.binding_ledger, set()))
             key = self.parser.model_resolver.join_path(observation.frame.engine_path)
             if (reference := self.parser.model_resolver.references.get(key)) is not None:
-                if (symbol := references.get(self.parser.binding_ledger.identity(reference))) is not None:
-                    return TypeProjection(GeneratedSymbolType(symbol))
+                if (identity := self.parser.binding_ledger.identity(reference)) in references:
+                    return projector.declaration_type(identity)
                 if (
                     isinstance(model := reference.source, DataModel)
                     and (model.IS_ALIAS or model.IS_ROOT_MODEL)

@@ -114,7 +114,7 @@ class OpenAPIGenerationSession:
         self._root_selector_document = root_selector_document
         self._next_attempt = 0
         self._attempts: dict[AttemptId, _AttemptResources] = {}
-        self._candidate: FrozenGenerationAttempt | None = None
+        self._candidate: openapi_contract_freeze.FrozenGenerationAttempt | None = None
         self._accepted: AttemptId | None = None
         self._failure: BindingCaptureError | None = None
         self._closed = False
@@ -200,7 +200,7 @@ class OpenAPIGenerationSession:
         self._candidate = frozen
         return attempt
 
-    def _owned_parser(self, parser: OpenAPIParser) -> BindingCaptureMixin:
+    def _owned_parser(self, parser: OpenAPIParser) -> openapi_contract.BindingCaptureMixin:
         from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin  # noqa: PLC0415
 
         if not isinstance(parser, BindingCaptureMixin):
@@ -330,8 +330,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_artifacts import ModelArtifact
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator.config import OpenAPIParserConfig
+    from datamodel_code_generator.parser import openapi_contract, openapi_contract_freeze
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi import OpenAPIParser
-    from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
-    from datamodel_code_generator.parser.openapi_contract_freeze import FrozenGenerationAttempt
     from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
