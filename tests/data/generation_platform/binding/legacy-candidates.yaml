@@ -1,0 +1,51 @@
+openapi: 3.1.0
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+paths:
+  /chosen:
+    parameters:
+      - name: common
+        in: query
+        schema: {type: string}
+    get:
+      operationId: &operation_id chosen
+      parameters:
+        - &parameter
+          name: limit
+          in: query
+          schema: {type: integer}
+      responses: &responses
+        '204': {description: No content}
+  /missing-key:
+    get:
+      operationId: *operation_id
+      parameters: [*parameter]
+      description: null
+      responses: *responses
+  /extra-key:
+    get:
+      parameters: [*parameter]
+      responses: *responses
+  /different-value:
+    get:
+      operationId: another
+      parameters: [*parameter]
+      responses: *responses
+  /invalid-parameters:
+    get:
+      operationId: *operation_id
+      parameters: invalid
+      responses: *responses
+  /different-parameter:
+    get:
+      operationId: *operation_id
+      parameters:
+        - name: other
+          in: query
+          schema: {type: boolean}
+      responses: *responses
