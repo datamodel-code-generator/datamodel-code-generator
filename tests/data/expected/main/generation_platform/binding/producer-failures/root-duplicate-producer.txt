@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A root materialization has ambiguous validation producers"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

@@ -1,0 +1,39 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Nullable alias provenance", "version": "1"},
+  "paths": {
+    "/items": {
+      "post": {
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Model"}}}},
+        "responses": {"204": {"description": "Accepted"}}
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Chain": {"$ref": "#/components/schemas/Nullable"},
+      "Chain2": {"$ref": "#/components/schemas/Chain"},
+      "Plain": {"type": "string"},
+      "Nullable": {"type": "string", "nullable": true},
+      "NullUnion": {"anyOf": [{"type": "string", "minLength": 3}, {"type": "null"}]},
+      "Items": {"type": "array", "items": {"type": "string", "nullable": true}},
+      "AnyValue": {},
+      "AnyChain": {"$ref": "#/components/schemas/AnyValue"},
+      "Model": {
+        "type": "object",
+        "properties": {
+          "any_value": {"$ref": "#/components/schemas/AnyValue"},
+          "any_chain": {"$ref": "#/components/schemas/AnyChain"},
+          "required_any": {"$ref": "#/components/schemas/AnyValue"},
+          "plain": {"$ref": "#/components/schemas/Plain"},
+          "nullable": {"$ref": "#/components/schemas/Nullable"},
+          "union": {"$ref": "#/components/schemas/NullUnion"},
+          "chain": {"$ref": "#/components/schemas/Chain2"},
+          "items": {"$ref": "#/components/schemas/Items"},
+          "required_nullable": {"$ref": "#/components/schemas/Nullable"}
+        },
+        "required": ["required_nullable", "required_any"]
+      }
+    }
+  }
+}

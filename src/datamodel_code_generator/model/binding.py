@@ -876,9 +876,12 @@ class _TypePlacementMatcher:
 
     def _match_generic(self, expected: GenericType, tokens: Tokens, path: tuple[int, ...]) -> None:
         base, arguments, tuple_form = expected.base, expected.arguments, expected.tuple_form
-        if (application := _application(tokens, "[")) is None:
+        if not arguments and tuple_form == "not_tuple":
+            callee, children = tokens, ()
+        elif (application := _application(tokens, "[")) is not None:
+            callee, children = application
+        else:
             self._mismatch()
-        callee, children = application
         if tuple_form == "fixed" and not arguments and len(children) == 1 and _text(children[0]) == "()":
             children = ()
         if tuple_form == "ellipsis":
@@ -1817,6 +1820,39 @@ def freeze_none_default_provenance(
     return NoneDefaultProvenance(default_kind, origin, annotation)
 
 
+def freeze_alias_nullability(
+    field: DataModelFieldBase,
+    *,
+    type_value: FinalPythonType,
+    emitted: EmittedFieldFacts,
+    aliases: Container[SymbolId],
+) -> tuple[bool | None, set[SymbolId]]:
+    """Corroborate top-level alias null producers without traversing container items or getters."""
+    direct = field.nullable is True or (field.nullable is None and field.required and field.type_has_null)
+    unknown = False
+    references: set[SymbolId] = set()
+    pending = [type_value]
+    while pending:
+        match pending.pop():
+            case NoneType():
+                direct = True
+            case AnnotatedType(value, _):
+                pending.append(value)
+            case UnionType(members, _):
+                pending.extend(members)
+            case GeneratedSymbolType(reference) if reference in aliases:
+                references.add(reference)
+            case BoundType():
+                unknown = True
+            case ImportedType(import_) if import_.from_ == "typing" and import_.import_ == "Any":
+                unknown = True
+    if direct and emitted.null_type_in_annotation:
+        return True, references
+    if unknown or bool(direct) != emitted.null_type_in_annotation:
+        return None, references
+    return False, references
+
+
 def _annotation_null_origin(
     field: DataModelFieldBase,
     *,
@@ -1826,7 +1862,7 @@ def _annotation_null_origin(
     fallback: bool,
 ) -> Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]:
     annotation: Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]
-    if not emitted.null_type_in_annotation:
+    if not emitted.null_type_in_annotation and projection.preexisting_null is False:
         annotation = "none"
     elif unknown:
         annotation = "opaque"
@@ -1862,7 +1898,7 @@ def freeze_reference_policy(model: DataModel, *, serialize_as_any: bool) -> Fina
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Container, Iterator, Sequence
 
     from datamodel_code_generator._generation_contract import (
         AttemptId,

@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A root-value child merge has unowned inputs or resolutions"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

@@ -1,0 +1,9 @@
+any_chain: absent / not_applicable / opaque
+any_value: absent / not_applicable / opaque
+chain: absent / not_applicable / opaque
+items: absent / not_applicable / opaque
+nullable: absent / not_applicable / opaque
+plain: absent / not_applicable / opaque
+required_any: absent / not_applicable / opaque
+required_nullable: absent / not_applicable / opaque
+union: absent / not_applicable / opaque

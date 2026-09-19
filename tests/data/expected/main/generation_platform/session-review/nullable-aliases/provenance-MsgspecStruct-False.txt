@@ -1,0 +1,9 @@
+any_chain: missing / not_applicable / opaque
+any_value: missing / not_applicable / opaque
+chain: missing / not_applicable / preexisting_type
+items: missing / not_applicable / none
+nullable: missing / not_applicable / preexisting_type
+plain: missing / not_applicable / none
+required_any: absent / not_applicable / opaque
+required_nullable: absent / not_applicable / preexisting_type
+union: missing / not_applicable / preexisting_type

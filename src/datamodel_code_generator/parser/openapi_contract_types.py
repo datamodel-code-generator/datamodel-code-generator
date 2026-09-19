@@ -159,7 +159,12 @@ class FinalTypeProjector:
         except (_UnsupportedTypeError, UnsupportedBindingValueError) as error:
             return TypeProjection(None, error.reason)
 
-    def preexisting_null(self, observation: openapi_contract.PreexistingNullObservation) -> bool | None:
+    def preexisting_null(
+        self,
+        observation: openapi_contract.PreexistingNullObservation,
+        *,
+        alias_nullable: Mapping[SymbolId, bool | None],
+    ) -> bool | None:
         """Resolve only captured top-level null evidence against final reference policy."""
         if observation.explicit:
             return True
@@ -167,10 +172,12 @@ class FinalTypeProjector:
         for reference in observation.references:
             if (binding := self._references.get(reference)) is None:
                 unknown = True
-            elif binding.nullable:
-                if not binding.is_alias:
+            elif binding.is_alias:
+                if (nullable := alias_nullable.get(binding.symbol)) is True:
                     return True
-                unknown = True
+                unknown |= nullable is None
+            elif binding.nullable:
+                return True
         return None if unknown else False
 
     def _project(self, recipe: TypeRecipe) -> FinalPythonType:

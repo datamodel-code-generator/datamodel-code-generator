@@ -18,6 +18,7 @@ from datamodel_code_generator.model.binding import (
     FieldProjectionContext,
     FrozenImportBindings,
     ModelProjectionContext,
+    freeze_alias_nullability,
     freeze_builtin_model_facts,
     freeze_model_field_facts,
     index_builtin_field_declarations,
@@ -199,7 +200,7 @@ class FinalFieldBuilder:
                 declarations[model.symbol] = tuple(own[field.slot] for field in model.fields if field.slot in own)
         return declarations
 
-    def _field_projection(self, slot: FieldSlot) -> FieldProjectionContext:
+    def _field_projection(self, slot: FieldSlot, alias_nullable: dict[SymbolId, bool | None]) -> FieldProjectionContext:
         original_ids = self.sources.get(slot.field, (slot.field,))
         constructions = tuple(
             construction
@@ -217,7 +218,10 @@ class FinalFieldBuilder:
             for source in original_ids
             if (inherited := self.parser.inherited_defaults.get(source)) is not None
         ) + tuple(policy.resolution.producer for policy in policies)
-        nullable = tuple(self.projector.preexisting_null(observation.preexisting_null) for observation in constructions)
+        nullable = tuple(
+            self.projector.preexisting_null(observation.preexisting_null, alias_nullable=alias_nullable)
+            for observation in constructions
+        )
         policy = self.policies[slot.symbol]
         facts = self.model_facts.get(slot.symbol)
         return FieldProjectionContext(
@@ -234,6 +238,57 @@ class FinalFieldBuilder:
             constructor_policy(facts, "init") if facts is not None else None,
             constructor_policy(facts, "kw_only") if facts is not None else None,
         )
+
+    def _alias_nulls(self, artifacts: list[FinalArtifactBinding]) -> dict[SymbolId, bool | None]:
+        """Resolve producer-owned alias nulls in linear time, leaving opaque cycles unknown."""
+        nullable: dict[SymbolId, bool | None] = {
+            model.symbol: None for model in self.inventory.models if model.is_alias
+        }
+        if not nullable:
+            return nullable
+        dependencies: dict[SymbolId, set[SymbolId]] = {}
+        dependents: dict[SymbolId, list[SymbolId]] = {}
+        opaque: set[SymbolId] = set()
+        ready: list[SymbolId] = []
+        declarations = {
+            declaration.expected.consumer: declaration
+            for artifact in artifacts
+            for declaration in artifact.index.fields
+            if declaration.expected.form == "alias_value"
+        }
+        for symbol, declaration in declarations.items():
+            value, references = freeze_alias_nullability(
+                self.field_nodes[declaration.expected.slot],
+                type_value=declaration.expected.type,
+                emitted=declaration.facts,
+                aliases=nullable,
+            )
+            if value is True or not references:
+                nullable[symbol] = value
+                ready.append(symbol)
+                continue
+            if value is None:
+                opaque.add(symbol)
+            dependencies[symbol] = references
+            for reference in references:
+                dependents.setdefault(reference, []).append(symbol)
+        while ready:
+            symbol = ready.pop()
+            for dependent in dependents.get(symbol, ()):
+                if (remaining := dependencies.get(dependent)) is None:
+                    continue
+                remaining.remove(symbol)
+                if nullable[symbol] is True:
+                    nullable[dependent] = True
+                else:
+                    if nullable[symbol] is None:
+                        opaque.add(dependent)
+                    if remaining:
+                        continue
+                    nullable[dependent] = None if dependent in opaque else False
+                del dependencies[dependent]
+                ready.append(dependent)
+        return nullable
 
     def _artifacts(
         self, declarations: dict[SymbolId, tuple[ExpectedFieldDeclaration, ...]]
@@ -272,7 +327,9 @@ class FinalFieldBuilder:
                         BindingDiagnostic("BND_TYPE_EXPRESSION_UNSUPPORTED", details=(("symbol", symbol),))
                     )
             artifacts.append(FinalArtifactBinding(address, module.models, expected, imports, index))
-            for declaration in index.fields:
+        alias_nullable = self._alias_nulls(artifacts)
+        for artifact in artifacts:
+            for declaration in artifact.index.fields:
                 slot = declaration.expected.slot
                 if slot in self.facts:
                     continue
@@ -280,7 +337,7 @@ class FinalFieldBuilder:
                     self.field_nodes[slot],
                     type_value=declaration.expected.type,
                     emitted=declaration.facts,
-                    projection=self._field_projection(slot),
+                    projection=self._field_projection(slot, alias_nullable),
                 )
         return tuple(artifacts)
 
