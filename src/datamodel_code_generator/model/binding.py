@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from io import StringIO
 from itertools import starmap
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, NoReturn, TypeAlias, cast
 
 from datamodel_code_generator._binding_literals import UnsupportedBindingValueError, freeze_argument, freeze_literal
 from datamodel_code_generator._generation_contract import (
@@ -44,7 +44,7 @@ from datamodel_code_generator._python_type_annotation import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
     from datamodel_code_generator._generation_contract import (
         AttemptId,
@@ -586,14 +586,14 @@ class _TypePlacementMatcher:
             if _resolved_name(callee, self.bindings) not in {"typing.Annotated", "typing_extensions.Annotated"}:
                 break
             if len(arguments) < _PAIR_SIZE:
-                raise self._mismatch_error()
+                self._mismatch()
             for metadata in arguments[1:]:
                 if (call := _application(metadata, "(")) is None:
                     continue
                 identity = _resolved_name(call[0], self.bindings)
                 if matched < len(required) and identity == _import_identity(required[matched].import_)[1]:
                     if not self._match_keywords(required[matched].keywords, call[1]):
-                        raise self._mismatch_error()
+                        self._mismatch()
                     matched += 1
                 if identity != "msgspec.Meta":
                     continue
@@ -601,7 +601,7 @@ class _TypePlacementMatcher:
                 for argument in call[1]:
                     pair = _split(argument, "=")
                     if len(pair) != _PAIR_SIZE or len(pair[0]) != 1 or pair[0][0].type != tokenize.NAME:
-                        raise self._mismatch_error()
+                        self._mismatch()
                     keywords.append((pair[0][0].string, _literal_or_syntax(pair[1])))
                 ordinal = self.layer_counts.get(path, 0)
                 self.layer_counts[path] = ordinal + 1
@@ -610,7 +610,7 @@ class _TypePlacementMatcher:
                 )
             tokens = arguments[0]
         if matched != len(required):
-            raise self._mismatch_error()
+            self._mismatch()
         return tokens
 
     def _projected_metadata(
@@ -685,20 +685,21 @@ class _TypePlacementMatcher:
             if len(actual) == 1 and actual[0] is not None:
                 self._match(expected, actual[0], ())
                 return
-            raise self._mismatch_error()
+            self._mismatch()
         for index, (member, annotation) in enumerate(zip(expected_members, actual, strict=True)):
             self._match(member, annotation, (index,) if isinstance(expected, UnionType) else ())
 
     @staticmethod
-    def _mismatch_error() -> BindingCaptureError:
-        return BindingCaptureError("Accepted field annotation does not match its projected type")
+    def _mismatch() -> NoReturn:
+        msg = "Accepted field annotation does not match its projected type"
+        raise BindingCaptureError(msg)
 
     def _match(  # ruff: ignore[too-many-branches] # Exhaustive finite type alternatives.
         self, expected: FinalPythonType, tokens: Tokens | None, path: tuple[int, ...]
     ) -> None:
         if tokens is None:
             if not isinstance(expected, NoneType):
-                raise self._mismatch_error()
+                self._mismatch()
             return
         skeleton, tokens = self._projected_metadata(expected, tokens, path)
         match skeleton:
@@ -718,7 +719,7 @@ class _TypePlacementMatcher:
                 return
             case UnionType(members, _):
                 if (children := self._union(tokens)) is None or len(children) != len(members):
-                    raise self._mismatch_error()
+                    self._mismatch()
                 for index, (member, child) in enumerate(zip(members, children, strict=True)):
                     self._match(member, child, (*path, index))
                 return
@@ -727,7 +728,7 @@ class _TypePlacementMatcher:
             case ConstructorType():
                 matched = self._match_constructor(skeleton, tokens, path)
         if not matched:
-            raise self._mismatch_error()
+            self._mismatch()
 
     def _match_bound(self, expected: BoundType, tokens: Tokens) -> bool:
         return self._match_python_expression(expected.binding.expression, tokens)
@@ -830,11 +831,11 @@ class _TypePlacementMatcher:
     def _match_generic(self, expected: GenericType, tokens: Tokens, path: tuple[int, ...]) -> None:
         base, arguments, tuple_form = expected.base, expected.arguments, expected.tuple_form
         if (application := _application(tokens, "[")) is None:
-            raise self._mismatch_error()
+            self._mismatch()
         callee, children = application
         if tuple_form == "ellipsis":
             if not children or _text(children[-1]) != "...":
-                raise self._mismatch_error()
+                self._mismatch()
             children = children[:-1]
         if isinstance(base, BuiltinType) and _resolved_name(callee, self.bindings) == _TYPING_CONTAINER_NAMES.get(
             base.name, ""
@@ -843,7 +844,7 @@ class _TypePlacementMatcher:
         else:
             self._match(base, callee, (*path, -1))
         if len(children) != len(arguments):
-            raise self._mismatch_error()
+            self._mismatch()
         for index, (argument, child) in enumerate(zip(arguments, children, strict=True)):
             self._match(argument, child, (*path, index))
 
@@ -870,7 +871,7 @@ class _TypePlacementMatcher:
     def _match_constructor(self, expected: ConstructorType, tokens: Tokens, path: tuple[int, ...]) -> bool:
         callee, keywords = expected.callable, expected.keywords
         if (application := _application(tokens, "(")) is None:
-            raise self._mismatch_error()
+            self._mismatch()
         self._match(callee, application[0], path)
         return self._match_keywords(keywords, application[1])
 
@@ -1324,7 +1325,7 @@ def _model_configuration(model: DataModel, backend: BackendName) -> dict[str, Ba
     for item in cast("tuple[object, ...] | list[object]", values):
         if type(item) is not tuple:
             return None
-        pair = cast("tuple[object, ...]", item)
+        pair = cast("Sequence[object]", item)
         if len(pair) != _PAIR_SIZE or type(pair[0]) is not str:
             return None
         if pair[0] in _PYDANTIC_CONFIGURATION:
@@ -1375,6 +1376,8 @@ def freeze_none_default_provenance(
             default_kind = "missing"
         case "literal" | "expression":
             default_kind = "value"
+        case "opaque":
+            pass
     unknown = (
         not projection.builtin_semantics
         or type(field.extras) is not dict

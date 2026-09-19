@@ -149,3 +149,7 @@ The initial third-PR checks job found five ty 0.0.9 diagnostics: narrowed litera
 ## CI determinism correction
 
 CodeQL's possible-uninitialized default_kind report is addressed by initializing the conservative opaque result before the finite match. Existing Literal snapshot failures were independently reproduced using only typing: prewarming Union[Literal['Optional', 'list', 'Field'], None] makes the equivalent differently ordered union reuse that first Literal order. The runtime test now orders observed members by the source fixture's enum sequence. Unexpected members still fail, missing members still differ, and all existing generated-byte and runtime expected files are unchanged. All 228 field_name_bindings cases pass both normally and after deliberately prewarming the conflicting typing cache. The 98 binding tests pass. Ruff migrated six existing suppression comments in the touched test module to its required spelling, without adding suppressions. Strict mypy and ty pass for the changed implementation.
+
+## Repository ty upgrade
+
+The user requested keeping the repository on the latest ty. The version update and the type fixes it requires in pre-existing modules are a separate PR at the bottom of native stack #4110. This stack keeps only the S03 modules' own adaptations to the newer checker.
