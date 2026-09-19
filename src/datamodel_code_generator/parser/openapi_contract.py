@@ -20,7 +20,11 @@ from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.parser._api_reference import ApiDeclarationId, ApiModelResolver
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, split_json_pointer
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from datamodel_code_generator.parser.openapi_contract_origins import SchemaOrigin, ValidatedSchemaOriginIndex
+from datamodel_code_generator.parser.openapi_contract_origins import (
+    SchemaOrigin,
+    ValidatedSchemaOriginIndex,
+    iter_materialized_schemas,
+)
 from datamodel_code_generator.parser.openapi_contract_store import (
     BindingLedger,
     ContractGenerationStore,
@@ -565,6 +569,27 @@ class InheritedMergeFrame:
     parents: dict[str, tuple[JsonSchemaObject | bool, str]] | None
 
 
+@dataclass(slots=True)
+class InheritedShapeMerge:
+    """Own one actual recursive merge and the effective shape it reads."""
+
+    parent: dict[str, object]
+    child: dict[str, object]
+    source: JsonSchemaObject | None = None
+    bound: bool = False
+
+
+@dataclass(slots=True)
+class InheritedShapeFrame:
+    """Borrow raw producer identities until one inherited property is validated."""
+
+    parent: JsonSchemaObject
+    child: JsonSchemaObject
+    values: dict[int, tuple[dict[str, object], tuple[JsonSchemaObject, ...]]]
+    merges: list[InheritedShapeMerge]
+    result: dict[str, object] | None = None
+
+
 class BindingCaptureMixin(OpenAPIParser):
     """Create attempt ownership before ordinary parser construction begins."""
 
@@ -598,6 +623,8 @@ class BindingCaptureMixin(OpenAPIParser):
         self.inherited_defaults: dict[GraphObjectId, InheritedDefaultObservation] = {}
         self._conditional_merges: list[ConditionalMergeFrame] = []
         self._inherited_merges: list[InheritedMergeFrame] = []
+        self._inherited_shapes: list[InheritedShapeFrame] = []
+        self._inherited_parent_sources: list[JsonSchemaObject | None] = []
         self._combined_branches: list[CombinedBranchFrame] = []
         self._allof_refs: list[AllOfRefFrame] = []
         self._root_schema_frames: list[RootSchemaFrame] = []
@@ -892,18 +919,154 @@ class BindingCaptureMixin(OpenAPIParser):
         self, parent: JsonSchemaObject, child: JsonSchemaObject, parent_ref: str
     ) -> JsonSchemaObject:
         """Retain parent and child inputs of the real no-merge materialization."""
-        result: JsonSchemaObject = super()._merge_no_merge_inherited_property(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-            parent, child, parent_ref
-        )
-        return self._record_inherited_property(parent, child, result)  # pyright: ignore[reportUnknownArgumentType]
+        frame = InheritedShapeFrame(parent, child, {}, [])
+        self._inherited_shapes.append(frame)
+        try:
+            result: JsonSchemaObject = super()._merge_no_merge_inherited_property(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                parent, child, parent_ref
+            )
+        finally:
+            self._inherited_shapes.pop()
+        return self._record_inherited_property(frame, child, result)  # pyright: ignore[reportUnknownArgumentType]
+
+    def _resolve_inherited_parent_property(
+        self,
+        schema: JsonSchemaObject,
+        parent_ref: str,
+        active: frozenset[str] = frozenset(),
+        *,
+        refs_resolved: bool = False,
+    ) -> tuple[JsonSchemaObject, str, frozenset[str], bool]:
+        """Borrow declarations only from the cache populated by the actual resolver."""
+        self._record_inherited_shape_input(schema)
+        self._inherited_parent_sources.append(schema if schema.ref and schema.has_ref_with_schema_keywords else None)
+        try:
+            result: tuple[JsonSchemaObject, str, frozenset[str], bool] = super()._resolve_inherited_parent_property(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                schema, parent_ref, active, refs_resolved=refs_resolved
+            )
+        finally:
+            sibling = self._inherited_parent_sources.pop()
+        self._record_inherited_parent(sibling, result)  # pyright: ignore[reportUnknownArgumentType]
+        return result  # pyright: ignore[reportUnknownVariableType]
+
+    @capture_errors
+    def _record_inherited_sibling(self, ref: str, parent_ref: str) -> None:
+        if (
+            self._inherited_parent_sources
+            and self._inherited_parent_sources[-1] is None
+            and (source := self._inherited_schema_cache.get(parent_ref)) is not None
+            and source.ref == ref
+            and source.has_ref_with_schema_keywords
+        ):
+            self._pair_inherited_declaration(parent_ref, source)
+            self._inherited_parent_sources[-1] = source
+
+    @capture_errors
+    def _record_inherited_parent(
+        self, source: JsonSchemaObject | None, result: tuple[JsonSchemaObject, str, frozenset[str], bool]
+    ) -> None:
+        schema, reference, _, _ = result
+        if self._inherited_schema_cache.get(reference) is schema:
+            self._pair_inherited_declaration(reference, schema)
+        elif (
+            source is not None
+            and (origin := self._borrow_resolved_schema(reference, "inherited_materialization")) is not None
+        ):
+            self.schema_origins.pair_merged_shape(origin, source, schema)
+
+    @capture_errors
+    def _record_inherited_shape_input(self, schema: JsonSchemaObject) -> None:
+        if not self._inherited_shapes or not (frame := self._inherited_shapes[-1]).merges:
+            return
+        merge = frame.merges[-1]
+        if merge.bound:
+            return
+        merge.bound = True
+        if len(frame.merges) == 1:
+            self.schema_origins.derive_preserved_shape(frame.parent, schema, "inherited_materialization")
+        for raw, validated in iter_materialized_schemas(merge.parent, schema):
+            if (source := frame.values.get(id(raw))) is not None:
+                for original in source[1]:
+                    self.schema_origins.derive(
+                        original, validated, "inherited_materialization", descend_properties=False
+                    )
+
+    def _get_inherited_type_shape(self, schema: JsonSchemaObject) -> dict[str, object]:
+        """Keep the real shape mapping, including unchanged tuple and property nodes."""
+        result: dict[str, object] = super()._get_inherited_type_shape(schema)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        self._record_inherited_shape(schema, result)  # pyright: ignore[reportUnknownArgumentType]
+        return result  # pyright: ignore[reportUnknownVariableType]
+
+    @capture_errors
+    def _record_inherited_shape(self, schema: JsonSchemaObject, result: dict[str, object]) -> None:
+        if not self._inherited_shapes or not (frame := self._inherited_shapes[-1]).merges:
+            return
+        merge = frame.merges[-1]
+        merge.source = schema
+        for raw, source in iter_materialized_schemas(result, schema):
+            frame.values[id(raw)] = raw, (source,)
+
+    def _merge_inherited_type_shape_dict(
+        self,
+        parent: dict[str, object],
+        child: dict[str, object],
+        parent_ref: str,
+        active: frozenset[str] = frozenset(),
+        *,
+        parent_refs_resolved: bool = False,
+    ) -> dict[str, object]:
+        """Connect each actual raw result before the original producer validates it."""
+        frame = self._inherited_shapes[-1] if self._inherited_shapes else None
+        merge = InheritedShapeMerge(parent, child)
+        if frame is not None:
+            if not frame.merges:
+                self._record_inherited_child_shape(child)
+            frame.merges.append(merge)
+        try:
+            result: dict[str, object] = super()._merge_inherited_type_shape_dict(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                parent, child, parent_ref, active, parent_refs_resolved=parent_refs_resolved
+            )
+        finally:
+            if frame is not None:
+                frame.merges.pop()
+        self._record_inherited_shape_merge(merge, result)  # pyright: ignore[reportUnknownArgumentType]
+        return result  # pyright: ignore[reportUnknownVariableType]
+
+    @capture_errors
+    def _record_inherited_child_shape(self, raw: dict[str, object]) -> None:
+        frame = self._inherited_shapes[-1]
+        for value, source in iter_materialized_schemas(raw, frame.child):
+            frame.values[id(value)] = value, (source,)
+
+    @capture_errors
+    def _record_inherited_shape_merge(self, merge: InheritedShapeMerge, result: dict[str, object]) -> None:
+        if not self._inherited_shapes:
+            return
+        frame = self._inherited_shapes[-1]
+        if merge.source is None:
+            msg = "An inherited merge has no observed effective parent shape"
+            raise BindingCaptureError(msg)
+        child_sources = child[1] if (child := frame.values.get(id(merge.child))) is not None else ()
+        frame.values[id(result)] = result, (merge.source, *child_sources)
+        if not frame.merges:
+            frame.result = result
 
     @capture_errors
     def _record_inherited_property(
-        self, parent: JsonSchemaObject, child: JsonSchemaObject, result: JsonSchemaObject
+        self, frame: InheritedShapeFrame, child: JsonSchemaObject, result: JsonSchemaObject
     ) -> JsonSchemaObject:
         if result is not child:
-            self.schema_origins.derive(parent, result, "inherited_materialization", merge_mode=self.allof_merge_mode)
+            self.schema_origins.derive(
+                frame.parent, result, "inherited_materialization", merge_mode=self.allof_merge_mode
+            )
             self.schema_origins.derive(child, result, "inherited_constraint", merge_mode=self.allof_merge_mode)
+            if frame.result is not None:
+                for raw, completed in iter_materialized_schemas(frame.result, result):
+                    if (source := frame.values.get(id(raw))) is not None:
+                        for original in source[1]:
+                            self.schema_origins.derive(
+                                original, completed, "inherited_materialization", descend_properties=False
+                            )
         return result
 
     def parse_combined_schema(
@@ -1061,6 +1224,7 @@ class BindingCaptureMixin(OpenAPIParser):
         """Separate copied child-ref normalization from the containing loader's resolution."""
         with self._resolution_producer():
             result: str = super()._resolve_inherited_child_ref(ref, parent_ref)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        self._record_inherited_sibling(ref, parent_ref)
         return result  # pyright: ignore[reportUnknownVariableType]
 
     def _get_deferred_inherited_property_names(
@@ -1226,8 +1390,9 @@ class BindingCaptureMixin(OpenAPIParser):
             msg = "A ref sibling merge has no matching direct loader resolution"
             raise BindingCaptureError(msg)
         if (origin := self._borrow_resolved_schema(frame.resolutions[1].output, "ref_sibling")) is not None:
-            self.schema_origins.pair_merged_properties(origin, result)
-        self.schema_origins.derive(obj, result, "ref_sibling")
+            self.schema_origins.pair_merged_shape(origin, obj, result)
+        else:
+            self.schema_origins.derive(obj, result, "ref_sibling")
         if self._combined_branches and (combined := self._combined_branches[-1]).collecting:
             combined.merged_inputs[id(obj)] = result
         return result
@@ -2025,6 +2190,8 @@ class BindingCaptureMixin(OpenAPIParser):
             self.inherited_defaults.clear()
             self._conditional_merges.clear()
             self._inherited_merges.clear()
+            self._inherited_shapes.clear()
+            self._inherited_parent_sources.clear()
             self._combined_branches.clear()
             self._allof_refs.clear()
             self._root_schema_frames.clear()

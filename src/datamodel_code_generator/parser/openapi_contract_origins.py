@@ -10,7 +10,7 @@ from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger, capture_errors
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator, Mapping, Sequence
 
     from datamodel_code_generator._generation_contract import SourceDocumentId
     from datamodel_code_generator._source import YamlValue
@@ -108,6 +108,51 @@ def _schema_children(obj: JsonSchemaObject) -> Iterator[tuple[tuple[str, ...], J
             yield (keyword,), optional_child
 
 
+def iter_materialized_schemas(
+    raw: dict[str, object], obj: JsonSchemaObject
+) -> Iterator[tuple[dict[str, object], JsonSchemaObject]]:
+    """Pair actual serialized schema children with their validated counterparts."""
+    pending = [(raw, obj)]
+    while pending:
+        current, completed = pending.pop()
+        yield current, completed
+        for tokens, child in _schema_children(completed):
+            if isinstance(child, bool):
+                continue
+            original: object = current
+            for token in tokens:
+                match original:
+                    case dict():
+                        original = cast("Mapping[str, object]", original).get(token)
+                    case list():
+                        original = cast("list[object]", original)[int(token)]
+                    case _:
+                        msg = "A materialization child has no actual raw producer"
+                        raise BindingCaptureError(msg)
+            if isinstance(original, dict):
+                pending.append((cast("dict[str, object]", original), child))
+
+
+def _merged_schema_tokens(
+    *, raw: dict[str, YamlValue] | bool, sibling: JsonSchemaObject, tokens: tuple[str, ...]
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Keep declaration ordinals separate from the actual concatenated result."""
+    match tokens:
+        case ("propertyNames",) if isinstance(raw, dict) and "propertyNames" not in raw and "x-propertyNames" in raw:
+            return ("x-propertyNames",), tokens
+        case (attribute, index) if attribute in {"allOf", "anyOf", "oneOf", "prefixItems", "items"}:
+            parent_sequence = raw.get(attribute) if isinstance(raw, dict) else None
+            branch_sequence: object = getattr(sibling, attribute)
+            if isinstance(parent_sequence, list) and isinstance(branch_sequence, list):
+                ordinal = int(index)
+                if ordinal >= len(parent_sequence):
+                    return (), (attribute, str(ordinal - len(parent_sequence)))
+                return tokens, ()
+        case _:
+            pass
+    return tokens, tokens
+
+
 class ValidatedSchemaOriginIndex:
     """Own borrowed source and validated identities without revalidating schemas."""
 
@@ -188,6 +233,7 @@ class ValidatedSchemaOriginIndex:
         obj: JsonSchemaObject,
         location: SourceLocation,
         relation: SchemaRelation = "validated_child",
+        descend: bool = True,
     ) -> None:
         """Pair actual validator input/output, following only corresponding children."""
         key = id(obj), location, relation
@@ -197,7 +243,7 @@ class ValidatedSchemaOriginIndex:
         self._validated_anchors[id(obj)] = obj
         self._register_required(obj)
         self._origins.setdefault(id(obj), []).append(SchemaOrigin(location, raw, relation))
-        if isinstance(raw, bool):
+        if isinstance(raw, bool) or not descend:
             return
         for tokens, child in _schema_children(obj):
             original: YamlValue = raw
@@ -222,6 +268,49 @@ class ValidatedSchemaOriginIndex:
                 msg = "A validated schema node has no matching raw schema"
                 raise BindingCaptureError(msg)
             self.pair(raw=original, obj=child, location=_child_location(location, *tokens), relation=relation)
+
+    @capture_errors
+    def pair_merged_shape(self, origin: SchemaOrigin, sibling: JsonSchemaObject, target: JsonSchemaObject) -> None:
+        """Follow the actual deep-merge ownership, including concatenated schema lists."""
+        if (id(target), origin.location, origin.relation) in self._paired:
+            return
+        self.pair(raw=origin.raw, obj=target, location=origin.location, relation=origin.relation, descend=False)
+        self.derive(sibling, target, origin.relation, descend_properties=False)
+        specific = dict(_schema_children(sibling))
+        for tokens, completed in _schema_children(target):
+            if not isinstance(completed, JsonSchemaObject):
+                continue
+            source_tokens, sibling_tokens = _merged_schema_tokens(raw=origin.raw, sibling=sibling, tokens=tokens)
+            raw: YamlValue = origin.raw if source_tokens else None
+            for token in source_tokens:
+                match raw:
+                    case dict():
+                        raw = raw.get(token)
+                    case list() if int(token) < len(raw):
+                        raw = raw[int(token)]
+                    case _:
+                        raw = None
+                        break
+            child = specific.get(sibling_tokens)
+            match raw, child:
+                case ((dict() | bool()), JsonSchemaObject()):
+                    self.pair_merged_shape(
+                        SchemaOrigin(_child_location(origin.location, *source_tokens), raw, origin.relation),
+                        child,
+                        completed,
+                    )
+                case ((dict() | bool()), _):
+                    self.pair(
+                        raw=raw,
+                        obj=completed,
+                        location=_child_location(origin.location, *source_tokens),
+                        relation=origin.relation,
+                    )
+                case _, JsonSchemaObject():
+                    self.derive_preserved_shape(child, completed, origin.relation)
+                case _:
+                    msg = "A merged schema child has no observed source"
+                    raise BindingCaptureError(msg)
 
     @capture_errors
     def pair_item_projection(
@@ -299,6 +388,7 @@ class ValidatedSchemaOriginIndex:
         relation: SchemaRelation,
         *,
         merge_mode: AllOfMergeMode | None = None,
+        descend_properties: bool = True,
     ) -> None:
         """Connect shape-preserving producer results using actual property identities.
 
@@ -313,7 +403,7 @@ class ValidatedSchemaOriginIndex:
         self._validated_anchors[id(source)] = source
         self._validated_anchors[id(target)] = target
         self._register_required(target)
-        if source.properties is None or target.properties is None:
+        if not descend_properties or source.properties is None or target.properties is None:
             return
         for name, original in source.properties.items():
             replacement = target.properties.get(name)
@@ -327,12 +417,9 @@ class ValidatedSchemaOriginIndex:
         """Follow validated children of a producer that preserves a single input shape."""
         if source is target:
             return
-        self.derive(source, target, relation)
+        self.derive(source, target, relation, descend_properties=False)
         completed = dict(_schema_children(target))
         for tokens, original in _schema_children(source):
-            if tokens[0] == "properties":
-                # The general property producer has already established these edges.
-                continue
             replacement = completed.get(tokens)
             if isinstance(original, JsonSchemaObject) and isinstance(replacement, JsonSchemaObject):
                 self.derive_preserved_shape(original, replacement, relation)
@@ -345,30 +432,13 @@ class ValidatedSchemaOriginIndex:
         producers: dict[int, tuple[JsonSchemaObject | bool, ...]],
     ) -> None:
         """Compose actual raw helper results with their final validated children."""
-        pending = [(raw, target)]
-        while pending:
-            current, completed = pending.pop()
+        for current, completed in iter_materialized_schemas(raw, target):
             sources = producers.get(id(current), ())
             for source in sources:
                 if isinstance(source, JsonSchemaObject):
                     self.derive(source, completed, "allof_root_materialization")
             if len(sources) == 1 and isinstance(source := sources[0], JsonSchemaObject):
                 self.derive_preserved_shape(source, completed, "allof_root_materialization")
-            for tokens, child in _schema_children(completed):
-                if isinstance(child, bool):
-                    continue
-                original: object = current
-                for token in tokens:
-                    match original:
-                        case dict():
-                            original = cast("Mapping[str, object]", original).get(token)
-                        case list():
-                            original = cast("list[object]", original)[int(token)]
-                        case _:
-                            msg = "A root materialization child has no actual raw producer"
-                            raise BindingCaptureError(msg)
-                if isinstance(original, dict):
-                    pending.append((cast("dict[str, object]", original), child))
 
     @capture_errors
     def derive_combined_common(
@@ -380,20 +450,48 @@ class ValidatedSchemaOriginIndex:
         sequences are concatenated by that producer before any branch filtering;
         their original ordinals remain local to their respective source nodes.
         """
-        for attribute, parent_nodes, specific, completed in (
-            ("allOf", parent.allOf, branch.allOf if isinstance(branch, JsonSchemaObject) else [], target.allOf),
-            ("anyOf", parent.anyOf, branch.anyOf if isinstance(branch, JsonSchemaObject) else [], target.anyOf),
-            ("oneOf", parent.oneOf, branch.oneOf if isinstance(branch, JsonSchemaObject) else [], target.oneOf),
+        common = {tokens: child for tokens, child in _schema_children(parent) if tokens[0] != keyword}
+        specific = dict(_schema_children(branch)) if isinstance(branch, JsonSchemaObject) else {}
+        for attribute, parent_nodes, branch_nodes, completed in (
+            ("allOf", parent.allOf, branch.allOf if isinstance(branch, JsonSchemaObject) else None, target.allOf),
+            ("anyOf", parent.anyOf, branch.anyOf if isinstance(branch, JsonSchemaObject) else None, target.anyOf),
+            ("oneOf", parent.oneOf, branch.oneOf if isinstance(branch, JsonSchemaObject) else None, target.oneOf),
+            (
+                "prefixItems",
+                parent.prefixItems,
+                branch.prefixItems if isinstance(branch, JsonSchemaObject) else None,
+                target.prefixItems,
+            ),
+            ("items", parent.items, branch.items if isinstance(branch, JsonSchemaObject) else None, target.items),
         ):
-            common = [] if attribute == keyword else parent_nodes
-            if len(common) + len(specific) != len(completed):
+            common_nodes = () if attribute == keyword or parent_nodes is None else parent_nodes
+            specific_nodes = () if branch_nodes is None else branch_nodes
+            if not isinstance(common_nodes, (list, tuple)) or not isinstance(specific_nodes, (list, tuple)):
+                continue
+            if completed is None and not common_nodes and not specific_nodes:
+                continue
+            common_count = len(cast("Sequence[object]", common_nodes))
+            specific_count = len(cast("Sequence[object]", specific_nodes))
+            if not isinstance(completed, list) or common_count + specific_count != len(cast("list[object]", completed)):
                 msg = "A combined common composition does not match its actual materialization"
                 raise BindingCaptureError(msg)
-            for offset, sources in ((0, common), (len(common), specific)):
-                for ordinal, source in enumerate(sources):
-                    result = completed[offset + ordinal]
-                    if isinstance(source, JsonSchemaObject) and isinstance(result, JsonSchemaObject):
-                        self.derive(source, result, "combined_materialization")
+            for ordinal in reversed(range(specific_count)):
+                specific[attribute, str(common_count + ordinal)] = specific.pop((attribute, str(ordinal)))
+        for tokens, completed in _schema_children(target):
+            if not isinstance(completed, JsonSchemaObject):
+                continue
+            sources = [
+                source for source in (common.get(tokens), specific.get(tokens)) if isinstance(source, JsonSchemaObject)
+            ]
+            for source in sources:
+                self.derive(source, completed, "combined_materialization", descend_properties=False)
+            match sources:
+                case [source]:
+                    self.derive_preserved_shape(source, completed, "combined_materialization")
+                case [common_source, branch_source]:
+                    self.derive_combined_common(common_source, completed, "", branch=branch_source)
+                case _:
+                    pass
 
     def _register_required(self, obj: JsonSchemaObject) -> None:
         if obj.required:

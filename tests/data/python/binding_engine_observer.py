@@ -70,6 +70,12 @@ _ENGINE_CALLS = OBSERVED | frozenset({
     "model_validate",
     "model_dump",
     "model_copy",
+    "has_ref_with_schema_keywords",
+    "_get_inherited_type_shape",
+    "_resolve_inherited_parent_property",
+    "_resolve_inherited_child_ref",
+    "_merge_inherited_type_shape_dict",
+    "_deep_merge",
 })
 
 

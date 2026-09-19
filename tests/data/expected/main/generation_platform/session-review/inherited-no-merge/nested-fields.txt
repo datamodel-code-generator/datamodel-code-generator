@@ -1,0 +1,15 @@
+{
+  "Detail.code": [
+    "/components/schemas/Child/allOf/1/properties/payload/properties/detail/properties/code",
+    "/components/schemas/Detail/properties/code"
+  ],
+  "Detail.count": [
+    "/components/schemas/Detail/properties/count"
+  ],
+  "Payload.label": [
+    "/components/schemas/Node/properties/label"
+  ],
+  "Node.label": [
+    "/components/schemas/Node/properties/label"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "unknown_fields": 0,
+  "retained_graph": 0,
+  "identical_model_bytes": true,
+  "identical_engine_calls": true
+}

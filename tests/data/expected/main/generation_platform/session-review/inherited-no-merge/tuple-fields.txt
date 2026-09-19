@@ -1,0 +1,15 @@
+{
+  "PayloadItem.code": [
+    "/components/schemas/Child/allOf/1/properties/payload/prefixItems/0/properties/code",
+    "/components/schemas/Parent/properties/payload/prefixItems/0/properties/code"
+  ],
+  "PayloadItem1.code": [
+    "/components/schemas/Parent/properties/payload/prefixItems/1/properties/code"
+  ],
+  "PayloadItem2.code": [
+    "/components/schemas/Parent/properties/payload/prefixItems/0/properties/code"
+  ],
+  "PayloadItem3.code": [
+    "/components/schemas/Parent/properties/payload/prefixItems/1/properties/code"
+  ]
+}

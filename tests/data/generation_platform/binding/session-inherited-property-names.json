@@ -1,0 +1,26 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Merged property name constraints",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Alias": {
+        "$ref": "#/components/schemas/Names",
+        "minProperties": 1
+      },
+      "Names": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "pattern": "^x"
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
