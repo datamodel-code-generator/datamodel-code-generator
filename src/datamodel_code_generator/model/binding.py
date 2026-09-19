@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import tokenize
 from dataclasses import dataclass, replace
+from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from io import StringIO
 from itertools import starmap
@@ -874,8 +875,7 @@ class _TypePlacementMatcher:
         self._match(callee, application[0], path)
         return self._match_keywords(keywords, application[1])
 
-    @staticmethod
-    def _match_keywords(keywords: tuple[tuple[str, TypeArgument], ...], arguments: tuple[Tokens, ...]) -> bool:
+    def _match_keywords(self, keywords: tuple[tuple[str, TypeArgument], ...], arguments: tuple[Tokens, ...]) -> bool:
         actual_keywords = tuple(_split(argument, "=") for argument in arguments)
         matched = len(actual_keywords) == len(keywords)
         if matched:
@@ -883,12 +883,29 @@ class _TypePlacementMatcher:
                 if len(pair) != _PAIR_SIZE or _text(pair[0]) != name:
                     matched = False
                     break
-                matched = matched and (
-                    _text(pair[1]) == _text(_expression_tokens(value.text))
-                    if isinstance(value, SourceExpression)
-                    else _literal_or_syntax(pair[1]) == value
-                )
+                matched = matched and self._match_argument(value, pair[1])
         return matched
+
+    def _match_argument(self, expected: TypeArgument, tokens: Tokens) -> bool:
+        match expected:
+            case SourceExpression(text):
+                return _text(tokens) == _text(_expression_tokens(text))
+            case LiteralScalar("decimal", Decimal() as value):
+                application = _application(tokens, "(")
+                if (
+                    application is None
+                    or _resolved_name(application[0], self.bindings) != "decimal.Decimal"
+                    or len(application[1]) != 1
+                    or (literal := _string_literal(application[1][0])) is None
+                ):
+                    return False
+                try:
+                    actual = Decimal(literal)
+                except InvalidOperation:
+                    return False
+                return actual.is_finite() and actual == value
+            case _:
+                return _literal_or_syntax(tokens) == expected
 
 
 class _ArtifactIndexBuilder:

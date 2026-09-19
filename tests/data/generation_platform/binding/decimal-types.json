@@ -1,0 +1,13 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Decimal constraints", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Prices": {
+      "type": "object",
+      "properties": {
+        "price": {"type": "number", "multipleOf": 0.1, "minimum": -1.5, "maximum": 12.3}
+      }
+    }
+  }}
+}

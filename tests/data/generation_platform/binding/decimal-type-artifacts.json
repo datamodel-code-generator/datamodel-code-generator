@@ -1,0 +1,12 @@
+[
+  {"id": "original", "old": "", "new": "", "error": false},
+  {"id": "equivalent-exponent", "old": "Decimal('0.1')", "new": "Decimal('1e-1')", "error": false},
+  {"id": "different-value", "old": "Decimal('0.1')", "new": "Decimal('0.2')", "error": true},
+  {"id": "plain-float", "old": "Decimal('0.1')", "new": "0.1", "error": true},
+  {"id": "different-callee", "old": "Decimal('0.1')", "new": "float('0.1')", "error": true},
+  {"id": "extra-argument", "old": "Decimal('0.1')", "new": "Decimal('0.1', None)", "error": true},
+  {"id": "non-string", "old": "Decimal('0.1')", "new": "Decimal(0.1)", "error": true},
+  {"id": "invalid-value", "old": "Decimal('0.1')", "new": "Decimal('invalid')", "error": true},
+  {"id": "infinity", "old": "Decimal('0.1')", "new": "Decimal('Infinity')", "error": true},
+  {"id": "signaling-nan", "old": "Decimal('0.1')", "new": "Decimal('sNaN')", "error": true}
+]
