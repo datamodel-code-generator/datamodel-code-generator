@@ -73,14 +73,16 @@ class SourceLease:
             raise BindingCaptureError(msg)
         for token in location.pointer[1:].split("/"):
             key = token.replace("~1", "/").replace("~0", "~")
-            try:  # Share lookup error conversion.
-                match value:
-                    case dict():
-                        value = value[key]
-                    case list() if key == "0" or (key.isascii() and key.isdecimal() and not key.startswith("0")):
-                        value = value[int(key)]
-                    case _:
+            match value:
+                case dict():
+                    pass
+                case list():
+                    if key != "0" and not (key.isascii() and key.isdecimal() and not key.startswith("0")):
                         raise BindingCaptureError(msg)
+                case _:
+                    raise BindingCaptureError(msg)
+            try:
+                value = value[key] if isinstance(value, dict) else value[int(key)]
             except (KeyError, IndexError, ValueError):
                 raise BindingCaptureError(msg) from None
         return value
