@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info:
+  title: Aliased source occurrences
+  version: '1'
+paths: {}
+components:
+  schemas:
+    First: &schema
+      type: object
+      properties:
+        ship-to:
+          type: string
+    Second: *schema

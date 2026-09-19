@@ -1015,7 +1015,7 @@ def _create_parser_config(
     additional_options: ParserConfigDict,
 ) -> Any:
     """Create the lightweight config for already-validated generation options."""
-    values = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
+    values: dict[str, Any] = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
     values.update(dict(additional_options))
     parser_config = _get_internal_parser_config_model().model_construct(**values)
     return _configure_parser_config_context(parser_config, values, generate_config)
@@ -1051,7 +1051,7 @@ def _create_typed_parser_config(
     and CLI-only options remain owned by ``GenerateConfig`` instead of leaking
     into an ``extra=allow`` parser bag.
     """
-    values = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
+    values: dict[str, Any] = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
     values.update(dict(additional_options))
     # ``extra="forbid"`` makes model_construct ignore non-parser generation
     # fields without allocating a second filtered dictionary.
@@ -1389,11 +1389,14 @@ def _build_parser(  # noqa: PLR0911, PLR0913
         case InputFileType.OpenAPI:
             from datamodel_code_generator.parser.openapi import OpenAPIParser  # noqa: PLC0415
 
-            openapi_additional_options: OpenAPIParserConfigDict = {
-                **_openapi_shared_options(config),
-                "openapi_version": openapi_version,
-                **additional_options,
-            }
+            openapi_additional_options = cast(
+                "OpenAPIParserConfigDict",
+                {
+                    **_openapi_shared_options(config),
+                    "openapi_version": openapi_version,
+                    **additional_options,
+                },
+            )
             parser_config = _create_parser_config(config, openapi_additional_options)
             if openapi_parser_factory is None and OpenAPIScope.Api in (config.openapi_scopes or ()):
                 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser  # noqa: PLC0415
@@ -1405,46 +1408,58 @@ def _build_parser(  # noqa: PLR0911, PLR0913
         case InputFileType.AsyncAPI:
             from datamodel_code_generator.parser.asyncapi import AsyncAPIParser  # noqa: PLC0415
 
-            asyncapi_additional_options: AsyncAPIParserConfigDict = {
-                **_openapi_shared_options(config),
-                "asyncapi_version": asyncapi_version,
-                **additional_options,
-            }
+            asyncapi_additional_options = cast(
+                "AsyncAPIParserConfigDict",
+                {
+                    **_openapi_shared_options(config),
+                    "asyncapi_version": asyncapi_version,
+                    **additional_options,
+                },
+            )
             parser_config = _create_parser_config(config, asyncapi_additional_options)
             return AsyncAPIParser(source=source, config=parser_config)
         case InputFileType.XMLSchema:
             from datamodel_code_generator.parser.xmlschema import XMLSchemaParser  # noqa: PLC0415
 
-            xmlschema_additional_options: XMLSchemaParserConfigDict = {
-                "xmlschema_version": xmlschema_version,
-                **additional_options,
-            }
+            xmlschema_additional_options = cast(
+                "XMLSchemaParserConfigDict",
+                {
+                    "xmlschema_version": xmlschema_version,
+                    **additional_options,
+                },
+            )
             parser_config = _create_parser_config(config, xmlschema_additional_options)
             return XMLSchemaParser(source=source, config=parser_config)
         case InputFileType.Protobuf:
             from datamodel_code_generator.parser.protobuf import ProtobufParser  # noqa: PLC0415
 
-            protobuf_additional_options: ProtobufParserConfigDict = {
-                **additional_options,
-                "protobuf_version": protobuf_version,
-                "skip_root_model": True,
-            }
+            protobuf_additional_options = cast(
+                "ProtobufParserConfigDict",
+                {
+                    **additional_options,
+                    "protobuf_version": protobuf_version,
+                    "skip_root_model": True,
+                },
+            )
             parser_config = _create_parser_config(config, protobuf_additional_options)
             return ProtobufParser(source=source, config=parser_config)
         case InputFileType.Avro:
             from datamodel_code_generator.parser.avro import AvroParser  # noqa: PLC0415
 
-            avro_additional_options: AvroParserConfigDict = {**additional_options}
+            avro_additional_options = cast("AvroParserConfigDict", {**additional_options})
             parser_config = _create_parser_config(config, avro_additional_options)
             return AvroParser(source=source, config=parser_config)
         case InputFileType.GraphQL:
             from datamodel_code_generator.parser.graphql import GraphQLParser  # noqa: PLC0415
 
-            graphql_additional_options: GraphQLParserConfigDict = {
-                "data_model_scalar_type": data_model_types.scalar_model,
-                "data_model_union_type": data_model_types.union_model,
-                **additional_options,
-            }
+            graphql_additional_options = cast(
+                "GraphQLParserConfigDict",
+                {
+                    "data_model_scalar_type": data_model_types.scalar_model,
+                    "data_model_union_type": data_model_types.union_model,
+                    **additional_options,
+                },
+            )
             parser_config = _create_parser_config(config, graphql_additional_options)
             return GraphQLParser(source=source, config=parser_config)
         case _:
@@ -2152,6 +2167,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         case Path() as input_path if not input_path.is_absolute():
             input_ = (caller_cwd / input_path.expanduser()).resolve()
         case [Path(), *_] as input_paths if input_file_type != InputFileType.MCPTools:
+            input_paths = cast("list[Path]", input_paths)
             if any(not path.is_absolute() for path in input_paths):
                 input_ = [
                     path if path.is_absolute() else (caller_cwd / path.expanduser()).resolve() for path in input_paths
@@ -2627,7 +2643,9 @@ def _run_generation(  # noqa: PLR0914
             if additional_options["base_path"] is None and not isinstance(source, Path):
                 match input_:
                     case [Path(), *_] as input_paths:
-                        additional_options["base_path"] = _path_list_base_path(input_paths, caller_cwd)
+                        additional_options["base_path"] = _path_list_base_path(
+                            cast("list[Path]", input_paths), caller_cwd
+                        )
                     case _:
                         additional_options["base_path"] = caller_cwd
             schema_versions = _resolve_schema_versions(input_file_type, config.schema_version)

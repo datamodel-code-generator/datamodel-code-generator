@@ -159,7 +159,7 @@ def _rewrite_runtime_value(
     if isinstance(value, PythonRuntimeExpression):
         return value.with_import_aliases(aliases)
     if type(value) is dict:
-        return _rewrite_runtime_mapping(value, aliases)
+        return _rewrite_runtime_mapping(cast("dict[object, object]", value), aliases)
     if (items := _runtime_expression_container_items(value)) is None:
         return value
     rewritten = tuple(_rewrite_runtime_value(item, aliases) for item in items)

@@ -1,0 +1,23 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Copied field origins", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "raw-note": {"type": "string", "minLength": 1, "default": "base"},
+        "id": {"type": "integer", "readOnly": true},
+        "secret": {"type": "string", "writeOnly": true}
+      }
+    },
+    "Child": {"allOf": [
+      {"$ref": "#/components/schemas/Base"},
+      {"type": "object", "properties": {"raw-note": {"default": null}}}
+    ]},
+    "GrandChild": {"allOf": [
+      {"$ref": "#/components/schemas/Child"},
+      {"type": "object", "properties": {"raw-note": {"description": "Inherited note"}}}
+    ]}
+  }}
+}

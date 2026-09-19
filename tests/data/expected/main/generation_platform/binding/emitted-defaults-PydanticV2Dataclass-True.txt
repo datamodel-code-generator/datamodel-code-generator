@@ -1,0 +1,141 @@
+{
+  "required": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "absent",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [],
+    "constructor_keywords": [],
+    "meta_layers": []
+  },
+  "missing": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "pydantic_missing",
+    "emitted_default_value": null,
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [],
+    "constructor_keywords": [],
+    "meta_layers": []
+  },
+  "explicit_null": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "none",
+    "emitted_default_value": {
+      "node": "LiteralScalar",
+      "kind": "none",
+      "value": null
+    },
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": true,
+    "qualifiers": [],
+    "constructor_keywords": [],
+    "meta_layers": []
+  },
+  "literal": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "literal",
+    "emitted_default_value": {
+      "node": "LiteralScalar",
+      "kind": "int",
+      "value": 4
+    },
+    "factory_present": false,
+    "factory_expression": null,
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": true,
+    "qualifiers": [],
+    "constructor_keywords": [],
+    "meta_layers": []
+  },
+  "items": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "factory",
+    "emitted_default_value": null,
+    "factory_present": true,
+    "factory_expression": {
+      "node": "SourceExpression",
+      "text": "lambda :[1 ,2 ]"
+    },
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": true,
+    "qualifiers": [],
+    "constructor_keywords": [
+      [
+        "default_factory",
+        {
+          "node": "SourceExpression",
+          "text": "lambda :[1 ,2 ]"
+        }
+      ]
+    ],
+    "meta_layers": []
+  },
+  "mapping": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "factory",
+    "emitted_default_value": null,
+    "factory_present": true,
+    "factory_expression": {
+      "node": "SourceExpression",
+      "text": "lambda :{'enabled':True }"
+    },
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": true,
+    "qualifiers": [],
+    "constructor_keywords": [
+      [
+        "default_factory",
+        {
+          "node": "SourceExpression",
+          "text": "lambda :{'enabled':True }"
+        }
+      ]
+    ],
+    "meta_layers": []
+  },
+  "factory": {
+    "node": "EmittedFieldFacts",
+    "emitted": true,
+    "emitted_default_kind": "factory",
+    "emitted_default_value": null,
+    "factory_present": true,
+    "factory_expression": {
+      "node": "SourceExpression",
+      "text": "list"
+    },
+    "unset_default": false,
+    "unset_type_in_annotation": false,
+    "null_type_in_annotation": false,
+    "qualifiers": [],
+    "constructor_keywords": [
+      [
+        "default_factory",
+        {
+          "node": "SourceExpression",
+          "text": "list"
+        }
+      ]
+    ],
+    "meta_layers": []
+  }
+}

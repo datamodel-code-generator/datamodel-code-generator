@@ -1,0 +1,8 @@
+{
+  "ship-to": [
+    "/components/schemas/Arr/allOf/0/items/properties/ship-to"
+  ],
+  "map-key": [
+    "/components/schemas/Map/allOf/0/additionalProperties/properties/map-key"
+  ]
+}

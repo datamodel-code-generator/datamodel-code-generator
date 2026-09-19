@@ -1,0 +1,8 @@
+[
+  [
+    "/components/schemas/First/properties/ship-to"
+  ],
+  [
+    "/components/schemas/Second/properties/ship-to"
+  ]
+]

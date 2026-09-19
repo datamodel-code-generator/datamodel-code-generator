@@ -1,0 +1,352 @@
+{
+  "Types": {
+    "flag": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "BuiltinType",
+        "name": "bool"
+      },
+      "reason": null
+    },
+    "count": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "ConstructorType",
+        "callable": {
+          "node": "ImportedType",
+          "import_": {
+            "node": "Import",
+            "import_": "conint",
+            "from_": "pydantic",
+            "alias": null,
+            "reference_path": null,
+            "keep_unaliased": false
+          },
+          "qualified_suffix": []
+        },
+        "keywords": [
+          [
+            "ge",
+            {
+              "node": "LiteralScalar",
+              "kind": "int",
+              "value": 2
+            }
+          ]
+        ]
+      },
+      "reason": null
+    },
+    "name": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "ConstructorType",
+        "callable": {
+          "node": "ImportedType",
+          "import_": {
+            "node": "Import",
+            "import_": "constr",
+            "from_": "pydantic",
+            "alias": null,
+            "reference_path": null,
+            "keep_unaliased": false
+          },
+          "qualified_suffix": []
+        },
+        "keywords": [
+          [
+            "pattern",
+            {
+              "node": "SourceExpression",
+              "text": "r'^a/b~c$'"
+            }
+          ]
+        ]
+      },
+      "reason": null
+    },
+    "moment": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "AwareDatetime",
+          "from_": "pydantic",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      },
+      "reason": null
+    },
+    "nullable": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          },
+          {
+            "node": "NoneType"
+          }
+        ],
+        "preserve_order": false
+      },
+      "reason": null
+    },
+    "items": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "int"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      },
+      "reason": null
+    },
+    "unique": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "set"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      },
+      "reason": null
+    },
+    "dictionary": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "dict"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          },
+          {
+            "node": "BuiltinType",
+            "name": "bool"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      },
+      "reason": null
+    },
+    "choice": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          },
+          {
+            "node": "BuiltinType",
+            "name": "int"
+          }
+        ],
+        "preserve_order": false
+      },
+      "reason": null
+    },
+    "position": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "UnionType",
+            "members": [
+              {
+                "node": "BuiltinType",
+                "name": "str"
+              },
+              {
+                "node": "BuiltinType",
+                "name": "int"
+              }
+            ],
+            "preserve_order": false
+          }
+        ],
+        "tuple_form": "not_tuple"
+      },
+      "reason": null
+    },
+    "child": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "GeneratedSymbolType",
+        "symbol": 1
+      },
+      "reason": null
+    },
+    "nullable_choice": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "BuiltinType",
+            "name": "int"
+          },
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          },
+          {
+            "node": "NoneType"
+          }
+        ],
+        "preserve_order": false
+      },
+      "reason": null
+    },
+    "nullable_items": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "UnionType",
+            "members": [
+              {
+                "node": "BuiltinType",
+                "name": "int"
+              },
+              {
+                "node": "BuiltinType",
+                "name": "str"
+              },
+              {
+                "node": "NoneType"
+              }
+            ],
+            "preserve_order": false
+          }
+        ],
+        "tuple_form": "not_tuple"
+      },
+      "reason": null
+    },
+    "external": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      "reason": null
+    },
+    "literal": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "LiteralType",
+        "values": [
+          {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": true
+          },
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 1
+          },
+          {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "one"
+          }
+        ]
+      },
+      "reason": null
+    },
+    "native": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "UUID",
+          "from_": "uuid",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      },
+      "reason": null
+    },
+    "bound_native": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "BoundType",
+        "binding": {
+          "node": "BoundPythonType",
+          "expression": {
+            "node": "PythonTypeRuntimeSymbol",
+            "module": "argparse",
+            "qualname_parts": [
+              "HelpFormatter",
+              "_Section"
+            ]
+          },
+          "imports": [
+            {
+              "node": "Import",
+              "import_": "argparse",
+              "from_": null,
+              "alias": null,
+              "reference_path": null,
+              "keep_unaliased": false
+            }
+          ]
+        }
+      },
+      "reason": null
+    }
+  },
+  "Child": {
+    "value": {
+      "node": "TypeProjection",
+      "value": {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      "reason": null
+    }
+  }
+}

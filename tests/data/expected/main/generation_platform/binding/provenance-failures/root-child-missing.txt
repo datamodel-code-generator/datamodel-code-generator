@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A root-value child merge lost an input occurrence"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

@@ -33,7 +33,7 @@ from datamodel_code_generator.enums import HTTPBackend
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from types import TracebackType
-    from typing import Protocol, overload
+    from typing import Any, Protocol, overload
 
     class _ResponseHeaders(Protocol):
         @overload
@@ -603,7 +603,7 @@ def _create_pinned_transport_type(
 ) -> _HTTPTransportFactory[_HTTPTransport]:
     """Create one transport class for a matched HTTP client/core pair."""
 
-    class _PinnedHTTPTransport(httpx_module.BaseTransport):
+    class _PinnedHTTPTransport(cast("Any", httpx_module.BaseTransport)):
         """Transport bound to a DNS-pinned HTTP connection pool."""
 
         __slots__ = ("_pool",)

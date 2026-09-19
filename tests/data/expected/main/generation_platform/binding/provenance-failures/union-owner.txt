@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "An allOf union does not match its direct loader frame"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

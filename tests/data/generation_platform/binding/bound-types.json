@@ -1,0 +1,81 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bound types",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Bindings": {
+        "type": "object",
+        "properties": {
+          "handler": {
+            "type": "string",
+            "x-python-type": "Callable[[uuid.UUID, Literal['uuid.UUID', True, 1]], str]"
+          },
+          "variadic": {
+            "type": "string",
+            "x-python-type": "Callable[..., str]"
+          },
+          "pair": {
+            "type": "string",
+            "x-python-type": "tuple[int, str]"
+          },
+          "choice": {
+            "type": "string",
+            "x-python-type": "uuid.UUID | str"
+          },
+          "optional_choice": {
+            "type": "string",
+            "x-python-type": "uuid.UUID | str"
+          },
+          "empty": {
+            "type": "string",
+            "x-python-type": "Callable[[], bool]"
+          },
+          "empty_tuple": {
+            "type": "string",
+            "x-python-type": "tuple[()]"
+          },
+          "native_field": {
+            "$ref": "#/components/schemas/NativeField"
+          }
+        },
+        "required": [
+          "handler",
+          "variadic",
+          "pair",
+          "choice",
+          "empty",
+          "empty_tuple",
+          "native_field"
+        ]
+      },
+      "NativeField": {
+        "x-python-import": {
+          "module": "external",
+          "name": "Model",
+          "native-field": {
+            "module": "external",
+            "qualname": "Model",
+            "fields": [
+              {
+                "name": "items",
+                "arguments": [
+                  0
+                ],
+                "pydantic": true
+              },
+              {
+                "name": "raw-key",
+                "arguments": [],
+                "pydantic": false
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

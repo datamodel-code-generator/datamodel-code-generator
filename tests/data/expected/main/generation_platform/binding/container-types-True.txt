@@ -1,0 +1,64 @@
+{
+  "values": {
+    "node": "GenericType",
+    "base": {
+      "node": "BuiltinType",
+      "name": "frozenset"
+    },
+    "arguments": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    ],
+    "tuple_form": "not_tuple"
+  },
+  "sequence": {
+    "node": "GenericType",
+    "base": {
+      "node": "ImportedType",
+      "import_": {
+        "node": "Import",
+        "import_": "Sequence",
+        "from_": "collections.abc",
+        "alias": null,
+        "reference_path": null,
+        "keep_unaliased": false
+      },
+      "qualified_suffix": []
+    },
+    "arguments": [
+      {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    ],
+    "tuple_form": "not_tuple"
+  },
+  "mapping": {
+    "node": "GenericType",
+    "base": {
+      "node": "ImportedType",
+      "import_": {
+        "node": "Import",
+        "import_": "Mapping",
+        "from_": "collections.abc",
+        "alias": null,
+        "reference_path": null,
+        "keep_unaliased": false
+      },
+      "qualified_suffix": []
+    },
+    "arguments": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      {
+        "node": "BuiltinType",
+        "name": "bool"
+      }
+    ],
+    "tuple_form": "not_tuple"
+  }
+}

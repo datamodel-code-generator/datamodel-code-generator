@@ -169,7 +169,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
     except ImportError as exc:  # pragma: no cover
         msg = "protobuf input requires grpcio-tools. Install datamodel-code-generator[protobuf]."
         raise Error(msg) from exc
-    return protoc, Path(cast("str", grpc_tools.__file__)).parent / "_proto"
+    return protoc, Path(grpc_tools.__file__).parent / "_proto"
 
 
 def _load_descriptor_pb2() -> Any:

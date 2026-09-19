@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "Combined reference decisions are out of occurrence order"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

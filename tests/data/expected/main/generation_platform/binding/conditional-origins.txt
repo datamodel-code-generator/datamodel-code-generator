@@ -1,0 +1,14 @@
+{
+  "postal-code": [
+    "/components/schemas/Choice/then/properties/ship-to/properties/postal-code"
+  ],
+  "enabled": [
+    "/components/schemas/Choice/properties/enabled"
+  ],
+  "ship-to": [
+    "/components/schemas/Choice/then/properties/ship-to"
+  ],
+  "reason": [
+    "/components/schemas/Choice/else/properties/reason"
+  ]
+}

@@ -1,0 +1,12 @@
+[
+  {
+    "source": "/components/requestBodies/Events/content/application~1x-ndjson/itemSchema",
+    "kind": "item_stream_array",
+    "array_origins": [
+      "/components/requestBodies/Events/content/application~1x-ndjson/itemSchema"
+    ],
+    "reference_origins": [
+      "/components/requestBodies/Events/content/application~1x-ndjson/itemSchema"
+    ]
+  }
+]

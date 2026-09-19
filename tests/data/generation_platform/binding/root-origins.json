@@ -1,0 +1,9 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Root origins", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Arr": {"allOf": [{"type": "array", "items": {"type": "object", "properties": {"ship-to": {"type": "string"}}}}]},
+    "Map": {"allOf": [{"type": "object", "additionalProperties": {"type": "object", "properties": {"map-key": {"type": "integer"}}}}]}
+  }}
+}

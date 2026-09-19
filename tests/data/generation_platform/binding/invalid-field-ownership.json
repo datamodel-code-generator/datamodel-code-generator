@@ -1,0 +1,26 @@
+[
+  {
+    "mutation": "missing_consumer",
+    "reason": "BND_FIELD_UNRESOLVED"
+  },
+  {
+    "mutation": "missing_base",
+    "reason": "BND_FIELD_UNRESOLVED"
+  },
+  {
+    "mutation": "custom_base",
+    "reason": "BND_CUSTOM_BINDING_REQUIRED"
+  },
+  {
+    "mutation": "cycle",
+    "reason": "BND_FIELD_AMBIGUOUS"
+  },
+  {
+    "mutation": "inconsistent_c3",
+    "reason": "BND_FIELD_AMBIGUOUS"
+  },
+  {
+    "mutation": "duplicate_field",
+    "reason": "BND_FIELD_AMBIGUOUS"
+  }
+]

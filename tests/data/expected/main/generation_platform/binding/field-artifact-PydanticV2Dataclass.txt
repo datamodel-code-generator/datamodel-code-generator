@@ -1,0 +1,443 @@
+[
+  {
+    "model": "Types",
+    "field": "flag",
+    "annotation": "Optional [bool ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "count",
+    "annotation": "Optional [conint (ge =2 )]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "name",
+    "annotation": "Optional [constr (pattern =r'^a/b~c$')]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "moment",
+    "annotation": "Optional [AwareDatetime ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable",
+    "annotation": "Optional [str ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "items",
+    "annotation": "Optional [List [int ]]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "unique",
+    "annotation": "Optional [Set [str ]]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "dictionary",
+    "annotation": "Optional [Dict [str ,bool ]]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "choice",
+    "annotation": "Optional [Union [str ,int ]]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "position",
+    "annotation": "Optional [List [Union [str ,int ]]]",
+    "assignment": "Field (None ,max_length =2 )",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [
+        [
+          "max_length",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 2
+          }
+        ]
+      ],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "child",
+    "annotation": "Optional [Child ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable_choice",
+    "annotation": "Optional [Union [int ,str ]]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable_items",
+    "annotation": "Optional [List [Optional [Union [int ,str ]]]]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "external",
+    "annotation": "Optional [str ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "literal",
+    "annotation": "Optional [Literal [True ,1 ,'one']]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "native",
+    "annotation": "Optional [UUID ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "bound_native",
+    "annotation": "Optional [argparse .HelpFormatter ._Section ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Child",
+    "field": "value",
+    "annotation": "Optional [str ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  }
+]

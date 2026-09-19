@@ -8,7 +8,7 @@ from __future__ import annotations
 import keyword
 from functools import wraps
 from math import isfinite
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
 from datamodel_code_generator import Error
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
@@ -66,6 +66,7 @@ class _MsgspecFieldRenderPlan(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
+    from collections.abc import Callable
     from pathlib import Path
 
     from datamodel_code_generator.reference import Reference
@@ -86,9 +87,9 @@ DataModelFieldBaseT = TypeVar("DataModelFieldBaseT", bound=DataModelFieldBase)
 
 def import_extender(cls: type[DataModelFieldBaseT]) -> type[DataModelFieldBaseT]:
     """Extend imports property with msgspec-specific imports."""
-    original_imports: property = cls.imports
+    original_getter = cast("Callable[[DataModelFieldBaseT], tuple[Import, ...]]", cls.imports.fget)
 
-    @wraps(original_imports.fget)
+    @wraps(original_getter)
     def new_imports(self: DataModelFieldBaseT) -> tuple[Import, ...]:
         if self.is_class_var:
             return ()
@@ -103,12 +104,12 @@ def import_extender(cls: type[DataModelFieldBaseT]) -> type[DataModelFieldBaseT]
                 extra_imports.append(IMPORT_MSGSPEC_META)
             if plan.needs_unset_import:
                 extra_imports.append(IMPORT_MSGSPEC_UNSET)
-        imports = original_imports.fget(self)
+        imports = original_getter(self)
         if isinstance(self, DataModelField) and self._not_required and not self.nullable and self.data_type.is_optional:
             imports = tuple(import_ for import_ in imports if import_ != IMPORT_OPTIONAL)
         return chain_as_tuple(imports, extra_imports)
 
-    cls.imports = property(new_imports)
+    setattr(cls, "imports", property(new_imports))  # ruff: ignore[set-attr-with-constant] -- Class descriptor.
     return cls
 
 

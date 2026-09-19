@@ -1,0 +1,38 @@
+[
+  {
+    "id": "valid",
+    "old": "",
+    "new": "",
+    "error": false
+  },
+  {
+    "id": "discriminator",
+    "old": "Field(discriminator='kind')",
+    "new": "Field(discriminator='other')",
+    "error": true
+  },
+  {
+    "id": "missing-metadata",
+    "old": "Annotated[Union[A, B], Field(discriminator='kind')]",
+    "new": "Union[A, B]",
+    "error": true
+  },
+  {
+    "id": "wrong-callee",
+    "old": "Field(discriminator='kind')",
+    "new": "BaseModel(discriminator='kind')",
+    "error": true
+  },
+  {
+    "id": "missing-keyword",
+    "old": "Field(discriminator='kind')",
+    "new": "Field()",
+    "error": true
+  },
+  {
+    "id": "positional",
+    "old": "Field(discriminator='kind')",
+    "new": "Field('kind')",
+    "error": true
+  }
+]
