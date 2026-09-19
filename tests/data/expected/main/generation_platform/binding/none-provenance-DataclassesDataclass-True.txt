@@ -1,0 +1,44 @@
+{
+  "required": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "absent",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  },
+  "missing": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "none",
+    "origin": "synthesized_optional_fallback",
+    "annotation_null_origin": "optional_fallback"
+  },
+  "explicit_null": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "none",
+    "origin": "schema_default",
+    "annotation_null_origin": "optional_fallback"
+  },
+  "literal": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "value",
+    "origin": "not_applicable",
+    "annotation_null_origin": "optional_fallback"
+  },
+  "items": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "factory",
+    "origin": "not_applicable",
+    "annotation_null_origin": "optional_fallback"
+  },
+  "mapping": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "factory",
+    "origin": "not_applicable",
+    "annotation_null_origin": "optional_fallback"
+  },
+  "factory": {
+    "node": "NoneDefaultProvenance",
+    "emitted_default": "factory",
+    "origin": "not_applicable",
+    "annotation_null_origin": "none"
+  }
+}

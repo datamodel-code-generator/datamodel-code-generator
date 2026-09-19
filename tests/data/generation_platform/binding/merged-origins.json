@@ -1,0 +1,17 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Merged origins", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "RefUse": {"anyOf": [{
+      "$ref": "#/components/schemas/Base",
+      "properties": {"side-key": {"type": "object", "properties": {"nested-key": {"type": "string"}}}}
+    }]},
+    "Combined": {"allOf": [
+      {"$ref": "#/components/schemas/Base"},
+      {"$ref": "#/components/schemas/Other"}
+    ]},
+    "Base": {"type": "object", "properties": {"shared-key": {"type": "string", "minLength": 1}}},
+    "Other": {"type": "object", "properties": {"shared-key": {"type": "string", "maxLength": 9}}}
+  }}
+}

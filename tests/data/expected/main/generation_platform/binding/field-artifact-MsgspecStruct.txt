@@ -1,0 +1,306 @@
+[
+  {
+    "model": "Types",
+    "field": "flag",
+    "annotation": "Union [bool ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "count",
+    "annotation": "Union [int ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "name",
+    "annotation": "Union [str ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "moment",
+    "annotation": "Union [str ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable",
+    "annotation": "Union [str ,None ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "items",
+    "annotation": "Union [List [int ],UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "unique",
+    "annotation": "Union [Set [str ],UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "dictionary",
+    "annotation": "Union [Dict [str ,bool ],UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "choice",
+    "annotation": "Union [str ,int ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "position",
+    "annotation": "Union [List [Union [str ,int ]],UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "child",
+    "annotation": "Union [Child ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable_choice",
+    "annotation": "Union [Union [int ,str ],None ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "nullable_items",
+    "annotation": "Union [List [Optional [Union [int ,str ]]],UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "external",
+    "annotation": "Union [str ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "literal",
+    "annotation": "Union [Literal [1 ,'one'],bool ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "model": "Child",
+    "field": "value",
+    "annotation": "Union [str ,UnsetType ]",
+    "assignment": "UNSET",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "msgspec_unset",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": true,
+      "unset_type_in_annotation": true,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  }
+]

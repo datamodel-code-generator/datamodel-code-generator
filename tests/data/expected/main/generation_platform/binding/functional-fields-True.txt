@@ -1,0 +1,121 @@
+[
+  {
+    "key": "",
+    "ordinal": 0,
+    "annotation": "Required [str ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "Required"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "key": "ship-to",
+    "ordinal": 1,
+    "annotation": "Required [ReadOnly [str ]]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "Required",
+        "ReadOnly"
+      ],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "key": "quote'",
+    "ordinal": 2,
+    "annotation": "str",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "key": "back\\slash",
+    "ordinal": 3,
+    "annotation": "str",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "key": "class",
+    "ordinal": 4,
+    "annotation": "str",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  },
+  {
+    "key": "naïve",
+    "ordinal": 5,
+    "annotation": "str",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": []
+    }
+  }
+]

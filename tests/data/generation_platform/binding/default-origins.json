@@ -1,0 +1,17 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Default producers", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Defaults": {
+      "type": "object",
+      "properties": {
+        "implicit": {"type": "string"},
+        "schemaNull": {"type": "string", "default": null},
+        "equalOverride": {"type": "string", "default": null},
+        "scopedOverride": {"type": "integer"},
+        "nullable": {"type": ["string", "null"]}
+      }
+    }
+  }}
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "wire": "in",
+    "required": false,
+    "locations": [
+      "/components/schemas/Envelope/properties/ship-to/properties/in"
+    ]
+  },
+  {
+    "wire": "kebab-key",
+    "required": false,
+    "locations": [
+      "/components/schemas/Envelope/properties/a~1b~0c/items/properties/kebab-key"
+    ]
+  },
+  {
+    "wire": "ship-to",
+    "required": true,
+    "locations": [
+      "/components/schemas/Envelope/properties/ship-to"
+    ]
+  },
+  {
+    "wire": "a/b~c",
+    "required": false,
+    "locations": [
+      "/components/schemas/Envelope/properties/a~1b~0c"
+    ]
+  },
+  {
+    "wire": "anything",
+    "required": false,
+    "locations": [
+      "/components/schemas/Envelope/properties/anything"
+    ]
+  },
+  {
+    "wire": "nothing",
+    "required": false,
+    "locations": [
+      "/components/schemas/Envelope/properties/nothing"
+    ]
+  },
+  {
+    "wire": "tuple",
+    "required": false,
+    "locations": [
+      "/components/schemas/Envelope/properties/tuple"
+    ]
+  }
+]

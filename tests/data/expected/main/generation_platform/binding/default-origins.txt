@@ -1,0 +1,42 @@
+{
+  "identical_output": true,
+  "defaults": [
+    {
+      "field": "implicit",
+      "original_has_default": false,
+      "selected_has_default": false,
+      "producer": "original"
+    },
+    {
+      "field": "schemaNull",
+      "original_has_default": true,
+      "selected_has_default": true,
+      "producer": "original"
+    },
+    {
+      "field": "equalOverride",
+      "original_has_default": true,
+      "selected_has_default": true,
+      "producer": "override"
+    },
+    {
+      "field": "scopedOverride",
+      "original_has_default": false,
+      "selected_has_default": true,
+      "producer": "override"
+    },
+    {
+      "field": "nullable",
+      "original_has_default": false,
+      "selected_has_default": false,
+      "producer": "original"
+    }
+  ],
+  "constructions": [
+    "implicit",
+    "schemaNull",
+    "equalOverride",
+    "scopedOverride",
+    "nullable"
+  ]
+}
