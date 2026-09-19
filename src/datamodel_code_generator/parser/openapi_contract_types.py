@@ -78,8 +78,8 @@ def _builtin_type(name: str) -> BuiltinType:
             | "frozenset"
             | "dict"
             | "tuple"
-        ):
-            return BuiltinType(name)
+        ) as builtin:
+            return BuiltinType(builtin)
         case _:
             raise _UnsupportedTypeError(_TYPE_UNSUPPORTED)
 
