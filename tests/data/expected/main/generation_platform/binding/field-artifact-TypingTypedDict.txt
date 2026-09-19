@@ -17,7 +17,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -38,7 +39,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -59,7 +61,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -80,7 +83,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -101,7 +105,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -122,7 +127,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -143,7 +149,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -164,7 +171,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -185,7 +193,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -206,7 +215,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -227,7 +237,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -248,7 +259,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -269,7 +281,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -290,7 +303,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -311,7 +325,52 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "native",
+    "annotation": "NotRequired [UUID ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "bound_native",
+    "annotation": "NotRequired [argparse .HelpFormatter ._Section ]",
+    "assignment": null,
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [
+        "NotRequired"
+      ],
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -332,7 +391,8 @@
       "qualifiers": [
         "NotRequired"
       ],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   }
 ]

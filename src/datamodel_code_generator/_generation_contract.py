@@ -84,6 +84,8 @@ class FieldSlot:
     attempt: AttemptId
     symbol: SymbolId
     field: GraphObjectId
+    index: int
+    name: str
 
 
 Direction: TypeAlias = Literal["request", "response", "neutral"]

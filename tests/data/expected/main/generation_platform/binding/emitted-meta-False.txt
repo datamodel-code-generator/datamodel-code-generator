@@ -1,0 +1,9 @@
+{
+  "integer": [],
+  "number": [],
+  "nested": [],
+  "mapping": [],
+  "choice": [],
+  "nullable": [],
+  "optional": []
+}

@@ -1,6 +1,9 @@
 from __future__ import annotations
+from uuid import UUID
 from typing import Dict, List, Literal, Optional, Set, Union
 from dataclasses import dataclass
+from uuid import UUID
+import argparse
 
 
 
@@ -27,3 +30,5 @@ class Types:
     nullable_items: Optional[List[Optional[Union[int, str]]]] = None
     external: Optional[str] = None
     literal: Optional[Literal[True, 1, 'one']] = None
+    native: Optional[UUID] = None
+    bound_native: Optional[argparse.HelpFormatter._Section] = None

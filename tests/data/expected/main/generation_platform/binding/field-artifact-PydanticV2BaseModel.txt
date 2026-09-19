@@ -19,7 +19,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -42,7 +43,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -65,7 +67,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -88,7 +91,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -111,7 +115,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -134,7 +139,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -157,7 +163,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -180,7 +187,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -203,7 +211,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -235,7 +244,8 @@
             "value": 2
           }
         ]
-      ]
+      ],
+      "meta_layers": []
     }
   },
   {
@@ -258,7 +268,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -281,7 +292,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -304,7 +316,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -327,7 +340,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -350,7 +364,56 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "native",
+    "annotation": "Optional [UUID ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    }
+  },
+  {
+    "model": "Types",
+    "field": "bound_native",
+    "annotation": "Optional [argparse .HelpFormatter ._Section ]",
+    "assignment": "None",
+    "facts": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   },
   {
@@ -373,7 +436,8 @@
       "unset_type_in_annotation": false,
       "null_type_in_annotation": true,
       "qualifiers": [],
-      "constructor_keywords": []
+      "constructor_keywords": [],
+      "meta_layers": []
     }
   }
 ]

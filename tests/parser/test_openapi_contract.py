@@ -790,7 +790,7 @@ def test_side_effect_free_type_projection(backend: DataModelType) -> None:
     """Project real post-render field types without calling annotation/import getters."""
     import sys
 
-    from datamodel_code_generator._generation_contract import FieldSlot, SymbolId
+    from datamodel_code_generator._generation_contract import BoundType, FieldSlot, ImportedType, SymbolId
     from datamodel_code_generator._shared_types import LiteralType
     from datamodel_code_generator.model import get_data_model_types
     from datamodel_code_generator.model.binding import (
@@ -832,17 +832,37 @@ def test_side_effect_free_type_projection(backend: DataModelType) -> None:
         try:
             declarations: list[ExpectedFieldDeclaration] = []
             projections: dict[str, dict[str, object]] = {}
+            native_identity: dict[str, bool] = {}
             for index, model in enumerate(parser.results):
                 fields = projections[model.name] = {}
-                for field in model.fields:
+                for ordinal, field in enumerate(model.fields):
                     projection = projector.project(_type_recipe(field.data_type, parser.binding_ledger, set()))
                     fields[field.name] = type_snapshot(projection)
+                    match field.name:
+                        case "native":
+                            native_identity["existing_import"] = (
+                                isinstance(projection.value, ImportedType)
+                                and projection.value.import_ is field.data_type.import_
+                            )
+                        case "bound_native":
+                            native_identity["existing_binding"] = (
+                                isinstance(projection.value, BoundType)
+                                and projection.value.binding is field.data_type.python_type
+                            )
+                        case _:
+                            pass
                     projected_type = next(value for value in (projection.value,) if value is not None)
                     declarations.append(
                         ExpectedFieldDeclaration(
                             AttemptId(1),
                             SymbolId(index),
-                            FieldSlot(AttemptId(1), SymbolId(index), parser.binding_ledger.identity(field)),
+                            FieldSlot(
+                                AttemptId(1),
+                                SymbolId(index),
+                                parser.binding_ledger.identity(field),
+                                ordinal,
+                                field.name,
+                            ),
                             model.name,
                             field.name,
                             binding_backend_name(backend),
@@ -873,6 +893,7 @@ def test_side_effect_free_type_projection(backend: DataModelType) -> None:
             + "\n",
             EXPECTED / f"field-artifact-{backend.name}.txt",
         )
+        assert_output(json.dumps(native_identity, indent=2) + "\n", EXPECTED / "native-type-identity.txt")
         assert_output(json.dumps(projections, indent=2) + "\n", EXPECTED / f"type-projection-{backend.name}.txt")
         assert_output(
             json.dumps({"additional_engine_calls": sum(observer.calls.values())}) + "\n",

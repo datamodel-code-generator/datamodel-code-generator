@@ -117,6 +117,12 @@
               1,
               "one"
             ]
+          },
+          "native": {
+            "$ref": "#/components/schemas/Native"
+          },
+          "bound_native": {
+            "$ref": "#/components/schemas/BoundNative"
           }
         }
       },
@@ -126,6 +132,19 @@
           "value": {
             "type": "string"
           }
+        }
+      },
+      "Native": {
+        "x-python-import": {
+          "module": "uuid",
+          "name": "UUID"
+        }
+      },
+      "BoundNative": {
+        "x-python-import": {
+          "module": "argparse",
+          "name": "HelpFormatter._Section",
+          "qualname": "HelpFormatter._Section"
         }
       }
     }

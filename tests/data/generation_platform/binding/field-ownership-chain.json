@@ -1,0 +1,58 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Field ownership",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "A": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "shared-key": {
+            "type": "string",
+            "default": "A"
+          }
+        }
+      },
+      "B": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/A"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "left": {
+                "type": "integer"
+              },
+              "shared-key": {
+                "type": "string",
+                "default": "B"
+              }
+            }
+          }
+        ]
+      },
+      "Leaf": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/B"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "leaf-key": {
+                "type": "number"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

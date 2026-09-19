@@ -1,6 +1,9 @@
 from __future__ import annotations
+from uuid import UUID
 from msgspec import Struct, UNSET, UnsetType
 from typing import Dict, List, Literal, Optional, Set, Union
+from uuid import UUID
+import argparse
 
 
 
@@ -25,3 +28,5 @@ class Types(Struct):
     nullable_items: Union[List[Optional[Union[int, str]]], UnsetType] = UNSET
     external: Union[str, UnsetType] = UNSET
     literal: Union[Literal[1, 'one'], bool, UnsetType] = UNSET
+    native: Union[UUID, UnsetType] = UNSET
+    bound_native: Union[argparse.HelpFormatter._Section, UnsetType] = UNSET

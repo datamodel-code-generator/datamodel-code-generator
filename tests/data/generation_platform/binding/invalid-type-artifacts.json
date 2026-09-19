@@ -1,0 +1,86 @@
+[
+  {
+    "id": "builtin",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType]",
+    "new": "flag: Union[int, UnsetType]"
+  },
+  {
+    "id": "reference",
+    "backend": "MsgspecStruct",
+    "old": "child: Union[Child, UnsetType]",
+    "new": "child: Union[Types, UnsetType]"
+  },
+  {
+    "id": "import",
+    "backend": "MsgspecStruct",
+    "old": "native: Union[UUID, UnsetType]",
+    "new": "native: Union[str, UnsetType]"
+  },
+  {
+    "id": "bound",
+    "backend": "MsgspecStruct",
+    "old": "bound_native: Union[argparse.HelpFormatter._Section, UnsetType]",
+    "new": "bound_native: Union[argparse.HelpFormatter, UnsetType]"
+  },
+  {
+    "id": "import-shadow",
+    "backend": "MsgspecStruct",
+    "old": "import argparse",
+    "new": "import argparse\nargparse = object()"
+  },
+  {
+    "id": "container",
+    "backend": "MsgspecStruct",
+    "old": "items: Union[List[int], UnsetType]",
+    "new": "items: Union[List[str], UnsetType]"
+  },
+  {
+    "id": "union-order",
+    "backend": "MsgspecStruct",
+    "old": "choice: Union[str, int, UnsetType]",
+    "new": "choice: Union[int, str, UnsetType]"
+  },
+  {
+    "id": "union-missing",
+    "backend": "MsgspecStruct",
+    "old": "choice: Union[str, int, UnsetType]",
+    "new": "choice: Union[str, UnsetType]"
+  },
+  {
+    "id": "container-arity",
+    "backend": "MsgspecStruct",
+    "old": "Dict[str, bool]",
+    "new": "Dict[str, bool, int]"
+  },
+  {
+    "id": "literal-order",
+    "backend": "PydanticV2BaseModel",
+    "old": "Literal[True, 1, 'one']",
+    "new": "Literal[1, True, 'one']"
+  },
+  {
+    "id": "constraint",
+    "backend": "PydanticV2BaseModel",
+    "old": "conint(ge=2)",
+    "new": "conint(ge=3)"
+  },
+  {
+    "id": "constraint-name",
+    "backend": "PydanticV2BaseModel",
+    "old": "conint(ge=2)",
+    "new": "conint(gt=2)"
+  },
+  {
+    "id": "constructor",
+    "backend": "PydanticV2BaseModel",
+    "old": "conint(ge=2)",
+    "new": "int"
+  },
+  {
+    "id": "literal-arity",
+    "backend": "PydanticV2BaseModel",
+    "old": "Literal[True, 1, 'one']",
+    "new": "Literal[True, 1]"
+  }
+]

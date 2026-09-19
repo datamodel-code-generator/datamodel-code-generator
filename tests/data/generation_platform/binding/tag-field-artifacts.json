@@ -1,0 +1,20 @@
+[
+  {
+    "id": "known-nonemission",
+    "old": "",
+    "new": "",
+    "error": null
+  },
+  {
+    "id": "unexpected-emission",
+    "old": "    pass",
+    "new": "    type: str = 'started'",
+    "error": "A tag-excluded field is declared"
+  },
+  {
+    "id": "missing-class",
+    "old": "class StartedEvent",
+    "new": "class RenamedEvent",
+    "error": "A tag-excluded field's final symbol is absent"
+  }
+]

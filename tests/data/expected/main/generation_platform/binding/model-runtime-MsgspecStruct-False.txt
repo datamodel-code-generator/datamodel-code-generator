@@ -1,0 +1,17 @@
+{
+  "config": {
+    "tag": null,
+    "tag_field": null,
+    "array_like": false,
+    "forbid_unknown_fields": false,
+    "omit_defaults": false,
+    "frozen": false
+  },
+  "fields": [
+    {
+      "name": "wireName",
+      "encode_name": "wireName",
+      "required": true
+    }
+  ]
+}

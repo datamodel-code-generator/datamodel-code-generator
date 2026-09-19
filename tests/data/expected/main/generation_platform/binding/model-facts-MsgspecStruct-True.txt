@@ -1,0 +1,134 @@
+{
+  "node": "BackendModelFacts",
+  "backend": "msgspec",
+  "parameters": [
+    {
+      "node": "BackendSetting",
+      "name": "tag",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "str",
+          "value": "record"
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "tag_field",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "str",
+          "value": "kind"
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "array_like",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": true
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "forbid_unknown_fields",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": true
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "omit_defaults",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": true
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "kw_only",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": true
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "frozen",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralScalar",
+          "kind": "bool",
+          "value": true
+        },
+        "state": "known"
+      }
+    },
+    {
+      "node": "BackendSetting",
+      "name": "rename",
+      "present": true,
+      "value": {
+        "node": "KnownBackendValue",
+        "value": {
+          "node": "LiteralMapping",
+          "entries": [
+            [
+              {
+                "node": "LiteralScalar",
+                "kind": "str",
+                "value": "wireName"
+              },
+              {
+                "node": "LiteralScalar",
+                "kind": "str",
+                "value": "wire_name"
+              }
+            ]
+          ]
+        },
+        "state": "known"
+      }
+    }
+  ],
+  "configuration": [],
+  "functional_typeddict": false,
+  "extra_items_present": false,
+  "extra_items": null
+}

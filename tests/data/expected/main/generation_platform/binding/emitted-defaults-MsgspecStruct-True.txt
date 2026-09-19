@@ -10,7 +10,8 @@
     "unset_type_in_annotation": false,
     "null_type_in_annotation": false,
     "qualifiers": [],
-    "constructor_keywords": []
+    "constructor_keywords": [],
+    "meta_layers": []
   },
   "missing": {
     "node": "EmittedFieldFacts",
@@ -23,7 +24,8 @@
     "unset_type_in_annotation": true,
     "null_type_in_annotation": false,
     "qualifiers": [],
-    "constructor_keywords": []
+    "constructor_keywords": [],
+    "meta_layers": []
   },
   "explicit_null": {
     "node": "EmittedFieldFacts",
@@ -36,7 +38,8 @@
     "unset_type_in_annotation": true,
     "null_type_in_annotation": false,
     "qualifiers": [],
-    "constructor_keywords": []
+    "constructor_keywords": [],
+    "meta_layers": []
   },
   "literal": {
     "node": "EmittedFieldFacts",
@@ -53,7 +56,8 @@
     "unset_type_in_annotation": true,
     "null_type_in_annotation": false,
     "qualifiers": [],
-    "constructor_keywords": []
+    "constructor_keywords": [],
+    "meta_layers": []
   },
   "items": {
     "node": "EmittedFieldFacts",
@@ -77,7 +81,8 @@
           "text": "lambda :[1 ,2 ]"
         }
       ]
-    ]
+    ],
+    "meta_layers": []
   },
   "mapping": {
     "node": "EmittedFieldFacts",
@@ -101,7 +106,8 @@
           "text": "lambda :{'enabled':True }"
         }
       ]
-    ]
+    ],
+    "meta_layers": []
   },
   "factory": {
     "node": "EmittedFieldFacts",
@@ -125,6 +131,7 @@
           "text": "list"
         }
       ]
-    ]
+    ],
+    "meta_layers": []
   }
 }

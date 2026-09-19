@@ -1,0 +1,7 @@
+{
+  "config": {
+    "extra": "forbid",
+    "strict": null,
+    "populate_by_name": true
+  }
+}
