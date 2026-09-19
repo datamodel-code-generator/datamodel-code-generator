@@ -10,7 +10,7 @@ from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger, capture_errors
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping, Sequence
+    from collections.abc import Iterator
 
     from datamodel_code_generator._generation_contract import SourceDocumentId
     from datamodel_code_generator._source import YamlValue
@@ -123,7 +123,7 @@ def iter_materialized_schemas(
             for token in tokens:
                 match original:
                     case dict():
-                        original = cast("Mapping[str, object]", original).get(token)
+                        original = cast("dict[str, object]", original).get(token)
                     case list():
                         original = cast("list[object]", original)[int(token)]
                     case _:
@@ -470,8 +470,8 @@ class ValidatedSchemaOriginIndex:
                 continue
             if completed is None and not common_nodes and not specific_nodes:
                 continue
-            common_count = len(cast("Sequence[object]", common_nodes))
-            specific_count = len(cast("Sequence[object]", specific_nodes))
+            common_count = len(cast("list[object] | tuple[object, ...]", common_nodes))
+            specific_count = len(cast("list[object] | tuple[object, ...]", specific_nodes))
             if not isinstance(completed, list) or common_count + specific_count != len(cast("list[object]", completed)):
                 msg = "A combined common composition does not match its actual materialization"
                 raise BindingCaptureError(msg)

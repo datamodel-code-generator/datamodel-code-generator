@@ -148,5 +148,42 @@
     "id": "pending-default-identity",
     "method": "_field_construction_inputs",
     "source": "emitted-defaults.json"
+  },
+  {
+    "id": "origin-raw-child",
+    "method": "pair",
+    "source": "session-final-corruption.json",
+    "owner": "origins"
+  },
+  {
+    "id": "origin-raw-node",
+    "method": "pair",
+    "source": "session-final-corruption.json",
+    "owner": "origins"
+  },
+  {
+    "id": "origin-merged-child",
+    "method": "pair_merged_shape",
+    "source": "session-inherited-ref-sibling.json",
+    "owner": "origins"
+  },
+  {
+    "id": "origin-item-array",
+    "method": "pair_item_projection",
+    "source": "session-media-stream.json",
+    "owner": "origins",
+    "api": "true"
+  },
+  {
+    "id": "origin-common-sequence",
+    "method": "derive_combined_common",
+    "source": "combined-origins.json",
+    "owner": "origins"
+  },
+  {
+    "id": "origin-materialized-child",
+    "method": "pair_root_materialization",
+    "source": "root-merged-values.json",
+    "owner": "origins"
   }
 ]

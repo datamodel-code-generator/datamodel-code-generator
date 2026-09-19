@@ -9,8 +9,13 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
-from datamodel_code_generator.enums import JsonSchemaVersion
-from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin, ContractOpenAPIParser
+from datamodel_code_generator.enums import JsonSchemaVersion, OpenAPIScope
+from datamodel_code_generator.parser.openapi_contract import (
+    BindingCaptureMixin,
+    ContractApiOpenAPIParser,
+    ContractOpenAPIParser,
+)
+from datamodel_code_generator.parser.openapi_contract_origins import ValidatedSchemaOriginIndex
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -23,10 +28,28 @@ if TYPE_CHECKING:
 def producer_fault(case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Keep the normal engine and capture methods, injecting only an inconsistent observation."""
     method = case["method"]
-    original = getattr(BindingCaptureMixin, method)
+    owner = ValidatedSchemaOriginIndex if case.get("owner") == "origins" else BindingCaptureMixin
+    original = getattr(owner, method)
 
     def damaged(parser: BindingCaptureMixin, *args: Any, **kwargs: Any) -> Any:
         match case["id"]:
+            case "origin-raw-child" | "origin-raw-node":
+                if kwargs["obj"].properties and isinstance(kwargs["raw"], dict):
+                    properties = None if case["id"] == "origin-raw-child" else dict.fromkeys(kwargs["obj"].properties)
+                    kwargs["raw"] = {**kwargs["raw"], "properties": properties}
+            case "origin-merged-child":
+                if args[2].properties:
+                    args = (
+                        replace(args[0], raw={"properties": None}),
+                        args[1].model_copy(update={"properties": None}),
+                        args[2],
+                    )
+            case "origin-item-array":
+                kwargs["obj"] = kwargs["obj"].model_copy(update={"type": "object"})
+            case "origin-common-sequence":
+                args = (args[0], args[1].model_copy(update={"allOf": [args[1]]}), *args[2:])
+            case "origin-materialized-child":
+                args = (args[0], args[1].model_copy(update={"properties": {"ghost": args[1]}}), *args[2:])
             case "combined-keyword":
                 args = (*args[:-1], "unobserved")
             case "combined-owner":
@@ -136,18 +159,21 @@ def producer_fault(case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> Ite
         return original(parser, *args, **kwargs)
 
     with monkeypatch.context() as patch:
-        patch.setattr(BindingCaptureMixin, method, damaged)
+        patch.setattr(owner, method, damaged)
         yield
 
 
 def provenance_failure(source: Path, case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
     """Retain the failure itself while checking parser and observed graph release."""
-    parser = ContractOpenAPIParser(
+    parser_type = ContractApiOpenAPIParser if case.get("api") == "true" else ContractOpenAPIParser
+    parser = parser_type(
         source,
         attempt_id=AttemptId(1),
         formatters=[],
         collapse_root_models=True,
+        field_constraints=case.get("field_constraints") == "true",
         jsonschema_version=JsonSchemaVersion.Draft202012,
+        openapi_scopes=[OpenAPIScope.Api] if case.get("api") == "true" else [OpenAPIScope.Schemas],
     )
     failure = None
     references = ()
