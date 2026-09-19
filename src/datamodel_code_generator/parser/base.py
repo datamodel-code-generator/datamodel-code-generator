@@ -2865,7 +2865,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 return None
             if isinstance(value, list):
                 seen: set[str] = set()
-                result = [v for v in value if isinstance(v, str) and v and v not in seen and not seen.add(v)]
+                result: list[str] = []
+                for v in value:
+                    if isinstance(v, str) and v and v not in seen:
+                        seen.add(v)
+                        result.append(v)
                 if not result:
                     return None
                 return result[0] if len(result) == 1 else result
