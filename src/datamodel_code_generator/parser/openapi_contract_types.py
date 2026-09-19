@@ -235,17 +235,18 @@ class FinalTypeProjector:
             if modifier not in recipe.modifiers:
                 continue
             generic = "generic_container" in recipe.modifiers
+            container_module = "collections.abc" if "standard_collections" in recipe.modifiers else "typing"
             match modifier:
                 case "frozen_set":
                     base: FinalPythonType = BuiltinType("frozenset")
                 case "set":
                     base = BuiltinType("frozenset" if generic else "set")
                 case "sequence" | "list" if modifier == "sequence" or generic:
-                    base = ImportedType(Import(import_="Sequence", from_="typing"))
+                    base = ImportedType(Import(import_="Sequence", from_=container_module))
                 case "list":
                     base = BuiltinType("list")
                 case "mapping" | "dict" if modifier == "mapping" or generic:
-                    base = ImportedType(Import(import_="Mapping", from_="typing"))
+                    base = ImportedType(Import(import_="Mapping", from_=container_module))
                 case "dict":
                     base = BuiltinType("dict")
                 case _:

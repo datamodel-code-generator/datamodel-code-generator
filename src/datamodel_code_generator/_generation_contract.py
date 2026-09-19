@@ -325,7 +325,7 @@ class AnnotatedType:
     metadata: tuple[MetadataCall, ...]
 
 
-FinalPythonType: TypeAlias = (
+UnannotatedPythonType: TypeAlias = (
     GeneratedSymbolType
     | BuiltinType
     | NoneType
@@ -335,8 +335,9 @@ FinalPythonType: TypeAlias = (
     | UnionType
     | LiteralType
     | ConstructorType
-    | AnnotatedType
 )
+
+FinalPythonType: TypeAlias = UnannotatedPythonType | AnnotatedType
 
 
 TypeProjectionReason: TypeAlias = Literal[

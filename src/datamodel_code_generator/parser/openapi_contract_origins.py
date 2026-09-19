@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 from datamodel_code_generator._generation_contract import BindingCaptureError, SourceLocation
 from datamodel_code_generator.parser.jsonschema import JsonSchemaObject
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger, capture_errors
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._generation_contract import SourceDocumentId
     from datamodel_code_generator._source import YamlValue
@@ -336,6 +336,39 @@ class ValidatedSchemaOriginIndex:
             replacement = completed.get(tokens)
             if isinstance(original, JsonSchemaObject) and isinstance(replacement, JsonSchemaObject):
                 self.derive_preserved_shape(original, replacement, relation)
+
+    @capture_errors
+    def pair_root_materialization(
+        self,
+        raw: dict[str, object],
+        target: JsonSchemaObject,
+        producers: dict[int, tuple[JsonSchemaObject | bool, ...]],
+    ) -> None:
+        """Compose actual raw helper results with their final validated children."""
+        pending = [(raw, target)]
+        while pending:
+            current, completed = pending.pop()
+            sources = producers.get(id(current), ())
+            for source in sources:
+                if isinstance(source, JsonSchemaObject):
+                    self.derive(source, completed, "allof_root_materialization")
+            if len(sources) == 1 and isinstance(source := sources[0], JsonSchemaObject):
+                self.derive_preserved_shape(source, completed, "allof_root_materialization")
+            for tokens, child in _schema_children(completed):
+                if isinstance(child, bool):
+                    continue
+                original: object = current
+                for token in tokens:
+                    match original:
+                        case dict():
+                            original = cast("Mapping[str, object]", original).get(token)
+                        case list():
+                            original = cast("list[object]", original)[int(token)]
+                        case _:
+                            msg = "A root materialization child has no actual raw producer"
+                            raise BindingCaptureError(msg)
+                if isinstance(original, dict):
+                    pending.append((cast("dict[str, object]", original), child))
 
     @capture_errors
     def derive_combined_common(

@@ -415,3 +415,78 @@ def test_tag_field_nonemission(change: dict[str, str | None]) -> None:
     finally:
         parser.dispose()
         parser.source_lease.close()
+
+
+@pytest.mark.parametrize(
+    "change", json.loads((SOURCE / "metadata-type-artifacts.json").read_text()), ids=itemgetter("id")
+)
+def test_projected_metadata_matches_accepted_type(change: dict[str, str | bool]) -> None:
+    """Keep projected discriminator metadata at its actual nested type location."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        builtin_field_imports,
+        projected_field_expectations,
+    )
+
+    backend = DataModelType.PydanticV2BaseModel
+    config = builtin_binding_config(backend)
+    config.collapse_root_models = True
+    parser = ContractApiOpenAPIParser(SOURCE / "metadata-types.json", attempt_id=AttemptId(1), config=config)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / "metadata-types.py")
+        expected = projected_field_expectations(parser, "Envelope", backend)
+        imports = FrozenImportBindings(
+            builtin_field_imports(), tuple((SymbolId(index), model.name) for index, model in enumerate(parser.results))
+        )
+        if change["error"]:
+            with pytest.raises(
+                BindingCaptureError, match="Accepted field annotation does not match its projected type"
+            ):
+                index_builtin_field_declarations(
+                    body.replace(str(change["old"]), str(change["new"])), expected=expected, imports=imports
+                )
+            return
+        index = index_builtin_field_declarations(body, expected=expected, imports=imports)
+        assert_output(
+            json.dumps([field.expected.native_name for field in index.fields], indent=2) + "\n",
+            EXPECTED / "metadata-type-fields.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("standard", [False, True])
+def test_container_projection_preserves_actual_imports(*, standard: bool) -> None:
+    """Preserve FrozenSet spelling and the actual typing or collections.abc identity."""
+    from tests.data.python.binding_inputs import builtin_binding_config, projected_field_expectations
+
+    backend = DataModelType.PydanticV2BaseModel
+    config = builtin_binding_config(backend)
+    config.use_unique_items_as_set = True
+    config.use_generic_container_types = True
+    config.use_standard_collections = standard
+    parser = ContractApiOpenAPIParser(SOURCE / "container-types.json", attempt_id=AttemptId(1), config=config)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"container-types-{standard}.py")
+        expected = projected_field_expectations(parser, "Container", backend)
+        imports = FrozenImportBindings((
+            Import(import_="FrozenSet", from_="typing"),
+            *(
+                Import(import_=name, from_="collections.abc" if standard else "typing")
+                for name in ("Sequence", "Mapping")
+            ),
+        ))
+        index = index_builtin_field_declarations(body, expected=expected, imports=imports)
+        assert_output(
+            json.dumps(
+                {field.expected.native_name: type_snapshot(field.expected.type) for field in index.fields}, indent=2
+            )
+            + "\n",
+            EXPECTED / f"container-types-{standard}.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
