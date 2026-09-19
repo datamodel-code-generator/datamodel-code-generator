@@ -1,6 +1,6 @@
 # S03 implementation record
 
-Status: implementing. The first two PRs are published in native GitHub stack #4110; none has been merged.
+Status: implementing. All four PRs are published in native GitHub stack #4110; none has been merged. Completion gates remain open.
 
 Repository: datamodel-code-generator/datamodel-code-generator. Fixed main baseline: `149d933d927ca12f2e0e45fc18f8a4cf772046d7`. S01 and S02 are merged. The planning PR #4098 remains open at `8e6f0d4a8a64b71e5a049ad8d108507b2fe164ca`; contracts are read from its separate checkout. The original worktree's untracked `1.tmp` is preserved.
 
@@ -153,3 +153,9 @@ CodeQL's possible-uninitialized default_kind report is addressed by initializing
 ## Repository ty upgrade
 
 The user requested keeping the repository on the latest ty. The version update and the type fixes it requires in pre-existing modules are a separate PR at the bottom of native stack #4110. This stack keeps only the S03 modules' own adaptations to the newer checker.
+
+## Third-PR failure lifetime checkpoint
+
+Retaining a latched producer exception must not retain its parser or generated graph after disposal. The ledger now clears tracebacks through the exception cause/context graph without replacing the original exception identity. Independent E2E cases deliberately damage actual producer observations during real generation; ordinary engine methods still run. Cases cover combined-branch correspondence, allOf loader ordering, root-value materialization, reference siblings, and field-default ownership. No normal-path mock or new assertion helper is introduced.
+
+On the third branch, the full Python 3.13 suite passes 19,601 tests with 15 existing skips in 138.64 seconds. The completed producer-failure matrix passes 30 cases, each retaining the first exception and observing zero surviving parsers and graph objects. Warning-strict full-source ty and Ruff pass. Full owned line/branch coverage is still incomplete; these results do not mark S03 complete. The fourth branch already has the accepted-session counterpart of the cleanup correction and must be restacked with the shared fault fixtures.

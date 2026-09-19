@@ -23,6 +23,22 @@ class BindingCaptureError(RuntimeError):
     """An internal capture inconsistency that must never become repair success."""
 
 
+def clear_capture_tracebacks(failure: BindingCaptureError | None) -> None:
+    """Keep the first failure identity while releasing graph-bearing traceback chains."""
+    pending: list[BaseException] = [failure] if failure is not None else []
+    visited: set[int] = set()
+    while pending:
+        error = pending.pop()
+        if id(error) in visited:
+            continue
+        visited.add(id(error))
+        error.__traceback__ = None
+        if error.__cause__ is not None:
+            pending.append(error.__cause__)
+        if error.__context__ is not None:
+            pending.append(error.__context__)
+
+
 class OpenAPIParserFactory(Protocol):
     """Construct a parser with capture state established before its base constructor."""
 

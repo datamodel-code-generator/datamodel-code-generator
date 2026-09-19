@@ -1,0 +1,152 @@
+[
+  {
+    "id": "combined-owner",
+    "method": "_complete_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "combined-identity",
+    "method": "_complete_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "combined-missing-decision",
+    "method": "_complete_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "combined-decision-order",
+    "method": "_complete_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "combined-missing-item",
+    "method": "_complete_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "combined-extra-item",
+    "method": "_complete_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "combined-invalid-node",
+    "method": "_connect_combined_occurrence",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "combined-missing-edge",
+    "method": "_connect_combined_occurrence",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "allof-owner",
+    "method": "_verify_allof_resolutions",
+    "source": "allof-union-origins.json"
+  },
+  {
+    "id": "allof-count",
+    "method": "_verify_allof_resolutions",
+    "source": "allof-union-origins.json"
+  },
+  {
+    "id": "allof-order",
+    "method": "_verify_allof_resolutions",
+    "source": "allof-union-origins.json"
+  },
+  {
+    "id": "union-owner",
+    "method": "_pair_allof_union",
+    "source": "allof-union-origins.json"
+  },
+  {
+    "id": "union-missing-reference",
+    "method": "_pair_allof_union",
+    "source": "allof-union-origins.json"
+  },
+  {
+    "id": "union-order",
+    "method": "_pair_allof_union",
+    "source": "allof-union-origins.json"
+  },
+  {
+    "id": "union-changed-parent",
+    "method": "_pair_allof_union",
+    "source": "allof-union-origins.json"
+  },
+  {
+    "id": "combined-invalid-decision",
+    "method": "_complete_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "root-duplicate-producer",
+    "method": "_record_root_value_materializations",
+    "source": "root-merged-values.json"
+  },
+  {
+    "id": "root-reference-owner",
+    "method": "_record_root_value_materializations",
+    "source": "root-merged-values.json"
+  },
+  {
+    "id": "root-child-missing",
+    "method": "_record_root_child_inputs",
+    "source": "root-merged-values.json"
+  },
+  {
+    "id": "root-child-identity",
+    "method": "_record_root_child_inputs",
+    "source": "root-merged-values.json"
+  },
+  {
+    "id": "root-child-extra",
+    "method": "_record_root_child_inputs",
+    "source": "root-merged-values.json"
+  },
+  {
+    "id": "root-child-resolution",
+    "method": "_record_root_child_inputs",
+    "source": "root-merged-values.json"
+  },
+  {
+    "id": "root-child-sibling",
+    "method": "_record_root_child_inputs",
+    "source": "root-merged-values.json"
+  },
+  {
+    "id": "combined-keyword",
+    "method": "_begin_combined_branch",
+    "source": "combined-origins.json"
+  },
+  {
+    "id": "ref-sibling-resolution",
+    "method": "_record_ref_merge",
+    "source": "merged-origins.json"
+  },
+  {
+    "id": "allof-object-reference",
+    "method": "_record_allof_object_merge",
+    "source": "merged-origins.json"
+  },
+  {
+    "id": "allof-object-extra",
+    "method": "_record_allof_object_merge",
+    "source": "merged-origins.json"
+  },
+  {
+    "id": "default-missing",
+    "method": "_record_effective_default",
+    "source": "emitted-defaults.json"
+  },
+  {
+    "id": "default-identity",
+    "method": "_record_effective_default",
+    "source": "emitted-defaults.json"
+  },
+  {
+    "id": "pending-default-identity",
+    "method": "_field_construction_inputs",
+    "source": "emitted-defaults.json"
+  }
+]
