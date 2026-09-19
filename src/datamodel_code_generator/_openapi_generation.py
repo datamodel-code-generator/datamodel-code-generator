@@ -62,6 +62,9 @@ class SourceLease:
     def borrow(self, location: SourceLocation) -> YamlValue:
         """Read an original plain JSON pointer from an already borrowed document."""
         self._check_open()
+        msg = "Source location does not identify an observed node"
+        if not 0 <= location.document < len(self._raw):
+            raise BindingCaptureError(msg)
         value: YamlValue = self._raw[location.document]
         if not location.pointer:
             return value
@@ -70,14 +73,16 @@ class SourceLease:
             raise BindingCaptureError(msg)
         for token in location.pointer[1:].split("/"):
             key = token.replace("~1", "/").replace("~0", "~")
-            match value:
-                case dict():
-                    value = value[key]
-                case list() if key == "0" or (key.isascii() and key.isdecimal() and not key.startswith("0")):
-                    value = value[int(key)]
-                case _:
-                    msg = "Source location does not identify an observed node"
-                    raise BindingCaptureError(msg)
+            try:  # ruff: ignore[too-many-statements-in-try-clause] # Share lookup error conversion.
+                match value:
+                    case dict():
+                        value = value[key]
+                    case list() if key == "0" or (key.isascii() and key.isdecimal() and not key.startswith("0")):
+                        value = value[int(key)]
+                    case _:
+                        raise BindingCaptureError(msg)
+            except (KeyError, IndexError, ValueError):
+                raise BindingCaptureError(msg) from None
         return value
 
     def close(self) -> None:

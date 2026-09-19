@@ -8,7 +8,12 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import OpenAPIScope
-from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError, SourceLocation
+from datamodel_code_generator._generation_contract import (
+    AttemptId,
+    BindingCaptureError,
+    SourceDocumentId,
+    SourceLocation,
+)
 from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser, ContractOpenAPIParser
 from tests.conftest import assert_output
 
@@ -230,6 +235,21 @@ def test_capture_failure_latches_before_propagation(failure: str, monkeypatch: p
             + "\n",
             EXPECTED / f"failure-{failure}.txt",
         )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize(("document", "pointer"), json.loads((SOURCE / "invalid-source-locations.json").read_text()))
+def test_source_lease_rejects_unobserved_locations(document: int, pointer: str) -> None:
+    """Reject invalid source identities and lookups after real model generation."""
+    parser = ContractApiOpenAPIParser(
+        SOURCE / "resolver.json", attempt_id=AttemptId(1), openapi_scopes=[OpenAPIScope.Api], formatters=[]
+    )
+    try:
+        assert_output(parser.parse(), EXPECTED / "resolver.py")
+        with pytest.raises(BindingCaptureError, match=r"^Source location does not identify an observed node$"):
+            parser.source_lease.borrow(SourceLocation(SourceDocumentId(document), pointer, "schema"))
     finally:
         parser.dispose()
         parser.source_lease.close()
