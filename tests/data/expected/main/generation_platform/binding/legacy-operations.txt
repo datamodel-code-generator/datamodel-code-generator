@@ -1,0 +1,37 @@
+{
+  "origins": [
+    "known"
+  ],
+  "original_paths": [
+    [
+      [
+        "paths",
+        "/pets",
+        "get"
+      ]
+    ]
+  ],
+  "request_media": [
+    [
+      "text/plain"
+    ]
+  ],
+  "response_media": [
+    [
+      [
+        "200",
+        [
+          "application/json"
+        ]
+      ],
+      [
+        "404",
+        [
+          "application/json"
+        ]
+      ]
+    ]
+  ],
+  "security_is_borrowed": true,
+  "types_have_owner": true
+}
