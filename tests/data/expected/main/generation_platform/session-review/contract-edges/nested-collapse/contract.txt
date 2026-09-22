@@ -1,14 +1,234 @@
-use request_body value /paths/~1posts/post/requestBody: bound None
-use response_body value /paths/~1posts/post/responses/201: bound None
-use schema value /components/schemas/Tag: bound None
-use schema value /components/schemas/Tags: bound None
-use schema value /components/schemas/Post: bound None
-use schema value /paths/~1posts/post/requestBody/content/application~1json/schema: bound None
-use schema value /paths/~1posts/post/responses/201/content/application~1json/schema: bound None
-use schema value /components/schemas/Tags/items: bound None
-use schema value /components/schemas/Post/properties/tags: bound None
-use schema value /components/schemas/Post/properties/previousTags: bound None
-use schema value /components/schemas/Post/properties/labels/items: bound None
-use schema value /components/schemas/Post/properties/labels: bound None
-use schema value /components/schemas/Post/properties/counts/additionalProperties: bound None
-use schema value /components/schemas/Post/properties/counts: bound None
+{
+  "uses": [
+    {
+      "use": "request_body value /paths/~1posts/post/requestBody",
+      "schema": "/paths/~1posts/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1posts/post/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Post"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1posts/post/responses/201",
+      "schema": "/paths/~1posts/post/responses/201/content/application~1json/schema",
+      "declaration": "/paths/~1posts/post/responses/201",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Post"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Tag",
+      "schema": "/components/schemas/Tag",
+      "declaration": "/components/schemas/Tag",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Tags",
+      "schema": "/components/schemas/Tags",
+      "declaration": "/components/schemas/Tags",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Post",
+      "schema": "/components/schemas/Post",
+      "declaration": "/components/schemas/Post",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Post"
+      }
+    },
+    {
+      "use": "schema value /paths/~1posts/post/requestBody/content/application~1json/schema",
+      "schema": "/paths/~1posts/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1posts/post/requestBody/content/application~1json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Post"
+      }
+    },
+    {
+      "use": "schema value /paths/~1posts/post/responses/201/content/application~1json/schema",
+      "schema": "/paths/~1posts/post/responses/201/content/application~1json/schema",
+      "declaration": "/paths/~1posts/post/responses/201/content/application~1json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Post"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Tags/items",
+      "schema": "/components/schemas/Tags/items",
+      "declaration": "/components/schemas/Tags/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Post/properties/tags",
+      "schema": "/components/schemas/Post/properties/tags",
+      "declaration": "/components/schemas/Post/properties/tags",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Post/properties/previousTags",
+      "schema": "/components/schemas/Post/properties/previousTags",
+      "declaration": "/components/schemas/Post/properties/previousTags",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Post/properties/labels/items",
+      "schema": "/components/schemas/Post/properties/labels/items",
+      "declaration": "/components/schemas/Post/properties/labels/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Post/properties/labels",
+      "schema": "/components/schemas/Post/properties/labels",
+      "declaration": "/components/schemas/Post/properties/labels",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Post/properties/counts/additionalProperties",
+      "schema": "/components/schemas/Post/properties/counts/additionalProperties",
+      "declaration": "/components/schemas/Post/properties/counts/additionalProperties",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Post/properties/counts",
+      "schema": "/components/schemas/Post/properties/counts",
+      "declaration": "/components/schemas/Post/properties/counts",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "dict"
+        },
+        "arguments": [
+          {
+            "node": "ConstructorType",
+            "callable": {
+              "node": "ImportedType",
+              "import_": {
+                "node": "Import",
+                "import_": "constr",
+                "from_": "pydantic",
+                "alias": null,
+                "reference_path": null,
+                "keep_unaliased": false
+              },
+              "qualified_suffix": []
+            },
+            "keywords": [
+              [
+                "pattern",
+                {
+                  "node": "SourceExpression",
+                  "text": "r'^[a-z]+$'"
+                }
+              ]
+            ]
+          },
+          {
+            "node": "BuiltinType",
+            "name": "int"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

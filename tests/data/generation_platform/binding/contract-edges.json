@@ -59,6 +59,16 @@
     }
   },
   {
+    "id": "legacy-shared-reference-body",
+    "source": "generation_platform/binding/legacy-shared-reference-body.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  {
     "id": "legacy-parameter-content",
     "source": "openapi/parameter_content.yaml",
     "options": {

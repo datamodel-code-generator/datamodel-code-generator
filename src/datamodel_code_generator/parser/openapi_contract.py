@@ -719,8 +719,8 @@ class BindingCaptureMixin(OpenAPIParser):
         self.legacy_scopes: list[LegacyPathItemsFrame] = []
         self._legacy_scopes: list[LegacyPathItemsFrame] = []
         self._legacy_operations: list[LegacyOperationObservation] = []
-        self.legacy_ref_objects: dict[tuple[int, str], SchemaOrigin] = {}
-        self._referenced_responses: set[tuple[int, str]] = set()
+        self.legacy_references: dict[tuple[int, tuple[str, ...]], SchemaOrigin | None] = {}
+        self._pending_responses: list[tuple[str, ...]] | None = None
         self._media_paths: dict[tuple[str, ...], tuple[tuple[str, ...], bool]] = {}
         self.request_types: list[RequestTypesObservation] = []
         self.response_types: list[ResponseTypesObservation] = []
@@ -2523,17 +2523,21 @@ class BindingCaptureMixin(OpenAPIParser):
 
     @capture_errors
     def _record_legacy_ref_object(self, ref: str, result: dict[str, YamlValue], start: int) -> dict[str, YamlValue]:
-        if not self._legacy_operations:
+        """Attribute an operation-level resolution to the request body or the next referenced response."""
+        if not self._legacy_operations or self._parameter_frames:
             return result
-        for event in self.binding_resolver.resolutions[start:]:
-            if (
-                event.input == ref
+        occurrence = ("requestBody",) if (pending := self._pending_responses) is None else pending.pop(0)
+        self.legacy_references[id(self._legacy_operations[-1]), occurrence] = next(
+            (
+                origin
+                for event in self.binding_resolver.resolutions[start:]
+                if event.input == ref
                 and event.operation == "resolve_ref"
                 and (origin := self._borrow_resolved_schema(event.output, "validated_child")) is not None
                 and origin.raw is result
-            ):
-                self.legacy_ref_objects[id(self._legacy_operations[-1]), ref] = origin
-                break
+            ),
+            None,
+        )
         return result
 
     def _media_schema_path(self, path: list[str], *, from_item_schema: bool) -> list[str]:
@@ -2558,8 +2562,7 @@ class BindingCaptureMixin(OpenAPIParser):
             return
         original_path, projected = media_path
         keyword = "itemSchema" if projected else "schema"
-        if (origin := self._legacy_media_source(operation, original_path, keyword)) is None:
-            return
+        origin = self._legacy_media_source(operation, original_path, keyword)
         if projected:
             self.schema_origins.pair_item_projection(
                 raw=origin.raw, obj=schema, location=origin.location, reference=False
@@ -2569,30 +2572,29 @@ class BindingCaptureMixin(OpenAPIParser):
 
     def _legacy_media_source(
         self, operation: LegacyOperationObservation, path: tuple[str, ...], keyword: str
-    ) -> SchemaOrigin | None:
-        """Join the original use to the direct or engine-resolved occurrence whose media the engine read."""
+    ) -> SchemaOrigin:
+        """Join the original use to the inline or engine-resolved occurrence whose media the engine read.
+
+        Every engine-resolved document is borrowed, so a resolved occurrence with media always has an origin.
+        """
         declaration = operation.candidates[0]
-        relative = path[len(operation.engine_path) :]
-        media = relative[-1]
-        raw: YamlValue
-        if relative[0] == "requestBody":
-            raw = declaration.raw.get("requestBody")
-            owner = (*declaration.declaration.tokens, "requestBody")
-            referenced = True
-        else:
-            status = relative[1]
-            responses = declaration.raw.get("responses")
-            raw = borrow_source_member(responses, status) if isinstance(responses, dict) else None
-            owner = (*declaration.declaration.tokens, "responses", status)
-            referenced = (id(operation), status) in self._referenced_responses
-        if referenced and isinstance(raw, dict) and isinstance(ref := raw.get("$ref"), str):
-            if (origin := self.legacy_ref_objects.get((id(operation), ref))) is None:
-                return None
+        *occurrence, media = path[len(operation.engine_path) :]
+        if (key := (id(operation), tuple(occurrence))) in self.legacy_references:
+            origin = cast("SchemaOrigin", self.legacy_references[key])
             raw, parent = origin.raw, origin.location
         else:
+            raw: YamlValue = declaration.raw
+            for token in occurrence:
+                raw = borrow_source_member(cast("dict[str, YamlValue]", raw), token)
             document = cast("SourceDocumentId", self.source_lease.document_id(declaration.declaration.document))
             parent = SourceLocation(
-                document, "/" + "/".join(token.replace("~", "~0").replace("/", "~1") for token in owner), "schema"
+                document,
+                "/"
+                + "/".join(
+                    token.replace("~", "~0").replace("/", "~1")
+                    for token in (*declaration.declaration.tokens, *occurrence)
+                ),
+                "schema",
             )
         location = SourceLocation(
             parent.document,
@@ -2750,18 +2752,18 @@ class BindingCaptureMixin(OpenAPIParser):
     ) -> dict[str | int, dict[str, DataType]]:
         """Retain every actual status and media, with no primary-response reduction."""
         self._record_response_references(responses)
-        return self._record_response_types(
-            super().parse_responses(name, responses, path),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-            path,
-        )
+        try:
+            types = super().parse_responses(name, responses, path)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        finally:
+            self._pending_responses = None
+        return self._record_response_types(types, path)  # pyright: ignore[reportUnknownArgumentType]
 
     @capture_errors
     def _record_response_references(self, responses: dict[str | int, ReferenceObject | ResponseObject]) -> None:
-        """Remember which actual response occurrences the engine resolved as references."""
-        operation = id(self._legacy_operations[-1])
-        self._referenced_responses.update(
-            (operation, str(status)) for status, detail in responses.items() if isinstance(detail, ReferenceObject)
-        )
+        """Queue, in engine order, the actual response occurrences resolved as references."""
+        self._pending_responses = [
+            ("responses", str(status)) for status, detail in responses.items() if isinstance(detail, ReferenceObject)
+        ]
 
     @capture_errors
     def _record_response_types(
@@ -2930,8 +2932,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self._parameter_frames.clear()
         for observations in (
             self._legacy_operations,
-            self.legacy_ref_objects,
-            self._referenced_responses,
+            self.legacy_references,
             self._media_paths,
             self.legacy_operations,
             self.legacy_scopes,

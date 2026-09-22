@@ -1,12 +1,222 @@
-use schema value /components/schemas/Pet: bound None
-use schema value /components/schemas/Pets: bound None
-use schema value /components/schemas/Labels: bound None
-use schema value /components/schemas/Holder: bound None
-use schema value /components/schemas/Missing: bound None
-use schema value /components/schemas/Pet/properties/name: bound None
-use schema value /components/schemas/Pets/items: bound None
-use schema value /components/schemas/Labels/additionalProperties: bound None
-use schema value /components/schemas/Holder/properties/pets: bound None
-use schema value /components/schemas/Holder/properties/labels: bound None
-use schema value /components/schemas/Holder/properties/bad: invalid BND_UNRESOLVED_REFERENCE
-diagnostic BND_UNRESOLVED_REFERENCE 
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/Pet",
+      "schema": "/components/schemas/Pet",
+      "declaration": "/components/schemas/Pet",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Pet"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pets",
+      "schema": "/components/schemas/Pets",
+      "declaration": "/components/schemas/Pets",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Pet"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Labels",
+      "schema": "/components/schemas/Labels",
+      "declaration": "/components/schemas/Labels",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "dict"
+        },
+        "arguments": [
+          {
+            "node": "ConstructorType",
+            "callable": {
+              "node": "ImportedType",
+              "import_": {
+                "node": "Import",
+                "import_": "constr",
+                "from_": "pydantic",
+                "alias": null,
+                "reference_path": null,
+                "keep_unaliased": false
+              },
+              "qualified_suffix": []
+            },
+            "keywords": [
+              [
+                "pattern",
+                {
+                  "node": "SourceExpression",
+                  "text": "r'^[a-z]+$'"
+                }
+              ]
+            ]
+          },
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder",
+      "schema": "/components/schemas/Holder",
+      "declaration": "/components/schemas/Holder",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Holder"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Missing",
+      "schema": "/components/schemas/Missing",
+      "declaration": "/components/schemas/Missing",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "Any",
+          "from_": "typing",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/name",
+      "schema": "/components/schemas/Pet/properties/name",
+      "declaration": "/components/schemas/Pet/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pets/items",
+      "schema": "/components/schemas/Pets/items",
+      "declaration": "/components/schemas/Pets/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Pet"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Labels/additionalProperties",
+      "schema": "/components/schemas/Labels/additionalProperties",
+      "declaration": "/components/schemas/Labels/additionalProperties",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder/properties/pets",
+      "schema": "/components/schemas/Holder/properties/pets",
+      "declaration": "/components/schemas/Holder/properties/pets",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Pet"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder/properties/labels",
+      "schema": "/components/schemas/Holder/properties/labels",
+      "declaration": "/components/schemas/Holder/properties/labels",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "dict"
+        },
+        "arguments": [
+          {
+            "node": "ConstructorType",
+            "callable": {
+              "node": "ImportedType",
+              "import_": {
+                "node": "Import",
+                "import_": "constr",
+                "from_": "pydantic",
+                "alias": null,
+                "reference_path": null,
+                "keep_unaliased": false
+              },
+              "qualified_suffix": []
+            },
+            "keywords": [
+              [
+                "pattern",
+                {
+                  "node": "SourceExpression",
+                  "text": "r'^[a-z]+$'"
+                }
+              ]
+            ]
+          },
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder/properties/bad",
+      "schema": "/components/schemas/Holder/properties/bad",
+      "declaration": "/components/schemas/Holder/properties/bad",
+      "media": null,
+      "state": "invalid BND_UNRESOLVED_REFERENCE",
+      "type": null
+    }
+  ],
+  "diagnostics": [
+    "BND_UNRESOLVED_REFERENCE "
+  ],
+  "ignored": []
+}

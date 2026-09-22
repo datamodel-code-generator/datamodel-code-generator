@@ -1,14 +1,166 @@
-use request_body value /paths/~1a/post/requestBody: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
-use request_body item_stream_array /paths/~1a/post/requestBody: bound None
-use response_body value /paths/~1a/post/responses/200: bound None
-use response_body item_stream_array /paths/~1a/post/responses/200: bound None
-use response_body value /paths/~1a/post/responses/201: bound None
-use response_body item_stream_array /paths/~1a/post/responses/201: bound None
-use request_body value /paths/~1b/post/requestBody: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
-use request_body item_stream_array /paths/~1b/post/requestBody: bound None
-use response_body value /paths/~1b/post/responses/200: bound None
-use response_body item_stream_array /paths/~1b/post/responses/200: bound None
-use schema value /components/requestBodies/Shared/content/application~1json/itemSchema/properties/value: bound None
-use schema value /components/requestBodies/Shared/content/application~1json/itemSchema: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/responses/Shared/content/application~1json/itemSchema/properties/value: bound None
-use schema value /components/responses/Shared/content/application~1json/itemSchema: invalid BND_AMBIGUOUS_REPLACEMENT
+{
+  "uses": [
+    {
+      "use": "request_body value /paths/~1a/post/requestBody",
+      "schema": "/paths/~1a/post/requestBody/content/application~1json/itemSchema",
+      "declaration": "/components/requestBodies/Shared",
+      "media": "application/json",
+      "state": "invalid BND_TYPE_EXPRESSION_UNSUPPORTED",
+      "type": null
+    },
+    {
+      "use": "request_body item_stream_array /paths/~1a/post/requestBody",
+      "schema": "/paths/~1a/post/requestBody/content/application~1json/itemSchema",
+      "declaration": "/components/requestBodies/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "APostRequest"
+          },
+          {
+            "node": "NoneType"
+          }
+        ],
+        "preserve_order": false
+      }
+    },
+    {
+      "use": "response_body value /paths/~1a/post/responses/200",
+      "schema": "/paths/~1a/post/responses/200/content/application~1json/itemSchema",
+      "declaration": "/components/responses/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "APostResponseItem"
+      }
+    },
+    {
+      "use": "response_body item_stream_array /paths/~1a/post/responses/200",
+      "schema": "/paths/~1a/post/responses/200/content/application~1json/itemSchema",
+      "declaration": "/components/responses/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "APostResponse"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1a/post/responses/201",
+      "schema": "/paths/~1a/post/responses/201/content/application~1json/itemSchema",
+      "declaration": "/components/responses/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "APostResponseItem"
+      }
+    },
+    {
+      "use": "response_body item_stream_array /paths/~1a/post/responses/201",
+      "schema": "/paths/~1a/post/responses/201/content/application~1json/itemSchema",
+      "declaration": "/components/responses/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "APostResponse1"
+      }
+    },
+    {
+      "use": "request_body value /paths/~1b/post/requestBody",
+      "schema": "/paths/~1b/post/requestBody/content/application~1json/itemSchema",
+      "declaration": "/components/requestBodies/Shared",
+      "media": "application/json",
+      "state": "invalid BND_TYPE_EXPRESSION_UNSUPPORTED",
+      "type": null
+    },
+    {
+      "use": "request_body item_stream_array /paths/~1b/post/requestBody",
+      "schema": "/paths/~1b/post/requestBody/content/application~1json/itemSchema",
+      "declaration": "/components/requestBodies/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "BPostRequest"
+          },
+          {
+            "node": "NoneType"
+          }
+        ],
+        "preserve_order": false
+      }
+    },
+    {
+      "use": "response_body value /paths/~1b/post/responses/200",
+      "schema": "/paths/~1b/post/responses/200/content/application~1json/itemSchema",
+      "declaration": "/components/responses/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "BPostResponseItem"
+      }
+    },
+    {
+      "use": "response_body item_stream_array /paths/~1b/post/responses/200",
+      "schema": "/paths/~1b/post/responses/200/content/application~1json/itemSchema",
+      "declaration": "/components/responses/Shared",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "BPostResponse"
+      }
+    },
+    {
+      "use": "schema value /components/requestBodies/Shared/content/application~1json/itemSchema/properties/value",
+      "schema": "/components/requestBodies/Shared/content/application~1json/itemSchema/properties/value",
+      "declaration": "/components/requestBodies/Shared/content/application~1json/itemSchema/properties/value",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/requestBodies/Shared/content/application~1json/itemSchema",
+      "schema": "/components/requestBodies/Shared/content/application~1json/itemSchema",
+      "declaration": "/components/requestBodies/Shared/content/application~1json/itemSchema",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/responses/Shared/content/application~1json/itemSchema/properties/value",
+      "schema": "/components/responses/Shared/content/application~1json/itemSchema/properties/value",
+      "declaration": "/components/responses/Shared/content/application~1json/itemSchema/properties/value",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/responses/Shared/content/application~1json/itemSchema",
+      "schema": "/components/responses/Shared/content/application~1json/itemSchema",
+      "declaration": "/components/responses/Shared/content/application~1json/itemSchema",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

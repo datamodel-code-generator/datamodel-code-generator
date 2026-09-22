@@ -1,5 +1,91 @@
-use schema value /components/schemas/Tags: bound None
-use schema value /components/schemas/Holder: bound None
-use schema value /components/schemas/Tags/items: bound None
-use schema value /components/schemas/Holder/properties/first: bound None
-use schema value /components/schemas/Holder/properties/second: bound None
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/Tags",
+      "schema": "/components/schemas/Tags",
+      "declaration": "/components/schemas/Tags",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder",
+      "schema": "/components/schemas/Holder",
+      "declaration": "/components/schemas/Holder",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Holder"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Tags/items",
+      "schema": "/components/schemas/Tags/items",
+      "declaration": "/components/schemas/Tags/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder/properties/first",
+      "schema": "/components/schemas/Holder/properties/first",
+      "declaration": "/components/schemas/Holder/properties/first",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder/properties/second",
+      "schema": "/components/schemas/Holder/properties/second",
+      "declaration": "/components/schemas/Holder/properties/second",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

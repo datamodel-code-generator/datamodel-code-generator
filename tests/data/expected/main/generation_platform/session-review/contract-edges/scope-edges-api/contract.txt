@@ -1,15 +1,162 @@
-use response_body value /paths/~1events/get/responses/200: bound None
-use parameter value /paths/~1events~1{eventId}/get/parameters/0: bound None
-use parameter value /paths/~1events~1{eventId}/get/parameters/2: bound None
-use response_body value /paths/~1events~1{eventId}/get/responses/200: bound None
-use response_header value /paths/~1events~1{eventId}/get/responses/200/headers/X-Rate-Limit: bound None
-use schema value /components/schemas/Event: bound None
-use schema value /components/pathItems/Events/get/responses/200/content/application~1json/schema: bound None
-use schema value /paths/~1events~1{eventId}/get/parameters/0/schema: bound None
-use schema value /components/parameters/Fields/schema: bound None
-use schema value /paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema: bound None
-use schema value /components/headers/RateLimit/schema: bound None
-use schema value /components/schemas/Event/properties/id: bound None
-use schema value /components/schemas/Event/properties/kind: bound None
-use schema value /components/pathItems/Events/get/responses/200/content/application~1json/schema/items: bound None
-ignored /paths/~1events~1{eventId}/get: oas_header_ignored
+{
+  "uses": [
+    {
+      "use": "response_body value /paths/~1events/get/responses/200",
+      "schema": "/paths/~1events/get/responses/200/content/application~1json/schema",
+      "declaration": "/components/pathItems/Events/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsGetResponse"
+      }
+    },
+    {
+      "use": "parameter value /paths/~1events~1{eventId}/get/parameters/0",
+      "schema": "/paths/~1events~1{eventId}/get/parameters/0/schema",
+      "declaration": "/paths/~1events~1{eventId}/get/parameters/0",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsEventIdGetPathEventIdParameter"
+      }
+    },
+    {
+      "use": "parameter value /paths/~1events~1{eventId}/get/parameters/2",
+      "schema": "/paths/~1events~1{eventId}/get/parameters/2/schema",
+      "declaration": "/components/parameters/Fields",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsEventIdGetQueryFieldsParameter"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1events~1{eventId}/get/responses/200",
+      "schema": "/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1events~1{eventId}/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "response_header value /paths/~1events~1{eventId}/get/responses/200/headers/X-Rate-Limit",
+      "schema": "/paths/~1events~1{eventId}/get/responses/200/headers/X-Rate-Limit/schema",
+      "declaration": "/components/headers/RateLimit",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsEventIdGetResponse200XRateLimitHeader"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event",
+      "schema": "/components/schemas/Event",
+      "declaration": "/components/schemas/Event",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "schema value /components/pathItems/Events/get/responses/200/content/application~1json/schema",
+      "schema": "/components/pathItems/Events/get/responses/200/content/application~1json/schema",
+      "declaration": "/components/pathItems/Events/get/responses/200/content/application~1json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsGetResponse"
+      }
+    },
+    {
+      "use": "schema value /paths/~1events~1{eventId}/get/parameters/0/schema",
+      "schema": "/paths/~1events~1{eventId}/get/parameters/0/schema",
+      "declaration": "/paths/~1events~1{eventId}/get/parameters/0/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsEventIdGetPathEventIdParameter"
+      }
+    },
+    {
+      "use": "schema value /components/parameters/Fields/schema",
+      "schema": "/components/parameters/Fields/schema",
+      "declaration": "/components/parameters/Fields/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsEventIdGetQueryFieldsParameter"
+      }
+    },
+    {
+      "use": "schema value /paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema",
+      "schema": "/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "schema value /components/headers/RateLimit/schema",
+      "schema": "/components/headers/RateLimit/schema",
+      "declaration": "/components/headers/RateLimit/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FieldEventsEventIdGetResponse200XRateLimitHeader"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event/properties/id",
+      "schema": "/components/schemas/Event/properties/id",
+      "declaration": "/components/schemas/Event/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event/properties/kind",
+      "schema": "/components/schemas/Event/properties/kind",
+      "declaration": "/components/schemas/Event/properties/kind",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/pathItems/Events/get/responses/200/content/application~1json/schema/items",
+      "schema": "/components/pathItems/Events/get/responses/200/content/application~1json/schema/items",
+      "declaration": "/components/pathItems/Events/get/responses/200/content/application~1json/schema/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": [
+    "/paths/~1events~1{eventId}/get: oas_header_ignored"
+  ]
+}

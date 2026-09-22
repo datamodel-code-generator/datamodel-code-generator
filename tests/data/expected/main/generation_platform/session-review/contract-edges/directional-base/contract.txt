@@ -1,6 +1,69 @@
-use request_body value /paths/~1users/post/requestBody: bound None
-use response_body value /paths/~1users/post/responses/201: bound None
-use schema value /components/schemas/User/properties/id: bound None
-use schema value /components/schemas/User/properties/name: bound None
-use schema value /components/schemas/User/properties/password: bound None
-use schema value /components/schemas/User: not_generated BND_SYMBOL_NOT_EMITTED
+{
+  "uses": [
+    {
+      "use": "request_body value /paths/~1users/post/requestBody",
+      "schema": "/paths/~1users/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1users/post/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UserRequest"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1users/post/responses/201",
+      "schema": "/paths/~1users/post/responses/201/content/application~1json/schema",
+      "declaration": "/paths/~1users/post/responses/201",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UserResponse"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/User/properties/id",
+      "schema": "/components/schemas/User/properties/id",
+      "declaration": "/components/schemas/User/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/User/properties/name",
+      "schema": "/components/schemas/User/properties/name",
+      "declaration": "/components/schemas/User/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/User/properties/password",
+      "schema": "/components/schemas/User/properties/password",
+      "declaration": "/components/schemas/User/properties/password",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/User",
+      "schema": "/components/schemas/User",
+      "declaration": "/components/schemas/User",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

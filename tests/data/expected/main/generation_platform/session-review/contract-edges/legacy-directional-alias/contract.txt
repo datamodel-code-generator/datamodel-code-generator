@@ -1,73 +1,692 @@
-use request_body value /paths/~1conditional/post/requestBody: bound None
-use schema value /components/schemas/ForwardGraphWrapper/properties/alias: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardGraphWrapper/properties/items: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardGraphWrapper/properties/values: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardGraphWrapper/properties/keyedValues: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardInlineWrapper/properties/container: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardRootInlineArrayWrapper/properties/items: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardRootInlineUnionWrapper/properties/value: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardDictKeyWrapper/properties/values: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ConditionalForwardWrapper/properties/payload: bound None
-use schema value /components/schemas/PositiveSccWrapper/properties/node: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/NegativeSccWrapper/properties/node: bound None
-use schema value /components/schemas/User/properties/id: bound None
-use schema value /components/schemas/User/properties/name: bound None
-use schema value /components/schemas/UserRequest/properties/legacy: bound None
-use schema value /components/schemas/CollisionWrapper/properties/user: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/CollisionWrapper/properties/sourceRequest: bound None
-use schema value /components/schemas/DirectInlineContainer/properties/child/properties/id: bound None
-use schema value /components/schemas/DirectInlineContainer/properties/child/properties/label: bound None
-use schema value /components/schemas/DirectInlineContainer/properties/child: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/ForwardInlineContainer/properties/child/properties/id: bound None
-use schema value /components/schemas/ForwardInlineContainer/properties/child/properties/label: bound None
-use schema value /components/schemas/ForwardInlineContainer/properties/child: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/InlineObjectArray/items/properties/id: bound None
-use schema value /components/schemas/InlineObjectArray/items/properties/label: bound None
-use schema value /components/schemas/InlineObjectArray/items: invalid BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardArray/items: invalid BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardMap/additionalProperties: invalid BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardKeyedMap/additionalProperties: invalid BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardDictKeyMap/additionalProperties: bound None
-use schema value /components/schemas/PositiveA/properties/name: bound None
-use schema value /components/schemas/PositiveA/properties/b: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/PositiveB/properties/id: bound None
-use schema value /components/schemas/PositiveB/properties/label: bound None
-use schema value /components/schemas/PositiveB/properties/a: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/NegativeA/properties/name: bound None
-use schema value /components/schemas/NegativeA/properties/b: bound None
-use schema value /components/schemas/NegativeB/properties/label: bound None
-use schema value /components/schemas/NegativeB/properties/a: bound None
-use schema value /components/schemas/ConditionalEnvelope/properties/kind: bound None
-use schema value /components/schemas/ReadOnlyLeaf/properties/id: bound None
-use schema value /components/schemas/InlineObjectUnion/anyOf/0/properties/id: bound None
-use schema value /components/schemas/InlineObjectUnion/anyOf/0/properties/label: bound None
-use schema value /components/schemas/InlineObjectUnion/anyOf/1/properties/name: bound None
-use schema value /components/schemas/InlineObjectUnion/anyOf/0: invalid BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/InlineObjectUnion: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/schemas/InlineObjectUnion/anyOf/1: bound None
-use schema value /components/schemas/ForwardGraphWrapper: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardInlineWrapper: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardRootInlineArrayWrapper: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardRootInlineUnionWrapper: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardDictKeyWrapper: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ConditionalForwardWrapper: bound None
-use schema value /components/schemas/PositiveSccWrapper: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/NegativeSccWrapper: bound None
-use schema value /components/schemas/User: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/UserRequest: bound None
-use schema value /components/schemas/CollisionWrapper: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/DirectInlineContainer: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardInlineContainer: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/InlineObjectArray: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardAlias: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardArray: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardMap: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardKeyedMap: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/ForwardDictKeyMap: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/PositiveA: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/PositiveB: not_generated BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/NegativeA: bound None
-use schema value /components/schemas/NegativeB: bound None
-use schema value /components/schemas/ConditionalEnvelope: bound None
-use schema value /components/schemas/AllowedKey: bound None
-use schema value /components/schemas/ReadOnlyLeaf: not_generated BND_SYMBOL_NOT_EMITTED
+{
+  "uses": [
+    {
+      "use": "request_body value /paths/~1conditional/post/requestBody",
+      "schema": "/paths/~1conditional/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1conditional/post/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "ConditionalForwardWrapper"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ForwardGraphWrapper/properties/alias",
+      "schema": "/components/schemas/ForwardGraphWrapper/properties/alias",
+      "declaration": "/components/schemas/ForwardGraphWrapper/properties/alias",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardGraphWrapper/properties/items",
+      "schema": "/components/schemas/ForwardGraphWrapper/properties/items",
+      "declaration": "/components/schemas/ForwardGraphWrapper/properties/items",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardGraphWrapper/properties/values",
+      "schema": "/components/schemas/ForwardGraphWrapper/properties/values",
+      "declaration": "/components/schemas/ForwardGraphWrapper/properties/values",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardGraphWrapper/properties/keyedValues",
+      "schema": "/components/schemas/ForwardGraphWrapper/properties/keyedValues",
+      "declaration": "/components/schemas/ForwardGraphWrapper/properties/keyedValues",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardInlineWrapper/properties/container",
+      "schema": "/components/schemas/ForwardInlineWrapper/properties/container",
+      "declaration": "/components/schemas/ForwardInlineWrapper/properties/container",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardRootInlineArrayWrapper/properties/items",
+      "schema": "/components/schemas/ForwardRootInlineArrayWrapper/properties/items",
+      "declaration": "/components/schemas/ForwardRootInlineArrayWrapper/properties/items",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardRootInlineUnionWrapper/properties/value",
+      "schema": "/components/schemas/ForwardRootInlineUnionWrapper/properties/value",
+      "declaration": "/components/schemas/ForwardRootInlineUnionWrapper/properties/value",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardDictKeyWrapper/properties/values",
+      "schema": "/components/schemas/ForwardDictKeyWrapper/properties/values",
+      "declaration": "/components/schemas/ForwardDictKeyWrapper/properties/values",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ConditionalForwardWrapper/properties/payload",
+      "schema": "/components/schemas/ConditionalForwardWrapper/properties/payload",
+      "declaration": "/components/schemas/ConditionalForwardWrapper/properties/payload",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "ConditionalEnvelope"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PositiveSccWrapper/properties/node",
+      "schema": "/components/schemas/PositiveSccWrapper/properties/node",
+      "declaration": "/components/schemas/PositiveSccWrapper/properties/node",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/NegativeSccWrapper/properties/node",
+      "schema": "/components/schemas/NegativeSccWrapper/properties/node",
+      "declaration": "/components/schemas/NegativeSccWrapper/properties/node",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "NegativeA"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/User/properties/id",
+      "schema": "/components/schemas/User/properties/id",
+      "declaration": "/components/schemas/User/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/User/properties/name",
+      "schema": "/components/schemas/User/properties/name",
+      "declaration": "/components/schemas/User/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/UserRequest/properties/legacy",
+      "schema": "/components/schemas/UserRequest/properties/legacy",
+      "declaration": "/components/schemas/UserRequest/properties/legacy",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "bool"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/CollisionWrapper/properties/user",
+      "schema": "/components/schemas/CollisionWrapper/properties/user",
+      "declaration": "/components/schemas/CollisionWrapper/properties/user",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/CollisionWrapper/properties/sourceRequest",
+      "schema": "/components/schemas/CollisionWrapper/properties/sourceRequest",
+      "declaration": "/components/schemas/CollisionWrapper/properties/sourceRequest",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UserRequest"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/DirectInlineContainer/properties/child/properties/id",
+      "schema": "/components/schemas/DirectInlineContainer/properties/child/properties/id",
+      "declaration": "/components/schemas/DirectInlineContainer/properties/child/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/DirectInlineContainer/properties/child/properties/label",
+      "schema": "/components/schemas/DirectInlineContainer/properties/child/properties/label",
+      "declaration": "/components/schemas/DirectInlineContainer/properties/child/properties/label",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/DirectInlineContainer/properties/child",
+      "schema": "/components/schemas/DirectInlineContainer/properties/child",
+      "declaration": "/components/schemas/DirectInlineContainer/properties/child",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardInlineContainer/properties/child/properties/id",
+      "schema": "/components/schemas/ForwardInlineContainer/properties/child/properties/id",
+      "declaration": "/components/schemas/ForwardInlineContainer/properties/child/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ForwardInlineContainer/properties/child/properties/label",
+      "schema": "/components/schemas/ForwardInlineContainer/properties/child/properties/label",
+      "declaration": "/components/schemas/ForwardInlineContainer/properties/child/properties/label",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ForwardInlineContainer/properties/child",
+      "schema": "/components/schemas/ForwardInlineContainer/properties/child",
+      "declaration": "/components/schemas/ForwardInlineContainer/properties/child",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectArray/items/properties/id",
+      "schema": "/components/schemas/InlineObjectArray/items/properties/id",
+      "declaration": "/components/schemas/InlineObjectArray/items/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectArray/items/properties/label",
+      "schema": "/components/schemas/InlineObjectArray/items/properties/label",
+      "declaration": "/components/schemas/InlineObjectArray/items/properties/label",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectArray/items",
+      "schema": "/components/schemas/InlineObjectArray/items",
+      "declaration": "/components/schemas/InlineObjectArray/items",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardArray/items",
+      "schema": "/components/schemas/ForwardArray/items",
+      "declaration": "/components/schemas/ForwardArray/items",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardMap/additionalProperties",
+      "schema": "/components/schemas/ForwardMap/additionalProperties",
+      "declaration": "/components/schemas/ForwardMap/additionalProperties",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardKeyedMap/additionalProperties",
+      "schema": "/components/schemas/ForwardKeyedMap/additionalProperties",
+      "declaration": "/components/schemas/ForwardKeyedMap/additionalProperties",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardDictKeyMap/additionalProperties",
+      "schema": "/components/schemas/ForwardDictKeyMap/additionalProperties",
+      "declaration": "/components/schemas/ForwardDictKeyMap/additionalProperties",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PositiveA/properties/name",
+      "schema": "/components/schemas/PositiveA/properties/name",
+      "declaration": "/components/schemas/PositiveA/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PositiveA/properties/b",
+      "schema": "/components/schemas/PositiveA/properties/b",
+      "declaration": "/components/schemas/PositiveA/properties/b",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/PositiveB/properties/id",
+      "schema": "/components/schemas/PositiveB/properties/id",
+      "declaration": "/components/schemas/PositiveB/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PositiveB/properties/label",
+      "schema": "/components/schemas/PositiveB/properties/label",
+      "declaration": "/components/schemas/PositiveB/properties/label",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PositiveB/properties/a",
+      "schema": "/components/schemas/PositiveB/properties/a",
+      "declaration": "/components/schemas/PositiveB/properties/a",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/NegativeA/properties/name",
+      "schema": "/components/schemas/NegativeA/properties/name",
+      "declaration": "/components/schemas/NegativeA/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/NegativeA/properties/b",
+      "schema": "/components/schemas/NegativeA/properties/b",
+      "declaration": "/components/schemas/NegativeA/properties/b",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "NegativeB"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/NegativeB/properties/label",
+      "schema": "/components/schemas/NegativeB/properties/label",
+      "declaration": "/components/schemas/NegativeB/properties/label",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/NegativeB/properties/a",
+      "schema": "/components/schemas/NegativeB/properties/a",
+      "declaration": "/components/schemas/NegativeB/properties/a",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "NegativeA"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ConditionalEnvelope/properties/kind",
+      "schema": "/components/schemas/ConditionalEnvelope/properties/kind",
+      "declaration": "/components/schemas/ConditionalEnvelope/properties/kind",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ReadOnlyLeaf/properties/id",
+      "schema": "/components/schemas/ReadOnlyLeaf/properties/id",
+      "declaration": "/components/schemas/ReadOnlyLeaf/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectUnion/anyOf/0/properties/id",
+      "schema": "/components/schemas/InlineObjectUnion/anyOf/0/properties/id",
+      "declaration": "/components/schemas/InlineObjectUnion/anyOf/0/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectUnion/anyOf/0/properties/label",
+      "schema": "/components/schemas/InlineObjectUnion/anyOf/0/properties/label",
+      "declaration": "/components/schemas/InlineObjectUnion/anyOf/0/properties/label",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectUnion/anyOf/1/properties/name",
+      "schema": "/components/schemas/InlineObjectUnion/anyOf/1/properties/name",
+      "declaration": "/components/schemas/InlineObjectUnion/anyOf/1/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectUnion/anyOf/0",
+      "schema": "/components/schemas/InlineObjectUnion/anyOf/0",
+      "declaration": "/components/schemas/InlineObjectUnion/anyOf/0",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectUnion",
+      "schema": "/components/schemas/InlineObjectUnion",
+      "declaration": "/components/schemas/InlineObjectUnion",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectUnion/anyOf/1",
+      "schema": "/components/schemas/InlineObjectUnion/anyOf/1",
+      "declaration": "/components/schemas/InlineObjectUnion/anyOf/1",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "InlineObjectUnion"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ForwardGraphWrapper",
+      "schema": "/components/schemas/ForwardGraphWrapper",
+      "declaration": "/components/schemas/ForwardGraphWrapper",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardInlineWrapper",
+      "schema": "/components/schemas/ForwardInlineWrapper",
+      "declaration": "/components/schemas/ForwardInlineWrapper",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardRootInlineArrayWrapper",
+      "schema": "/components/schemas/ForwardRootInlineArrayWrapper",
+      "declaration": "/components/schemas/ForwardRootInlineArrayWrapper",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardRootInlineUnionWrapper",
+      "schema": "/components/schemas/ForwardRootInlineUnionWrapper",
+      "declaration": "/components/schemas/ForwardRootInlineUnionWrapper",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardDictKeyWrapper",
+      "schema": "/components/schemas/ForwardDictKeyWrapper",
+      "declaration": "/components/schemas/ForwardDictKeyWrapper",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ConditionalForwardWrapper",
+      "schema": "/components/schemas/ConditionalForwardWrapper",
+      "declaration": "/components/schemas/ConditionalForwardWrapper",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "ConditionalForwardWrapper"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PositiveSccWrapper",
+      "schema": "/components/schemas/PositiveSccWrapper",
+      "declaration": "/components/schemas/PositiveSccWrapper",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/NegativeSccWrapper",
+      "schema": "/components/schemas/NegativeSccWrapper",
+      "declaration": "/components/schemas/NegativeSccWrapper",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "NegativeSccWrapper"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/User",
+      "schema": "/components/schemas/User",
+      "declaration": "/components/schemas/User",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/UserRequest",
+      "schema": "/components/schemas/UserRequest",
+      "declaration": "/components/schemas/UserRequest",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UserRequest"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/CollisionWrapper",
+      "schema": "/components/schemas/CollisionWrapper",
+      "declaration": "/components/schemas/CollisionWrapper",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/DirectInlineContainer",
+      "schema": "/components/schemas/DirectInlineContainer",
+      "declaration": "/components/schemas/DirectInlineContainer",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardInlineContainer",
+      "schema": "/components/schemas/ForwardInlineContainer",
+      "declaration": "/components/schemas/ForwardInlineContainer",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/InlineObjectArray",
+      "schema": "/components/schemas/InlineObjectArray",
+      "declaration": "/components/schemas/InlineObjectArray",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardAlias",
+      "schema": "/components/schemas/ForwardAlias",
+      "declaration": "/components/schemas/ForwardAlias",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardArray",
+      "schema": "/components/schemas/ForwardArray",
+      "declaration": "/components/schemas/ForwardArray",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardMap",
+      "schema": "/components/schemas/ForwardMap",
+      "declaration": "/components/schemas/ForwardMap",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardKeyedMap",
+      "schema": "/components/schemas/ForwardKeyedMap",
+      "declaration": "/components/schemas/ForwardKeyedMap",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/ForwardDictKeyMap",
+      "schema": "/components/schemas/ForwardDictKeyMap",
+      "declaration": "/components/schemas/ForwardDictKeyMap",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/PositiveA",
+      "schema": "/components/schemas/PositiveA",
+      "declaration": "/components/schemas/PositiveA",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/PositiveB",
+      "schema": "/components/schemas/PositiveB",
+      "declaration": "/components/schemas/PositiveB",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/NegativeA",
+      "schema": "/components/schemas/NegativeA",
+      "declaration": "/components/schemas/NegativeA",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "NegativeA"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/NegativeB",
+      "schema": "/components/schemas/NegativeB",
+      "declaration": "/components/schemas/NegativeB",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "NegativeB"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ConditionalEnvelope",
+      "schema": "/components/schemas/ConditionalEnvelope",
+      "declaration": "/components/schemas/ConditionalEnvelope",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "ConditionalEnvelope"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/AllowedKey",
+      "schema": "/components/schemas/AllowedKey",
+      "declaration": "/components/schemas/AllowedKey",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "AllowedKey"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/ReadOnlyLeaf",
+      "schema": "/components/schemas/ReadOnlyLeaf",
+      "declaration": "/components/schemas/ReadOnlyLeaf",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

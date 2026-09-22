@@ -98,7 +98,10 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
             operation = observation.operation.candidates[0].declaration
             body = child_declaration(operation, "requestBody")
             declaration, raw = self._resolve_media_object(
-                observation.operation, body, observation.operation.candidates[0].raw.get("requestBody")
+                observation.operation,
+                body,
+                observation.operation.candidates[0].raw.get("requestBody"),
+                ("requestBody",),
             )
             for media, data_type in observation.types.items():
                 self._record_media_type(body, declaration, media, raw, data_type)
@@ -110,20 +113,23 @@ class LegacyFinalOperationBuilder(FinalOperationBuilder):
             types = {str(status): media for status, media in observation.types.items()}
             for status, response_value in responses.items():
                 response = child_declaration(operation, "responses", str(status))
-                declaration, raw = self._resolve_media_object(observation.operation, response, response_value)
+                declaration, raw = self._resolve_media_object(
+                    observation.operation, response, response_value, ("responses", str(status))
+                )
                 for media, data_type in types.get(str(status), {}).items():
                     self._record_media_type(response, declaration, media, raw, data_type)
 
     def _resolve_media_object(
-        self, operation: LegacyOperationObservation, declaration: ApiDeclarationId, raw: YamlValue
+        self,
+        operation: LegacyOperationObservation,
+        declaration: ApiDeclarationId,
+        raw: YamlValue,
+        occurrence: tuple[str, ...],
     ) -> tuple[ApiDeclarationId, dict[str, YamlValue]]:
-        """Use the engine's actual borrowed destination, including loaded external objects."""
-        value = wire_mapping(raw)
-        if (
-            isinstance(ref := value.get("$ref"), str)
-            and (origin := self.parser.legacy_ref_objects.get((id(operation), ref))) is not None
-            and isinstance(origin.raw, dict)
-        ):
+        """Use the engine's actual destination: its borrowed reference target, or the inline object it read."""
+        if (key := (id(operation), occurrence)) not in self.parser.legacy_references:
+            self.resolved_objects[declaration] = (declaration, wire_mapping(raw))
+        elif (origin := self.parser.legacy_references[key]) is not None and isinstance(origin.raw, dict):
             document = self.document_uris[origin.location.document]
             tokens = (
                 tuple(token.replace("~1", "/").replace("~0", "~") for token in origin.location.pointer[1:].split("/"))

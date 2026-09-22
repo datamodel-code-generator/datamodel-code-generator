@@ -1,4 +1,50 @@
-use schema value /components/schemas/Pet: bound None
-use schema value /components/schemas/Pet/properties/id: bound None
-use schema value /components/schemas/Pet/properties/name: bound None
-use schema value /components/schemas/Pet/properties/secret: bound None
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/Pet",
+      "schema": "/components/schemas/Pet",
+      "declaration": "/components/schemas/Pet",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Pet"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/id",
+      "schema": "/components/schemas/Pet/properties/id",
+      "declaration": "/components/schemas/Pet/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/name",
+      "schema": "/components/schemas/Pet/properties/name",
+      "declaration": "/components/schemas/Pet/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/secret",
+      "schema": "/components/schemas/Pet/properties/secret",
+      "declaration": "/components/schemas/Pet/properties/secret",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

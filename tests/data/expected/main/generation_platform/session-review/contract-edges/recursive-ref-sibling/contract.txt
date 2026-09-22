@@ -1,8 +1,98 @@
-use request_body value /paths/~1comments/post/requestBody: invalid BND_SYMBOL_NOT_EMITTED
-use response_body value /paths/~1comments/post/responses/201: bound None
-use schema value /components/schemas/Comment: bound None
-use schema value /paths/~1comments/post/requestBody/content/application~1json/schema: invalid BND_SYMBOL_NOT_EMITTED
-use schema value /paths/~1comments/post/responses/201/content/application~1json/schema: bound None
-use schema value /components/schemas/Comment/properties/body: bound None
-use schema value /components/schemas/Comment/properties/replies/items: bound None
-use schema value /components/schemas/Comment/properties/replies: bound None
+{
+  "uses": [
+    {
+      "use": "request_body value /paths/~1comments/post/requestBody",
+      "schema": "/paths/~1comments/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1comments/post/requestBody",
+      "media": "application/json",
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "response_body value /paths/~1comments/post/responses/201",
+      "schema": "/paths/~1comments/post/responses/201/content/application~1json/schema",
+      "declaration": "/paths/~1comments/post/responses/201",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Comment"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Comment",
+      "schema": "/components/schemas/Comment",
+      "declaration": "/components/schemas/Comment",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Comment"
+      }
+    },
+    {
+      "use": "schema value /paths/~1comments/post/requestBody/content/application~1json/schema",
+      "schema": "/paths/~1comments/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1comments/post/requestBody/content/application~1json/schema",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /paths/~1comments/post/responses/201/content/application~1json/schema",
+      "schema": "/paths/~1comments/post/responses/201/content/application~1json/schema",
+      "declaration": "/paths/~1comments/post/responses/201/content/application~1json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Comment"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Comment/properties/body",
+      "schema": "/components/schemas/Comment/properties/body",
+      "declaration": "/components/schemas/Comment/properties/body",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Comment/properties/replies/items",
+      "schema": "/components/schemas/Comment/properties/replies/items",
+      "declaration": "/components/schemas/Comment/properties/replies/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Comment"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Comment/properties/replies",
+      "schema": "/components/schemas/Comment/properties/replies",
+      "declaration": "/components/schemas/Comment/properties/replies",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Comment"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

@@ -1,10 +1,146 @@
-use request_body value /paths/~1events/post/requestBody: bound None
-use request_body item_stream_array /paths/~1events/post/requestBody: bound None
-use request_body value /paths/~1batches/post/requestBody: bound None
-use schema value /paths/~1events/post/requestBody/content/application~1jsonl/itemSchema: bound None
-use schema value /components/schemas/Batch/properties/events: bound None
-use schema value /components/schemas/Event/properties/id: bound None
-use schema value /components/schemas/EventsPostRequest/items: bound None
-use schema value /components/schemas/Batch: bound None
-use schema value /components/schemas/Event: bound None
-use schema value /components/schemas/EventsPostRequest: bound None
+{
+  "uses": [
+    {
+      "use": "request_body value /paths/~1events/post/requestBody",
+      "schema": "/paths/~1events/post/requestBody/content/application~1jsonl/itemSchema",
+      "declaration": "/paths/~1events/post/requestBody",
+      "media": "application/jsonl",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "request_body item_stream_array /paths/~1events/post/requestBody",
+      "schema": "/paths/~1events/post/requestBody/content/application~1jsonl/itemSchema",
+      "declaration": "/paths/~1events/post/requestBody",
+      "media": "application/jsonl",
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Event"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "request_body value /paths/~1batches/post/requestBody",
+      "schema": "/paths/~1batches/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1batches/post/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Batch"
+      }
+    },
+    {
+      "use": "schema value /paths/~1events/post/requestBody/content/application~1jsonl/itemSchema",
+      "schema": "/paths/~1events/post/requestBody/content/application~1jsonl/itemSchema",
+      "declaration": "/paths/~1events/post/requestBody/content/application~1jsonl/itemSchema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Batch/properties/events",
+      "schema": "/components/schemas/Batch/properties/events",
+      "declaration": "/components/schemas/Batch/properties/events",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Event"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event/properties/id",
+      "schema": "/components/schemas/Event/properties/id",
+      "declaration": "/components/schemas/Event/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/EventsPostRequest/items",
+      "schema": "/components/schemas/EventsPostRequest/items",
+      "declaration": "/components/schemas/EventsPostRequest/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Batch",
+      "schema": "/components/schemas/Batch",
+      "declaration": "/components/schemas/Batch",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Batch"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event",
+      "schema": "/components/schemas/Event",
+      "declaration": "/components/schemas/Event",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/EventsPostRequest",
+      "schema": "/components/schemas/EventsPostRequest",
+      "declaration": "/components/schemas/EventsPostRequest",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Event"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

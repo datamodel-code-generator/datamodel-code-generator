@@ -1,3 +1,30 @@
-use parameter value /paths/~1pets/get/parameters/0: invalid BND_AMBIGUOUS_REPLACEMENT
-use parameter value /paths/~1toys/get/parameters/0: invalid BND_AMBIGUOUS_REPLACEMENT
-use schema value /components/parameters/Status/schema: invalid BND_AMBIGUOUS_REPLACEMENT
+{
+  "uses": [
+    {
+      "use": "parameter value /paths/~1pets/get/parameters/0",
+      "schema": "/paths/~1pets/get/parameters/0/schema",
+      "declaration": "/components/parameters/Status",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "parameter value /paths/~1toys/get/parameters/0",
+      "schema": "/paths/~1toys/get/parameters/0/schema",
+      "declaration": "/components/parameters/Status",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    },
+    {
+      "use": "schema value /components/parameters/Status/schema",
+      "schema": "/components/parameters/Status/schema",
+      "declaration": "/components/parameters/Status/schema",
+      "media": null,
+      "state": "invalid BND_AMBIGUOUS_REPLACEMENT",
+      "type": null
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

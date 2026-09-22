@@ -1,5 +1,68 @@
-use schema value /components/schemas/Node: bound None
-use schema value /components/schemas/Root: invalid BND_SYMBOL_NOT_EMITTED
-use schema value /components/schemas/Node/properties/name: bound None
-use schema value /components/schemas/Node/properties/children/items: bound None
-use schema value /components/schemas/Node/properties/children: bound None
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/Node",
+      "schema": "/components/schemas/Node",
+      "declaration": "/components/schemas/Node",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Node"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Root",
+      "schema": "/components/schemas/Root",
+      "declaration": "/components/schemas/Root",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/Node/properties/name",
+      "schema": "/components/schemas/Node/properties/name",
+      "declaration": "/components/schemas/Node/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Node/properties/children/items",
+      "schema": "/components/schemas/Node/properties/children/items",
+      "declaration": "/components/schemas/Node/properties/children/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Node"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Node/properties/children",
+      "schema": "/components/schemas/Node/properties/children",
+      "declaration": "/components/schemas/Node/properties/children",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Node"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}
