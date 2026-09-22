@@ -36,12 +36,13 @@ class SourceLease:
             raise RuntimeError(msg)
 
     def register(self, uri: str, document: dict[str, YamlValue]) -> SourceDocumentId:
-        """Borrow an actual loader result without conflating URI or node identity."""
+        """Borrow an actual loader result without conflating URI or node identity.
+
+        Deferred pointer processing can reload the same source into another mapping. Document identity is its loader
+        key; producer frames retain the actual raw node used by each validation call separately.
+        """
         self._check_open()
         if (existing := self._by_uri.get(uri)) is not None:
-            # Deferred pointer processing can reload the same source into another
-            # mapping. Document identity is its loader key; producer frames retain
-            # the actual raw node used by each validation call separately.
             return existing
         identity = SourceDocumentId(len(self._documents))
         self._documents.append(SourceDocument(identity, uri))

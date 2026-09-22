@@ -191,7 +191,10 @@ class _ObservedDeclarationFrames(list[ApiDeclarationFrame]):  # ruff: ignore[sub
 
     @capture_errors
     def append(self, frame: ApiDeclarationFrame) -> None:
-        """Borrow the engine's actual frame without recomputing its effective values."""
+        """Borrow the engine's actual frame without recomputing its effective values.
+
+        The remaining Api-owned frame phases after operations are schema and file.
+        """
         if (record_schema := self.record_schema) is None:
             msg = "Declaration capture is closed"
             raise BindingCaptureError(msg)
@@ -200,7 +203,7 @@ class _ObservedDeclarationFrames(list[ApiDeclarationFrame]):  # ruff: ignore[sub
             case "operation":
                 parent = next((entry for entry in reversed(self) if entry.phase == "operation"), None)
                 self.operations.append(OperationObservation(frame, parent))
-            case _:  # The remaining Api-owned frame phases are schema and file.
+            case _:
                 self.schemas.append(frame)
                 record_schema(frame)
         super().append(frame)
@@ -292,7 +295,10 @@ class BindingCaptureMixin(OpenAPIParser):
         config: OpenAPIParserConfig | None = None,
         **options: Unpack[OpenAPIParserConfigDict],
     ) -> None:
-        """Keep state on capture subclasses without adding fields to default parsers."""
+        """Keep state on capture subclasses without adding fields to default parsers.
+
+        The existing parser accepts mappings; its constructor annotation omits them.
+        """
         self.binding_ledger = BindingLedger(attempt_id)
         self.source_lease = SourceLease()
         self.type_observations: list[TypeObservation] = []
@@ -303,7 +309,6 @@ class BindingCaptureMixin(OpenAPIParser):
         self.request_types: list[RequestTypesObservation] = []
         self.response_types: list[ResponseTypesObservation] = []
         self._model_resolver_factory = partial(self._create_binding_resolver)
-        # The existing parser accepts mappings; its constructor annotation omits them.
         super().__init__(  # pyright: ignore[reportUnknownMemberType]
             source,  # type: ignore[arg-type]
             config=config,
