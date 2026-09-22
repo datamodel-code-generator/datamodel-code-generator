@@ -1,0 +1,8 @@
+use request_body value /paths/~1comments/post/requestBody: invalid BND_SYMBOL_NOT_EMITTED
+use response_body value /paths/~1comments/post/responses/201: bound None
+use schema value /components/schemas/Comment: bound None
+use schema value /paths/~1comments/post/requestBody/content/application~1json/schema: invalid BND_SYMBOL_NOT_EMITTED
+use schema value /paths/~1comments/post/responses/201/content/application~1json/schema: bound None
+use schema value /components/schemas/Comment/properties/body: bound None
+use schema value /components/schemas/Comment/properties/replies/items: bound None
+use schema value /components/schemas/Comment/properties/replies: bound None

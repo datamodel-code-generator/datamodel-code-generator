@@ -1,0 +1,14 @@
+use request_body value /paths/~1a/post/requestBody: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+use request_body item_stream_array /paths/~1a/post/requestBody: bound None
+use response_body value /paths/~1a/post/responses/200: bound None
+use response_body item_stream_array /paths/~1a/post/responses/200: bound None
+use response_body value /paths/~1a/post/responses/201: bound None
+use response_body item_stream_array /paths/~1a/post/responses/201: bound None
+use request_body value /paths/~1b/post/requestBody: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+use request_body item_stream_array /paths/~1b/post/requestBody: bound None
+use response_body value /paths/~1b/post/responses/200: bound None
+use response_body item_stream_array /paths/~1b/post/responses/200: bound None
+use schema value /components/requestBodies/Shared/content/application~1json/itemSchema/properties/value: bound None
+use schema value /components/requestBodies/Shared/content/application~1json/itemSchema: invalid BND_AMBIGUOUS_REPLACEMENT
+use schema value /components/responses/Shared/content/application~1json/itemSchema/properties/value: bound None
+use schema value /components/responses/Shared/content/application~1json/itemSchema: invalid BND_AMBIGUOUS_REPLACEMENT

@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Recursive reference with sibling keywords
+  version: "1"
+paths:
+  /comments:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+              required: [body]
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+components:
+  schemas:
+    Comment:
+      type: object
+      properties:
+        body:
+          type: string
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'

@@ -1,0 +1,6 @@
+use parameter value /paths/~1items/get/parameters/1: not_generated BND_SYMBOL_NOT_EMITTED
+use parameter value /paths/~1items/get/parameters/1: not_generated BND_SYMBOL_NOT_EMITTED
+use response_body value /paths/~1items/get/responses/200: bound None
+use schema value /paths/~1items/get/parameters/1/content/application~1json/schema: bound None
+use schema value /paths/~1items/get/parameters/1/content/text~1plain/schema: bound None
+use schema value /paths/~1items/get/responses/200/content/application~1json/schema/properties/ok: bound None

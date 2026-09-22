@@ -1,0 +1,4 @@
+use schema value /components/schemas/Node: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+use schema value /components/schemas/Holder: bound None
+use schema value /components/schemas/Holder/properties/node: invalid BND_SYMBOL_NOT_EMITTED
+diagnostic BND_SYMBOL_NOT_EMITTED 

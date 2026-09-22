@@ -2570,7 +2570,7 @@ class BindingCaptureMixin(OpenAPIParser):
     def _legacy_media_source(
         self, operation: LegacyOperationObservation, path: tuple[str, ...], keyword: str
     ) -> SchemaOrigin | None:
-        """Join the original use to its direct or actually resolved media occurrence."""
+        """Join the original use to the direct or engine-resolved occurrence whose media the engine read."""
         declaration = operation.candidates[0]
         relative = path[len(operation.engine_path) :]
         media = relative[-1]
@@ -2594,18 +2594,12 @@ class BindingCaptureMixin(OpenAPIParser):
             parent = SourceLocation(
                 document, "/" + "/".join(token.replace("~", "~0").replace("/", "~1") for token in owner), "schema"
             )
-        if (
-            not isinstance(raw, dict)
-            or not isinstance(content := raw.get("content"), dict)
-            or not isinstance(medium := content.get(media), dict)
-            or not isinstance(original := medium.get(keyword), (dict, bool))
-        ):
-            return None
         location = SourceLocation(
             parent.document,
             parent.pointer + "/content/" + media.replace("~", "~0").replace("/", "~1") + "/" + keyword,
             "schema",
         )
+        original = cast("dict[str, YamlValue] | bool", raw_value(raw, ("content", media, keyword)))
         return SchemaOrigin(location, original, "validated_child")
 
     @capture_errors

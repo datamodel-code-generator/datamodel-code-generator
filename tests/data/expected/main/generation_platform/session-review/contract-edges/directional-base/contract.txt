@@ -1,0 +1,6 @@
+use request_body value /paths/~1users/post/requestBody: bound None
+use response_body value /paths/~1users/post/responses/201: bound None
+use schema value /components/schemas/User/properties/id: bound None
+use schema value /components/schemas/User/properties/name: bound None
+use schema value /components/schemas/User/properties/password: bound None
+use schema value /components/schemas/User: not_generated BND_SYMBOL_NOT_EMITTED

@@ -1,0 +1,4 @@
+use schema value /components/schemas/Pet: bound None
+use schema value /components/schemas/Pet/properties/id: bound None
+use schema value /components/schemas/Pet/properties/name: bound None
+use schema value /components/schemas/Pet/properties/secret: bound None

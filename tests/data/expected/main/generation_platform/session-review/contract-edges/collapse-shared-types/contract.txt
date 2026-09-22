@@ -1,0 +1,5 @@
+use schema value /components/schemas/Tags: bound None
+use schema value /components/schemas/Holder: bound None
+use schema value /components/schemas/Tags/items: bound None
+use schema value /components/schemas/Holder/properties/first: bound None
+use schema value /components/schemas/Holder/properties/second: bound None

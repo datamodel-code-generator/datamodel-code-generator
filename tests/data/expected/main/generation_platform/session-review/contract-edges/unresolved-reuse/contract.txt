@@ -1,0 +1,3 @@
+use request_body value /paths/~1notes/post/requestBody: invalid BND_UNRESOLVED_REFERENCE
+use response_body value /paths/~1notes/post/responses/200: invalid BND_UNRESOLVED_REFERENCE
+use schema value /components/schemas/Payload: invalid BND_UNRESOLVED_REFERENCE

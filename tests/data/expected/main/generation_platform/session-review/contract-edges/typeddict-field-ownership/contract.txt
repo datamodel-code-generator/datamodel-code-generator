@@ -1,0 +1,11 @@
+use schema value /components/schemas/A: bound None
+use schema value /components/schemas/B: bound None
+use schema value /components/schemas/C: bound None
+use schema value /components/schemas/Leaf: bound None
+use schema value /components/schemas/A/properties/root: bound None
+use schema value /components/schemas/A/properties/shared-key: bound None
+use schema value /components/schemas/B/allOf/1/properties/left: bound None
+use schema value /components/schemas/B/allOf/1/properties/shared-key: bound None
+use schema value /components/schemas/C/allOf/1/properties/right: bound None
+use schema value /components/schemas/C/allOf/1/properties/shared-key: bound None
+use schema value /components/schemas/Leaf/allOf/2/properties/leaf-key: bound None

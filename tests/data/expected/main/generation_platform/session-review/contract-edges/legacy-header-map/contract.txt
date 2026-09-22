@@ -1,0 +1,5 @@
+use response_body value /paths/~1files/get/responses/200: bound None
+use response_body value /paths/~1files/get/responses/206: bound None
+use schema value /components/schemas/File/properties/name: bound None
+use schema value /components/schemas/File: bound None
+ignored /paths/~1files/get: oas_header_ignored

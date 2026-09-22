@@ -1,0 +1,5 @@
+use schema value /components/schemas/Node: bound None
+use schema value /components/schemas/Root: invalid BND_SYMBOL_NOT_EMITTED
+use schema value /components/schemas/Node/properties/name: bound None
+use schema value /components/schemas/Node/properties/children/items: bound None
+use schema value /components/schemas/Node/properties/children: bound None

@@ -1,0 +1,41 @@
+openapi: 3.2.0
+info:
+  title: Legacy stream root name collision
+  version: "1"
+paths:
+  /events:
+    post:
+      requestBody:
+        content:
+          application/jsonl:
+            itemSchema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        "204":
+          description: Accepted
+  /batches:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Batch'
+      responses:
+        "204":
+          description: Accepted
+components:
+  schemas:
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+    EventsPostRequest:
+      type: array
+      items:
+        $ref: '#/components/schemas/Event'
+    Batch:
+      type: object
+      properties:
+        events:
+          $ref: '#/components/schemas/EventsPostRequest'

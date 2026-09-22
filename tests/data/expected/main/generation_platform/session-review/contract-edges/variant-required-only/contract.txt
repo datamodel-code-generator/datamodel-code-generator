@@ -1,0 +1,4 @@
+use schema value /components/schemas/Base: bound None
+use schema value /components/schemas/Child: bound None
+use schema value /components/schemas/Base/properties/id: bound None
+use schema value /components/schemas/Base/properties/name: bound None

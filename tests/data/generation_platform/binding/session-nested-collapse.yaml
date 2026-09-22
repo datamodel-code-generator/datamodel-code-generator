@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info:
+  title: Nested root collapse
+  version: "1"
+paths:
+  /posts:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Post'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+components:
+  schemas:
+    Tag:
+      type: string
+    Tags:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tag'
+    Post:
+      type: object
+      properties:
+        tags:
+          $ref: '#/components/schemas/Tags'
+        previousTags:
+          $ref: '#/components/schemas/Tags'
+        labels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        counts:
+          type: object
+          propertyNames:
+            pattern: '^[a-z]+$'
+          additionalProperties:
+            type: integer

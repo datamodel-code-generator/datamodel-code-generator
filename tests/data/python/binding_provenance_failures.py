@@ -175,6 +175,9 @@ def producer_fault(case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> Ite
                 parser.binding_resolver.default_resolutions[-1] = replace(
                     parser.binding_resolver.default_resolutions[-1], field_name="unobserved"
                 )
+            case "item-stream-container":
+                for data_type in args[0].values():
+                    data_type.is_optional = True
             case "pending-default-identity":
                 if parser._pending_field_default is not None:
                     parser._pending_field_default = replace(parser._pending_field_default, field_name="unobserved")

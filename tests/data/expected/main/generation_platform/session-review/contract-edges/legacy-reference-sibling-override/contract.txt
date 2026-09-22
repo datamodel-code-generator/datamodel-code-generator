@@ -1,0 +1,6 @@
+use response_body value /paths/~1pets/get/responses/200: bound None
+use response_body value /paths/~1pets/get/responses/206: bound None
+use schema value /components/schemas/Pet/properties/name: bound None
+use schema value /components/responses/PetPage/content/application~1json/schema/items: bound None
+use schema value /paths/~1pets/get/responses/206/content/application~1json/schema/properties/count: bound None
+use schema value /components/schemas/Pet: bound None

@@ -1,0 +1,21 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Directional variant with an undeclared required name", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Base": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "readOnly": true},
+          "name": {"type": "string"}
+        }
+      },
+      "Child": {
+        "type": "object",
+        "required": ["name", "ghost"],
+        "allOf": [{"$ref": "#/components/schemas/Base"}]
+      }
+    }
+  }
+}

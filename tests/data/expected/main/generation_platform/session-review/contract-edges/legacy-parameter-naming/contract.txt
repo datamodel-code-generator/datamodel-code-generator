@@ -1,0 +1,3 @@
+use parameter value /paths/~1pets/get/parameters/0: invalid BND_AMBIGUOUS_REPLACEMENT
+use parameter value /paths/~1toys/get/parameters/0: invalid BND_AMBIGUOUS_REPLACEMENT
+use schema value /components/parameters/Status/schema: invalid BND_AMBIGUOUS_REPLACEMENT

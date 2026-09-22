@@ -1,0 +1,11 @@
+use parameter value /paths/~1events~1{eventId}/get/parameters/0: not_generated BND_SYMBOL_NOT_EMITTED
+use response_body value /paths/~1events~1{eventId}/get/responses/200: bound None
+use schema value /paths/~1events~1batch/post/requestBody/content/application~1jsonl/itemSchema: bound None
+use schema value /components/parameters/Fields/schema: bound None
+use schema value /components/schemas/Event/properties/id: bound None
+use schema value /components/schemas/Event/properties/kind: bound None
+use schema value /components/schemas/Event: bound None
+diagnostic BND_OPERATION_ORIGIN_UNRESOLVED 
+diagnostic BND_UNRESOLVED_REFERENCE /paths/~1events~1{eventId}/get/parameters/2
+diagnostic BND_UNRESOLVED_REFERENCE /paths/~1events~1{eventId}/get/responses/200/headers/X-Rate-Limit
+ignored /paths/~1events~1{eventId}/get: oas_header_ignored

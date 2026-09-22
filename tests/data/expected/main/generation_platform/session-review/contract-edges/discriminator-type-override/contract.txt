@@ -1,0 +1,13 @@
+use schema value /components/schemas/app.Beagle: bound None
+use schema value /components/schemas/zoo.Kind: bound None
+use schema value /components/schemas/zoo.Dog: bound None
+use schema value /components/schemas/zoo.Cat: bound None
+use schema value /components/schemas/zoo.Selector: bound None
+use schema value /components/schemas/zoo.Dog/properties/kind: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+use schema value /components/schemas/zoo.Dog/properties/bark: bound None
+use schema value /components/schemas/zoo.Cat/properties/kind: bound None
+use schema value /components/schemas/zoo.Cat/properties/purr: bound None
+use schema value /components/schemas/zoo.Selector/oneOf/0: bound None
+use schema value /components/schemas/zoo.Selector/oneOf/1: bound None
+diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED 
+diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED 

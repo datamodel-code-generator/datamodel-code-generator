@@ -1,0 +1,3 @@
+use schema value /components/schemas/LabeledPoint: bound None
+use schema value /components/schemas/LabeledPoint/prefixItems/1: bound None
+use schema value /components/schemas/LabeledPoint/prefixItems/2: bound None

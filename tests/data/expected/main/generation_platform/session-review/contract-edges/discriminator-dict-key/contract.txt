@@ -1,0 +1,14 @@
+use schema value /components/schemas/Pet: bound None
+use schema value /components/schemas/Cat: bound None
+use schema value /components/schemas/Dog: bound None
+use schema value /components/schemas/Scores: bound None
+use schema value /components/schemas/Kennel: bound None
+use schema value /components/schemas/Pet/oneOf/0: bound None
+use schema value /components/schemas/Pet/oneOf/1: bound None
+use schema value /components/schemas/Cat/properties/kind: bound None
+use schema value /components/schemas/Cat/properties/indoor: bound None
+use schema value /components/schemas/Dog/properties/kind: bound None
+use schema value /components/schemas/Dog/properties/breed: bound None
+use schema value /components/schemas/Scores/additionalProperties: bound None
+use schema value /components/schemas/Kennel/properties/resident: bound None
+use schema value /components/schemas/Kennel/properties/scores: bound None

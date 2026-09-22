@@ -1,0 +1,10 @@
+use request_body value /paths/~1events/post/requestBody: bound None
+use request_body item_stream_array /paths/~1events/post/requestBody: bound None
+use request_body value /paths/~1batches/post/requestBody: bound None
+use schema value /paths/~1events/post/requestBody/content/application~1jsonl/itemSchema: bound None
+use schema value /components/schemas/Batch/properties/events: bound None
+use schema value /components/schemas/Event/properties/id: bound None
+use schema value /components/schemas/EventsPostRequest/items: bound None
+use schema value /components/schemas/Batch: bound None
+use schema value /components/schemas/Event: bound None
+use schema value /components/schemas/EventsPostRequest: bound None

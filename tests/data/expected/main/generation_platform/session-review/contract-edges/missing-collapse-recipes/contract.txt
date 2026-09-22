@@ -1,0 +1,12 @@
+use schema value /components/schemas/Pet: bound None
+use schema value /components/schemas/Pets: bound None
+use schema value /components/schemas/Labels: bound None
+use schema value /components/schemas/Holder: bound None
+use schema value /components/schemas/Missing: bound None
+use schema value /components/schemas/Pet/properties/name: bound None
+use schema value /components/schemas/Pets/items: bound None
+use schema value /components/schemas/Labels/additionalProperties: bound None
+use schema value /components/schemas/Holder/properties/pets: bound None
+use schema value /components/schemas/Holder/properties/labels: bound None
+use schema value /components/schemas/Holder/properties/bad: invalid BND_UNRESOLVED_REFERENCE
+diagnostic BND_UNRESOLVED_REFERENCE 
