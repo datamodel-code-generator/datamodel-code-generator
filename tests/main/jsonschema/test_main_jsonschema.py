@@ -2383,6 +2383,83 @@ def test_main_reuse_model_collapse_inline_definitions(output_file: Path) -> None
     )
 
 
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        pytest.param("same_name_reference_models.py", [], id="default"),
+        pytest.param(
+            "same_name_reference_models_collapse_reuse_models.py",
+            ["--reuse-model", "--collapse-reuse-models"],
+            id="collapse-reuse-models",
+        ),
+    ],
+)
+def test_main_jsonschema_same_name_reference_models(
+    expected_file: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Keep equally rendered models apart when same-named references from other files differ."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_models" / "probe.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *extra_args],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=Path(expected_file).stem,
+        model_name="Probe",
+        valid_json='{"speed": {"values": {"left": 1.5}}, "direction": {"values": {"left": "increase"}}}',
+        invalid_json='{"direction": {"values": {"left": 1.5}}}',
+        expected_error_type="enum",
+    )
+
+
+def test_main_jsonschema_same_name_reference_literals(output_file: Path) -> None:
+    """Keep equally rendered models apart when their references differ in string defaults naming referenced models."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_literals" / "probe.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="same_name_reference_literals.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="same_name_reference_literals",
+        model_name="Probe",
+        valid_json='{"direction": {"values": {"left": {"kind": "up"}}}}',
+        invalid_json='{"direction": {"values": {"left": {"kind": "sideways"}}}}',
+        expected_error_type="enum",
+        expected_attribute_path=("direction", "values", "left", "tag"),
+        expected_attribute_value="Mode",
+    )
+
+
+def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
+    """Keep equally rendered models apart when their references differ in fields named after referenced models."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "probe.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="same_name_reference_fields.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="same_name_reference_fields",
+        model_name="Probe",
+        valid_json='{"direction": {"values": {"left": {"Foo": {"x": 1}}}}}',
+        invalid_json='{"direction": {"values": {"left": {"Foo": {"x": "one"}}}}}',
+        expected_error_type="int_parsing",
+        expected_attribute_path=("direction", "values", "left", "Foo_1", "x"),
+        expected_attribute_value=1,
+    )
+
+
 def test_main_reuse_model_discriminator_literal(output_file: Path) -> None:
     """Reuse inherited discriminator literals instead of injecting the reuse path segment."""
     run_main_and_assert(

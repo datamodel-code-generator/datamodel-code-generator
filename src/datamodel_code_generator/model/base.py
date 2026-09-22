@@ -2274,12 +2274,16 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if cached is not None:
             return cached
 
-        if self.IS_ROOT_MODEL:
-            self.finalize_sequence_interface()
         render_class_name = class_name if class_name is not None or not use_default else "M"
-        result = tuple(to_hashable(v) for v in (self.render(class_name=render_class_name), self.imports))
+        result = self._render_dedup_key(render_class_name)
         self._dedup_key_cache[cache_key] = result
         return result
+
+    def _render_dedup_key(self, class_name: str | None) -> tuple[Any, ...]:
+        """Render the hashable deduplication key for a class name without caching it."""
+        if self.IS_ROOT_MODEL:
+            self.finalize_sequence_interface()
+        return tuple(to_hashable(v) for v in (self.render(class_name=class_name), self.imports))
 
     def create_reuse_model(self, base_ref: Reference) -> Self:
         """Create inherited model with empty fields pointing to base reference."""
