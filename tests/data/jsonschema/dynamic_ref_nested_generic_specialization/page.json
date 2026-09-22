@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "page.json",
+  "title": "Page",
+  "type": "object",
+  "properties": {
+    "items": {"$ref": "item_list.json"},
+    "cursor": {"$dynamicRef": "#/$defs/cursor"}
+  },
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "not": true},
+    "cursor": {"type": "string"}
+  }
+}

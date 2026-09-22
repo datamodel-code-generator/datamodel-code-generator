@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "int_container.json",
+  "title": "IntContainer",
+  "$ref": "container.json",
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "type": "integer"}
+  }
+}

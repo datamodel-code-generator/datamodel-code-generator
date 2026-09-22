@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "increment.schema.json",
+  "title": "ParameterisedIncrement",
+  "$ref": "./parameterised.schema.json",
+  "$defs": {
+    "leaf": {
+      "$dynamicAnchor": "T",
+      "type": "number"
+    }
+  }
+}

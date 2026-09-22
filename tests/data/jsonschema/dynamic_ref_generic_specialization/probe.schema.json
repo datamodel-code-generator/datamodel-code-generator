@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "probe.schema.json",
+  "title": "Probe",
+  "type": "object",
+  "required": [
+    "increment",
+    "direction"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "increment": {
+      "$ref": "./increment.schema.json"
+    },
+    "direction": {
+      "$ref": "./direction.schema.json"
+    }
+  }
+}
