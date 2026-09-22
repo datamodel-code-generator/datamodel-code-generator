@@ -98,11 +98,6 @@
     "failure": "parser_attempt"
   },
   {
-    "name": "cyclic_recipe",
-    "input": "observation.json",
-    "failure": "recipe_cycle"
-  },
-  {
     "name": "lost_source_lease",
     "input": "observation.json",
     "failure": "lease_lost",

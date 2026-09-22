@@ -1,0 +1,6 @@
+/components/schemas/NodeA: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+/components/schemas/NodeB: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+/components/schemas/NodeA/oneOf/1: invalid BND_SYMBOL_NOT_EMITTED
+/components/schemas/NodeB/oneOf/1: invalid BND_SYMBOL_NOT_EMITTED
+/components/schemas/NodeA/oneOf/0: bound None
+/components/schemas/NodeB/oneOf/0: bound None

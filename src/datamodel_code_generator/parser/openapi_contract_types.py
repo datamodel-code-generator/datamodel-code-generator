@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._binding_literals import UnsupportedBindingValueError, freeze_argument
 from datamodel_code_generator._generation_contract import (
     AnnotatedType,
-    BindingCaptureError,
     BoundType,
     BuiltinType,
     ConstructorType,
@@ -182,8 +181,7 @@ class FinalTypeProjector:
         if recipe.node in self._unresolved_nodes:
             raise _UnsupportedTypeError(_UNRESOLVED_REFERENCE)
         if recipe.node in self._active:
-            msg = "A final type recipe contains a structural cycle"
-            raise BindingCaptureError(msg)
+            raise _UnsupportedTypeError(_SYMBOL_NOT_EMITTED)
         self._active.add(recipe.node)
         try:
             projected, inferred_optional = self._project_base(recipe)

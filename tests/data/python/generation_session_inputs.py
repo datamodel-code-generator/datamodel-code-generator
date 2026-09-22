@@ -300,29 +300,7 @@ def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, sourc
             raise RuntimeError(message)
 
     def failed_freeze(self: OpenAPIGenerationSession, parser: BindingCaptureMixin, results: Any) -> Any:
-        if failure == "recipe_cycle":
-            from datamodel_code_generator.parser.openapi_contract_store import _type_recipe
-            from datamodel_code_generator.reference import Reference
-
-            field = parser.results[0].fields[0]
-            recipe = _type_recipe(field.data_type, parser.binding_ledger, set())
-            reference = Reference(path="#/corrupt-cycle", name="CorruptCycle")
-            identity = parser.binding_ledger.identity(reference)
-            parser.binding_ledger.root_recipes[identity] = replace(
-                recipe,
-                reference=identity,
-                atom=None,
-                import_=None,
-                bound=None,
-                data_types=(),
-                dict_key=None,
-                kwargs=(),
-                modifiers=(),
-                literals=(),
-                enum_members=(),
-            )
-            field.data_type = parser.data_type(reference=reference)
-        elif failure == "lease_lost":
+        if failure == "lease_lost":
             parser.source_lease._by_uri.clear()
         if failure in {"freeze", "freeze_dispose"} or (
             failure == "repair_freeze" and parser.binding_ledger.attempt_id == 2

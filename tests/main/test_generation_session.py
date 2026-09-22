@@ -924,6 +924,35 @@ def test_required_types_reject_changed_artifacts(change: dict[str, str]) -> None
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
+@pytest.mark.parametrize("case", ["type_alias_mutual_recursive", "type_alias_forward_ref_multiple"])
+def test_recursive_collapsed_roots_stay_unbound(case: str) -> None:
+    """Report recursive roots without an emitted symbol instead of failing the ordinary attempt."""
+    product, retained = generate_product(
+        (DATA / f"openapi/{case}.yaml").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            input_filename="recursive.yaml",
+            collapse_root_models=True,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    product.close()
+    expected = EXPECTED / "session-review/recursive-roots" / case
+    for artifact in product.artifacts:
+        assert_output(artifact.content.decode(), expected / Path(*artifact.path))
+    assert_output(
+        "".join(
+            f"{use.id.schema_site.pointer}: {use.state} {use.reason}\n"
+            for use in product.batch.type_uses
+            if use.id.role == "schema"
+        ),
+        expected / "schema-uses.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
 def test_dynamic_builtin_member_names_stay_unbound() -> None:
     """Keep fixed-main bytes while refusing to corroborate a module that spells a dynamic builtin."""
     product, retained = generate_product(
