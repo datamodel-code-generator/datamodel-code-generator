@@ -115,9 +115,8 @@ def _materialized_child(value: object, token: str) -> object:
             return cast("dict[str, object]", value).get(token)
         case list():
             return cast("list[object]", value)[int(token)]
-        case _:
-            msg = "A materialization child has no actual raw producer"
-            raise BindingCaptureError(msg)
+    msg = "A materialization child has no actual raw producer"
+    raise BindingCaptureError(msg)
 
 
 def iter_materialized_schemas(
