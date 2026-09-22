@@ -374,11 +374,14 @@ def test_tag_field_nonemission(change: dict[str, str | None]) -> None:
             for field in projected_field_expectations(parser, name, backend)
         )
         imports = FrozenImportBindings(())
+        changed = body.replace(str(change["old"]), str(change["new"]))
+        collected = index_builtin_field_declarations(changed, expected=expected, imports=imports, collect_errors=True)
+        assert_output(
+            json.dumps(collected.invalid_models) + "\n", EXPECTED / "tag-field-collected" / f"{change['id']}.txt"
+        )
         if (error := change["error"]) is not None:
             with pytest.raises(BindingCaptureError, match=error):
-                index_builtin_field_declarations(
-                    body.replace(str(change["old"]), str(change["new"])), expected=expected, imports=imports
-                )
+                index_builtin_field_declarations(changed, expected=expected, imports=imports)
             return
         index = index_builtin_field_declarations(body, expected=expected, imports=imports)
         fields = {parser.binding_ledger.identity(field): field for model in parser.results for field in model.fields}

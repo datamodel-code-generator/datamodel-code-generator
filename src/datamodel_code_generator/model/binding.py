@@ -149,7 +149,7 @@ class ArtifactDefinition:
     name: str
     kind: Literal["class", "type_alias", "assignment", "import", "unverified"]
     line: int
-    signature: SourceExpression | None = None
+    signature: SourceExpression
     decorators: tuple[SourceExpression, ...] = ()
 
 
@@ -1053,7 +1053,9 @@ class _ArtifactIndexBuilder:
                 self.bindings[alias] = resolution_base
             else:
                 self.bindings[alias] = ""
-            self.definitions.append(ArtifactDefinition(alias, "import", tokens[0].start[0]))
+            self.definitions.append(
+                ArtifactDefinition(alias, "import", tokens[0].start[0], SourceExpression(_text(tokens)))
+            )
         if tokens[0].string in {"from", "import"}:
             return None
         match tokens:
@@ -1166,7 +1168,9 @@ class _ArtifactIndexBuilder:
                     names.extend(token.string for token in parts[0] if token.type == tokenize.NAME)
         for name in names:
             self.bindings[name] = ""
-            self.definitions.append(ArtifactDefinition(name, "unverified", tokens[0].start[0]))
+            self.definitions.append(
+                ArtifactDefinition(name, "unverified", tokens[0].start[0], SourceExpression(_text(tokens)))
+            )
         if (
             words[0] in {"if", "elif", "else", "for", "while", "with", "try", "except", "finally", "match", "case"}
             and len(parts := _split(tokens, ":")) > 1
@@ -1454,7 +1458,6 @@ def split_artifact_models(index: BuiltinFieldArtifactIndex) -> dict[str, Builtin
                 source.text
                 for definition in own_definitions
                 for source in (definition.signature, *definition.decorators)
-                if source is not None
             ),
             *(source.text for model in own_models for source in model.settings),
             *(text for field in own_fields for text in (field.annotation, field.assignment) if text is not None),
@@ -1478,9 +1481,7 @@ def same_artifact_model_facts(
 ) -> bool:
     """Corroborate bases, decorators, enum values, own fields, and adopted class settings."""
 
-    def same_source(left: SourceExpression | None, right: SourceExpression | None) -> bool:
-        if left is None or right is None:
-            return left is right
+    def same_source(left: SourceExpression, right: SourceExpression) -> bool:
         return _same_expression(_expression_tokens(left.text), _expression_tokens(right.text))
 
     def same_sequence(left: tuple[SourceExpression, ...], right: tuple[SourceExpression, ...]) -> bool:
@@ -1502,12 +1503,7 @@ def same_artifact_model_facts(
         return False
     namespace = dict(actual.namespace)
     sources = (
-        *(
-            source.text
-            for definition in left_definitions
-            for source in (definition.signature, *definition.decorators)
-            if source is not None
-        ),
+        *(source.text for definition in left_definitions for source in (definition.signature, *definition.decorators)),
         *(source.text for model in left_models for source in model.settings),
         *(
             text
@@ -1937,13 +1933,11 @@ def freeze_alias_nullability(
         match pending.pop():
             case NoneType():
                 direct = True
-            case AnnotatedType(value, _):
-                pending.append(value)
             case UnionType(members, _):
                 pending.extend(members)
             case GeneratedSymbolType(reference) if reference in aliases:
                 references.add(reference)
-            case BoundType():
+            case AnnotatedType() | BoundType():
                 unknown = True
             case _:
                 pass

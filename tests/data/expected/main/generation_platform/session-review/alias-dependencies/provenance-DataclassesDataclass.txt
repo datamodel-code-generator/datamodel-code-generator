@@ -1,0 +1,3 @@
+bound: none / runtime_or_opaque / opaque
+either: none / runtime_or_opaque / preexisting_type
+mixed: none / runtime_or_opaque / opaque

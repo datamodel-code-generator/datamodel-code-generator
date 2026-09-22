@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -13,15 +14,29 @@ from datamodel_code_generator.format import PythonVersion
 from tests.conftest import assert_output
 from tests.data.python.generation_session_inputs import generate_product
 
+if TYPE_CHECKING:
+    from datamodel_code_generator._openapi_generation import ModelGenerationProduct
+
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/binding"
 EXPECTED = DATA / "expected/main/generation_platform"
+VARIANTS = [*((backend, False) for backend in DataModelType), (DataModelType.PydanticV2BaseModel, True)]
 
 
-@pytest.mark.parametrize(
-    ("backend", "root_alias"),
-    [*((backend, False) for backend in DataModelType), (DataModelType.PydanticV2BaseModel, True)],
-)
+def _provenance_table(product: ModelGenerationProduct) -> str:
+    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
+    fields = sorted(
+        (field for field in product.batch.fields if names[field.consumer] == "Model"),
+        key=lambda field: field.slot.name,
+    )
+    return "".join(
+        f"{field.slot.name}: {provenance.emitted_default} / {provenance.origin} / {provenance.annotation_null_origin}\n"
+        for field in fields
+        for provenance in (field.model_facts.none_default_provenance,)
+    )
+
+
+@pytest.mark.parametrize(("backend", "root_alias"), VARIANTS)
 @pytest.mark.parametrize("collapse", [False, True])
 @pytest.mark.parametrize("annotated", [False, True])
 @pytest.mark.parametrize("remapped", [False, True])
@@ -51,20 +66,40 @@ def test_nullable_alias_provenance(
         product.artifacts[0].content.decode(),
         EXPECTED / "session-review/nullable-aliases" / f"{variant}-{collapse}-{annotated}-{remapped}.py",
     )
-    names = {symbol.id: symbol.name for symbol in product.batch.symbols}
-    fields = sorted(
-        (field for field in product.batch.fields if names[field.consumer] == "Model"),
-        key=lambda field: field.slot.name,
-    )
     assert_output(
-        "".join(
-            f"{field.slot.name}: {provenance.emitted_default} / {provenance.origin} / "
-            f"{provenance.annotation_null_origin}\n"
-            for field in fields
-            for provenance in (field.model_facts.none_default_provenance,)
-        ),
+        _provenance_table(product),
         EXPECTED / "session-review/nullable-aliases" / f"provenance-{variant}-{collapse}.txt",
     )
+    assert_output(
+        "\n".join(
+            error.code
+            for error in require_type_bindings(product.batch, tuple(use.id for use in product.batch.type_uses))
+        ),
+        EXPECTED / "session-review/no-diagnostics.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
+@pytest.mark.parametrize(("backend", "root_alias"), VARIANTS)
+def test_alias_null_dependencies(backend: DataModelType, *, root_alias: bool) -> None:
+    """Resolve alias unions through nullable members while bound alias values stay opaque."""
+    product, retained = generate_product(
+        (SOURCE / "session-alias-dependencies.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            output_model_type=backend,
+            input_filename="alias-dependencies.json",
+            use_root_model_type_alias=root_alias,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    product.close()
+    variant = "RootModelAlias" if root_alias else backend.name
+    expected = EXPECTED / "session-review/alias-dependencies"
+    assert_output(product.artifacts[0].content.decode(), expected / f"{variant}.py")
+    assert_output(_provenance_table(product), expected / f"provenance-{variant}.txt")
     assert_output(
         "\n".join(
             error.code

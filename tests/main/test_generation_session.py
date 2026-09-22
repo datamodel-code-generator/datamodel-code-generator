@@ -455,6 +455,7 @@ def test_final_builtin_type_demands(
         "media-stream",
         "imports",
         "builtin-alias",
+        "discriminator-synthetic",
     ],
 )
 @pytest.mark.parametrize(
@@ -923,6 +924,28 @@ def test_required_types_reject_changed_artifacts(change: dict[str, str]) -> None
     assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
+def test_dynamic_builtin_member_names_stay_unbound() -> None:
+    """Keep fixed-main bytes while refusing to corroborate a module that spells a dynamic builtin."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-dynamic-names.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            input_filename="dynamic-names.json",
+            set_default_enum_member=True,
+            formatters=[],
+            disable_timestamp=True,
+        ),
+    )
+    product.close()
+    assert_output(product.artifacts[0].content.decode(), EXPECTED / "session-review/dynamic-names.py")
+    assert_output(
+        "".join(code + "\n" for code in dict.fromkeys(diagnostic.code for diagnostic in product.batch.diagnostics)),
+        EXPECTED / "session-review/unsupported-artifact.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
 @pytest.mark.parametrize(
     "backend",
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
@@ -1146,9 +1169,8 @@ def test_legacy_media_producer_types(backend: str, *, collapse: bool) -> None:
             disable_timestamp=True,
         ),
     )
-    for field in product.batch.fields:
-        if field.schema is not None:
-            product.source_lease.borrow(field.schema)
+    for location in (field.schema for field in product.batch.fields if field.schema is not None):
+        product.source_lease.borrow(location)
     product.close()
     uses = tuple(use for use in product.batch.type_uses if use.id.role in {"request_body", "response_body"})
     assert_output(
@@ -1194,13 +1216,11 @@ def test_legacy_media_use_identity(backend: str, case: str, *, status_names: boo
             disable_timestamp=True,
         ),
     )
-    for field in product.batch.fields:
-        if field.schema is not None:
-            product.source_lease.borrow(field.schema)
+    for location in (field.schema for field in product.batch.fields if field.schema is not None):
+        product.source_lease.borrow(location)
     uses = tuple(use for use in product.batch.type_uses if use.id.role in {"request_body", "response_body"})
-    for use in uses:
-        if use.schema is not None:
-            product.source_lease.borrow(use.schema)
+    for location in (use.schema for use in uses if use.schema is not None):
+        product.source_lease.borrow(location)
     if case == "external":
         responses = product.batch.operations[0].responses
         for response in responses:
@@ -1265,9 +1285,8 @@ def test_legacy_shared_stream_types(backend: str) -> None:
             disable_timestamp=True,
         ),
     )
-    for field in product.batch.fields:
-        if field.schema is not None:
-            product.source_lease.borrow(field.schema)
+    for location in (field.schema for field in product.batch.fields if field.schema is not None):
+        product.source_lease.borrow(location)
     product.close()
     uses = tuple(use.id for use in product.batch.type_uses if use.id.role in {"request_body", "response_body"})
     assert_output(
@@ -1341,9 +1360,8 @@ def test_integer_yaml_response_status(backend: str, scope: str) -> None:
         for response in operation.responses:
             product.source_lease.borrow(response.declaration.location)
     uses = tuple(use for use in product.batch.type_uses if use.id.role == "response_body")
-    for use in uses:
-        if use.schema is not None:
-            product.source_lease.borrow(use.schema)
+    for location in (use.schema for use in uses if use.schema is not None):
+        product.source_lease.borrow(location)
     product.close()
     assert_output(
         "\n".join(error.code for error in require_type_bindings(product.batch, tuple(use.id for use in uses))),

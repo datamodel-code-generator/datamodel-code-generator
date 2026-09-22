@@ -43,9 +43,12 @@ def test_real_artifact_fact_comparison(case: dict[str, str]) -> None:
         body = str(parser.parse())
         assert_output(
             body,
-            EXPECTED / ("emitted-meta-True.py" if metadata else f"emitted-defaults-{backend.name}-False.py"),
+            EXPECTED
+            / case.get("oracle", "emitted-meta-True.py" if metadata else f"emitted-defaults-{backend.name}-False.py"),
         )
-        declarations = projected_field_expectations(parser, "Metadata" if metadata else "Defaults", backend)
+        declarations = projected_field_expectations(
+            parser, case.get("model", "Metadata" if metadata else "Defaults"), backend
+        )
         imports = FrozenImportBindings(
             (
                 *builtin_field_imports(),

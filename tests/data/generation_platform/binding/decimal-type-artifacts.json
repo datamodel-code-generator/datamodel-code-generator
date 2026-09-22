@@ -8,5 +8,7 @@
   {"id": "non-string", "old": "Decimal('0.1')", "new": "Decimal(0.1)", "error": true},
   {"id": "invalid-value", "old": "Decimal('0.1')", "new": "Decimal('invalid')", "error": true},
   {"id": "infinity", "old": "Decimal('0.1')", "new": "Decimal('Infinity')", "error": true},
-  {"id": "signaling-nan", "old": "Decimal('0.1')", "new": "Decimal('sNaN')", "error": true}
+  {"id": "signaling-nan", "old": "Decimal('0.1')", "new": "Decimal('sNaN')", "error": true},
+  {"id": "qualified-callee", "old": "Decimal('0.1')", "new": "decimal.Decimal('0.1')", "error": true},
+  {"id": "bare-callee", "old": "Decimal('0.1')", "new": "Decimal", "error": true}
 ]

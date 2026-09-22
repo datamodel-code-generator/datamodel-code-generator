@@ -238,5 +238,15 @@
     "old": "explicit_null: Optional[str] = None",
     "new": "explicit_null: Optional[str]",
     "expected": "explicit_null"
+  },
+  {
+    "id": "PydanticV2BaseModel-extra-annotations",
+    "backend": "PydanticV2BaseModel",
+    "source": "synthetic-origins",
+    "model": "Payload",
+    "oracle": "synthetic-extra-annotations.py",
+    "old": "'__pydantic_extra__': Dict[str, int],",
+    "new": "'other': int,\n        '__pydantic_extra__': Dict[str, int],",
+    "expected": "model"
   }
 ]

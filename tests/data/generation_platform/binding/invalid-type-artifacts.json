@@ -31,6 +31,13 @@
     "error": "Executable artifact statements require an explicit export adapter"
   },
   {
+    "id": "qualified-call-shadow",
+    "backend": "MsgspecStruct",
+    "old": "import argparse",
+    "new": "import argparse\nparser = argparse.ArgumentParser()",
+    "error": "Executable artifact statements require an explicit export adapter"
+  },
+  {
     "id": "container",
     "backend": "MsgspecStruct",
     "old": "items: Union[List[int], UnsetType]",
