@@ -174,11 +174,15 @@ class FinalOperationBuilder:
         for original, owner in fields.copied_type_sources:
             projections.setdefault(original, []).append(final_field_types[owner])
         nested = tuple(
-            replacement for replacement in self.parser.binding_ledger.replacements if replacement.kind == "nested_type"
+            (replacement.original, replacement.replacement)
+            for replacement in self.parser.binding_ledger.replacements
+            if replacement.kind == "nested_type"
+            and replacement.original is not None
+            and replacement.replacement is not None
         )
         if not nested:
             return projections
-        targets = {replacement.replacement for replacement in nested}
+        targets = {target for _, target in nested}
         pending = [
             field.data_type
             for output in self.parser.module_outputs
@@ -199,11 +203,10 @@ class FinalOperationBuilder:
             pending.extend(data_type.data_types)
             if data_type.dict_key is not None:
                 pending.append(data_type.dict_key)
-        for replacement in reversed(nested):
-            if replacement.original is not None and replacement.replacement is not None:
-                projections.setdefault(replacement.original, []).extend(
-                    projections.get(replacement.replacement, (TypeProjection(None, "BND_SYMBOL_NOT_EMITTED"),))
-                )
+        for original, target in reversed(nested):
+            projections.setdefault(original, []).extend(
+                projections.get(target, (TypeProjection(None, "BND_SYMBOL_NOT_EMITTED"),))
+            )
         return projections
 
     def location(self, declaration: ApiDeclarationId, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
@@ -316,12 +319,6 @@ class FinalOperationBuilder:
                     and len(model.fields) == 1
                 ):
                     return projector.project(_type_recipe(model.fields[0].data_type, self.parser.binding_ledger, set()))
-                if (
-                    recipe := self.parser.binding_ledger.root_recipes.get(
-                        self.parser.binding_ledger.identity(reference)
-                    )
-                ) is not None:
-                    return projector.project(recipe)
             projected = tuple(
                 projector.project(_type_recipe(data_type, self.parser.binding_ledger, set()))
                 for data_type in self.resolved_types.get(key, ())

@@ -31,7 +31,7 @@ from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
     split_json_pointer,
 )
-from datamodel_code_generator.parser.openapi import OpenAPIParser, ParameterObject
+from datamodel_code_generator.parser.openapi import OpenAPIParser, ParameterObject, ReferenceObject
 from datamodel_code_generator.parser.openapi_contract_origins import (
     SchemaOrigin,
     ValidatedSchemaOriginIndex,
@@ -357,7 +357,7 @@ class LegacyOperationObservation:
 class LegacyPathItemsFrame:
     """Borrow original scope inputs, including parameter sequences and security."""
 
-    items: dict[str, dict[str, YamlValue]]
+    items: Mapping[str, YamlValue]
     base_path: tuple[str, ...]
     scope: str
     global_parameters: list[dict[str, YamlValue]]
@@ -720,6 +720,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self._legacy_scopes: list[LegacyPathItemsFrame] = []
         self._legacy_operations: list[LegacyOperationObservation] = []
         self.legacy_ref_objects: dict[tuple[int, str], SchemaOrigin] = {}
+        self._referenced_responses: set[tuple[int, str]] = set()
         self._media_paths: dict[tuple[str, ...], tuple[tuple[str, ...], bool]] = {}
         self.request_types: list[RequestTypesObservation] = []
         self.response_types: list[ResponseTypesObservation] = []
@@ -755,8 +756,6 @@ class BindingCaptureMixin(OpenAPIParser):
         result: DataModelFieldBase = super()._copy_model_field(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             field, data_type=data_type, register_references=register_references
         )
-        if data_type is None and self.discriminator_types:
-            self._record_enum_copies(field.data_type, result.data_type)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
         return self._record_field_copy((field,), result, None)  # pyright: ignore[reportUnknownArgumentType]
 
     def _copy_model_type(self, data_type: DataType, *, register_references: bool = True) -> DataType:
@@ -872,8 +871,7 @@ class BindingCaptureMixin(OpenAPIParser):
             original, copied = pending.pop()
             if original.enum_member_literals and copied.enum_member_literals == original.enum_member_literals:
                 self.binding_ledger.enum_copies[identity(copied)] = identity(original)
-            if len(original.data_types) == len(copied.data_types):
-                pending.extend(zip(original.data_types, copied.data_types, strict=True))
+            pending.extend(zip(original.data_types, copied.data_types, strict=True))
             if original.dict_key is not None and copied.dict_key is not None:
                 pending.append((original.dict_key, copied.dict_key))
 
@@ -916,10 +914,7 @@ class BindingCaptureMixin(OpenAPIParser):
         for field in source:
             if (field_id := identity(field)) in selected:
                 continue
-            if suffix == "Request" and field.read_only:
-                excluded.append((field_id, "read_only"))
-            elif suffix == "Response" and field.write_only:
-                excluded.append((field_id, "write_only"))
+            excluded.append((field_id, "read_only" if suffix == "Request" else "write_only"))
         self.variant_fields.append(
             VariantFieldsObservation(
                 identity(base), suffix, tuple(identity(field) for field in source), tuple(excluded)
@@ -1001,10 +996,8 @@ class BindingCaptureMixin(OpenAPIParser):
     @capture_errors
     def _pair_validated_source(self, name: str, obj: JsonSchemaObject, path: list[str]) -> None:
         if not self._raw_validation_frames:
-            if (
-                reference := self.model_resolver.references.get(self.model_resolver.join_path(tuple(path)))
-            ) is not None:
-                self._pair_inherited_declaration(reference.path, obj, relation="validated_child")
+            reference = self.model_resolver.references[self.model_resolver.join_path(tuple(path))]
+            self._pair_inherited_declaration(reference.path, obj, relation="validated_child")
             return
         frame = self._raw_validation_frames[-1]
         if frame.name != name or frame.path != tuple(path) or not isinstance(frame.raw, (dict, bool)):
@@ -1886,8 +1879,8 @@ class BindingCaptureMixin(OpenAPIParser):
                     and (model.IS_ROOT_MODEL or model.IS_ALIAS)
                 ):
                     self._record_root_fields(schema, model.fields, model.reference.name)
-                    if len(model.fields) == 1:
-                        root_value = self.binding_ledger.identity(model.fields[0].data_type)
+                    (root_field,) = model.fields
+                    root_value = self.binding_ledger.identity(root_field.data_type)
                 self.schema_types.append(SchemaTypeObservation(schema, result, root_value=root_value))
 
     def get_data_type(self, obj: JsonSchemaObject) -> DataType:
@@ -1992,8 +1985,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self, source: JsonSchemaObject, type_: str, result: JsonSchemaObject
     ) -> JsonSchemaObject:
         self.schema_origins.derive_preserved_shape(source, result, "synthetic_value")
-        if self._constrained_branches and (frame := self._constrained_branches[-1]).source is source:
-            frame.schemas[type_] = result
+        self._constrained_branches[-1].schemas[type_] = result
         return result
 
     @capture_errors
@@ -2013,8 +2005,6 @@ class BindingCaptureMixin(OpenAPIParser):
 
     @capture_errors
     def _record_array_fallback(self, result: list[DataType]) -> None:
-        if not self._array_sources or len(result) != 1:
-            return
         obj = self._array_sources[-1]
         if obj.items is True:
             self.schema_types.append(
@@ -2448,7 +2438,7 @@ class BindingCaptureMixin(OpenAPIParser):
     @capture_errors
     def _begin_legacy_scope(
         self,
-        items: dict[str, dict[str, YamlValue]],
+        items: Mapping[str, YamlValue],
         base_path: list[str],
         scope_name: str,
         global_parameters: list[dict[str, YamlValue]],
@@ -2458,7 +2448,7 @@ class BindingCaptureMixin(OpenAPIParser):
         candidates = tuple(
             LegacyOperationCandidate(ApiDeclarationId("/".join(base_path), (scope_name, key, method)), method, raw)
             for key, item in items.items()
-            if "$ref" not in item
+            if isinstance(item, dict) and "$ref" not in item
             for method, raw in item.items()
             if isinstance(raw, dict)
         )
@@ -2582,26 +2572,25 @@ class BindingCaptureMixin(OpenAPIParser):
     ) -> SchemaOrigin | None:
         """Join the original use to its direct or actually resolved media occurrence."""
         declaration = operation.candidates[0]
+        relative = path[len(operation.engine_path) :]
+        media = relative[-1]
         raw: YamlValue
-        match path[len(operation.engine_path) :]:
-            case ("requestBody", media):
-                raw = declaration.raw.get("requestBody")
-                owner = (*declaration.declaration.tokens, "requestBody")
-            case ("responses", status, media):
-                responses = declaration.raw.get("responses")
-                raw = borrow_source_member(responses, status) if isinstance(responses, dict) else None
-                owner = (*declaration.declaration.tokens, "responses", status)
-            case _:
-                return None
-        if not isinstance(raw, dict):
-            return None
-        if isinstance(ref := raw.get("$ref"), str):
+        if relative[0] == "requestBody":
+            raw = declaration.raw.get("requestBody")
+            owner = (*declaration.declaration.tokens, "requestBody")
+            referenced = True
+        else:
+            status = relative[1]
+            responses = declaration.raw.get("responses")
+            raw = borrow_source_member(responses, status) if isinstance(responses, dict) else None
+            owner = (*declaration.declaration.tokens, "responses", status)
+            referenced = (id(operation), status) in self._referenced_responses
+        if referenced and isinstance(raw, dict) and isinstance(ref := raw.get("$ref"), str):
             if (origin := self.legacy_ref_objects.get((id(operation), ref))) is None:
                 return None
             raw, parent = origin.raw, origin.location
         else:
-            if (document := self.source_lease.document_id(declaration.declaration.document)) is None:
-                return None
+            document = cast("SourceDocumentId", self.source_lease.document_id(declaration.declaration.document))
             parent = SourceLocation(
                 document, "/" + "/".join(token.replace("~", "~0").replace("/", "~1") for token in owner), "schema"
             )
@@ -2635,8 +2624,6 @@ class BindingCaptureMixin(OpenAPIParser):
         self, name: str, parameters: list[ReferenceObject | ParameterObject], path: list[str]
     ) -> DataType | None:
         """Observe the real parameter producer without adding a Parameters scope."""
-        if not self._legacy_operations:
-            return super().parse_all_parameters(name, parameters, path)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         operation = self._legacy_operations[-1]
         raw = operation.effective.get("parameters", [])
         inputs = (
@@ -2655,13 +2642,8 @@ class BindingCaptureMixin(OpenAPIParser):
         producer = ReferenceProducerFrame([])
         with self._resolution_producer(producer):
             result = super().resolve_object(obj, object_type)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        self._record_resolved_parameter(obj, result, producer)  # pyright: ignore[reportUnknownArgumentType]
+        self._record_parameter_schema(obj, cast("ParameterObject", result), producer)  # pyright: ignore[reportUnknownArgumentType]
         return result  # pyright: ignore[reportUnknownVariableType]
-
-    @capture_errors
-    def _record_resolved_parameter(self, original: object, result: object, producer: ReferenceProducerFrame) -> None:
-        if isinstance(result, ParameterObject):
-            self._record_parameter_schema(original, result, producer)
 
     @capture_errors
     def _record_parameter_schema(
@@ -2670,10 +2652,9 @@ class BindingCaptureMixin(OpenAPIParser):
         frame = self._parameter_frames[-1]
         frame.current = parameter
         raws = tuple(raw for validated, raw in frame.inputs if validated is original)
-        if len(raws) != 1 or not isinstance(raw := raws[0], dict):
-            return
+        raw = raws[0] if len(raws) == 1 else None
         origins: list[SchemaOrigin] = []
-        if isinstance(ref := raw.get("$ref"), str):
+        if isinstance(raw, dict) and isinstance(ref := raw.get("$ref"), str):
             origins.extend(
                 origin
                 for event in producer.resolutions
@@ -2684,24 +2665,26 @@ class BindingCaptureMixin(OpenAPIParser):
             origins.extend(self._direct_parameter_origins(frame, raw))
         for origin in dict.fromkeys(origin.location for origin in origins):
             raw_parameter = self.source_lease.borrow(origin)
-            if not isinstance(raw_parameter, dict):
-                continue
-            if parameter.schema_ is not None and isinstance(schema := raw_parameter.get("schema"), (dict, bool)):
+            if (
+                parameter.schema_ is not None
+                and isinstance(raw_parameter, dict)
+                and isinstance(schema := raw_parameter.get("schema"), (dict, bool))
+            ):
                 self.schema_origins.pair(
                     raw=schema,
                     obj=parameter.schema_,
                     location=SourceLocation(origin.document, origin.pointer + "/schema", "schema"),
                     relation="validated_child",
                 )
-            content = raw_parameter.get("content")
+            content = raw_parameter.get("content") if isinstance(raw_parameter, dict) else None
             if not isinstance(content, dict):
                 continue
             for media, value in parameter.content.items():
                 raw_media = content.get(media)
-                if not isinstance(raw_media, dict):
-                    continue
-                if isinstance(value.schema_, JsonSchemaObject) and isinstance(
-                    schema := raw_media.get("schema"), (dict, bool)
+                if (
+                    isinstance(value.schema_, JsonSchemaObject)
+                    and isinstance(raw_media, dict)
+                    and isinstance(schema := raw_media.get("schema"), (dict, bool))
                 ):
                     self.schema_origins.pair(
                         raw=schema,
@@ -2714,23 +2697,15 @@ class BindingCaptureMixin(OpenAPIParser):
                         relation="validated_child",
                     )
 
-    def _direct_parameter_origins(
-        self, frame: LegacyParameterFrame, raw: dict[str, YamlValue]
-    ) -> tuple[SchemaOrigin, ...]:
-        """Find original occurrences by identity inside the actual legacy operation frame."""
+    def _direct_parameter_origins(self, frame: LegacyParameterFrame, raw: YamlValue) -> tuple[SchemaOrigin, ...]:
+        """Find original occurrences by identity inside the actual legacy operation frame; no raw matches none."""
         if frame.operation.origin_state != "known":
             return ()
         origins: list[SchemaOrigin] = []
         declaration = frame.operation.candidates[0].declaration
-        document = self.source_lease.document_id(declaration.document)
-        if document is None:
-            return ()
-        root = self.source_lease.borrow(SourceLocation(document, "", "schema"))
-        if not isinstance(root, dict):
-            return ()
-        scope = root.get(declaration.tokens[0])
-        if not isinstance(scope, dict):
-            return ()
+        document = cast("SourceDocumentId", self.source_lease.document_id(declaration.document))
+        root = cast("dict[str, YamlValue]", self.source_lease.borrow(SourceLocation(document, "", "schema")))
+        scope = cast("dict[str, YamlValue]", root.get(declaration.tokens[0]))
         path_item = scope.get(declaration.tokens[1])
         groups = (
             (declaration.tokens, frame.operation.candidates[0].raw.get("parameters")),
@@ -2741,7 +2716,7 @@ class BindingCaptureMixin(OpenAPIParser):
             if not isinstance(values, list):
                 continue
             for index, candidate in enumerate(values):
-                if candidate is raw:
+                if candidate is raw and isinstance(raw, dict):
                     pointer = "/" + "/".join(
                         token.replace("~", "~0").replace("/", "~1") for token in (*parent, "parameters", str(index))
                     )
@@ -2780,9 +2755,18 @@ class BindingCaptureMixin(OpenAPIParser):
         self, name: str, responses: dict[str | int, ReferenceObject | ResponseObject], path: list[str]
     ) -> dict[str | int, dict[str, DataType]]:
         """Retain every actual status and media, with no primary-response reduction."""
+        self._record_response_references(responses)
         return self._record_response_types(
             super().parse_responses(name, responses, path),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
             path,
+        )
+
+    @capture_errors
+    def _record_response_references(self, responses: dict[str | int, ReferenceObject | ResponseObject]) -> None:
+        """Remember which actual response occurrences the engine resolved as references."""
+        operation = id(self._legacy_operations[-1])
+        self._referenced_responses.update(
+            (operation, str(status)) for status, detail in responses.items() if isinstance(detail, ReferenceObject)
         )
 
     @capture_errors
@@ -2804,10 +2788,10 @@ class BindingCaptureMixin(OpenAPIParser):
     ) -> set[str]:
         """Observe completed getter returns while preserving the ordinary classmethod call."""
         result: set[str] = super()._collect_used_names_from_models(models, model_imports)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        if (frame := _module_import_frame.get()) is None or model_imports is None:
-            return result  # pyright: ignore[reportUnknownVariableType]
+        frame = cast("ModuleImportFrame", _module_import_frame.get())
+        imports = cast("Mapping[DataModel, tuple[Import, ...]]", model_imports)
         try:
-            frame.values.update((id(model), model_imports[model]) for model in models)
+            frame.values.update((id(model), imports[model]) for model in models)
         except Exception as cause:
             frame.failure = BindingCaptureError("Binding import capture failed")
             raise frame.failure from cause
@@ -2953,6 +2937,7 @@ class BindingCaptureMixin(OpenAPIParser):
         for observations in (
             self._legacy_operations,
             self.legacy_ref_objects,
+            self._referenced_responses,
             self._media_paths,
             self.legacy_operations,
             self.legacy_scopes,
@@ -3168,7 +3153,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.openapi import (
         BaseModelT,
         MediaSchema,
-        ReferenceObject,
         RequestBodyObject,
         ResponseObject,
     )

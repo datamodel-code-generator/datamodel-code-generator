@@ -248,8 +248,6 @@ def _unresolved_nodes(
         for source in copy.sources if isinstance(copy, FieldCopy) else (copy.source,):
             edges.setdefault(source, []).append(copy.target)
     for collapse in ledger.collapses:
-        if not collapse.completed:
-            continue
         targets = (collapse.owner, collapse.original, collapse.replacement)
         edges.setdefault(ledger.identity(collapse.reference), []).extend(targets)
         pending = [collapse.recipe]
