@@ -1,0 +1,8 @@
+{
+  "Value.left": [
+    "/components/schemas/Payload/properties/value/oneOf/0/properties/left"
+  ],
+  "Value1.right": [
+    "/components/schemas/Payload/anyOf/0/properties/value/oneOf/1/properties/right"
+  ]
+}

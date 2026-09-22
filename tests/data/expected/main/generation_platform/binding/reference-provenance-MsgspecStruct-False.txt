@@ -1,0 +1,5 @@
+base: missing / not_applicable / none
+maybe: absent / not_applicable / preexisting_type
+name: absent / not_applicable / none
+pair: absent / not_applicable / none
+record: absent / not_applicable / preexisting_type

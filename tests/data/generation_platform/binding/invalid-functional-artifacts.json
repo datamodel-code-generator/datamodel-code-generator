@@ -70,5 +70,17 @@
     "old": "NotRequired[str],})",
     "new": "NotRequired[str],}",
     "error": "Accepted artifact could not be tokenized"
+  },
+  {
+    "id": "invalid-unicode-key",
+    "old": "'ship-to':",
+    "new": "u'\\uZZZZ':",
+    "error": "Functional TypedDict contains a nonliteral entry"
+  },
+  {
+    "id": "class-declaration",
+    "old": "Payload = TypedDict('Payload', {",
+    "new": "class Payload(TypedDict):\n    ship_to: str\n\n\nPayload = TypedDict('Payload', {",
+    "error": "A final symbol is declared more than once"
   }
 ]

@@ -185,5 +185,35 @@
     "method": "pair_root_materialization",
     "source": "root-merged-values.json",
     "owner": "origins"
+  },
+  {
+    "id": "inherited-source",
+    "method": "_record_inherited_shape_merge",
+    "source": "session-inherited-shapes.json",
+    "no_merge": "true"
+  },
+  {
+    "id": "shared-field-type",
+    "method": "_field_construction_inputs",
+    "source": "type-projection.json"
+  },
+  {
+    "id": "object-field-properties",
+    "method": "_record_object_fields",
+    "source": "merged-origins.json"
+  },
+  {
+    "id": "item-stream-source",
+    "method": "_declaration_source_location",
+    "source": "session-media-stream.json",
+    "owner": "api",
+    "api": "true"
+  },
+  {
+    "id": "validation-frame",
+    "method": "_validation_locations",
+    "source": "session-media-stream.json",
+    "owner": "api",
+    "api": "true"
   }
 ]

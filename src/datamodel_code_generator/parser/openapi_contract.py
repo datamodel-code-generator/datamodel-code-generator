@@ -5,7 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 from typing_extensions import TypedDict, Unpack, override
 
@@ -24,6 +24,7 @@ from datamodel_code_generator.parser.openapi_contract_origins import (
     SchemaOrigin,
     ValidatedSchemaOriginIndex,
     iter_materialized_schemas,
+    raw_value,
 )
 from datamodel_code_generator.parser.openapi_contract_store import (
     BindingLedger,
@@ -562,14 +563,6 @@ class CombinedBranchFrame:
 
 
 @dataclass(slots=True)
-class InheritedMergeFrame:
-    """Retain the effective map returned inside one actual parent-constraint merge."""
-
-    child: JsonSchemaObject
-    parents: dict[str, tuple[JsonSchemaObject | bool, str]] | None
-
-
-@dataclass(slots=True)
 class InheritedShapeMerge:
     """Own one actual recursive merge and the effective shape it reads."""
 
@@ -622,7 +615,6 @@ class BindingCaptureMixin(OpenAPIParser):
         self.effective_defaults: list[EffectiveDefaultObservation] = []
         self.inherited_defaults: dict[GraphObjectId, InheritedDefaultObservation] = {}
         self._conditional_merges: list[ConditionalMergeFrame] = []
-        self._inherited_merges: list[InheritedMergeFrame] = []
         self._inherited_shapes: list[InheritedShapeFrame] = []
         self._inherited_parent_sources: list[JsonSchemaObject | None] = []
         self._combined_branches: list[CombinedBranchFrame] = []
@@ -999,10 +991,8 @@ class BindingCaptureMixin(OpenAPIParser):
 
     @capture_errors
     def _record_inherited_shape(self, schema: JsonSchemaObject, result: dict[str, object]) -> None:
-        if not self._inherited_shapes or not (frame := self._inherited_shapes[-1]).merges:
-            return
-        merge = frame.merges[-1]
-        merge.source = schema
+        frame = self._inherited_shapes[-1]
+        frame.merges[-1].source = schema
         for raw, source in iter_materialized_schemas(result, schema):
             frame.values[id(raw)] = raw, (source,)
 
@@ -1016,32 +1006,28 @@ class BindingCaptureMixin(OpenAPIParser):
         parent_refs_resolved: bool = False,
     ) -> dict[str, object]:
         """Connect each actual raw result before the original producer validates it."""
-        frame = self._inherited_shapes[-1] if self._inherited_shapes else None
         merge = InheritedShapeMerge(parent, child)
-        if frame is not None:
-            if not frame.merges:
-                self._record_inherited_child_shape(child)
-            frame.merges.append(merge)
+        frame = self._begin_inherited_shape_merge(merge)
         try:
             result: dict[str, object] = super()._merge_inherited_type_shape_dict(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
                 parent, child, parent_ref, active, parent_refs_resolved=parent_refs_resolved
             )
         finally:
-            if frame is not None:
-                frame.merges.pop()
+            frame.merges.pop()
         self._record_inherited_shape_merge(merge, result)  # pyright: ignore[reportUnknownArgumentType]
         return result  # pyright: ignore[reportUnknownVariableType]
 
     @capture_errors
-    def _record_inherited_child_shape(self, raw: dict[str, object]) -> None:
+    def _begin_inherited_shape_merge(self, merge: InheritedShapeMerge) -> InheritedShapeFrame:
         frame = self._inherited_shapes[-1]
-        for value, source in iter_materialized_schemas(raw, frame.child):
-            frame.values[id(value)] = value, (source,)
+        if not frame.merges:
+            for value, source in iter_materialized_schemas(merge.child, frame.child):
+                frame.values[id(value)] = value, (source,)
+        frame.merges.append(merge)
+        return frame
 
     @capture_errors
     def _record_inherited_shape_merge(self, merge: InheritedShapeMerge, result: dict[str, object]) -> None:
-        if not self._inherited_shapes:
-            return
         frame = self._inherited_shapes[-1]
         if merge.source is None:
             msg = "An inherited merge has no observed effective parent shape"
@@ -1060,13 +1046,11 @@ class BindingCaptureMixin(OpenAPIParser):
                 frame.parent, result, "inherited_materialization", merge_mode=self.allof_merge_mode
             )
             self.schema_origins.derive(child, result, "inherited_constraint", merge_mode=self.allof_merge_mode)
-            if frame.result is not None:
-                for raw, completed in iter_materialized_schemas(frame.result, result):
-                    if (source := frame.values.get(id(raw))) is not None:
-                        for original in source[1]:
-                            self.schema_origins.derive(
-                                original, completed, "inherited_materialization", descend_properties=False
-                            )
+            for raw, completed in iter_materialized_schemas(cast("dict[str, object]", frame.result), result):
+                for original in frame.values[id(raw)][1]:
+                    self.schema_origins.derive(
+                        original, completed, "inherited_materialization", descend_properties=False
+                    )
         return result
 
     def parse_combined_schema(
@@ -1093,8 +1077,6 @@ class BindingCaptureMixin(OpenAPIParser):
                 originals = tuple(obj.anyOf)
             case "oneOf":
                 originals = tuple(obj.oneOf)
-            case "allOf":
-                originals = tuple(obj.allOf)
             case _:
                 msg = "An unobserved combined-schema keyword was supplied"
                 raise BindingCaptureError(msg)
@@ -1111,13 +1093,11 @@ class BindingCaptureMixin(OpenAPIParser):
 
     @capture_errors
     def _record_materialized_shape(self, source: JsonSchemaObject, result: JsonSchemaObject) -> JsonSchemaObject:
-        if self._combined_branches and (frame := self._combined_branches[-1]).collecting:
-            frame.edges.append((source, result))
-            self.schema_origins.derive(source, result, "combined_materialization")
-            if (merged := frame.merged_inputs.get(id(source))) is not None and merged is not result:
-                self.schema_origins.derive(merged, result, "combined_materialization")
-        else:
-            self.schema_origins.derive(source, result, "inherited_materialization")
+        frame = self._combined_branches[-1]
+        frame.edges.append((source, result))
+        self.schema_origins.derive(source, result, "combined_materialization")
+        if (merged := frame.merged_inputs.get(id(source))) is not None and merged is not result:
+            self.schema_origins.derive(merged, result, "combined_materialization")
         return result
 
     def _is_local_ref_false_schema(self, ref: str, *, use_builtin_facts: bool) -> bool:
@@ -1127,8 +1107,7 @@ class BindingCaptureMixin(OpenAPIParser):
 
     @capture_errors
     def _record_false_decision(self, ref: str, *, result: bool) -> bool:
-        if self._combined_branches and (frame := self._combined_branches[-1]).collecting:
-            frame.false_decisions.append((ref, result))
+        self._combined_branches[-1].false_decisions.append((ref, result))
         return result
 
     def _parse_combined_schema_items(
@@ -1205,9 +1184,9 @@ class BindingCaptureMixin(OpenAPIParser):
         if id(target) not in reachable:
             msg = "A combined occurrence has no actual materialization edge"
             raise BindingCaptureError(msg)
-        merged = frame.merged_inputs.get(id(original), original)
-        if merged is not target:
-            self.schema_origins.derive_combined_common(frame.parent, target, frame.keyword, branch=merged)
+        self.schema_origins.derive_combined_common(
+            frame.parent, target, frame.keyword, branch=frame.merged_inputs.get(id(original), original)
+        )
         self.schema_origins.derive(frame.parent, target, "combined_materialization")
 
     def _get_allof_parent_references(
@@ -1321,7 +1300,9 @@ class BindingCaptureMixin(OpenAPIParser):
         if not self._allof_refs:
             return
         frame = self._allof_refs[-1]
-        if self.binding_resolver.resolution_owner is not frame.producer:
+        if self.binding_resolver.resolution_owner is not frame.producer or any(
+            obj is inline for inline in frame.obj.allOf
+        ):
             return
         if frame.name != name or frame.path != tuple(path) or not frame.producer.resolutions:
             msg = "An allOf union does not match its direct loader frame"
@@ -1332,7 +1313,7 @@ class BindingCaptureMixin(OpenAPIParser):
             raise BindingCaptureError(msg)
         _, node = frame.direct_refs[occurrence]
         event = frame.producer.resolutions[occurrence]
-        if event.input != node.ref or any(obj is inline for inline in frame.obj.allOf):
+        if event.input != node.ref:
             msg = "An allOf union is not the observed referenced declaration"
             raise BindingCaptureError(msg)
         if (prior := frame.materialized_parents.get(occurrence)) is not None and prior is not obj:
@@ -1345,18 +1326,18 @@ class BindingCaptureMixin(OpenAPIParser):
     def _borrow_resolved_schema(self, resolved_ref: str, relation: SchemaRelation) -> SchemaOrigin | None:
         """Decode an actual resolved key against a document the engine already borrowed."""
         document_uri, marker, fragment = resolved_ref.partition("#")
-        if not marker or SPECIAL_PATH_MARKER in resolved_ref:
-            return None
-        if (document := self.source_lease.document_id(document_uri)) is None:
-            return None
-        root = self.source_lease.borrow(SourceLocation(document, "", "schema"))
-        if not isinstance(root, dict):
+        if (
+            not marker
+            or SPECIAL_PATH_MARKER in resolved_ref
+            or (document := self.source_lease.document_id(document_uri)) is None
+            or not isinstance(root := self.source_lease.borrow(SourceLocation(document, "", "schema")), dict)
+        ):
             return None
         tokens = split_json_pointer(root, fragment)
+        if not isinstance(raw := raw_value(root, tuple(tokens)), (dict, bool)):
+            return None
         pointer = "/" + "/".join(token.replace("~", "~0").replace("/", "~1") for token in tokens) if tokens else ""
-        location = SourceLocation(document, pointer, "schema")
-        raw = self.source_lease.borrow(location)
-        return SchemaOrigin(location, raw, relation) if isinstance(raw, (dict, bool)) else None
+        return SchemaOrigin(SourceLocation(document, pointer, "schema"), raw, relation)
 
     @capture_errors
     def _pair_inherited_declaration(
@@ -1803,10 +1784,7 @@ class BindingCaptureMixin(OpenAPIParser):
         self, result: dict[str, tuple[JsonSchemaObject | bool, str]]
     ) -> dict[str, tuple[JsonSchemaObject | bool, str]]:
         for parent_ref in dict.fromkeys(parent_ref for _, parent_ref in result.values()):
-            if (schema := self._inherited_schema_cache.get(parent_ref)) is not None:
-                self._pair_inherited_declaration(parent_ref, schema)
-        if self._inherited_merges:
-            self._inherited_merges[-1].parents = result
+            self._pair_inherited_declaration(parent_ref, self._inherited_schema_cache[parent_ref])
         return result
 
     def _merge_properties_with_parent_constraints(
@@ -1817,23 +1795,23 @@ class BindingCaptureMixin(OpenAPIParser):
         deferred_property_names: frozenset[str] | None = None,
     ) -> JsonSchemaObject:
         """Observe the real effective parent map and result without repeating a merge."""
-        frame = InheritedMergeFrame(child_obj, parent_properties)
-        self._inherited_merges.append(frame)
-        try:
-            with self._resolution_producer():
-                result: JsonSchemaObject = super()._merge_properties_with_parent_constraints(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-                    child_obj, base_classes, parent_properties, deferred_property_names
-                )
-        finally:
-            self._inherited_merges.pop()
-        return self._record_parent_constraint_merge(frame, result)  # pyright: ignore[reportUnknownArgumentType]
+        with self._resolution_producer():
+            result: JsonSchemaObject = super()._merge_properties_with_parent_constraints(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+                child_obj, base_classes, parent_properties, deferred_property_names
+            )
+        return self._record_parent_constraint_merge(child_obj, parent_properties, result)  # pyright: ignore[reportUnknownArgumentType]
 
     @capture_errors
-    def _record_parent_constraint_merge(self, frame: InheritedMergeFrame, result: JsonSchemaObject) -> JsonSchemaObject:
-        if result is frame.child:
+    def _record_parent_constraint_merge(
+        self,
+        child: JsonSchemaObject,
+        parents: dict[str, tuple[JsonSchemaObject | bool, str]] | None,
+        result: JsonSchemaObject,
+    ) -> JsonSchemaObject:
+        if result is child:
             return result
-        self.schema_origins.derive(frame.child, result, "inherited_constraint", merge_mode=self.allof_merge_mode)
-        for name, (parent, _) in (frame.parents or {}).items():
+        self.schema_origins.derive(child, result, "inherited_constraint", merge_mode=self.allof_merge_mode)
+        for name, (parent, _) in (parents or {}).items():
             target = (result.properties or {}).get(name)
             if isinstance(parent, JsonSchemaObject) and isinstance(target, JsonSchemaObject):
                 self.schema_origins.derive(
@@ -2189,7 +2167,6 @@ class BindingCaptureMixin(OpenAPIParser):
             self.effective_defaults.clear()
             self.inherited_defaults.clear()
             self._conditional_merges.clear()
-            self._inherited_merges.clear()
             self._inherited_shapes.clear()
             self._inherited_parent_sources.clear()
             self._combined_branches.clear()

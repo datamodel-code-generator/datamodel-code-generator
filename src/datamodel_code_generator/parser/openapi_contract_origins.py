@@ -77,7 +77,7 @@ def _item_schema_children(
                 yield ("items", str(ordinal)), child
         case JsonSchemaObject() | bool() as child:
             yield ("items",), child
-        case None:
+        case _:
             return
 
 
@@ -108,6 +108,18 @@ def _schema_children(obj: JsonSchemaObject) -> Iterator[tuple[tuple[str, ...], J
             yield (keyword,), optional_child
 
 
+def _materialized_child(value: object, token: str) -> object:
+    """Follow one serialized token; a missing container means the raw producer is unobserved."""
+    match value:
+        case dict():
+            return cast("dict[str, object]", value).get(token)
+        case list():
+            return cast("list[object]", value)[int(token)]
+        case _:
+            msg = "A materialization child has no actual raw producer"
+            raise BindingCaptureError(msg)
+
+
 def iter_materialized_schemas(
     raw: dict[str, object], obj: JsonSchemaObject
 ) -> Iterator[tuple[dict[str, object], JsonSchemaObject]]:
@@ -121,16 +133,22 @@ def iter_materialized_schemas(
                 continue
             original: object = current
             for token in tokens:
-                match original:
-                    case dict():
-                        original = cast("dict[str, object]", original).get(token)
-                    case list():
-                        original = cast("list[object]", original)[int(token)]
-                    case _:
-                        msg = "A materialization child has no actual raw producer"
-                        raise BindingCaptureError(msg)
+                original = _materialized_child(original, token)
             if isinstance(original, dict):
                 pending.append((cast("dict[str, object]", original), child))
+
+
+def raw_value(raw: YamlValue, tokens: tuple[str, ...]) -> YamlValue:
+    """Follow raw tokens, returning None instead of inventing a missing occurrence."""
+    for token in tokens:
+        match raw:
+            case dict():
+                raw = raw.get(token)
+            case list() if int(token) < len(raw):
+                raw = raw[int(token)]
+            case _:
+                return None
+    return raw
 
 
 def _merged_schema_tokens(
@@ -166,6 +184,7 @@ class ValidatedSchemaOriginIndex:
         self._required_owners: dict[int, list[JsonSchemaObject]] = {}
         self._required_lists: dict[int, list[str]] = {}
         self._paired: set[tuple[int, SourceLocation, SchemaRelation]] = set()
+        self._true_branches: dict[tuple[int, str, int], list[SourceLocation]] = {}
         self.edges: list[SchemaOriginEdge] = []
         self.projections: list[SyntheticSchemaProjection] = []
         self._incoming: dict[int, list[SchemaOriginEdge]] = {}
@@ -235,7 +254,7 @@ class ValidatedSchemaOriginIndex:
         relation: SchemaRelation = "validated_child",
         descend: bool = True,
     ) -> None:
-        """Pair actual validator input/output, following only corresponding children."""
+        """Pair actual validator input/output, following only corresponding children and the x-propertyNames alias."""
         key = id(obj), location, relation
         if key in self._paired:
             return
@@ -259,7 +278,6 @@ class ValidatedSchemaOriginIndex:
             if isinstance(child, bool):
                 continue
             if not isinstance(original, (dict, bool)):
-                # x-propertyNames is the engine's documented declaration alias.
                 if tokens == ("propertyNames",) and isinstance(alias := raw.get("x-propertyNames"), (dict, bool)):
                     self.pair(
                         raw=alias, obj=child, location=_child_location(location, "x-propertyNames"), relation=relation
@@ -272,25 +290,18 @@ class ValidatedSchemaOriginIndex:
     @capture_errors
     def pair_merged_shape(self, origin: SchemaOrigin, sibling: JsonSchemaObject, target: JsonSchemaObject) -> None:
         """Follow the actual deep-merge ownership, including concatenated schema lists."""
-        if (id(target), origin.location, origin.relation) in self._paired:
-            return
         self.pair(raw=origin.raw, obj=target, location=origin.location, relation=origin.relation, descend=False)
         self.derive(sibling, target, origin.relation, descend_properties=False)
         specific = dict(_schema_children(sibling))
         for tokens, completed in _schema_children(target):
-            if not isinstance(completed, JsonSchemaObject):
-                continue
             source_tokens, sibling_tokens = _merged_schema_tokens(raw=origin.raw, sibling=sibling, tokens=tokens)
-            raw: YamlValue = origin.raw if source_tokens else None
-            for token in source_tokens:
-                match raw:
-                    case dict():
-                        raw = raw.get(token)
-                    case list() if int(token) < len(raw):
-                        raw = raw[int(token)]
-                    case _:
-                        raw = None
-                        break
+            if not isinstance(completed, JsonSchemaObject):
+                if completed is True and tokens[0] in {"allOf", "anyOf", "oneOf"}:
+                    self._true_branches[id(target), tokens[0], int(tokens[1])] = self._true_locations(
+                        origin, source_tokens, sibling, sibling_tokens
+                    )
+                continue
+            raw = raw_value(origin.raw, source_tokens) if source_tokens else None
             child = specific.get(sibling_tokens)
             match raw, child:
                 case ((dict() | bool()), JsonSchemaObject()):
@@ -312,6 +323,22 @@ class ValidatedSchemaOriginIndex:
                     msg = "A merged schema child has no observed source"
                     raise BindingCaptureError(msg)
 
+    def _true_locations(
+        self,
+        origin: SchemaOrigin,
+        source_tokens: tuple[str, ...],
+        sibling: JsonSchemaObject,
+        sibling_tokens: tuple[str, ...],
+    ) -> list[SourceLocation]:
+        """Locate a boolean branch in the referenced or sibling list that the merge concatenated."""
+        if source_tokens and raw_value(origin.raw, source_tokens) is True:
+            return [_child_location(origin.location, *source_tokens)]
+        return [
+            _child_location(sibling_origin.location, *sibling_tokens)
+            for sibling_origin in self.origins(sibling)
+            if raw_value(sibling_origin.raw, sibling_tokens) is True
+        ]
+
     @capture_errors
     def pair_item_projection(
         self, *, raw: dict[str, YamlValue] | bool, obj: JsonSchemaObject, location: SourceLocation
@@ -320,10 +347,7 @@ class ValidatedSchemaOriginIndex:
         if obj.type != "array" or not isinstance(item := obj.items, JsonSchemaObject) or item.ref is None:
             msg = "An item-stream projection did not produce the expected array reference"
             raise BindingCaptureError(msg)
-        key: tuple[int, SourceLocation, SchemaRelation] = id(obj), location, "synthetic_value"
-        if key in self._paired:
-            return
-        self._paired.add(key)
+        self._paired.add((id(obj), location, "synthetic_value"))
         self._validated_anchors[id(obj)] = obj
         self._origins.setdefault(id(obj), []).append(SchemaOrigin(location, raw, "synthetic_value"))
         self.pair(raw=raw, obj=item, location=location, relation="synthetic_value")
@@ -369,16 +393,17 @@ class ValidatedSchemaOriginIndex:
     @capture_errors
     def pair_true_branch(self, parent: JsonSchemaObject, keyword: str, ordinal: int, target: JsonSchemaObject) -> None:
         """Attach a verified true occurrence without inventing child declarations."""
-        for origin in self.origins(parent):
-            if not isinstance(origin.raw, dict) or not isinstance(sequence := origin.raw.get(keyword), list):
-                continue
-            if ordinal < len(sequence) and sequence[ordinal] is True:
-                self.pair(
-                    raw=True,
-                    obj=target,
-                    location=_child_location(origin.location, keyword, str(ordinal)),
-                    relation="combined_materialization",
-                )
+        if (locations := self._true_branches.get((id(parent), keyword, ordinal))) is None:
+            locations = [
+                _child_location(origin.location, keyword, str(ordinal))
+                for origin in self.origins(parent)
+                if isinstance(origin.raw, dict)
+                and isinstance(sequence := origin.raw.get(keyword), list)
+                and ordinal < len(sequence)
+                and sequence[ordinal] is True
+            ]
+        for location in locations:
+            self.pair(raw=True, obj=target, location=location, relation="combined_materialization")
 
     @capture_errors
     def derive(
@@ -558,6 +583,7 @@ class ValidatedSchemaOriginIndex:
         self._validated_anchors.clear()
         self._origins.clear()
         self._paired.clear()
+        self._true_branches.clear()
         self._required_owners.clear()
         self._required_lists.clear()
         self.edges.clear()

@@ -1,0 +1,50 @@
+{
+  "alias_ref": {
+    "constructor_init": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    },
+    "kw_only": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    }
+  },
+  "needed": {
+    "constructor_init": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    },
+    "kw_only": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    }
+  },
+  "strict": {
+    "constructor_init": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    },
+    "kw_only": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    }
+  },
+  "wire_name": {
+    "constructor_init": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    },
+    "kw_only": {
+      "node": "OpaqueBackendValue",
+      "reason": "model_policy_required",
+      "state": "opaque"
+    }
+  }
+}

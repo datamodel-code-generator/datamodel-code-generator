@@ -1,0 +1,22 @@
+[
+  [
+    "NullableRecord",
+    "class"
+  ],
+  [
+    "NullableName",
+    "type_alias"
+  ],
+  [
+    "Base",
+    "class"
+  ],
+  [
+    "Child",
+    "class"
+  ],
+  [
+    "Holder",
+    "class"
+  ]
+]

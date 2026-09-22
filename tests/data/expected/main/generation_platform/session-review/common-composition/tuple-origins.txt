@@ -1,0 +1,27 @@
+{
+  "Nested.same": [
+    "/components/schemas/Payload/anyOf/0/properties/nested/properties/same",
+    "/components/schemas/Payload/properties/nested/properties/same"
+  ],
+  "Nested.common": [
+    "/components/schemas/Payload/properties/nested/properties/common"
+  ],
+  "Nested.specific": [
+    "/components/schemas/Payload/anyOf/0/properties/nested/properties/specific"
+  ],
+  "Value.left": [
+    "/components/schemas/Payload/properties/values/prefixItems/0/properties/left"
+  ],
+  "Value1.right": [
+    "/components/schemas/Payload/anyOf/0/properties/values/prefixItems/0/properties/right"
+  ],
+  "Nested1.same": [
+    "/components/schemas/Payload/properties/nested/properties/same"
+  ],
+  "Nested1.common": [
+    "/components/schemas/Payload/properties/nested/properties/common"
+  ],
+  "Value2.left": [
+    "/components/schemas/Payload/properties/values/prefixItems/0/properties/left"
+  ]
+}

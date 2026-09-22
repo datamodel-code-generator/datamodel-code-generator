@@ -1,0 +1,18 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Null propertyNames", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Choice": {
+      "type": "object",
+      "propertyNames": true,
+      "x-propertyNames": {"pattern": "^[a-z]+$"},
+      "anyOf": [
+        {"propertyNames": null, "properties": {"a": {"type": "string"}}},
+        {"properties": {"b": {"type": "integer"}}}
+      ]
+    },
+    "BaseArray": {"type": "array", "items": {"type": "object", "properties": {"a": {"type": "string"}}, "propertyNames": true, "x-propertyNames": {"pattern": "^a"}}},
+    "Array": {"allOf": [{"$ref": "#/components/schemas/BaseArray", "items": {"type": "object", "propertyNames": null, "properties": {"b": {"type": "boolean"}}}}]}
+  }}
+}

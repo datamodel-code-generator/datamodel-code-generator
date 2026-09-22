@@ -31,3 +31,19 @@ def test_inherited_field_origins(case: str, backend: DataModelType) -> None:
     assert_output(body, EXPECTED / f"parser-{case}-{backend.name}.py")
     assert_output(json.dumps(facts.pop("origins"), indent=2) + "\n", expected)
     assert_output(json.dumps(facts, indent=2) + "\n", EXPECTED / "parser-release.txt")
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("case", ["tuple", "any", "one"])
+def test_common_branch_field_origins(case: str, backend: DataModelType) -> None:
+    """Match independently authored nested common/branch origins before session assembly."""
+    expected = EXPECTED.parent / "common-composition"
+    origins = expected / f"{case}-origins.txt"
+    body, facts = inherited_fields(
+        (DATA / f"generation_platform/binding/session-common-{case}.json").resolve(),
+        backend,
+        json.loads(origins.read_text()),
+    )
+    assert_output(body, expected / f"parser-{case}-{backend.name}.py")
+    assert_output(json.dumps(facts.pop("origins"), indent=2) + "\n", origins)
+    assert_output(json.dumps(facts, indent=2) + "\n", EXPECTED / "parser-release.txt")

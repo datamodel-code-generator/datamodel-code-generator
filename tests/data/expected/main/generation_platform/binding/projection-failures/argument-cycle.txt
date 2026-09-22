@@ -1,0 +1,4 @@
+{
+  "rejection": "BND_CUSTOM_BINDING_REQUIRED",
+  "retained_graph": 0
+}

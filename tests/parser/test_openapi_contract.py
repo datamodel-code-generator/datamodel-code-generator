@@ -105,37 +105,17 @@ def test_actual_reference_capture(api: bool) -> None:
 )
 def test_api_capture_engine_calls(case: str) -> None:
     """Keep original resolver, loader, validation and getter counts unchanged."""
-    import sys
-
     from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-    from tests.data.python.binding_engine_observer import BindingEngineObserver
+    from tests.data.python.binding_engine_observer import compare_engine_runs
 
     source = DATA / "generation_platform/api_scope" / f"{case}.json"
     ordinary = ApiOpenAPIParser(source, openapi_scopes=[OpenAPIScope.Api], formatters=[])
     captured = ContractApiOpenAPIParser(
         source, attempt_id=AttemptId(1), openapi_scopes=[OpenAPIScope.Api], formatters=[]
     )
-    outputs = []
-    counts = []
-    previous = sys.getprofile()
     try:
-        for parser in (ordinary, captured):
-            parser.data_model_field_type._field_imports_cache.clear()
-            observer = BindingEngineObserver()
-            sys.setprofile(observer.record)
-            try:
-                outputs.append(parser.parse())
-            finally:
-                sys.setprofile(previous)
-            counts.append(observer.calls)
-        assert_output(
-            json.dumps(
-                {"identical_model_bytes": outputs[0] == outputs[1], "identical_engine_calls": counts[0] == counts[1]},
-                indent=2,
-            )
-            + "\n",
-            EXPECTED / "engine-parity.txt",
-        )
+        _outputs, parity = compare_engine_runs(ordinary, captured)
+        assert_output(parity, EXPECTED / "engine-parity.txt")
         if case in {"items-object", "items-primitive"}:
             assert_output(
                 json.dumps(
@@ -303,12 +283,10 @@ def test_source_lease_rejects_unobserved_locations(document: int, pointer: str) 
 @pytest.mark.parametrize("case", ["observation", "replacements", "inherited-overrides"])
 def test_replacement_capture_engine_parity(backend: DataModelType, case: str) -> None:
     """Preserve bytes and original engine calls across real copies and replacements."""
-    import sys
-
     from datamodel_code_generator.enums import CollapseRootModelsNameStrategy, ReadOnlyWriteOnlyModelType
     from datamodel_code_generator.model import get_data_model_types
     from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-    from tests.data.python.binding_engine_observer import BindingEngineObserver
+    from tests.data.python.binding_engine_observer import compare_engine_runs
 
     source = DATA / "generation_platform/observation.json" if case == "observation" else SOURCE / f"{case}.json"
     model_types = get_data_model_types(backend, target_python_version=PythonVersionMin)
@@ -328,28 +306,11 @@ def test_replacement_capture_engine_parity(backend: DataModelType, case: str) ->
     }
     ordinary = ApiOpenAPIParser(source, **options)
     captured = ContractApiOpenAPIParser(source, attempt_id=AttemptId(1), **options)
-    previous = sys.getprofile()
-    outputs, counts = [], []
     try:
-        for parser in (ordinary, captured):
-            parser.data_model_field_type._field_imports_cache.clear()
-            observer = BindingEngineObserver()
-            sys.setprofile(observer.record)
-            try:
-                outputs.append(parser.parse())
-            finally:
-                sys.setprofile(previous)
-            counts.append(observer.calls)
+        outputs, parity = compare_engine_runs(ordinary, captured)
         for output in outputs:
             assert_output(output, EXPECTED / f"{case}-{backend.name}.py")
-        assert_output(
-            json.dumps(
-                {"identical_model_bytes": outputs[0] == outputs[1], "identical_engine_calls": counts[0] == counts[1]},
-                indent=2,
-            )
-            + "\n",
-            EXPECTED / "engine-parity.txt",
-        )
+        assert_output(parity, EXPECTED / "engine-parity.txt")
         assert_output(
             json.dumps(
                 {
@@ -769,34 +730,15 @@ def test_default_producer_and_preexisting_null_are_bound_to_fields() -> None:
 
 def test_actual_conditional_property_origins() -> None:
     """Preserve branch pointers when ordinary validation materializes new properties."""
-    import sys
-
     from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-    from tests.data.python.binding_engine_observer import BindingEngineObserver
+    from tests.data.python.binding_engine_observer import compare_engine_runs
 
     options = {"openapi_scopes": [OpenAPIScope.Api], "generate_schema_validators": True, "formatters": []}
     ordinary = ApiOpenAPIParser(SOURCE / "conditional-origins.json", **options)
     parser = ContractApiOpenAPIParser(SOURCE / "conditional-origins.json", attempt_id=AttemptId(1), **options)
-    previous = sys.getprofile()
-    outputs, counts = [], []
     try:
-        for current in (ordinary, parser):
-            current.data_model_field_type._field_imports_cache.clear()
-            observer = BindingEngineObserver()
-            sys.setprofile(observer.record)
-            try:
-                outputs.append(current.parse())
-            finally:
-                sys.setprofile(previous)
-            counts.append(observer.calls)
-        assert_output(
-            json.dumps(
-                {"identical_model_bytes": outputs[0] == outputs[1], "identical_engine_calls": counts[0] == counts[1]},
-                indent=2,
-            )
-            + "\n",
-            EXPECTED / "engine-parity.txt",
-        )
+        _outputs, parity = compare_engine_runs(ordinary, parser)
+        assert_output(parity, EXPECTED / "engine-parity.txt")
         assert_output(
             json.dumps(
                 {
@@ -825,16 +767,20 @@ def test_actual_conditional_property_origins() -> None:
         "root-origins",
         "root-merged-values",
         "synthetic-origins",
+        "merge-edges",
+        "root-edges",
+        "null-property-names",
+        "cyclic-extension",
+        "session-helper-producers",
+        "inline-allof-union",
     ],
 )
 def test_materialized_property_origins(backend: DataModelType, case: str) -> None:
     """Preserve original keys through forward inheritance and filtered combined branches."""
-    import sys
-
     from datamodel_code_generator.enums import JsonSchemaVersion, ReadOnlyWriteOnlyModelType
     from datamodel_code_generator.model import get_data_model_types
     from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-    from tests.data.python.binding_engine_observer import BindingEngineObserver
+    from tests.data.python.binding_engine_observer import compare_engine_runs
 
     model_types = get_data_model_types(backend, target_python_version=PythonVersionMin)
     options = {
@@ -848,32 +794,16 @@ def test_materialized_property_origins(backend: DataModelType, case: str) -> Non
         "read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.RequestResponse,
         "formatters": [],
     }
-    if case == "root-merged-values":
+    if case in {"root-merged-values", "root-edges", "null-property-names"}:
         options["jsonschema_version"] = JsonSchemaVersion.Draft202012
-    ordinary = ApiOpenAPIParser(SOURCE / f"{case}.json", **options)
-    captured = ContractApiOpenAPIParser(SOURCE / f"{case}.json", attempt_id=AttemptId(1), **options)
-    previous = sys.getprofile()
-    outputs, counts = [], []
+    source = SOURCE / f"{case}.yaml" if case == "cyclic-extension" else SOURCE / f"{case}.json"
+    ordinary = ApiOpenAPIParser(source, **options)
+    captured = ContractApiOpenAPIParser(source, attempt_id=AttemptId(1), **options)
     try:
-        for parser in (ordinary, captured):
-            parser.data_model_field_type._field_imports_cache.clear()
-            observer = BindingEngineObserver()
-            sys.setprofile(observer.record)
-            try:
-                outputs.append(parser.parse())
-            finally:
-                sys.setprofile(previous)
-            counts.append(observer.calls)
+        outputs, parity = compare_engine_runs(ordinary, captured)
         for output in outputs:
             assert_output(output, EXPECTED / f"{case}-{backend.name}.py")
-        assert_output(
-            json.dumps(
-                {"identical_model_bytes": outputs[0] == outputs[1], "identical_engine_calls": counts[0] == counts[1]},
-                indent=2,
-            )
-            + "\n",
-            EXPECTED / "engine-parity.txt",
-        )
+        assert_output(parity, EXPECTED / "engine-parity.txt")
         assert_output(
             json.dumps(
                 {"all_fields_resolved": all(entry.origins for entry in captured.field_origins.values())}, indent=2
@@ -887,7 +817,7 @@ def test_materialized_property_origins(backend: DataModelType, case: str) -> Non
             pointers.extend(
                 origin.location.pointer for origin in entry.origins if origin.location.pointer not in pointers
             )
-        origin_case = f"{case}-{backend.name}" if case == "root-merged-values" else case
+        origin_case = f"{case}-{backend.name}" if case in {"root-merged-values", "null-property-names"} else case
         assert_output(json.dumps(locations, indent=2) + "\n", EXPECTED / f"{origin_case}.txt")
         if case == "synthetic-origins":
             assert_output(
@@ -912,6 +842,149 @@ def test_materialized_property_origins(backend: DataModelType, case: str) -> Non
                 + "\n",
                 EXPECTED / "synthetic-keywords.txt",
             )
+        if case == "session-helper-producers":
+            assert_output(
+                json.dumps(
+                    [
+                        [[pattern, type(schema).__name__] for pattern, schema in observation.patterns]
+                        for observation in captured.pattern_types
+                    ],
+                    indent=2,
+                )
+                + "\n",
+                EXPECTED / "helper-pattern-types.txt",
+            )
+        if case == "merge-edges":
+            branches = (
+                sorted(
+                    origin.location.pointer
+                    for origin in origins
+                    if origin.raw is True and origin.relation == "combined_materialization"
+                )
+                for origins in captured.schema_origins._origins.values()
+            )
+            assert_output(
+                json.dumps(sorted(branch for branch in branches if branch), indent=2) + "\n",
+                EXPECTED / "merge-edges-true-branches.txt",
+            )
+    finally:
+        ordinary.dispose()
+        captured.dispose()
+        captured.source_lease.close()
+
+
+@pytest.mark.parametrize("variant", ["default", "no-merge", "validators", "enum-override"])
+def test_capture_branch_parity(variant: str) -> None:
+    """Keep ordinary bytes for boolean parents, recursive siblings, merges and opaque override keys."""
+    from enum import Enum
+
+    from datamodel_code_generator.enums import AllOfMergeMode
+    from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
+    from tests.data.python.binding_engine_observer import compare_engine_runs
+    from tests.data.python.binding_inputs import builtin_binding_config
+
+    class OverrideKey(str, Enum):
+        A = "a"
+
+    configs = []
+    for _ in range(2):
+        config = builtin_binding_config(DataModelType.PydanticV2BaseModel)
+        match variant:
+            case "no-merge":
+                config.allof_merge_mode = AllOfMergeMode.NoMerge
+            case "validators":
+                config.generate_schema_validators = True
+            case "enum-override":
+                config.default_value_overrides = {OverrideKey.A: "y"}
+            case _:
+                pass
+        configs.append(config)
+    ordinary = ApiOpenAPIParser(SOURCE / "capture-branches.json", config=configs[0])
+    captured = ContractApiOpenAPIParser(SOURCE / "capture-branches.json", attempt_id=AttemptId(1), config=configs[1])
+    try:
+        outputs, parity = compare_engine_runs(ordinary, captured)
+        assert_output(outputs[1], EXPECTED / f"capture-branches-{variant}.py")
+        assert_output(parity, EXPECTED / "engine-parity.txt")
+        assert_output(
+            json.dumps(
+                {
+                    "capture_failed": captured.binding_ledger.failure is not None,
+                    "default_producers": sorted({
+                        entry.producer for entry in captured.binding_resolver.default_resolutions
+                    }),
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / f"capture-branches-{variant}.txt",
+        )
+    finally:
+        ordinary.dispose()
+        captured.dispose()
+        captured.source_lease.close()
+
+
+def test_legacy_marker_reference_parity() -> None:
+    """Leave engine-internal marker paths without borrowed origins while keeping legacy parameter output."""
+    from datamodel_code_generator.enums import JsonSchemaVersion
+    from datamodel_code_generator.parser.openapi import OpenAPIParser
+    from tests.data.python.binding_engine_observer import compare_engine_runs
+    from tests.data.python.binding_inputs import builtin_binding_config
+
+    configs = []
+    for _ in range(2):
+        config = builtin_binding_config(DataModelType.PydanticV2BaseModel)
+        config.generate_schema_validators = True
+        config.jsonschema_version = JsonSchemaVersion.Draft202012
+        config.openapi_scopes = [OpenAPIScope.Schemas, OpenAPIScope.Paths, OpenAPIScope.Parameters]
+        configs.append(config)
+    ordinary = OpenAPIParser(SOURCE / "marker-references.json", config=configs[0])
+    captured = ContractOpenAPIParser(SOURCE / "marker-references.json", attempt_id=AttemptId(1), config=configs[1])
+    try:
+        outputs, parity = compare_engine_runs(ordinary, captured)
+        assert_output(outputs[1], EXPECTED / "marker-references.py")
+        assert_output(parity, EXPECTED / "engine-parity.txt")
+        assert_output(
+            json.dumps({"capture_failed": captured.binding_ledger.failure is not None}, indent=2) + "\n",
+            EXPECTED / "marker-references.txt",
+        )
+    finally:
+        ordinary.dispose()
+        captured.dispose()
+        captured.source_lease.close()
+
+
+def test_dangling_sibling_reference_keeps_capture() -> None:
+    """Keep the ordinary fallback without latching a failure for an unresolved sibling reference."""
+    from datamodel_code_generator import DanglingRefWarning
+    from datamodel_code_generator.enums import ReadOnlyWriteOnlyModelType
+    from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
+
+    options = {
+        "openapi_scopes": [OpenAPIScope.Api],
+        "use_title_as_name": True,
+        "read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.RequestResponse,
+        "formatters": [],
+    }
+    ordinary = ApiOpenAPIParser(SOURCE / "dangling-sibling.yaml", **options)
+    captured = ContractApiOpenAPIParser(SOURCE / "dangling-sibling.yaml", attempt_id=AttemptId(1), **options)
+    try:
+        with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref '#/components/schemas/Error'"):
+            expected = ordinary.parse()
+        with pytest.warns(DanglingRefWarning, match=r"Unresolved local \$ref '#/components/schemas/Error'"):
+            actual = captured.parse()
+        assert_output(actual, EXPECTED / "dangling-sibling.py")
+        assert_output(
+            json.dumps(
+                {
+                    "identical_model_bytes": actual == expected,
+                    "capture_failed": captured.binding_ledger.failure is not None,
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "dangling-sibling.txt",
+        )
     finally:
         ordinary.dispose()
         captured.dispose()

@@ -1,0 +1,4 @@
+alias_ref: none / runtime_or_opaque / opaque
+needed: absent / not_applicable / none
+strict: none / synthesized_optional_fallback / optional_fallback
+wire_name: value / not_applicable / optional_fallback

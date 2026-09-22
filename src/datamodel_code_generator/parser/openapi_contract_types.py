@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._binding_literals import UnsupportedBindingValueError, freeze_argument
 from datamodel_code_generator._generation_contract import (
     AnnotatedType,
-    BindingCaptureError,
     BoundType,
     BuiltinType,
     ConstructorType,
@@ -111,8 +110,6 @@ def _ordered_union(members: tuple[FinalPythonType, ...], *, preserve_order: bool
     unique = tuple(dict.fromkeys(flattened))
     if len(unique) == 1:
         return unique[0]
-    if not unique:
-        raise _UnsupportedTypeError(_TYPE_UNSUPPORTED)
     return UnionType(unique, preserve_order)
 
 
@@ -127,7 +124,6 @@ class FinalTypeProjector:
         """Borrow only value mappings established from actual final reference ownership."""
         self._references = references
         self._enum_members = enum_members
-        self._active: set[GraphObjectId] = set()
 
     def project(self, recipe: TypeRecipe) -> TypeProjection:
         """Return a finite unsupported-type diagnostic without changing model acceptance."""
@@ -142,33 +138,22 @@ class FinalTypeProjector:
             return True
         unknown = observation.opaque
         for reference in observation.references:
-            if (binding := self._references.get(reference)) is None:
+            if (binding := self._references.get(reference)) is None or binding.is_alias:
                 unknown = True
             elif binding.nullable:
-                if not binding.is_alias:
-                    return True
-                unknown = True
+                return True
         return None if unknown else False
 
     def _project(self, recipe: TypeRecipe) -> FinalPythonType:
-        if recipe.node in self._active:
-            msg = "A final type recipe contains a structural cycle"
-            raise BindingCaptureError(msg)
-        self._active.add(recipe.node)
-        try:
-            projected, inferred_optional = self._project_base(recipe)
-            projected = self._wrap_container(recipe, projected)
-            reference = self._references.get(recipe.reference) if recipe.reference is not None else None
-            nullable_reference = reference is not None and reference.nullable and not reference.is_alias
-            if (
-                "optional" in recipe.modifiers or inferred_optional or nullable_reference
-            ) and projected != ImportedType(IMPORT_ANY):
-                return _ordered_union(
-                    (projected, NoneType()), preserve_order="preserve_union_order" in recipe.modifiers
-                )
-            return projected
-        finally:
-            self._active.remove(recipe.node)
+        projected, inferred_optional = self._project_base(recipe)
+        projected = self._wrap_container(recipe, projected)
+        reference = self._references.get(recipe.reference) if recipe.reference is not None else None
+        nullable_reference = reference is not None and reference.nullable and not reference.is_alias
+        if ("optional" in recipe.modifiers or inferred_optional or nullable_reference) and projected != ImportedType(
+            IMPORT_ANY
+        ):
+            return _ordered_union((projected, NoneType()), preserve_order="preserve_union_order" in recipe.modifiers)
+        return projected
 
     def _project_base(self, recipe: TypeRecipe) -> tuple[FinalPythonType | None, bool]:
         if recipe.bound is not None:
@@ -207,15 +192,6 @@ class FinalTypeProjector:
 
     def _project_structural(self, recipe: TypeRecipe) -> tuple[FinalPythonType, bool]:
         if "tuple" in recipe.modifiers:
-            if recipe.data_types and recipe.data_types[-1].atom == "...":
-                return (
-                    GenericType(
-                        BuiltinType("tuple"),
-                        tuple(self._project(child) for child in recipe.data_types[:-1]),
-                        "ellipsis",
-                    ),
-                    False,
-                )
             arguments = tuple(self._project(child) for child in recipe.data_types)
             if recipe.tuple_item_count is not None:
                 arguments = (arguments[0] if arguments else ImportedType(IMPORT_ANY),) * recipe.tuple_item_count
@@ -264,10 +240,8 @@ class FinalTypeProjector:
                     base = BuiltinType("list")
                 case "mapping" | "dict" if modifier == "mapping" or generic:
                     base = ImportedType(Import(import_="Mapping", from_=container_module))
-                case "dict":
-                    base = BuiltinType("dict")
                 case _:
-                    raise _UnsupportedTypeError(_TYPE_UNSUPPORTED)
+                    base = BuiltinType("dict")
             if modifier in {"mapping", "dict"} and (recipe.dict_key is not None or value is not None):
                 key = self._project(recipe.dict_key) if recipe.dict_key is not None else BuiltinType("str")
                 return GenericType(base, (key, value if value is not None else ImportedType(IMPORT_ANY)))
@@ -284,5 +258,5 @@ def _freeze_literal_atom(*, value: bool | int | str) -> LiteralScalar:
             return LiteralScalar("bool", value)
         case int():
             return LiteralScalar("int", value)
-        case str():
+        case _:
             return LiteralScalar("str", value)

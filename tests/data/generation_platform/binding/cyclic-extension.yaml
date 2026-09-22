@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info:
+  title: Cyclic extension
+  version: "1"
+x-cycle: &cycle
+  self: *cycle
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string

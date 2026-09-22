@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 from io import StringIO
-from itertools import starmap
+from itertools import accumulate, starmap
 from typing import TYPE_CHECKING, Final, Literal, NoReturn, TypeAlias, cast
 
 from datamodel_code_generator._binding_literals import UnsupportedBindingValueError, freeze_argument, freeze_literal
@@ -103,6 +103,16 @@ class ExpectedFieldDeclaration:
 DefaultKind: TypeAlias = Literal[
     "absent", "none", "literal", "expression", "factory", "msgspec_unset", "pydantic_missing", "opaque"
 ]
+_PROVENANCE_DEFAULTS: Final[dict[DefaultKind, Literal["absent", "none", "value", "factory", "missing", "opaque"]]] = {
+    "absent": "absent",
+    "none": "none",
+    "literal": "value",
+    "expression": "value",
+    "factory": "factory",
+    "msgspec_unset": "missing",
+    "pydantic_missing": "missing",
+    "opaque": "opaque",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,19 +306,20 @@ def _import_names(tokens: Tokens) -> tuple[tuple[str, str, str], ...]:
     return tuple(result)
 
 
+def _bracket_delta(token: tokenize.TokenInfo) -> int:
+    if token.type != tokenize.OP:
+        return 0
+    return (token.string in {"(", "[", "{"}) - (token.string in {")", "]", "}"})
+
+
 def _unparenthesized(tokens: Tokens) -> Tokens:
-    while len(tokens) >= _PAIR_SIZE and tokens[0].string == "(" and tokens[-1].string == ")":
-        depth = 0
-        closing = -1
-        for index, token in enumerate(tokens):
-            closing = index
-            if token.type == tokenize.OP:
-                depth += token.string in {"(", "[", "{"}
-                depth -= token.string in {")", "]", "}"}
-                if depth == 0:
-                    break
-        if closing != len(tokens) - 1:
-            break
+    """Strip only parentheses enclosing the whole expression; tokenized brackets always balance."""
+    while (
+        len(tokens) >= _PAIR_SIZE
+        and tokens[0].string == "("
+        and tokens[-1].string == ")"
+        and all(accumulate(map(_bracket_delta, tokens[:-1])))
+    ):
         tokens = tokens[1:-1]
     return tokens
 
@@ -681,10 +692,6 @@ class _TypePlacementMatcher:
             }
         )
         if len(expected_members) != len(actual):
-            # Field-level Optional can enclose a complete union rather than flatten it.
-            if len(actual) == 1 and actual[0] is not None:
-                self._match(expected, actual[0], ())
-                return
             self._mismatch()
         for index, (member, annotation) in enumerate(zip(expected_members, actual, strict=True)):
             self._match(member, annotation, (index,) if isinstance(expected, UnionType) else ())
@@ -725,7 +732,7 @@ class _TypePlacementMatcher:
                 return
             case LiteralType():
                 matched = self._match_literal(skeleton, tokens)
-            case ConstructorType():
+            case _:
                 matched = self._match_constructor(skeleton, tokens, path)
         if not matched:
             self._mismatch()
@@ -829,14 +836,10 @@ class _TypePlacementMatcher:
         )
 
     def _match_generic(self, expected: GenericType, tokens: Tokens, path: tuple[int, ...]) -> None:
-        base, arguments, tuple_form = expected.base, expected.arguments, expected.tuple_form
+        base, arguments = expected.base, expected.arguments
         if (application := _application(tokens, "[")) is None:
             self._mismatch()
         callee, children = application
-        if tuple_form == "ellipsis":
-            if not children or _text(children[-1]) != "...":
-                self._mismatch()
-            children = children[:-1]
         if isinstance(base, BuiltinType) and _resolved_name(callee, self.bindings) == _TYPING_CONTAINER_NAMES.get(
             base.name, ""
         ):
@@ -1154,8 +1157,6 @@ def freeze_builtin_field_facts(
         return BackendFieldFacts(
             backend, tuple((name, opaque) for name in names), emitted, opaque, opaque, opaque, opaque, opaque
         )
-    # These are declared data attributes. Constraint/default rendering is owned by
-    # emitted, not reconstructed from raw extras or another field getter.
     declarations = (
         ("name", _backend_value(field.name)),
         ("original_name", _backend_value(field.original_name)),
@@ -1258,7 +1259,7 @@ def _model_parameters(backend: BackendName) -> tuple[str, ...]:
             return _MSGSPEC_PARAMETERS
         case "typeddict":
             return ("total", "closed")
-        case "pydantic":
+        case _:
             return ()
 
 
@@ -1290,7 +1291,6 @@ def _model_parameter_values(  # ruff: ignore[too-many-return-statements] # Finit
         case "dataclass" | "pydantic_dataclass":
             if (arguments := _raw_mapping(model.dataclass_arguments)) is None:
                 return None, False
-            # Both builtin dataclass templates omit False/None decorator arguments.
             return {
                 name: _backend_value(value)
                 for name, value in arguments.items()
@@ -1310,13 +1310,13 @@ def _model_parameter_values(  # ruff: ignore[too-many-return-statements] # Finit
             if (arguments := _raw_mapping(internal.get("typed_dict_kwargs", {}))) is None:
                 return None, False
             return {name: _syntax_value(value) for name, value in arguments.items()}, "extra_items" in arguments
-        case "pydantic":
+        case _:
             return {}, False
 
 
-def _model_configuration(model: DataModel, backend: BackendName) -> dict[str, BackendValue] | None:
-    if backend not in {"pydantic", "pydantic_dataclass"}:
-        return {}
+def _model_configuration(
+    model: DataModel, backend: Literal["pydantic", "pydantic_dataclass"]
+) -> dict[str, BackendValue] | None:
     key = "config_items" if backend == "pydantic" else "_safe_config_items"
     values: object = model._internal_template_data.get(key, ())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] # Already normalized by the renderer owner.
     if type(values) not in {tuple, list}:
@@ -1349,11 +1349,12 @@ def freeze_builtin_model_facts(model: DataModel, *, projection: ModelProjectionC
     if values is not None and extra_present != (projection.extra_items is not None):
         msg = "TypedDict extra_items does not match its captured final type"
         raise BindingCaptureError(msg)
-    configuration = (
-        _freeze_settings(_PYDANTIC_CONFIGURATION, _model_configuration(model, backend))
-        if backend in {"pydantic", "pydantic_dataclass"}
-        else ()
-    )
+    configuration: tuple[BackendSetting, ...] = ()
+    match backend:
+        case "pydantic" | "pydantic_dataclass":
+            configuration = _freeze_settings(_PYDANTIC_CONFIGURATION, _model_configuration(model, backend))
+        case _:
+            pass
     return BackendModelFacts(
         backend,
         _freeze_settings(_model_parameters(backend), values),
@@ -1368,16 +1369,7 @@ def freeze_none_default_provenance(
     field: DataModelFieldBase, *, emitted: EmittedFieldFacts, projection: FieldProjectionContext
 ) -> NoneDefaultProvenance:
     """Prove ordinary None synthesis from producer facts and accepted syntax, never a getter."""
-    default_kind: Literal["absent", "none", "value", "factory", "missing", "opaque"] = "opaque"
-    match emitted.emitted_default_kind:
-        case "absent" | "none" | "factory" as kind:
-            default_kind = kind
-        case "msgspec_unset" | "pydantic_missing":
-            default_kind = "missing"
-        case "literal" | "expression":
-            default_kind = "value"
-        case "opaque":
-            pass
+    default_kind = _PROVENANCE_DEFAULTS[emitted.emitted_default_kind]
     unknown = (
         not projection.builtin_semantics
         or type(field.extras) is not dict
@@ -1438,19 +1430,14 @@ def _annotation_null_origin(
     unknown: bool,
     fallback: bool,
 ) -> Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]:
-    annotation: Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]
     if not emitted.null_type_in_annotation:
-        annotation = "none"
-    elif unknown:
-        annotation = "opaque"
-    elif projection.explicit_nullable:
-        annotation = "schema"
-    elif projection.preexisting_null:
-        annotation = "preexisting_type"
-    elif projection.configuration_nullable or (projection.original_required and not field.required):
-        annotation = "model_configuration"
-    elif fallback:
-        annotation = "optional_fallback"
-    else:
-        annotation = "opaque"
-    return annotation
+        return "none"
+    if unknown:
+        return "opaque"
+    if projection.explicit_nullable:
+        return "schema"
+    if projection.preexisting_null:
+        return "preexisting_type"
+    if projection.configuration_nullable or (projection.original_required and not field.required):
+        return "model_configuration"
+    return "optional_fallback" if fallback else "opaque"

@@ -9,7 +9,7 @@ from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
-from datamodel_code_generator.enums import JsonSchemaVersion, OpenAPIScope
+from datamodel_code_generator.enums import AllOfMergeMode, JsonSchemaVersion, OpenAPIScope
 from datamodel_code_generator.parser.openapi_contract import (
     BindingCaptureMixin,
     ContractApiOpenAPIParser,
@@ -28,7 +28,9 @@ if TYPE_CHECKING:
 def producer_fault(case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Keep the normal engine and capture methods, injecting only an inconsistent observation."""
     method = case["method"]
-    owner = ValidatedSchemaOriginIndex if case.get("owner") == "origins" else BindingCaptureMixin
+    owner = {"origins": ValidatedSchemaOriginIndex, "api": ContractApiOpenAPIParser}.get(
+        case.get("owner", ""), BindingCaptureMixin
+    )
     original = getattr(owner, method)
 
     def damaged(parser: BindingCaptureMixin, *args: Any, **kwargs: Any) -> Any:
@@ -52,6 +54,18 @@ def producer_fault(case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> Ite
                 args = (args[0], args[1].model_copy(update={"properties": {"ghost": args[1]}}), *args[2:])
             case "combined-keyword":
                 args = (*args[:-1], "unobserved")
+            case "inherited-source":
+                args = (replace(args[0], source=None), *args[1:])
+            case "shared-field-type":
+                if args[0].data_types:
+                    args = (args[0].model_copy(update={"data_types": [args[0].data_types[0]] * 2}), *args[1:])
+            case "object-field-properties":
+                args = (args[0].model_copy(update={"properties": {}}), *args[1:])
+            case "item-stream-source":
+                location = original(parser, *args, **kwargs)
+                return replace(location, pointer="/openapi") if args[0].projection == "item_stream_array" else location
+            case "validation-frame":
+                args = (replace(args[0], raw=dict(args[0].raw)),)
             case "combined-owner":
                 saved = parser._combined_branches
                 parser._combined_branches = []
@@ -174,6 +188,7 @@ def provenance_failure(source: Path, case: dict[str, str], monkeypatch: pytest.M
         field_constraints=case.get("field_constraints") == "true",
         jsonschema_version=JsonSchemaVersion.Draft202012,
         openapi_scopes=[OpenAPIScope.Api] if case.get("api") == "true" else [OpenAPIScope.Schemas],
+        **({"allof_merge_mode": AllOfMergeMode.NoMerge} if case.get("no_merge") == "true" else {}),
     )
     failure = None
     references = ()

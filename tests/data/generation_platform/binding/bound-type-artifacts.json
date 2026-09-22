@@ -100,5 +100,35 @@
     "old": "external.Model.model_fields",
     "new": "external.Other.model_fields",
     "error": true
+  },
+  {
+    "id": "native-without-lookup",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__",
+    "error": true
+  },
+  {
+    "id": "native-empty-lookup",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__[]",
+    "error": true
+  },
+  {
+    "id": "empty-argument-group",
+    "old": "Callable[[], bool]",
+    "new": "Callable[(), bool]",
+    "error": true
+  },
+  {
+    "id": "native-unbalanced-square",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__('raw-key']",
+    "error": true
+  },
+  {
+    "id": "native-unbalanced-bracket",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__{'raw-key']",
+    "error": true
   }
 ]

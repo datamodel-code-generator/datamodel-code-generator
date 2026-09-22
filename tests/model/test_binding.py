@@ -273,14 +273,22 @@ def test_artifact_type_must_match_existing_projection(change: dict[str, str]) ->
     config.use_unique_items_as_set = True
     config.enum_field_as_literal = LiteralType.All
     config.target_datetime_class = DatetimeClassType.Awaredatetime
-    parser = ContractApiOpenAPIParser(SOURCE / "type-projection.json", attempt_id=AttemptId(1), config=config)
+    metadata = change.get("source") == "emitted-meta"
+    config.field_constraints = metadata
+    config.use_annotated = metadata
+    config.collapse_root_models = metadata
+    source = "emitted-meta" if metadata else "type-projection"
+    parser = ContractApiOpenAPIParser(SOURCE / f"{source}.json", attempt_id=AttemptId(1), config=config)
     try:
         body = str(parser.parse())
-        assert_output(body, EXPECTED / f"type-projection-{backend.name}.py")
-        with pytest.raises(BindingCaptureError, match="Accepted field annotation does not match its projected type"):
+        assert_output(body, EXPECTED / ("emitted-meta-True.py" if metadata else f"type-projection-{backend.name}.py"))
+        with pytest.raises(
+            BindingCaptureError,
+            match=change.get("error", "Accepted field annotation does not match its projected type"),
+        ):
             index_builtin_field_declarations(
                 body.replace(change["old"], change["new"]),
-                expected=projected_field_expectations(parser, "Types", backend),
+                expected=projected_field_expectations(parser, "Metadata" if metadata else "Types", backend),
                 imports=FrozenImportBindings(
                     builtin_field_imports(),
                     tuple((SymbolId(index), model.name) for index, model in enumerate(parser.results)),
@@ -567,6 +575,206 @@ def test_bound_expression_matches_actual_structure(change: dict[str, str | bool]
         assert_output(
             json.dumps([field.expected.native_name for field in index.fields], indent=2) + "\n",
             EXPECTED / "bound-type-fields.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("collapse", [False, True])
+def test_final_reference_policies_match_artifacts(backend: DataModelType, *, collapse: bool) -> None:
+    """Project nullable, alias, SerializeAsAny and tuple uses that the accepted artifact corroborates."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        builtin_field_imports,
+        default_provenance_table,
+        final_reference_projector,
+        projected_field_expectations,
+    )
+
+    config = builtin_binding_config(backend)
+    config.use_serialize_as_any = True
+    config.collapse_root_models = collapse
+    parser = ContractApiOpenAPIParser(SOURCE / "reference-policies.json", attempt_id=AttemptId(1), config=config)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"reference-policies-{backend.name}-{collapse}.py")
+        projector = final_reference_projector(parser)
+        extra_imports = (Import(import_="Tuple", from_="typing"), Import(import_="SerializeAsAny", from_="pydantic"))
+        index = index_builtin_field_declarations(
+            body,
+            expected=projected_field_expectations(parser, "Holder", backend, projector),
+            imports=FrozenImportBindings(
+                (*builtin_field_imports(), *extra_imports),
+                tuple((SymbolId(index), model.name) for index, model in enumerate(parser.results)),
+            ),
+        )
+        nulls = {
+            entry.original_name: projector.preexisting_null(entry.preexisting_null)
+            for entry in parser.field_constructions.values()
+            if entry.class_name == "Holder"
+        }
+        assert_output(
+            json.dumps(
+                {
+                    field.expected.native_name: {
+                        "type": type_snapshot(field.expected.type),
+                        "preexisting_null": nulls[field.expected.native_name],
+                    }
+                    for field in index.fields
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / f"reference-policies-{backend.name}-{collapse}.txt",
+        )
+        assert_output(
+            default_provenance_table(parser, body, backend, "Holder", extra_imports),
+            EXPECTED / f"reference-provenance-{backend.name}-{collapse}.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("enum_values", [False, True])
+def test_discriminator_members_match_artifacts(backend: DataModelType, *, enum_values: bool) -> None:
+    """Keep actual enum member identities behind the accepted discriminator literals."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        builtin_field_imports,
+        final_reference_projector,
+        projected_field_expectations,
+    )
+
+    config = builtin_binding_config(backend)
+    config.use_enum_values_in_discriminator = enum_values
+    config.use_subclass_enum = True
+    config.reuse_model = True
+    parser = ContractApiOpenAPIParser(
+        SOURCE / "session-discriminator-override.yaml", attempt_id=AttemptId(1), config=config
+    )
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"discriminator-members-{backend.name}-{enum_values}.py")
+        projector = final_reference_projector(parser)
+        index = index_builtin_field_declarations(
+            body,
+            expected=tuple(
+                field
+                for name in ("RequestV1", "RequestV2")
+                for field in projected_field_expectations(parser, name, backend, projector)
+            ),
+            imports=FrozenImportBindings(
+                builtin_field_imports(),
+                tuple((SymbolId(index), model.name) for index, model in enumerate(parser.results)),
+            ),
+        )
+        assert_output(
+            json.dumps(
+                {
+                    f"{field.expected.model_name}.{field.expected.native_name}": type_snapshot(field.expected.type)
+                    for field in index.fields
+                },
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / f"discriminator-members-{backend.name}-{enum_values}.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("force_optional", [False, True])
+def test_default_policy_provenance(backend: DataModelType, *, force_optional: bool) -> None:
+    """Distinguish equal-valued explicit overrides, schema nulls, and configured annotations."""
+    from tests.data.python.binding_inputs import builtin_binding_config, default_provenance_table
+
+    config = builtin_binding_config(backend)
+    config.default_value_overrides = {"override_null": None}
+    config.force_optional_for_required_fields = force_optional
+    parser = ContractApiOpenAPIParser(SOURCE / "session-default-policies.json", attempt_id=AttemptId(1), config=config)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"default-policies-{backend.name}-{force_optional}.py")
+        assert_output(
+            default_provenance_table(parser, body, backend, "Defaults"),
+            EXPECTED.parent / "session-review/default-policies" / f"{backend.name}-{force_optional}.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+def test_type_statement_definitions(backend: DataModelType) -> None:
+    """Record PEP 695 aliases as final definitions while corroborating the fields that use them."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        builtin_field_imports,
+        final_reference_projector,
+        projected_field_expectations,
+    )
+
+    parser = ContractApiOpenAPIParser(
+        SOURCE / "reference-policies.json",
+        attempt_id=AttemptId(1),
+        config=builtin_binding_config(backend, type_statement=True),
+    )
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"type-statement-{backend.name}.py")
+        index = index_builtin_field_declarations(
+            body,
+            expected=projected_field_expectations(parser, "Holder", backend, final_reference_projector(parser)),
+            imports=FrozenImportBindings(
+                (
+                    *builtin_field_imports(),
+                    *(Import(import_=name, from_="typing") for name in ("Tuple", "NotRequired")),
+                ),
+                tuple((SymbolId(index), model.name) for index, model in enumerate(parser.results)),
+            ),
+        )
+        assert_output(
+            json.dumps(
+                [[definition.name, definition.kind] for definition in index.definitions if definition.kind != "import"],
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "type-statement-definitions.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", [backend for backend in DataModelType if backend != DataModelType.TypingTypedDict])
+def test_field_edge_facts(backend: DataModelType) -> None:
+    """Read keyword defaults, per-field keyword-only markers and conservative null provenance."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        constructor_fact_table,
+        default_provenance_table,
+    )
+
+    config = builtin_binding_config(backend)
+    config.use_default_kwarg = True
+    parser = ContractApiOpenAPIParser(SOURCE / "field-edges.json", attempt_id=AttemptId(1), config=config)
+    imports = (Import(import_="field", from_="msgspec" if backend == DataModelType.MsgspecStruct else "dataclasses"),)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"field-edges-{backend.name}.py")
+        assert_output(
+            default_provenance_table(parser, body, backend, "Edges", imports),
+            EXPECTED / f"field-edges-{backend.name}.txt",
+        )
+        assert_output(
+            constructor_fact_table(parser, body, backend, "Edges", imports),
+            EXPECTED / f"field-edges-constructors-{backend.name}.txt",
         )
     finally:
         parser.dispose()

@@ -81,7 +81,7 @@ def freeze_literal(value: object, active: set[int]) -> FrozenLiteral:
                     kind = "tuple"
                 case set():
                     kind = "set"
-                case frozenset():
+                case _:
                     kind = "frozenset"
             return LiteralSequence(kind, tuple(freeze_literal(item, active) for item in value))
         raise UnsupportedBindingValueError(_CUSTOM_BINDING_REQUIRED)

@@ -1,0 +1,8 @@
+{
+  "label": [
+    "/components/schemas/Holder/properties/nested/allOf/0/oneOf/0/properties/label"
+  ],
+  "nested": [
+    "/components/schemas/Holder/properties/nested"
+  ]
+}

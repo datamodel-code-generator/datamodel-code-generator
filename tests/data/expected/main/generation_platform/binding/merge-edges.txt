@@ -1,0 +1,27 @@
+{
+  "shared": [
+    "/components/schemas/Base/properties/shared",
+    "/components/schemas/Other/properties/shared"
+  ],
+  "extra": [
+    "/components/schemas/Other/properties/extra"
+  ],
+  "flag": [
+    "/components/schemas/Other/properties/flag"
+  ],
+  "a": [
+    "/components/schemas/Plain/properties/a",
+    "/components/schemas/Sibling/properties/a",
+    "/components/schemas/ThingBase/properties/a"
+  ],
+  "open": [
+    "/components/schemas/Plain/properties/open"
+  ],
+  "b": [
+    "/components/schemas/Sibling/anyOf/1/properties/b",
+    "/components/schemas/ThingBase/anyOf/1/properties/b"
+  ],
+  "c": [
+    "/components/schemas/Branched/anyOf/0/properties/c"
+  ]
+}

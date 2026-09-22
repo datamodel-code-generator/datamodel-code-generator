@@ -1,0 +1,6 @@
+{
+  "capture_failed": false,
+  "default_producers": [
+    "opaque"
+  ]
+}

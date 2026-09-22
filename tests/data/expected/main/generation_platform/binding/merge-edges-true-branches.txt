@@ -1,0 +1,17 @@
+[
+  [
+    "/components/schemas/Appended/anyOf/0"
+  ],
+  [
+    "/components/schemas/Sibling/anyOf/0"
+  ],
+  [
+    "/components/schemas/Thing/anyOf/0"
+  ],
+  [
+    "/components/schemas/ThingBase/anyOf/0"
+  ],
+  [
+    "/components/schemas/ThingBase/anyOf/0"
+  ]
+]

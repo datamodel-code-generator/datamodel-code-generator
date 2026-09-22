@@ -1,0 +1,5 @@
+{
+  "name": [
+    "/components/schemas/Pet/properties/name"
+  ]
+}

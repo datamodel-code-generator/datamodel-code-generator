@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import json
+import sys
 from collections import Counter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from tests.data.python.generation_observer import OBSERVED
 
 if TYPE_CHECKING:
     from types import FrameType
+
+    from datamodel_code_generator.parser.base import Parser
 
 _CAPTURE_MODULES = frozenset({
     "datamodel_code_generator.parser.openapi_contract",
@@ -96,3 +100,21 @@ class BindingEngineObserver:
             and frame.f_code.co_name in _ENGINE_CALLS
         ):
             self.calls[module, frame.f_code.co_name] += 1
+
+
+def compare_engine_runs(ordinary: Parser, captured: Parser) -> tuple[list[Any], str]:
+    """Parse both sides from the same cold field-import cache and describe output/engine parity."""
+    previous = sys.getprofile()
+    outputs: list[Any] = []
+    counts: list[Counter[tuple[str, str]]] = []
+    for parser in (ordinary, captured):
+        parser.data_model_field_type._field_imports_cache.clear()
+        observer = BindingEngineObserver()
+        sys.setprofile(observer.record)
+        try:
+            outputs.append(parser.parse())
+        finally:
+            sys.setprofile(previous)
+        counts.append(observer.calls)
+    parity = {"identical_model_bytes": outputs[0] == outputs[1], "identical_engine_calls": counts[0] == counts[1]}
+    return outputs, json.dumps(parity, indent=2) + "\n"

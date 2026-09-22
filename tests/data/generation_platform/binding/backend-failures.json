@@ -1,0 +1,74 @@
+[
+  {
+    "id": "dataclass-invalid",
+    "backend": "dataclasses.dataclass"
+  },
+  {
+    "id": "dataclass-opaque-init",
+    "backend": "dataclasses.dataclass"
+  },
+  {
+    "id": "msgspec-raw",
+    "backend": "msgspec.Struct"
+  },
+  {
+    "id": "msgspec-adopted",
+    "backend": "msgspec.Struct"
+  },
+  {
+    "id": "msgspec-keyword",
+    "backend": "msgspec.Struct"
+  },
+  {
+    "id": "typeddict-invalid",
+    "backend": "typing.TypedDict"
+  },
+  {
+    "id": "typeddict-keyword",
+    "backend": "typing.TypedDict"
+  },
+  {
+    "id": "config-container",
+    "backend": "pydantic_v2.BaseModel"
+  },
+  {
+    "id": "config-item",
+    "backend": "pydantic_v2.BaseModel"
+  },
+  {
+    "id": "config-arity",
+    "backend": "pydantic_v2.BaseModel"
+  },
+  {
+    "id": "config-name",
+    "backend": "pydantic_v2.BaseModel"
+  },
+  {
+    "id": "config-unknown",
+    "backend": "pydantic_v2.BaseModel"
+  },
+  {
+    "id": "config-value",
+    "backend": "pydantic_v2.BaseModel"
+  },
+  {
+    "id": "custom-model",
+    "backend": "dataclasses.dataclass"
+  },
+  {
+    "id": "typeddict-extra",
+    "backend": "typing.TypedDict"
+  },
+  {
+    "id": "field-backend",
+    "backend": "dataclasses.dataclass"
+  },
+  {
+    "id": "field-custom",
+    "backend": "dataclasses.dataclass"
+  },
+  {
+    "id": "field-alias",
+    "backend": "dataclasses.dataclass"
+  }
+]
