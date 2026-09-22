@@ -840,11 +840,9 @@ class _TypePlacementMatcher:
         if (application := _application(tokens, "[")) is None:
             self._mismatch()
         callee, children = application
-        if isinstance(base, BuiltinType) and _resolved_name(callee, self.bindings) == _TYPING_CONTAINER_NAMES.get(
+        if not isinstance(base, BuiltinType) or _resolved_name(callee, self.bindings) != _TYPING_CONTAINER_NAMES.get(
             base.name, ""
         ):
-            pass
-        else:
             self._match(base, callee, (*path, -1))
         if len(children) != len(arguments):
             self._mismatch()
@@ -1430,7 +1428,7 @@ def _annotation_null_origin(
     unknown: bool,
     fallback: bool,
 ) -> Literal["optional_fallback", "schema", "model_configuration", "preexisting_type", "none", "opaque"]:
-    if not emitted.null_type_in_annotation:
+    if not emitted.null_type_in_annotation and projection.preexisting_null is False:
         return "none"
     if unknown:
         return "opaque"

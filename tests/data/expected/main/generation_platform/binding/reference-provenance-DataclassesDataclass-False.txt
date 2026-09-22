@@ -1,5 +1,5 @@
 base: none / synthesized_optional_fallback / optional_fallback
 maybe: absent / not_applicable / preexisting_type
-name: absent / not_applicable / none
+name: absent / not_applicable / opaque
 pair: absent / not_applicable / none
 record: absent / not_applicable / preexisting_type

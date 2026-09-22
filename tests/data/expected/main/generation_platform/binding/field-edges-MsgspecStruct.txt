@@ -1,4 +1,4 @@
-alias_ref: missing / not_applicable / none
+alias_ref: missing / not_applicable / opaque
 needed: absent / not_applicable / none
 strict: missing / not_applicable / none
 wire_name: value / not_applicable / none

@@ -290,7 +290,7 @@ class GenericType:
 
     base: FinalPythonType
     arguments: tuple[FinalPythonType, ...]
-    tuple_form: Literal["not_tuple", "fixed", "ellipsis"] = "not_tuple"
+    tuple_form: Literal["not_tuple", "fixed"] = "not_tuple"
 
 
 @dataclass(frozen=True, slots=True)
