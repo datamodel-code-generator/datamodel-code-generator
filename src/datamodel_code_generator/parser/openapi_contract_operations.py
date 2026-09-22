@@ -849,21 +849,22 @@ class FinalOperationBuilder:
 
     def _schema_helpers(self) -> None:
         """Expose actual final returns, treating surviving roots as terminals."""
+        observed = [(observation, self._schema_type_locations(observation)) for observation in self.parser.schema_types]
         root_values = {
             (location, observation.root_value)
-            for observation in self.parser.schema_types
+            for observation, locations in observed
             if observation.root_value is not None
             and observation.data_type.reference is not None
             and self.parser.binding_ledger.identity(observation.data_type.reference) in self.references
-            for location, _inherited in self._schema_type_locations(observation)
+            for location, _inherited in locations
         }
         candidates: dict[SourceLocation, list[TypeProjection]] = {}
         inherited_candidates: dict[SourceLocation, list[TypeProjection]] = {}
-        for observation in self.parser.schema_types:
+        for observation, observed_locations in observed:
             node = self.parser.binding_ledger.identity(observation.data_type)
             locations = tuple(
                 (location, inherited)
-                for location, inherited in self._schema_type_locations(observation)
+                for location, inherited in observed_locations
                 if (location, node) not in root_values
             )
             if not locations:
