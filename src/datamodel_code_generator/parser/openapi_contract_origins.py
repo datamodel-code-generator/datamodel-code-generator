@@ -110,11 +110,10 @@ def _schema_children(obj: JsonSchemaObject) -> Iterator[tuple[tuple[str, ...], J
 
 def _materialized_child(value: object, token: str) -> object:
     """Follow one serialized token; a missing container means the raw producer is unobserved."""
-    match value:
-        case dict():
-            return cast("dict[str, object]", value).get(token)
-        case list():
-            return cast("list[object]", value)[int(token)]
+    if isinstance(value, dict):
+        return cast("dict[str, object]", value).get(token)
+    if isinstance(value, list):
+        return cast("list[object]", value)[int(token)]
     msg = "A materialization child has no actual raw producer"
     raise BindingCaptureError(msg)
 
