@@ -291,11 +291,10 @@ def _freeze_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass join
     outputs = tuple(observation for observation in parser.module_outputs if observation.models)
     models = tuple(model for observation in outputs for model in observation.models)
     symbols = {ledger.identity(model): SymbolId(index) for index, model in enumerate(models)}
+    manager = parser.data_type_manager
+    serialize_as_any = manager.use_serialize_as_any and manager.data_type.SUPPORTS_SERIALIZE_AS_ANY
     policies = {
-        ledger.identity(model): freeze_reference_policy(
-            model, serialize_as_any=parser.data_type_manager.use_serialize_as_any
-        )
-        for model in models
+        ledger.identity(model): freeze_reference_policy(model, serialize_as_any=serialize_as_any) for model in models
     }
     projector, references = _final_projector(parser, models, symbols, policies)
     addresses: dict[

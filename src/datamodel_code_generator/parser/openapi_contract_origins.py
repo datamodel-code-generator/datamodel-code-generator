@@ -216,8 +216,8 @@ class ValidatedSchemaOriginIndex:
         """Keep repeated mapping occurrences distinct; booleans need an owning frame."""
         return tuple(self._raw_locations.get(id(raw), ()))
 
-    def origins(self, obj: JsonSchemaObject) -> tuple[SchemaOrigin, ...]:
-        """Return only recorded producer relations for this exact validated node."""
+    def origins(self, obj: JsonSchemaObject, *, skip: SchemaRelation | None = None) -> tuple[SchemaOrigin, ...]:
+        """Return recorded producer relations for this exact validated node without crossing ``skip`` edges."""
         pending = [obj]
         seen_nodes: set[int] = set()
         seen_origins: set[tuple[SourceLocation, SchemaRelation]] = set()
@@ -232,7 +232,7 @@ class ValidatedSchemaOriginIndex:
                 if key not in seen_origins:
                     seen_origins.add(key)
                     result.append(origin)
-            pending.extend(edge.source for edge in reversed(self._incoming.get(id(node), ())))
+            pending.extend(edge.source for edge in reversed(self._incoming.get(id(node), ())) if edge.relation != skip)
         return tuple(result)
 
     @capture_errors

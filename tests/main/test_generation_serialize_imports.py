@@ -89,6 +89,47 @@ def test_operation_serializer_imports(
     )
 
 
+@pytest.mark.parametrize(
+    "backend", [DataModelType.DataclassesDataclass, DataModelType.TypingTypedDict, DataModelType.MsgspecStruct]
+)
+def test_serializer_policy_without_wrapper(backend: DataModelType) -> None:
+    """Bind plain references when the backend never renders the configured SerializeAsAny wrapper."""
+    source = (SOURCE / "session-serialize-imports-True.json").resolve()
+    config = GenerateConfig(
+        input_file_type="openapi",
+        openapi_scopes=[OpenAPIScope.Api],
+        output_model_type=backend,
+        use_serialize_as_any=True,
+        input_filename="serialize-imports.json",
+        formatters=[],
+        disable_timestamp=True,
+    )
+    product, retained = generate_product(source, config)
+    product.close()
+    assert_output(
+        product.artifacts[0].content.decode(), EXPECTED / "serialize-imports" / f"unwrapped-{backend.name}.py"
+    )
+    batch = product.batch
+    names = {symbol.id: symbol.name for symbol in batch.symbols}
+    request = next(use for use in batch.type_uses if use.id.role == "request_body")
+    field = next(field.model_facts.type for field in batch.fields if names[field.consumer] == "Container")
+    assert_output(
+        json.dumps(
+            {
+                "request": type_snapshot(request.type, names),
+                "field": type_snapshot(field, names),
+                "demands": [
+                    item.code for item in require_type_bindings(batch, tuple(use.id for use in batch.type_uses))
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+        EXPECTED / "serialize-imports/types-unwrapped.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED.parent / "no-retained-graph.txt")
+
+
 @pytest.mark.parametrize("backend", list(DataModelType))
 @pytest.mark.parametrize("variant", ["plain", "partial", "dotted"])
 @pytest.mark.parametrize("remapped", [False, True])

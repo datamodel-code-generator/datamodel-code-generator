@@ -1,0 +1,16 @@
+[
+  {
+    "node": "UnionType",
+    "members": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    ],
+    "preserve_order": false
+  }
+]

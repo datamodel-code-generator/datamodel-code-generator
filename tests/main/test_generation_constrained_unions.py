@@ -20,6 +20,7 @@ CASES = {
     "object": "generation_platform/binding/session-constrained-object-False.json",
     "values": "generation_platform/binding/session-constrained-object-True.json",
     "nested": "generation_platform/binding/session-constrained-object-nested.json",
+    "plain": "generation_platform/binding/session-plain-unions.json",
 }
 
 

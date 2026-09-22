@@ -450,6 +450,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
 class PydanticV2DataType(DataType):
     """Pydantic v2-specific DataType with SerializeAsAny support."""
 
+    SUPPORTS_SERIALIZE_AS_ANY: ClassVar[bool] = True
     _CONSTRAINED_TYPE_TO_BASE: ClassVar[dict[str, str]] = {"constr": "str"}
     _BASE_TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = ("list", "set", "dict")
 
