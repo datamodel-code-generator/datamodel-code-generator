@@ -108,7 +108,6 @@ def test_api_capture_engine_calls(case: str) -> None:
     previous = sys.getprofile()
     try:
         for parser in (ordinary, captured):
-            # Match the existing process-wide field-import cache state for both runs.
             parser.data_model_field_type._field_imports_cache.clear()
             observer = BindingEngineObserver()
             sys.setprofile(observer.record)
@@ -299,7 +298,6 @@ def test_replacement_capture_engine_parity(backend: DataModelType, case: str) ->
     outputs, counts = [], []
     try:
         for parser in (ordinary, captured):
-            # Match the existing process-wide field-import cache state for both runs.
             parser.data_model_field_type._field_imports_cache.clear()
             observer = BindingEngineObserver()
             sys.setprofile(observer.record)
