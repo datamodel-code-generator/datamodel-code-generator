@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {"child": {"$ref": "#/$defs/Child"}},
+  "$defs": {
+    "Child": {
+      "type": "object",
+      "allOf": [{"$ref": "parent.json#/$defs/Parent"}],
+      "properties": {"name": {"type": "string"}}
+    }
+  }
+}

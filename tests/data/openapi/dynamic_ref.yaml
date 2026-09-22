@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Tree API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Tree:
+      $dynamicAnchor: node
+      type: object
+      properties:
+        value:
+          type: string
+        children:
+          type: array
+          items:
+            $dynamicRef: '#node'

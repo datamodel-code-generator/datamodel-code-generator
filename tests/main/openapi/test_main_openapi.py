@@ -9690,6 +9690,18 @@ def test_main_openapi_recursive_ref_discriminator_pydantic_v2(output_file: Path)
     )
 
 
+def test_main_openapi_dynamic_ref(output_file: Path) -> None:
+    """Test OpenAPI 3.1 $dynamicRef resolving to a component $dynamicAnchor."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dynamic_ref.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 

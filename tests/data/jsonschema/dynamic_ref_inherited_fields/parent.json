@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Label": {"$dynamicAnchor": "item", "type": "string"},
+    "Parent": {
+      "$id": "https://example.com/parent",
+      "type": "object",
+      "properties": {
+        "id": {"type": "integer", "readOnly": true},
+        "value": {"$dynamicRef": "#item"}
+      },
+      "$defs": {"Count": {"$dynamicAnchor": "item", "type": "integer"}}
+    }
+  }
+}
