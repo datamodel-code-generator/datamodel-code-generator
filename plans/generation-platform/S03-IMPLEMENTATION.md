@@ -1,6 +1,6 @@
 # S03 implementation record
 
-Status: verifying S03-3 and S03-4. All four PRs are published in native GitHub stack #4110; none has been merged. Coverage, CI and final performance gates remain incomplete.
+Status: all four PRs are published in native GitHub stack #4110 with coverage, typing and performance gates met locally; none has been merged.
 
 Repository: datamodel-code-generator/datamodel-code-generator. Fixed main baseline: `149d933d927ca12f2e0e45fc18f8a4cf772046d7`. S01 and S02 are merged. The planning PR #4098 remains open at `8e6f0d4a8a64b71e5a049ad8d108507b2fe164ca`; contracts are read from its separate checkout. The original worktree's untracked `1.tmp` is preserved.
 
@@ -316,3 +316,23 @@ A coherent full Python 3.13 run passed **21,228 tests with 15 skips in 185.23 se
 Current published PR4112 has 78 successful checks, one intentional skip, and three failed checks: combine coverage, dependent test-gate, and codecov/patch. Neither PR4111 nor PR4112 has an unresolved review thread at this inspection. The lower CodeQL comment was addressed and resolved with the concrete type-narrowing correction. An isolated 17-case, 30-pair A/A performance control has completed: every 99% paired interval includes zero and no sign test is significant at alpha 0.01. The final 60-pair A/B and full-product timing/peak measurements remain in progress.
 
 Evidence: import-fix-full.log, import-fix-full-coverage.json, import-complete.log, baseline-global-imports.log, baseline-imported-helper.log, baseline-split-collapse.log, common-parser.log, and import-fix-aa.json under /private/tmp/dcg-s03-evidence. Next: finish lower-PR independent coverage and remaining owned branches, complete isolated performance measurements, publish the native stack, and close fresh CI/review gates before declaring S03 complete.
+
+
+## Stack completion checkpoint
+
+Main remains `149d933d927ca12f2e0e45fc18f8a4cf772046d7`. Native stack 4110 keeps the four PRs in order: #4108 `generation-platform-binding-uses`, #4109 `generation-platform-binding-replacements`, #4111 `generation-platform-binding-fields` and #4112 `generation-platform-binding-freeze`. Nothing has been merged and S04 has not started.
+
+Layer changes since the previous checkpoint:
+
+- #4108 and #4109 keep their behavior; explanatory line comments moved into docstrings or were removed.
+- #4111 removes guards that the capture invariants make unreachable; an unexpected state now reaches the existing latched `BindingCaptureError` instead of a silent fallback. It fixes three capture-only failures found by comparing ordinary and captured generation: boolean `true` branches in concatenated combined lists, inline `allOf` unions whose producer frame was not the direct loader, and dangling `$ref` loader keys. Unknown alias nullability now yields an `opaque` annotation origin instead of `none`, and the unused ellipsis tuple form is gone.
+- #4112 is one squashed commit for the previously published S03-4 history plus the import-producer follow-up, then focused commits. Plain `anyOf`/`oneOf` schema helpers are no longer ambiguous because origins reached only through combined-materialization edges are secondary candidates. `SerializeAsAny` reference policies follow the new neutral `DataType.SUPPORTS_SERIALIZE_AS_ANY` capability, so non-pydantic backends bind the plain reference they emit. Recursive roots that ordinary generation collapses away report `BND_SYMBOL_NOT_EMITTED` instead of failing the attempt. Legacy responses follow `$ref` only for occurrences the engine resolved as references, and legacy scopes ignore non-mapping path entries such as global `paths.parameters`. Every artifact definition keeps its source statement, and unreachable guards were removed.
+
+Verification:
+
+- Owned modules of all four layers have 100% line and branch coverage from end-to-end tests. New inputs and oracles are external files; fault injection stays limited to abnormal states. Every new generated-code oracle equals fixed-main ordinary output byte for byte.
+- #4112 full Python 3.13 suite: 21,357 passed and 15 skipped. The changed-test set passes 8,012 tests on Python 3.10, 3.13 and 3.14. Ruff, formatting, warning-strict ty, strict Pyright and the architecture/store guards pass.
+- Ordinary versus capture sweep over every repository OpenAPI fixture: 3,055 parser runs across five option sets have no output or latched-capture difference (361 fail identically on both paths). 3,666 complete-session runs across six option sets differ only where `session-cyclic-metadata.yaml` intentionally rejects recursive source metadata.
+- Ordinary-path A/B against fixed main (17 cases, 60 balanced pairs, seed 4098): no wall or CPU 99% interval lies above zero. The complete capture product (generation, freeze, artifact validation and close) compared with the previously published #4112 head plus its import follow-up (30 balanced pairs): the two contract cases differ by 0.00 and +0.14 ms, and the large OpenAPI case by +4.3 ms of 1,077 ms. Every 99% interval includes zero.
+
+Conservative behavior kept on purpose: a module whose ordinary output spells a dynamic builtin name, for example the enum default `Mode.eval`, is reported as `BND_TYPE_EXPRESSION_UNSUPPORTED` rather than corroborated. Two ordinary-generator issues were observed outside S03 and left unchanged: a discriminator field can be dropped with `use_enum_values_in_discriminator` and `module_split_mode="single"`, and one module-split output imports `Literal` without using it.
