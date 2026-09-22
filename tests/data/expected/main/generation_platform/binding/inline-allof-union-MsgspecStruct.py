@@ -4,6 +4,11 @@ from typing import TypeAlias, Union
 
 
 
+class Base(Struct):
+    pass
+
+
+
 class Nested1(Struct):
     label: Union[str, UnsetType] = UNSET
 
@@ -23,5 +28,20 @@ Nested: TypeAlias = Nested3
 
 
 
+class Mixed1(Struct):
+    code: Union[int, UnsetType] = UNSET
+
+
+
+class Mixed2(Mixed1, Base):
+    pass
+
+
+
+Mixed: TypeAlias = Mixed2
+
+
+
 class Holder(Struct):
     nested: Union[Nested, UnsetType] = UNSET
+    mixed: Union[Mixed, UnsetType] = UNSET

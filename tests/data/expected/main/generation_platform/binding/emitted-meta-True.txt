@@ -137,5 +137,24 @@
       "line": 30,
       "column": 35
     }
+  ],
+  "rank": [
+    {
+      "node": "MetaLayer",
+      "node_path": [],
+      "ordinal": 0,
+      "keywords": [
+        [
+          "description",
+          {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "rank"
+          }
+        ]
+      ],
+      "line": 31,
+      "column": 45
+    }
   ]
 }

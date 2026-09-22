@@ -2,7 +2,13 @@
   "label": [
     "/components/schemas/Holder/properties/nested/allOf/0/oneOf/0/properties/label"
   ],
+  "code": [
+    "/components/schemas/Holder/properties/mixed/allOf/1/oneOf/0/properties/code"
+  ],
   "nested": [
     "/components/schemas/Holder/properties/nested"
+  ],
+  "mixed": [
+    "/components/schemas/Holder/properties/mixed"
   ]
 }

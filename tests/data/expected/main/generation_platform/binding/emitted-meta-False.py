@@ -24,3 +24,4 @@ class Metadata(Struct):
     choice: Union[Choice, Choice1]
     nullable: Optional[str]
     optional: Union[str, UnsetType] = UNSET
+    rank: Union[int, float, UnsetType] = UNSET

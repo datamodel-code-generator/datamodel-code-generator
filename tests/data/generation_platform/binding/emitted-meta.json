@@ -66,6 +66,13 @@
           "optional": {
             "type": "string",
             "maxLength": 6
+          },
+          "rank": {
+            "type": [
+              "integer",
+              "number"
+            ],
+            "description": "rank"
           }
         },
         "required": [

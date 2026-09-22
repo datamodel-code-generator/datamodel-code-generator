@@ -637,7 +637,10 @@ class _TypePlacementMatcher:
         return expected, self._metadata(tokens, path, required)
 
     def match_field(self, expected: FinalPythonType, tokens: Tokens) -> None:
-        """Separate field policy wrappers from the existing data-type skeleton."""
+        """Separate field policy wrappers from the existing data-type skeleton.
+
+        A field-level union such as ``Union[Annotated[...], UnsetType]`` can enclose the complete projected union.
+        """
         expected, tokens = self._projected_metadata(expected, tokens, ())
         while (application := _application(tokens, "[")) is not None:
             callee, arguments = application
@@ -692,6 +695,9 @@ class _TypePlacementMatcher:
             }
         )
         if len(expected_members) != len(actual):
+            if len(actual) == 1 and actual[0] is not None:
+                self._match(expected, actual[0], ())
+                return
             self._mismatch()
         for index, (member, annotation) in enumerate(zip(expected_members, actual, strict=True)):
             self._match(member, annotation, (index,) if isinstance(expected, UnionType) else ())

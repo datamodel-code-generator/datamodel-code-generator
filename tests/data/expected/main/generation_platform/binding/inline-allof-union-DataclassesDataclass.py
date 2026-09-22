@@ -1,6 +1,12 @@
 from __future__ import annotations
-from typing import Optional, TypeAlias
 from dataclasses import dataclass
+from typing import Optional, TypeAlias
+
+
+
+@dataclass
+class Base:
+    pass
 
 
 
@@ -27,5 +33,22 @@ Nested: TypeAlias = Nested3
 
 
 @dataclass
+class Mixed1:
+    code: Optional[int] = None
+
+
+
+@dataclass
+class Mixed2(Mixed1, Base):
+    pass
+
+
+
+Mixed: TypeAlias = Mixed2
+
+
+
+@dataclass
 class Holder:
     nested: Optional[Nested] = None
+    mixed: Optional[Mixed] = None

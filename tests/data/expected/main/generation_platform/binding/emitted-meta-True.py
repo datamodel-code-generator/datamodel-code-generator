@@ -28,3 +28,4 @@ class Metadata(Struct):
     choice: Union[Choice, Choice1]
     nullable: Union[Annotated[str, Meta(min_length=2)], None]
     optional: Union[Annotated[str, Meta(max_length=6)], UnsetType] = UNSET
+    rank: Union[Annotated[Union[int, float], Meta(description='rank')], UnsetType] = UNSET

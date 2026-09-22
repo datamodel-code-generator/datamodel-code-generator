@@ -1,6 +1,11 @@
 from __future__ import annotations
-from typing_extensions import NotRequired
 from typing import TypeAlias, TypedDict
+from typing_extensions import NotRequired
+
+
+
+class Base(TypedDict):
+    pass
 
 
 
@@ -23,5 +28,20 @@ Nested: TypeAlias = Nested3
 
 
 
+class Mixed1(TypedDict):
+    code: NotRequired[int]
+
+
+
+class Mixed2(Mixed1, Base):
+    pass
+
+
+
+Mixed: TypeAlias = Mixed2
+
+
+
 class Holder(TypedDict):
     nested: NotRequired[Nested]
+    mixed: NotRequired[Mixed]
