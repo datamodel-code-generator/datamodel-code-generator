@@ -1,0 +1,306 @@
+[
+  {
+    "id": "if-assignment",
+    "append": "\n\nif True:\n    Model = int\n",
+    "rejected": true
+  },
+  {
+    "id": "if-inline",
+    "append": "\n\nif True: Model = int\n",
+    "rejected": true
+  },
+  {
+    "id": "nested-control",
+    "append": "\n\nif True:\n    if True:\n        Model = int\n",
+    "rejected": true
+  },
+  {
+    "id": "conditional-import",
+    "append": "\n\nif True:\n    from builtins import int as Model\n",
+    "rejected": true
+  },
+  {
+    "id": "conditional-builtin",
+    "append": "\n\nif True:\n    str = int\n",
+    "rejected": true
+  },
+  {
+    "id": "for-target",
+    "append": "\n\nfor Model in (int,):\n    pass\n",
+    "rejected": true
+  },
+  {
+    "id": "for-body",
+    "append": "\n\nfor item in (int,):\n    Model = item\n",
+    "rejected": true
+  },
+  {
+    "id": "with-target",
+    "append": "\n\nwith resource() as Model:\n    pass\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "with-body",
+    "append": "\n\nwith resource():\n    Model = int\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "except-target",
+    "append": "\n\ntry:\n    pass\nexcept ValueError as Model:\n    pass\n",
+    "rejected": true
+  },
+  {
+    "id": "finally-body",
+    "append": "\n\ntry:\n    pass\nfinally:\n    Model = int\n",
+    "rejected": true
+  },
+  {
+    "id": "while-named-expression",
+    "append": "\n\nwhile (Model := int):\n    break\n",
+    "rejected": true
+  },
+  {
+    "id": "if-named-expression",
+    "append": "\n\nif (Model := int):\n    pass\n",
+    "rejected": true
+  },
+  {
+    "id": "case-capture",
+    "append": "\n\nmatch int:\n    case Model:\n        pass\n",
+    "rejected": true
+  },
+  {
+    "id": "conditional-delete",
+    "append": "\n\nif True:\n    del Model\n",
+    "rejected": true
+  },
+  {
+    "id": "conditional-function",
+    "append": "\n\nif True:\n    def Model():\n        pass\n",
+    "rejected": true
+  },
+  {
+    "id": "conditional-class",
+    "append": "\n\nif True:\n    class Model:\n        pass\n",
+    "rejected": true
+  },
+  {
+    "id": "conditional-unpack",
+    "append": "\n\nif True:\n    (Model, other) = (int, str)\n",
+    "rejected": true
+  },
+  {
+    "id": "conditional-augmented",
+    "append": "\n\nif True:\n    Model |= int\n",
+    "rejected": true
+  },
+  {
+    "id": "condition-read",
+    "append": "\n\nif Other:\n    Model = int\n",
+    "rejected": true
+  },
+  {
+    "id": "function-local",
+    "append": "\n\ndef helper():\n    Model = int\n",
+    "rejected": false
+  },
+  {
+    "id": "async-local",
+    "append": "\n\nasync def helper():\n    Model = int\n",
+    "rejected": false
+  },
+  {
+    "id": "class-local",
+    "append": "\n\nclass Helper:\n    Model = int\n",
+    "rejected": false
+  },
+  {
+    "id": "conditional-function-local",
+    "append": "\n\nif True:\n    def helper():\n        Model = int\n",
+    "rejected": false
+  },
+  {
+    "id": "conditional-class-local",
+    "append": "\n\nif True:\n    class Helper:\n        Model = int\n",
+    "rejected": false
+  },
+  {
+    "id": "conditional-local-siblings",
+    "append": "\n\nif True:\n    def helper():\n        Model = int\n    class Helper:\n        Model = int\n",
+    "rejected": false
+  },
+  {
+    "id": "conditional-read",
+    "append": "\n\nif Model:\n    pass\n",
+    "rejected": false
+  },
+  {
+    "id": "exec",
+    "append": "\n\nexec('Model = int')\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "globals",
+    "append": "\n\nglobals()['Model'] = int\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "conditional-exec",
+    "append": "\n\nif True:\n    exec('Model = int')\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "class-globals",
+    "append": "\n\nclass Helper:\n    globals()['Model'] = int\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "eval",
+    "append": "\n\neval(\"globals().__setitem__('Model', int)\")\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "locals",
+    "append": "\n\nlocals()['Model'] = int\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "vars",
+    "append": "\n\nvars()['Model'] = int\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "setattr",
+    "append": "\n\nsetattr(Model, '__annotations__', {'value': int})\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "builtins",
+    "append": "\n\n__builtins__['exec']('Model = int')\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "aliased-exec",
+    "append": "\n\nrun = exec\nrun('Model = int')\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "import",
+    "append": "\n\n__import__('builtins').exec('Model = int')\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "function-dynamic",
+    "append": "\n\ndef helper():\n    exec('Model = int')\n",
+    "rejected": false
+  },
+  {
+    "id": "function-dynamic-sibling",
+    "append": "\n\ndef helper():\n    globals()['Model'] = int\n\nif Model:\n    pass\n",
+    "rejected": false
+  },
+  {
+    "id": "string-dynamic",
+    "append": "\n\ncomment = \"exec('Model = int')\"\n",
+    "rejected": false
+  },
+  {
+    "id": "class-local-dynamic-name",
+    "append": "\n\nclass Helper:\n    globals: str\n    exec: str\n",
+    "rejected": false
+  },
+  {
+    "id": "imported-exec",
+    "append": "\n\nfrom builtins import exec as run\nrun('Model = int')\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "parenthesized-exec",
+    "append": "\n\nrun = (exec)\nrun('Model = int')\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "function-inline-dynamic",
+    "append": "\n\ndef helper(): exec('Model = int')\n",
+    "rejected": false
+  },
+  {
+    "id": "function-inline-globals",
+    "append": "\n\ndef helper(): globals()['Model'] = int\n",
+    "rejected": false
+  },
+  {
+    "id": "local-dynamic-definition-name",
+    "append": "\n\nexec = int\nglobals = str\n",
+    "rejected": false
+  },
+  {
+    "id": "called-function",
+    "append": "\n\ndef helper():\n    global Model\n    Model = int\nhelper()\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "conditional-call",
+    "append": "\n\nif True:\n    arbitrary_mutator()\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "call-attribute",
+    "append": "\n\nexternal.mutate()\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "assigned-call",
+    "append": "\n\ndef alter():\n    global Model\n    Model = int\nmarker = alter()\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "assigned-parenthesized-call",
+    "append": "\n\nmarker = (alter)()\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "assigned-indexed-call",
+    "append": "\n\nmarker = handlers[0]()\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "assigned-tuple-call",
+    "append": "\n\nmarker = (alter(), 1)[1]\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "conditional-test-call",
+    "append": "\n\nif alter():\n    pass\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  },
+  {
+    "id": "conditional-assigned-call",
+    "append": "\n\nif True:\n    marker = alter()\n",
+    "rejected": true,
+    "expected": "dynamic.txt"
+  }
+]

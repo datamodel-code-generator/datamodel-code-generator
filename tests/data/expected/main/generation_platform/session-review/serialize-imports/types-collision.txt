@@ -1,0 +1,37 @@
+{
+  "request": {
+    "node": "GenericType",
+    "base": {
+      "node": "ImportedType",
+      "import_": {
+        "node": "Import",
+        "import_": "SerializeAsAny",
+        "from_": "pydantic",
+        "alias": null,
+        "reference_path": null,
+        "keep_unaliased": false
+      },
+      "qualified_suffix": []
+    },
+    "arguments": [
+      {
+        "node": "GeneratedSymbolType",
+        "symbol": "Base"
+      }
+    ],
+    "tuple_form": "not_tuple"
+  },
+  "field": {
+    "node": "ImportedType",
+    "import_": {
+      "node": "Import",
+      "import_": "SerializeAsAny",
+      "from_": "pydantic.functional_serializers",
+      "alias": null,
+      "reference_path": null,
+      "keep_unaliased": false
+    },
+    "qualified_suffix": []
+  },
+  "demands": []
+}

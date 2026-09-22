@@ -1,0 +1,42 @@
+{
+  "/components/schemas/Values/properties/any": {
+    "import_": {
+      "alias": null,
+      "from_": "typing",
+      "import_": "Any",
+      "keep_unaliased": false,
+      "node": "Import",
+      "reference_path": null
+    },
+    "node": "ImportedType",
+    "qualified_suffix": []
+  },
+  "/components/schemas/Values/properties/choice/anyOf/1": {
+    "name": "str",
+    "node": "BuiltinType"
+  },
+  "/components/schemas/Values/properties/choice/anyOf/2": {
+    "name": "int",
+    "node": "BuiltinType"
+  },
+  "/components/schemas/Values/properties/dictionary/additionalProperties": {
+    "name": "str",
+    "node": "BuiltinType"
+  },
+  "/components/schemas/Values/properties/list_any/items": {
+    "import_": {
+      "alias": null,
+      "from_": "typing",
+      "import_": "Any",
+      "keep_unaliased": false,
+      "node": "Import",
+      "reference_path": null
+    },
+    "node": "ImportedType",
+    "qualified_suffix": []
+  },
+  "/components/schemas/Values/properties/pattern/patternProperties/^x": {
+    "name": "int",
+    "node": "BuiltinType"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A validated schema node has no matching raw schema"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

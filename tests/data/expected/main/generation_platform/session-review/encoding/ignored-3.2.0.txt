@@ -1,0 +1,8 @@
+/paths/~1values/post/parameters/0/content/multipart~1form-data/encoding/value/headers/Content-Type: oas_header_ignored
+/paths/~1values/post/requestBody/content/application~1json/encoding: oas_encoding_media_not_applicable
+/paths/~1values/post/requestBody/content/application~1x-www-form-urlencoded/encoding/value/headers/Content-Type: oas_non_multipart_encoding_headers
+/paths/~1values/post/requestBody/content/application~1x-www-form-urlencoded/encoding/value/headers/X-Form: oas_non_multipart_encoding_headers
+/paths/~1values/post/requestBody/content/multipart~1form-data/encoding/value/headers/Content-Type: oas_header_ignored
+/paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value/headers/Content-Type: oas_header_ignored
+/paths/~1values/post/responses/200/headers/Content-Type: oas_header_ignored
+/paths/~1values/post/responses/200/headers/X-Content/content/multipart~1form-data/encoding/value/headers/Content-Type: oas_header_ignored

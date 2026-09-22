@@ -5,7 +5,7 @@
       {
         "node": "GeneratedEnumMember",
         "symbol": 1,
-        "field": 13,
+        "field": 9,
         "name": "v1"
       }
     ]
@@ -20,7 +20,7 @@
       {
         "node": "GeneratedEnumMember",
         "symbol": 1,
-        "field": 14,
+        "field": 10,
         "name": "v2"
       }
     ]

@@ -1,0 +1,7 @@
+{
+  "error": "release:1",
+  "first_failure_preserved": true,
+  "closed_leases": 2,
+  "retained_graph": 0,
+  "retained_parsers": 0
+}

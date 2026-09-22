@@ -1,0 +1,11 @@
+{
+  "errors": [
+    [
+      "BindingCaptureError",
+      "No accepted artifact evidence is available"
+    ]
+  ],
+  "accepted": 1,
+  "retained_graph": 0,
+  "retained_parsers": 0
+}

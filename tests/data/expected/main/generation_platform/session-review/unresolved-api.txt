@@ -1,0 +1,12 @@
+{
+  "/components/schemas/Record": [
+    "BND_FIELD_UNRESOLVED",
+    "BND_UNRESOLVED_REFERENCE"
+  ],
+  "/components/schemas/Record/properties/bad": [
+    "BND_UNRESOLVED_REFERENCE"
+  ],
+  "/paths/~1missing/post/requestBody/content/application~1json/schema": [
+    "BND_UNRESOLVED_REFERENCE"
+  ]
+}

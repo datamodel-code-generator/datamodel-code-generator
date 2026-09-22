@@ -1,0 +1,1 @@
+["str = int", "from builtins import int as str"]

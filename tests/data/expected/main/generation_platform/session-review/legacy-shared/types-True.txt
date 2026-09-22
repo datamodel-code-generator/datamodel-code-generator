@@ -1,0 +1,82 @@
+[
+  {
+    "use": "/paths/~1a/post/requestBody/content/application~1json/schema",
+    "projection": "value",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "APostRequest"
+    },
+    "schema": "/components/requestBodies/Shared/content/application~1json/schema",
+    "members": [
+      [
+        "APostRequest",
+        "value",
+        "/components/requestBodies/Shared/content/application~1json/schema/properties/value"
+      ]
+    ]
+  },
+  {
+    "use": "/paths/~1a/post/responses/200/content/application~1json/schema",
+    "projection": "value",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "APostResponse200"
+    },
+    "schema": "/components/responses/Shared/content/application~1json/schema",
+    "members": [
+      [
+        "APostResponse200",
+        "value",
+        "/components/responses/Shared/content/application~1json/schema/properties/value"
+      ]
+    ]
+  },
+  {
+    "use": "/paths/~1a/post/responses/201/content/application~1json/schema",
+    "projection": "value",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "APostResponse201"
+    },
+    "schema": "/components/responses/Shared/content/application~1json/schema",
+    "members": [
+      [
+        "APostResponse201",
+        "value",
+        "/components/responses/Shared/content/application~1json/schema/properties/value"
+      ]
+    ]
+  },
+  {
+    "use": "/paths/~1b/post/requestBody/content/application~1json/schema",
+    "projection": "value",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "BPostRequest"
+    },
+    "schema": "/components/requestBodies/Shared/content/application~1json/schema",
+    "members": [
+      [
+        "BPostRequest",
+        "value",
+        "/components/requestBodies/Shared/content/application~1json/schema/properties/value"
+      ]
+    ]
+  },
+  {
+    "use": "/paths/~1b/post/responses/200/content/application~1json/schema",
+    "projection": "value",
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": "BPostResponse200"
+    },
+    "schema": "/components/responses/Shared/content/application~1json/schema",
+    "members": [
+      [
+        "BPostResponse200",
+        "value",
+        "/components/responses/Shared/content/application~1json/schema/properties/value"
+      ]
+    ]
+  }
+]

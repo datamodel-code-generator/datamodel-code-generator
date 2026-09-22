@@ -1,0 +1,4 @@
+/paths/~1items/post request_body: bound
+/paths/~1items/post response_body: bound
+/paths/~1inline/post request_body: BND_MODEL_SCOPE_REQUIRED
+/paths/~1inline/post response_body: BND_MODEL_SCOPE_REQUIRED

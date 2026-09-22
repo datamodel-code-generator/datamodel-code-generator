@@ -1,0 +1,6 @@
+q
+  declaration: /components/callbacks/Event/{$request.body#~1callbackUrl}/post/parameters/0
+  use: /paths/~1items/post/callbacks/onDone/{$request.body#~1callbackUrl}/post/parameters/0
+path-token
+  declaration: /components/callbacks/Event/{$request.body#~1callbackUrl}/parameters/0
+  use: /paths/~1items/post/callbacks/onDone/{$request.body#~1callbackUrl}/parameters/0

@@ -1,0 +1,23 @@
+[
+  {
+    "models": [
+      "Foo"
+    ],
+    "primary": [
+      "a.b",
+      "__init__.py"
+    ],
+    "secondary": [],
+    "reason": null
+  },
+  {
+    "models": [
+      "Bar"
+    ],
+    "primary": [
+      "other_name.py"
+    ],
+    "secondary": [],
+    "reason": null
+  }
+]

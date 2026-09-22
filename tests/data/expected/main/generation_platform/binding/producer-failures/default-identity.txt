@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "An effective field default does not match its actual resolver call"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

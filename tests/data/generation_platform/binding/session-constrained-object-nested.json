@@ -1,0 +1,42 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Constrained property union",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Payload": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "object",
+              "string"
+            ],
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^x"
+            },
+            "minLength": 1,
+            "additionalProperties": {
+              "type": [
+                "array",
+                "string"
+              ],
+              "minItems": 1,
+              "minLength": 2,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+    }
+  }
+}

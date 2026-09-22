@@ -27,7 +27,8 @@
     "id": "import-shadow",
     "backend": "MsgspecStruct",
     "old": "import argparse",
-    "new": "import argparse\nargparse = object()"
+    "new": "import argparse\nargparse = object()",
+    "error": "Executable artifact statements require an explicit export adapter"
   },
   {
     "id": "container",

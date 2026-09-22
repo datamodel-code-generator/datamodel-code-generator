@@ -1,0 +1,4 @@
+q: bound; diagnostics=none; /paths/~1x/get/parameters/0/schema
+optional: bound; diagnostics=none; /paths/~1x/get/parameters/1/schema
+filter: bound; diagnostics=none; /paths/~1x/get/parameters/2/content/application~1json/schema
+limit: bound; diagnostics=none; /paths/~1x/parameters/0/schema

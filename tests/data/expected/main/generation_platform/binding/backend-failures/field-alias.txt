@@ -1,0 +1,4 @@
+{
+  "opaque_declarations": 1,
+  "opaque_init": false
+}

@@ -1,0 +1,8 @@
+path get /items
+  security: [[["Key",[]]]]
+  servers: []
+  responses: [["200","exact"]]
+  encode parameter token - -: models.py:FieldItemsGetQueryTokenParameter
+  decode response_body - 200 application/json: models.py:Item
+    id -> id: required=True, nullable=False
+  link next: {"operationId":"readItem","parameters":{"id":"$response.body#/id"}}

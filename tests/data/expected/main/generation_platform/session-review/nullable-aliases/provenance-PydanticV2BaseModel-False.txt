@@ -1,0 +1,10 @@
+any_chain: none / synthesized_optional_fallback / optional_fallback
+any_value: none / synthesized_optional_fallback / optional_fallback
+chain: none / synthesized_optional_fallback / optional_fallback
+imported_none: none / runtime_or_opaque / opaque
+items: none / synthesized_optional_fallback / optional_fallback
+nullable: none / synthesized_optional_fallback / optional_fallback
+plain: none / synthesized_optional_fallback / optional_fallback
+required_any: absent / not_applicable / none
+required_nullable: absent / not_applicable / none
+union: none / runtime_or_opaque / preexisting_type

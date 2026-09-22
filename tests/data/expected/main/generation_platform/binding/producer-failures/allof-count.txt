@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "Direct allOf references and loader resolution counts disagree"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

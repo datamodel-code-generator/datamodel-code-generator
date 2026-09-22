@@ -1,0 +1,19 @@
+[
+  {
+    "node": "GenericType",
+    "base": {
+      "node": "ImportedType",
+      "import_": {
+        "node": "Import",
+        "import_": "Sequence",
+        "from_": "typing",
+        "alias": null,
+        "reference_path": null,
+        "keep_unaliased": false
+      },
+      "qualified_suffix": []
+    },
+    "arguments": [],
+    "tuple_form": "not_tuple"
+  }
+]

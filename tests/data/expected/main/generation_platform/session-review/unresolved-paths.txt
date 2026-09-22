@@ -1,0 +1,5 @@
+{
+  "/paths/~1missing/post/requestBody/content/application~1json/schema": [
+    "BND_UNRESOLVED_REFERENCE"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A root-value child has no matching loader resolution"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

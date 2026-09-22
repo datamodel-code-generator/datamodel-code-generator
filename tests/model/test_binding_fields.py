@@ -186,3 +186,33 @@ def test_functional_emissions_keep_declaring_slots(change: str) -> None:
     finally:
         parser.dispose()
         parser.source_lease.close()
+
+
+def test_functional_inherited_keys_keep_distinct_declaring_slots() -> None:
+    """Keep different wire keys when inherited fields share one Python identifier."""
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model.binding import FrozenImportBindings, index_builtin_field_declarations
+    from tests.data.python.field_ownership_inputs import functional_leaf_expectations
+
+    backend = DataModelType.TypingTypedDict
+    parser = ContractApiOpenAPIParser(
+        SOURCE / "functional-name-collision.json", attempt_id=AttemptId(1), config=builtin_binding_config(backend)
+    )
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / "functional-name-collision.py")
+        expected = functional_leaf_expectations(parser)
+        index = index_builtin_field_declarations(
+            body, expected=expected, imports=FrozenImportBindings((Import(import_="TypedDict", from_="typing"),))
+        )
+        assert_output(
+            json.dumps(
+                [[field.expected.entry_key, field.expected.native_name, field.annotation] for field in index.fields],
+                indent=2,
+            )
+            + "\n",
+            EXPECTED / "functional-name-collision.txt",
+        )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()

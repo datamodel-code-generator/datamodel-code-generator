@@ -17,9 +17,6 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
 
-if TYPE_CHECKING:
-    from datamodel_code_generator._generation_contract import FrozenLiteral, TypeArgument, TypeProjectionReason
-
 _CUSTOM_BINDING_REQUIRED: Final = "BND_CUSTOM_BINDING_REQUIRED"
 
 
@@ -93,3 +90,7 @@ def freeze_argument(value: object) -> TypeArgument:
     if type(value) is PythonRuntimeExpression:
         return ImportedExpression(value.import_, value.prefix, value.suffix)
     return freeze_literal(value, set())
+
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._generation_contract import FrozenLiteral, TypeArgument, TypeProjectionReason

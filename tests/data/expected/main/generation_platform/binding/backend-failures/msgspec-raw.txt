@@ -1,0 +1,8 @@
+{
+  "opaque_parameters": 8,
+  "unknown_parameters": 8,
+  "opaque_configuration": 0,
+  "unknown_configuration": 0,
+  "init": true,
+  "kw_only": null
+}

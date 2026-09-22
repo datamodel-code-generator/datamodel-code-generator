@@ -91,5 +91,41 @@
     "name": "emit_failed",
     "input": "observation.json",
     "failure": "emit"
+  },
+  {
+    "name": "foreign_parser_attempt",
+    "input": "observation.json",
+    "failure": "parser_attempt"
+  },
+  {
+    "name": "cyclic_recipe",
+    "input": "observation.json",
+    "failure": "recipe_cycle"
+  },
+  {
+    "name": "lost_source_lease",
+    "input": "observation.json",
+    "failure": "lease_lost",
+    "api": "true"
+  },
+  {
+    "name": "import_observation",
+    "input": "observation.json",
+    "failure": "import_observation"
+  },
+  {
+    "name": "repair_import_observation",
+    "input": "../openapi/usable_identical_invalid_dotted_models.yaml",
+    "failure": "repair_import_observation"
+  },
+  {
+    "name": "import_engine",
+    "input": "observation.json",
+    "failure": "import_engine"
+  },
+  {
+    "name": "repair_import_engine",
+    "input": "../openapi/usable_identical_invalid_dotted_models.yaml",
+    "failure": "repair_import_engine"
   }
 ]

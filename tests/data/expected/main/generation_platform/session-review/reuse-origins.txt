@@ -1,0 +1,2 @@
+/paths/~1first/post: First.value <- /components/schemas/First/properties/value
+/paths/~1second/post: Second.value <- /components/schemas/Second/properties/value

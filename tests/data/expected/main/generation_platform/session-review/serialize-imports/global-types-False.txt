@@ -1,0 +1,15 @@
+{
+  "request": {
+    "node": "ImportedType",
+    "import_": {
+      "node": "Import",
+      "import_": "UUID",
+      "from_": "uuid",
+      "alias": null,
+      "reference_path": null,
+      "keep_unaliased": false
+    },
+    "qualified_suffix": []
+  },
+  "demands": []
+}

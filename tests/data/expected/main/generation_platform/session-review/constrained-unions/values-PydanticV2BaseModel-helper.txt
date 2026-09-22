@@ -1,0 +1,16 @@
+[
+  {
+    "node": "UnionType",
+    "members": [
+      {
+        "node": "GeneratedSymbolType",
+        "symbol": "ValueObject"
+      },
+      {
+        "node": "GeneratedSymbolType",
+        "symbol": "ValueString"
+      }
+    ],
+    "preserve_order": false
+  }
+]

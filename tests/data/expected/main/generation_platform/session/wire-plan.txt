@@ -1,0 +1,72 @@
+security Key: {"type":"apiKey","name":"X-Key","in":"header"}
+security OAuth: {"type":"oauth2","flows":{"clientCredentials":{"tokenUrl":"https://auth.example.test/token","scopes":{"read":"Read records"}}}}
+path post /records/{id}
+  source: /paths/~1records~1{id}/post
+  operationId: "createRecord"
+  security: [{"Key":[]},{"OAuth":["read"],"Key":[]},{}]
+  servers: [{"url":"https://{region}.example.test","variables":{"region":{"default":"us","enum":["us","eu"]}}}]
+  explicit: True/False/False
+  parameter trace: {"name":"trace","in":"header"}
+    parameter request trace header - -: bound
+  parameter filter: {"name":"filter","in":"query"}
+  media application/json: {}
+    parameter request filter query - application/json: bound
+  parameter id: {"name":"id","in":"path","required":true}
+    parameter request id path - -: bound
+  parameter page: {"name":"page","in":"query","style":"form","explode":false}
+    parameter request page query - -: bound
+  request_body -: {"required":true}
+  media application/json: {}
+    request_body request - - - application/json: bound
+  media application/vnd.acme+json: {}
+    request_body request - - - application/vnd.acme+json: bound
+  media multipart/form-data: {}
+    request_body request - - - multipart/form-data: bound
+  encoding items: {"contentType":"application/json"}
+  header X-Part: {}
+    request_encoding_header request X-Part - - multipart/form-data: bound
+  response 201: {}
+  media application/json: {}
+    response_body response - - 201 application/json: bound
+  header Location: {}
+    response_header response Location - 201 -: bound
+  header X-Limit: {}
+    response_header response X-Limit - 201 -: bound
+  link self: {"operationRef":"#/paths/~1records~1{id}/get","parameters":{"id":"$response.body#/id"}}
+  response 4XX: {}
+  media application/problem+json: {}
+    response_body response - - 4XX application/problem+json: bound
+  response default: {}
+  callback onDone: {}
+callback post {$request.body#/callbackUrl}
+  source: /paths/~1records~1{id}/post/callbacks/onDone/{$request.body#~1callbackUrl}/post
+  security: [{"Key":[]},{"OAuth":["read"],"Key":[]},{}]
+  servers: [{"url":"https://{region}.example.test","variables":{"region":{"default":"us","enum":["us","eu"]}}}]
+  explicit: False/False/False
+  request_body -: {}
+  media application/json: {}
+    request_body request - - - application/json: bound
+  response 204: {}
+path get /records/{id}
+  source: /paths/~1records~1{id}/get
+  security: []
+  servers: []
+  explicit: False/True/True
+  parameter id: {"name":"id","in":"path","required":true}
+    parameter request id path - -: bound
+  parameter page: {"name":"page","in":"query","style":"form","explode":false}
+    parameter request page query - -: bound
+  response 200: {}
+  media application/json: {}
+    response_body response - - 200 application/json: bound
+webhook post record.created
+  source: /webhooks/record.created/post
+  security: []
+  servers: [{"url":"https://{region}.example.test","variables":{"region":{"default":"us","enum":["us","eu"]}}}]
+  explicit: False/True/False
+  request_body -: {}
+  media application/json: {}
+    request_body request - - - application/json: bound
+  response 204: {}
+demands: 17
+diagnostics: none

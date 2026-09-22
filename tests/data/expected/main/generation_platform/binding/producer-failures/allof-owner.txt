@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "The completed allOf producer is not the active frame"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

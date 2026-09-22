@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "An item-stream projection did not produce the expected array reference"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

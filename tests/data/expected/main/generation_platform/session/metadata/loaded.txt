@@ -1,0 +1,5 @@
+security_scheme Key: {"type":"apiKey","name":"X-Key","in":"header"}
+  session-metadata-library.json#/components/securitySchemes/Key: resolved -> session-metadata-library.json#/components/securitySchemes/Key
+  #/components/securitySchemes/ActualKey: resolved -> session-metadata-library.json#/components/securitySchemes/ActualKey
+link next: {"operationId":"readItem","parameters":{"id":"$response.body#/id"}}
+  session-metadata-library.json#/components/links/Next: resolved -> session-metadata-library.json#/components/links/Next

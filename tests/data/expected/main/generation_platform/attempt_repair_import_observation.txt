@@ -1,0 +1,23 @@
+{
+  "events": [
+    "construct:1",
+    "parse:1",
+    "freeze:1:True",
+    "dispose:1",
+    "construct:2",
+    "parse:2",
+    "dispose:2",
+    "discard:2",
+    "close"
+  ],
+  "error": [
+    "BindingCaptureError",
+    "Binding import capture failed"
+  ],
+  "batch": null,
+  "result_sha256": null,
+  "retained_parsers": 0,
+  "import_observations": true,
+  "import_contexts_cleared": true,
+  "ambient_context_clear": true
+}

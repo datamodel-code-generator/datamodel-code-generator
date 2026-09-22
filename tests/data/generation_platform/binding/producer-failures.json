@@ -150,6 +150,24 @@
     "source": "emitted-defaults.json"
   },
   {
+    "id": "constrained-missing-branch",
+    "method": "_record_constrained_branch",
+    "source": "session-constrained-object-False.json",
+    "field_constraints": "true"
+  },
+  {
+    "id": "constrained-nonlist-source",
+    "method": "_record_constrained_union",
+    "source": "session-constrained-object-False.json",
+    "field_constraints": "true"
+  },
+  {
+    "id": "constrained-missing-return",
+    "method": "_record_constrained_union",
+    "source": "session-constrained-object-False.json",
+    "field_constraints": "true"
+  },
+  {
     "id": "origin-raw-child",
     "method": "pair",
     "source": "session-final-corruption.json",

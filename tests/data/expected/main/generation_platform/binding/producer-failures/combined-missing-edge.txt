@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A combined occurrence has no actual materialization edge"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

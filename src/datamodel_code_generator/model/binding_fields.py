@@ -8,12 +8,6 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._generation_contract import BindingCaptureError
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from datamodel_code_generator._generation_contract import FieldSlot, SymbolId
-    from datamodel_code_generator.model.binding import ExpectedFieldDeclaration
-
 
 @dataclass(frozen=True, slots=True)
 class DeclaredField:
@@ -205,3 +199,10 @@ class FieldOwnershipIndex:
             pending.append((current, True))
             pending.extend((base, False) for base in reversed(owner.bases))
         return tuple(order)
+
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from datamodel_code_generator._generation_contract import FieldSlot, SymbolId
+    from datamodel_code_generator.model.binding import ExpectedFieldDeclaration

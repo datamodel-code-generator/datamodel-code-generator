@@ -1,0 +1,45 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Import producer identity",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Anchor": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "Native": {
+        "x-python-import": {
+          "module": "uuid",
+          "name": "UUID"
+        }
+      }
+    }
+  },
+  "paths": {
+    "/native": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Native"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    }
+  }
+}

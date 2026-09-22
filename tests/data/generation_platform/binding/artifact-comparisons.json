@@ -1,0 +1,242 @@
+[
+  {
+    "id": "PydanticV2BaseModel-unchanged",
+    "backend": "PydanticV2BaseModel",
+    "source": "emitted-defaults",
+    "old": "class Defaults",
+    "new": "class Defaults",
+    "expected": "unchanged"
+  },
+  {
+    "id": "PydanticV2BaseModel-quote",
+    "backend": "PydanticV2BaseModel",
+    "source": "emitted-defaults",
+    "old": "'enabled'",
+    "new": "\"enabled\"",
+    "expected": "unchanged"
+  },
+  {
+    "id": "PydanticV2BaseModel-literal",
+    "backend": "PydanticV2BaseModel",
+    "source": "emitted-defaults",
+    "old": " = 4",
+    "new": " = 5",
+    "expected": "literal"
+  },
+  {
+    "id": "PydanticV2BaseModel-factory",
+    "backend": "PydanticV2BaseModel",
+    "source": "emitted-defaults",
+    "old": "default_factory=list",
+    "new": "default_factory=set",
+    "expected": "factory"
+  },
+  {
+    "id": "PydanticV2BaseModel-explicit_null",
+    "backend": "PydanticV2BaseModel",
+    "source": "emitted-defaults",
+    "old": "explicit_null: Optional[str] = None",
+    "new": "explicit_null: Optional[str] = \"value\"",
+    "expected": "explicit_null"
+  },
+  {
+    "id": "PydanticV2BaseModel-model",
+    "backend": "PydanticV2BaseModel",
+    "source": "emitted-defaults",
+    "old": "class Defaults(BaseModel):",
+    "new": "class Defaults(Other):",
+    "expected": "model"
+  },
+  {
+    "id": "PydanticV2Dataclass-unchanged",
+    "backend": "PydanticV2Dataclass",
+    "source": "emitted-defaults",
+    "old": "class Defaults",
+    "new": "class Defaults",
+    "expected": "unchanged"
+  },
+  {
+    "id": "PydanticV2Dataclass-quote",
+    "backend": "PydanticV2Dataclass",
+    "source": "emitted-defaults",
+    "old": "'enabled'",
+    "new": "\"enabled\"",
+    "expected": "unchanged"
+  },
+  {
+    "id": "PydanticV2Dataclass-literal",
+    "backend": "PydanticV2Dataclass",
+    "source": "emitted-defaults",
+    "old": " = 4",
+    "new": " = 5",
+    "expected": "literal"
+  },
+  {
+    "id": "PydanticV2Dataclass-factory",
+    "backend": "PydanticV2Dataclass",
+    "source": "emitted-defaults",
+    "old": "default_factory=list",
+    "new": "default_factory=set",
+    "expected": "factory"
+  },
+  {
+    "id": "PydanticV2Dataclass-explicit_null",
+    "backend": "PydanticV2Dataclass",
+    "source": "emitted-defaults",
+    "old": "explicit_null: Optional[str] = None",
+    "new": "explicit_null: Optional[str] = \"value\"",
+    "expected": "explicit_null"
+  },
+  {
+    "id": "PydanticV2Dataclass-model",
+    "backend": "PydanticV2Dataclass",
+    "source": "emitted-defaults",
+    "old": "@dataclass",
+    "new": "@dataclass(frozen=True)",
+    "expected": "model"
+  },
+  {
+    "id": "DataclassesDataclass-unchanged",
+    "backend": "DataclassesDataclass",
+    "source": "emitted-defaults",
+    "old": "class Defaults",
+    "new": "class Defaults",
+    "expected": "unchanged"
+  },
+  {
+    "id": "DataclassesDataclass-quote",
+    "backend": "DataclassesDataclass",
+    "source": "emitted-defaults",
+    "old": "'enabled'",
+    "new": "\"enabled\"",
+    "expected": "unchanged"
+  },
+  {
+    "id": "DataclassesDataclass-literal",
+    "backend": "DataclassesDataclass",
+    "source": "emitted-defaults",
+    "old": " = 4",
+    "new": " = 5",
+    "expected": "literal"
+  },
+  {
+    "id": "DataclassesDataclass-factory",
+    "backend": "DataclassesDataclass",
+    "source": "emitted-defaults",
+    "old": "default_factory=list",
+    "new": "default_factory=set",
+    "expected": "factory"
+  },
+  {
+    "id": "DataclassesDataclass-explicit_null",
+    "backend": "DataclassesDataclass",
+    "source": "emitted-defaults",
+    "old": "explicit_null: Optional[str] = None",
+    "new": "explicit_null: Optional[str] = \"value\"",
+    "expected": "explicit_null"
+  },
+  {
+    "id": "DataclassesDataclass-model",
+    "backend": "DataclassesDataclass",
+    "source": "emitted-defaults",
+    "old": "@dataclass",
+    "new": "@dataclass(frozen=True)",
+    "expected": "model"
+  },
+  {
+    "id": "TypingTypedDict-unchanged",
+    "backend": "TypingTypedDict",
+    "source": "emitted-defaults",
+    "old": "class Defaults",
+    "new": "class Defaults",
+    "expected": "unchanged"
+  },
+  {
+    "id": "TypingTypedDict-quote",
+    "backend": "TypingTypedDict",
+    "source": "emitted-defaults",
+    "old": "'enabled'",
+    "new": "\"enabled\"",
+    "expected": "unchanged"
+  },
+  {
+    "id": "TypingTypedDict-model",
+    "backend": "TypingTypedDict",
+    "source": "emitted-defaults",
+    "old": "class Defaults(TypedDict):",
+    "new": "class Defaults(TypedDict, total=False):",
+    "expected": "model"
+  },
+  {
+    "id": "MsgspecStruct-unchanged",
+    "backend": "MsgspecStruct",
+    "source": "emitted-defaults",
+    "old": "class Defaults",
+    "new": "class Defaults",
+    "expected": "unchanged"
+  },
+  {
+    "id": "MsgspecStruct-quote",
+    "backend": "MsgspecStruct",
+    "source": "emitted-defaults",
+    "old": "'enabled'",
+    "new": "\"enabled\"",
+    "expected": "unchanged"
+  },
+  {
+    "id": "MsgspecStruct-literal",
+    "backend": "MsgspecStruct",
+    "source": "emitted-defaults",
+    "old": " = 4",
+    "new": " = 5",
+    "expected": "literal"
+  },
+  {
+    "id": "MsgspecStruct-factory",
+    "backend": "MsgspecStruct",
+    "source": "emitted-defaults",
+    "old": "default_factory=list",
+    "new": "default_factory=set",
+    "expected": "factory"
+  },
+  {
+    "id": "MsgspecStruct-explicit_null",
+    "backend": "MsgspecStruct",
+    "source": "emitted-defaults",
+    "old": "explicit_null: Union[str, UnsetType] = UNSET",
+    "new": "explicit_null: Union[str, UnsetType] = \"value\"",
+    "expected": "explicit_null"
+  },
+  {
+    "id": "MsgspecStruct-model",
+    "backend": "MsgspecStruct",
+    "source": "emitted-defaults",
+    "old": "class Defaults(Struct):",
+    "new": "class Defaults(Struct, kw_only=True):",
+    "expected": "model"
+  },
+  {
+    "id": "nested-meta",
+    "backend": "MsgspecStruct",
+    "source": "emitted-meta",
+    "old": "Meta(max_length=4, min_length=1)",
+    "new": "Meta(max_length=5, min_length=1)",
+    "expected": "nested"
+  },
+  {
+    "id": "number-meta",
+    "backend": "MsgspecStruct",
+    "source": "emitted-meta",
+    "old": "Meta(ge=1.5, lt=9.75, multiple_of=0.5)",
+    "new": "Meta(ge=1.5, lt=9.5, multiple_of=0.5)",
+    "expected": "number"
+  },
+  {
+    "id": "PydanticV2BaseModel-lost-assignment",
+    "backend": "PydanticV2BaseModel",
+    "source": "emitted-defaults",
+    "old": "explicit_null: Optional[str] = None",
+    "new": "explicit_null: Optional[str]",
+    "expected": "explicit_null"
+  }
+]

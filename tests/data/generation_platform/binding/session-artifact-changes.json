@@ -1,0 +1,9 @@
+[
+  {"name": "line-offsets", "original": "class Record(BaseModel):", "replacement": "\n\nclass Record(BaseModel):", "expected": "no-diagnostics"},
+  {"name": "base", "original": "class Record(BaseModel):", "replacement": "class Record(dict):", "expected": "unsupported-artifact"},
+  {"name": "configuration", "original": "extra='forbid'", "replacement": "extra='allow'", "expected": "unsupported-artifact"},
+  {"name": "new-field", "original": "class Record(BaseModel):", "replacement": "class Record(BaseModel):\n    unexpected: str", "expected": "unsupported-artifact"},
+  {"name": "decorator", "original": "class Record(BaseModel):", "replacement": "@custom_decorator\nclass Record(BaseModel):", "expected": "unsupported-artifact"},
+  {"name": "symbol-shadow", "original": "    root: int", "replacement": "    root: int\n\nfrom builtins import str as Record", "expected": "missing-artifact-symbol"},
+  {"name": "import-identity", "original": "from pydantic import BaseModel, ConfigDict, Field, RootModel, conint", "replacement": "from custom_backend import BaseModel, ConfigDict, Field, RootModel, conint", "expected": "unsupported-artifact"}
+]

@@ -1,0 +1,2 @@
+/paths/~1bad/post: BND_FIELD_UNRESOLVED,BND_UNRESOLVED_REFERENCE
+/paths/~1good/post: bound

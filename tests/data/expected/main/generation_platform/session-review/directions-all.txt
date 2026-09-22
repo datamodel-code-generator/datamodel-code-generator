@@ -1,0 +1,14 @@
+request_body RecordRequest
+  id: read_only <- /components/schemas/Record/properties/id
+  secret: emitted <- /components/schemas/Record/properties/secret
+  name: emitted <- /components/schemas/Record/properties/name
+response_body RecordResponse
+  id: emitted <- /components/schemas/Record/properties/id
+  secret: write_only <- /components/schemas/Record/properties/secret
+  name: emitted <- /components/schemas/Record/properties/name
+request_body Envelope
+  record: emitted <- /components/schemas/Envelope/properties/record
+  records: emitted <- /components/schemas/Envelope/properties/records
+response_body Envelope
+  record: emitted <- /components/schemas/Envelope/properties/record
+  records: emitted <- /components/schemas/Envelope/properties/records

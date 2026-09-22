@@ -1,0 +1,27 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Independent binding regressions",
+    "version": "1"
+  },
+  "paths": {
+    "/items": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "itemSchema": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "done"
+          }
+        }
+      }
+    }
+  }
+}

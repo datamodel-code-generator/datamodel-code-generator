@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A validated schema child has no matching source occurrence"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

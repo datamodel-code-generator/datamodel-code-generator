@@ -1,0 +1,9 @@
+{
+  "diagnostics": [
+    "BND_TYPE_EXPRESSION_UNSUPPORTED"
+  ],
+  "demands": [
+    "BND_TYPE_EXPRESSION_UNSUPPORTED"
+  ],
+  "retained_graph": 0
+}
