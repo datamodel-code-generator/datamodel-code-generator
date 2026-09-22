@@ -216,6 +216,10 @@ class ValidatedSchemaOriginIndex:
         """Keep repeated mapping occurrences distinct; booleans need an owning frame."""
         return tuple(self._raw_locations.get(id(raw), ()))
 
+    def derived(self, obj: JsonSchemaObject) -> bool:
+        """Return whether any recorded producer edge leads to this exact validated node."""
+        return id(obj) in self._incoming
+
     def origins(self, obj: JsonSchemaObject, *, skip: SchemaRelation | None = None) -> tuple[SchemaOrigin, ...]:
         """Return recorded producer relations for this exact validated node without crossing ``skip`` edges."""
         pending = [obj]

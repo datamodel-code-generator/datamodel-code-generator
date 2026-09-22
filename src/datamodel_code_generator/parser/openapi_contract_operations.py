@@ -838,13 +838,19 @@ class FinalOperationBuilder:
         if (schema := observation.schema) is None:
             return tuple((location, False) for location in observation.locations)
         origins = self.parser.schema_origins
+        found = origins.origins(schema)
+        if not origins.derived(schema):
+            return tuple(
+                (origin.location, observation.partial or origin.relation == "inherited_materialization")
+                for origin in found
+            )
         direct = {origin.location for origin in origins.origins(schema, skip="combined_materialization")}
         return tuple(
             (
                 origin.location,
                 observation.partial or origin.relation == "inherited_materialization" or origin.location not in direct,
             )
-            for origin in origins.origins(schema)
+            for origin in found
         )
 
     def _schema_helpers(self) -> None:
