@@ -1364,9 +1364,10 @@ class BindingCaptureMixin(OpenAPIParser):
     def _record_ref_merge(
         self, obj: JsonSchemaObject, result: JsonSchemaObject, frame: ReferenceProducerFrame
     ) -> JsonSchemaObject:
+        """Pair a real sibling merge resolved once for the original cycle-check key and once by the loader."""
         if result is obj:
             return result
-        expected_calls = 2  # The original cycle-check key and the actual loader key.
+        expected_calls = 2
         if len(frame.resolutions) != expected_calls or any(event.input != obj.ref for event in frame.resolutions):
             msg = "A ref sibling merge has no matching direct loader resolution"
             raise BindingCaptureError(msg)

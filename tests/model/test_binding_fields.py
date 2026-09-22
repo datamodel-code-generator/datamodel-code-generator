@@ -87,7 +87,7 @@ def test_unresolved_field_ownership_is_not_invented(change: dict[str, str]) -> N
                 owners[base] = replace(owners[base], bases=(leaf,))
             case "inconsistent_c3":
                 owners[symbols["C"]] = replace(owners[symbols["C"]], bases=(symbols["B"], base))
-            case _:  # The remaining external fixture duplicates an own field.
+            case _:
                 owners[leaf] = replace(owners[leaf], fields=(*owners[leaf].fields, *owners[leaf].fields))
         projection = FieldOwnershipIndex(owners).project(leaf)
         assert_output(
