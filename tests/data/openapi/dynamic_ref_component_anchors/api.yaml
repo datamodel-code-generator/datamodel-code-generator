@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Component Anchors
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    IntList:
+      $ref: list.json
+      $defs:
+        item:
+          $dynamicAnchor: item
+          type: integer
+    StrList:
+      $ref: list.json
+      $defs:
+        item:
+          $dynamicAnchor: item
+          type: string
+    AnyValue: true

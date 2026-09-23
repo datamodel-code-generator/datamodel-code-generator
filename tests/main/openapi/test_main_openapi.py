@@ -9722,6 +9722,26 @@ def test_main_openapi_dynamic_ref_external_generic(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_dynamic_ref_component_anchors(output_file: Path) -> None:
+    """Specialize external generics for the $dynamicAnchor that each OpenAPI component schema declares."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dynamic_ref_component_anchors" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref_component_anchors.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_ref_component_anchors",
+        model_name="IntList",
+        valid_json="[1, 2]",
+        invalid_json='["one"]',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 
