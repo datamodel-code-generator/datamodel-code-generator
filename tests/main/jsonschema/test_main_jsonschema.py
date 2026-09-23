@@ -19380,6 +19380,28 @@ def test_main_jsonschema_dynamic_ref_merged_generic(output_file: Path) -> None:
     )
 
 
+def test_main_jsonschema_dynamic_ref_documents(output_file: Path) -> None:
+    """Resolve $dynamicRef to other documents and to JSON pointers the way $ref resolves them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_documents" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref_documents.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="dynamic_ref_documents",
+        model_name="Root",
+        valid_json=(
+            '{"whole": {"name": "a"}, "pointer": {"radius": 1.5}, "row": {"n": 1}, "local": 2, "again": {"id": 3}}'
+        ),
+        invalid_json='{"pointer": {"radius": "wide"}}',
+        expected_error_type="float_parsing",
+    )
+
+
 def test_main_jsonschema_multiple_aliases_required_pydantic_v2(output_file: Path) -> None:
     """Test multiple aliases with AliasChoices on required fields for Pydantic v2. (#2989)."""
     run_main_and_assert(

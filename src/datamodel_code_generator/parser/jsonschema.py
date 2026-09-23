@@ -1396,6 +1396,11 @@ def _ref_path_parts(file_part: str) -> list[str]:
     return file_part.split("/") if file_part else []
 
 
+def _is_plain_name_fragment(ref: str) -> bool:
+    """Return whether a reference is a plain-name fragment, which names an anchor instead of a location."""
+    return ref.startswith("#") and ref[1:2] not in {"", "/"}
+
+
 class _DynamicSpecialization(NamedTuple):
     """A referenced schema to parse again with the $dynamicAnchor bindings of its dynamic scope."""
 
@@ -4164,7 +4169,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             anchor_map = self._dynamic_anchor_index.get(root_key, {})
             if anchor_name in anchor_map:
                 return anchor_map[anchor_name]
-            return ref  # pragma: no cover
+            return ref
         return ref
 
     def _dynamic_scope_resource(self, document: str, pointer: str) -> str | None:
@@ -4563,7 +4568,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             node = stack.pop()
             for keyword in ("$ref", "$dynamicRef"):
                 match node.get(keyword):
-                    case str() as ref if keyword == "$ref" or not ref.startswith("#") or ref[1:2] in {"", "/"}:
+                    case str() as ref if keyword == "$ref" or not _is_plain_name_fragment(ref):
                         node[keyword] = self._schema_location(self._resolve_inherited_child_ref(ref, defining_ref))
             stack.extend(child for _, child in self._iter_schema_resource_children(node))
 
@@ -11833,10 +11838,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
 
     def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:  # noqa: ARG002
-        """Resolve $ref in schema object."""
+        """Resolve $ref in schema object, and the target of $dynamicRef the way its data type resolves it."""
         if obj.ref:
             self.resolve_ref(obj.ref)
-        elif obj.dynamicRef and (location := self._bound_dynamic_anchor(obj.dynamicRef)) is not None:
+            return
+        if not (dynamic_ref := obj.dynamicRef):
+            return
+        if not _is_plain_name_fragment(dynamic_ref):
+            self.resolve_ref(dynamic_ref)
+        elif (location := self._bound_dynamic_anchor(dynamic_ref)) is not None:
             with self._schema_location_context(location) as ref:
                 self.resolve_ref(ref)
 
