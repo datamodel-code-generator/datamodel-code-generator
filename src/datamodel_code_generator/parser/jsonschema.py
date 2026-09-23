@@ -43,6 +43,7 @@ from datamodel_code_generator import (
     JsonSchemaVersion,
     ReadOnlyWriteOnlyModelType,
     SchemaParseError,
+    SchemaResourceRefWarning,
     VersionMode,
     snooper_to_methods,
 )
@@ -1399,6 +1400,19 @@ def _ref_path_parts(file_part: str) -> list[str]:
 def _is_plain_name_fragment(ref: str) -> bool:
     """Return whether a reference is a plain-name fragment, which names an anchor instead of a location."""
     return ref.startswith("#") and ref[1:2] not in {"", "/"}
+
+
+def _document_location(location: str, document: str) -> str:
+    """Return a registry location as a reference from a document, local when it lies in the document."""
+    target_document, _, pointer = location.partition("#")
+    return f"#{pointer}" if target_document == document else location
+
+
+def _file_uri_path(uri: str) -> Path:
+    """Return the local path that a file URI names."""
+    from urllib.request import url2pathname  # noqa: PLC0415
+
+    return Path(url2pathname(uri[5:]))
 
 
 class _DynamicSpecialization(NamedTuple):
@@ -4535,11 +4549,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not obj.ref:
             return obj
 
-        resolved_ref = self.model_resolver.resolve_ref(obj.ref)
+        resolved_ref = self.model_resolver.resolve_ref(ref := self._lenient_ref(obj.ref))
         if self._is_ref_circular(resolved_ref):
             return obj
 
-        ref_schema = self._load_ref_schema_object(obj.ref)
+        ref_schema = self._load_ref_schema_object(ref)
         ref_dict = ref_schema.model_dump(exclude_unset=True, by_alias=True)
         if self._schema_location(resolved_ref).partition("#")[0] != self._schema_resource_document(
             list(self.model_resolver.current_root)
@@ -11510,9 +11524,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._prepare_schema_resources(self._get_ref_body_from_url(resolved_ref), [resolved_ref])
         return self._prepare_schema_resources(self._get_ref_body_from_remote(resolved_ref), [resolved_ref])
 
+    def _lenient_ref(self, ref: str) -> str:
+        """Return a reference of the current document mapped as its lenient resolution maps it, if it has one."""
+        if (
+            not self._lenient_documents
+            or (document := self._schema_resource_document(list(self.model_resolver.current_root)))
+            not in self._lenient_documents
+        ):
+            return ref
+        return self._resolve_lenient_resource_ref(ref, self._schema_resource_root_bases[document], document)
+
     def _normalize_external_ref(self, ref: str) -> str:
         """Resolve an external anchor before falling back to legacy shorthand pointers."""
-        if get_ref_type(ref) == JSONReference.LOCAL:
+        if get_ref_type(ref := self._lenient_ref(ref)) == JSONReference.LOCAL:
             return ref
 
         resolved_ref = self.model_resolver.resolve_ref(ref)
@@ -11896,6 +11920,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
         self._schema_resource_keys: dict[str, set[str]] = {}
         self._has_embedded_schema_resources = False
+        self._lenient_documents: dict[str, dict[str, Any]] = {}
+        self._resource_ref_warnings: set[str] = set()
         self._schema_resources: dict[str, set[str]] = {}
         self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = {}
         self._embedded_resources: dict[tuple[str, str], dict[str, str]] = {}
@@ -12002,32 +12028,77 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
+        if document in self._lenient_documents:
+            return self._resolve_lenient_resource_ref(reference, base, document)
         absolute = urljoin(base, reference)
         resource, _, fragment = absolute.partition("#")
-        location = self._schema_resource_locations.get(absolute)
+        if (location := self._registered_location(absolute)) is not None:
+            return _document_location(location, document)
         if (
-            location is None
-            and (not fragment or fragment.startswith("/"))
-            and (root := self._schema_resource_locations.get(resource)) is not None
-        ):
-            location = f"{root}{fragment}" if fragment else root
-        if (
-            location is None
-            and fragment
+            fragment
             and not fragment.startswith("/")
             and (root := self._schema_resource_locations.get(resource)) is not None
             and root.split("#", 1)[1]
         ):
             msg = f"Embedded schema resource has no anchor {fragment!r}: {reference!r}"
             raise Error(msg)
-        if location is not None:
-            target_document, pointer = location.split("#", 1)
-            return f"#{pointer}" if target_document == document else location
         if nested_scope and resource.startswith("file://") and not reference.startswith("file://"):
-            from urllib.request import url2pathname  # noqa: PLC0415
-
-            absolute = Path(url2pathname(resource[5:])).as_posix() + absolute[len(resource) :]
+            absolute = _file_uri_path(resource).as_posix() + absolute[len(resource) :]
         return absolute if nested_scope else reference
+
+    def _registered_location(self, absolute: str) -> str | None:
+        """Return the registry location an absolute reference names in a registered schema resource, if any."""
+        if (location := self._schema_resource_locations.get(absolute)) is not None:
+            return location
+        resource, _, fragment = absolute.partition("#")
+        if (not fragment or fragment.startswith("/")) and (root := self._schema_resource_locations.get(resource)):
+            return f"{root}{fragment}" if fragment else root
+        return None
+
+    def _resolve_lenient_resource_ref(self, reference: str, base: str, document: str) -> str:
+        """Resolve a reference of a document that resolves references against itself, like OpenAPI.
+
+        The reference keeps resolving against the document whenever that finds a target, and names the
+        schema resource an $id of the document declares only otherwise. A reference that JSON Schema
+        resolves elsewhere warns, so the schema can be fixed to mean the same under both.
+        """
+        if (
+            _is_plain_name_fragment(reference)
+            or (location := self._registered_location(urljoin(base, reference))) is None
+        ):
+            return reference
+        if (target := _document_location(location, document)) == reference or not target.startswith("#"):
+            return reference
+        source = "/".join(self._schema_resource_path_parts[document])
+        if reference.startswith("#"):
+            if not self._lenient_pointer_exists(document, reference):
+                return target if self._lenient_pointer_exists(document, target) else reference
+            message = (
+                f"$ref {reference!r} in {source} is resolved against the document for compatibility, but JSON "
+                f"Schema resolves it against the enclosing $id, to {target!r}."
+            )
+        else:
+            if not self._loads_document(urljoin(self._schema_resource_root_bases[document], reference)):
+                return target
+            message = (
+                f"$ref {reference!r} in {source} loads the referenced document for compatibility, but JSON Schema "
+                f"resolves it to the schema with that $id at {target!r}."
+            )
+        self._resource_ref_warnings.add(f"{message} Update the reference or the $id so that both name one schema.")
+        return reference
+
+    def _lenient_pointer_exists(self, document: str, reference: str) -> bool:
+        """Return whether a local JSON pointer reference names a location in a lenient document."""
+        raw = self._lenient_documents[document]
+        return not (parts := split_json_pointer(raw, reference.partition("#")[2])) or (
+            _get_model_by_path_or_missing(raw, parts) is not _MISSING_JSON_POINTER
+        )
+
+    def _loads_document(self, absolute: str) -> bool:
+        """Return whether loading an absolute reference as a document would find one."""
+        if not absolute.startswith("file://"):
+            return is_url(absolute) and self.allow_remote_refs is not False
+        return _file_uri_path(absolute.partition("#")[0]).is_file()
 
     def _rewrite_schema_resource_refs(  # noqa: PLR0913
         self,
@@ -12048,7 +12119,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             resolved = self._resolve_schema_resource_ref(reference, base, document, nested_scope=base != root_base)
             if resolved != reference:
                 result = {**schema, "$ref": resolved}
-        for path, child in self._iter_schema_resource_children(schema):
+        children = self._iter_schema_resource_children(schema)
+        for path, child in chain(children, self._implicit_schema_resources(schema)) if is_root else children:
             rewritten = self._rewrite_schema_resource_refs(child, document, base, root_base, id_field)
             if rewritten is child:
                 continue
@@ -12066,8 +12138,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 cast("dict[str, Any]", parent)[cast("str", path[-1])] = rewritten
         return result
 
-    def _implicit_schema_resources(self, raw: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
-        """Yield the pointers and schemas that a document evaluates as schema resources without an $id.
+    def _implicit_schema_resources(self, raw: dict[str, Any]) -> Iterator[tuple[tuple[str | int, ...], dict[str, Any]]]:
+        """Yield the paths and schemas that a document evaluates as schema resources without an $id.
 
         Formats such as OpenAPI evaluate each component schema independently.
         """
@@ -12077,7 +12149,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             case {"schemas": dict() as schemas}:
                 for name, schema in schemas.items():
                     if isinstance(schema, dict):
-                        yield f"/components/schemas/{name.replace('~', '~0').replace('/', '~1')}", schema
+                        yield ("components", "schemas", name), schema
 
     def _prepare_schema_resources(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Cache resource indexing and normalization instead of rescanning on each reference."""
@@ -12091,6 +12163,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for resource in self._schema_resources.pop(document, ()):
             self._dynamic_anchors.pop((document, resource), None)
             self._embedded_resources.pop((document, resource), None)
+        self._lenient_documents.pop(document, None)
         keys: set[str] = set()
         base = document if is_url(document) else Path(document).as_uri() if document else f"{self.base_path.as_uri()}/"
         id_field = (
@@ -12099,9 +12172,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else None
         )
         nested = self._register_schema_resources(raw, document, "", base, keys, id_field=id_field)
-        for pointer, schema in self._implicit_schema_resources(raw):
+        implicit = list(self._implicit_schema_resources(raw))
+        for path, schema in implicit:
+            pointer = "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in path)
             self._schema_resources[document].add(pointer)
-            self._register_schema_resources(schema, document, pointer, base, keys, id_field=id_field, resource=pointer)
+            nested |= self._register_schema_resources(
+                schema, document, pointer, base, keys, id_field=id_field, resource=pointer
+            )
+        if implicit and nested:
+            self._lenient_documents[document] = raw
         self._schema_resource_keys[document] = keys
         prepared = raw
         if nested:
@@ -12555,6 +12634,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if self.current_source_path is not None:
                 self.current_source_path = source.path
 
+            prepared = (
+                self._schema_resource_cache[document][1]
+                if self._lenient_documents
+                and (document := self._schema_resource_document(path_parts)) in self._lenient_documents
+                else None
+            )
             with (
                 self.model_resolver.current_base_path_context(source.path.parent),
                 self.model_resolver.current_root_context(path_parts),
@@ -12562,7 +12647,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 for reserved_ref in sorted(reserved_refs):
                     if self.model_resolver.add_ref(reserved_ref, resolved=True).loaded:
                         continue
-                    self.raw_obj = self._load_source_dict(source)
+                    self.raw_obj = self._load_source_dict(source) if prepared is None else prepared
                     self.parse_json_pointer(self.raw_obj, reserved_ref, path_parts)
 
         if model_count != len(self.results):
@@ -12601,7 +12686,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return {}
 
     def _report_parse_diagnostics(self) -> None:
-        """Report each unique dangling local reference after schema parsing completes."""
+        """Report each unique dangling local reference and compatibility resolution after schema parsing completes."""
+        for message in sorted(self._resource_ref_warnings):
+            warn(message, SchemaResourceRefWarning, stacklevel=4)
+        self._resource_ref_warnings.clear()
         if not self._dangling_refs:
             return
 

@@ -553,6 +553,10 @@ class DanglingRefWarning(UserWarning):
     """Warn that a local JSON pointer target was not found."""
 
 
+class SchemaResourceRefWarning(UserWarning):
+    """Warn that a reference keeps, for compatibility, a target other than the one JSON Schema resolves."""
+
+
 class DefaultValueTypeWarning(UserWarning):
     """Warn that a generated default is still serialized instead of its runtime type."""
 
@@ -2859,6 +2863,7 @@ __all__ = [
     "ReadOnlyWriteOnlyModelType",
     "ReuseScope",
     "SchemaParseError",
+    "SchemaResourceRefWarning",
     "SchemaValidatorType",
     "TargetPydanticVersion",
     "VersionMode",

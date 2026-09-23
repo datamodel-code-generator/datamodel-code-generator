@@ -30,6 +30,7 @@ from datamodel_code_generator import (
     OpenAPIScope,
     PythonVersionMin,
     ReadOnlyWriteOnlyModelType,
+    SchemaResourceRefWarning,
     chdir,
     generate,
     get_version,
@@ -9739,6 +9740,47 @@ def test_main_openapi_dynamic_ref_component_anchors(output_file: Path) -> None:
         valid_json="[1, 2]",
         invalid_json='["one"]',
         expected_error_type="int_parsing",
+    )
+
+
+def test_main_openapi_component_embedded_ids(output_file: Path) -> None:
+    """Resolve references to $id resources of component schemas where the document has no target.
+
+    References that the document resolves keep their targets, and warn where JSON Schema resolves them elsewhere.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "component_embedded_ids" / "api.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file="component_embedded_ids.py",
+            extra_args=["--openapi-scopes", "schemas", "paths", "--output-model-type", "pydantic_v2.BaseModel"],
+        )
+    assert_warnings_contain(
+        warning_records,
+        "$ref '#/components/schemas/Tag' in api.yaml is resolved against the document for compatibility",
+        "$ref 'shared.json' in api.yaml loads the referenced document for compatibility",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_component_embedded_ids",
+        model_name="Other",
+        valid_json='{"again": {"item": 1, "size": 2}, "size": 3}',
+        invalid_json='{"again": {"item": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
+def test_main_openapi_component_embedded_remote_ids(output_file: Path) -> None:
+    """Resolve a reference to the absolute $id of a component schema when remote references are not fetched."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "component_embedded_ids" / "remote.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="component_embedded_remote_ids.py",
+        extra_args=["--no-allow-remote-refs", "--output-model-type", "pydantic_v2.BaseModel"],
     )
 
 
