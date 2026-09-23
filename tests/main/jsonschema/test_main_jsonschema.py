@@ -22351,7 +22351,9 @@ def test_field_name_bindings(
         if "items" in properties:
             data.update(items=[1, 2], count=3, child={"value": 4})
             observations["items_annotation"] = list[int] in get_args(hints["items"])
-            observations["choice_literals"] = get_args(next(arg for arg in get_args(hints["choice"]) if get_args(arg)))
+            observations["choice_literals"] = sorted(
+                get_args(next(arg for arg in get_args(hints["choice"]) if get_args(arg)))
+            )
         elif "count" in properties:
             data["count"] = 3
         if backend == DataModelType.MsgspecStruct:
