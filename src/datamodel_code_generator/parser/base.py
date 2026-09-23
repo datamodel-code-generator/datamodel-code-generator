@@ -3749,7 +3749,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         require_update_action_models: list[str],
         reference_models: list[DataModel] | None,
     ) -> tuple[tuple[str, ...], list[DataModel]]:
-        """Create shared module with canonical models and replace duplicates with inherited models."""
+        """Create shared module with canonical models and replace duplicates with inherited models.
+
+        A duplicate that is removed rather than replaced hands every user to the shared model, since
+        users in other modules would otherwise import it from a module that no longer defines it.
+        """
         shared_module = self.shared_module_name
 
         shared_models: list[DataModel] = []
@@ -3782,15 +3786,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for module, models in module_models:  # pragma: no branch
                 if module != duplicate_module:
                     continue
-                referring_models = reference_models if reference_models is not None else models
                 if isinstance(duplicate_model, Enum) or not supports_inheritance or self.collapse_reuse_models:
-                    self.generation_store.redirect_model_reference_users(duplicate_model, referring_models, shared_ref)
+                    self.generation_store.redirect_reference_users(duplicate_model.reference, shared_ref)
                     models_to_remove[module].add(duplicate_model)
                 else:
                     inherited_model = duplicate_model.create_reuse_model(shared_ref)
                     self.generation_store.redirect_model_reference_users(
                         duplicate_model,
-                        referring_models,
+                        reference_models if reference_models is not None else models,
                         inherited_model.reference,
                     )
                     if shared_ref.path in require_update_action_models:
