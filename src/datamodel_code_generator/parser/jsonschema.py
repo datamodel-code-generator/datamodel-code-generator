@@ -4562,15 +4562,46 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         Rebased references are absolute, so external reference mappings still match them. Plain-name
         $dynamicRef fragments stay, since they resolve through the dynamic scope of the merged target.
+        A $recursiveRef becomes a $ref to its target in the defining document when it has a fixed one.
         """
-        stack = [schema]
+        stack: list[tuple[dict[str, Any], tuple[str | int, ...]]] = [(schema, ())]
         while stack:
-            node = stack.pop()
+            node, path = stack.pop()
             for keyword in ("$ref", "$dynamicRef"):
                 match node.get(keyword):
                     case str() as ref if keyword == "$ref" or not _is_plain_name_fragment(ref):
                         node[keyword] = self._schema_location(self._resolve_inherited_child_ref(ref, defining_ref))
-            stack.extend(child for _, child in self._iter_schema_resource_children(node))
+            match node:
+                case {"$recursiveRef": "#"} if "$ref" not in node and (
+                    target := self._recursive_ref_target(defining_ref, path)
+                ):
+                    del node["$recursiveRef"]
+                    node["$ref"] = target
+            stack.extend(
+                (child, (*path, *child_path)) for child_path, child in self._iter_schema_resource_children(node)
+            )
+
+    def _recursive_ref_target(self, defining_ref: str, path: tuple[str | int, ...]) -> str | None:
+        """Return the location a $recursiveRef in a schema dumped from another document names there.
+
+        As in its own document, it names the nearest enclosing $recursiveAnchor, or the document root.
+        The outermost $recursiveAnchor of the dynamic scope extends an anchored target, so the reference
+        is left to it when the document the schema is merged into declares $recursiveAnchor.
+        """
+        file_part, _, pointer = defining_ref.partition("#")
+        _, document = self._prepared_ref_document(file_part)
+        parts = [*split_json_pointer(document, pointer), *map(str, path)]
+        depth = 0
+        for index in range(1, len(parts) + 1):
+            match _get_model_by_path_or_missing(document, parts[:index]):
+                case {"$recursiveAnchor": True}:
+                    depth = index
+        if (depth or document.get("$recursiveAnchor") is True) and self._recursive_anchor_index.get(
+            tuple(self.model_resolver.current_root)
+        ):
+            return None
+        target = "".join(f"/{part.replace('~', '~0').replace('/', '~1')}" for part in parts[:depth])
+        return self._schema_location(self._resolve_inherited_child_ref(f"#{target}", defining_ref))
 
     def _is_ref_circular(self, resolved_ref: str) -> bool:
         """Check if a resolved $ref target contains a circular reference (cached)."""

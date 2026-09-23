@@ -1,0 +1,5 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "title": "Holder", "type": "object", "properties": {
+  "tree": {"$ref": "tree.json", "minProperties": 1},
+  "plain": {"$ref": "plain.json", "minProperties": 1},
+  "node": {"$ref": "defs.json#/$defs/Node", "minProperties": 1},
+  "kids": {"$ref": "defs.json#/$defs/Node/properties/kids", "minItems": 1}}}
