@@ -19190,6 +19190,49 @@ def test_main_jsonschema_dynamic_ref_allof_inherited_fields(output_file: Path) -
     )
 
 
+def test_main_jsonschema_dynamic_ref_inline_resources(output_file: Path) -> None:
+    """Resolve $dynamicRef in inline $id resources within them unless an enclosing resource declares the anchor."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_inline_resources.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref_inline_resources.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="dynamic_ref_inline_resources",
+        model_name="Holder",
+        valid_json=(
+            '{"first": {"value": "one"}, "second": {"value": 1, "values": [1, 2]},'
+            ' "labelled": {"tagged": {"value": "one"}}}'
+        ),
+        invalid_json='{"second": {"values": ["one"]}}',
+        expected_error_type="int_parsing",
+    )
+
+
+def test_main_jsonschema_dynamic_ref_merged_generic(output_file: Path) -> None:
+    """Resolve $dynamicRef in a $ref merged with sibling keywords within the schema resource it names."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_merged_generic" / "holder.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref_merged_generic.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="dynamic_ref_merged_generic",
+        model_name="Holder",
+        valid_json='{"numbers": [1], "plain": {"values": [2]}}',
+        invalid_json='{"plain": {"values": ["two"]}}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_jsonschema_multiple_aliases_required_pydantic_v2(output_file: Path) -> None:
     """Test multiple aliases with AliasChoices on required fields for Pydantic v2. (#2989)."""
     run_main_and_assert(
