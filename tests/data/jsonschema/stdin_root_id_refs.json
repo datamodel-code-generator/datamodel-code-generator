@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/root",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "numbers": {"$ref": "#/$defs/NumberList"},
+    "tags": {"$ref": "tagList"}
+  },
+  "$defs": {
+    "NumberList": {"type": "array", "items": {"type": "number"}},
+    "TagList": {"$id": "tagList", "type": "array", "items": {"type": "string"}}
+  }
+}
