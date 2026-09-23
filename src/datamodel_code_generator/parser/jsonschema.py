@@ -4164,7 +4164,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if anchor_name in anchor_map:
                 return anchor_map[anchor_name]
             return ref  # pragma: no cover
-        return ref  # pragma: no cover
+        return ref
 
     def _dynamic_scope_resource(self, document: str, pointer: str) -> str | None:
         """Return the root pointer of the schema resource enclosing a location in a registered document."""
@@ -4522,7 +4522,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         JSON Schema 2020-12 allows $ref alongside other keywords,
         which should be merged together.
 
-        The local keywords take precedence over referenced schema.
+        The local keywords take precedence over referenced schema. References inside a schema from
+        another document are rebased to their locations first, and a referenced schema that is itself
+        a $ref is merged with its own target, so aliases keep the definition they name.
         """
         if not obj.ref:
             return obj
@@ -4533,6 +4535,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         ref_schema = self._load_ref_schema_object(obj.ref)
         ref_dict = ref_schema.model_dump(exclude_unset=True, by_alias=True)
+        if self._schema_location(resolved_ref).partition("#")[0] != self._schema_resource_document(
+            list(self.model_resolver.current_root)
+        ):
+            self._rebase_schema_refs(ref_dict, resolved_ref)
+        if isinstance(ref_dict.get("$ref"), str):
+            target = self._merge_ref_with_schema(self.SCHEMA_OBJECT_TYPE.model_validate(ref_dict))
+            ref_dict = target.model_dump(exclude_unset=True, by_alias=True)
+            resolved_ref = target.__dict__.get(_MERGED_REF_TARGET_KEY, resolved_ref)
         current_dict = obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True)
         merged = self._deep_merge(ref_dict, current_dict)
         merged.pop("$ref", None)
@@ -4540,6 +4550,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         merged_obj = self.SCHEMA_OBJECT_TYPE.model_validate(merged)
         merged_obj.__dict__[_MERGED_REF_TARGET_KEY] = resolved_ref
         return merged_obj
+
+    def _rebase_schema_refs(self, schema: dict[str, Any], defining_ref: str) -> None:
+        """Rewrite in place the references of a schema dumped from another document to the locations they name.
+
+        Rebased references are absolute, so external reference mappings still match them. Plain-name
+        $dynamicRef fragments stay, since they resolve through the dynamic scope of the merged target.
+        """
+        stack = [schema]
+        while stack:
+            node = stack.pop()
+            for keyword in ("$ref", "$dynamicRef"):
+                match node.get(keyword):
+                    case str() as ref if keyword == "$ref" or not ref.startswith("#") or ref[1:2] in {"", "/"}:
+                        node[keyword] = self._schema_location(self._resolve_inherited_child_ref(ref, defining_ref))
+            stack.extend(child for _, child in self._iter_schema_resource_children(node))
 
     def _is_ref_circular(self, resolved_ref: str) -> bool:
         """Check if a resolved $ref target contains a circular reference (cached)."""

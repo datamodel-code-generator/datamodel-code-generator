@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "local": {"$ref": "#/$defs/Alias", "minItems": 1},
+    "remote": {"$ref": "sub/alias.json", "maxItems": 3},
+    "box": {"$ref": "sub/box.json", "minProperties": 1}
+  },
+  "$defs": {
+    "Real": {"type": "array", "items": {"type": "integer"}},
+    "Alias": {"$ref": "#/$defs/Real"}
+  }
+}
