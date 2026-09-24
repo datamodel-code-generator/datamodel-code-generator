@@ -14323,6 +14323,45 @@ def test_main_jsonschema_ref_with_additional_keywords(output_dir: Path) -> None:
     )
 
 
+def test_main_jsonschema_merged_ref_targets(output_file: Path) -> None:
+    """Merge $ref with sibling keywords through aliases and references relative to other documents."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "merged_ref_targets" / "holder.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="merged_ref_targets.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="merged_ref_targets",
+        model_name="Holder",
+        valid_json='{"local": [1], "remote": ["one"], "box": {"item": "one", "thing": {"name": "two"}, "size": 3}}',
+        invalid_json='{"local": ["one"]}',
+        expected_error_type="int_parsing",
+    )
+
+
+@pytest.mark.parametrize(
+    ("mapping", "expected_file"),
+    [
+        ("sub/things.json=mypkg.things", "merged_ref_targets_mapped.py"),
+        ("things.json=mypkg.things", "merged_ref_targets.py"),
+    ],
+)
+def test_main_jsonschema_merged_ref_target_mappings(output_file: Path, mapping: str, expected_file: str) -> None:
+    """Match external reference mappings against the documents that merged $ref targets come from."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "merged_ref_targets" / "holder.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--external-ref-mapping", mapping],
+    )
+
+
 @pytest.mark.parametrize(
     ("output_model", "expected_file"),
     [
