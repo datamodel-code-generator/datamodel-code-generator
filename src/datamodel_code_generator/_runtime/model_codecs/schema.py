@@ -216,7 +216,10 @@ class _ResourceCopy:
         if "$dynamicRef" in copied:
             msg = f"A dynamic schema reference at {self.uri} requires an explicit schema adapter"
             raise CodecConfigurationError(msg)
-        if isinstance(reference := copied.get("$ref"), str):
+        if "$ref" in copied:
+            if not isinstance(reference := copied["$ref"], str):
+                msg = f"A bundled schema reference at {self.uri} must be a string"
+                raise CodecConfigurationError(msg)
             self.references.append((id(copied), base, reference))
         if isinstance(source := copied.get("pattern"), str):
             self.plan(source)
@@ -380,6 +383,13 @@ def _is_valid(errors: Iterator[ValidationError]) -> bool:
     return next(errors, None) is None
 
 
+def _reference(
+    validator: _KeywordValidator, _: object, instance: object, schema: dict[str, object]
+) -> Iterator[ValidationError]:
+    contents, resolver = _CALL.get().targets[id(schema)]
+    yield from validator.descend(instance, contents, resolver=resolver)
+
+
 def _referenced_keys(validator: _KeywordValidator, instance: dict[str, object], schema: dict[str, object]) -> set[str]:
     if (target := _CALL.get().targets.get(id(schema))) is None:
         return set()
@@ -529,6 +539,7 @@ def _validator_factory() -> Callable[[object, object, object], _KeywordValidator
     validator = extend(
         Draft202012Validator,
         validators={
+            "$ref": _reference,
             "additionalProperties": _additional_properties,
             "dependentRequired": _dependent_required,
             "multipleOf": _multiple_of,

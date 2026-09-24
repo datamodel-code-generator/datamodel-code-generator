@@ -50,6 +50,7 @@ scalar-root: CodecConfigurationError A schema resource root must be a boolean or
 unresolved-reference: CodecConfigurationError A bundled schema reference cannot be resolved offline from https://dcg.invalid/inputs/root
 missing-pointer: CodecConfigurationError A bundled schema reference cannot be resolved offline from https://dcg.invalid/inputs/root
 non-schema-target: CodecConfigurationError A bundled schema reference from https://dcg.invalid/inputs/root does not target a schema
+non-string-reference: CodecConfigurationError A bundled schema reference at https://dcg.invalid/inputs/root must be a string
 dialect-pattern: CodecConfigurationError A bundled schema pattern at https://dcg.invalid/inputs/root is outside the builtin grammar
 program-size-pattern: CodecConfigurationError A compiled pattern exceeds the program size limit of 4096
 dynamic-reference: CodecConfigurationError A dynamic schema reference at https://dcg.invalid/inputs/root requires an explicit schema adapter

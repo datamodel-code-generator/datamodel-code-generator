@@ -241,6 +241,7 @@ def schema_report(path: Path) -> str:
         ("unresolved-reference", lambda: _bundle([(root, {"$ref": f"{other}#/missing"}, ("",))])),
         ("missing-pointer", lambda: _bundle([(root, {"$ref": "#/$defs/missing"}, ("",))])),
         ("non-schema-target", lambda: _bundle([(root, {"a": {"$ref": "#/b"}, "b": {"type": "string"}}, ("/a",))])),
+        ("non-string-reference", lambda: _bundle([(root, {"$ref": 5}, ("",))])),
         ("dialect-pattern", lambda: _bundle([(root, {"pattern": "(?=a)"}, ("",))])),
         ("program-size-pattern", lambda: _bundle([(root, {"patternProperties": {"x{1000}y{1000}z{1000}w{1000}v{1000}": True}}, ("",))])),
         ("dynamic-reference", lambda: _bundle([(root, {"$dynamicAnchor": "a", "$dynamicRef": "#a"}, ("",))])),
