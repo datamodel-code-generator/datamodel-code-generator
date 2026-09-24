@@ -432,17 +432,27 @@ def _auth_names(planner: _WirePlanner, operation: OperationContract) -> list[tup
     )
 
 
+def _spread(plan: ParameterPlan) -> bool:
+    return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
+
+
 def _claimed(plans: list[ParameterPlan], location: str) -> list[str]:
     return [
         name.lower() if location == "header" else name
         for plan in plans
         if plan.location == location
-        for name in (
-            [field.name for field in plan.fields]
-            if plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
-            else [plan.name]
-        )
+        for name in ([field.name for field in plan.fields] if _spread(plan) else [plan.name])
     ]
+
+
+def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan:
+    owned = {
+        field.name
+        for other in plans
+        if other is not plan and other.location == plan.location and _spread(other)
+        for field in other.fields
+    } - set(_claimed([plan], plan.location))
+    return replace(plan, reserved_names=tuple(sorted({*plan.reserved_names, *owned}))) if owned else plan
 
 
 def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[ParameterPlan, ...]:
@@ -460,16 +470,20 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
             *{name.lower() if location == "header" else name for kind, name in auth if kind == location},
         ]
         absorbing = [
-            plan for plan in plans if plan.location == location and plan.additional is not None and plan.explode
+            plan for plan in plans if plan.location == location and plan.additional is not None and _spread(plan)
         ]
-        if len(set(claimed)) != len(claimed) or len(absorbing) > 1:
+        if (
+            len(set(claimed)) != len(claimed)
+            or len(absorbing) > 1
+            or (absorbing and any(plan.location == location and plan.style == "deepObject" for plan in plans))
+        ):
             source = next(item.use_site for item in declarations if _fact(item, "in") == location)
             planner.diagnostics.append(
                 CodecDiagnostic(
                     "MC_PARAMETER_ENCODING", source, f"Expanded {location} parameter names collide", operation.id
                 )
             )
-    return tuple(plans)
+    return tuple(_reserving(plan, plans) for plan in plans)
 
 
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:

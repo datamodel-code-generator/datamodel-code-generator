@@ -19,6 +19,24 @@ paths:
         - {name: prefs, in: cookie, style: cookie, explode: true, schema: {type: object, properties: {a: {type: string}}, additionalProperties: false}}
       responses:
         "204": {description: none}
+  /spread:
+    get:
+      parameters:
+        - {name: extra, in: query, schema: {type: object}}
+        - {name: window, in: query, schema: {type: object, properties: {limit: {type: integer}, offset: {type: integer}}, additionalProperties: false}}
+        - {name: jar, in: cookie, schema: {type: object}}
+        - {name: crumbs, in: cookie, style: cookie, explode: true, schema: {type: object, properties: {flavor: {type: string}}, additionalProperties: false}}
+        - {name: X-Counts, in: header, explode: true, schema: {type: object, additionalProperties: {type: integer}}}
+        - {name: X-Tallies, in: header, explode: true, schema: {type: object, additionalProperties: {type: integer}}}
+      responses:
+        "204": {description: none}
+  /deep:
+    get:
+      parameters:
+        - {name: extra, in: query, schema: {type: object}}
+        - {name: filter, in: query, style: deepObject, explode: true, schema: {type: object, properties: {tag: {type: string}}, additionalProperties: false}}
+      responses:
+        "204": {description: none}
   /raw:
     post:
       parameters:

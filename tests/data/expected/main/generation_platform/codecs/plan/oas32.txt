@@ -3,14 +3,44 @@
     {
       "uri": "https://dcg.invalid/inputs/root",
       "roots": [
+        "/paths/~1deep/get/parameters/0/schema",
+        "/paths/~1deep/get/parameters/1/schema",
         "/paths/~1raw/post/parameters/0/content/application~1json/schema",
         "/paths/~1raw/post/parameters/1/content/text~1plain/schema",
         "/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema",
         "/paths/~1search/get/parameters/1/schema",
-        "/paths/~1search/get/parameters/2/schema"
+        "/paths/~1search/get/parameters/2/schema",
+        "/paths/~1spread/get/parameters/0/schema",
+        "/paths/~1spread/get/parameters/1/schema",
+        "/paths/~1spread/get/parameters/2/schema",
+        "/paths/~1spread/get/parameters/3/schema",
+        "/paths/~1spread/get/parameters/4/schema",
+        "/paths/~1spread/get/parameters/5/schema"
       ],
       "contents": {
         "paths": {
+          "/deep": {
+            "get": {
+              "parameters": [
+                {
+                  "schema": {
+                    "type": "object"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "tag": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              ]
+            }
+          },
           "/raw": {
             "post": {
               "parameters": [
@@ -80,17 +110,85 @@
                 }
               ]
             }
+          },
+          "/spread": {
+            "get": {
+              "parameters": [
+                {
+                  "schema": {
+                    "type": "object"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "limit": {
+                        "type": "integer"
+                      },
+                      "offset": {
+                        "type": "integer"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "flavor": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              ]
+            }
           }
         }
       }
     }
   ],
   "schemas": [
+    "parameter cookie crumbs - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/3/schema",
+    "parameter cookie jar - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/2/schema",
     "parameter cookie prefs - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema",
     "parameter cookie theme - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema",
+    "parameter header X-Counts - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/4/schema",
+    "parameter header X-Tallies - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/5/schema",
     "parameter header note - text/plain https://dcg.invalid/inputs/root#/paths/~1raw/post/parameters/1/content/text~1plain/schema",
+    "parameter query extra - - https://dcg.invalid/inputs/root#/paths/~1deep/get/parameters/0/schema",
+    "parameter query extra - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/0/schema",
+    "parameter query filter - - https://dcg.invalid/inputs/root#/paths/~1deep/get/parameters/1/schema",
+    "parameter query window - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/1/schema",
     "parameter querystring body - application/json https://dcg.invalid/inputs/root#/paths/~1raw/post/parameters/0/content/application~1json/schema",
     "parameter querystring query - application/x-www-form-urlencoded https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1deep/get/parameters/0/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1deep/get/parameters/1/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1deep/get/parameters/1/schema/properties/tag",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1raw/post/parameters/0/content/application~1json/schema",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1raw/post/parameters/1/content/text~1plain/schema",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema",
@@ -100,7 +198,18 @@
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema/properties/tags/items",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema",
-    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema/properties/a"
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema/properties/a",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/0/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/1/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/1/schema/properties/limit",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/1/schema/properties/offset",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/2/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/3/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/3/schema/properties/flavor",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/4/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/4/schema/additionalProperties",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/5/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/5/schema/additionalProperties"
   ],
   "parameters": {
     "/paths/~1search/get": [
@@ -147,6 +256,7 @@
         "fields": [],
         "additional": null,
         "reserved_names": [
+          "a",
           "prefs"
         ]
       },
@@ -170,6 +280,184 @@
         "additional": null,
         "reserved_names": [
           "theme"
+        ]
+      }
+    ],
+    "/paths/~1spread/get": [
+      {
+        "location": "query",
+        "name": "extra",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "limit",
+          "offset",
+          "window"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "window",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [
+          {
+            "name": "limit",
+            "kind": "integer",
+            "repeated": false
+          },
+          {
+            "name": "offset",
+            "kind": "integer",
+            "repeated": false
+          }
+        ],
+        "additional": null,
+        "reserved_names": [
+          "extra"
+        ]
+      },
+      {
+        "location": "cookie",
+        "name": "jar",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "crumbs",
+          "flavor"
+        ]
+      },
+      {
+        "location": "cookie",
+        "name": "crumbs",
+        "style": "cookie",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [
+          {
+            "name": "flavor",
+            "kind": "string",
+            "repeated": false
+          }
+        ],
+        "additional": null,
+        "reserved_names": [
+          "jar"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "X-Counts",
+        "style": "simple",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "integer",
+          "repeated": false
+        },
+        "reserved_names": [
+          "X-Tallies"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "X-Tallies",
+        "style": "simple",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "integer",
+          "repeated": false
+        },
+        "reserved_names": [
+          "X-Counts"
+        ]
+      }
+    ],
+    "/paths/~1deep/get": [
+      {
+        "location": "query",
+        "name": "extra",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "filter"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "filter",
+        "style": "deepObject",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [
+          {
+            "name": "tag",
+            "kind": "string",
+            "repeated": false
+          }
+        ],
+        "additional": null,
+        "reserved_names": [
+          "extra"
         ]
       }
     ],
@@ -204,5 +492,7 @@
       }
     ]
   },
-  "diagnostics": []
+  "diagnostics": [
+    "MC_PARAMETER_ENCODING oas32.yaml#/paths/~1deep/get/parameters/0 [/paths/~1deep/get]: Expanded query parameter names collide"
+  ]
 }
