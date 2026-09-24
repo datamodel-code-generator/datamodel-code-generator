@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "str_list.json",
+  "title": "StrListSchema",
+  "$ref": "list.json",
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "type": "string"}
+  }
+}

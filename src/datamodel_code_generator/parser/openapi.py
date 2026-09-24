@@ -1003,7 +1003,11 @@ class OpenAPIParser(JsonSchemaParser):
             )
 
     def parse_raw(self) -> None:
-        """Parse OpenAPI specification including schemas, paths, and operations."""
+        """Parse OpenAPI specification including schemas, paths, and operations.
+
+        Operations resolve references outside schema parsing, so models specialized for a dynamic scope
+        there are parsed once every specification has been read.
+        """
         self._discriminator_documents.clear()
         self._discriminator_schemas.clear()
         self._discriminator_subtypes.clear()
@@ -1042,6 +1046,7 @@ class OpenAPIParser(JsonSchemaParser):
                 with self.openapi_self_context(specification):
                     self._parse_specification(specification, path_parts)
 
+            self._parse_dynamic_specializations()
             self._resolve_unparsed_json_pointer()
             self._generate_forced_base_models()
         finally:

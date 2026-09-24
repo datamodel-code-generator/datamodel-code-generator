@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "container.json",
+  "title": "Container",
+  "type": "object",
+  "properties": {
+    "item": {"$dynamicRef": "#item"},
+    "meta": {"$ref": "common.json#/$defs/Meta"}
+  },
+  "$defs": {
+    "item": {"$dynamicAnchor": "item", "not": true}
+  }
+}
