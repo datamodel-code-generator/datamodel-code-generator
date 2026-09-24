@@ -153,6 +153,10 @@ class _KeywordValidator(Protocol):
     def iter_errors(self, instance: object) -> Iterator[ValidationError]: ...
 
 
+def _nesting() -> CodecResourceLimitError:
+    return CodecResourceLimitError("The wire value is nested beyond the validator recursion limit")
+
+
 def _number(value: object) -> object:
     return Decimal(repr(value)) if type(value) is float else value
 
@@ -707,6 +711,8 @@ class WireSchemaValidator:
         found = _Exclusions(flag, [])
         try:
             _flagged(self._validator, _instance_copy(wire, set()), root, "", found)
+        except RecursionError:
+            raise _nesting() from None
         finally:
             _CALL.reset(token)
         return tuple(found.pointers)
@@ -718,8 +724,7 @@ class WireSchemaValidator:
             instance = _instance_copy(wire, set())
             return tuple(_issue(error, self._index) for error in self._validator.iter_errors(instance))
         except RecursionError:
-            msg = "The wire value is nested beyond the validator recursion limit"
-            raise CodecResourceLimitError(msg) from None
+            raise _nesting() from None
         finally:
             _CALL.reset(token)
 
