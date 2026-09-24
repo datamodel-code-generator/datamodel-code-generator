@@ -187,7 +187,7 @@ jobs:
       - name: Run Claude Code Analysis
         id: claude
         if: steps.analysis-route.outputs.requires_claude == 'true'
-        timeout-minutes: 10
+        timeout-minutes: 20
         uses: anthropics/claude-code-action/base-action@8cf3482550831fb35a4fc3fbf7ca139cf8028b4c # v1.0.233
         env:
           CLAUDE_WORKING_DIR: ${{ steps.pr-diff.outputs.claude_working_dir }}
@@ -251,7 +251,7 @@ jobs:
           # The extra slash creates Claude's // filesystem-root path anchor.
           claude_args: |
             --model claude-opus-5-5
-            --effort high
+            --effort xhigh
             --max-turns 50
             --setting-sources user
             --tools Read
@@ -495,11 +495,21 @@ jobs:
           # Build final release body using printf to avoid YAML parsing issues
           # Merge breaking changes sections with same headings
           FINAL_BC=""
-          if [ -n "$BC_CONTENT" ] && [ -n "$EXISTING_BC" ]; then
+          if [ -n "$BC_CONTENT" ] || [ -n "$EXISTING_BC" ]; then
             # Merge sections with same ### headings to avoid duplicates
             # Preserves blank lines inside fenced code blocks
             MERGED_BC=$(printf '%s\n\n%s' "$EXISTING_BC" "$BC_CONTENT" | awk '
-              BEGIN { current_section = ""; in_fence = 0; }
+              BEGIN { current_section = ""; in_fence = 0; in_comment = 0; }
+              in_comment {
+                if (!(end = index($0, "-->"))) next;
+                $0 = substr($0, end + 3);
+                in_comment = 0;
+              }
+              /^<!--/ && !in_fence {
+                $0 = substr($0, 5);
+                if (!(end = index($0, "-->"))) { in_comment = 1; next; }
+                $0 = substr($0, end + 3);
+              }
               /^```/ || /^~~~/ { in_fence = !in_fence; }
               /^### / && !in_fence {
                 current_section = $0;
@@ -509,7 +519,11 @@ jobs:
                 next;
               }
               /^[[:space:]]*$/ && !in_fence { next; }
-              current_section != "" {
+              current_section == "" {
+                preamble = preamble == "" ? $0 : preamble "\n" $0;
+                next;
+              }
+              {
                 if (sections[current_section] != "") {
                   sections[current_section] = sections[current_section] "\n" $0;
                 } else {
@@ -517,19 +531,16 @@ jobs:
                 }
               }
               END {
+                if (preamble != "") print preamble;
                 for (i = 1; i <= order_count; i++) {
                   section = order[i];
-                  if (i > 1) print "";
+                  if (i > 1 || preamble != "") print "";
                   print section;
                   print sections[section];
                 }
               }
             ')
             FINAL_BC=$(printf '## Breaking Changes\n\n%s' "$MERGED_BC")
-          elif [ -n "$BC_CONTENT" ]; then
-            FINAL_BC=$(printf '## Breaking Changes\n\n%s' "$BC_CONTENT")
-          elif [ -n "$EXISTING_BC" ]; then
-            FINAL_BC=$(printf '## Breaking Changes\n\n%s' "$EXISTING_BC")
           fi
 
           if [ -n "$FINAL_BC" ]; then
