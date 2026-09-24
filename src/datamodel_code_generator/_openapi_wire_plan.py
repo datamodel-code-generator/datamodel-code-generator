@@ -27,7 +27,12 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     media_kind,
     normalize_media_type,
 )
-from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan, ValueShape
+from datamodel_code_generator._runtime.model_codecs.parameters import (
+    ParameterLocation,
+    ParameterPlan,
+    ValueShape,
+    builtin_content,
+)
 from datamodel_code_generator._runtime.model_codecs.patterns import (
     PatternDialectError,
     PatternResourceError,
@@ -409,11 +414,13 @@ def _requirement_names(value: FrozenLiteral | None) -> list[str]:
 def _auth_names(planner: _WirePlanner, operation: OperationContract) -> list[tuple[object, str]]:
     schemes = {scheme.name: scheme for scheme in planner.batch.security_schemes}
     requirements = next((value for name, value in operation.facts if name == "security"), None)
-    return [
-        (_fact(scheme, "in"), str(_fact(scheme, "name")))
-        for name in _requirement_names(requirements)
-        if (scheme := schemes.get(name)) is not None and _fact(scheme, "type") == "apiKey"
-    ]
+    return list(
+        dict.fromkeys(
+            (_fact(scheme, "in"), str(_fact(scheme, "name")))
+            for name in _requirement_names(requirements)
+            if (scheme := schemes.get(name)) is not None and _fact(scheme, "type") == "apiKey"
+        )
+    )
 
 
 def _claimed(plans: list[ParameterPlan], location: str) -> list[str]:
@@ -439,8 +446,9 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
         if (plan := _planned(planner, operation.id, declaration, names)) is not None
     ]
     for location in ("query", "header", "cookie"):
-        claimed = _claimed(plans, location) + [
-            name.lower() if location == "header" else name for kind, name in auth if kind == location
+        claimed = [
+            *_claimed(plans, location),
+            *{name.lower() if location == "header" else name for kind, name in auth if kind == location},
         ]
         absorbing = [
             plan for plan in plans if plan.location == location and plan.additional is not None and plan.explode
@@ -499,8 +507,7 @@ def _content_parameter(
             code="MC_PARAMETER_ENCODING", source=source, message="Querystring parameters require OpenAPI 3.2"
         )
     media = normalize_media_type(declaration.children[0].name or "")
-    kind = media_kind(media)
-    if location == "cookie" or kind not in {"json", "text", "form"} or (kind == "form" and location != "querystring"):
+    if not builtin_content(location, media):
         raise _PlanError(
             code="MC_PARAMETER_ENCODING",
             source=source,
@@ -508,7 +515,7 @@ def _content_parameter(
         )
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
-    if kind == "form":
+    if media_kind(media) == "form":
         _, _, fields, additional = _shape(
             planner, _schema_location(planner, declaration.children[0].schemas, source), form=True
         )

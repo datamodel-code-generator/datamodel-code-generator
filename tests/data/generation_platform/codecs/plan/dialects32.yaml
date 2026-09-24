@@ -12,3 +12,23 @@ paths:
         - {name: prefs, in: cookie, style: form, explode: false, schema: {type: array, items: {type: string}}}
       responses:
         "204": {description: none}
+  /alternatives:
+    get:
+      security:
+        - Token: []
+        - Lower: []
+      responses:
+        "204": {description: none}
+    post:
+      security:
+        - Token: []
+        - Token: []
+          Lower: []
+      parameters:
+        - {name: X-Trace, in: header, schema: {type: string}}
+      responses:
+        "204": {description: none}
+components:
+  securitySchemes:
+    Token: {type: apiKey, in: header, name: X-Token}
+    Lower: {type: apiKey, in: header, name: x-token}

@@ -1308,32 +1308,12 @@
     },
     {
       "plan": {
-        "location": "cookie",
-        "name": "c",
-        "shape": "scalar",
-        "content_media_type": "application/json"
-      },
-      "value": [
-        1
-      ]
-    },
-    {
-      "plan": {
         "location": "query",
         "name": "c",
         "shape": "scalar",
         "content_media_type": "text/plain"
       },
       "value": 1
-    },
-    {
-      "plan": {
-        "location": "query",
-        "name": "c",
-        "shape": "scalar",
-        "content_media_type": "application/xml"
-      },
-      "value": "x"
     },
     {
       "plan": {
@@ -1468,6 +1448,21 @@
       "name": "q",
       "style": "form",
       "content_media_type": "application/json"
+    },
+    {
+      "location": "cookie",
+      "name": "c",
+      "content_media_type": "application/json"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "content_media_type": "application/xml"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "content_media_type": "application/x-www-form-urlencoded"
     },
     {
       "location": "header",

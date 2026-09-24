@@ -24,7 +24,9 @@ def _remotes(suite: Path) -> list[SchemaResource]:
         try:
             SchemaBundle(remotes)
         except CodecError as error:
-            remotes = [remote for remote in remotes if remote.uri not in str(error)]
+            if len(kept := [remote for remote in remotes if remote.uri not in str(error)]) == len(remotes):
+                raise
+            remotes = kept
         else:
             return remotes
 

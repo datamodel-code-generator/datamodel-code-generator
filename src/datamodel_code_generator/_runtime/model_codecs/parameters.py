@@ -73,13 +73,25 @@ class ParameterPlan:
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form."""
         if not _reversible(self):
-            msg = f"{self.location} parameter style {self.style!r} has no builtin form for {self.shape} values"
+            content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
+            msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {self.shape} values"
             raise ValueError(msg)
+
+
+def builtin_content(location: ParameterLocation, media_type: str) -> bool:
+    """Return whether a builtin codec carries parameter content of this media type in this location."""
+    match media_kind(media_type):
+        case "json" | "text":
+            return location != "cookie"
+        case "form":
+            return location == "querystring"
+        case _:
+            return False
 
 
 def _reversible(plan: ParameterPlan) -> bool:
     if plan.content_media_type is not None:
-        return plan.style is None
+        return plan.style is None and builtin_content(plan.location, plan.content_media_type)
     if plan.style is None or plan.style not in _STYLES.get(plan.location, ()):
         return False
     match plan.style, plan.shape, plan.explode:
@@ -314,11 +326,8 @@ def _content_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
             return [(None, quote(text, safe=""))]
         case "query":
             return [(quote(plan.name, safe=""), quote(text, safe=""))]
-        case "header":
-            return [(plan.name, _header_text(text, item=False))]
         case _:
-            msg = "Cookie content requires an explicit parameter adapter"
-            raise ParameterEncodingError(msg)
+            return [(plan.name, _header_text(text, item=False))]
 
 
 def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterContribution:

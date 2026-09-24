@@ -84,9 +84,7 @@ header X simple* object/string: ParameterEncodingError An exploded header member
 header X simple* object/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
 cookie c cookie* scalar/string: ParameterEncodingError A cookie-style name must be a token and its value unquoted cookie octets
 cookie c d cookie* scalar/string: ParameterEncodingError A cookie-style name must be a token and its value unquoted cookie octets
-cookie c application/json scalar/string: ParameterEncodingError Cookie content requires an explicit parameter adapter
 query c text/plain scalar/string: ParameterEncodingError The parameter content media or value is not builtin
-query c application/xml scalar/string: ParameterEncodingError The parameter content media or value is not builtin
 querystring qs text/plain scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
 querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A URL-encoded form value must be an object
@@ -101,7 +99,10 @@ invalid {'location': 'cookie', 'name': 'c', 'style': 'form', 'explode': False, '
 invalid {'location': 'cookie', 'name': 'c', 'style': 'cookie', 'explode': False, 'shape': 'object'}: ValueError cookie parameter style 'cookie' has no builtin form for object values
 invalid {'location': 'querystring', 'name': 'q', 'style': 'form'}: ValueError querystring parameter style 'form' has no builtin form for scalar values
 invalid {'location': 'querystring', 'name': 'q'}: ValueError querystring parameter style None has no builtin form for scalar values
-invalid {'location': 'query', 'name': 'q', 'style': 'form', 'content_media_type': 'application/json'}: ValueError query parameter style 'form' has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'style': 'form', 'content_media_type': 'application/json'}: ValueError query parameter style 'form' with content 'application/json' has no builtin form for scalar values
+invalid {'location': 'cookie', 'name': 'c', 'content_media_type': 'application/json'}: ValueError cookie parameter style None with content 'application/json' has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/xml'}: ValueError query parameter style None with content 'application/xml' has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'content_media_type': 'application/x-www-form-urlencoded'}: ValueError query parameter style None with content 'application/x-www-form-urlencoded' has no builtin form for scalar values
 invalid {'location': 'header', 'name': 'h', 'style': 'form'}: ValueError header parameter style 'form' has no builtin form for scalar values
 invalid {'location': 'path', 'name': 'p'}: ValueError path parameter style None has no builtin form for scalar values
 python query i form* scalar/integer: ?i=2 => 2
