@@ -187,7 +187,7 @@ jobs:
       - name: Run Claude Code Analysis
         id: claude
         if: steps.analysis-route.outputs.requires_claude == 'true'
-        timeout-minutes: 10
+        timeout-minutes: 20
         uses: anthropics/claude-code-action/base-action@8cf3482550831fb35a4fc3fbf7ca139cf8028b4c # v1.0.233
         env:
           CLAUDE_WORKING_DIR: ${{ steps.pr-diff.outputs.claude_working_dir }}
@@ -510,7 +510,11 @@ jobs:
               }
               /^[[:space:]]*$/ && !in_fence { next; }
               /^<!--/ && !in_fence { next; }
-              current_section != "" {
+              current_section == "" {
+                preamble = preamble == "" ? $0 : preamble "\n" $0;
+                next;
+              }
+              {
                 if (sections[current_section] != "") {
                   sections[current_section] = sections[current_section] "\n" $0;
                 } else {
@@ -518,9 +522,10 @@ jobs:
                 }
               }
               END {
+                if (preamble != "") print preamble;
                 for (i = 1; i <= order_count; i++) {
                   section = order[i];
-                  if (i > 1) print "";
+                  if (i > 1 || preamble != "") print "";
                   print section;
                   print sections[section];
                 }
