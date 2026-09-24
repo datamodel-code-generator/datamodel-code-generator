@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
+from . import request_version_enum
 from .request_base import RequestBase
 from typing import Literal
 
@@ -10,5 +11,5 @@ from typing import Literal
 
 @dataclass
 class RequestV1(RequestBase):
-    version: Literal[RequestVersionEnum.v1]
+    version: Literal[request_version_enum.RequestVersionEnum.v1]
     request_id: str

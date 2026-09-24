@@ -304,6 +304,49 @@ def test_main_openapi_discriminator_enum_use_enum_values(output_file: Path) -> N
     )
 
 
+@pytest.mark.parametrize(
+    ("split_args", "expected_directory", "validation_module", "validation_data"),
+    [
+        ([], "enum_use_enum_values_modules", "pets", {"kind": "cat", "purr": "soft"}),
+        (
+            ["--module-split-mode", "single"],
+            "enum_use_enum_values_module_split",
+            "pets.pet",
+            {"kind": "dog", "bark": "woof"},
+        ),
+    ],
+)
+def test_main_openapi_discriminator_enum_use_enum_values_across_modules(
+    split_args: list[str],
+    expected_directory: str,
+    validation_module: str,
+    validation_data: dict[str, str],
+    output_dir: Path,
+) -> None:
+    """Import the enum rendered by discriminator literals into every variant module."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_enum_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=EXPECTED_OPENAPI_PATH / "discriminator" / expected_directory,
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-enum-values-in-discriminator",
+            "--use-subclass-enum",
+            "--type-overrides",
+            '{"Hound.kind": "typing.Any"}',
+            "--disable-timestamp",
+            *split_args,
+        ],
+        runtime_validation_module=validation_module,
+        runtime_validation_model_name="Pet",
+        runtime_validation_data=validation_data,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",

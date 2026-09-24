@@ -83,6 +83,7 @@ OPTIONAL = "Optional"
 OPTIONAL_PREFIX = f"{OPTIONAL}["
 
 _RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY = "_runtime_expression_imports"
+_ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 
 
 class DefaultValueRecipe(Enum):
@@ -610,6 +611,8 @@ class DataType(_BaseModel):
                 copied_value = deepcopy(value, memo)
                 object.__setattr__(new_obj, field_name, copied_value)
         new_obj._set_runtime_expression_imports(self.runtime_expression_imports)
+        if (enum_member_literal_reference := self._enum_member_literal_reference) is not None:
+            new_obj._set_enum_member_literal_reference(enum_member_literal_reference)
 
         return new_obj
 
@@ -790,6 +793,15 @@ class DataType(_BaseModel):
             self.__dict__[_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY] = imports
             return
         self.__dict__.pop(_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY, None)
+
+    @property
+    def _enum_member_literal_reference(self) -> Reference | None:
+        """Return the enum whose members ``enum_member_literals`` render."""
+        return self.__dict__.get(_ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY)
+
+    def _set_enum_member_literal_reference(self, reference: Reference) -> None:
+        """Keep the enum identity so every rendering module can import the class."""
+        self.__dict__[_ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY] = reference
 
     @property
     def imports(self) -> Iterator[Import]:

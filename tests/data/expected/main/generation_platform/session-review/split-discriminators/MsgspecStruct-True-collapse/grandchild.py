@@ -4,8 +4,9 @@
 from __future__ import annotations
 from typing import Literal
 from .request_v1 import RequestV1
+from . import request_version_enum
 
 
 
 class Grandchild(RequestV1):
-    version: Literal[RequestVersionEnum.v1]
+    version: Literal[request_version_enum.RequestVersionEnum.v1]

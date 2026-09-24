@@ -3204,7 +3204,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for model in models:
             model.invalidate_render_caches()
 
-    def __change_from_import(  # noqa: PLR0912, PLR0913, PLR0914
+    def __change_from_import(  # noqa: PLR0913
         self,
         models: list[DataModel],
         imports: Imports,
@@ -3235,75 +3235,131 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     case reference:
                         pass
 
-                target_full_name = _get_data_type_target_full_name(data_type, reference, model_path_to_module_name)
-
-                if isinstance(data_type, BaseClassDataType):
-                    left, right = relative(current_module_name, target_full_name)
-                    from_ = (
-                        left
-                        if is_ancestor_package_reference(current_module_name, target_full_name)
-                        else (f"{left}{right}" if left.endswith(".") else f"{left}.{right}")
-                    )
-                    import_ = reference.short_name
-                    full_path = from_, import_
-                else:
-                    from_, import_ = full_path = relative(current_module_name, target_full_name)
-                    if imports.use_exact:
-                        from_, import_ = full_path = _resolve_exact_import(
-                            current_module_name,
-                            target_full_name,
-                            from_,
-                            import_,
-                            reference.short_name,
-                        )
-                    import_ = import_.replace("-", "_")
-                    current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
-                    if (  # pragma: no cover
-                        len(current_module_path) > 1
-                        and current_module_path[-1].count(".") > 0
-                        and not self.treat_dot_as_module
-                    ):
-                        rel_path_depth = current_module_path[-1].count(".")
-                        from_ = from_[rel_path_depth:]
-
-                    ref_module = tuple(target_full_name.split(".")[:-1])
-
-                    is_module_class_collision = (
-                        ref_module and import_ == reference.short_name and ref_module[-1] == import_
-                    )
-
-                    if (
-                        from_
-                        and not imports.use_exact
-                        and (ref_module in internal_modules or is_module_class_collision)
-                    ):
-                        from_ = f"{from_}{import_}" if from_.endswith(".") else f"{from_}.{import_}"
-                        import_ = reference.short_name
-                        full_path = from_, import_
-
-                alias = scoped_model_resolver.add(full_path, import_).name
-
-                name = reference.short_name
-                if from_ and import_ and alias != name:
-                    data_type.alias = alias if reference.short_name == import_ else f"{alias}.{name}"
+                if alias := self.__register_reference_import(
+                    reference,
+                    current_module_name,
+                    _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+                    imports,
+                    scoped_model_resolver,
+                    init=init,
+                    internal_modules=internal_modules,
+                    base_class=isinstance(data_type, BaseClassDataType),
+                ):
+                    data_type.alias = alias
                     import_sensitive_alias_changed = True
-
-                if init and not target_full_name.startswith(current_module_name + "."):
-                    from_ = "." + from_
-                imports.append(
-                    Import(
-                        from_=from_,
-                        import_=import_,
-                        alias=alias,
-                        reference_path=reference.path,
-                    ),
-                )
             if import_sensitive_alias_changed:  # pragma: no cover
                 model.clear_imports_cache()
                 after_import = model.imports
                 if before_import != after_import:
                     imports.remove(before_import)
                     imports.append(after_import)
+
+    def __register_reference_import(  # noqa: PLR0913
+        self,
+        reference: Reference,
+        current_module_name: str,
+        target_full_name: str,
+        imports: Imports,
+        scoped_model_resolver: ModelResolver,
+        *,
+        init: bool,
+        internal_modules: set[tuple[str, ...]],
+        base_class: bool = False,
+    ) -> str | None:
+        """Import a reference from another module and return its expression when it is not the class name."""
+        name = reference.short_name
+        if base_class:
+            left, right = relative(current_module_name, target_full_name)
+            from_ = (
+                left
+                if is_ancestor_package_reference(current_module_name, target_full_name)
+                else (f"{left}{right}" if left.endswith(".") else f"{left}.{right}")
+            )
+            import_ = name
+            full_path = from_, import_
+        else:
+            from_, import_ = full_path = relative(current_module_name, target_full_name)
+            if imports.use_exact:
+                from_, import_ = full_path = _resolve_exact_import(
+                    current_module_name,
+                    target_full_name,
+                    from_,
+                    import_,
+                    name,
+                )
+            import_ = import_.replace("-", "_")
+            current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
+            if (  # pragma: no cover
+                len(current_module_path) > 1 and current_module_path[-1].count(".") > 0 and not self.treat_dot_as_module
+            ):
+                rel_path_depth = current_module_path[-1].count(".")
+                from_ = from_[rel_path_depth:]
+
+            ref_module = tuple(target_full_name.split(".")[:-1])
+
+            is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
+
+            if from_ and not imports.use_exact and (ref_module in internal_modules or is_module_class_collision):
+                from_ = f"{from_}{import_}" if from_.endswith(".") else f"{from_}.{import_}"
+                import_ = name
+                full_path = from_, import_
+
+        alias = scoped_model_resolver.add(full_path, import_).name
+        expression = None
+        if from_ and import_ and alias != name:
+            expression = alias if name == import_ else f"{alias}.{name}"
+        if init and not target_full_name.startswith(current_module_name + "."):
+            from_ = "." + from_
+        imports.append(
+            Import(
+                from_=from_,
+                import_=import_,
+                alias=alias,
+                reference_path=reference.path,
+            ),
+        )
+        return expression
+
+    def __import_enum_member_literal_classes(
+        self,
+        contexts: list[ModuleContext],
+        *,
+        internal_modules: set[ModulePath],
+        model_path_to_module_name: dict[str, str],
+    ) -> None:
+        """Import enum classes that discriminator literals render outside the enum module."""
+        if not self.use_enum_values_in_discriminator:
+            return
+        for ctx in contexts:
+            model_paths = {model.path for model in ctx.models}
+            for model in ctx.models:
+                for data_type in model.all_data_types:
+                    match data_type._enum_member_literal_reference:  # noqa: SLF001
+                        case None:
+                            continue
+                        case reference if data_type.alias or reference.path in model_paths:
+                            continue
+                        case reference:
+                            pass
+
+                    enum_module_name = _get_model_module_name(
+                        cast("DataModel", reference.source), model_path_to_module_name
+                    )
+                    enum_class = (
+                        self.__register_reference_import(
+                            reference,
+                            _get_model_module_name(model, model_path_to_module_name),
+                            f"{enum_module_name}.{reference.short_name}" if enum_module_name else reference.short_name,
+                            ctx.imports,
+                            ctx.scoped_model_resolver,
+                            init=ctx.is_init,
+                            internal_modules=internal_modules,
+                        )
+                        or reference.short_name
+                    )
+                    data_type.enum_member_literals = [
+                        (enum_class, member) for _, member in data_type.enum_member_literals
+                    ]
 
     @classmethod
     def __extract_inherited_enum(cls, models: list[DataModel]) -> None:
@@ -3329,8 +3385,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self,
         enum_source: Enum | None,
         discriminator_values: list[DiscriminatorValue],
-        discriminator_model: DataModel,
-        imports: Imports,
+        discriminator_model: DataModel,  # noqa: ARG002
+        imports: Imports,  # noqa: ARG002
     ) -> DataType:
         """Create a data type for discriminator field, using enum literals if available."""
         if enum_source:
@@ -3344,8 +3400,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     else:  # pragma: no cover
                         enum_member_literals.append((enum_class_name, _semantic_value_text(value)))
                 data_type = self.data_type(enum_member_literals=enum_member_literals)
-                if enum_source.module_path != discriminator_model.module_path:  # pragma: no cover
-                    imports.append(Import.from_full_path(enum_source.name))
+                data_type._set_enum_member_literal_reference(enum_source.reference)  # noqa: SLF001
             else:
                 data_type = self.data_type(
                     literals=[
@@ -4419,6 +4474,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 and not field.data_type.reference
                 and not field.data_type.type
                 and not field.data_type.literals
+                and not field.data_type.enum_member_literals
                 and not field.data_type.dict_key
                 for field in model.fields
             )
@@ -4445,6 +4501,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     or data_type.reference
                     or data_type.type
                     or data_type.literals
+                    or data_type.enum_member_literals
                     or data_type.dict_key
                 ):
                     resolved_fields.append(model_field)
@@ -5269,6 +5326,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     add(qualified_name)
             else:
                 add(data_type.type)
+                for enum_class, _ in data_type.enum_member_literals:
+                    add(enum_class)
             if data_type.reference:
                 add(data_type.reference.short_name)
 
@@ -6754,6 +6813,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_to_import[module_] = ctx.imports
             contexts.append(ctx)
 
+        self.__import_enum_member_literal_classes(
+            contexts,
+            internal_modules=internal_modules,
+            model_path_to_module_name=model_path_to_module_name,
+        )
         self._finalize_modules(contexts, unused_models, model_to_module_models, module_to_import)
         self.__warn_about_decimal_defaults()
         if self.use_default_factory_for_optional_nested_models:
