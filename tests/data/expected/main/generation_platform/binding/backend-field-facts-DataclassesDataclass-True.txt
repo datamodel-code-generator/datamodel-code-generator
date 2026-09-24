@@ -1,0 +1,994 @@
+{
+  "required": {
+    "node": "BackendFieldFacts",
+    "backend": "dataclass",
+    "declarations": [
+      [
+        "name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "required"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "original_name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "required"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "validation_aliases",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "use_serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": false
+          },
+          "state": "known"
+        }
+      ]
+    ],
+    "emitted": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "absent",
+      "emitted_default_value": null,
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": true
+      },
+      "state": "known"
+    },
+    "init_var": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "kw_only": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "factory_result": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    },
+    "fields_set": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    }
+  },
+  "missing": {
+    "node": "BackendFieldFacts",
+    "backend": "dataclass",
+    "declarations": [
+      [
+        "name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "missing"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "original_name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "missing"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "validation_aliases",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "use_serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": false
+          },
+          "state": "known"
+        }
+      ]
+    ],
+    "emitted": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": true
+      },
+      "state": "known"
+    },
+    "init_var": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "kw_only": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "factory_result": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    },
+    "fields_set": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    }
+  },
+  "explicit_null": {
+    "node": "BackendFieldFacts",
+    "backend": "dataclass",
+    "declarations": [
+      [
+        "name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "explicit_null"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "original_name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "explicit_null"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "validation_aliases",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "use_serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": false
+          },
+          "state": "known"
+        }
+      ]
+    ],
+    "emitted": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "none",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": true
+      },
+      "state": "known"
+    },
+    "init_var": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "kw_only": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "factory_result": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    },
+    "fields_set": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    }
+  },
+  "literal": {
+    "node": "BackendFieldFacts",
+    "backend": "dataclass",
+    "declarations": [
+      [
+        "name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "literal"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "original_name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "literal"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "validation_aliases",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "use_serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": false
+          },
+          "state": "known"
+        }
+      ]
+    ],
+    "emitted": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "literal",
+      "emitted_default_value": {
+        "node": "LiteralScalar",
+        "kind": "int",
+        "value": 4
+      },
+      "factory_present": false,
+      "factory_expression": null,
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": true
+      },
+      "state": "known"
+    },
+    "init_var": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "kw_only": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "factory_result": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    },
+    "fields_set": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    }
+  },
+  "items": {
+    "node": "BackendFieldFacts",
+    "backend": "dataclass",
+    "declarations": [
+      [
+        "name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "items"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "original_name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "items"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "validation_aliases",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "use_serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": false
+          },
+          "state": "known"
+        }
+      ]
+    ],
+    "emitted": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "factory",
+      "emitted_default_value": null,
+      "factory_present": true,
+      "factory_expression": {
+        "node": "SourceExpression",
+        "text": "lambda :[1 ,2 ]"
+      },
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [
+        [
+          "default_factory",
+          {
+            "node": "SourceExpression",
+            "text": "lambda :[1 ,2 ]"
+          }
+        ]
+      ],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": true
+      },
+      "state": "known"
+    },
+    "init_var": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "kw_only": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "factory_result": {
+      "node": "RuntimeBackendValue",
+      "reason": "factory_result",
+      "state": "runtime"
+    },
+    "fields_set": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    }
+  },
+  "mapping": {
+    "node": "BackendFieldFacts",
+    "backend": "dataclass",
+    "declarations": [
+      [
+        "name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "mapping"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "original_name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "mapping"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "validation_aliases",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "use_serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": false
+          },
+          "state": "known"
+        }
+      ]
+    ],
+    "emitted": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "factory",
+      "emitted_default_value": null,
+      "factory_present": true,
+      "factory_expression": {
+        "node": "SourceExpression",
+        "text": "lambda :{'enabled':True }"
+      },
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": true,
+      "qualifiers": [],
+      "constructor_keywords": [
+        [
+          "default_factory",
+          {
+            "node": "SourceExpression",
+            "text": "lambda :{'enabled':True }"
+          }
+        ]
+      ],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": true
+      },
+      "state": "known"
+    },
+    "init_var": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "kw_only": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "factory_result": {
+      "node": "RuntimeBackendValue",
+      "reason": "factory_result",
+      "state": "runtime"
+    },
+    "fields_set": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    }
+  },
+  "factory": {
+    "node": "BackendFieldFacts",
+    "backend": "dataclass",
+    "declarations": [
+      [
+        "name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "factory"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "original_name",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "factory"
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "validation_aliases",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "none",
+            "value": null
+          },
+          "state": "known"
+        }
+      ],
+      [
+        "use_serialization_alias",
+        {
+          "node": "KnownBackendValue",
+          "value": {
+            "node": "LiteralScalar",
+            "kind": "bool",
+            "value": false
+          },
+          "state": "known"
+        }
+      ]
+    ],
+    "emitted": {
+      "node": "EmittedFieldFacts",
+      "emitted": true,
+      "emitted_default_kind": "factory",
+      "emitted_default_value": null,
+      "factory_present": true,
+      "factory_expression": {
+        "node": "SourceExpression",
+        "text": "list"
+      },
+      "unset_default": false,
+      "unset_type_in_annotation": false,
+      "null_type_in_annotation": false,
+      "qualifiers": [],
+      "constructor_keywords": [
+        [
+          "default_factory",
+          {
+            "node": "SourceExpression",
+            "text": "list"
+          }
+        ]
+      ],
+      "meta_layers": []
+    },
+    "constructor_init": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": true
+      },
+      "state": "known"
+    },
+    "init_var": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "kw_only": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "bool",
+        "value": false
+      },
+      "state": "known"
+    },
+    "factory_result": {
+      "node": "RuntimeBackendValue",
+      "reason": "factory_result",
+      "state": "runtime"
+    },
+    "fields_set": {
+      "node": "KnownBackendValue",
+      "value": {
+        "node": "LiteralScalar",
+        "kind": "none",
+        "value": null
+      },
+      "state": "known"
+    }
+  }
+}

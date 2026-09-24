@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "Combined items do not match their owning producer"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

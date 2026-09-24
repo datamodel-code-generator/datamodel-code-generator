@@ -1,0 +1,17 @@
+{
+  "init": true,
+  "frozen": true,
+  "slots": true,
+  "fields": [
+    {
+      "name": "wireName",
+      "init": true,
+      "kw_only": true
+    }
+  ],
+  "config": {
+    "extra": "forbid",
+    "strict": true,
+    "populate_by_name": true
+  }
+}

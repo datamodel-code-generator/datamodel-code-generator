@@ -1,0 +1,174 @@
+{
+  "BaseRequest": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        true
+      ]
+    },
+    "secret": {
+      "locations": [
+        "/components/schemas/Base/properties/secret"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "BaseResponse": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        true
+      ]
+    },
+    "id": {
+      "locations": [
+        "/components/schemas/Base/properties/id"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "Base": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        true
+      ]
+    },
+    "id": {
+      "locations": [
+        "/components/schemas/Base/properties/id"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "secret": {
+      "locations": [
+        "/components/schemas/Base/properties/secret"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "ChildRequest": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/Child/allOf/1/properties/raw-note",
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        true,
+        true
+      ]
+    },
+    "secret": {
+      "locations": [
+        "/components/schemas/Base/properties/secret"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "ChildResponse": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/Child/allOf/1/properties/raw-note",
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        true,
+        true
+      ]
+    },
+    "id": {
+      "locations": [
+        "/components/schemas/Base/properties/id"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "Child": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/Child/allOf/1/properties/raw-note",
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        true,
+        true
+      ]
+    }
+  },
+  "GrandChildRequest": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/GrandChild/allOf/1/properties/raw-note",
+        "/components/schemas/Child/allOf/1/properties/raw-note",
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        false,
+        true,
+        true
+      ]
+    },
+    "secret": {
+      "locations": [
+        "/components/schemas/Base/properties/secret"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "GrandChildResponse": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/GrandChild/allOf/1/properties/raw-note",
+        "/components/schemas/Child/allOf/1/properties/raw-note",
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        false,
+        true,
+        true
+      ]
+    },
+    "id": {
+      "locations": [
+        "/components/schemas/Base/properties/id"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "GrandChild": {
+    "raw_note": {
+      "locations": [
+        "/components/schemas/GrandChild/allOf/1/properties/raw-note",
+        "/components/schemas/Child/allOf/1/properties/raw-note",
+        "/components/schemas/Base/properties/raw-note"
+      ],
+      "defaults": [
+        false,
+        true,
+        true
+      ]
+    }
+  }
+}

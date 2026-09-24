@@ -1,0 +1,6 @@
+{
+  "k": [
+    "/components/schemas/Obj/properties/k",
+    "/components/schemas/Base/items/properties/k"
+  ]
+}

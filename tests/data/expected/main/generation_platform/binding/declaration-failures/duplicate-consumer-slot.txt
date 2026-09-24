@@ -1,0 +1,1 @@
+Duplicate field expectation in one consumer

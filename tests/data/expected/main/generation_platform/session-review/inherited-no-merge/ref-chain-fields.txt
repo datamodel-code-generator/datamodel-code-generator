@@ -1,0 +1,22 @@
+{
+  "Payload.code": [
+    "/components/schemas/Child/allOf/1/properties/payload/properties/code",
+    "/components/schemas/Choice/anyOf/0/properties/code"
+  ],
+  "Payload.left": [
+    "/components/schemas/Choice/anyOf/0/properties/left"
+  ],
+  "Payload1.code": [
+    "/components/schemas/Alias/anyOf/0/properties/code",
+    "/components/schemas/Child/allOf/1/properties/payload/properties/code"
+  ],
+  "Payload1.right": [
+    "/components/schemas/Alias/anyOf/0/properties/right"
+  ],
+  "Alias1.left": [
+    "/components/schemas/Choice/anyOf/0/properties/left"
+  ],
+  "Alias2.right": [
+    "/components/schemas/Alias/anyOf/0/properties/right"
+  ]
+}

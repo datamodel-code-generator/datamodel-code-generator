@@ -1,0 +1,28 @@
+{
+  "RequestV1.version": {
+    "node": "LiteralType",
+    "values": [
+      {
+        "node": "GeneratedEnumMember",
+        "symbol": 1,
+        "field": 13,
+        "name": "v1"
+      }
+    ]
+  },
+  "RequestV1.request_id": {
+    "node": "BuiltinType",
+    "name": "str"
+  },
+  "RequestV2.version": {
+    "node": "LiteralType",
+    "values": [
+      {
+        "node": "GeneratedEnumMember",
+        "symbol": 1,
+        "field": 14,
+        "name": "v2"
+      }
+    ]
+  }
+}

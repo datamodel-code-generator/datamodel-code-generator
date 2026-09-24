@@ -1,0 +1,36 @@
+{
+  "ship-to": [
+    "/components/schemas/BaseArray/items/properties/ship-to",
+    "/components/schemas/Array/allOf/0/items/properties/ship-to"
+  ],
+  "base-value": [
+    "/components/schemas/BaseArray/items/properties/base-value"
+  ],
+  "extra-value": [
+    "/components/schemas/Array/allOf/0/items/properties/extra-value"
+  ],
+  "first-key": [
+    "/components/schemas/BaseTuple/items/0/properties/first-key",
+    "/components/schemas/TupleValue/allOf/0/items/0/properties/first-key"
+  ],
+  "tail-key": [
+    "/components/schemas/BaseTuple/additionalItems/properties/tail-key"
+  ],
+  "first-extra": [
+    "/components/schemas/TupleValue/allOf/0/items/0/properties/first-extra"
+  ],
+  "second-key": [
+    "/components/schemas/TupleValue/allOf/0/items/1/properties/second-key"
+  ],
+  "kept": [
+    "/components/schemas/BaseClosed/items/properties/kept",
+    "/components/schemas/ClosedValue/allOf/0/items/properties/kept"
+  ],
+  "nested-key": [
+    "/components/schemas/ObjectValue/properties/nested-key",
+    "/components/schemas/ReferencedValue/allOf/0/items/properties/nested-key"
+  ],
+  "sibling-key": [
+    "/components/schemas/ReferencedValue/allOf/0/items/properties/sibling-key"
+  ]
+}

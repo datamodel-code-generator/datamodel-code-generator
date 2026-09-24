@@ -1,0 +1,47 @@
+{
+  "consumer": "Leaf",
+  "fields": [
+    {
+      "owner": "A",
+      "name": "root",
+      "index": 0,
+      "wire_name": "root"
+    },
+    {
+      "owner": "C",
+      "name": "shared_key",
+      "index": 1,
+      "wire_name": "shared-key"
+    },
+    {
+      "owner": "B",
+      "name": "left",
+      "index": 0,
+      "wire_name": "left"
+    },
+    {
+      "owner": "C",
+      "name": "right",
+      "index": 0,
+      "wire_name": "right"
+    },
+    {
+      "owner": "Leaf",
+      "name": "leaf_key",
+      "index": 0,
+      "wire_name": "leaf-key"
+    }
+  ],
+  "overrides": [
+    {
+      "key": "shared-key",
+      "original": "A",
+      "replacement": "B"
+    },
+    {
+      "key": "shared-key",
+      "original": "B",
+      "replacement": "C"
+    }
+  ]
+}

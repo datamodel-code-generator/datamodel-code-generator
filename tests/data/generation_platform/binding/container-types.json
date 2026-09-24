@@ -1,0 +1,41 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Container types",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Container": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "sequence": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "mapping": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "required": [
+          "values",
+          "sequence",
+          "mapping"
+        ]
+      }
+    }
+  }
+}

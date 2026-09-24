@@ -1,0 +1,6 @@
+implicit: none / runtime_or_opaque / model_configuration
+nullable: none / explicit_nullable / schema
+override_null: none / explicit_model_default / model_configuration
+required_nullable: none / explicit_nullable / schema
+required_value: none / runtime_or_opaque / model_configuration
+schema_null: none / schema_default / model_configuration

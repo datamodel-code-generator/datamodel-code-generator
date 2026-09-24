@@ -1,0 +1,47 @@
+{
+  "implicit": {
+    "producer": "original",
+    "original_has_default": false,
+    "preexisting_null": false
+  },
+  "schemaNull": {
+    "producer": "original",
+    "original_has_default": true,
+    "preexisting_null": false
+  },
+  "equalOverride": {
+    "producer": "override",
+    "original_has_default": true,
+    "preexisting_null": false
+  },
+  "scopedOverride": {
+    "producer": "override",
+    "original_has_default": false,
+    "preexisting_null": false
+  },
+  "nullable": {
+    "producer": "original",
+    "original_has_default": false,
+    "preexisting_null": true
+  },
+  "nullable_items": {
+    "producer": "original",
+    "original_has_default": false,
+    "preexisting_null": false
+  },
+  "nullable_container": {
+    "producer": "original",
+    "original_has_default": false,
+    "preexisting_null": true
+  },
+  "child": {
+    "producer": "original",
+    "original_has_default": false,
+    "preexisting_null": false
+  },
+  "external": {
+    "producer": "original",
+    "original_has_default": false,
+    "preexisting_null": null
+  }
+}

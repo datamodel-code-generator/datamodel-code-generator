@@ -1,0 +1,16 @@
+{
+  "Value.code": [
+    "/components/schemas/Child/allOf/1/properties/payload/properties/value/properties/code",
+    "/components/schemas/Choice/anyOf/0/properties/code"
+  ],
+  "Value1.code": [
+    "/components/schemas/Child/allOf/1/properties/payload/properties/value/properties/code",
+    "/components/schemas/Parent/properties/payload/properties/value/anyOf/0/properties/code"
+  ],
+  "Value2.code": [
+    "/components/schemas/Choice/anyOf/0/properties/code"
+  ],
+  "Value3.code": [
+    "/components/schemas/Parent/properties/payload/properties/value/anyOf/0/properties/code"
+  ]
+}

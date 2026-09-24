@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import TYPE_CHECKING, Concatenate, Literal, ParamSpec, Protocol, TypeAlias, TypeVar
 
-from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError, GraphObjectId
+from datamodel_code_generator._generation_contract import (
+    AttemptId,
+    BindingCaptureError,
+    GraphObjectId,
+    clear_capture_tracebacks,
+)
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser.generation import GenerationStore
 
@@ -67,6 +72,7 @@ class BindingLedger:
         self.variants.clear()
         self.collapses.clear()
         self.root_recipes.clear()
+        clear_capture_tracebacks(self.failure)
 
 
 class _CaptureOwner(Protocol):
@@ -154,13 +160,14 @@ class TypeRecipe:
     alias: str | None
     import_: Import | None
     bound: BoundPythonType | None
-    children: tuple[TypeRecipe, ...]
+    data_types: tuple[TypeRecipe, ...]
     dict_key: TypeRecipe | None
     literals: tuple[bool | int | str, ...]
     enum_members: tuple[tuple[str, str], ...]
     kwargs: tuple[tuple[str, object], ...]
     modifiers: tuple[str, ...]
     tuple_item_count: int | None
+    discriminator: str | None
 
 
 def _type_recipe(data_type: DataType, ledger: BindingLedger, active: set[int]) -> TypeRecipe:
@@ -177,7 +184,7 @@ def _type_recipe(data_type: DataType, ledger: BindingLedger, active: set[int]) -
         alias=data_type.alias,
         import_=data_type.import_,
         bound=data_type.python_type,
-        children=tuple(_type_recipe(child, ledger, active) for child in data_type.data_types),
+        data_types=tuple(_type_recipe(child, ledger, active) for child in data_type.data_types),
         dict_key=_type_recipe(key, ledger, active) if (key := data_type.dict_key) is not None else None,
         literals=tuple(data_type.literals),
         enum_members=tuple(data_type.enum_member_literals),
@@ -205,6 +212,7 @@ def _type_recipe(data_type: DataType, ledger: BindingLedger, active: set[int]) -
             if enabled
         ),
         tuple_item_count=data_type.tuple_item_count,
+        discriminator=data_type.discriminator,
     )
     active.remove(node)
     return result

@@ -1,0 +1,26 @@
+{
+  "RequestV1.version": {
+    "node": "LiteralType",
+    "values": [
+      {
+        "node": "LiteralScalar",
+        "kind": "str",
+        "value": "v1"
+      }
+    ]
+  },
+  "RequestV1.request_id": {
+    "node": "BuiltinType",
+    "name": "str"
+  },
+  "RequestV2.version": {
+    "node": "LiteralType",
+    "values": [
+      {
+        "node": "LiteralScalar",
+        "kind": "str",
+        "value": "v2"
+      }
+    ]
+  }
+}

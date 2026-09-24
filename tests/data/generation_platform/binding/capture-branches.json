@@ -1,0 +1,30 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "capture branches", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Parent": {"type": "object", "properties": {"flag": true, "other": true, "code": {"type": "string"}}},
+      "Child": {"allOf": [
+        {"$ref": "#/components/schemas/Parent"},
+        {"type": "object", "properties": {
+          "flag": {"minLength": 1},
+          "other": {"type": "string", "minLength": 1},
+          "code": {"type": "string", "minLength": 2}
+        }}
+      ]},
+      "Node": {"type": "object", "properties": {"next": {"$ref": "#/components/schemas/Node"}}},
+      "Holder": {"type": "object", "properties": {"node": {"$ref": "#/components/schemas/Node", "minProperties": 1}}},
+      "A": {"type": "object", "properties": {"x": {"type": "string"}}},
+      "B": {"type": "object", "properties": {"x": {"type": "integer"}}},
+      "C": {"allOf": [true, {"$ref": "#/components/schemas/A"}, {"$ref": "#/components/schemas/B"},
+                      {"type": "object", "properties": {"y": {"type": "string"}}}]},
+      "Extra": {"type": "object", "properties": {"a": {"type": "string"}},
+                "additionalProperties": {"type": "array", "items": {"type": "string"}}},
+      "Open": {"type": "object", "properties": {"a": {"type": "string"}}, "additionalProperties": {}},
+      "Code": {"type": "string"},
+      "Limited": {"allOf": [{"$ref": "#/components/schemas/Code"}, {"maxLength": 5}], "enum": ["a", "b"]},
+      "Defaulted": {"type": "object", "properties": {"a": {"type": "string", "default": "x"}}}
+    }
+  }
+}

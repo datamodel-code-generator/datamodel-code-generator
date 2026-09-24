@@ -1,0 +1,134 @@
+[
+  {
+    "id": "valid",
+    "old": "",
+    "new": "",
+    "error": false
+  },
+  {
+    "id": "argument-list",
+    "old": "[[UUID,",
+    "new": "[UUID,",
+    "error": true
+  },
+  {
+    "id": "literal-value",
+    "old": "Literal['uuid.UUID', True, 1]",
+    "new": "Literal['uuid.UUID', 1, 1]",
+    "error": true
+  },
+  {
+    "id": "literal-order",
+    "old": "Literal['uuid.UUID', True, 1]",
+    "new": "Literal[True, 'uuid.UUID', 1]",
+    "error": true
+  },
+  {
+    "id": "bound-import",
+    "old": "from uuid import UUID",
+    "new": "from decimal import UUID",
+    "error": true
+  },
+  {
+    "id": "return-type",
+    "old": "]], str]",
+    "new": "]], int]",
+    "error": true
+  },
+  {
+    "id": "ellipsis",
+    "old": "Callable[..., str]",
+    "new": "Callable[int, str]",
+    "error": true
+  },
+  {
+    "id": "tuple-order",
+    "old": "tuple[int, str]",
+    "new": "tuple[str, int]",
+    "error": true
+  },
+  {
+    "id": "union-order",
+    "old": "choice: UUID | str",
+    "new": "choice: str | UUID",
+    "error": true
+  },
+  {
+    "id": "optional-union",
+    "old": "Optional[UUID | str]",
+    "new": "Optional[UUID | bool]",
+    "error": true
+  },
+  {
+    "id": "empty-parameters",
+    "old": "Callable[[], bool]",
+    "new": "Callable[[int], bool]",
+    "error": true
+  },
+  {
+    "id": "empty-tuple",
+    "old": "tuple[()]",
+    "new": "tuple[str]",
+    "error": true
+  },
+  {
+    "id": "native-name",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__['other-key']",
+    "error": true
+  },
+  {
+    "id": "native-family",
+    "old": "__annotations__['raw-key']",
+    "new": "model_fields['raw-key']",
+    "error": true
+  },
+  {
+    "id": "native-index",
+    "old": ".__args__[0]",
+    "new": ".__args__[1]",
+    "error": true
+  },
+  {
+    "id": "native-annotation",
+    "old": ".annotation.__args__",
+    "new": ".other.__args__",
+    "error": true
+  },
+  {
+    "id": "native-base",
+    "old": "external.Model.model_fields",
+    "new": "external.Other.model_fields",
+    "error": true
+  },
+  {
+    "id": "native-without-lookup",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__",
+    "error": true
+  },
+  {
+    "id": "native-empty-lookup",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__[]",
+    "error": true
+  },
+  {
+    "id": "empty-argument-group",
+    "old": "Callable[[], bool]",
+    "new": "Callable[(), bool]",
+    "error": true
+  },
+  {
+    "id": "native-unbalanced-square",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__('raw-key']",
+    "error": true
+  },
+  {
+    "id": "native-unbalanced-bracket",
+    "old": "__annotations__['raw-key']",
+    "new": "__annotations__{'raw-key']",
+    "error": true
+  }
+]

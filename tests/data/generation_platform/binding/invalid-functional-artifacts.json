@@ -1,0 +1,86 @@
+[
+  {
+    "id": "missing-symbol",
+    "old": "Payload =",
+    "new": "Other =",
+    "error": "An expected final field is absent"
+  },
+  {
+    "id": "wrong-callee",
+    "old": "Payload = TypedDict(",
+    "new": "Payload = dict(",
+    "error": "Functional TypedDict callee does not match"
+  },
+  {
+    "id": "wrong-name",
+    "old": "TypedDict('Payload',",
+    "new": "TypedDict('Other',",
+    "error": "Functional TypedDict name does not match"
+  },
+  {
+    "id": "dynamic-fields",
+    "old": "TypedDict('Payload',",
+    "new": "TypedDict('Payload', fields,",
+    "error": "Functional TypedDict fields must be a literal dictionary"
+  },
+  {
+    "id": "dynamic-key",
+    "old": "'ship-to':",
+    "new": "field_key:",
+    "error": "Functional TypedDict contains a nonliteral entry"
+  },
+  {
+    "id": "unpacked-fields",
+    "old": "'': str,",
+    "new": "**other,",
+    "error": "Functional TypedDict contains a nonliteral entry"
+  },
+  {
+    "id": "wrong-key",
+    "old": "'': str,",
+    "new": "'changed': str,",
+    "error": "Functional TypedDict entry order differs"
+  },
+  {
+    "id": "missing-entry",
+    "old": "    'class': NotRequired[str],\n",
+    "new": "",
+    "error": "Functional TypedDict entry count differs"
+  },
+  {
+    "id": "wrong-key-type",
+    "old": "'ship-to':",
+    "new": "0:",
+    "error": "Functional TypedDict contains a nonliteral entry"
+  },
+  {
+    "id": "shadowed-callee",
+    "old": "Payload =",
+    "new": "from custom import TypedDict\nPayload =",
+    "error": "Functional TypedDict callee does not match"
+  },
+  {
+    "id": "trailing-expression",
+    "old": "NotRequired[str],})",
+    "new": "NotRequired[str],}) or 1",
+    "error": "Expected a builtin functional TypedDict call"
+  },
+  {
+    "id": "unclosed-body",
+    "old": "NotRequired[str],})",
+    "new": "NotRequired[str],}",
+    "error": "Accepted artifact could not be tokenized"
+  },
+  {
+    "id": "invalid-unicode-key",
+    "old": "'ship-to':",
+    "new": "u'\\uZZZZ':",
+    "error": "Functional TypedDict contains a nonliteral entry"
+  },
+  {
+    "id": "class-declaration",
+    "old": "Payload = TypedDict('Payload', {",
+    "new": "class Payload(TypedDict):\n    ship_to: str\n\n\nPayload = TypedDict('Payload', {",
+    "error": "A final symbol is declared more than once"
+  }
+]

@@ -1,0 +1,114 @@
+{
+  "BaseRequest": {
+    "ship_to": {
+      "locations": [
+        "/components/schemas/Base/properties/ship-to"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "Base": {
+    "id": {
+      "locations": [
+        "/components/schemas/Base/properties/id"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "ship_to": {
+      "locations": [
+        "/components/schemas/Base/properties/ship-to"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "ItemRequest": {
+    "ship_to": {
+      "locations": [
+        "/components/schemas/Base/properties/ship-to"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "secret": {
+      "locations": [
+        "/components/schemas/Item/allOf/1/properties/secret"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "values": {
+      "locations": [
+        "/components/schemas/Item/allOf/1/properties/values"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "ItemResponse": {
+    "id": {
+      "locations": [
+        "/components/schemas/Base/properties/id"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "ship_to": {
+      "locations": [
+        "/components/schemas/Base/properties/ship-to"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "values": {
+      "locations": [
+        "/components/schemas/Item/allOf/1/properties/values"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "Item": {
+    "secret": {
+      "locations": [
+        "/components/schemas/Item/allOf/1/properties/secret"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "values": {
+      "locations": [
+        "/components/schemas/Item/allOf/1/properties/values"
+      ],
+      "defaults": [
+        false
+      ]
+    },
+    "ship_to": {
+      "locations": [
+        "/components/schemas/Base/properties/ship-to"
+      ],
+      "defaults": [
+        false
+      ]
+    }
+  },
+  "Value": {
+    "field_": {
+      "locations": [],
+      "defaults": []
+    }
+  }
+}

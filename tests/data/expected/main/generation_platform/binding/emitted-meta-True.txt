@@ -1,0 +1,160 @@
+{
+  "integer": [
+    {
+      "node": "MetaLayer",
+      "node_path": [],
+      "ordinal": 0,
+      "keywords": [
+        [
+          "ge",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 4
+          }
+        ],
+        [
+          "le",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 12
+          }
+        ],
+        [
+          "multiple_of",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 2
+          }
+        ]
+      ],
+      "line": 24,
+      "column": 28
+    }
+  ],
+  "number": [
+    {
+      "node": "MetaLayer",
+      "node_path": [],
+      "ordinal": 0,
+      "keywords": [
+        [
+          "ge",
+          {
+            "node": "LiteralScalar",
+            "kind": "float",
+            "value": 1.5
+          }
+        ],
+        [
+          "lt",
+          {
+            "node": "LiteralScalar",
+            "kind": "float",
+            "value": 9.75
+          }
+        ],
+        [
+          "multiple_of",
+          {
+            "node": "LiteralScalar",
+            "kind": "float",
+            "value": 0.5
+          }
+        ]
+      ],
+      "line": 25,
+      "column": 29
+    }
+  ],
+  "nested": [
+    {
+      "node": "MetaLayer",
+      "node_path": [],
+      "ordinal": 0,
+      "keywords": [
+        [
+          "max_length",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 4
+          }
+        ],
+        [
+          "min_length",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 1
+          }
+        ]
+      ],
+      "line": 26,
+      "column": 46
+    }
+  ],
+  "mapping": [],
+  "choice": [],
+  "nullable": [
+    {
+      "node": "MetaLayer",
+      "node_path": [
+        0
+      ],
+      "ordinal": 0,
+      "keywords": [
+        [
+          "min_length",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 2
+          }
+        ]
+      ],
+      "line": 29,
+      "column": 35
+    }
+  ],
+  "optional": [
+    {
+      "node": "MetaLayer",
+      "node_path": [],
+      "ordinal": 0,
+      "keywords": [
+        [
+          "max_length",
+          {
+            "node": "LiteralScalar",
+            "kind": "int",
+            "value": 6
+          }
+        ]
+      ],
+      "line": 30,
+      "column": 35
+    }
+  ],
+  "rank": [
+    {
+      "node": "MetaLayer",
+      "node_path": [],
+      "ordinal": 0,
+      "keywords": [
+        [
+          "description",
+          {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "rank"
+          }
+        ]
+      ],
+      "line": 31,
+      "column": 45
+    }
+  ]
+}

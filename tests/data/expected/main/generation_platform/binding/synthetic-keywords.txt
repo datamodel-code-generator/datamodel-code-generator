@@ -1,0 +1,9 @@
+{
+  "all_synthetic_resolved": true,
+  "required_only": [
+    "/components/schemas/Required/allOf/1/required/0"
+  ],
+  "root_value": [
+    "/components/schemas/Dictionary/additionalProperties"
+  ]
+}

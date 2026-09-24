@@ -1,0 +1,106 @@
+[
+  {
+    "consumer": "A",
+    "owner": "A",
+    "name": "root",
+    "key": "root",
+    "ordinal": 0,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "A",
+    "owner": "A",
+    "name": "shared_key",
+    "key": "shared-key",
+    "ordinal": 1,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "B",
+    "owner": "A",
+    "name": "root",
+    "key": "root",
+    "ordinal": 0,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "B",
+    "owner": "B",
+    "name": "shared_key",
+    "key": "shared-key",
+    "ordinal": 1,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "B",
+    "owner": "B",
+    "name": "left",
+    "key": "left",
+    "ordinal": 2,
+    "annotation": "NotRequired [int ]"
+  },
+  {
+    "consumer": "C",
+    "owner": "A",
+    "name": "root",
+    "key": "root",
+    "ordinal": 0,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "C",
+    "owner": "C",
+    "name": "shared_key",
+    "key": "shared-key",
+    "ordinal": 1,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "C",
+    "owner": "C",
+    "name": "right",
+    "key": "right",
+    "ordinal": 2,
+    "annotation": "NotRequired [bool ]"
+  },
+  {
+    "consumer": "Leaf",
+    "owner": "A",
+    "name": "root",
+    "key": "root",
+    "ordinal": 0,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "Leaf",
+    "owner": "C",
+    "name": "shared_key",
+    "key": "shared-key",
+    "ordinal": 1,
+    "annotation": "NotRequired [str ]"
+  },
+  {
+    "consumer": "Leaf",
+    "owner": "B",
+    "name": "left",
+    "key": "left",
+    "ordinal": 2,
+    "annotation": "NotRequired [int ]"
+  },
+  {
+    "consumer": "Leaf",
+    "owner": "C",
+    "name": "right",
+    "key": "right",
+    "ordinal": 3,
+    "annotation": "NotRequired [bool ]"
+  },
+  {
+    "consumer": "Leaf",
+    "owner": "Leaf",
+    "name": "leaf_key",
+    "key": "leaf-key",
+    "ordinal": 4,
+    "annotation": "NotRequired [float ]"
+  }
+]

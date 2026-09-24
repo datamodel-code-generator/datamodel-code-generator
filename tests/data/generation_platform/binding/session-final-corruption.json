@@ -1,0 +1,24 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Final type corruption", "version": "1"},
+  "paths": {
+    "/values": {
+      "post": {
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Model"}}}},
+        "responses": {"204": {"description": "Accepted"}}
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Model": {
+        "type": "object",
+        "properties": {
+          "value": {"type": "integer", "minimum": 1},
+          "imported": {"$ref": "#/components/schemas/Decimal"}
+        }
+      },
+      "Decimal": {"type": "number", "x-python-import": {"module": "decimal", "name": "Decimal"}}
+    }
+  }
+}

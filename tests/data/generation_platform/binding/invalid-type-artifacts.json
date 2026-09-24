@@ -1,0 +1,219 @@
+[
+  {
+    "id": "builtin",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType]",
+    "new": "flag: Union[int, UnsetType]"
+  },
+  {
+    "id": "reference",
+    "backend": "MsgspecStruct",
+    "old": "child: Union[Child, UnsetType]",
+    "new": "child: Union[Types, UnsetType]"
+  },
+  {
+    "id": "import",
+    "backend": "MsgspecStruct",
+    "old": "native: Union[UUID, UnsetType]",
+    "new": "native: Union[str, UnsetType]"
+  },
+  {
+    "id": "bound",
+    "backend": "MsgspecStruct",
+    "old": "bound_native: Union[argparse.HelpFormatter._Section, UnsetType]",
+    "new": "bound_native: Union[argparse.HelpFormatter, UnsetType]"
+  },
+  {
+    "id": "import-shadow",
+    "backend": "MsgspecStruct",
+    "old": "import argparse",
+    "new": "import argparse\nargparse = object()"
+  },
+  {
+    "id": "container",
+    "backend": "MsgspecStruct",
+    "old": "items: Union[List[int], UnsetType]",
+    "new": "items: Union[List[str], UnsetType]"
+  },
+  {
+    "id": "union-order",
+    "backend": "MsgspecStruct",
+    "old": "choice: Union[str, int, UnsetType]",
+    "new": "choice: Union[int, str, UnsetType]"
+  },
+  {
+    "id": "union-missing",
+    "backend": "MsgspecStruct",
+    "old": "choice: Union[str, int, UnsetType]",
+    "new": "choice: Union[str, UnsetType]"
+  },
+  {
+    "id": "container-arity",
+    "backend": "MsgspecStruct",
+    "old": "Dict[str, bool]",
+    "new": "Dict[str, bool, int]"
+  },
+  {
+    "id": "literal-order",
+    "backend": "PydanticV2BaseModel",
+    "old": "Literal[True, 1, 'one']",
+    "new": "Literal[1, True, 'one']"
+  },
+  {
+    "id": "constraint",
+    "backend": "PydanticV2BaseModel",
+    "old": "conint(ge=2)",
+    "new": "conint(ge=3)"
+  },
+  {
+    "id": "constraint-name",
+    "backend": "PydanticV2BaseModel",
+    "old": "conint(ge=2)",
+    "new": "conint(gt=2)"
+  },
+  {
+    "id": "constructor",
+    "backend": "PydanticV2BaseModel",
+    "old": "conint(ge=2)",
+    "new": "int"
+  },
+  {
+    "id": "literal-arity",
+    "backend": "PydanticV2BaseModel",
+    "old": "Literal[True, 1, 'one']",
+    "new": "Literal[True, 1]"
+  },
+  {
+    "id": "builtin-forward-multiple",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType]",
+    "new": "flag: Union[\"bool; int\", UnsetType]"
+  },
+  {
+    "id": "builtin-forward-empty",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType]",
+    "new": "flag: Union[\"\", UnsetType]"
+  },
+  {
+    "id": "container-not-subscript",
+    "backend": "MsgspecStruct",
+    "old": "items: Union[List[int], UnsetType]",
+    "new": "items: Union[List, UnsetType]"
+  },
+  {
+    "id": "constraint-positional",
+    "backend": "PydanticV2BaseModel",
+    "old": "conint(ge=2)",
+    "new": "conint(2)"
+  },
+  {
+    "id": "literal-callee",
+    "backend": "PydanticV2BaseModel",
+    "old": "Literal[True, 1, 'one']",
+    "new": "tuple[True, 1, 'one']"
+  },
+  {
+    "id": "nested-optional-type",
+    "backend": "MsgspecStruct",
+    "old": "Dict[str, bool]",
+    "new": "Dict[str, Optional[None]]"
+  },
+  {
+    "id": "duplicate-field",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType] = UNSET",
+    "new": "flag: Union[bool, UnsetType] = UNSET; flag: Union[bool, UnsetType] = UNSET",
+    "error": "An accepted class declares the same expected field more than once"
+  },
+  {
+    "id": "duplicate-class",
+    "backend": "MsgspecStruct",
+    "old": "class Types(Struct):",
+    "new": "class Types(Struct):\n    pass\nclass Types(Struct):",
+    "error": "A final symbol is declared more than once"
+  },
+  {
+    "id": "empty-annotation",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType] = UNSET",
+    "new": "flag: = UNSET",
+    "error": "An accepted field declaration has unsupported assignment syntax"
+  },
+  {
+    "id": "chained-default",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType] = UNSET",
+    "new": "flag: Union[bool, UnsetType] = one = two",
+    "error": "An accepted field declaration has unsupported assignment syntax"
+  },
+  {
+    "id": "positional-field-default",
+    "backend": "PydanticV2BaseModel",
+    "old": "child: Optional[Child] = None",
+    "new": "child: Optional[Child] = Field(None, 'extra')",
+    "error": "A builtin field constructor contains unsupported argument syntax"
+  },
+  {
+    "id": "empty-semicolon-prefix",
+    "backend": "MsgspecStruct",
+    "old": "class Types(Struct):",
+    "new": ";;\nfrom typing import (Any,)\nclass Types(Struct):\n    flag: int = 1"
+  },
+  {
+    "id": "malformed-import-alias",
+    "backend": "MsgspecStruct",
+    "old": "class Types(Struct):",
+    "new": "from typing import Any as 2\nclass Types(Struct):\n    flag: int = 1"
+  },
+  {
+    "id": "parenthesized-noncall",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType]",
+    "new": "flag: Union[(bool)(int), UnsetType]"
+  },
+  {
+    "id": "union-extra-member",
+    "backend": "MsgspecStruct",
+    "old": "flag: Union[bool, UnsetType]",
+    "new": "flag: Union[bool, int, UnsetType]"
+  },
+  {
+    "id": "nullable-reversed",
+    "backend": "MsgspecStruct",
+    "old": "nullable: Union[str, None, UnsetType]",
+    "new": "nullable: Union[None, str, UnsetType]"
+  },
+  {
+    "id": "malformed-import-target",
+    "backend": "MsgspecStruct",
+    "old": "import argparse",
+    "new": "import 2 as argparse"
+  },
+  {
+    "id": "malformed-meta-position",
+    "backend": "MsgspecStruct",
+    "source": "emitted-meta",
+    "old": "Meta(max_length=4, min_length=1)",
+    "new": "Meta(4)"
+  },
+  {
+    "id": "malformed-meta-key",
+    "backend": "MsgspecStruct",
+    "source": "emitted-meta",
+    "old": "Meta(max_length=4, min_length=1)",
+    "new": "Meta(\"max_length\"=4)"
+  },
+  {
+    "id": "parenthesized-callee",
+    "backend": "MsgspecStruct",
+    "old": "items: Union[List[int], UnsetType]",
+    "new": "items: Union[(List)[int], UnsetType]"
+  },
+  {
+    "id": "nested-optional-member",
+    "backend": "MsgspecStruct",
+    "old": "position: Union[List[Union[str, int]], UnsetType]",
+    "new": "position: Union[List[Optional[str]], UnsetType]"
+  }
+]

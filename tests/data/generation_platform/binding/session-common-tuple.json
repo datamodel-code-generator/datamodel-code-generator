@@ -1,0 +1,81 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "review",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Payload": {
+        "type": "object",
+        "properties": {
+          "nested": {
+            "type": "object",
+            "properties": {
+              "same": {
+                "type": "string",
+                "minLength": 1
+              },
+              "common": {
+                "type": "integer"
+              }
+            }
+          },
+          "values": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "object",
+                "properties": {
+                  "left": {
+                    "type": "string"
+                  }
+                }
+              }
+            ],
+            "items": false
+          }
+        },
+        "anyOf": [
+          {
+            "properties": {
+              "nested": {
+                "type": "object",
+                "properties": {
+                  "same": {
+                    "maxLength": 3
+                  },
+                  "specific": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "values": {
+                "prefixItems": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "right": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                ],
+                "items": false
+              }
+            }
+          },
+          false,
+          {
+            "properties": {
+              "tail": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

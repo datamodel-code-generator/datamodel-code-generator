@@ -1,0 +1,18 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Field origins", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Envelope": {
+      "type": "object",
+      "required": ["ship-to"],
+      "properties": {
+        "ship-to": {"type": "object", "properties": {"in": {"type": "string"}}},
+        "a/b~c": {"type": "array", "items": {"type": "object", "properties": {"kebab-key": {"type": "integer"}}}},
+        "anything": true,
+        "nothing": false,
+        "tuple": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "integer"}], "items": false}
+      }
+    }
+  }}
+}

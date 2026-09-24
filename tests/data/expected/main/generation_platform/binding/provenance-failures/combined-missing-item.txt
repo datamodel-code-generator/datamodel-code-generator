@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "The completed combined sequence is missing an occurrence"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

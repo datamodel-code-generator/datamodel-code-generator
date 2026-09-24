@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "An effective field default has no actual resolver result"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

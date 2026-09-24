@@ -1,0 +1,14 @@
+{
+  "postal-code": [
+    "/components/schemas/Choice/anyOf/2/properties/ship-to/properties/postal-code"
+  ],
+  "common-key": [
+    "/components/schemas/Choice/properties/common-key"
+  ],
+  "ship-to": [
+    "/components/schemas/Choice/anyOf/2/properties/ship-to"
+  ],
+  "external-name": [
+    "/components/schemas/Named/properties/external-name"
+  ]
+}

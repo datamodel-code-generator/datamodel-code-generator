@@ -1,0 +1,6 @@
+{
+  "opaque_parameters": 0,
+  "unknown_parameters": 0,
+  "opaque_configuration": 7,
+  "unknown_configuration": 7
+}

@@ -1,0 +1,28 @@
+from __future__ import annotations
+from enum import Enum
+from pydantic import BaseModel, Field, RootModel
+from typing import Literal, Union
+
+
+class RequestVersionEnum(str, Enum):
+    v1 = 'v1'
+    v2 = 'v2'
+
+
+class RequestBase(BaseModel):
+    version: RequestVersionEnum
+
+
+class RequestV1(RequestBase):
+    version: Literal['v1']
+    request_id: str = Field(..., description='there is description', title='test title')
+
+
+class RequestV2(RequestBase):
+    version: Literal['v2']
+
+
+class Request(RootModel[Union[RequestV1, RequestV2]]):
+    root: Union[RequestV1, RequestV2] = Field(..., discriminator='version')
+
+

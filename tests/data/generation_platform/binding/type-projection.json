@@ -1,0 +1,152 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Type projection",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Types": {
+        "type": "object",
+        "properties": {
+          "flag": {
+            "type": "boolean"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 2
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^a/b~c$"
+          },
+          "moment": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nullable": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "unique": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "dictionary": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "choice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "position": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "additionalItems": false
+          },
+          "child": {
+            "$ref": "#/components/schemas/Child"
+          },
+          "nullable_choice": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "nullable_items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "external": {
+            "type": "string",
+            "x-python-import": {
+              "module": "uuid",
+              "name": "UUID"
+            }
+          },
+          "literal": {
+            "enum": [
+              true,
+              1,
+              "one"
+            ]
+          },
+          "native": {
+            "$ref": "#/components/schemas/Native"
+          },
+          "bound_native": {
+            "$ref": "#/components/schemas/BoundNative"
+          }
+        }
+      },
+      "Child": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "Native": {
+        "x-python-import": {
+          "module": "uuid",
+          "name": "UUID"
+        }
+      },
+      "BoundNative": {
+        "x-python-import": {
+          "module": "argparse",
+          "name": "HelpFormatter._Section",
+          "qualname": "HelpFormatter._Section"
+        }
+      }
+    }
+  }
+}

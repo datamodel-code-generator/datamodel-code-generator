@@ -1,0 +1,69 @@
+{
+  "record": {
+    "type": {
+      "node": "UnionType",
+      "members": [
+        {
+          "node": "GeneratedSymbolType",
+          "symbol": 1
+        },
+        {
+          "node": "NoneType"
+        }
+      ],
+      "preserve_order": false
+    },
+    "preexisting_null": true
+  },
+  "name": {
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": 2
+    },
+    "preexisting_null": null
+  },
+  "maybe": {
+    "type": {
+      "node": "UnionType",
+      "members": [
+        {
+          "node": "BuiltinType",
+          "name": "str"
+        },
+        {
+          "node": "NoneType"
+        }
+      ],
+      "preserve_order": false
+    },
+    "preexisting_null": true
+  },
+  "pair": {
+    "type": {
+      "node": "GenericType",
+      "base": {
+        "node": "BuiltinType",
+        "name": "tuple"
+      },
+      "arguments": [
+        {
+          "node": "BuiltinType",
+          "name": "int"
+        },
+        {
+          "node": "BuiltinType",
+          "name": "str"
+        }
+      ],
+      "tuple_form": "fixed"
+    },
+    "preexisting_null": false
+  },
+  "base": {
+    "type": {
+      "node": "GeneratedSymbolType",
+      "symbol": 3
+    },
+    "preexisting_null": false
+  }
+}

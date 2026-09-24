@@ -1,0 +1,17 @@
+{
+  "any": [
+    "/components/schemas/Values/properties/any"
+  ],
+  "list_any": [
+    "/components/schemas/Values/properties/list_any"
+  ],
+  "choice": [
+    "/components/schemas/Values/properties/choice"
+  ],
+  "dictionary": [
+    "/components/schemas/Values/properties/dictionary"
+  ],
+  "pattern": [
+    "/components/schemas/Values/properties/pattern"
+  ]
+}
