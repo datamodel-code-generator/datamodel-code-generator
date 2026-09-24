@@ -12,9 +12,9 @@
   ],
   "items_annotation": true,
   "choice_literals": [
-    "list",
+    "Field",
     "Optional",
-    "Field"
+    "list"
   ],
   "values": {
     "label": "list",
