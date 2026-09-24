@@ -1,0 +1,61 @@
+use /paths/~1pets/get parameter query limit: native root models:FieldPetsGetQueryLimitParameter models=[('models:FieldPetsGetQueryLimitParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get parameter query tags: native root models:FieldPetsGetQueryTagsParameter models=[('models:FieldPetsGetQueryTagsParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get parameter query filter: native root models:FieldPetsGetQueryFilterParameter models=[('models:FieldPetsGetQueryFilterParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get parameter query choice: native root models:FieldPetsGetQueryChoiceParameter models=[('models:FieldPetsGetQueryChoiceParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get response_body 200: native root models:FieldPetsGetResponse models=[('models:FieldPetsGetResponse', 'root', 'ignore', True), ('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets/post request_body: envelope model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets/post response_body 201: native model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets~1lookup/get response_body 200: native root models:FieldPetsLookupGetResponse models=[('models:FieldPetsLookupGetResponse', 'root', 'ignore', True), ('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets~1{id}~1photo/get parameter path id: native root models:FieldPetsIdPhotoGetPathIdParameter models=[('models:FieldPetsIdPhotoGetPathIdParameter', 'root', 'ignore', True)]
+use /paths/~1pets~1{id}/patch parameter path id: native root models:FieldPetsIdPatchPathIdParameter models=[('models:FieldPetsIdPatchPathIdParameter', 'root', 'ignore', True)]
+use /paths/~1pets~1{id}/patch request_body: native model models:PetPatch models=[('models:PetPatch', 'model', 'ignore', True)]
+use /paths/~1pets~1{id}/patch response_body 200: native model models:PetPatch models=[('models:PetPatch', 'model', 'ignore', True)]
+create-server-decode: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","password":"pw","tag":"t"} extras={}
+create-server-decode-read-only: WireValidationError schema.readOnly@/id
+create-client-from-wire: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","owner":{"name":"Ann","note":1},"extra":true} extras={"/extra":true}
+create-client-encode-input: wire={"name":"Mimi","status":"new","owner":{"name":"Ann","note":1},"extra":true}
+create-client-envelope: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new"} extras={}
+create-client-native-refused: ModelProjectionError The value has no native projection: DIRECTIONAL_REQUIRED at /id
+create-client-encode-native: wire={"name":"Mimi","status":"new","tag":"t"}
+create-client-required-default: WireValidationError schema.required@/status
+create-server-outbound-context: CodecBindingError An outbound codec requires a sending context
+create-client-decode-context: CodecBindingError The codec context does not match the bound use
+create-schema-context: CodecBindingError The codec context does not match the bound use
+created-client-decode: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=<Kind.cat: 'cat'>, owner=Owner(name='Ann', e_mail=None, phone=None, note=1), co_owner=None, born=datetime.datetime(2020, 1, 1, 9, 0, tzinfo=TzInfo(32400)), price=Decimal('1.50'), cost=None, weight=0.1, labels=None, scores=None, visits=0) set=['born', 'id', 'kind', 'name', 'nick_name', 'owner', 'price', 'status', 'weight'] wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","born":"2020-01-01T09:00:00+09:00","price":"1.50","weight":0.1000000000000000055511151231257827,"owner":{"name":"Ann","note":1},"hint":"x"} presence=['', '/id', '/name', '/status', '/nick-name', '/kind', '/born', '/price', '/weight', '/owner', '/owner/name', '/owner/note', '/hint'] extras={"/hint":"x"}
+created-client-decode-write-only: WireValidationError schema.writeOnly@/password
+created-client-decode-unknown-enum: WireValidationError schema.enum@/kind
+created-client-decode-native-email: NativeValidationError native.value_error@/owner/e-mail['owner', 'e-mail']
+created-client-decode-co-owner: NativeValidationError native.value_error@/co-owner/e-mail['co-owner', 'e-mail']
+created-client-decode-cost: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=Decimal('2.50'), weight=None, labels=None, scores=None, visits=0) set=['co_owner', 'cost', 'id', 'name', 'status'] wire={"id":1,"name":"Mimi","status":"new","cost":"2.50","co-owner":null} presence=['', '/id', '/name', '/status', '/cost', '/co-owner'] extras={}
+created-server-encode-cost: wire={"id":1,"name":"Mimi","status":"new","co-owner":null,"cost":"2.50"}
+created-require: required Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=Decimal('2.50'), weight=None, labels=None, scores=None, visits=0)
+created-server-nested-write-only: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=None, owner=Owner(name='Ann', e_mail=None, phone=None, note=1), co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) set=['id', 'name', 'owner', 'status'] wire={"id":1,"name":"Mimi","status":"new","owner":{"name":"Ann","note":1}} presence=['', '/id', '/name', '/status', '/owner', '/owner/name', '/owner/note'] extras={}
+created-server-infinite-weight: ModelProjectionError A wire number must be finite at /weight
+lookup-client-decode-list: model FieldPetsLookupGetResponse(root=[Pet(id=1, name='A', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0)]) set=['root'] wire=[{"id":1,"name":"A","status":"new","zz":1}] presence=['', '/0', '/0/id', '/0/name', '/0/status', '/0/zz'] extras={"/0/zz":1}
+lookup-server-encode-list: wire=[{"id":1,"name":"A","status":"new"}]
+lookup-client-decode-map: model FieldPetsLookupGetResponse(root={'a': Pet(id=1, name='A', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0)}) set=['root'] wire={"a":{"id":1,"name":"A","status":"new","zz":2}} presence=['', '/a', '/a/id', '/a/name', '/a/status', '/a/zz'] extras={"/a/zz":2}
+lookup-server-encode-map: wire={"a":{"id":1,"name":"A","status":"new"}}
+created-server-encode-echo: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","owner":{"name":"Ann","note":1},"born":"2020-01-01T09:00:00+09:00","price":"1.50","weight":0.1}
+created-server-encode-snapshot: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","born":"2020-01-01T09:00:00+09:00","price":"1.50","weight":0.1000000000000000055511151231257827,"owner":{"name":"Ann","note":1},"hint":"x"}
+created-server-omitted: wire={"id":1,"name":"Mimi","status":"new"}
+created-server-explicit-none: WireValidationError schema.type@/tag
+created-server-explicit-default: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"visits":0}
+created-server-write-only: wire={"id":1,"name":"Mimi","status":"new","kind":"dog","price":"2.5"}
+created-server-snapshot-presence: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) set=['id', 'name', 'nick_name', 'status'] wire={"id":1,"name":"Mimi","status":"new"} presence=['', '/id', '/name', '/status'] extras={}
+created-server-snapshot-presence-unknown: CodecBindingError The presence tree does not select existing object members at /
+created-server-snapshot-presence-kind: CodecBindingError The presence tree does not select existing object members at /
+created-server-snapshot: model Pet(id=1, name='Old', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) set=['id', 'name', 'status'] wire={"id":1,"name":"Old","status":"new"} presence=['', '/id', '/name', '/status'] extras={}
+created-server-mutate: mutated name
+created-server-encode-mutated: wire={"id":1,"name":"Old","status":"new"}
+created-server-native-outbound: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) set=['id', 'name', 'status'] wire={"id":1,"name":"Mimi","status":"new"} presence=['', '/id', '/name', '/status'] extras={}
+created-server-foreign-binding: CodecBindingError The value was captured for a different binding
+list-client-decode: model FieldPetsGetResponse(root=[Pet(id=1, name='A', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0), Pet(id=2, name='B', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels={'a', 'b'}, scores={'x': 1}, visits=0)]) set=['root'] wire=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["b","a"],"scores":{"x":1}}] presence=['', '/0', '/0/id', '/0/name', '/0/status', '/0/zz', '/1', '/1/id', '/1/name', '/1/status', '/1/labels', '/1/labels/0', '/1/labels/1', '/1/scores', '/1/scores/x'] extras={"/0/zz":1}
+list-server-encode-plain: wire=[{"id":1,"name":"A","status":"new"},{"id":2,"name":"B","status":"new","labels":["a","b"],"scores":{"x":1}}]
+list-server-encode-snapshot: wire=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["b","a"],"scores":{"x":1}}]
+list-client-decode-duplicate: WireValidationError schema.uniqueItems@/0/labels
+patch-client-snapshot: model PetPatch(name='B', tag=None) set=['name'] wire={"name":"B"} presence=['', '/name'] extras={}
+patch-client-from-wire-null: model PetPatch(name='B', tag=None) set=['name', 'tag'] wire={"name":"B","tag":null} presence=['', '/name', '/tag'] extras={}
+patch-client-encode-plain: wire={"name":"B","tag":null}
+patch-server-decode: model PetPatch(name=None, tag='t') set=['tag'] wire={"tag":"t"} presence=['', '/tag'] extras={}
+limit-server-decode: model FieldPetsGetQueryLimitParameter(root=5) set=['root'] wire=5 presence=[''] extras={}
+limit-server-decode-type: WireValidationError schema.type@

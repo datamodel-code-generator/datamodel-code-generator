@@ -1,0 +1,10 @@
+matching: built
+plain-validation-alias: built
+aliases-refused: CodecConfigurationError The native type of models:Pet does not match its binding
+converter: CodecConfigurationError The binding does not select a Pydantic v2 type adapter
+backend: CodecConfigurationError The binding does not select a Pydantic v2 type adapter
+bundle-direction: CodecConfigurationError The schema bundle does not validate the binding's direction
+missing-model: CodecConfigurationError The native type of models:Owner does not match its binding
+other-model: CodecConfigurationError The native type of models:Pet does not match its binding
+root-model: CodecConfigurationError The native type of models:FieldPetsGetResponse does not match its binding
+unknown-schema: CodecConfigurationError Schema https://dcg.invalid/inputs/missing# is not bundled

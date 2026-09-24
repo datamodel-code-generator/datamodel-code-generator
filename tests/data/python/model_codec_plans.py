@@ -41,6 +41,13 @@ def wire_plan_report(source: Path, instances: Path | None = None, *, legacy: boo
             operation.use_site.pointer: [asdict(parameter) for parameter in parameters]
             for operation, parameters in plan.parameters
         },
+        "views": {
+            view.direction: {
+                "patches": [f"{patch.uri}#{patch.pointer} {patch.keyword}={json.dumps(thaw_wire(patch.value))}" for patch in view.patches],
+                "flagged": list(view.flagged),
+            }
+            for view in plan.views
+        },
         "diagnostics": [
             f"{item.code} {documents[item.source.document]}#{item.source.pointer}"
             f"{f' [{item.operation.use_site.pointer}]' if item.operation else ''}: {item.message}"

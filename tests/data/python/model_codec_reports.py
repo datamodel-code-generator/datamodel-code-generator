@@ -10,7 +10,13 @@ from enum import IntEnum
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._runtime.model_codecs.errors import CodecError, WireIssue, WireValidationError
+from datamodel_code_generator._runtime.model_codecs.errors import (
+    CodecError,
+    NativeIssue,
+    NativeValidationError,
+    WireIssue,
+    WireValidationError,
+)
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     decode_json,
@@ -414,6 +420,9 @@ def media_report(path: Path) -> str:
         f"error-empty: {WireValidationError(())}",
         f"error-pointer: {WireValidationError((issue, root_issue))}",
         f"error-root: {WireValidationError((root_issue,))}",
+        f"native-empty: {NativeValidationError(())}",
+        f"native-pointer: {NativeValidationError((NativeIssue(code='native.missing', pointer='/a', native_path=('a',)),))}",
+        f"native-root: {NativeValidationError((NativeIssue(code='native.model_type', pointer='', native_path=()),))}",
         f"unset: {UNSET!r} {bool(UNSET)} {UNSET is Unset.UNSET}",
     ))
     return "\n".join(lines) + "\n"

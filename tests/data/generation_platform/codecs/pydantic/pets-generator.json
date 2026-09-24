@@ -1,0 +1,11 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_generator",
+  "options": {"alias_generator": "to_camel"},
+  "cases": [
+    {"name": "created-client-decode", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "nick-name": "Mi"}},
+    {"name": "created-server-encode", "use": "/paths/~1pets/post response_body 201", "op": "encode",
+     "value": {"result": "created-client-decode", "attr": "value"}}
+  ]
+}

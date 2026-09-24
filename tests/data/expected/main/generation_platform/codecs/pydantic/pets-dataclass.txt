@@ -1,0 +1,29 @@
+use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
+use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
+use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
+use /paths/~1pets/get parameter query choice: native alias models:FieldPetsGetQueryChoiceParameter models=[]
+use /paths/~1pets/get response_body 200: native alias models:FieldPetsGetResponse models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
+use /paths/~1pets/post request_body: envelope dataclass models:Pet models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
+use /paths/~1pets/post response_body 201: native dataclass models:Pet models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
+use /paths/~1pets~1lookup/get response_body 200: native alias models:FieldPetsLookupGetResponse models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
+use /paths/~1pets~1{id}~1photo/get parameter path id: native alias models:FieldPetsIdPhotoGetPathIdParameter models=[]
+use /paths/~1pets~1{id}/patch parameter path id: native alias models:FieldPetsIdPatchPathIdParameter models=[]
+use /paths/~1pets~1{id}/patch request_body: native dataclass models:PetPatch models=[('models:PetPatch', 'dataclass', 'ignore', True)]
+use /paths/~1pets~1{id}/patch response_body 200: native dataclass models:PetPatch models=[('models:PetPatch', 'dataclass', 'ignore', True)]
+create-server-decode: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","password":"pw"} extras={}
+create-client-from-wire: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","extra":true} extras={"/extra":true}
+create-client-encode-native: wire={"name":"Mimi","status":"new","nick-name":null,"password":"pw","co-owner":null,"cost":null,"visits":0}
+created-client-decode: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=<Kind.cat: 'cat'>, owner=Owner(name='Ann', e_mail=None, phone=None), co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","note":1},"hint":"x"} presence=['', '/id', '/name', '/status', '/kind', '/owner', '/owner/name', '/owner/note', '/hint'] extras={"/owner/note":1,"/hint":"x"}
+created-server-encode-echo: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","owner":{"name":"Ann"},"co-owner":null,"cost":null,"visits":0}
+created-server-encode-snapshot: wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","note":1},"hint":"x"}
+created-server-omitted: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"co-owner":null,"cost":null,"visits":0}
+created-server-explicit-none: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"co-owner":null,"cost":null,"visits":0}
+created-server-presence-none: WireValidationError schema.type@/tag
+created-server-presence-absent: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels={'a', 'b'}, scores=None, visits=0) wire={"id":1,"name":"Mimi","status":"new","labels":["a","b"]} presence=['', '/id', '/name', '/status', '/labels', '/labels/0', '/labels/1'] extras={}
+created-server-presence-short-array: CodecBindingError The presence tree does not select the whole array at /labels
+list-client-decode: model [Pet(id=1, name='A', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0), Pet(id=2, name='B', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels={'a', 'b'}, scores=None, visits=0)] wire=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["b","a"]}] presence=['', '/0', '/0/id', '/0/name', '/0/status', '/0/zz', '/1', '/1/id', '/1/name', '/1/status', '/1/labels', '/1/labels/0', '/1/labels/1'] extras={"/0/zz":1}
+list-server-encode-plain: wire=[{"id":1,"name":"A","status":"new","nick-name":null,"co-owner":null,"cost":null,"visits":0},{"id":2,"name":"B","status":"new","nick-name":null,"co-owner":null,"cost":null,"labels":["a","b"],"visits":0}]
+patch-client-encode-native: wire={"name":"B","tag":null}
+patch-client-from-wire: model PetPatch(name='B', tag=None) wire={"name":"B"} presence=['', '/name'] extras={}
+patch-client-snapshot-presence: model PetPatch(name='B', tag=None) wire={"name":"B"} presence=['', '/name'] extras={}
+limit-server-decode: model 5 wire=5 presence=[''] extras={}

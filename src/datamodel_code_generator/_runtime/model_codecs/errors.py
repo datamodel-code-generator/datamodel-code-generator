@@ -56,8 +56,27 @@ class WireValidationError(CodecError):
         )
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NativeIssue:
+    """Describe one native rejection by backend error type and location, never by the rejected value."""
+
+    code: str
+    pointer: str
+    native_path: tuple[str | int, ...]
+
+
 class NativeValidationError(CodecError):
     """Report a native constructor, validator, or converter rejecting a schema-valid value."""
+
+    def __init__(self, issues: tuple[NativeIssue, ...]) -> None:
+        """Keep the ordered native issues, naming only the first in the message."""
+        self.issues = issues
+        first = issues[0] if issues else None
+        super().__init__(
+            f"The native type rejected the value ({first.code}) at {first.pointer or '/'}"
+            if first
+            else "The native type rejected the value"
+        )
 
 
 class ModelProjectionError(CodecError):

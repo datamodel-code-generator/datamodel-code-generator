@@ -1,0 +1,5 @@
+use /paths/~1zoo/put request_body: native model models:Zoo models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True), ('models:Zoo', 'model', 'ignore', True)]
+use /paths/~1zoo/put response_body 200: native model models:Zoo models=[('models:Cat', 'model', 'ignore', True), ('models:Dog', 'model', 'ignore', True), ('models:Zoo', 'model', 'ignore', True)]
+zoo-server-decode: model Zoo(animals=[Cat(kind='cat', nick_name='Mi', contact=None), Dog(kind='dog', bark_level=2)]) set=['animals'] wire={"animals":[{"kind":"cat","nick-name":"Mi","x":1},{"kind":"dog","bark-level":2}]} presence=['', '/animals', '/animals/0', '/animals/0/kind', '/animals/0/nick-name', '/animals/0/x', '/animals/1', '/animals/1/kind', '/animals/1/bark-level'] extras={"/animals/0/x":1}
+zoo-server-encode: wire={"animals":[{"kind":"cat","nick-name":"Mi"},{"kind":"dog","bark-level":2}]}
+zoo-server-decode-native: NativeValidationError native.value_error@/animals/1/contact['animals', 1, 'cat', 'contact']

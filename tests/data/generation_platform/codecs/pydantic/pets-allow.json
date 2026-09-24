@@ -1,0 +1,15 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_allow",
+  "options": {"extra_fields": "allow"},
+  "cases": [
+    {"name": "created-client-decode-unknown", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "hint": {"a": [1, 2]}, "owner": {"name": "Ann", "note": 2}}},
+    {"name": "created-server-encode", "use": "/paths/~1pets/post response_body 201", "op": "encode",
+     "value": {"result": "created-client-decode-unknown", "attr": "value"}},
+    {"name": "created-server-presence-extra", "use": "/paths/~1pets/post response_body 201", "op": "snapshot",
+     "value": {"result": "created-client-decode-unknown", "attr": "value"}, "presence": {"id": 1, "name": "Mimi", "status": "new", "hint": {"a": [1, 2]}}},
+    {"name": "created-server-presence-no-extra", "use": "/paths/~1pets/post response_body 201", "op": "snapshot",
+     "value": {"result": "created-client-decode-unknown", "attr": "value"}, "presence": {"id": 1, "name": "Mimi", "status": "new"}}
+  ]
+}

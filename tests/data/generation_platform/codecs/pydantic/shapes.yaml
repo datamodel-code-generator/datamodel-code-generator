@@ -1,0 +1,216 @@
+openapi: 3.1.0
+info:
+  title: Codec shapes
+  version: "1"
+paths:
+  /animals:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/Cat"
+                - $ref: "#/components/schemas/Dog"
+      responses:
+        "200":
+          description: Any animal.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - $ref: "#/components/schemas/Dog"
+                  - type: "null"
+  /tree:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Node"
+      responses:
+        "200":
+          description: The stored tree.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+  /mixed:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Mixed"
+      responses:
+        "204":
+          description: Stored.
+  /values:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Values"
+      responses:
+        "200":
+          description: The stored values.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Values"
+components:
+  schemas:
+    Animal:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        nick-name:
+          type: string
+    Cat:
+      allOf:
+        - $ref: "#/components/schemas/Animal"
+        - type: object
+          required: [meow]
+          properties:
+            meow:
+              type: boolean
+      unevaluatedProperties: false
+    Dog:
+      allOf:
+        - $ref: "#/components/schemas/Animal"
+        - type: object
+          required: [bark]
+          properties:
+            bark:
+              type: integer
+    Node:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: integer
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Node"
+        pair:
+          type: array
+          prefixItems:
+            - type: integer
+            - type: string
+              format: email
+          items: false
+          minItems: 2
+          maxItems: 2
+        contact:
+          type: string
+          format: email
+        index:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Node"
+    Mixed:
+      oneOf:
+        - $ref: "#/components/schemas/Small"
+        - $ref: "#/components/schemas/Large"
+      discriminator:
+        propertyName: size
+    Small:
+      type: object
+      required: [size]
+      properties:
+        size:
+          type: string
+          const: small
+        contact:
+          type: string
+          format: email
+    Large:
+      type: object
+      required: [size]
+      properties:
+        size:
+          type: string
+          const: large
+    Level:
+      type: integer
+      enum: [1, 2]
+    Values:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0
+        day:
+          type: string
+          format: date
+        clock:
+          type: string
+          format: time
+        span:
+          type: string
+          format: duration
+        uid:
+          type: string
+          format: uuid
+        secret:
+          type: string
+          format: password
+          writeOnly: true
+        blob:
+          type: string
+          format: byte
+        level:
+          $ref: "#/components/schemas/Level"
+        link:
+          type: string
+          format: uri
+        any:
+          type: object
+          additionalProperties: true
+        list:
+          type: array
+        codes:
+          type: array
+          items:
+            type: string
+            writeOnly: true
+        un:
+          oneOf:
+            - type: string
+              format: email
+            - type: integer
+        mark:
+          type: array
+          prefixItems:
+            - type: integer
+            - type: string
+          items: false
+          minItems: 2
+          maxItems: 2
+      patternProperties:
+        "^x-":
+          type: string
+      dependentSchemas:
+        secret:
+          properties:
+            level:
+              minimum: 1
+      if:
+        required: [level]
+      then:
+        properties:
+          amount:
+            minimum: 0
+      else:
+        properties:
+          amount:
+            maximum: 100

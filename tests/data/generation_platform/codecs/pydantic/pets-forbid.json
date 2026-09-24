@@ -1,0 +1,11 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_forbid",
+  "options": {"extra_fields": "forbid"},
+  "cases": [
+    {"name": "created-client-decode-unknown", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "hint": 1, "owner": {"name": "Ann", "note": 2}}},
+    {"name": "created-client-decode", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new"}}
+  ]
+}

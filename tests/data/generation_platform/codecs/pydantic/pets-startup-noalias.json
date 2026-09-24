@@ -1,0 +1,11 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_startup_noalias",
+  "options": {"no_alias": true, "snake_case_field": true},
+  "startup": [
+    {"name": "native-gap", "use": "/paths/~1pets/post request_body", "binding": {"projection_mode": "native"},
+     "decode": {"name": "Mimi", "status": "new", "nick-name": "Mi"}},
+    {"name": "patch-target", "use": "/paths/~1pets/post request_body",
+     "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Missing", "keyword": "required", "value": []}}
+  ]
+}

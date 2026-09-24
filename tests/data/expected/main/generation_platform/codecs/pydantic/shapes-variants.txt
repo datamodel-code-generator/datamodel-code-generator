@@ -1,0 +1,9 @@
+use /paths/~1animals/post request_body: native root models:FieldAnimalsPostRequestRequest models=[('models:CatRequest', 'model', 'forbid', True), ('models:DogRequest', 'model', 'ignore', True), ('models:FieldAnimalsPostRequestRequest', 'root', 'ignore', True)]
+use /paths/~1animals/post response_body 200: native root models:FieldAnimalsPostResponseResponse models=[('models:CatResponse', 'model', 'forbid', True), ('models:DogResponse', 'model', 'ignore', True), ('models:FieldAnimalsPostResponseResponse', 'root', 'ignore', True)]
+use /paths/~1tree/put request_body: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
+use /paths/~1tree/put response_body 200: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
+use /paths/~1mixed/post request_body: native root models:Mixed models=[('models:Large', 'model', 'ignore', True), ('models:Mixed', 'root', 'ignore', True), ('models:Small', 'model', 'ignore', True)]
+use /paths/~1values/post request_body: native model models:ValuesRequest models=[('models:ValuesRequest', 'model', 'ignore', True)]
+use /paths/~1values/post response_body 200: native model models:ValuesResponse models=[('models:ValuesResponse', 'model', 'ignore', True)]
+animal-server-cat: model FieldAnimalsPostRequestRequest(root=CatRequest(name=None, nick_name='Tom', meow=True)) set=['root'] wire={"meow":true,"nick-name":"Tom"} presence=['', '/meow', '/nick-name'] extras={}
+animal-client-decode-dog: model FieldAnimalsPostResponseResponse(root=DogResponse(id=2, name=None, nick_name='Rex', bark=3)) set=['root'] wire={"id":2,"bark":3,"nick-name":"Rex"} presence=['', '/id', '/bark', '/nick-name'] extras={}

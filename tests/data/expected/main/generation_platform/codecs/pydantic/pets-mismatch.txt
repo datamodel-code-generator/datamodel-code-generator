@@ -1,0 +1,18 @@
+diagnostic MC_ADAPTER_REQUIRED /paths/~1pets/get/responses/200: The Pet model needs a builtin compatibility declaration or a model adapter
+diagnostic MC_ADAPTER_REQUIRED /paths/~1pets/post/requestBody: The Pet model needs a builtin compatibility declaration or a model adapter
+diagnostic MC_ADAPTER_REQUIRED /paths/~1pets/post/responses/201: The Pet model needs a builtin compatibility declaration or a model adapter
+diagnostic MC_ADAPTER_REQUIRED /paths/~1pets~1lookup/get/responses/200: The Pet model needs a builtin compatibility declaration or a model adapter
+diagnostic MC_ADAPTER_REQUIRED /paths/~1pets~1{id}/patch/requestBody: The PetPatch model needs a builtin compatibility declaration or a model adapter
+diagnostic MC_ADAPTER_REQUIRED /paths/~1pets~1{id}/patch/responses/200: The PetPatch model needs a builtin compatibility declaration or a model adapter
+use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
+use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
+use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
+use /paths/~1pets/get parameter query choice: native alias models:FieldPetsGetQueryChoiceParameter models=[]
+use /paths/~1pets/get response_body 200: native alias models:FieldPetsGetResponse models=[]
+use /paths/~1pets/post request_body: native scalar models:Pet models=[]
+use /paths/~1pets/post response_body 201: native scalar models:Pet models=[]
+use /paths/~1pets~1lookup/get response_body 200: native alias models:FieldPetsLookupGetResponse models=[]
+use /paths/~1pets~1{id}~1photo/get parameter path id: native alias models:FieldPetsIdPhotoGetPathIdParameter models=[]
+use /paths/~1pets~1{id}/patch parameter path id: native alias models:FieldPetsIdPatchPathIdParameter models=[]
+use /paths/~1pets~1{id}/patch request_body: native scalar models:PetPatch models=[]
+use /paths/~1pets~1{id}/patch response_body 200: native scalar models:PetPatch models=[]

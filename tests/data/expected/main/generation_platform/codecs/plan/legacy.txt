@@ -86,6 +86,16 @@
   "parameters": {
     "/paths/~1legacy/get": []
   },
+  "views": {
+    "request": {
+      "patches": [],
+      "flagged": []
+    },
+    "response": {
+      "patches": [],
+      "flagged": []
+    }
+  },
   "diagnostics": [
     "MC_PARAMETER_ENCODING legacy.yaml#/paths/~1legacy/get/parameters/0 [/paths/~1legacy/get]: Parameter content must declare exactly one media type",
     "MC_PARAMETER_ENCODING legacy.yaml#/paths/~1legacy/get/parameters/1 [/paths/~1legacy/get]: Parameter content must declare exactly one media type",

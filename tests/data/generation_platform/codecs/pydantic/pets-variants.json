@@ -1,0 +1,17 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_variants",
+  "options": {"read_only_write_only_model_type": "request-response", "no_alias": true, "snake_case_field": true},
+  "cases": [
+    {"name": "create-server-decode", "use": "/paths/~1pets/post request_body", "op": "decode",
+     "value": {"name": "Mimi", "status": "new", "nick-name": "Mi"}},
+    {"name": "created-client-decode", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "nick-name": "Mi", "zz": 1}},
+    {"name": "lookup-client-decode-list", "use": "/paths/~1pets~1lookup/get response_body 200", "surface": "client", "op": "decode",
+     "value": [{"id": 1, "name": "A", "status": "new", "nick-name": "a"}]},
+    {"name": "lookup-client-decode-map", "use": "/paths/~1pets~1lookup/get response_body 200", "surface": "client", "op": "decode",
+     "value": {"a": {"id": 1, "name": "A", "status": "new", "nick-name": "a"}}},
+    {"name": "lookup-client-decode-scalar", "use": "/paths/~1pets~1lookup/get response_body 200", "surface": "client", "op": "decode",
+     "value": "x"}
+  ]
+}

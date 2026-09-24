@@ -1,0 +1,15 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_noalias_forbid",
+  "options": {"no_alias": true, "snake_case_field": true, "extra_fields": "forbid"},
+  "cases": [
+    {"name": "created-client-decode-shadow", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "nick-name": "Mi", "nick_name": "x"}},
+    {"name": "list-client-decode-shadow", "use": "/paths/~1pets/get response_body 200", "surface": "client", "op": "decode",
+     "value": [{"id": 1, "name": "Mimi", "status": "new"}, {"id": 2, "name": "Kiki", "status": "new", "co_owner": null}]},
+    {"name": "created-client-decode-extra", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "zz": 1}},
+    {"name": "create-server-decode-shadow", "use": "/paths/~1pets/post request_body", "op": "decode",
+     "value": {"name": "Mimi", "status": "new", "nick_name": "x"}}
+  ]
+}

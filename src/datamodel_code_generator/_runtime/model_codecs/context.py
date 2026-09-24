@@ -1,0 +1,25 @@
+"""The per-call codec context shared by generated surfaces, codec adapters, and bound factories."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Literal, TypeAlias
+
+Surface: TypeAlias = Literal["client", "server"]
+Direction: TypeAlias = Literal["request", "response"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CodecContext:
+    """Identify the surface, direction, schema view, root use, and selected media of one codec call."""
+
+    surface: Surface
+    direction: Direction
+    schema_id: str | None
+    operation_id: str | None = None
+    media_type: str | None = None
+
+    @property
+    def inbound(self) -> bool:
+        """Return whether this call receives a value: client responses and server requests."""
+        return (self.surface == "client") == (self.direction == "response")

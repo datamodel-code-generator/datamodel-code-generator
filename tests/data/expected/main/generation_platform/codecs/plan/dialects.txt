@@ -822,6 +822,16 @@
       }
     ]
   },
+  "views": {
+    "request": {
+      "patches": [],
+      "flagged": []
+    },
+    "response": {
+      "patches": [],
+      "flagged": []
+    }
+  },
   "diagnostics": [
     "MC_SCHEMA_DIALECT dialects.yaml#/jsonSchemaDialect: The default schema dialect is not builtin",
     "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/$schema: The schema dialect is not builtin",

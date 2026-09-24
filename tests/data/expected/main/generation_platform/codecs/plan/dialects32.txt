@@ -79,6 +79,16 @@
       }
     ]
   },
+  "views": {
+    "request": {
+      "patches": [],
+      "flagged": []
+    },
+    "response": {
+      "patches": [],
+      "flagged": []
+    }
+  },
   "diagnostics": [
     "MC_PARAMETER_ENCODING dialects32.yaml#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema [/paths/~1search/get]: A URL-encoded value must be an object",
     "MC_PARAMETER_ENCODING dialects32.yaml#/paths/~1search/get/parameters/1 [/paths/~1search/get]: cookie parameter style 'form' has no builtin form for array values"

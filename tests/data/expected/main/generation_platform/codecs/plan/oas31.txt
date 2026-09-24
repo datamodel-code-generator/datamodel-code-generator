@@ -390,6 +390,16 @@
       }
     ]
   },
+  "views": {
+    "request": {
+      "patches": [],
+      "flagged": []
+    },
+    "response": {
+      "patches": [],
+      "flagged": []
+    }
+  },
   "diagnostics": [],
   "validation": [
     "https://dcg.invalid/inputs/root#/components/schemas/Pet {\"name\": \"Rex\", \"code\": \"123\", \"shared\": {\"note\": \"x\"}, \"tag\": null, \"count\": 1} -> valid",

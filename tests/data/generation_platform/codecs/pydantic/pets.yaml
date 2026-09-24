@@ -1,0 +1,179 @@
+openapi: 3.1.0
+info:
+  title: Codec pets
+  version: "1"
+paths:
+  /pets:
+    get:
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: filter
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+        - name: choice
+          in: query
+          schema:
+            oneOf:
+              - type: integer
+              - type: boolean
+      responses:
+        "200":
+          description: Every pet.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "201":
+          description: The created pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /pets/lookup:
+    get:
+      responses:
+        "200":
+          description: Pets as a list or by name.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/Pet"
+                  - type: object
+                    additionalProperties:
+                      $ref: "#/components/schemas/Pet"
+  /pets/{id}/photo:
+    get:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The photo bytes.
+          content:
+            image/png: {}
+  /pets/{id}:
+    patch:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/PetPatch"
+      responses:
+        "200":
+          description: The changed fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetPatch"
+components:
+  schemas:
+    Kind:
+      type: string
+      enum: [cat, dog]
+    Owner:
+      type: object
+      required: [name]
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+        e-mail:
+          type: string
+          format: email
+        phone:
+          type: string
+          writeOnly: true
+    Pet:
+      type: object
+      required: [id, name, status]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 8
+        status:
+          type: string
+          default: new
+        tag:
+          type: string
+        nick-name:
+          type: [string, "null"]
+        password:
+          type: string
+          writeOnly: true
+        kind:
+          $ref: "#/components/schemas/Kind"
+        owner:
+          $ref: "#/components/schemas/Owner"
+        co-owner:
+          anyOf:
+            - $ref: "#/components/schemas/Owner"
+            - type: "null"
+        born:
+          type: string
+          format: date-time
+        price:
+          type: string
+          format: decimal
+        cost:
+          type: [string, "null"]
+          format: decimal
+        weight:
+          type: number
+        labels:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+        scores:
+          type: object
+          additionalProperties:
+            type: integer
+        visits:
+          type: integer
+          default: 0
+    PetPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        tag:
+          type: [string, "null"]

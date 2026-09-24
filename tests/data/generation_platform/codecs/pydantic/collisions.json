@@ -1,0 +1,11 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_collisions",
+  "options": {"aliases": {"nick-name": ["nick-name", "nickName"]}, "allow_population_by_field_name": true},
+  "cases": [
+    {"name": "names-server-decode-name", "use": "/paths/~1names/post request_body", "op": "decode", "value": {"a_b": 1}},
+    {"name": "names-server-decode-both", "use": "/paths/~1names/post request_body", "op": "decode", "value": {"a-b": 2, "a_b": 1}},
+    {"name": "names-client-encode", "use": "/paths/~1names/post request_body", "surface": "client", "op": "encode",
+     "value": {"result": "names-server-decode-name", "attr": "value"}}
+  ]
+}

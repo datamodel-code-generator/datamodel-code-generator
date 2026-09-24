@@ -492,6 +492,16 @@
       }
     ]
   },
+  "views": {
+    "request": {
+      "patches": [],
+      "flagged": []
+    },
+    "response": {
+      "patches": [],
+      "flagged": []
+    }
+  },
   "diagnostics": [
     "MC_PARAMETER_ENCODING oas32.yaml#/paths/~1deep/get/parameters/0 [/paths/~1deep/get]: Expanded query parameter names collide"
   ]

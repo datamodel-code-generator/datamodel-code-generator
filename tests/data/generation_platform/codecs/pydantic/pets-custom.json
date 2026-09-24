@@ -1,0 +1,9 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_custom",
+  "options": {"base_class": "tests.data.python.model_codec_base.CodecBase", "use_type_alias": true},
+  "cases": [
+    {"name": "created-client-decode-native-email", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "owner": {"name": "Ann", "e-mail": "ann@example"}}}
+  ]
+}

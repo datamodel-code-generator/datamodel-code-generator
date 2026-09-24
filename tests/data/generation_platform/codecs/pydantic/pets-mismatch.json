@@ -1,0 +1,7 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "planned_backend": "pydantic_v2.dataclass",
+  "package": "codec_pets_mismatch",
+  "options": {"use_type_alias": true},
+  "cases": []
+}
