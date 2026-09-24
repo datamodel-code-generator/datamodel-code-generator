@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "$recursiveAnchor": true, "title": "Tree", "type": "object", "properties": {"value": {"type": "integer"}, "children": {"type": "array", "items": {"$recursiveRef": "#"}}}}

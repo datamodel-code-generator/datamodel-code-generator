@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "title": "Defs", "type": "object", "properties": {"root": {"type": "boolean"}}, "$defs": {"Node": {"$recursiveAnchor": true, "type": "object", "properties": {"size": {"type": "integer"}, "kids": {"type": "array", "items": {"$recursiveRef": "#"}}}}}}

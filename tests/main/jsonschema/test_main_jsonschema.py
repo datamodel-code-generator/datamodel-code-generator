@@ -14384,6 +14384,44 @@ def test_main_jsonschema_merged_ref_target_mappings(output_file: Path, mapping: 
 
 
 @pytest.mark.parametrize(
+    ("name", "model_name", "valid_json", "invalid_json"),
+    [
+        (
+            "holder",
+            "Holder",
+            '{"tree": {"children": [{"value": 1}]}, "plain": {"next": {"label": "a"}}, "kids": [{"size": 1}]}',
+            '{"tree": {"children": [{"value": "one"}]}}',
+        ),
+        ("strict", "Strict", '{"value": 1, "children": [{"value": 2}]}', '{"children": [{"value": "two"}]}'),
+    ],
+    ids=["holder", "strict"],
+)
+def test_main_jsonschema_merged_recursive_ref(
+    output_file: Path, name: str, model_name: str, valid_json: str, invalid_json: str
+) -> None:
+    """Resolve $recursiveRef in $ref targets merged from other documents where they are defined.
+
+    A document that declares $recursiveAnchor itself extends the recursion of an anchored target instead.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "merged_recursive_ref" / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"merged_recursive_ref_{name}.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"merged_recursive_ref_{name}",
+        model_name=model_name,
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type="int_parsing",
+    )
+
+
+@pytest.mark.parametrize(
     ("output_model", "expected_file"),
     [
         ("typing.TypedDict", "reserved_field_name_schema_typed_dict.py"),
