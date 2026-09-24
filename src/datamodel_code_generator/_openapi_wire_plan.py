@@ -87,6 +87,7 @@ _DEFAULT_STYLES: Final = {"path": "simple", "query": "form", "header": "simple",
 _NULL: Final = frozenset({"null"})
 _ARRAY: Final = frozenset({"array"})
 _OBJECT: Final = frozenset({"object"})
+_STRING: Final = frozenset({"string"})
 _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
 _LEXICAL_KINDS: Final[dict[str, LexicalKind]] = {
     "string": "string",
@@ -515,9 +516,17 @@ def _content_parameter(
         )
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
-    if media_kind(media) == "form":
-        _, _, fields, additional = _shape(
-            planner, _schema_location(planner, declaration.children[0].schemas, source), form=True
+    content = declaration.children[0]
+    kind = media_kind(media)
+    if kind == "form":
+        _, _, fields, additional = _shape(planner, _schema_location(planner, content.schemas, source), form=True)
+    elif (
+        kind == "text"
+        and content.schemas
+        and _kinds(planner, _schema_location(planner, content.schemas, source)) != _STRING
+    ):
+        raise _PlanError(
+            code="MC_PARAMETER_ENCODING", source=source, message="Text parameter content requires a string schema"
         )
     return ParameterPlan(
         location=location, name=name, required=required, content_media_type=media, fields=fields, additional=additional

@@ -42,6 +42,20 @@ paths:
         - {name: shaped, in: header, schema: {const: {a: 1}}}
         - {name: counts, in: header, explode: true, schema: {type: object, additionalProperties: {type: integer}}}
         - {name: anyMap, in: header, explode: true, schema: {type: object, additionalProperties: {}}}
+        - name: count
+          in: header
+          content:
+            text/plain:
+              schema: {type: integer}
+        - name: note
+          in: header
+          content:
+            text/plain:
+              schema: {type: [string, "null"]}
+        - name: plain
+          in: header
+          content:
+            text/plain: {}
       responses:
         "200":
           description: ok
