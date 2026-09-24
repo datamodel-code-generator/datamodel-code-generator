@@ -1,0 +1,12 @@
+{
+  "document_uris": [
+    "resolver.json"
+  ],
+  "borrowed_root": true,
+  "borrowed_response": true,
+  "repeated_identity": true,
+  "canonical_results": true,
+  "shared_reference": true,
+  "nested_calls": true,
+  "attempt": 7
+}
