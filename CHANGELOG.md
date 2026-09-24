@@ -5,6 +5,73 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.83.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.83.0) - 2026-09-24
+
+## Breaking Changes
+
+### Code Generation Changes
+* Deduplication now compares referenced models - Models that render identically are only merged when the models they reference also match structurally, so schemas whose same-named references resolve to different definitions in other files no longer collapse into a single class; such models are now emitted separately and may gain suffixed names such as `LeafModel` or `Values1`, changing class names and module contents compared with previous output (#4115)
+* Generic schemas using `$dynamicRef` are now specialized per dynamic scope - A plain-name `$dynamicRef` previously resolved lexically within its own schema resource, so every referrer shared one model of the referenced generic. The parser now tracks the dynamic scope of the schemas that referenced a model, binds each `$dynamicAnchor` name to its outermost declaration in that scope, and re-parses a referenced schema as an additional specialized model whenever its bindings differ. Schemas that combine `$dynamicRef` with `$dynamicAnchor`, including remote, embedded, recursive, root-level and tuple `additionalItems` generics, now emit extra model classes with suffixed names and different field types than before, so generated module contents, class names and import sites can change for existing users (#4117)
+* Specialized dynamic-scope models shift generated class names - Specialized models are registered under the referencing model and named like the shared model before parsing, so the shared model keeps naming priority and specializations receive derived names such as numeric or `Model` suffixes. Output ordering and names of surrounding models can therefore differ from previous releases, and this applies under `--naming-strategy full-path` and `--collapse-root-models` as well (#4117)
+* OpenAPI specifications referencing external JSON Schema generics gain specialized models - `parse_raw` now drains pending dynamic-scope specializations after every specification has been read, so components that reference external schemas rebinding a `$dynamicAnchor` produce additional specialized models instead of reusing a single shared model (#4117)
+* Dynamic ref resolution scope for inline resources and merged refs - `$dynamicRef` is now resolved within the schema resource a subschema stands for, namely an inline subschema declaring its own `$id` and the target of a `$ref` merged with sibling keywords, with enclosing and referencing resources still able to override the binding so the outermost `$dynamicAnchor` declaration wins; schemas combining `$dynamicRef` with embedded `$id` resources or with `$ref` plus sibling keywords may now generate different field types and model shapes than before, for example a resource-local anchor type such as `RootModel[str]` where the previous output used the anchor visible in the outer scope (#4119)
+* Model reuse no longer merges models whose same-named references point at different models - Deduplication for `--reuse-model`, `--collapse-reuse-models` and `--reuse-scope=tree` previously matched models on rendered output and imports alone, so models that rendered identically but referenced different models sharing a name were incorrectly collapsed into one. Duplicate detection within a module and across modules now also requires the referenced models to match, so these models stay distinct. Affected schemas now generate additional or differently named classes, such as a suffixed `FieldModel` alongside `Field`, extra per-module classes, and inheritance from a shared base instead of a single merged model, which can change class names and module layout that downstream code imports (#4121)
+* Merged `$ref` targets now resolve through aliases - A referenced schema that is itself a `$ref` is merged with its own target, so a `$ref` with sibling keywords pointing at an alias now generates the aliased definition instead of the alias node, changing model names and field types in generated output for JSON Schema 2020-12 documents that use `$ref` alongside other keywords (#4122)
+* References inside merged targets from other documents are rebased - When a `$ref` with sibling keywords points into another document, nested `$ref` and plain-name `$dynamicRef` values are rewritten to absolute locations before merging, so schemas whose relative references previously resolved against the wrong base now produce different models, imports, and field types (#4122)
+* Resolve `$recursiveRef` in merged cross-document `$ref` targets - A self-pointing `$recursiveRef` inside a schema merged in from another document now resolves to the nearest enclosing `$recursiveAnchor` of its defining document, or that document's root, instead of resolving against the merging document; schemas that rely on the previous resolution generate different recursive model references and field annotations, so regenerated models may name different classes than before, and when the merging document itself declares `$recursiveAnchor` the reference is instead left to extend the dynamic scope (#4127)
+* OpenAPI component schemas that declare an $id are now registered as schema resources - References naming an $id declared inside a component schema now resolve to that embedded schema when the document itself has no matching target, instead of only being treated as document-relative or external document references, and the OpenAPI parser now parses the normalized specification returned by `_prepare_schema_resources` rather than the original raw specification, so specifications that use $id inside component schemas can produce different models, model names, and field types than before (#4128)
+* Merged schema copies now collapse into shared models - Object models parsed from a schema merged in from another document are now recognized as duplicates of an identically named model when their rendered shapes match, even if their dedup keys differ because nested referenced names only converge later in the same pass; schemas that previously produced extra suffixed classes such as a second `Tree`, `Node`, or `Branch` now reuse the single shared model, so generated class names, class counts, and field annotations can change and code importing the previously emitted duplicate class names will need updating (#4133)
+* Recursive references inside embedded `$id` resources resolve to the resource root - A `$recursiveRef` located in a subschema that declares its own `$id` but no `$recursiveAnchor` now targets the root of that embedded resource instead of the nearest enclosing `$recursiveAnchor` or the document root, both when the document is parsed directly and when its schemas are merged into another document, so affected fields are annotated with the embedded resource model instead of the outer model, and targets reachable only through `$recursiveRef` are now loaded and can add generated models (#4130)
+* Root models of documents referenced only by JSON pointer are named after the document - When an external document is reached only through pointer references into it and its own subschemas refer back to the document root, that root model was previously generated as `Field` or `FieldModel`; it is now named after the file stem, for example `Tree` or `Node`, so class names and field annotations such as `list[Field]` change for such schemas (#4132)
+
+### Error Handling Changes
+* New warning for allOf base classes that cannot follow dynamic scope bindings - When an `allOf` base class is referenced from a schema whose dynamic scope would rebind its `$dynamicAnchor`, the parser now emits a `UserWarning` stating that the base class resolves its `$dynamicRef` within its own schema resources. Generation still succeeds, but builds that treat warnings as errors or assert on captured warnings can now fail (#4117)
+* New SchemaResourceRefWarning raised for compatibility-resolved references - A reference that keeps resolving against the document, or keeps loading the referenced document, for compatibility while JSON Schema would resolve it to an embedded $id resource now emits the newly added `SchemaResourceRefWarning`, so generation runs that previously completed silently can now surface warnings and can fail where warnings are configured as errors (#4128)
+
+### Default Behavior Changes
+* External reference mapping keys are matched against the defining document - Because merged target references are rebased to absolute locations, `--external-ref-mapping` entries must now name the path of the document the reference actually comes from rather than a path relative to the merged target, so existing mappings that relied on the previous matching may silently stop applying (#4122)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Rebalance CI test shard weights by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4085
+* Run measured slow tests first by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4086
+* Balance Windows and macOS test shards by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4087
+* Fix release draft validation for stacked pull requests by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4088
+* Record per-version CI test shard weights by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4089
+* Add Ubuntu coverage test shards by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4090
+* Run payload validation only with coverage by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4092
+* Bump the github-actions group with 7 updates by @dependabot[bot] in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4096
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4067
+* Add generation observation baselines by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4099
+* Add parser generation factories by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4100
+* Share generation attempt lifecycle by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4101
+* Add canonical API declaration references by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4103
+* Add explicit OpenAPI API scope by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4104
+* Verify API scope generation contracts by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4105
+* Add TypeSafe Jev SDK usage example by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4134
+* Fix merging models with different referenced types by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4115
+* Fix plain-name $dynamicRef in embedded schema resources by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4116
+* Fix $dynamicRef generics losing dynamic scope bindings by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4117
+* Fix $dynamicRef scope in inline schema resources by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4119
+* Fix tree-scope reuse leaving references to removed duplicates by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4120
+* Fix model reuse merging models with different referenced types by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4121
+* Fix $ref merging with alias and cross-file targets by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4122
+* Fix $dynamicAnchor bindings in OpenAPI component schemas by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4123
+* Fix pointer $ref from stdin schemas with a root $id by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4124
+* Fix $dynamicRef to other documents and JSON pointers by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4126
+* Fix $recursiveRef in cross-file merged $ref targets by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4127
+* Fix $ref to embedded $id resources in OpenAPI component schemas by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4128
+* Fix $recursiveRef targets in embedded $id resources and other documents by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4130
+* Fix $anchor references in OpenAPI component schemas by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4131
+* Fix Field class name for roots of pointer-referenced documents by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4132
+* Fix duplicate models left by merged copies of recursive schemas by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4133
+
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.82.0...0.83.0
+
+---
+
 ## [0.82.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.82.0) - 2026-09-16
 
 ## Breaking Changes
