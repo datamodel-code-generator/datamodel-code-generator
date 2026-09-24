@@ -1,0 +1,15 @@
+exact-numbers: json={"a":0.1,"b":10,"c":0,"d":1E+400,"e":12345678901234567890,"f":-0.0015} ascii={"a":0.1,"b":10,"c":0,"d":1E+400,"e":12345678901234567890,"f":-0.0015} presence=["", "/a", "/b", "/c", "/d", "/e", "/f"]
+literals-and-order: json={"z":[true,false,null],"a":{},"m":[],"n":[[]]} ascii={"z":[true,false,null],"a":{},"m":[],"n":[[]]} presence=["", "/z", "/z/0", "/z/1", "/z/2", "/a", "/m", "/n", "/n/0"]
+unicode: json="é😀 \"quoted\" \\" ascii="\u00e9\ud83d\ude00 \"quoted\" \\" presence=[""]
+raw-unicode: json="é😀" ascii="\u00e9\ud83d\ude00" presence=[""]
+pointer-escapes: json={"a/b":{"c~d":[1,{"":null}]}} ascii={"a/b":{"c~d":[1,{"":null}]}} presence=["", "/a~1b", "/a~1b/c~0d", "/a~1b/c~0d/0", "/a~1b/c~0d/1", "/a~1b/c~0d/1/"]
+duplicate-key: WireValidationError json.duplicate_key
+nan: WireValidationError json.non_finite_number
+infinity: WireValidationError json.non_finite_number
+syntax: WireValidationError json.syntax
+trailing-data: WireValidationError json.syntax
+invalid-utf8: WireValidationError json.encoding
+lone-surrogate: WireValidationError json.unicode
+long-integer: CodecResourceLimitError A JSON integer exceeds the interpreter's decimal conversion limit
+deep-nesting: CodecResourceLimitError JSON text is nested beyond the interpreter recursion limit
+snapshot-nesting: CodecResourceLimitError JSON text is nested beyond the interpreter recursion limit

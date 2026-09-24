@@ -1,0 +1,90 @@
+openapi: 3.1.0
+info: {title: Wire plan diagnostics, version: "1"}
+jsonSchemaDialect: https://json-schema.org/draft-07/schema
+paths:
+  /things:
+    get:
+      security:
+        - Token: []
+      parameters:
+        - {name: x-token, in: header, schema: {type: string}}
+        - {name: anything, in: query, schema: {}}
+        - {name: mixed, in: query, schema: {type: [string, integer]}}
+        - {name: patterned, in: query, schema: {type: object, patternProperties: {"^x": {type: string}}}}
+        - {name: deep, in: query, style: deepObject, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: legacyCookie, in: cookie, style: cookie, schema: {type: string}}
+        - name: jsonCookie
+          in: cookie
+          content:
+            application/json:
+              schema: {type: object}
+        - name: xml
+          in: query
+          content:
+            application/xml:
+              schema: {type: object}
+        - name: form
+          in: query
+          content:
+            application/x-www-form-urlencoded:
+              schema: {type: object}
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: pager, in: query, schema: {type: object, properties: {page: {type: integer}}, additionalProperties: false}}
+        - {name: opts, in: query, schema: {type: object}}
+        - {name: more, in: query, schema: {type: object}}
+        - {name: noItems, in: header, schema: {type: array}}
+        - {name: anyItems, in: header, schema: {type: array, items: true}}
+        - {name: combined, in: header, schema: {type: string, allOf: [{type: [string, "null"]}, {minLength: 1}], anyOf: []}}
+        - {name: loose, in: header, schema: {anyOf: [{type: string}, {minLength: 1}]}}
+        - {name: flag, in: header, schema: {enum: [true, false]}}
+        - {name: ratio, in: header, schema: {enum: [0.5, 1.5]}}
+        - {name: mode, in: header, schema: {enum: [null, a]}}
+        - {name: shaped, in: header, schema: {const: {a: 1}}}
+        - {name: counts, in: header, explode: true, schema: {type: object, additionalProperties: {type: integer}}}
+        - {name: anyMap, in: header, explode: true, schema: {type: object, additionalProperties: {}}}
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Odd"}
+components:
+  securitySchemes:
+    Token: {type: apiKey, in: header, name: X-Token}
+  schemas:
+    Odd:
+      $schema: https://json-schema.org/draft-07/schema
+      type: object
+      properties:
+        look: {type: string, pattern: "^(?=a)"}
+        long: {type: string, pattern: "a{1001}"}
+        props:
+          type: object
+          patternProperties:
+            "\\p{L}": {type: string}
+        embedded: {$id: "https://example.invalid/embedded", type: string}
+        anchored: {$anchor: here, type: string}
+        legacyItems: {type: array, items: [{type: string}]}
+        dependent: {type: object, dependencies: {a: [b]}}
+        tuple: {type: array, additionalItems: false}
+        exclusive: {type: number, exclusiveMinimum: true}
+        notSchema:
+          not: {properties: {x: 5}}
+        dynamic:
+          not: {$dynamicRef: "#meta"}
+        numericRef:
+          not: {$ref: 5}
+        missingDocument:
+          not: {$ref: "missing.yaml#/X"}
+        missingPointer:
+          not: {$ref: "#/components/schemas/Missing"}
+        plainAnchor:
+          not: {$ref: "#here"}
+        unknownAnchor:
+          not: {$ref: "codes.json#nowhere"}
+        infinite: {const: .inf}
+        code: {$ref: "codes.json#/$defs/Code"}
+        alias:
+          not: {$ref: "https://example.invalid/codes.json#/$defs/Code"}
+        numbered:
+          not: {properties: {200: {type: string}}}

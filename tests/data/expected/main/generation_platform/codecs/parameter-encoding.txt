@@ -1,0 +1,112 @@
+path color simple scalar/string: /blue => "blue"
+path color simple array/string: /blue,black,brown => ["blue","black","brown"]
+path color simple object/string: /R,100,G,200,B,150 => {"R":100,"G":200,"B":150}
+path color simple* scalar/string: /blue => "blue"
+path color simple* array/string: /blue,black,brown => ["blue","black","brown"]
+path color simple* object/string: /R=100,G=200,B=150 => {"R":100,"G":200,"B":150}
+path color label scalar/string: /.blue => "blue"
+path color label array/string: /.blue,black,brown => ["blue","black","brown"]
+path color label object/string: /.R,100,G,200,B,150 => {"R":100,"G":200,"B":150}
+path color label* scalar/string: /.blue => "blue"
+path color label* array/string: /.blue.black.brown => ["blue","black","brown"]
+path color label* object/string: /.R=100.G=200.B=150 => {"R":100,"G":200,"B":150}
+path color matrix scalar/string: /;color=blue => "blue"
+path color matrix array/string: /;color=blue,black,brown => ["blue","black","brown"]
+path color matrix object/string: /;color=R,100,G,200,B,150 => {"R":100,"G":200,"B":150}
+path color matrix* scalar/string: /;color=blue => "blue"
+path color matrix* array/string: /;color=blue;color=black;color=brown => ["blue","black","brown"]
+path color matrix* object/string: /;R=100;G=200;B=150 => {"R":100,"G":200,"B":150}
+query color form scalar/string: ?color=blue => "blue"
+query color form array/string: ?color=blue,black,brown => ["blue","black","brown"]
+query color form object/string: ?color=R,100,G,200,B,150 => {"R":100,"G":200,"B":150}
+query color form* scalar/string: ?color=blue => "blue"
+query color form* array/string: ?color=blue&color=black&color=brown => ["blue","black","brown"]
+query color form* object/string: ?R=100&G=200&B=150 => {"R":100,"G":200,"B":150}
+query color spaceDelimited array/string: ?color=blue%20black%20brown => ["blue","black","brown"]
+query color spaceDelimited object/string: ?color=R%20100%20G%20200%20B%20150 => {"R":100,"G":200,"B":150}
+query color pipeDelimited array/string: ?color=blue%7Cblack%7Cbrown => ["blue","black","brown"]
+query color pipeDelimited object/string: ?color=R%7C100%7CG%7C200%7CB%7C150 => {"R":100,"G":200,"B":150}
+query color deepObject* object/string: ?color%5BR%5D=100&color%5BG%5D=200&color%5BB%5D=150 => {"R":100,"G":200,"B":150}
+header color simple scalar/string: color: blue => "blue"
+header color simple array/string: color: blue,black,brown => ["blue","black","brown"]
+header color simple object/string: color: R,100,G,200,B,150 => {"R":100,"G":200,"B":150}
+header color simple* object/string: color: R=100,G=200,B=150 => {"R":100,"G":200,"B":150}
+cookie color form scalar/string: Cookie: color=blue => "blue"
+cookie color form* scalar/string: Cookie: color=blue => "blue"
+cookie color form* array/string: Cookie: color=blue; color=black; color=brown => ["blue","black","brown"]
+cookie color form* object/string: Cookie: R=100; G=200; B=150 => {"R":100,"G":200,"B":150}
+cookie color cookie scalar/string: Cookie: color=blue => "blue"
+cookie color cookie* array/string: Cookie: color=blue; color=black; color=brown => ["blue","black","brown"]
+cookie color cookie* object/string: Cookie: R=100; G=200; B=150 => {"R":100,"G":200,"B":150}
+path username simple scalar/string: /di%E1%B9%85n%C4%81ga => "diṅnāga"
+path username simple scalar/string: /%D8%A7%D9%84%D8%AE%D9%88%D8%A7%D8%B1%D8%B2%D9%85%D9%8A%D9%91 => "الخوارزميّ"
+query thing form* array/string: ?thing=one%20thing&thing=another%20thing => ["one thing","another thing"]
+query freeForm form* object/string: ?page=4&pageSize=50 => {"page":4,"pageSize":50}
+header X-Token simple array/integer: X-Token: 12345678,90099 => [12345678,90099]
+cookie greeting form* scalar/string: Cookie: greeting=Hello%2C%20world%21 => "Hello, world!"
+cookie cookie cookie* object/string: Cookie: greeting=Hello%2C%20world!; code=42 => {"greeting":"Hello%2C%20world!","code":42}
+query q form* scalar/string: ?q=a/b?c%23d%26e%3Df%2Bg%5Bh%5D%41%25zz%2Ci => "a/b?c#d&e=f+g[h]A%zz,i"
+query q form array/string: ?q=a%2Cb,c/d => ["a,b","c/d"]
+path p simple scalar/string: /a%2Fb%2Cc%3Bd%3De:f@g!%2F => "a/b,c;d=e:f@g!/"
+query n form* array/number: ?n=1&n=1.50&n=1E%2B400&n=-0.0 => [1,1.50,1E+400,-0.0]
+query i form* array/integer: ?i=10&i=10&i=-3 => [10,10,-3]
+query b form* array/boolean: ?b=true&b=false => [true,false]
+query e form* array/string: ?e= => [""]
+path m matrix* array/string: /;m;m=x => ["","x"]
+path m matrix scalar/string: /;m => ""
+path m matrix* object/string: /;a => {"a":""}
+path m label array/string: /.a.b,c => ["a.b","c"]
+query d deepObject* object/string: ?d%5Ba%5Db%5D=1&d%5B%5D=2 => {"a]b":"1","":"2"}
+path c application/json scalar/string: /%7B%22a%22%3A%5B1%2C%22x%20y%22%5D%7D => {"a":[1,"x y"]}
+query c text/plain scalar/string: ?c=a%20b%2Bc => "a b+c"
+header X-C application/vnd.api+json scalar/string: X-C: {"a":"\u00e9"} => {"a":"é"}
+querystring qs application/x-www-form-urlencoded scalar/string: ?q=a+b%2Bc%7E*&tags=x&tags=y&n=3 => {"q":"a b+c~*","tags":["x","y"],"n":3}
+querystring qs application/json scalar/string: ?%7B%22a%22%3A%5B1%2C%22x%26y%22%5D%7D => {"a":[1,"x&y"]}
+querystring qs text/plain scalar/string: ?a%20b%2Bc => "a b+c"
+query q form* scalar/string: ParameterEncodingError JSON null cannot be written by a style-based parameter
+query q form* array/string: ParameterEncodingError An empty array or object cannot be distinguished from omission
+query q form* object/string: ParameterEncodingError An empty array or object cannot be distinguished from omission
+query q form* array/string: ParameterEncodingError The value does not have the parameter's declared shape
+query q form* array/string: ParameterEncodingError The tuple value does not have the string lexical kind
+query q form* object/string: ParameterEncodingError An object parameter member is not declared
+query q form* scalar/string: ParameterEncodingError The int value does not have the string lexical kind
+query q form* scalar/integer: ParameterEncodingError The Decimal value does not have the integer lexical kind
+query q form* scalar/boolean: ParameterEncodingError The int value does not have the boolean lexical kind
+path p simple array/string: ParameterEncodingError An empty delimited value cannot be distinguished from an empty container
+path p label* array/string: ParameterEncodingError An exploded label value cannot contain its '.' delimiter
+path p label* array/number: ParameterEncodingError An exploded label value cannot contain its '.' delimiter
+query q spaceDelimited array/string: ParameterEncodingError A delimited query value cannot contain its own delimiter
+query q pipeDelimited array/string: ParameterEncodingError A delimited query value cannot contain its own delimiter
+header X simple scalar/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
+header X simple scalar/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
+header X simple array/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
+header X simple* object/string: ParameterEncodingError An exploded header member name cannot contain '='
+header X simple* object/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
+cookie c cookie* scalar/string: ParameterEncodingError A cookie-style name must be a token and its value unquoted cookie octets
+cookie c d cookie* scalar/string: ParameterEncodingError A cookie-style name must be a token and its value unquoted cookie octets
+cookie c application/json scalar/string: ParameterEncodingError Cookie content requires an explicit parameter adapter
+query c text/plain scalar/string: ParameterEncodingError The parameter content media or value is not builtin
+query c application/xml scalar/string: ParameterEncodingError The parameter content media or value is not builtin
+querystring qs text/plain scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
+querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An explicit querystring value cannot encode to an empty query
+querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A URL-encoded form value must be an object
+querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A URL-encoded form member is not declared
+querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError An empty array cannot be represented by repeated pairs
+querystring qs application/x-www-form-urlencoded scalar/string: ParameterEncodingError A repeated member must be an array
+invalid {'location': 'query', 'name': 'q', 'style': 'spaceDelimited', 'shape': 'scalar'}: ValueError query parameter style 'spaceDelimited' has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'style': 'pipeDelimited', 'explode': True, 'shape': 'array'}: ValueError query parameter style 'pipeDelimited' has no builtin form for array values
+invalid {'location': 'query', 'name': 'q', 'style': 'deepObject', 'explode': False, 'shape': 'object'}: ValueError query parameter style 'deepObject' has no builtin form for object values
+invalid {'location': 'query', 'name': 'q', 'style': 'deepObject', 'explode': True, 'shape': 'array'}: ValueError query parameter style 'deepObject' has no builtin form for array values
+invalid {'location': 'cookie', 'name': 'c', 'style': 'form', 'explode': False, 'shape': 'array'}: ValueError cookie parameter style 'form' has no builtin form for array values
+invalid {'location': 'cookie', 'name': 'c', 'style': 'cookie', 'explode': False, 'shape': 'object'}: ValueError cookie parameter style 'cookie' has no builtin form for object values
+invalid {'location': 'querystring', 'name': 'q', 'style': 'form'}: ValueError querystring parameter style 'form' has no builtin form for scalar values
+invalid {'location': 'querystring', 'name': 'q'}: ValueError querystring parameter style None has no builtin form for scalar values
+invalid {'location': 'query', 'name': 'q', 'style': 'form', 'content_media_type': 'application/json'}: ValueError query parameter style 'form' has no builtin form for scalar values
+invalid {'location': 'header', 'name': 'h', 'style': 'form'}: ValueError header parameter style 'form' has no builtin form for scalar values
+invalid {'location': 'path', 'name': 'p'}: ValueError path parameter style None has no builtin form for scalar values
+python query i form* scalar/integer: ?i=2 => 2
+python query n form* scalar/number: ?n=1.5 => 1.5
+python query n form* scalar/number: ?n=1e-07 => 1E-7
+python query i form* scalar/integer: CodecResourceLimitError An integer exceeds the interpreter's decimal conversion limit
+operation-present: ?q=a
+operation-missing: ParameterEncodingError The required query parameter 'q' has no value

@@ -1,0 +1,793 @@
+{
+  "resources": [
+    {
+      "uri": "https://dcg.invalid/inputs/documents/0",
+      "roots": [
+        "/$defs/Code"
+      ],
+      "contents": {
+        "$defs": {
+          "Code": {
+            "type": "string",
+            "pattern": "^[0-9]{3}$"
+          }
+        }
+      }
+    },
+    {
+      "uri": "https://dcg.invalid/inputs/root",
+      "roots": [
+        "/components/schemas/Odd",
+        "/paths/~1things/get/parameters/0/schema",
+        "/paths/~1things/get/parameters/1/schema",
+        "/paths/~1things/get/parameters/10/schema",
+        "/paths/~1things/get/parameters/11/schema",
+        "/paths/~1things/get/parameters/12/schema",
+        "/paths/~1things/get/parameters/13/schema",
+        "/paths/~1things/get/parameters/14/schema",
+        "/paths/~1things/get/parameters/15/schema",
+        "/paths/~1things/get/parameters/16/schema",
+        "/paths/~1things/get/parameters/17/schema",
+        "/paths/~1things/get/parameters/18/schema",
+        "/paths/~1things/get/parameters/19/schema",
+        "/paths/~1things/get/parameters/2/schema",
+        "/paths/~1things/get/parameters/20/schema",
+        "/paths/~1things/get/parameters/21/schema",
+        "/paths/~1things/get/parameters/22/schema",
+        "/paths/~1things/get/parameters/3/schema",
+        "/paths/~1things/get/parameters/4/schema",
+        "/paths/~1things/get/parameters/5/schema",
+        "/paths/~1things/get/parameters/6/content/application~1json/schema",
+        "/paths/~1things/get/parameters/7/content/application~1xml/schema",
+        "/paths/~1things/get/parameters/8/content/application~1x-www-form-urlencoded/schema",
+        "/paths/~1things/get/parameters/9/schema",
+        "/paths/~1things/get/responses/200/content/application~1json/schema"
+      ],
+      "contents": {
+        "components": {
+          "schemas": {
+            "Odd": {
+              "type": "object",
+              "properties": {
+                "look": {
+                  "type": "string",
+                  "pattern": "^(?=a)"
+                },
+                "long": {
+                  "type": "string",
+                  "pattern": "a{1001}"
+                },
+                "props": {
+                  "type": "object",
+                  "patternProperties": {
+                    "\\p{L}": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "embedded": {
+                  "type": "string"
+                },
+                "anchored": {
+                  "type": "string"
+                },
+                "legacyItems": {
+                  "type": "array"
+                },
+                "dependent": {
+                  "type": "object"
+                },
+                "tuple": {
+                  "type": "array"
+                },
+                "exclusive": {
+                  "type": "number"
+                },
+                "notSchema": {
+                  "not": {
+                    "properties": {
+                      "x": null
+                    }
+                  }
+                },
+                "dynamic": {
+                  "not": {}
+                },
+                "numericRef": {
+                  "not": {
+                    "$ref": null
+                  }
+                },
+                "missingDocument": {
+                  "not": {
+                    "$ref": "missing.yaml#/X"
+                  }
+                },
+                "missingPointer": {
+                  "not": {
+                    "$ref": "#/components/schemas/Missing"
+                  }
+                },
+                "plainAnchor": {
+                  "not": {
+                    "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/anchored"
+                  }
+                },
+                "unknownAnchor": {
+                  "not": {
+                    "$ref": "codes.json#nowhere"
+                  }
+                },
+                "infinite": {
+                  "const": null
+                },
+                "code": {
+                  "$ref": "https://dcg.invalid/inputs/documents/0#/$defs/Code"
+                },
+                "alias": {
+                  "not": {
+                    "$ref": "https://dcg.invalid/inputs/documents/0#/$defs/Code"
+                  }
+                },
+                "numbered": {
+                  "not": {
+                    "properties": {
+                      "200": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "paths": {
+          "/things": {
+            "get": {
+              "parameters": [
+                {
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "schema": {}
+                },
+                {
+                  "schema": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ]
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "patternProperties": {
+                      "^x": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                },
+                {
+                  "content": {
+                    "application/xml": {
+                      "schema": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                },
+                {
+                  "content": {
+                    "application/x-www-form-urlencoded": {
+                      "schema": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "page": {
+                        "type": "integer"
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "array"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "array",
+                    "items": true
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      {
+                        "minLength": 1
+                      }
+                    ],
+                    "anyOf": []
+                  }
+                },
+                {
+                  "schema": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "minLength": 1
+                      }
+                    ]
+                  }
+                },
+                {
+                  "schema": {
+                    "enum": [
+                      true,
+                      false
+                    ]
+                  }
+                },
+                {
+                  "schema": {
+                    "enum": [
+                      0.5,
+                      1.5
+                    ]
+                  }
+                },
+                {
+                  "schema": {
+                    "enum": [
+                      null,
+                      "a"
+                    ]
+                  }
+                },
+                {
+                  "schema": {
+                    "const": {
+                      "a": 1
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Odd"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "schemas": [
+    "parameter cookie jsonCookie - application/json https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/6/content/application~1json/schema",
+    "parameter cookie legacyCookie - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/5/schema",
+    "parameter header anyItems - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/14/schema",
+    "parameter header anyMap - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/22/schema",
+    "parameter header combined - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/15/schema",
+    "parameter header counts - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/21/schema",
+    "parameter header flag - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/17/schema",
+    "parameter header loose - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/16/schema",
+    "parameter header mode - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/19/schema",
+    "parameter header noItems - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/13/schema",
+    "parameter header ratio - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/18/schema",
+    "parameter header shaped - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/20/schema",
+    "parameter header x-token - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/0/schema",
+    "parameter query anything - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/1/schema",
+    "parameter query deep - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/4/schema",
+    "parameter query form - application/x-www-form-urlencoded https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/8/content/application~1x-www-form-urlencoded/schema",
+    "parameter query mixed - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/2/schema",
+    "parameter query more - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/12/schema",
+    "parameter query opts - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/11/schema",
+    "parameter query page - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/9/schema",
+    "parameter query pager - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/10/schema",
+    "parameter query patterned - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/3/schema",
+    "parameter query xml - application/xml https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/7/content/application~1xml/schema",
+    "response_body - - 200 application/json https://dcg.invalid/inputs/root#/paths/~1things/get/responses/200/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/documents/0#/$defs/Code",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/alias",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/anchored",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/code",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/dependent",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/dynamic",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/embedded",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/exclusive",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/infinite",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/legacyItems",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/legacyItems/items/0",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/long",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/look",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/missingDocument",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/missingPointer",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/notSchema",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/numbered",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/numericRef",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/plainAnchor",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/props",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/props/patternProperties/%5Cp%7BL%7D",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/tuple",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Odd/properties/unknownAnchor",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/0/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/1/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/10/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/10/schema/properties/page",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/11/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/12/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/13/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/14/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/14/schema/items",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/15/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/16/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/16/schema/anyOf/0",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/16/schema/anyOf/1",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/17/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/18/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/19/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/2/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/20/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/21/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/21/schema/additionalProperties",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/22/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/22/schema/additionalProperties",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/3/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/3/schema/patternProperties/%5Ex",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/4/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/4/schema/items",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/5/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/6/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/7/content/application~1xml/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/8/content/application~1x-www-form-urlencoded/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/parameters/9/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1things/get/responses/200/content/application~1json/schema"
+  ],
+  "parameters": {
+    "/paths/~1things/get": [
+      {
+        "location": "header",
+        "name": "x-token",
+        "style": "simple",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "anyMap",
+          "combined",
+          "counts",
+          "flag",
+          "loose",
+          "mode",
+          "noItems",
+          "ratio",
+          "shaped"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "page",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "integer",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "anything",
+          "deep",
+          "form",
+          "mixed",
+          "more",
+          "opts",
+          "pager",
+          "patterned",
+          "xml"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "pager",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [
+          {
+            "name": "page",
+            "kind": "integer",
+            "repeated": false
+          }
+        ],
+        "additional": null,
+        "reserved_names": [
+          "anything",
+          "deep",
+          "form",
+          "mixed",
+          "more",
+          "opts",
+          "page",
+          "patterned",
+          "xml"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "opts",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "anything",
+          "deep",
+          "form",
+          "mixed",
+          "more",
+          "page",
+          "pager",
+          "patterned",
+          "xml"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "more",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "anything",
+          "deep",
+          "form",
+          "mixed",
+          "opts",
+          "page",
+          "pager",
+          "patterned",
+          "xml"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "combined",
+        "style": "simple",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "anyMap",
+          "counts",
+          "flag",
+          "loose",
+          "mode",
+          "noItems",
+          "ratio",
+          "shaped",
+          "x-token"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "flag",
+        "style": "simple",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "boolean",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "anyMap",
+          "combined",
+          "counts",
+          "loose",
+          "mode",
+          "noItems",
+          "ratio",
+          "shaped",
+          "x-token"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "ratio",
+        "style": "simple",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "number",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "anyMap",
+          "combined",
+          "counts",
+          "flag",
+          "loose",
+          "mode",
+          "noItems",
+          "shaped",
+          "x-token"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "mode",
+        "style": "simple",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "anyMap",
+          "combined",
+          "counts",
+          "flag",
+          "loose",
+          "noItems",
+          "ratio",
+          "shaped",
+          "x-token"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "shaped",
+        "style": "simple",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "anyMap",
+          "combined",
+          "counts",
+          "flag",
+          "loose",
+          "mode",
+          "noItems",
+          "ratio",
+          "x-token"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "counts",
+        "style": "simple",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "integer",
+          "repeated": false
+        },
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "anyMap",
+          "combined",
+          "flag",
+          "loose",
+          "mode",
+          "noItems",
+          "ratio",
+          "shaped",
+          "x-token"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "anyMap",
+        "style": "simple",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "X-Token",
+          "anyItems",
+          "combined",
+          "counts",
+          "flag",
+          "loose",
+          "mode",
+          "noItems",
+          "ratio",
+          "shaped",
+          "x-token"
+        ]
+      }
+    ]
+  },
+  "diagnostics": [
+    "MC_SCHEMA_DIALECT dialects.yaml#/jsonSchemaDialect: The default schema dialect is not builtin",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/$schema: The schema dialect is not builtin",
+    "MC_PATTERN_DIALECT dialects.yaml#/components/schemas/Odd/properties/look/pattern: The pattern is outside the builtin ECMA-262 Unicode grammar",
+    "MC_PATTERN_RESOURCE_LIMIT dialects.yaml#/components/schemas/Odd/properties/long/pattern: The pattern exceeds a static resource limit",
+    "MC_PATTERN_DIALECT dialects.yaml#/components/schemas/Odd/properties/props/patternProperties/\\p{L}: The pattern is outside the builtin ECMA-262 Unicode grammar",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/embedded/$id: Embedded schema resources require an explicit schema adapter",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/anchored/$anchor: Schema anchors in OpenAPI documents require an explicit schema adapter",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/legacyItems/items: Array-form items requires an explicit schema adapter",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/dependent/dependencies: Keyword dependencies requires an explicit schema adapter",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/tuple/additionalItems: Keyword additionalItems requires an explicit schema adapter",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/exclusive/exclusiveMinimum: Boolean exclusive bounds belong to OpenAPI 3.0",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/notSchema/not/properties/x: A schema must be an object or a boolean",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/dynamic/not/$dynamicRef: Keyword $dynamicRef requires an explicit schema adapter",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/numericRef/not/$ref: A schema reference must be a string",
+    "BND_UNRESOLVED_REFERENCE dialects.yaml#/components/schemas/Odd/properties/missingDocument/not/$ref: A schema reference targets an unobserved document",
+    "BND_UNRESOLVED_REFERENCE dialects.yaml#/components/schemas/Odd/properties/missingPointer/not/$ref: A schema reference pointer does not exist",
+    "BND_UNRESOLVED_REFERENCE dialects.yaml#/components/schemas/Odd/properties/unknownAnchor/not/$ref: A schema reference pointer does not exist",
+    "MC_SCHEMA_DIALECT dialects.yaml#/components/schemas/Odd/properties/infinite/const: A schema value must be a finite JSON number",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/1/schema [/paths/~1things/get]: A parameter value needs one unambiguous scalar kind",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/2/schema [/paths/~1things/get]: A parameter value needs one unambiguous scalar kind",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/3/schema [/paths/~1things/get]: Pattern properties need an explicit parameter adapter",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/4 [/paths/~1things/get]: query parameter style 'deepObject' has no builtin form for array values",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/5 [/paths/~1things/get]: Cookie style requires OpenAPI 3.2",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/6 [/paths/~1things/get]: The parameter content requires an explicit parameter adapter",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/7 [/paths/~1things/get]: The parameter content requires an explicit parameter adapter",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/8 [/paths/~1things/get]: The parameter content requires an explicit parameter adapter",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/13/schema/items [/paths/~1things/get]: A parameter value needs one unambiguous scalar kind",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/14/schema/items [/paths/~1things/get]: A parameter value needs one unambiguous scalar kind",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/16/schema [/paths/~1things/get]: A parameter value needs one unambiguous scalar kind",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/1 [/paths/~1things/get]: Expanded query parameter names collide",
+    "MC_PARAMETER_ENCODING dialects.yaml#/paths/~1things/get/parameters/0 [/paths/~1things/get]: Expanded header parameter names collide"
+  ]
+}

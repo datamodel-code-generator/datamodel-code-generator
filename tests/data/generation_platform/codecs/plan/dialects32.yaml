@@ -1,0 +1,14 @@
+openapi: 3.2.0
+info: {title: Wire plan 3.2 diagnostics, version: "1"}
+paths:
+  /search:
+    get:
+      parameters:
+        - name: query
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema: {type: string}
+        - {name: prefs, in: cookie, style: form, explode: false, schema: {type: array, items: {type: string}}}
+      responses:
+        "204": {description: none}

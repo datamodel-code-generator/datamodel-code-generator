@@ -1,0 +1,34 @@
+[
+  {
+    "schema": "https://dcg.invalid/inputs/root#/components/schemas/Pet",
+    "value": {
+      "name": "Rex",
+      "code": "123",
+      "shared": {
+        "note": "x"
+      },
+      "tag": null,
+      "count": 1
+    }
+  },
+  {
+    "schema": "https://dcg.invalid/inputs/root#/components/schemas/Pet",
+    "value": {
+      "name": "rex",
+      "code": "12",
+      "tag": "",
+      "count": 0
+    }
+  },
+  {
+    "schema": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/1/schema",
+    "value": {
+      "kind": "a",
+      "extra": 1
+    }
+  },
+  {
+    "schema": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/parameters/0/schema",
+    "value": 5
+  }
+]

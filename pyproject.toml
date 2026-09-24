@@ -98,10 +98,11 @@ dev = [
 ]
 test = [
   "email-validator>=2.2",
+  "google-re2>=1.1.20251105,<2",
   "hypothesis>=6.136.6",
   "hypothesis-jsonschema>=0.23.1",
   "inline-snapshot>=0.34.2",
-  "jsonschema>=4.24",
+  "jsonschema[format-nongpl]>=4.26,<5",
   "lxml>=5.3",
   "msgspec>=0.18",
   "pytest>=8.3.4",
@@ -325,6 +326,7 @@ run.omit = [
   "tests/main/test_jsonschema_suite_conformance.py",
   "tests/main/test_memory.py",
   "tests/main/test_performance.py",
+  "tests/model_codecs/test_json_schema_suite.py",
 ]
 run.dynamic_context = "none"
 run.parallel = true

@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info: {title: Legacy scope wire plan, version: "1"}
+paths:
+  /legacy:
+    get:
+      parameters:
+        - name: twoMedia
+          in: header
+          content:
+            application/json: {schema: {type: object}}
+            text/plain: {schema: {type: string}}
+        - name: both
+          in: header
+          schema: {type: string}
+          content:
+            text/plain: {schema: {type: string}}
+        - {name: bare, in: header}
+        - name: early
+          in: querystring
+          content:
+            application/json: {schema: {type: object}}
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {type: object, properties: {id: {type: integer}}}

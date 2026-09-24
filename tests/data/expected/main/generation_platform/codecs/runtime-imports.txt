@@ -1,0 +1,9 @@
+__init__.py: -
+model_codecs/__init__.py: -
+model_codecs/errors.py: __future__, dataclasses, typing
+model_codecs/media.py: .errors, .wire, __future__, collections.abc, dataclasses, decimal, json, json.encoder, re, typing, urllib.parse
+model_codecs/parameters.py: .errors, .media, .unset, .wire, __future__, collections.abc, dataclasses, itertools, re, typing, urllib.parse
+model_codecs/patterns.py: .errors, __future__, dataclasses, functools, importlib, string, typing
+model_codecs/schema.py: .errors, .patterns, .wire, __future__, collections.abc, contextvars, dataclasses, datetime, decimal, functools, importlib, jsonschema, jsonschema.exceptions, math, referencing.exceptions, referencing.jsonschema, typing, typing_extensions, urllib.parse
+model_codecs/unset.py: __future__, enum, typing
+model_codecs/wire.py: __future__, collections.abc, dataclasses, decimal, math, re, types, typing, typing_extensions

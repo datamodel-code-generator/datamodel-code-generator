@@ -1,0 +1,95 @@
+{
+  "resources": [
+    {
+      "uri": "https://dcg.invalid/inputs/root",
+      "roots": [
+        "/paths/~1legacy/get/parameters/0/content/application~1json/schema",
+        "/paths/~1legacy/get/parameters/0/content/text~1plain/schema",
+        "/paths/~1legacy/get/parameters/1/content/text~1plain/schema",
+        "/paths/~1legacy/get/parameters/1/schema",
+        "/paths/~1legacy/get/parameters/3/content/application~1json/schema",
+        "/paths/~1legacy/get/responses/200/content/application~1json/schema"
+      ],
+      "contents": {
+        "paths": {
+          "/legacy": {
+            "get": {
+              "parameters": [
+                {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object"
+                      }
+                    },
+                    "text/plain": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "content": {
+                    "text/plain": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                null,
+                {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "schemas": [
+    "parameter header both - - https://dcg.invalid/inputs/root#/paths/~1legacy/get/parameters/1/schema",
+    "parameter header both - text/plain https://dcg.invalid/inputs/root#/paths/~1legacy/get/parameters/1/content/text~1plain/schema",
+    "parameter header twoMedia - application/json https://dcg.invalid/inputs/root#/paths/~1legacy/get/parameters/0/content/application~1json/schema",
+    "parameter header twoMedia - text/plain https://dcg.invalid/inputs/root#/paths/~1legacy/get/parameters/0/content/text~1plain/schema",
+    "parameter querystring early - application/json https://dcg.invalid/inputs/root#/paths/~1legacy/get/parameters/3/content/application~1json/schema",
+    "response_body - - 200 application/json https://dcg.invalid/inputs/root#/paths/~1legacy/get/responses/200/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1legacy/get/responses/200/content/application~1json/schema/properties/id"
+  ],
+  "parameters": {
+    "/paths/~1legacy/get": []
+  },
+  "diagnostics": [
+    "MC_PARAMETER_ENCODING legacy.yaml#/paths/~1legacy/get/parameters/0 [/paths/~1legacy/get]: Parameter content must declare exactly one media type",
+    "MC_PARAMETER_ENCODING legacy.yaml#/paths/~1legacy/get/parameters/1 [/paths/~1legacy/get]: Parameter content must declare exactly one media type",
+    "MC_PARAMETER_ENCODING legacy.yaml#/paths/~1legacy/get/parameters/2 [/paths/~1legacy/get]: A style-based parameter requires a schema",
+    "MC_PARAMETER_ENCODING legacy.yaml#/paths/~1legacy/get/parameters/3 [/paths/~1legacy/get]: Querystring parameters require OpenAPI 3.2"
+  ]
+}

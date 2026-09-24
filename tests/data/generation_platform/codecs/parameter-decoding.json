@@ -1,0 +1,1296 @@
+{
+  "cases": [
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "integer"
+      },
+      "raw": {
+        "path": "42"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "integer"
+      },
+      "raw": {
+        "path": "042"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "integer"
+      },
+      "raw": {
+        "path": "4.0"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "integer"
+      },
+      "raw": {
+        "path": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "number"
+      },
+      "raw": {
+        "path": "-1.5e3"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "number"
+      },
+      "raw": {
+        "path": "1"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "number"
+      },
+      "raw": {
+        "path": "+1"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "boolean"
+      },
+      "raw": {
+        "path": "true"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "kind": "boolean"
+      },
+      "raw": {
+        "path": "True"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple"
+      },
+      "raw": {
+        "path": "a%2Fb%zz"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple"
+      },
+      "raw": {
+        "path": "%C3%A9"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple"
+      },
+      "raw": {
+        "path": {
+          "hex": "c3a9"
+        }
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple"
+      },
+      "raw": {
+        "path": "%C3"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple"
+      },
+      "raw": {}
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "shape": "array"
+      },
+      "raw": {
+        "path": ""
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "path": "R,1,G"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "shape": "object",
+        "explode": true,
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "path": "R=1,G"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "shape": "object",
+        "explode": true,
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "path": "R=1,R=2"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "shape": "object",
+        "explode": true,
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "path": "X=1"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label"
+      },
+      "raw": {
+        "path": "blue"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "shape": "array",
+        "explode": true
+      },
+      "raw": {
+        "path": "."
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "shape": "array",
+        "explode": true
+      },
+      "raw": {
+        "path": ".a.b"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix"
+      },
+      "raw": {
+        "path": ";color"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix"
+      },
+      "raw": {
+        "path": ";color="
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix"
+      },
+      "raw": {
+        "path": ";other=x"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix"
+      },
+      "raw": {
+        "path": ";color=a;color=b"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "shape": "array"
+      },
+      "raw": {
+        "path": ";color="
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "shape": "array",
+        "explode": true
+      },
+      "raw": {
+        "path": ";color=a;color"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "shape": "object",
+        "explode": true,
+        "fields": [
+          {
+            "name": "a"
+          },
+          {
+            "name": "b"
+          }
+        ]
+      },
+      "raw": {
+        "path": ";a;b=%3B"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": null,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "path": "%7B%22a%22%3A1%7D"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": null,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "path": "%7B"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": null,
+        "content_media_type": "application/json"
+      },
+      "raw": {}
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false
+      },
+      "raw": {
+        "query": "color=blue&color=red"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false
+      },
+      "raw": {
+        "query": "other=1"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false
+      },
+      "raw": {
+        "query": "color"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false
+      },
+      "raw": {
+        "query": "color=a+b%2Bc&&"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "raw": {
+        "query": "color=a&color=&x=1&color=b"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "raw": {
+        "query": "x=1"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false,
+        "shape": "array"
+      },
+      "raw": {
+        "query": "color=a,b%2Cc"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false,
+        "shape": "array"
+      },
+      "raw": {
+        "query": "color="
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "spaceDelimited",
+        "explode": false,
+        "shape": "array"
+      },
+      "raw": {
+        "query": "color=a%20b+c d"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "pipeDelimited",
+        "explode": false,
+        "shape": "array"
+      },
+      "raw": {
+        "query": "color=a%7Cb%7cc|d"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "deepObject",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "query": "color%5BR%5D=1&color[G]=2&x=3"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "deepObject",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "query": "x=3"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "deepObject",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "query": "color[R]=1&color[R]=2"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": ""
+        },
+        "reserved_names": [
+          "limit"
+        ]
+      },
+      "raw": {
+        "query": "a=1&limit=2&b=3"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": ""
+        },
+        "reserved_names": [
+          "limit"
+        ]
+      },
+      "raw": {
+        "query": "limit=2"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "raw": {
+        "query": "a=1&b=2"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": null,
+        "explode": true,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "query": "color=%7B%22a%22%3A%5B1%5D%7D"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": null,
+        "explode": true,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "query": "color=1&color=2"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": null,
+        "explode": true,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "query": "x=1"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": null,
+        "explode": true,
+        "content_media_type": "text/plain"
+      },
+      "raw": {
+        "query": "color=a+b"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "query": "%zz=1"
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple",
+        "kind": "integer"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            " 5 "
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple",
+        "kind": "integer"
+      },
+      "raw": {
+        "headers": [
+          [
+            "x-rate",
+            "5"
+          ],
+          [
+            "X-RATE",
+            "6"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple",
+        "kind": "integer"
+      },
+      "raw": {
+        "headers": [
+          [
+            "Other",
+            "5"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            {
+              "hex": "ff"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple",
+        "shape": "array"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            "a, b"
+          ],
+          [
+            "X-Rate",
+            "c"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple",
+        "shape": "array"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            ""
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple",
+        "shape": "object",
+        "explode": true,
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            "R=1, G=2"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": null,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            " {\"a\":1} "
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": null,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            "1"
+          ],
+          [
+            "X-Rate",
+            "2"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": null,
+        "content_media_type": "application/json"
+      },
+      "raw": {}
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Rate",
+        "style": null,
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "headers": [
+          [
+            "X-Rate",
+            {
+              "hex": "ff"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "other=x; color=blue"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=a; color=b"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "other=x"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=a%2Cb"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=%zz"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=a"
+          ],
+          [
+            "Accept",
+            "x"
+          ],
+          [
+            "cookie",
+            " color=b ;;color"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "other=a"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "cookie",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "R=1; G=2; X=3"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "cookie",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "X=3"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "cookie",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            "color=a%2Cb"
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "cookie",
+        "explode": true
+      },
+      "raw": {
+        "headers": [
+          [
+            "Cookie",
+            {
+              "hex": "636f6c6f723dff"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          },
+          {
+            "name": "tags",
+            "repeated": true
+          },
+          {
+            "name": "n",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "query": "q=a+b%2Bc&tags=x&tags=y&n=3"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          }
+        ]
+      },
+      "raw": {
+        "query": ""
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          }
+        ]
+      },
+      "raw": {}
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          }
+        ]
+      },
+      "raw": {
+        "query": "z=1"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          }
+        ]
+      },
+      "raw": {
+        "query": "q=1&q=2"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "n",
+            "kind": "integer"
+          }
+        ]
+      },
+      "raw": {
+        "query": "n=x"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "query": "%7B%22a%22%3A1%7D"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/json"
+      },
+      "raw": {
+        "query": "%7B"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "text/plain"
+      },
+      "raw": {
+        "query": "a+b%20c"
+      }
+    }
+  ],
+  "operation": {
+    "plans": [
+      {
+        "location": "path",
+        "name": "id",
+        "style": "simple",
+        "required": true,
+        "kind": "integer"
+      },
+      {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "required": true
+      },
+      {
+        "location": "query",
+        "name": "page",
+        "style": "form",
+        "explode": true,
+        "kind": "integer"
+      },
+      {
+        "location": "header",
+        "name": "X-Rate",
+        "style": "simple",
+        "kind": "integer"
+      },
+      {
+        "location": "cookie",
+        "name": "session",
+        "style": "form",
+        "explode": true
+      }
+    ],
+    "raw": [
+      {
+        "path": {
+          "id": "7"
+        },
+        "query": "q=a&page=2",
+        "headers": [
+          [
+            "X-Rate",
+            "5"
+          ],
+          [
+            "Cookie",
+            "session=abc"
+          ]
+        ]
+      },
+      {
+        "path": {
+          "id": "x"
+        },
+        "query": "page=1&page=2",
+        "headers": [
+          [
+            "X-Rate",
+            "5"
+          ],
+          [
+            "X-Rate",
+            "6"
+          ]
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "resources": [
+    {
+      "uri": "https://dcg.invalid/inputs/root",
+      "roots": [
+        "/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema",
+        "/paths/~1search/get/parameters/1/schema"
+      ],
+      "contents": {
+        "paths": {
+          "/search": {
+            "get": {
+              "parameters": [
+                {
+                  "content": {
+                    "application/x-www-form-urlencoded": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "schemas": [
+    "parameter cookie prefs - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema",
+    "parameter querystring query - application/x-www-form-urlencoded https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema/items"
+  ],
+  "parameters": {
+    "/paths/~1search/get": []
+  },
+  "diagnostics": [
+    "MC_PARAMETER_ENCODING dialects32.yaml#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema [/paths/~1search/get]: A URL-encoded value must be an object",
+    "MC_PARAMETER_ENCODING dialects32.yaml#/paths/~1search/get/parameters/1 [/paths/~1search/get]: cookie parameter style 'form' has no builtin form for array values"
+  ]
+}

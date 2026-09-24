@@ -1,0 +1,23 @@
+ordered: json={"b":[1,2],"a":[0.10,2.5,null]} ascii={"b":[1,2],"a":[0.10,2.5,null]} presence=["", "/b", "/b/0", "/b/1", "/a", "/a/0", "/a/1", "/a/2"] independent=True
+mapping-proxy: json={"x":{"y":[true,false]}} ascii={"x":{"y":[true,false]}} presence=["", "/x", "/x/y", "/x/y/0", "/x/y/1"] independent=True
+shared-branches: json={"left":[1],"right":[1]} ascii={"left":[1],"right":[1]} presence=["", "/left", "/left/0", "/right", "/right/0"] independent=True
+large-decimal: json=1E+999999 ascii=1E+999999 presence=[""] independent=True
+negative-zero: json=[-0.0,-0] ascii=[-0.0,-0] presence=["", "/0", "/1"] independent=True
+nan-float: ValueError A wire number must be finite
+infinite-decimal: ValueError A wire number must be finite
+integer-key: TypeError A wire object key must be a string
+str-subclass: TypeError _Text is not a JSON value
+int-enum: TypeError _Color is not a JSON value
+bytes: TypeError bytes is not a JSON value
+set: TypeError set is not a JSON value
+lone-surrogate-value: ValueError A wire string must not contain lone surrogates
+lone-surrogate-key: ValueError A wire string must not contain lone surrogates
+cyclic-list: ValueError A wire value must not contain cycles
+cyclic-mapping: ValueError A wire value must not contain cycles
+huge-integer: CodecResourceLimitError An integer exceeds the interpreter's decimal conversion limit
+child-object: /a
+child-index: /a/0
+child-type-mismatch: None
+child-missing: None
+presence-cycle: ValueError A wire value must not contain cycles
+presence-invalid: TypeError object is not a JSON value

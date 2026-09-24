@@ -1,0 +1,303 @@
+{
+  "resources": [
+    {
+      "uri": "https://dcg.invalid/inputs/root",
+      "roots": [
+        "/components/schemas/Item",
+        "/components/schemas/Tag",
+        "/paths/~1items/get/parameters/0/schema",
+        "/paths/~1items/get/parameters/1/schema",
+        "/paths/~1items/get/parameters/2/schema",
+        "/paths/~1items/get/parameters/3/schema",
+        "/paths/~1items/get/parameters/4/schema",
+        "/paths/~1items/get/parameters/5/schema",
+        "/paths/~1items/get/responses/200/content/application~1json/schema"
+      ],
+      "contents": {
+        "components": {
+          "schemas": {
+            "Item": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "x-extra": {
+                    "keep": "me"
+                  }
+                },
+                "tag": {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Tag"
+                },
+                "other": {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Tag"
+                },
+                "score": {
+                  "type": "number",
+                  "exclusiveMaximum": 10
+                },
+                "choice": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "a",
+                    "b"
+                  ]
+                },
+                "untyped": {},
+                "lonely": {}
+              }
+            },
+            "Tag": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "paths": {
+          "/items": {
+            "get": {
+              "parameters": [
+                {
+                  "schema": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "exclusiveMinimum": 1
+                  }
+                },
+                {
+                  "schema": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "size": {
+                        "type": "integer"
+                      }
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "theme": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Item"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "schemas": [
+    "parameter cookie pref - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/5/schema",
+    "parameter header X-Id - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/4/schema",
+    "parameter query flags - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/2/schema",
+    "parameter query limit - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/0/schema",
+    "parameter query page - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/3/schema",
+    "parameter query q - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/1/schema",
+    "response_body - - 200 application/json https://dcg.invalid/inputs/root#/paths/~1items/get/responses/200/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/choice",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/id",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/lonely",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/name",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/other",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/score",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/tag",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/untyped",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Tag",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/0/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/1/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/2/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/2/schema/items",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/3/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/3/schema/additionalProperties",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/3/schema/properties/size",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/4/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/4/schema/items",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/5/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/5/schema/properties/theme",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/get/responses/200/content/application~1json/schema"
+  ],
+  "parameters": {
+    "/paths/~1items/get": [
+      {
+        "location": "query",
+        "name": "limit",
+        "style": "form",
+        "explode": true,
+        "required": true,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "integer",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "flags",
+          "page",
+          "q"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": true,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "flags",
+          "limit",
+          "page"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "flags",
+        "style": "spaceDelimited",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "array",
+        "kind": "boolean",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "limit",
+          "page",
+          "q"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "page",
+        "style": "form",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [
+          {
+            "name": "size",
+            "kind": "integer",
+            "repeated": false
+          }
+        ],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": [
+          "flags",
+          "limit",
+          "q"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "X-Id",
+        "style": "simple",
+        "explode": false,
+        "required": true,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "array",
+        "kind": "integer",
+        "fields": [],
+        "additional": null,
+        "reserved_names": []
+      },
+      {
+        "location": "cookie",
+        "name": "pref",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [
+          {
+            "name": "theme",
+            "kind": "string",
+            "repeated": false
+          }
+        ],
+        "additional": {
+          "name": "",
+          "kind": "string",
+          "repeated": false
+        },
+        "reserved_names": []
+      }
+    ]
+  },
+  "diagnostics": [],
+  "validation": [
+    "https://dcg.invalid/inputs/root#/components/schemas/Item {\"id\": 1, \"name\": null, \"tag\": \"a\", \"other\": \"b\", \"score\": \"9.5\", \"choice\": \"a\"} -> valid",
+    "https://dcg.invalid/inputs/root#/components/schemas/Item {\"id\": 1, \"name\": null, \"tag\": \"a\", \"other\": \"b\", \"score\": \"9.5\", \"choice\": null} -> schema.enum@/choice",
+    "https://dcg.invalid/inputs/root#/components/schemas/Item {\"id\": 0, \"other\": null, \"score\": 10, \"choice\": \"c\"} -> schema.exclusiveMinimum@/id,schema.type@/other,schema.exclusiveMaximum@/score,schema.enum@/choice",
+    "https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/0/schema 1 -> schema.exclusiveMinimum@"
+  ]
+}

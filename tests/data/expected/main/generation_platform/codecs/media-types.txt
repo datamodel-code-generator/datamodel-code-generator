@@ -1,0 +1,24 @@
+normalize "Application/JSON": application/json
+normalize " text/plain ; Charset=UTF-8 ": text/plain; charset=UTF-8
+normalize "multipart/form-data; boundary=\"a;b\"": multipart/form-data; boundary="a;b"
+normalize "application/vnd.api+json;version=2;q=0.5": application/vnd.api+json; version=2; q=0.5
+normalize "json": ValueError A media type must be a token/token essence
+normalize "text/": ValueError A media type must be a token/token essence
+normalize "text/plain; charset": ValueError A media type parameter must be a token=value pair
+normalize "text/plain; =x": ValueError A media type parameter must be a token=value pair
+kind application/json: json
+kind application/problem+json: json
+kind application/x-www-form-urlencoded: form
+kind multipart/mixed: multipart
+kind text/csv: text
+kind application/octet-stream: binary
+kind image/png: binary
+text 616263: "abc"
+text c3a9: "\u00e9"
+text ff: WireValidationError text.encoding
+issue-code: ValueError A wire issue code must be a dotted identifier
+issue-message: ValueError A wire issue message must not exceed 1024 characters
+error-empty: The wire value is invalid
+error-pointer: Wrong type at /a
+error-root: Wrong type at /
+unset: UNSET False True
