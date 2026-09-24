@@ -1,0 +1,6 @@
+{
+  "root_relations_completed": true,
+  "root_recipes_preserved": true,
+  "scoped_owners_preserved": true,
+  "copy_targets_distinct": true
+}
