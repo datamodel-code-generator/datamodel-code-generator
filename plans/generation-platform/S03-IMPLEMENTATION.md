@@ -1,6 +1,6 @@
 # S03 implementation record
 
-Status: all four PRs are published in native GitHub stack #4110 with coverage, typing and performance gates met locally; none has been merged.
+Status: all four PRs are published in native GitHub stack #4142, above the separate ty update #4141, with coverage, typing and performance gates met locally; none has been merged.
 
 Repository: datamodel-code-generator/datamodel-code-generator. Fixed main baseline: `149d933d927ca12f2e0e45fc18f8a4cf772046d7`. S01 and S02 are merged. The planning PR #4098 remains open at `8e6f0d4a8a64b71e5a049ad8d108507b2fe164ca`; contracts are read from its separate checkout. The original worktree's untracked `1.tmp` is preserved.
 
@@ -336,3 +336,9 @@ Verification:
 - Ordinary-path A/B against fixed main (17 cases, 60 balanced pairs, seed 4098): no wall or CPU 99% interval lies above zero. The complete capture product (generation, freeze, artifact validation and close) compared with the previously published #4112 head plus its import follow-up (30 balanced pairs): the two contract cases differ by 0.00 and +0.14 ms, and the large OpenAPI case by +4.3 ms of 1,077 ms. Every 99% interval includes zero.
 
 Conservative behavior kept on purpose: a module whose ordinary output spells a dynamic builtin name, for example the enum default `Mode.eval`, is reported as `BND_TYPE_EXPRESSION_UNSUPPORTED` rather than corroborated. Two ordinary-generator issues were observed outside S03 and left unchanged: a discriminator field can be dropped with `use_enum_values_in_discriminator` and `module_split_mode="single"`, and one module-split output imports `Literal` without using it.
+
+## Rebase and ty split checkpoint
+
+Main advanced to `5acbd129`, and the stack was rebased onto it. The ty update, now to the latest 0.0.84, and the type fixes it requires in pre-existing modules moved out of #4111 into #4141, so the S03 PRs contain only S03 changes. GitHub does not allow inserting a PR below a stacked PR, so stack #4110 was dissolved and recreated as native stack #4142: #4141, #4108, #4109, #4111, #4112, #4135 and #4136. #4135 and #4136 fix ordinary-generator issues observed outside S03 and update the S03 expectations that pinned them.
+
+Every layer passes Ruff, formatting, ty 0.0.84 and the architecture/store guards; the full suite on each layer fails only the 23 environment-dependent tests that fail identically on main. Strict Pyright passes on all sixteen new modules, and the lines changed by #4141 are fully covered.
