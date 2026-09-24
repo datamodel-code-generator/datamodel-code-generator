@@ -18892,6 +18892,57 @@ def test_main_jsonschema_dynamic_ref_in_defs_pydantic_v2(output_file: Path) -> N
     )
 
 
+def test_main_jsonschema_dynamic_ref_embedded_resources(output_file: Path) -> None:
+    """Resolve plain-name $dynamicRef within the embedded schema resource that declares it."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_embedded_resources.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref_embedded_resources.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="dynamic_ref_embedded_resources",
+        model_name="Catalog",
+        valid_json='{"numbers": [1.5], "names": ["name"], "labels": ["abc"]}',
+        invalid_json='{"names": [1]}',
+        expected_error_type="string_type",
+    )
+
+
+def test_main_jsonschema_dynamic_ref_shared_id(output_dir: Path) -> None:
+    """Keep plain-name $dynamicRef in each document when separate documents declare the same $id."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_shared_id",
+        output_path=output_dir,
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "dynamic_ref_shared_id",
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+
+
+def test_main_jsonschema_dynamic_ref_inherited_fields(output_file: Path) -> None:
+    """Resolve plain-name $dynamicRef in inherited fields within the inherited schema's own resource."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_inherited_fields" / "child.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref_inherited_fields.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--read-only-write-only-model-type", "all"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="dynamic_ref_inherited_fields",
+        model_name="ChildRequest",
+        valid_json='{"value": 1, "name": "one"}',
+        invalid_json='{"value": "one"}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_jsonschema_multiple_aliases_required_pydantic_v2(output_file: Path) -> None:
     """Test multiple aliases with AliasChoices on required fields for Pydantic v2. (#2989)."""
     run_main_and_assert(
