@@ -189,7 +189,7 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
         case ast.Constant(value=value) if allow_literal and isinstance(value, _LITERAL_VALUE_TYPES):
             return PythonTypeLiteralValue(value)
         case ast.UnaryOp(op=ast.UAdd() | ast.USub() as operator, operand=ast.Constant(value=value)) if (
-            allow_literal and type(value) in {int, float}
+            allow_literal and (type(value) is int or type(value) is float)
         ):
             return PythonTypeLiteralValue(+value if isinstance(operator, ast.UAdd) else -value)
     raise _InvalidPythonTypeAnnotationError

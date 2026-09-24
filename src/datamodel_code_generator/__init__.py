@@ -227,11 +227,15 @@ if TYPE_CHECKING:
         bool,
         RemoteReferenceLock | None,
     ]
+
+    class _SharedParserConfigDict(ParserConfigDict, closed=True):
+        """Parser options every input type accepts, closed so they extend each closed parser config."""
+
     _PreparedParser: TypeAlias = tuple[
         DataModelSet,
         _ParserSource,
         bool,
-        ParserConfigDict,
+        _SharedParserConfigDict,
         _PythonTypeExpressions | None,
     ]
     _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, DataModelSet, bool]
@@ -1019,7 +1023,7 @@ def _create_parser_config(
     additional_options: ParserConfigDict,
 ) -> Any:
     """Create the lightweight config for already-validated generation options."""
-    values = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
+    values: dict[str, Any] = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
     values.update(dict(additional_options))
     parser_config = _get_internal_parser_config_model().model_construct(**values)
     return _configure_parser_config_context(parser_config, values, generate_config)
@@ -1055,7 +1059,7 @@ def _create_typed_parser_config(
     and CLI-only options remain owned by ``GenerateConfig`` instead of leaking
     into an ``extra=allow`` parser bag.
     """
-    values = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
+    values: dict[str, Any] = {**_INTERNAL_PARSER_CONFIG_DEFAULTS, **_generate_config_values(generate_config)}
     values.update(dict(additional_options))
     # ``extra="forbid"`` makes model_construct ignore non-parser generation
     # fields without allocating a second filtered dictionary.
@@ -1337,7 +1341,7 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
             case _:
                 target_datetime_class = DatetimeClassType.Awaredatetime
 
-    additional_options: ParserConfigDict = {
+    additional_options: _SharedParserConfigDict = {
         "data_model_type": data_model_types.data_model,
         "data_model_root_type": data_model_types.root_model,
         "data_model_field_type": data_model_types.field_model,
@@ -1378,7 +1382,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
     input_file_type: InputFileType,
     source: Any,
     config: GenerateConfig,
-    additional_options: ParserConfigDict,
+    additional_options: _SharedParserConfigDict,
     data_model_types: DataModelSet,
     *,
     jsonschema_version: JsonSchemaVersion | None,
@@ -1936,7 +1940,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     input_file_type: InputFileType,
     parser_source: _ParserSource,
     config: GenerateConfig,
-    parser_options: ParserConfigDict,
+    parser_options: _SharedParserConfigDict,
     data_model_types: DataModelSet,
     schema_versions: _SchemaVersions,
     diagnostic_source_path: Path | None,
@@ -2156,6 +2160,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         case Path() as input_path if not input_path.is_absolute():
             input_ = (caller_cwd / input_path.expanduser()).resolve()
         case [Path(), *_] as input_paths if input_file_type != InputFileType.MCPTools:
+            input_paths = cast("list[Path]", input_paths)
             if any(not path.is_absolute() for path in input_paths):
                 input_ = [
                     path if path.is_absolute() else (caller_cwd / path.expanduser()).resolve() for path in input_paths
@@ -2360,7 +2365,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     source_override: Mapping[str, Any] | None,
     config: GenerateConfig,
     parser_source: _ParserSource,
-    parser_options: ParserConfigDict,
+    parser_options: _SharedParserConfigDict,
     data_model_types: DataModelSet,
     defer_formatting: bool,  # noqa: FBT001
     extra_template_data: defaultdict[str, dict[str, Any]] | None,
@@ -2631,7 +2636,9 @@ def _run_generation(  # noqa: PLR0914
             if additional_options["base_path"] is None and not isinstance(source, Path):
                 match input_:
                     case [Path(), *_] as input_paths:
-                        additional_options["base_path"] = _path_list_base_path(input_paths, caller_cwd)
+                        additional_options["base_path"] = _path_list_base_path(
+                            cast("list[Path]", input_paths), caller_cwd
+                        )
                     case _:
                         additional_options["base_path"] = caller_cwd
             schema_versions = _resolve_schema_versions(input_file_type, config.schema_version)

@@ -6,7 +6,7 @@ import re
 import sys
 import warnings
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from datamodel_code_generator.deprecations import warn_deprecated
 
@@ -112,7 +112,7 @@ def reject_unsupported_yaml_tags(text: str) -> None:
 
     import yaml  # noqa: PLC0415
 
-    node = yaml.compose(text, Loader=get_safe_loader())
+    node = yaml.compose(text, Loader=cast("type[yaml.SafeLoader | yaml.CSafeLoader]", get_safe_loader()))
     if node is None:
         return
     for yaml_node in _iter_yaml_nodes(node):

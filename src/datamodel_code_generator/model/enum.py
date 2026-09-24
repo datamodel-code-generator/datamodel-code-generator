@@ -68,7 +68,7 @@ class _NullEnumMemberValue(_StructuredEnumMemberValue):
     """A unique structured marker for an explicit JSON null enum member."""
 
     __slots__ = ()
-    value: ClassVar[None] = None
+    value: None = None
 
     def __str__(self) -> str:
         """Render JSON null as its Python source equivalent."""
