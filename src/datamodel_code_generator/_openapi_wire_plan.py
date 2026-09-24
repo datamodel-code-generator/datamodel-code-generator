@@ -102,6 +102,7 @@ _INTEGER_NUMBER: Final = frozenset({"integer", "number"})
 _FLAGS: Final[dict[Direction, str]] = {"request": "readOnly", "response": "writeOnly"}
 _BRANCH_ARRAYS: Final = ("anyOf", "oneOf")
 _BRANCH_VALUES: Final = ("if", "then", "else", "not")
+_GUARDED: Final = frozenset({"if", "not"})
 _CHILD_VALUES: Final = ("items", "additionalProperties", "contains", "unevaluatedItems", "unevaluatedProperties")
 _LEXICAL_KINDS: Final[dict[str, LexicalKind]] = {
     "string": "string",
@@ -423,6 +424,7 @@ class _DirectionalPlanner:
         self.documents = {uri: document for document, uri in planner.logical.items()}
         self.decisions: dict[tuple[SourceLocation, str], tuple[JSONValue, JSONValue]] = {}
         self.visited: set[tuple[frozenset[SourceLocation], frozenset[tuple[str, SourceLocation]]]] = set()
+        self.guarded: set[SourceLocation] = set()
 
     def schema(self, location: SourceLocation) -> dict[str, JSONValue]:
         roots = self.planner.roots.get(location.document, {})
@@ -579,12 +581,37 @@ class _DirectionalPlanner:
         for name in own:
             self.visit(declared[name], {})
         for location in group:
-            for child in self.children(location):
-                self.visit((child,), {})
-            for branch in self.branches(location):
+            self.descend(location, declared)
+
+    def descend(self, location: SourceLocation, declared: Mapping[str, tuple[SourceLocation, ...]]) -> None:
+        for child in self.children(location):
+            self.visit((child,), {})
+        for branch in self.branches(location):
+            if branch.pointer.rpartition("/")[2] in _GUARDED:
+                self.guard((branch,))
+            else:
                 self.visit((branch,), declared)
 
+    def guard(self, locations: Iterable[SourceLocation]) -> None:
+        for location in self.closure(locations):
+            if location in self.guarded:
+                continue
+            self.guarded.add(location)
+            properties = self.schema(location).get("properties")
+            self.guard((
+                *(_at(location, "properties", name) for name in (properties if isinstance(properties, dict) else {})),
+                *self.children(location),
+                *self.branches(location),
+            ))
+
     def view(self, direction: Direction, flagged: Iterable[str]) -> DirectionalView:
+        for (location, keyword), (original, decided) in self.decisions.items():
+            if original != decided and location in self.guarded:
+                self.planner.report(
+                    "MC_SCHEMA_DIALECT",
+                    _at(location, keyword),
+                    "The directional required members of a shared schema depend on how it is referenced",
+                )
         return DirectionalView(
             direction=direction,
             flagged=tuple(sorted(set(flagged))),

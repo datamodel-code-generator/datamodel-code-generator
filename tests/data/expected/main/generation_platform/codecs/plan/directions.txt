@@ -5,12 +5,15 @@
       "roots": [
         "/components/schemas/ContextA",
         "/components/schemas/ContextB",
+        "/components/schemas/Guarded",
         "/components/schemas/Item",
         "/components/schemas/Mode",
         "/components/schemas/Shared",
+        "/components/schemas/Stamp",
         "/paths/~1contexts/post/requestBody/content/application~1json/schema",
         "/paths/~1contexts/post/responses/201/content/application~1json/schema",
         "/paths/~1contexts/put/requestBody/content/application~1json/schema",
+        "/paths/~1guarded/post/requestBody/content/application~1json/schema",
         "/paths/~1items/post/requestBody/content/application~1json/schema",
         "/paths/~1items/post/responses/200/content/application~1json/schema"
       ],
@@ -43,6 +46,54 @@
                       "type": "string"
                     }
                   }
+                }
+              ]
+            },
+            "Guarded": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "readOnly": true
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "not": {
+                "required": [
+                  "id"
+                ]
+              },
+              "if": {
+                "required": [
+                  "id"
+                ]
+              },
+              "then": {
+                "required": [
+                  "note"
+                ]
+              },
+              "allOf": [
+                {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Stamp"
+                }
+              ],
+              "anyOf": [
+                {
+                  "not": {
+                    "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Stamp"
+                  }
+                },
+                {
+                  "type": "object"
                 }
               ]
             },
@@ -176,6 +227,20 @@
               "required": [
                 "key"
               ]
+            },
+            "Stamp": {
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "readOnly": true
+                },
+                "parent": {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Stamp"
+                }
+              }
             }
           }
         },
@@ -215,6 +280,19 @@
               }
             }
           },
+          "/guarded": {
+            "post": {
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Guarded"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "/items": {
             "post": {
               "requestBody": {
@@ -246,6 +324,7 @@
   "schemas": [
     "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1contexts/post/requestBody/content/application~1json/schema",
     "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1contexts/put/requestBody/content/application~1json/schema",
+    "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1guarded/post/requestBody/content/application~1json/schema",
     "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1items/post/requestBody/content/application~1json/schema",
     "response_body - - 200 application/json https://dcg.invalid/inputs/root#/paths/~1items/post/responses/200/content/application~1json/schema",
     "response_body - - 201 application/json https://dcg.invalid/inputs/root#/paths/~1contexts/post/responses/201/content/application~1json/schema",
@@ -253,6 +332,12 @@
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/ContextA/allOf/1/properties/key",
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/ContextB",
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/ContextB/allOf/1/properties/key",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/anyOf/0",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/anyOf/1",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/properties/id",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/properties/name",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/properties/note",
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item",
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/both",
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/id",
@@ -270,16 +355,21 @@
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Mode/anyOf/0",
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Mode/anyOf/1",
     "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Shared",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Stamp",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Stamp/properties/id",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Stamp/properties/parent",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1contexts/post/requestBody/content/application~1json/schema",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1contexts/post/responses/201/content/application~1json/schema",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1contexts/put/requestBody/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1guarded/post/requestBody/content/application~1json/schema",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/post/requestBody/content/application~1json/schema",
     "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/post/responses/200/content/application~1json/schema"
   ],
   "parameters": {
     "/paths/~1items/post": [],
     "/paths/~1contexts/post": [],
-    "/paths/~1contexts/put": []
+    "/paths/~1contexts/put": [],
+    "/paths/~1guarded/post": []
   },
   "views": {
     "request": {
@@ -289,10 +379,12 @@
         "https://dcg.invalid/inputs/root#/components/schemas/Item/properties/pair/prefixItems/0 required=[]",
         "https://dcg.invalid/inputs/root#/components/schemas/Item/then required=[]",
         "https://dcg.invalid/inputs/root#/components/schemas/Item/dependentSchemas/token required=[]",
-        "https://dcg.invalid/inputs/root#/components/schemas/Shared required=[]"
+        "https://dcg.invalid/inputs/root#/components/schemas/Shared required=[]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Stamp required=[]"
       ],
       "flagged": [
         "https://dcg.invalid/inputs/root#/paths/~1contexts/post/requestBody/content/application~1json/schema",
+        "https://dcg.invalid/inputs/root#/paths/~1guarded/post/requestBody/content/application~1json/schema",
         "https://dcg.invalid/inputs/root#/paths/~1items/post/requestBody/content/application~1json/schema"
       ]
     },
@@ -312,6 +404,7 @@
   "diagnostics": [
     "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Item/required: A required property's readOnly or writeOnly annotation is conditional",
     "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Item/properties/both: A property cannot be both read-only and write-only",
-    "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Shared/required: The directional required members of a shared schema depend on how it is referenced"
+    "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Shared/required: The directional required members of a shared schema depend on how it is referenced",
+    "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Stamp/required: The directional required members of a shared schema depend on how it is referenced"
   ]
 }

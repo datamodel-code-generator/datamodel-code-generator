@@ -40,6 +40,16 @@ paths:
       responses:
         "204":
           description: Stored.
+  /guarded:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Guarded"
+      responses:
+        "204":
+          description: Stored.
 components:
   schemas:
     Mode:
@@ -122,3 +132,34 @@ components:
         - properties:
             key:
               type: string
+    Guarded:
+      type: object
+      required: [name]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        note:
+          type: string
+      not:
+        required: [id]
+      if:
+        required: [id]
+      then:
+        required: [note]
+      allOf:
+        - $ref: "#/components/schemas/Stamp"
+      anyOf:
+        - not:
+            $ref: "#/components/schemas/Stamp"
+        - type: object
+    Stamp:
+      required: [id]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parent:
+          $ref: "#/components/schemas/Stamp"
