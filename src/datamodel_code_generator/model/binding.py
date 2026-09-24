@@ -1315,7 +1315,8 @@ def _model_parameter_values(  # ruff: ignore[too-many-return-statements]
                 return None, False
             return {name: _syntax_value(value) for name, value in arguments.items()}, "extra_items" in arguments
         case _:
-            return {}, False
+            pass
+    return {}, False
 
 
 def _model_configuration(

@@ -41,23 +41,21 @@ def _is_literal_sequence(value: object) -> TypeIs[list[object] | tuple[object, .
 
 
 def _literal_scalar(value: object) -> LiteralScalar | None:  # ruff: ignore[too-many-return-statements]
-    match value:
-        case None:
-            return LiteralScalar("none", None)
-        case bool() if type(value) is bool:
-            return LiteralScalar("bool", value)
-        case int() if type(value) is int:
-            return LiteralScalar("int", value)
-        case float() if type(value) is float and isfinite(value):
-            return LiteralScalar("float", value)
-        case str() if type(value) is str:
-            return LiteralScalar("str", value)
-        case bytes() if type(value) is bytes:
-            return LiteralScalar("bytes", value)
-        case Decimal() if type(value) is Decimal and value.is_finite():
-            return LiteralScalar("decimal", value)
-        case _:
-            return None
+    if value is None:
+        return LiteralScalar("none", None)
+    if type(value) is bool:
+        return LiteralScalar("bool", value)
+    if type(value) is int:
+        return LiteralScalar("int", value)
+    if type(value) is float and isfinite(value):
+        return LiteralScalar("float", value)
+    if type(value) is str:
+        return LiteralScalar("str", value)
+    if type(value) is bytes:
+        return LiteralScalar("bytes", value)
+    if type(value) is Decimal and value.is_finite():
+        return LiteralScalar("decimal", value)
+    return None
 
 
 def freeze_literal(value: object, active: set[int]) -> FrozenLiteral:
