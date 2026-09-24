@@ -101,8 +101,8 @@ def _array_kind(base: FinalPythonType) -> ArrayKind:
 
 def _models(node: TypeNode) -> Iterator[str]:
     match node:
-        case ModelNode(symbol=symbol):
-            yield symbol
+        case ModelNode():
+            yield node.symbol
         case ArrayNode(item=item):
             yield from _models(item)
         case TupleNode(items=items) | UnionNode(members=items):
@@ -181,8 +181,8 @@ class _CodecPlanner:
 
     def node(self, value: FinalPythonType, schema: SourceLocation | None, source: SourceLocation) -> TypeNode:  # noqa: PLR0911
         match value:
-            case GeneratedSymbolType(symbol=symbol):
-                return self.symbol_node(self.symbols[symbol], source)
+            case GeneratedSymbolType():
+                return self.symbol_node(self.symbols[value.symbol], source)
             case AnnotatedType(base=base):
                 return self.node(base, schema, source)
             case UnionType(members=members):

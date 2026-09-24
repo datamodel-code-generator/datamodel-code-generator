@@ -160,7 +160,7 @@ def _scalar(value: object, pointer: str) -> JSONValue:
 
 def _key(key: object, pointer: str) -> str:
     try:
-        return checked_key(key)
+        return checked_key(key.value if isinstance(key, Enum) else key)
     except (TypeError, ValueError) as error:
         msg = f"{error} at {pointer or '/'}"
         raise ModelProjectionError(msg) from None
@@ -204,6 +204,18 @@ def _has_models(node: TypeNode | None) -> bool:
             return False
 
 
+def _model_unions(node: TypeNode | None) -> bool:
+    match node:
+        case UnionNode(members=members) if len(members) > 1 and any(isinstance(item, ModelNode) for item in members):
+            return True
+        case UnionNode(members=items) | TupleNode(items=items):
+            return any(_model_unions(item) for item in items)
+        case ArrayNode(item=item) | MapNode(value=item):
+            return _model_unions(item)
+        case _:
+            return False
+
+
 def _item(node: ArrayNode | TupleNode, index: int) -> TypeNode | None:
     if isinstance(node, ArrayNode):
         return node.item
@@ -229,7 +241,7 @@ class PydanticModelCodec(Generic[T]):
         "_adapter",
         "_binding",
         "_bundle",
-        "_extras",
+        "_inspect",
         "_keys",
         "_members",
         "_models",
@@ -296,7 +308,14 @@ class PydanticModelCodec(Generic[T]):
             and model.native_kind != "root"
             and (model.extra == "ignore" or (model.extra == "allow" and model.native_kind == "dataclass"))
         )
-        self._extras = bool(self._unstored or self._reserved)
+        self._inspect = any(
+            _model_unions(node)
+            for node in (
+                binding.type,
+                *(model.root for model in binding.models),
+                *(field.type for model in binding.models for field in model.fields),
+            )
+        ) or bool(self._unstored or self._reserved)
 
     @property
     def binding(self) -> UseBinding:
@@ -387,7 +406,7 @@ class PydanticModelCodec(Generic[T]):
                 binding_id=binding_id,
                 wire=wire,
                 presence=presence,
-                extras=self._native_extras(wire, value),
+                extras=self._native_extras(wire, value, budget),
             )
         if self._binding.projection_mode == "native":
             msg = f"The native use has an unplanned projection gap at {walk.issues[0].pointer or '/'}"
@@ -550,39 +569,41 @@ class PydanticModelCodec(Generic[T]):
                     continue
         return next((member for member in members if isinstance(member, LeafNode)), None)
 
-    def _native_extras(self, wire: WireValue, value: object) -> Mapping[str, WireValue]:
-        if not self._extras:
+    def _native_extras(self, wire: WireValue, value: object, budget: MatchBudget) -> Mapping[str, WireValue]:
+        if not self._inspect:
             return _EMPTY
-        extras: dict[str, WireValue] = {}
-        self._collect(wire, value, self._binding.type, "", extras)
-        return MappingProxyType(extras)
+        walk = _Walk(budget)
+        self._collect(wire, value, self._binding.type, "", walk)
+        return MappingProxyType(walk.extras)
 
-    def _collect(
-        self, wire: WireValue, native: object, node: TypeNode | None, pointer: str, extras: dict[str, WireValue]
-    ) -> None:
+    def _collect(self, wire: WireValue, native: object, node: TypeNode | None, pointer: str, walk: _Walk) -> None:
         match node:
             case ModelNode(symbol=symbol) if (model := self._models[symbol]).native_kind == "root" and _is_root(native):
-                self._collect(wire, native.root, model.root, pointer, extras)
+                self._collect(wire, native.root, model.root, pointer, walk)
             case ModelNode(symbol=symbol) if isinstance(wire, Mapping):
-                self._collect_model(wire, native, self._models[symbol], pointer, extras)
+                self._collect_model(wire, native, self._models[symbol], pointer, walk)
             case UnionNode(members=members):
-                self._collect(wire, native, self._native_member(native, members), pointer, extras)
+                member = self._native_member(native, members)
+                if (
+                    len(members) > 1
+                    and isinstance(member, ModelNode)
+                    and not self._matches(member.symbol, wire, walk.budget)
+                ):
+                    msg = f"The native union member at {pointer or '/'} does not match the wire schema"
+                    raise ModelProjectionError(msg)
+                self._collect(wire, native, member, pointer, walk)
             case ArrayNode() | TupleNode() if isinstance(wire, tuple) and _is_sequence(native):
                 for index, (entry, native_entry) in enumerate(zip(wire, native, strict=False)):
-                    self._collect(entry, native_entry, _item(node, index), _at(pointer, index), extras)
+                    self._collect(entry, native_entry, _item(node, index), _at(pointer, index), walk)
             case MapNode(value=value) if isinstance(wire, Mapping) and _is_mapping(native):
+                entries = {_key(key, pointer): entry for key, entry in native.items()}
                 for name, entry in wire.items():
-                    self._collect(entry, native.get(name), value, _at(pointer, name), extras)
+                    self._collect(entry, entries.get(name), value, _at(pointer, name), walk)
             case _:
                 return
 
     def _collect_model(
-        self,
-        wire: Mapping[str, WireValue],
-        native: object,
-        model: ModelBinding,
-        pointer: str,
-        extras: dict[str, WireValue],
+        self, wire: Mapping[str, WireValue], native: object, model: ModelBinding, pointer: str, walk: _Walk
     ) -> None:
         fields = self._wire_fields[model.symbol]
         nested = self._nested[model.symbol]
@@ -590,9 +611,9 @@ class PydanticModelCodec(Generic[T]):
         reserved = self._reserved.get(model.symbol, _NO_KEYS)
         for name, entry in wire.items():
             if (field := nested.get(name)) is not None:
-                self._collect(entry, getattr(native, field.native_name), field.type, _at(pointer, name), extras)
+                self._collect(entry, getattr(native, field.native_name), field.type, _at(pointer, name), walk)
             elif name not in fields and (unstored or name in reserved):
-                extras[_at(pointer, name)] = entry
+                walk.extras[_at(pointer, name)] = entry
 
     def _native_wire(self, value: T, presence: PresenceTree | None) -> WireValue:
         dumped = self._adapter.dump_python(value, mode="python", by_alias=False, round_trip=True, warnings=False)
