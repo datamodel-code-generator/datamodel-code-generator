@@ -499,7 +499,9 @@ jobs:
             # Merge sections with same ### headings to avoid duplicates
             # Preserves blank lines inside fenced code blocks
             MERGED_BC=$(printf '%s\n\n%s' "$EXISTING_BC" "$BC_CONTENT" | awk '
-              BEGIN { current_section = ""; in_fence = 0; }
+              BEGIN { current_section = ""; in_fence = 0; in_comment = 0; }
+              in_comment { if (index($0, "-->")) in_comment = 0; next; }
+              /^<!--/ && !in_fence { if (!index($0, "-->")) in_comment = 1; next; }
               /^```/ || /^~~~/ { in_fence = !in_fence; }
               /^### / && !in_fence {
                 current_section = $0;
@@ -509,7 +511,6 @@ jobs:
                 next;
               }
               /^[[:space:]]*$/ && !in_fence { next; }
-              /^<!--/ && !in_fence { next; }
               current_section == "" {
                 preamble = preamble == "" ? $0 : preamble "\n" $0;
                 next;
