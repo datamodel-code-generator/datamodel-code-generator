@@ -346,7 +346,7 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         return self._record_type_copy(data_type, result)  # pyright: ignore[reportUnknownArgumentType]
 
-    def _copy_inherited_field(  # ruff: ignore[too-many-arguments] -- Preserve the existing copy hook signature.
+    def _copy_inherited_field(  # ruff: ignore[too-many-arguments]
         self,
         field: DataModelFieldBase,
         inherited_field: DataModelFieldBase,
