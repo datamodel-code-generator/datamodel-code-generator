@@ -125,8 +125,10 @@ def _symbol_key(symbol: FinalModelSymbol) -> str:
 
 
 def _accepted(facts: ModelFieldFacts, slot: FieldSlot, wire_name: str, *, generated: bool) -> frozenset[str]:
-    if aliases := frozenset(facts.validation_aliases or ()) or frozenset({facts.alias} if facts.alias else ()):
-        return aliases
+    if facts.validation_aliases:
+        return frozenset(facts.validation_aliases)
+    if facts.alias and not facts.use_serialization_alias:
+        return frozenset({facts.alias})
     return frozenset({wire_name if generated else slot.name})
 
 

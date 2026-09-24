@@ -27,6 +27,8 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
         ("pets", "pets-noalias"),
         ("pets", "pets-noalias-forbid"),
         ("pets", "pets-generator"),
+        ("pets", "pets-serialization"),
+        ("pets", "pets-missing"),
         ("pets", "pets-strict"),
         ("pets", "pets-forbid"),
         ("pets", "pets-allow"),

@@ -206,7 +206,7 @@ def _has_models(node: TypeNode | None) -> bool:
 
 def _model_unions(node: TypeNode | None) -> bool:
     match node:
-        case UnionNode(members=members) if len(members) > 1 and any(isinstance(item, ModelNode) for item in members):
+        case UnionNode() if len(node.members) > 1 and any(isinstance(item, ModelNode) for item in node.members):
             return True
         case UnionNode(members=items) | TupleNode(items=items):
             return any(_model_unions(item) for item in items)
