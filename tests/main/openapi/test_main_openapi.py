@@ -9784,6 +9784,26 @@ def test_main_openapi_component_embedded_remote_ids(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_anchor_refs(output_file: Path) -> None:
+    """Resolve plain-name references to the $anchor of component schemas, including within $id resources."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "anchor_refs.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="anchor_refs.py",
+        extra_args=["--openapi-scopes", "schemas", "paths", "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_anchor_refs",
+        model_name="Other",
+        valid_json='{"label": "a", "size": 1}',
+        invalid_json='{"size": "one"}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 
