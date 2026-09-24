@@ -1,0 +1,64 @@
+[
+  {
+    "node": "UnionType",
+    "members": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    ],
+    "preserve_order": false
+  },
+  {
+    "node": "GenericType",
+    "base": {
+      "node": "BuiltinType",
+      "name": "dict"
+    },
+    "arguments": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          },
+          {
+            "node": "GenericType",
+            "base": {
+              "node": "BuiltinType",
+              "name": "list"
+            },
+            "arguments": [
+              {
+                "node": "BuiltinType",
+                "name": "str"
+              }
+            ],
+            "tuple_form": "not_tuple"
+          }
+        ],
+        "preserve_order": false
+      }
+    ],
+    "tuple_form": "not_tuple"
+  }
+]

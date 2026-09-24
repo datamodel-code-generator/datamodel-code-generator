@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A constrained union has unmatched branch returns"
+  ],
+  "latched_first": true,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

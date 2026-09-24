@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "Repeated allOf union processing changed the actual referenced schema"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

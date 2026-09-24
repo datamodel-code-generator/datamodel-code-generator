@@ -1,0 +1,10 @@
+/paths/~1a/post/requestBody/content/application~1json/itemSchema value: bound
+/paths/~1a/post/requestBody/content/application~1json/itemSchema item_stream_array: bound
+/paths/~1a/post/responses/200/content/application~1json/itemSchema value: bound
+/paths/~1a/post/responses/200/content/application~1json/itemSchema item_stream_array: bound
+/paths/~1a/post/responses/201/content/application~1json/itemSchema value: bound
+/paths/~1a/post/responses/201/content/application~1json/itemSchema item_stream_array: bound
+/paths/~1b/post/requestBody/content/application~1json/itemSchema value: BND_TYPE_EXPRESSION_UNSUPPORTED
+/paths/~1b/post/requestBody/content/application~1json/itemSchema item_stream_array: BND_TYPE_EXPRESSION_UNSUPPORTED
+/paths/~1b/post/responses/200/content/application~1json/itemSchema value: bound
+/paths/~1b/post/responses/200/content/application~1json/itemSchema item_stream_array: bound

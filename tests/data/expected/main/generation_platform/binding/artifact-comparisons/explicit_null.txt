@@ -1,0 +1,7 @@
+{
+  "changed_fields": [
+    "explicit_null"
+  ],
+  "same_models": true,
+  "same_partitioned_models": true
+}

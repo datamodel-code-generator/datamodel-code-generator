@@ -1,0 +1,127 @@
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/A",
+      "schema": "/components/schemas/A",
+      "declaration": "/components/schemas/A",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "A"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/B",
+      "schema": "/components/schemas/B",
+      "declaration": "/components/schemas/B",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "B"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/C",
+      "schema": "/components/schemas/C",
+      "declaration": "/components/schemas/C",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "C"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Leaf",
+      "schema": "/components/schemas/Leaf",
+      "declaration": "/components/schemas/Leaf",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Leaf"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/A/properties/root",
+      "schema": "/components/schemas/A/properties/root",
+      "declaration": "/components/schemas/A/properties/root",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/A/properties/shared-key",
+      "schema": "/components/schemas/A/properties/shared-key",
+      "declaration": "/components/schemas/A/properties/shared-key",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/B/allOf/1/properties/left",
+      "schema": "/components/schemas/B/allOf/1/properties/left",
+      "declaration": "/components/schemas/B/allOf/1/properties/left",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/B/allOf/1/properties/shared-key",
+      "schema": "/components/schemas/B/allOf/1/properties/shared-key",
+      "declaration": "/components/schemas/B/allOf/1/properties/shared-key",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/C/allOf/1/properties/right",
+      "schema": "/components/schemas/C/allOf/1/properties/right",
+      "declaration": "/components/schemas/C/allOf/1/properties/right",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "bool"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/C/allOf/1/properties/shared-key",
+      "schema": "/components/schemas/C/allOf/1/properties/shared-key",
+      "declaration": "/components/schemas/C/allOf/1/properties/shared-key",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Leaf/allOf/2/properties/leaf-key",
+      "schema": "/components/schemas/Leaf/allOf/2/properties/leaf-key",
+      "declaration": "/components/schemas/Leaf/allOf/2/properties/leaf-key",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "float"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

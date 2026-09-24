@@ -1,0 +1,94 @@
+{
+  "uses": [
+    {
+      "use": "response_body value /paths/~1pets/get/responses/200",
+      "schema": "/paths/~1pets/get/responses/200/content/application~1json/schema",
+      "declaration": "/components/responses/PetPage",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "PetsGetResponse"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1pets/get/responses/206",
+      "schema": "/paths/~1pets/get/responses/206/content/text~1csv/schema",
+      "declaration": "/paths/~1pets/get/responses/206",
+      "media": "text/csv",
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "request_body value /paths/~1pets/post/requestBody",
+      "schema": "/paths/~1pets/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1pets/post/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "PetsPostRequest"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/name",
+      "schema": "/components/schemas/Pet/properties/name",
+      "declaration": "/components/schemas/Pet/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/responses/PetPage/content/application~1json/schema/items",
+      "schema": "/components/responses/PetPage/content/application~1json/schema/items",
+      "declaration": "/components/responses/PetPage/content/application~1json/schema/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Pet"
+      }
+    },
+    {
+      "use": "schema value /paths/~1pets/get/responses/206/content/text~1csv/schema",
+      "schema": "/paths/~1pets/get/responses/206/content/text~1csv/schema",
+      "declaration": "/paths/~1pets/get/responses/206/content/text~1csv/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1pets/post/requestBody/content/application~1json/schema/properties/name",
+      "schema": "/paths/~1pets/post/requestBody/content/application~1json/schema/properties/name",
+      "declaration": "/paths/~1pets/post/requestBody/content/application~1json/schema/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet",
+      "schema": "/components/schemas/Pet",
+      "declaration": "/components/schemas/Pet",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Pet"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

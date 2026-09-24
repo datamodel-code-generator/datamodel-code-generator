@@ -26,6 +26,8 @@ class GenerationObserver:
         """Record engine events without retaining live generation frames."""
         if not frame.f_globals.get("__name__", "").startswith("datamodel_code_generator"):
             return
+        if frame.f_globals.get("__name__") == "datamodel_code_generator.parser.openapi_contract":
+            return
         name = frame.f_code.co_name
         if event == "call":
             if name in OBSERVED:

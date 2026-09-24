@@ -1,0 +1,20 @@
+{
+  "Payload.value": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value"
+    ]
+  },
+  "Payload.one": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/one"
+    ]
+  },
+  "Payload.items": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/items"
+    ]
+  }
+}

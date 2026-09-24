@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Cyclic metadata
+  version: '1'
+paths:
+  /items:
+    get:
+      externalDocs: &docs
+        url: https://example.com/docs
+        extra: *docs
+      responses:
+        '204':
+          description: Done
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        value:
+          type: string

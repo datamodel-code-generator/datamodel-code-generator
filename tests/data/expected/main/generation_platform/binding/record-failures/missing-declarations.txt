@@ -1,0 +1,12 @@
+{
+  "diagnostics": [
+    "BND_SYMBOL_NOT_EMITTED",
+    "BND_TYPE_EXPRESSION_UNSUPPORTED"
+  ],
+  "demands": [
+    "BND_FIELD_UNRESOLVED",
+    "BND_SYMBOL_NOT_EMITTED",
+    "BND_TYPE_EXPRESSION_UNSUPPORTED"
+  ],
+  "retained_graph": 0
+}

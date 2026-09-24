@@ -1,0 +1,7 @@
+{
+  "diagnostics": [],
+  "demands": [
+    "BND_MODEL_SCOPE_REQUIRED"
+  ],
+  "retained_graph": 0
+}

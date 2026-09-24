@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A merged schema child has no observed source"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

@@ -1,0 +1,304 @@
+[
+  {
+    "id": "ref-sibling-recursive-target",
+    "source": "generation_platform/binding/ref-sibling-recursive-target.yaml",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  {
+    "id": "prefix-items-true",
+    "source": "generation_platform/binding/prefix-items-true.yaml",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  {
+    "id": "discriminator-dict-key",
+    "source": "generation_platform/binding/session-discriminator-dict-key.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "module_split_mode": "single",
+      "collapse_root_models": true
+    }
+  },
+  {
+    "id": "legacy-dangling-response",
+    "source": "generation_platform/binding/legacy-dangling-response.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "legacy-reference-siblings",
+    "source": "generation_platform/binding/legacy-reference-siblings.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "legacy-reference-sibling-override",
+    "source": "generation_platform/binding/legacy-reference-sibling-override.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "legacy-shared-reference-body",
+    "source": "generation_platform/binding/legacy-shared-reference-body.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "legacy-parameter-content",
+    "source": "openapi/parameter_content.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "legacy-path-item-reference",
+    "source": "openapi/body_and_parameters.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "legacy-directional-alias",
+    "source": "openapi/read_only_write_only_variant_graph.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  {
+    "id": "legacy-global-parameters",
+    "source": "generation_platform/binding/legacy-global-parameters.yaml",
+    "options": {
+      "openapi_scopes": [
+        "schemas",
+        "paths",
+        "parameters"
+      ],
+      "openapi_include_paths": [
+        "/pets"
+      ]
+    }
+  },
+  {
+    "id": "scope-edges-paths",
+    "source": "generation_platform/binding/session-scope-edges.yaml",
+    "options": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "scope-edges-api",
+    "source": "generation_platform/binding/session-scope-edges.yaml",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  {
+    "id": "legacy-stream-collision",
+    "source": "generation_platform/binding/session-legacy-stream-collision.yaml",
+    "options": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "collapse_root_models": true
+    }
+  },
+  {
+    "id": "legacy-parameter-naming",
+    "source": "generation_platform/binding/session-legacy-parameter-naming.yaml",
+    "options": {
+      "openapi_scopes": [
+        "paths",
+        "parameters"
+      ],
+      "naming_strategy": "parent-prefixed"
+    }
+  },
+  {
+    "id": "unresolved-reuse",
+    "source": "generation_platform/binding/session-unresolved-reuse.yaml",
+    "options": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "dangling": true
+  },
+  {
+    "id": "legacy-header-map",
+    "source": "generation_platform/binding/session-legacy-header-map.yaml",
+    "options": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    }
+  },
+  {
+    "id": "nested-collapse",
+    "source": "generation_platform/binding/session-nested-collapse.yaml",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    }
+  },
+  {
+    "id": "directional-base",
+    "source": "generation_platform/binding/session-directional-base.yaml",
+    "options": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  {
+    "id": "recursive-ref-sibling",
+    "source": "generation_platform/binding/session-recursive-ref-sibling.yaml",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  {
+    "id": "legacy-media-reuse",
+    "source": "generation_platform/binding/session-legacy-media.json",
+    "options": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "reuse_model": true
+    }
+  },
+  {
+    "id": "legacy-stream-item-container",
+    "source": "generation_platform/binding/session-legacy-shared-stream.json",
+    "options": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    },
+    "fault": {
+      "id": "item-stream-container",
+      "method": "_record_request_types"
+    }
+  },
+  {
+    "id": "collapse-shared-types",
+    "source": "generation_platform/binding/session-collapse-shared-types.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    }
+  },
+  {
+    "id": "self-alias-redirect",
+    "source": "generation_platform/binding/session-self-alias-redirect.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  {
+    "id": "missing-collapse-recipes",
+    "source": "generation_platform/binding/session-missing-collapse-recipes.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    },
+    "dangling": true
+  },
+  {
+    "id": "discriminator-type-override",
+    "source": "generation_platform/binding/session-discriminator-type-override.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_enum_values_in_discriminator": true,
+      "type_overrides": {
+        "Dog.kind": "my_app.types.DogKind"
+      }
+    }
+  },
+  {
+    "id": "typeddict-field-ownership",
+    "source": "generation_platform/binding/field-ownership.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "output_model_type": "typing.TypedDict"
+    }
+  },
+  {
+    "id": "overridden-variant",
+    "source": "generation_platform/binding/session-overridden-variant.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "read_only_write_only_model_type": "all",
+      "type_overrides": {
+        "PetRequest": "my_app.models.PetRequest"
+      }
+    }
+  },
+  {
+    "id": "variant-required-only",
+    "source": "generation_platform/binding/session-variant-required-only.json",
+    "options": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "read_only_write_only_model_type": "all"
+    }
+  }
+]

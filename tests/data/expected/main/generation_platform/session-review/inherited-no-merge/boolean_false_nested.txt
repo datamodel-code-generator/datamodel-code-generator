@@ -1,0 +1,1 @@
+Error at schema path 'allof_no_merge_boolean_false_nested.yaml#/components/schemas/Derived/values/#-datamodel-code-generator-#-array-#-special-#/0/#-datamodel-code-generator-#-allOf-#-special-#': allOf contains a boolean false schema that makes the schema unsatisfiable

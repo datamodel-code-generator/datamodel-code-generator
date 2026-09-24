@@ -1,0 +1,30 @@
+{
+  "uses": [
+    {
+      "use": "request_body value /paths/~1notes/post/requestBody",
+      "schema": "/paths/~1notes/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1notes/post/requestBody",
+      "media": "application/json",
+      "state": "invalid BND_UNRESOLVED_REFERENCE",
+      "type": null
+    },
+    {
+      "use": "response_body value /paths/~1notes/post/responses/200",
+      "schema": "/paths/~1notes/post/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1notes/post/responses/200",
+      "media": "application/json",
+      "state": "invalid BND_UNRESOLVED_REFERENCE",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/Payload",
+      "schema": "/components/schemas/Payload",
+      "declaration": "/components/schemas/Payload",
+      "media": null,
+      "state": "invalid BND_UNRESOLVED_REFERENCE",
+      "type": null
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

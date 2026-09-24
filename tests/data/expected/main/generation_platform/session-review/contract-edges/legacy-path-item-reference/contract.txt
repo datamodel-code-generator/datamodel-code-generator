@@ -1,0 +1,591 @@
+{
+  "uses": [
+    {
+      "use": "parameter value /paths/~1pets~1{petId}/get/parameters/0",
+      "schema": "/paths/~1pets~1{petId}/get/parameters/0/schema",
+      "declaration": "/paths/~1pets~1{petId}/get/parameters/0",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "response_body value /paths/~1pets~1{petId}/get/responses/200",
+      "schema": "/paths/~1pets~1{petId}/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1pets~1{petId}/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Pet"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1pets~1{petId}/get/responses/default",
+      "schema": "/paths/~1pets~1{petId}/get/responses/default/content/application~1json/schema",
+      "declaration": "/paths/~1pets~1{petId}/get/responses/default",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Error"
+      }
+    },
+    {
+      "use": "parameter value /paths/~1pets~1{petId}/put/parameters/0",
+      "schema": "/paths/~1pets~1{petId}/put/parameters/0/schema",
+      "declaration": "/paths/~1pets~1{petId}/put/parameters/0",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "request_body value /paths/~1pets~1{petId}/put/requestBody",
+      "schema": "/paths/~1pets~1{petId}/put/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1pets~1{petId}/put/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "PetForm"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1pets~1{petId}/put/responses/default",
+      "schema": "/paths/~1pets~1{petId}/put/responses/default/content/application~1json/schema",
+      "declaration": "/paths/~1pets~1{petId}/put/responses/default",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Error"
+      }
+    },
+    {
+      "use": "request_body value /paths/~1food/post/requestBody",
+      "schema": "/paths/~1food/post/requestBody/content/application~1problem+json/schema",
+      "declaration": "/paths/~1food/post/requestBody",
+      "media": "application/problem+json",
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1food/post/responses/default",
+      "schema": "/paths/~1food/post/responses/default/content/application~1problem+json/schema",
+      "declaration": "/paths/~1food/post/responses/default",
+      "media": "application/problem+json",
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "parameter value /paths/~1food~1{food_id}/get/parameters/0",
+      "schema": "/paths/~1food~1{food_id}/get/parameters/0/schema",
+      "declaration": "/paths/~1food~1{food_id}/get/parameters/0",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "parameter value /paths/~1food~1{food_id}/get/parameters/1",
+      "schema": "/paths/~1food~1{food_id}/get/parameters/1/schema",
+      "declaration": "/paths/~1food~1{food_id}/get/parameters/1",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1food~1{food_id}/get/responses/200",
+      "schema": "/paths/~1food~1{food_id}/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1food~1{food_id}/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "FoodFoodIdGetResponse"
+      }
+    },
+    {
+      "use": "parameter value /paths/~1foo/parameters/0",
+      "schema": "/paths/~1foo/parameters/0/schema",
+      "declaration": "/components/parameters/MyParam",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1foo/get/responses/200",
+      "schema": "/paths/~1foo/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1foo/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "request_body value /paths/~1bar/post/requestBody",
+      "schema": "/paths/~1bar/post/requestBody/content/application~1x-www-form-urlencoded/schema",
+      "declaration": "/paths/~1bar/post/requestBody",
+      "media": "application/x-www-form-urlencoded",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "PetForm"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1user/get/responses/200",
+      "schema": "/paths/~1user/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1user/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UserGetResponse"
+      }
+    },
+    {
+      "use": "request_body value /paths/~1user/post/requestBody",
+      "schema": "/paths/~1user/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1user/post/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UserPostRequest"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1users/get/responses/200",
+      "schema": "/paths/~1users/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1users/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UsersGetResponse"
+      }
+    },
+    {
+      "use": "request_body value /paths/~1users/post/requestBody",
+      "schema": "/paths/~1users/post/requestBody/content/application~1json/schema",
+      "declaration": "/paths/~1users/post/requestBody",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UsersPostRequest"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/id",
+      "schema": "/components/schemas/Pet/properties/id",
+      "declaration": "/components/schemas/Pet/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/name",
+      "schema": "/components/schemas/Pet/properties/name",
+      "declaration": "/components/schemas/Pet/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/properties/tag",
+      "schema": "/components/schemas/Pet/properties/tag",
+      "declaration": "/components/schemas/Pet/properties/tag",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Error/properties/code",
+      "schema": "/components/schemas/Error/properties/code",
+      "declaration": "/components/schemas/Error/properties/code",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Error/properties/message",
+      "schema": "/components/schemas/Error/properties/message",
+      "declaration": "/components/schemas/Error/properties/message",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PetForm/properties/name",
+      "schema": "/components/schemas/PetForm/properties/name",
+      "declaration": "/components/schemas/PetForm/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PetForm/properties/age",
+      "schema": "/components/schemas/PetForm/properties/age",
+      "declaration": "/components/schemas/PetForm/properties/age",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /paths/~1food/post/requestBody/content/application~1problem+json/schema",
+      "schema": "/paths/~1food/post/requestBody/content/application~1problem+json/schema",
+      "declaration": "/paths/~1food/post/requestBody/content/application~1problem+json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1food/post/responses/default/content/application~1problem+json/schema",
+      "schema": "/paths/~1food/post/responses/default/content/application~1problem+json/schema",
+      "declaration": "/paths/~1food/post/responses/default/content/application~1problem+json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1food~1{food_id}/get/parameters/1/schema/items",
+      "schema": "/paths/~1food~1{food_id}/get/parameters/1/schema/items",
+      "declaration": "/paths/~1food~1{food_id}/get/parameters/1/schema/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1food~1{food_id}/get/parameters/1/schema",
+      "schema": "/paths/~1food~1{food_id}/get/parameters/1/schema",
+      "declaration": "/paths/~1food~1{food_id}/get/parameters/1/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "list"
+        },
+        "arguments": [
+          {
+            "node": "BuiltinType",
+            "name": "str"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /paths/~1food~1{food_id}/get/responses/200/content/application~1json/schema/items",
+      "schema": "/paths/~1food~1{food_id}/get/responses/200/content/application~1json/schema/items",
+      "declaration": "/paths/~1food~1{food_id}/get/responses/200/content/application~1json/schema/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/parameters/MyParam/schema",
+      "schema": "/components/parameters/MyParam/schema",
+      "declaration": "/components/parameters/MyParam/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1foo/get/responses/200/content/application~1json/schema",
+      "schema": "/paths/~1foo/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1foo/get/responses/200/content/application~1json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1user/get/responses/200/content/application~1json/schema/properties/timestamp",
+      "schema": "/paths/~1user/get/responses/200/content/application~1json/schema/properties/timestamp",
+      "declaration": "/paths/~1user/get/responses/200/content/application~1json/schema/properties/timestamp",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "AwareDatetime",
+          "from_": "pydantic",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      }
+    },
+    {
+      "use": "schema value /paths/~1user/get/responses/200/content/application~1json/schema/properties/name",
+      "schema": "/paths/~1user/get/responses/200/content/application~1json/schema/properties/name",
+      "declaration": "/paths/~1user/get/responses/200/content/application~1json/schema/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1user/get/responses/200/content/application~1json/schema/properties/age",
+      "schema": "/paths/~1user/get/responses/200/content/application~1json/schema/properties/age",
+      "declaration": "/paths/~1user/get/responses/200/content/application~1json/schema/properties/age",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1user/post/requestBody/content/application~1json/schema/properties/timestamp",
+      "schema": "/paths/~1user/post/requestBody/content/application~1json/schema/properties/timestamp",
+      "declaration": "/paths/~1user/post/requestBody/content/application~1json/schema/properties/timestamp",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "AwareDatetime",
+          "from_": "pydantic",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      }
+    },
+    {
+      "use": "schema value /paths/~1user/post/requestBody/content/application~1json/schema/properties/name",
+      "schema": "/paths/~1user/post/requestBody/content/application~1json/schema/properties/name",
+      "declaration": "/paths/~1user/post/requestBody/content/application~1json/schema/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1user/post/requestBody/content/application~1json/schema/properties/age",
+      "schema": "/paths/~1user/post/requestBody/content/application~1json/schema/properties/age",
+      "declaration": "/paths/~1user/post/requestBody/content/application~1json/schema/properties/age",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/get/responses/200/content/application~1json/schema/items/properties/timestamp",
+      "schema": "/paths/~1users/get/responses/200/content/application~1json/schema/items/properties/timestamp",
+      "declaration": "/paths/~1users/get/responses/200/content/application~1json/schema/items/properties/timestamp",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "AwareDatetime",
+          "from_": "pydantic",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/get/responses/200/content/application~1json/schema/items/properties/name",
+      "schema": "/paths/~1users/get/responses/200/content/application~1json/schema/items/properties/name",
+      "declaration": "/paths/~1users/get/responses/200/content/application~1json/schema/items/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/get/responses/200/content/application~1json/schema/items/properties/age",
+      "schema": "/paths/~1users/get/responses/200/content/application~1json/schema/items/properties/age",
+      "declaration": "/paths/~1users/get/responses/200/content/application~1json/schema/items/properties/age",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/get/responses/200/content/application~1json/schema/items",
+      "schema": "/paths/~1users/get/responses/200/content/application~1json/schema/items",
+      "declaration": "/paths/~1users/get/responses/200/content/application~1json/schema/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UsersGetResponseItem"
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/post/requestBody/content/application~1json/schema/items/properties/timestamp",
+      "schema": "/paths/~1users/post/requestBody/content/application~1json/schema/items/properties/timestamp",
+      "declaration": "/paths/~1users/post/requestBody/content/application~1json/schema/items/properties/timestamp",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "AwareDatetime",
+          "from_": "pydantic",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/post/requestBody/content/application~1json/schema/items/properties/name",
+      "schema": "/paths/~1users/post/requestBody/content/application~1json/schema/items/properties/name",
+      "declaration": "/paths/~1users/post/requestBody/content/application~1json/schema/items/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/post/requestBody/content/application~1json/schema/items/properties/age",
+      "schema": "/paths/~1users/post/requestBody/content/application~1json/schema/items/properties/age",
+      "declaration": "/paths/~1users/post/requestBody/content/application~1json/schema/items/properties/age",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1users/post/requestBody/content/application~1json/schema/items",
+      "schema": "/paths/~1users/post/requestBody/content/application~1json/schema/items",
+      "declaration": "/paths/~1users/post/requestBody/content/application~1json/schema/items",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "UsersPostRequestItem"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet",
+      "schema": "/components/schemas/Pet",
+      "declaration": "/components/schemas/Pet",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Pet"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Error",
+      "schema": "/components/schemas/Error",
+      "declaration": "/components/schemas/Error",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Error"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/PetForm",
+      "schema": "/components/schemas/PetForm",
+      "declaration": "/components/schemas/PetForm",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "PetForm"
+      }
+    }
+  ],
+  "diagnostics": [
+    "BND_OPERATION_ORIGIN_UNRESOLVED ",
+    "BND_OPERATION_ORIGIN_UNRESOLVED "
+  ],
+  "ignored": []
+}

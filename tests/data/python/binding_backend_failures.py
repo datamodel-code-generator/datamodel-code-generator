@@ -24,10 +24,20 @@ from tests.data.python.binding_inputs import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
+    from typing import Literal
+
+    from datamodel_code_generator.model.binding import BackendModelFacts
 
 
-def backend_failure(source: Path, backend: DataModelType, case: str) -> dict[str, object]:
+def backend_failure(
+    source: Path,
+    backend: DataModelType,
+    case: str,
+    *,
+    constructor_policy: Callable[[BackendModelFacts, Literal["init", "kw_only"]], bool | None] | None = None,
+) -> dict[str, object]:
     """Corrupt one adopted value, preserving actual generation and backend projection."""
     parser = ContractApiOpenAPIParser(
         source, attempt_id=AttemptId(1), config=builtin_model_config(backend, configured=False)
@@ -81,8 +91,8 @@ def backend_failure(source: Path, backend: DataModelType, case: str) -> dict[str
                 explicit_nullable=False,
                 preexisting_null=False,
                 configuration_nullable=False,
-                constructor_init=True,
-                kw_only=False,
+                constructor_init=constructor_policy(facts, "init") if constructor_policy is not None else True,
+                kw_only=constructor_policy(facts, "kw_only") if constructor_policy is not None else False,
             )
             if case == "field-backend":
                 projection = replace(projection, backend=None)
@@ -95,12 +105,15 @@ def backend_failure(source: Path, backend: DataModelType, case: str) -> dict[str
                 "opaque_declarations": sum(isinstance(value, OpaqueBackendValue) for _, value in field.declarations),
                 "opaque_init": isinstance(field.constructor_init, OpaqueBackendValue),
             }
-        return {
+        observed = {
             "opaque_parameters": sum(isinstance(item.value, OpaqueBackendValue) for item in facts.parameters),
             "unknown_parameters": sum(item.present is None for item in facts.parameters),
             "opaque_configuration": sum(isinstance(item.value, OpaqueBackendValue) for item in facts.configuration),
             "unknown_configuration": sum(item.present is None for item in facts.configuration),
         }
+        if constructor_policy is not None:
+            observed.update(init=constructor_policy(facts, "init"), kw_only=constructor_policy(facts, "kw_only"))
+        return observed
     except BindingCaptureError as error:
         return {"error": str(error)}
     finally:

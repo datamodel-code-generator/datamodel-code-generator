@@ -1,0 +1,39 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "Accepted contract", "version": "1"},
+  "servers": [{"url": "https://{region}.example.test", "variables": {"region": {"default": "us", "enum": ["us", "eu"]}}}],
+  "security": [{"Key": []}, {"OAuth": ["read"], "Key": []}, {}],
+  "components": {
+    "securitySchemes": {
+      "Key": {"type": "apiKey", "name": "X-Key", "in": "header"},
+      "OAuth": {"type": "oauth2", "flows": {"clientCredentials": {"tokenUrl": "https://auth.example.test/token", "scopes": {"read": "Read records"}}}}
+    },
+    "parameters": {"Page": {"name": "page", "in": "query", "style": "form", "explode": false, "schema": {"type": "integer", "minimum": 0}}},
+    "schemas": {
+      "Record": {"type": "object", "required": ["id"], "properties": {"id": {"type": "integer"}, "wire-name": {"type": "string"}, "nullable": {"type": ["string", "null"]}, "items": {"type": "array", "items": {"type": "integer"}}}, "additionalProperties": false},
+      "Problem": {"type": "object", "required": ["message"], "properties": {"message": {"type": "string"}}}
+    }
+  },
+  "paths": {
+    "/records/{id}": {
+      "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer"}}, {"$ref": "#/components/parameters/Page"}],
+      "post": {
+        "operationId": "createRecord",
+        "parameters": [{"name": "trace", "in": "header", "schema": {"type": "string"}}, {"name": "filter", "in": "query", "content": {"application/json": {"schema": {"type": "object", "properties": {"active": {"type": "boolean"}}}}}}],
+        "requestBody": {"required": true, "content": {
+          "application/json": {"schema": {"$ref": "#/components/schemas/Record"}},
+          "application/vnd.acme+json": {"schema": {"$ref": "#/components/schemas/Record"}},
+          "multipart/form-data": {"schema": {"$ref": "#/components/schemas/Record"}, "encoding": {"items": {"contentType": "application/json", "headers": {"X-Part": {"schema": {"type": "string"}}}}}}
+        }},
+        "responses": {
+          "201": {"description": "Created", "headers": {"Location": {"schema": {"type": "string"}}, "X-Limit": {"schema": {"type": "integer"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Record"}}}, "links": {"self": {"operationRef": "#/paths/~1records~1{id}/get", "parameters": {"id": "$response.body#/id"}}}},
+          "4XX": {"description": "Rejected", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}}}},
+          "default": {"description": "No declared content"}
+        },
+        "callbacks": {"onDone": {"{$request.body#/callbackUrl}": {"post": {"requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Record"}}}}, "responses": {"204": {"description": "Received"}}}}}}
+      },
+      "get": {"security": [], "servers": [], "responses": {"200": {"description": "Found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Record"}}}}}}
+    }
+  },
+  "webhooks": {"record.created": {"post": {"security": [], "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/Record"}}}}, "responses": {"204": {"description": "Received"}}}}}
+}

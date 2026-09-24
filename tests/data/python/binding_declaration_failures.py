@@ -12,16 +12,12 @@ from datamodel_code_generator._generation_contract import (
     BindingCaptureError,
     BuiltinType,
     MetadataCall,
-    SymbolId,
 )
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model.binding import FrozenImportBindings, index_builtin_field_declarations
 from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser
-from tests.data.python.binding_inputs import (
-    builtin_binding_config,
-    builtin_field_imports,
-    projected_field_expectations,
-)
+from datamodel_code_generator.parser.openapi_contract_freeze import freeze_model_inventory
+from tests.data.python.binding_inputs import builtin_binding_config, final_inventory_declarations
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -29,11 +25,13 @@ if TYPE_CHECKING:
 
 def declaration_failure(source: Path, case: str) -> str:
     """Retain the real generated slots while corrupting an attempt or type expectation."""
-    backend = DataModelType.PydanticV2BaseModel
-    parser = ContractApiOpenAPIParser(source, attempt_id=AttemptId(1), config=builtin_binding_config(backend))
+    parser = ContractApiOpenAPIParser(
+        source, attempt_id=AttemptId(1), config=builtin_binding_config(DataModelType.PydanticV2BaseModel)
+    )
     try:
         body = str(parser.parse())
-        expected = projected_field_expectations(parser, "Model", backend)
+        inventory = freeze_model_inventory(parser, body, output=source.with_name("models.py"), model_package="models")
+        expected = final_inventory_declarations(inventory)
         match case:
             case "foreign-attempt":
                 expected = (replace(expected[0], attempt=AttemptId(2)), *expected[1:])
@@ -50,12 +48,7 @@ def declaration_failure(source: Path, case: str) -> str:
             case _:
                 raise ValueError(case)
         index_builtin_field_declarations(
-            body,
-            expected=expected,
-            imports=FrozenImportBindings(
-                (*builtin_field_imports(), Import(import_="Decimal", from_="decimal")),
-                tuple((SymbolId(index), model.name) for index, model in enumerate(parser.results)),
-            ),
+            body, expected=expected, imports=FrozenImportBindings(inventory.imports[0].values)
         )
         return "accepted\n"
     except BindingCaptureError as error:

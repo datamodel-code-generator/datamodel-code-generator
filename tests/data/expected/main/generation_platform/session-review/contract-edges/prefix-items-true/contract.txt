@@ -1,0 +1,39 @@
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/LabeledPoint",
+      "schema": "/components/schemas/LabeledPoint",
+      "declaration": "/components/schemas/LabeledPoint",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "LabeledPoint"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/LabeledPoint/prefixItems/1",
+      "schema": "/components/schemas/LabeledPoint/prefixItems/1",
+      "declaration": "/components/schemas/LabeledPoint/prefixItems/1",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "float"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/LabeledPoint/prefixItems/2",
+      "schema": "/components/schemas/LabeledPoint/prefixItems/2",
+      "declaration": "/components/schemas/LabeledPoint/prefixItems/2",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "float"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

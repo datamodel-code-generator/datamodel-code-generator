@@ -1,0 +1,20 @@
+{
+  "ValueArray.": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value"
+    ]
+  },
+  "ValueString.": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value"
+    ]
+  },
+  "Payload.value": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value"
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+/paths/~1items/post/requestBody/content/application~1json/schema value bound

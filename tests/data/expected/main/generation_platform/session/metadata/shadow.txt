@@ -1,0 +1,4 @@
+security_scheme Key: {"type":"apiKey","name":"X-Key","in":"header"}
+  #/components/securitySchemes/ActualKey: resolved -> session-metadata-shadow.json#/components/securitySchemes/ActualKey
+link next: {"operationId":"readItem","parameters":{"id":"$response.body#/id"}}
+  #/components/links/Next: resolved -> session-metadata-shadow.json#/components/links/Next

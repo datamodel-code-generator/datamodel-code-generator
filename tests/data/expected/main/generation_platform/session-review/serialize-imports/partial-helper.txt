@@ -1,0 +1,18 @@
+{
+  "helper": {
+    "node": "ImportedType",
+    "import_": {
+      "node": "Import",
+      "import_": "UUID",
+      "from_": "custom_uuid",
+      "alias": null,
+      "reference_path": null,
+      "keep_unaliased": false
+    },
+    "qualified_suffix": []
+  },
+  "demands": [
+    "BND_FIELD_UNRESOLVED",
+    "BND_UNRESOLVED_REFERENCE"
+  ]
+}

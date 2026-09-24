@@ -1,0 +1,124 @@
+{
+  "/paths/~1scalar/post/requestBody/content/application~1json/itemSchema": {
+    "node": "BuiltinType",
+    "name": "int"
+  },
+  "/paths/~1scalar/post/responses/200/content/application~1json/itemSchema": {
+    "node": "BuiltinType",
+    "name": "int"
+  },
+  "/paths/~1object/post/requestBody/content/application~1json/itemSchema": {
+    "node": "GeneratedSymbolType",
+    "symbol": "ObjectPostRequestItem"
+  },
+  "/paths/~1object/post/responses/200/content/application~1json/itemSchema": {
+    "node": "GeneratedSymbolType",
+    "symbol": "ObjectPostResponseItem"
+  },
+  "/paths/~1enum/post/requestBody/content/application~1json/itemSchema": {
+    "node": "LiteralType",
+    "values": [
+      {
+        "node": "LiteralScalar",
+        "kind": "str",
+        "value": "one"
+      },
+      {
+        "node": "LiteralScalar",
+        "kind": "str",
+        "value": "two"
+      }
+    ]
+  },
+  "/paths/~1enum/post/responses/200/content/application~1json/itemSchema": {
+    "node": "LiteralType",
+    "values": [
+      {
+        "node": "LiteralScalar",
+        "kind": "str",
+        "value": "one"
+      },
+      {
+        "node": "LiteralScalar",
+        "kind": "str",
+        "value": "two"
+      }
+    ]
+  },
+  "/paths/~1union/post/requestBody/content/application~1json/itemSchema": {
+    "node": "UnionType",
+    "members": [
+      {
+        "node": "BuiltinType",
+        "name": "int"
+      },
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    ],
+    "preserve_order": false
+  },
+  "/paths/~1union/post/responses/200/content/application~1json/itemSchema": {
+    "node": "UnionType",
+    "members": [
+      {
+        "node": "BuiltinType",
+        "name": "int"
+      },
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    ],
+    "preserve_order": false
+  },
+  "/paths/~1any/post/requestBody/content/application~1json/itemSchema": {
+    "node": "ImportedType",
+    "import_": {
+      "node": "Import",
+      "import_": "Any",
+      "from_": "typing",
+      "alias": null,
+      "reference_path": null,
+      "keep_unaliased": false
+    },
+    "qualified_suffix": []
+  },
+  "/paths/~1any/post/responses/200/content/application~1json/itemSchema": {
+    "node": "ImportedType",
+    "import_": {
+      "node": "Import",
+      "import_": "Any",
+      "from_": "typing",
+      "alias": null,
+      "reference_path": null,
+      "keep_unaliased": false
+    },
+    "qualified_suffix": []
+  },
+  "/paths/~1empty/post/requestBody/content/application~1json/itemSchema": {
+    "node": "ImportedType",
+    "import_": {
+      "node": "Import",
+      "import_": "Any",
+      "from_": "typing",
+      "alias": null,
+      "reference_path": null,
+      "keep_unaliased": false
+    },
+    "qualified_suffix": []
+  },
+  "/paths/~1empty/post/responses/200/content/application~1json/itemSchema": {
+    "node": "ImportedType",
+    "import_": {
+      "node": "Import",
+      "import_": "Any",
+      "from_": "typing",
+      "alias": null,
+      "reference_path": null,
+      "keep_unaliased": false
+    },
+    "qualified_suffix": []
+  }
+}

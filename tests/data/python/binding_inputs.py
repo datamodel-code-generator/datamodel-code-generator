@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.model.binding import FieldArtifactDeclaration, FieldProjectionContext
     from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser
+    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
     from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector
 
 
@@ -75,7 +76,7 @@ def builtin_field_imports() -> tuple[Import, ...]:
                 ("pydantic.experimental.missing_sentinel", ("MISSING",)),
                 ("msgspec", ("UNSET", "UnsetType", "Meta")),
                 ("typing", ("Union", "Optional", "Annotated", "List", "Dict", "Set", "Literal")),
-                ("typing_extensions", ("NotRequired", "Required", "ReadOnly")),
+                ("typing_extensions", ("NotRequired", "Required", "ReadOnly", "TypeAliasType")),
                 ("uuid", ("UUID",)),
             )
             for name in names
@@ -226,7 +227,7 @@ def accepted_field_facts(
                 policy.has_default if policy is not None else None,
                 None if not producers or "opaque" in producers else "override" in producers,
                 construction.schema is not None and construction.schema.nullable is True,
-                projector.preexisting_null(construction.preexisting_null),
+                projector.preexisting_null(construction.preexisting_null, alias_nullable={}),
                 parser.force_optional_for_required_fields,
                 builtin_semantics=True,
                 backend=binding_backend_name(backend),
@@ -327,4 +328,50 @@ def builtin_model_config(backend: DataModelType, *, configured: bool) -> OpenAPI
                 }
             },
         )
+    return config
+
+
+def final_inventory_config(case: str) -> OpenAPIParserConfig:
+    """Select explicit settings for independent final-import and reuse regression inputs."""
+    from datamodel_code_generator.enums import StrictTypes
+
+    config = builtin_binding_config(DataModelType.PydanticV2BaseModel)
+    match case:
+        case "final-imports":
+            config.strict_types = [StrictTypes.str]
+            config.import_overrides = {"StrictStr": "pydantic.types", "Color": "palette"}
+        case "final-reused-inheritance":
+            config.use_serialize_as_any = True
+            config.reuse_model = True
+    return config
+
+
+def final_inventory_declarations(inventory: FinalModelInventory) -> tuple[ExpectedFieldDeclaration, ...]:
+    """Use actual frozen slots and types to prepare class-field corroboration inputs."""
+    return tuple(
+        ExpectedFieldDeclaration(
+            inventory.attempt,
+            model.symbol,
+            field.slot,
+            model.name,
+            field.slot.name,
+            "pydantic",
+            next(value for value in (field.projection.value,) if value is not None),
+        )
+        for model in inventory.models
+        for field in model.fields
+    )
+
+
+def quoted_constraints_config(formatter: str) -> OpenAPIParserConfig:
+    """Exercise real formatter quote changes on source and imported expression producers."""
+    from datamodel_code_generator.enums import DefaultValueType
+    from datamodel_code_generator.format import Formatter
+
+    config = builtin_binding_config(DataModelType.PydanticV2BaseModel)
+    config.formatters = [Formatter(formatter)]
+    config.use_double_quotes = True
+    config.wrap_string_literal = True
+    config.use_decimal_for_multiple_of = True
+    config.deserialize_default_values = [DefaultValueType.Decimal]
     return config

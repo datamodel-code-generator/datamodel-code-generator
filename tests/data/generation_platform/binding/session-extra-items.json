@@ -1,0 +1,163 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Extra item identities",
+    "version": "1"
+  },
+  "paths": {
+    "/imported": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Imported"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/direct": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Direct"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/nested": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nested"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/recursive": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Recursive"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Accepted"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Child": {
+        "type": "object",
+        "required": [
+          "bad"
+        ],
+        "properties": {
+          "bad": {
+            "type": "string"
+          }
+        }
+      },
+      "Imported": {
+        "type": "object",
+        "required": [
+          "fixed"
+        ],
+        "properties": {
+          "fixed": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "Direct": {
+        "type": "object",
+        "required": [
+          "fixed"
+        ],
+        "properties": {
+          "fixed": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Child"
+        }
+      },
+      "Nested": {
+        "type": "object",
+        "required": [
+          "fixed"
+        ],
+        "properties": {
+          "fixed": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/Child"
+          }
+        }
+      },
+      "Recursive": {
+        "type": "object",
+        "required": [
+          "fixed"
+        ],
+        "properties": {
+          "fixed": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "$ref": "#/components/schemas/Recursive"
+            },
+            {
+              "$ref": "#/components/schemas/Child"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

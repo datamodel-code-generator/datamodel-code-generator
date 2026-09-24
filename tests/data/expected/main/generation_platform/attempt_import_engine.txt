@@ -1,0 +1,19 @@
+{
+  "events": [
+    "construct:1",
+    "parse:1",
+    "dispose:1",
+    "discard:1",
+    "close"
+  ],
+  "error": [
+    "RuntimeError",
+    "ordinary imports failed"
+  ],
+  "batch": null,
+  "result_sha256": null,
+  "retained_parsers": 0,
+  "import_observations": true,
+  "import_contexts_cleared": true,
+  "ambient_context_clear": true
+}

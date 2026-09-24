@@ -1,0 +1,20 @@
+openapi: 3.2.0
+info:
+  title: Ambiguous YAML status
+  version: '1'
+paths:
+  /items:
+    post:
+      responses:
+        200:
+          description: Integer
+          content:
+            application/json:
+              schema:
+                type: integer
+        '200':
+          description: String
+          content:
+            application/json:
+              schema:
+                type: string

@@ -1,0 +1,14 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Empty fixed tuple", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Record": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": {"type": "array", "items": {"type": "string"}, "minItems": 0, "maxItems": 0}
+      }
+    }
+  }}
+}

@@ -1,0 +1,11 @@
+{
+  "errors": [
+    [
+      "RuntimeError",
+      "Generation capture session is closed"
+    ]
+  ],
+  "accepted": null,
+  "retained_graph": 0,
+  "retained_parsers": 0
+}

@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A combined reference has no observed false decision"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

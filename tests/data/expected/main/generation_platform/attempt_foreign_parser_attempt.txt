@@ -1,0 +1,13 @@
+{
+  "events": [
+    "construct:1",
+    "close"
+  ],
+  "error": [
+    "BindingCaptureError",
+    "BND_ATTEMPT_MISMATCH: parser and ledger identities differ"
+  ],
+  "batch": null,
+  "result_sha256": null,
+  "retained_parsers": 0
+}

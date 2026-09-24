@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A field construction does not match its pending default producer"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

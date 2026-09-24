@@ -1,0 +1,2 @@
+/paths/~1values/post/requestBody/content/multipart~1form-data/encoding/value/headers/X-Part
+/paths/~1values/post/responses/200/headers/X-Content

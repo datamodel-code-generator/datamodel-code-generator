@@ -1,0 +1,16 @@
+[
+  {"id": "missing-module-result", "source": "session-final-corruption.json"},
+  {"id": "duplicate-module-owner", "source": "session-final-corruption.json"},
+  {"id": "custom-model-policy", "source": "session-final-corruption.json"},
+  {"id": "custom-template-policy", "source": "session-final-corruption.json"},
+  {"id": "lost-extra-items", "source": "session-extra-items.json", "backend": "typing.TypedDict"},
+  {"id": "malformed-model-settings", "source": "session-final-corruption.json", "backend": "dataclasses.dataclass"},
+  {"id": "functional-unknown-parent", "source": "functional-fields.json", "backend": "typing.TypedDict"},
+  {"id": "functional-lost-type", "source": "functional-fields.json", "backend": "typing.TypedDict"},
+  {"id": "missing-declarations", "source": "session-final-corruption.json"},
+  {"id": "legacy-unknown-operation", "source": "session-contract.json", "legacy": true},
+  {"id": "legacy-lost-parameter", "source": "session-contract.json", "legacy": true},
+  {"id": "legacy-malformed-parameters", "source": "session-contract.json", "legacy": true},
+  {"id": "legacy-foreign-parameter", "source": "session-contract.json", "legacy": true},
+  {"id": "unresolved-emitted-reference", "source": "session-final-corruption.json"}
+]

@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    "BND_OPERATION_ORIGIN_UNRESOLVED"
+  ],
+  "demands": [
+    "BND_MODEL_SCOPE_REQUIRED",
+    "BND_OPERATION_ORIGIN_UNRESOLVED"
+  ],
+  "retained_graph": 0
+}

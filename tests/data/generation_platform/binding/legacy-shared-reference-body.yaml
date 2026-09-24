@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: Shared
+  version: '1'
+paths:
+  /pets:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/Shared'
+      requestBody:
+        $ref: '#/components/parameters/Shared'
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: ok
+components:
+  parameters:
+    Shared:
+      name: q
+      in: query
+      schema:
+        type: string

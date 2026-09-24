@@ -374,11 +374,14 @@ def test_tag_field_nonemission(change: dict[str, str | None]) -> None:
             for field in projected_field_expectations(parser, name, backend)
         )
         imports = FrozenImportBindings(())
+        changed = body.replace(str(change["old"]), str(change["new"]))
+        collected = index_builtin_field_declarations(changed, expected=expected, imports=imports, collect_errors=True)
+        assert_output(
+            json.dumps(collected.invalid_models) + "\n", EXPECTED / "tag-field-collected" / f"{change['id']}.txt"
+        )
         if (error := change["error"]) is not None:
             with pytest.raises(BindingCaptureError, match=error):
-                index_builtin_field_declarations(
-                    body.replace(str(change["old"]), str(change["new"])), expected=expected, imports=imports
-                )
+                index_builtin_field_declarations(changed, expected=expected, imports=imports)
             return
         index = index_builtin_field_declarations(body, expected=expected, imports=imports)
         fields = {parser.binding_ledger.identity(field): field for model in parser.results for field in model.fields}
@@ -503,7 +506,8 @@ def test_container_projection_preserves_actual_imports(*, standard: bool) -> Non
 @pytest.mark.parametrize(
     "change", json.loads((SOURCE / "decimal-type-artifacts.json").read_text()), ids=itemgetter("id")
 )
-def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool]) -> None:
+@pytest.mark.parametrize("deserialize", [False, True])
+def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool], *, deserialize: bool) -> None:
     """Corroborate actual Decimal constraints without evaluating annotation calls."""
     from tests.data.python.binding_inputs import (
         builtin_binding_config,
@@ -514,10 +518,18 @@ def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool]) 
     backend = DataModelType.PydanticV2BaseModel
     config = builtin_binding_config(backend)
     config.use_decimal_for_multiple_of = True
-    parser = ContractApiOpenAPIParser(SOURCE / "decimal-types.json", attempt_id=AttemptId(1), config=config)
+    if deserialize:
+        from datamodel_code_generator.enums import DefaultValueType
+
+        config.deserialize_default_values = [DefaultValueType.Decimal]
+    parser = ContractApiOpenAPIParser(
+        SOURCE / ("decimal-default-types.json" if deserialize else "decimal-types.json"),
+        attempt_id=AttemptId(1),
+        config=config,
+    )
     try:
         body = str(parser.parse())
-        assert_output(body, EXPECTED / "decimal-types.py")
+        assert_output(body, EXPECTED / ("decimal-default-types.py" if deserialize else "decimal-types.py"))
         expected = projected_field_expectations(parser, "Prices", backend)
         imports = FrozenImportBindings((
             *builtin_field_imports(),
@@ -525,7 +537,7 @@ def test_decimal_constraint_matches_finite_value(change: dict[str, str | bool]) 
             Import(import_="Decimal", from_="decimal"),
         ))
         body = body.replace(str(change["old"]), str(change["new"]))
-        if change["error"]:
+        if change["error"] or (deserialize and change["id"] == "equivalent-exponent"):
             with pytest.raises(
                 BindingCaptureError, match="Accepted field annotation does not match its projected type"
             ):
@@ -611,7 +623,7 @@ def test_final_reference_policies_match_artifacts(backend: DataModelType, *, col
             ),
         )
         nulls = {
-            entry.original_name: projector.preexisting_null(entry.preexisting_null)
+            entry.original_name: projector.preexisting_null(entry.preexisting_null, alias_nullable={})
             for entry in parser.field_constructions.values()
             if entry.class_name == "Holder"
         }
@@ -633,6 +645,35 @@ def test_final_reference_policies_match_artifacts(backend: DataModelType, *, col
             default_provenance_table(parser, body, backend, "Holder", extra_imports),
             EXPECTED / f"reference-provenance-{backend.name}-{collapse}.txt",
         )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("backend", list(DataModelType))
+@pytest.mark.parametrize("standard", [False, True])
+def test_empty_fixed_tuple_matches_actual_emission(backend: DataModelType, *, standard: bool) -> None:
+    """Accept the builtin empty-tuple spelling and reject a changed element type."""
+    from datamodel_code_generator.parser.openapi_contract_freeze import freeze_model_inventory
+    from tests.data.python.binding_inputs import builtin_binding_config, projected_field_expectations
+    from tests.data.python.binding_type_snapshot import inventory_tuple_snapshot
+
+    config = builtin_binding_config(backend)
+    config.use_tuple_for_fixed_length_arrays = True
+    config.use_standard_collections = standard
+    parser = ContractApiOpenAPIParser(SOURCE / "empty-fixed-tuple.json", attempt_id=AttemptId(7), config=config)
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"empty-fixed-tuple-{backend.name}-{standard}.py")
+        inventory = freeze_model_inventory(parser, body, output=Path("models.py"), model_package="example.models")
+        expected = projected_field_expectations(parser, "Record", backend)
+        imports = FrozenImportBindings(inventory.imports[0].values)
+        index_builtin_field_declarations(body, expected=expected, imports=imports)
+        assert_output(
+            json.dumps(inventory_tuple_snapshot(inventory), indent=2) + "\n", EXPECTED / "empty-fixed-tuple.txt"
+        )
+        with pytest.raises(BindingCaptureError, match="Accepted field annotation does not match its projected type"):
+            index_builtin_field_declarations(body.replace("[()]", "[str]"), expected=expected, imports=imports)
     finally:
         parser.dispose()
         parser.source_lease.close()
@@ -776,6 +817,34 @@ def test_field_edge_facts(backend: DataModelType) -> None:
             constructor_fact_table(parser, body, backend, "Edges", imports),
             EXPECTED / f"field-edges-constructors-{backend.name}.txt",
         )
+    finally:
+        parser.dispose()
+        parser.source_lease.close()
+
+
+@pytest.mark.parametrize("declaration", json.loads((SOURCE / "builtin-shadow-artifacts.json").read_text()))
+@pytest.mark.parametrize("case", ["builtin-shadow", "builtin-bound-shadow"])
+def test_changed_artifact_cannot_shadow_a_projected_builtin(declaration: str, case: str) -> None:
+    """Treat unverified top-level names as shadowing, never as builtin fallback."""
+    from tests.data.python.binding_inputs import (
+        builtin_binding_config,
+        builtin_field_imports,
+        projected_field_expectations,
+    )
+
+    backend = DataModelType.PydanticV2BaseModel
+    parser = ContractApiOpenAPIParser(
+        SOURCE / f"{case}.json", attempt_id=AttemptId(1), config=builtin_binding_config(backend)
+    )
+    try:
+        body = str(parser.parse())
+        assert_output(body, EXPECTED / f"{case}.py")
+        with pytest.raises(BindingCaptureError, match="Accepted field annotation does not match its projected type"):
+            index_builtin_field_declarations(
+                body.replace("class Record", declaration + "\n\nclass Record"),
+                expected=projected_field_expectations(parser, "Record", backend),
+                imports=FrozenImportBindings(builtin_field_imports()),
+            )
     finally:
         parser.dispose()
         parser.source_lease.close()

@@ -577,6 +577,7 @@ class DataType(_BaseModel):
     use_serialize_as_any: bool = False
     discriminator: Optional[str] = None  # noqa: UP045
 
+    SUPPORTS_SERIALIZE_AS_ANY: ClassVar[bool] = False
     _exclude_fields: ClassVar[set[str]] = {"parent", "children"}
     _pass_fields: ClassVar[set[str]] = {"parent", "children", "data_types", "reference"}
 

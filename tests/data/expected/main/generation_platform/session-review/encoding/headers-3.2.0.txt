@@ -1,0 +1,5 @@
+/paths/~1values/post/parameters/0/content/multipart~1form-data/encoding/value/headers/X-Parameter
+/paths/~1values/post/requestBody/content/multipart~1form-data/encoding/value/headers/X-Part
+/paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value/headers/X-Response
+/paths/~1values/post/responses/200/headers/X-Content
+/paths/~1values/post/responses/200/headers/X-Content/content/multipart~1form-data/encoding/value/headers/X-Nested

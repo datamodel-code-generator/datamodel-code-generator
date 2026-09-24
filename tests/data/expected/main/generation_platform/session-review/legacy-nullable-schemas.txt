@@ -1,0 +1,16 @@
+{
+  "type": {
+    "node": "UnionType",
+    "members": [
+      {
+        "node": "GeneratedSymbolType",
+        "symbol": "Item"
+      },
+      {
+        "node": "NoneType"
+      }
+    ],
+    "preserve_order": false
+  },
+  "diagnostics": []
+}

@@ -1,0 +1,52 @@
+[
+  {
+    "module": [
+      "item_response.py"
+    ],
+    "models": [
+      "ItemResponse"
+    ],
+    "actual_return": true,
+    "global_imports": true
+  },
+  {
+    "module": [
+      "item_request.py"
+    ],
+    "models": [
+      "ItemRequest"
+    ],
+    "actual_return": true,
+    "global_imports": true
+  },
+  {
+    "module": [
+      "item.py"
+    ],
+    "models": [
+      "Item"
+    ],
+    "actual_return": true,
+    "global_imports": true
+  },
+  {
+    "module": [
+      "base_request.py"
+    ],
+    "models": [
+      "BaseRequest"
+    ],
+    "actual_return": true,
+    "global_imports": true
+  },
+  {
+    "module": [
+      "base.py"
+    ],
+    "models": [
+      "Base"
+    ],
+    "actual_return": true,
+    "global_imports": true
+  }
+]

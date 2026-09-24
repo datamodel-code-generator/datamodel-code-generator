@@ -1,0 +1,86 @@
+{
+  "uses": [
+    {
+      "use": "parameter value /paths/~1events~1{eventId}/get/parameters/0",
+      "schema": "/paths/~1events~1{eventId}/get/parameters/0/schema",
+      "declaration": "/paths/~1events~1{eventId}/get/parameters/0",
+      "media": null,
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "response_body value /paths/~1events~1{eventId}/get/responses/200",
+      "schema": "/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1events~1{eventId}/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "schema value /paths/~1events~1batch/post/requestBody/content/application~1jsonl/itemSchema",
+      "schema": "/paths/~1events~1batch/post/requestBody/content/application~1jsonl/itemSchema",
+      "declaration": "/paths/~1events~1batch/post/requestBody/content/application~1jsonl/itemSchema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    },
+    {
+      "use": "schema value /components/parameters/Fields/schema",
+      "schema": "/components/parameters/Fields/schema",
+      "declaration": "/components/parameters/Fields/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event/properties/id",
+      "schema": "/components/schemas/Event/properties/id",
+      "declaration": "/components/schemas/Event/properties/id",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event/properties/kind",
+      "schema": "/components/schemas/Event/properties/kind",
+      "declaration": "/components/schemas/Event/properties/kind",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Event",
+      "schema": "/components/schemas/Event",
+      "declaration": "/components/schemas/Event",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Event"
+      }
+    }
+  ],
+  "diagnostics": [
+    "BND_OPERATION_ORIGIN_UNRESOLVED ",
+    "BND_UNRESOLVED_REFERENCE /paths/~1events~1{eventId}/get/parameters/2",
+    "BND_UNRESOLVED_REFERENCE /paths/~1events~1{eventId}/get/responses/200/headers/X-Rate-Limit"
+  ],
+  "ignored": [
+    "/paths/~1events~1{eventId}/get: oas_header_ignored"
+  ]
+}

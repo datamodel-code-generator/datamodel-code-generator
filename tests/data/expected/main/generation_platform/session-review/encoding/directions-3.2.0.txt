@@ -1,0 +1,4 @@
+X-Parameter: request_encoding_header / request
+X-Part: request_encoding_header / request
+X-Response: response_encoding_header / response
+X-Nested: response_encoding_header / response

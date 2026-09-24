@@ -1,0 +1,3 @@
+bound: missing / not_applicable / opaque
+either: missing / not_applicable / preexisting_type
+mixed: missing / not_applicable / opaque

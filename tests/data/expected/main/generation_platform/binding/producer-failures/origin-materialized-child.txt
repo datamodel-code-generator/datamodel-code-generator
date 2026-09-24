@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "A materialization child has no actual raw producer"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

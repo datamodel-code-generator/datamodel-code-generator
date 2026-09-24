@@ -1,0 +1,11 @@
+{
+  "request": {
+    "node": "GeneratedSymbolType",
+    "symbol": "Base"
+  },
+  "field": {
+    "node": "GeneratedSymbolType",
+    "symbol": "Base"
+  },
+  "demands": []
+}

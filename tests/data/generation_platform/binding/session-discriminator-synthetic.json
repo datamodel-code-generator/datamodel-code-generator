@@ -1,0 +1,19 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Synthesized discriminator fields", "version": "1"},
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Cat": {"type": "object", "properties": {"name": {"type": "string"}}},
+      "Dog": {"type": "object", "properties": {"bark": {"type": "boolean"}}},
+      "Pet": {
+        "oneOf": [{"$ref": "#/components/schemas/Cat"}, {"$ref": "#/components/schemas/Dog"}],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"}
+        }
+      },
+      "Model": {"type": "object", "properties": {"pet": {"$ref": "#/components/schemas/Pet"}}}
+    }
+  }
+}

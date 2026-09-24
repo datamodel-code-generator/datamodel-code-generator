@@ -1,0 +1,20 @@
+[
+  {
+    "node": "GenericType",
+    "base": {
+      "node": "BuiltinType",
+      "name": "dict"
+    },
+    "arguments": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    ],
+    "tuple_form": "not_tuple"
+  }
+]

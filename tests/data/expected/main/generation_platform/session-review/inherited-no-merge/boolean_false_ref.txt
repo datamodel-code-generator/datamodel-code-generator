@@ -1,0 +1,1 @@
+Error at schema path 'allof_no_merge_boolean_false_ref.yaml#/components/schemas/Derived/value/#-datamodel-code-generator-#-allOf-#-special-#': allOf contains a boolean false schema that makes the schema unsatisfiable

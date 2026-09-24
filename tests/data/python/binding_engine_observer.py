@@ -80,6 +80,9 @@ _ENGINE_CALLS = OBSERVED | frozenset({
     "_resolve_inherited_child_ref",
     "_merge_inherited_type_shape_dict",
     "_deep_merge",
+    "_parse_constrained_type_union",
+    "_get_array_union_branch_schema",
+    "_parse_array_union_constrained_branch",
 })
 
 

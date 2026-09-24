@@ -1,0 +1,22 @@
+[
+  {
+    "replacement": "Nullable: str",
+    "expected": "unsupported-artifact.txt"
+  },
+  {
+    "replacement": "Nullable =",
+    "expected": "missing-alias-artifact.txt"
+  },
+  {
+    "replacement": "Nullable = TypeAliasType(\"Wrong\", str | None)",
+    "expected": "unsupported-artifact.txt"
+  },
+  {
+    "replacement": "Nullable = TypeAliasType(\"Nullable\")",
+    "expected": "unsupported-artifact.txt"
+  },
+  {
+    "replacement": "Nullable = TypeAliasType(\"Nullable\", str | None, str)",
+    "expected": "unsupported-artifact.txt"
+  }
+]

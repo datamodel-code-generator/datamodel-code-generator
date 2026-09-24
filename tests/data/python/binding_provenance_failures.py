@@ -52,6 +52,14 @@ def producer_fault(case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> Ite
                 args = (args[0], args[1].model_copy(update={"allOf": [args[1]]}), *args[2:])
             case "origin-materialized-child":
                 args = (args[0], args[1].model_copy(update={"properties": {"ghost": args[1]}}), *args[2:])
+            case "constrained-missing-branch":
+                args[0].schemas.clear()
+            case "constrained-nonlist-source" | "constrained-missing-return":
+                if args[1] is not None and args[0].schemas:
+                    if case["id"] == "constrained-nonlist-source":
+                        args[0].source.type = "string"
+                    else:
+                        args[1].data_types.clear()
             case "combined-keyword":
                 args = (*args[:-1], "unobserved")
             case "inherited-source":
@@ -167,6 +175,9 @@ def producer_fault(case: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> Ite
                 parser.binding_resolver.default_resolutions[-1] = replace(
                     parser.binding_resolver.default_resolutions[-1], field_name="unobserved"
                 )
+            case "item-stream-container":
+                for data_type in args[0].values():
+                    data_type.is_optional = True
             case "pending-default-identity":
                 if parser._pending_field_default is not None:
                     parser._pending_field_default = replace(parser._pending_field_default, field_name="unobserved")

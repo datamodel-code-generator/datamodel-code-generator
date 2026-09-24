@@ -1,0 +1,35 @@
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/Node",
+      "schema": "/components/schemas/Node",
+      "declaration": "/components/schemas/Node",
+      "media": null,
+      "state": "invalid BND_TYPE_EXPRESSION_UNSUPPORTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/Holder",
+      "schema": "/components/schemas/Holder",
+      "declaration": "/components/schemas/Holder",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Holder"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Holder/properties/node",
+      "schema": "/components/schemas/Holder/properties/node",
+      "declaration": "/components/schemas/Holder/properties/node",
+      "media": null,
+      "state": "invalid BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    }
+  ],
+  "diagnostics": [
+    "BND_SYMBOL_NOT_EMITTED "
+  ],
+  "ignored": []
+}

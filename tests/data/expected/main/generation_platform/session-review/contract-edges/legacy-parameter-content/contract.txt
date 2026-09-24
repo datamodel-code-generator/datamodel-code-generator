@@ -1,0 +1,66 @@
+{
+  "uses": [
+    {
+      "use": "parameter value /paths/~1items/get/parameters/1",
+      "schema": "/paths/~1items/get/parameters/1/content/application~1json/schema",
+      "declaration": "/paths/~1items/get/parameters/1",
+      "media": "application/json",
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "parameter value /paths/~1items/get/parameters/1",
+      "schema": "/paths/~1items/get/parameters/1/content/text~1plain/schema",
+      "declaration": "/paths/~1items/get/parameters/1",
+      "media": "text/plain",
+      "state": "not_generated BND_SYMBOL_NOT_EMITTED",
+      "type": null
+    },
+    {
+      "use": "response_body value /paths/~1items/get/responses/200",
+      "schema": "/paths/~1items/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1items/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "ItemsGetResponse"
+      }
+    },
+    {
+      "use": "schema value /paths/~1items/get/parameters/1/content/application~1json/schema",
+      "schema": "/paths/~1items/get/parameters/1/content/application~1json/schema",
+      "declaration": "/paths/~1items/get/parameters/1/content/application~1json/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1items/get/parameters/1/content/text~1plain/schema",
+      "schema": "/paths/~1items/get/parameters/1/content/text~1plain/schema",
+      "declaration": "/paths/~1items/get/parameters/1/content/text~1plain/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /paths/~1items/get/responses/200/content/application~1json/schema/properties/ok",
+      "schema": "/paths/~1items/get/responses/200/content/application~1json/schema/properties/ok",
+      "declaration": "/paths/~1items/get/responses/200/content/application~1json/schema/properties/ok",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "bool"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

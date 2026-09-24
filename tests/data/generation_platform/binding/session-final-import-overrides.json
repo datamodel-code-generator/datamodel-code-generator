@@ -1,0 +1,10 @@
+{
+  "UUID": "custom_uuid",
+  "datetime": "custom_dates",
+  "argparse": "custom_runtime",
+  "Bar": "custom_models",
+  "Qux": "custom_models",
+  "conint": "pydantic.types",
+  "constr": "pydantic.types",
+  "NamedTuple": "typing_extensions"
+}

@@ -1,0 +1,11 @@
+{
+  "errors": [
+    [
+      "RuntimeError",
+      "No accepted contract batch is available for transfer"
+    ]
+  ],
+  "accepted": 1,
+  "retained_graph": 0,
+  "retained_parsers": 0
+}

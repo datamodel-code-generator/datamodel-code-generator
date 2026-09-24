@@ -1,0 +1,11 @@
+{
+  "errors": [
+    [
+      "BindingCaptureError",
+      "BND_ATTEMPT_MISMATCH: selected attempt has no frozen candidate"
+    ]
+  ],
+  "accepted": null,
+  "retained_graph": 0,
+  "retained_parsers": 0
+}

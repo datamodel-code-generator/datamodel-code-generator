@@ -1,0 +1,9 @@
+/components/schemas/RegularModel: bound None
+/components/schemas/Third: bound None
+/components/schemas/Second: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+/components/schemas/First: invalid BND_TYPE_EXPRESSION_UNSUPPORTED
+/components/schemas/RegularModel/properties/name: bound None
+/components/schemas/Second/oneOf/0: invalid BND_SYMBOL_NOT_EMITTED
+/components/schemas/Second/oneOf/1: bound None
+/components/schemas/Second/oneOf/2: bound None
+/components/schemas/First/oneOf/0: invalid BND_SYMBOL_NOT_EMITTED

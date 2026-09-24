@@ -1,0 +1,28 @@
+[
+  {
+    "node": "GenericType",
+    "base": {
+      "node": "BuiltinType",
+      "name": "dict"
+    },
+    "arguments": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      {
+        "node": "ImportedType",
+        "import_": {
+          "node": "Import",
+          "import_": "Any",
+          "from_": "typing",
+          "alias": null,
+          "reference_path": null,
+          "keep_unaliased": false
+        },
+        "qualified_suffix": []
+      }
+    ],
+    "tuple_form": "not_tuple"
+  }
+]

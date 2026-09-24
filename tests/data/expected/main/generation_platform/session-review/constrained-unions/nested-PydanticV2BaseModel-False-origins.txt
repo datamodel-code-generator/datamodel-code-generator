@@ -1,0 +1,38 @@
+{
+  "ValueObjectArray.": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value/additionalProperties"
+    ]
+  },
+  "ValueObjectString.": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value/additionalProperties"
+    ]
+  },
+  "ValueObject.root": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value/additionalProperties"
+    ]
+  },
+  "ValueObject1.": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value"
+    ]
+  },
+  "ValueString.": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value"
+    ]
+  },
+  "Payload.value": {
+    "state": "known",
+    "locations": [
+      "/components/schemas/Payload/properties/value"
+    ]
+  }
+}

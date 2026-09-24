@@ -1,0 +1,4 @@
+security_scheme Key: {"$ref":"#/components/securitySchemes/~2"}
+  #/components/securitySchemes/~2: invalid_pointer -> -
+link next: {"operationId":"readItem","parameters":{"id":"$response.body#/id"}}
+  #/components/links/Next: resolved -> session-metadata-invalid.json#/components/links/Next

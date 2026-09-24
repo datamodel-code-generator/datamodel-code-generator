@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "Binding capture freeze failed"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

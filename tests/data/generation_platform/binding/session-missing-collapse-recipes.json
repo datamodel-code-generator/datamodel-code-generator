@@ -1,0 +1,49 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Missing reference beside collapsed roots",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Pets": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Pet"
+        }
+      },
+      "Labels": {
+        "type": "object",
+        "propertyNames": {
+          "pattern": "^[a-z]+$"
+        },
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "Holder": {
+        "type": "object",
+        "properties": {
+          "pets": {
+            "$ref": "#/components/schemas/Pets"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/Labels"
+          },
+          "bad": {
+            "$ref": "#/components/schemas/Missing"
+          }
+        }
+      }
+    }
+  }
+}

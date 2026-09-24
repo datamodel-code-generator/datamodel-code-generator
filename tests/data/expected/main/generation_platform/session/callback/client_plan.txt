@@ -1,0 +1,13 @@
+path post /items
+  security: []
+  servers: []
+  responses: [["200","exact"]]
+  decode response_body - 200 application/json: models.py:Item
+    id -> id: required=True, nullable=False
+  callback onDone
+helper encode /components/schemas/Item/properties/id: builtins.int
+documentation post {$request.body#/callbackUrl}
+  request_body -
+  media application/json
+  response 204
+  schema /paths/~1items/post/callbacks/onDone/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema: {"type":"object","required":["event"],"properties":{"event":"string"}}

@@ -1,0 +1,19 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Recursive bare array", "version": "1"},
+  "paths": {
+    "/items": {
+      "post": {
+        "requestBody": {
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Model"}}}
+        },
+        "responses": {"204": {"description": "Done"}}
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Model": {"type": "array", "items": {"$ref": "#/components/schemas/Model"}}
+    }
+  }
+}

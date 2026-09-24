@@ -1,0 +1,11 @@
+components:
+  parameters:
+    Fields:
+      name: fields
+      in: query
+      schema:
+        type: string
+  headers:
+    RateLimit:
+      schema:
+        type: integer

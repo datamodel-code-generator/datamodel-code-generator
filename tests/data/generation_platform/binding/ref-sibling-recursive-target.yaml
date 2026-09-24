@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info:
+  title: Recursive reference siblings
+  version: '1'
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        name:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node'
+    Root:
+      $ref: '#/components/schemas/Node'
+      required:
+        - name

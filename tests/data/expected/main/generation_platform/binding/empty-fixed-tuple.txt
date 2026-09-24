@@ -1,0 +1,28 @@
+{
+  "attempt": 7,
+  "models": [
+    "Record"
+  ],
+  "fields": [
+    [
+      "value",
+      {
+        "node": "TypeProjection",
+        "value": {
+          "node": "GenericType",
+          "base": {
+            "node": "BuiltinType",
+            "name": "tuple"
+          },
+          "arguments": [],
+          "tuple_form": "fixed"
+        },
+        "reason": null
+      }
+    ]
+  ],
+  "path": [
+    "models.py"
+  ],
+  "package": "example.models"
+}

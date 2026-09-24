@@ -1,0 +1,260 @@
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/Pet",
+      "schema": "/components/schemas/Pet",
+      "declaration": "/components/schemas/Pet",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Cat"
+          },
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Dog"
+          }
+        ],
+        "preserve_order": false
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Cat",
+      "schema": "/components/schemas/Cat",
+      "declaration": "/components/schemas/Cat",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Cat"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Dog",
+      "schema": "/components/schemas/Dog",
+      "declaration": "/components/schemas/Dog",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Dog"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Scores",
+      "schema": "/components/schemas/Scores",
+      "declaration": "/components/schemas/Scores",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "dict"
+        },
+        "arguments": [
+          {
+            "node": "ConstructorType",
+            "callable": {
+              "node": "ImportedType",
+              "import_": {
+                "node": "Import",
+                "import_": "constr",
+                "from_": "pydantic",
+                "alias": null,
+                "reference_path": null,
+                "keep_unaliased": false
+              },
+              "qualified_suffix": []
+            },
+            "keywords": [
+              [
+                "pattern",
+                {
+                  "node": "SourceExpression",
+                  "text": "r'^[a-z]+$'"
+                }
+              ]
+            ]
+          },
+          {
+            "node": "BuiltinType",
+            "name": "int"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Kennel",
+      "schema": "/components/schemas/Kennel",
+      "declaration": "/components/schemas/Kennel",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Kennel"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/oneOf/0",
+      "schema": "/components/schemas/Pet/oneOf/0",
+      "declaration": "/components/schemas/Pet/oneOf/0",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Cat"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Pet/oneOf/1",
+      "schema": "/components/schemas/Pet/oneOf/1",
+      "declaration": "/components/schemas/Pet/oneOf/1",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Dog"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Cat/properties/kind",
+      "schema": "/components/schemas/Cat/properties/kind",
+      "declaration": "/components/schemas/Cat/properties/kind",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "LiteralType",
+        "values": [
+          {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "Cat"
+          }
+        ]
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Cat/properties/indoor",
+      "schema": "/components/schemas/Cat/properties/indoor",
+      "declaration": "/components/schemas/Cat/properties/indoor",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "bool"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Dog/properties/kind",
+      "schema": "/components/schemas/Dog/properties/kind",
+      "declaration": "/components/schemas/Dog/properties/kind",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "LiteralType",
+        "values": [
+          {
+            "node": "LiteralScalar",
+            "kind": "str",
+            "value": "Dog"
+          }
+        ]
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Dog/properties/breed",
+      "schema": "/components/schemas/Dog/properties/breed",
+      "declaration": "/components/schemas/Dog/properties/breed",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Scores/additionalProperties",
+      "schema": "/components/schemas/Scores/additionalProperties",
+      "declaration": "/components/schemas/Scores/additionalProperties",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "int"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Kennel/properties/resident",
+      "schema": "/components/schemas/Kennel/properties/resident",
+      "declaration": "/components/schemas/Kennel/properties/resident",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Cat"
+          },
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "Dog"
+          }
+        ],
+        "preserve_order": false
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Kennel/properties/scores",
+      "schema": "/components/schemas/Kennel/properties/scores",
+      "declaration": "/components/schemas/Kennel/properties/scores",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GenericType",
+        "base": {
+          "node": "BuiltinType",
+          "name": "dict"
+        },
+        "arguments": [
+          {
+            "node": "ConstructorType",
+            "callable": {
+              "node": "ImportedType",
+              "import_": {
+                "node": "Import",
+                "import_": "constr",
+                "from_": "pydantic",
+                "alias": null,
+                "reference_path": null,
+                "keep_unaliased": false
+              },
+              "qualified_suffix": []
+            },
+            "keywords": [
+              [
+                "pattern",
+                {
+                  "node": "SourceExpression",
+                  "text": "r'^[a-z]+$'"
+                }
+              ]
+            ]
+          },
+          {
+            "node": "BuiltinType",
+            "name": "int"
+          }
+        ],
+        "tuple_form": "not_tuple"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

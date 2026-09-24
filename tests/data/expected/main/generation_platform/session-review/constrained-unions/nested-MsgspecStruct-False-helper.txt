@@ -1,0 +1,44 @@
+[
+  {
+    "node": "UnionType",
+    "members": [
+      {
+        "node": "GeneratedSymbolType",
+        "symbol": "ValueString"
+      },
+      {
+        "node": "GeneratedSymbolType",
+        "symbol": "ValueArray"
+      }
+    ],
+    "preserve_order": false
+  },
+  {
+    "node": "GenericType",
+    "base": {
+      "node": "BuiltinType",
+      "name": "dict"
+    },
+    "arguments": [
+      {
+        "node": "BuiltinType",
+        "name": "str"
+      },
+      {
+        "node": "UnionType",
+        "members": [
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "ValueString"
+          },
+          {
+            "node": "GeneratedSymbolType",
+            "symbol": "ValueArray"
+          }
+        ],
+        "preserve_order": false
+      }
+    ],
+    "tuple_form": "not_tuple"
+  }
+]

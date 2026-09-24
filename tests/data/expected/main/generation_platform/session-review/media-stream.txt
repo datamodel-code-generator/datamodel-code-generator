@@ -1,0 +1,2 @@
+/paths/~1items/post/requestBody/content/application~1json/itemSchema value bound
+/paths/~1items/post/requestBody/content/application~1json/itemSchema item_stream_array bound

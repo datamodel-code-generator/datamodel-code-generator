@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "An inherited merge has no observed effective parent shape"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

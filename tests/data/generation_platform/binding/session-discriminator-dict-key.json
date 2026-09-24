@@ -1,0 +1,26 @@
+{
+  "openapi": "3.1.0",
+  "info": {"title": "Kennel", "version": "1"},
+  "components": {
+    "schemas": {
+      "Pet": {
+        "oneOf": [{"$ref": "#/components/schemas/Cat"}, {"$ref": "#/components/schemas/Dog"}],
+        "discriminator": {"propertyName": "kind"}
+      },
+      "Cat": {"type": "object", "required": ["kind"], "properties": {"kind": {"type": "string"}, "indoor": {"type": "boolean"}}},
+      "Dog": {"type": "object", "required": ["kind"], "properties": {"kind": {"type": "string"}, "breed": {"type": "string"}}},
+      "Scores": {
+        "type": "object",
+        "propertyNames": {"pattern": "^[a-z]+$"},
+        "additionalProperties": {"type": "integer"}
+      },
+      "Kennel": {
+        "type": "object",
+        "properties": {
+          "resident": {"$ref": "#/components/schemas/Pet"},
+          "scores": {"$ref": "#/components/schemas/Scores"}
+        }
+      }
+    }
+  }
+}

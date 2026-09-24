@@ -1,0 +1,9 @@
+/paths/~1items/get: common,root
+/paths/~1items/get/callbacks/event/{$request.body#~1url}/post: -
+BND_OPERATION_ORIGIN_UNRESOLVED: /paths/~1reference
+BND_UNRESOLVED_REFERENCE: /paths/~1items/get/parameters/2
+BND_UNRESOLVED_REFERENCE: /paths/~1items/get/parameters/3
+BND_UNRESOLVED_REFERENCE: /paths/~1items/get/parameters/4
+BND_UNRESOLVED_REFERENCE: /paths/~1items/get/parameters/5
+BND_UNRESOLVED_REFERENCE: /paths/~1items/get/parameters/6
+BND_UNRESOLVED_REFERENCE: /paths/~1items/get/parameters/7

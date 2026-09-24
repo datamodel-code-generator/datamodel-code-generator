@@ -1,0 +1,24 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Builtin annotation binding",
+    "version": "1"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "Record": {
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "string",
+            "x-python-type": "tuple[int, str]"
+          }
+        }
+      }
+    }
+  }
+}

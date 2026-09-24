@@ -1,0 +1,50 @@
+{
+  "uses": [
+    {
+      "use": "parameter value /paths/parameters/0",
+      "schema": "/paths/parameters/0/schema",
+      "declaration": "/paths/parameters/0",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1pets/get/responses/200",
+      "schema": "/paths/~1pets/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1pets/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "PetsGetResponse"
+      }
+    },
+    {
+      "use": "schema value /paths/parameters/0/schema",
+      "schema": "/paths/parameters/0/schema",
+      "declaration": "/paths/parameters/0/schema",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /paths/~1pets/get/responses/200/content/application~1json/schema/properties/name",
+      "schema": "/paths/~1pets/get/responses/200/content/application~1json/schema/properties/name",
+      "declaration": "/paths/~1pets/get/responses/200/content/application~1json/schema/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": []
+}

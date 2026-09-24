@@ -1,0 +1,52 @@
+{
+  "uses": [
+    {
+      "use": "response_body value /paths/~1files/get/responses/200",
+      "schema": "/paths/~1files/get/responses/200/content/application~1json/schema",
+      "declaration": "/paths/~1files/get/responses/200",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "File"
+      }
+    },
+    {
+      "use": "response_body value /paths/~1files/get/responses/206",
+      "schema": "/paths/~1files/get/responses/206/content/application~1json/schema",
+      "declaration": "/components/responses/Partial",
+      "media": "application/json",
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "File"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/File/properties/name",
+      "schema": "/components/schemas/File/properties/name",
+      "declaration": "/components/schemas/File/properties/name",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/File",
+      "schema": "/components/schemas/File",
+      "declaration": "/components/schemas/File",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "File"
+      }
+    }
+  ],
+  "diagnostics": [],
+  "ignored": [
+    "/paths/~1files/get: oas_header_ignored"
+  ]
+}

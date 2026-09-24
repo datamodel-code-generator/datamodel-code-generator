@@ -1,0 +1,9 @@
+{
+  "error": [
+    "BindingCaptureError",
+    "An item-stream source is not an accepted schema declaration"
+  ],
+  "batch": null,
+  "retained_parsers": 0,
+  "retained_graph": 0
+}

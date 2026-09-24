@@ -1,0 +1,133 @@
+{
+  "uses": [
+    {
+      "use": "schema value /components/schemas/app.Beagle",
+      "schema": "/components/schemas/app.Beagle",
+      "declaration": "/components/schemas/app.Beagle",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Beagle"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Kind",
+      "schema": "/components/schemas/zoo.Kind",
+      "declaration": "/components/schemas/zoo.Kind",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Kind"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Dog",
+      "schema": "/components/schemas/zoo.Dog",
+      "declaration": "/components/schemas/zoo.Dog",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Dog"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Cat",
+      "schema": "/components/schemas/zoo.Cat",
+      "declaration": "/components/schemas/zoo.Cat",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Cat"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Selector",
+      "schema": "/components/schemas/zoo.Selector",
+      "declaration": "/components/schemas/zoo.Selector",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Selector"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Dog/properties/kind",
+      "schema": "/components/schemas/zoo.Dog/properties/kind",
+      "declaration": "/components/schemas/zoo.Dog/properties/kind",
+      "media": null,
+      "state": "invalid BND_TYPE_EXPRESSION_UNSUPPORTED",
+      "type": null
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Dog/properties/bark",
+      "schema": "/components/schemas/zoo.Dog/properties/bark",
+      "declaration": "/components/schemas/zoo.Dog/properties/bark",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Cat/properties/kind",
+      "schema": "/components/schemas/zoo.Cat/properties/kind",
+      "declaration": "/components/schemas/zoo.Cat/properties/kind",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "LiteralType",
+        "values": [
+          {
+            "node": "GeneratedEnumMember",
+            "symbol": "Kind",
+            "name": "cat"
+          }
+        ]
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Cat/properties/purr",
+      "schema": "/components/schemas/zoo.Cat/properties/purr",
+      "declaration": "/components/schemas/zoo.Cat/properties/purr",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "BuiltinType",
+        "name": "str"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Selector/oneOf/0",
+      "schema": "/components/schemas/zoo.Selector/oneOf/0",
+      "declaration": "/components/schemas/zoo.Selector/oneOf/0",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Dog"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/zoo.Selector/oneOf/1",
+      "schema": "/components/schemas/zoo.Selector/oneOf/1",
+      "declaration": "/components/schemas/zoo.Selector/oneOf/1",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "Cat"
+      }
+    }
+  ],
+  "diagnostics": [
+    "BND_TYPE_EXPRESSION_UNSUPPORTED ",
+    "BND_TYPE_EXPRESSION_UNSUPPORTED "
+  ],
+  "ignored": []
+}

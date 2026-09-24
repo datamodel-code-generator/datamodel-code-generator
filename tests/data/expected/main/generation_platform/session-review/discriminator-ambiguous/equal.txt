@@ -1,0 +1,2 @@
+/components/schemas/Grandchild: bound
+/components/schemas/Grandchild/properties/version: bound
