@@ -105,6 +105,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "ReuseScope",
         "SchemaValidatorType",
         "SchemaParseError",
+        "SchemaResourceRefWarning",
         "TargetPydanticVersion",
         "VersionMode",
         "XMLSchemaVersion",
