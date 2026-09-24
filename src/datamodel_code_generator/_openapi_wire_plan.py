@@ -428,11 +428,7 @@ class _DirectionalPlanner:
 
     def schema(self, location: SourceLocation) -> dict[str, JSONValue]:
         roots = self.planner.roots.get(location.document, {})
-        prefix = max(
-            (pointer for pointer in roots if location.pointer == pointer or _covers(pointer, location.pointer)),
-            key=len,
-            default=None,
-        )
+        prefix = _enclosing(roots, location.pointer)
         value = None if prefix is None else roots[prefix]
         for token in _tokens(location.pointer[len(prefix or "") :]):
             value = (
