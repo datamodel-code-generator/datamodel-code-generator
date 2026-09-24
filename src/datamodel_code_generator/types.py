@@ -756,7 +756,7 @@ class DataType(_BaseModel):
         use_standard_collections = self.use_standard_collections
         yield (self.is_optional and not self.use_union_operator, IMPORT_OPTIONAL)
         yield (len(self.data_types) > 1 and not self.use_union_operator, IMPORT_UNION)
-        yield (bool(self.literals) or bool(self.enum_member_literals), IMPORT_LITERAL)
+        yield ((bool(self.literals) or bool(self.enum_member_literals)) and not self.alias, IMPORT_LITERAL)
         yield (bool(self.discriminator), IMPORT_ANNOTATED)
         yield (self.is_frozen_set and not use_standard_collections, IMPORT_FROZEN_SET)
         yield (self.is_mapping and use_standard_collections, IMPORT_ABC_MAPPING)

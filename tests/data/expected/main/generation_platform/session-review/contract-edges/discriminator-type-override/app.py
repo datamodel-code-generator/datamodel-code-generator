@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 from my_app.types import DogKind
-from typing import Literal
 from .zoo import Dog
 
 
