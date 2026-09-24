@@ -1,7 +1,0 @@
-{
-  "native": [
-    true,
-    false
-  ],
-  "generation_error": "$ref path is a directory: ."
-}

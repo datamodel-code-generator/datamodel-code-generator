@@ -1208,7 +1208,8 @@ class ModelResolver:  # noqa: PLR0904
             file_path, fragment = joined_path.split("#", 1)
             ref = f"{file_path}#{fragment}"
             if (
-                self.root_id_base_path
+                file_path
+                and self.root_id_base_path
                 and not self.base_url
                 and not (is_url(joined_path) or Path(self._base_path, file_path).is_file())
             ):

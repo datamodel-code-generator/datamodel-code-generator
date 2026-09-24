@@ -238,10 +238,7 @@
     "resources": [
       "root.json"
     ],
-    "normal": true,
-    "generation_errors": {
-      "dict": "normal_root_uri_dict_error.txt"
-    }
+    "normal": true
   },
   "legacy": {
     "payloads": [
