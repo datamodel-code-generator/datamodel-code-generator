@@ -327,7 +327,7 @@ class FinalOperationBuilder:
                 return projected[0]
         return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
 
-    def _use(  # ruff: ignore[too-many-arguments, too-many-positional-arguments] -- Preserve independent owner, declaration, use-site, and wire identities.
+    def _use(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         owner: OperationId | SourceLocation,
         role: TypeUseRole,
@@ -399,7 +399,7 @@ class FinalOperationBuilder:
                     return members
         return tuple(self.members.get(symbol, ()))
 
-    def _media(  # ruff: ignore[too-many-arguments] -- Preserve independent owner, declaration, use-site, and wire identities.
+    def _media(  # ruff: ignore[too-many-arguments]
         self,
         raw: YamlValue,
         declaration: ApiDeclarationId,
@@ -531,7 +531,7 @@ class FinalOperationBuilder:
                     )
         return True
 
-    def _parameter(  # ruff: ignore[too-many-arguments] -- Preserve independent owner, declaration, use-site, and wire identities.
+    def _parameter(  # ruff: ignore[too-many-arguments]
         self,
         raw: YamlValue,
         declaration: ApiDeclarationId,
@@ -584,7 +584,7 @@ class FinalOperationBuilder:
             children,
         )
 
-    def _headers(  # ruff: ignore[too-many-arguments] -- Preserve independent owner, declaration, use-site, and wire identities.
+    def _headers(  # ruff: ignore[too-many-arguments]
         self,
         raw: YamlValue,
         declaration: ApiDeclarationId,

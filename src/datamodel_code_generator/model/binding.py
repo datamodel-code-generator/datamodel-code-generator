@@ -1115,7 +1115,7 @@ class _ArtifactIndexBuilder:
             msg = "Executable artifact statements require an explicit export adapter"
             raise BindingCaptureError(msg)
 
-    def _unverified_writes(self, tokens: Tokens) -> None:  # ruff: ignore[too-many-branches] -- Keep the finite module-write grammar together.
+    def _unverified_writes(self, tokens: Tokens) -> None:  # ruff: ignore[too-many-branches]
         if (call := _application(tokens, "(")) is not None:
             match call[0]:
                 case (owner, dot, method) if (
@@ -1981,7 +1981,7 @@ class FinalReferencePolicy:
 def freeze_reference_policy(model: DataModel, *, serialize_as_any: bool) -> FinalReferencePolicy:
     """Project raw builtin state for a final reference; never compute a type hint."""
     return FinalReferencePolicy(
-        model._nullable,  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] -- Read the stored flag without invoking its property.
+        model._nullable,  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         model.IS_ALIAS,
         serialize_as_any and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
     )

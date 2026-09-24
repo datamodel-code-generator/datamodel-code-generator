@@ -662,7 +662,7 @@ class BindingCaptureMixin(OpenAPIParser):
 
     _binding_resolver_type: ClassVar[type[BindingResolverMixin]] = ContractModelResolver
 
-    def __init__(  # ruff: ignore[too-many-statements] -- Initialize all attempt-owned capture state together.
+    def __init__(  # ruff: ignore[too-many-statements]
         self,
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
@@ -884,7 +884,7 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         return self._record_variant(base_reference, suffix, result)  # pyright: ignore[reportUnknownArgumentType]
 
-    def _create_variant_model(  # ruff: ignore[too-many-arguments] -- Preserve the existing producer signature.
+    def _create_variant_model(  # ruff: ignore[too-many-arguments]
         self,
         base_reference: Reference,
         suffix: Literal["Request", "Response"],
@@ -1854,7 +1854,7 @@ class BindingCaptureMixin(OpenAPIParser):
         target_items: Sequence[JsonSchemaObject | bool],
         path: list[str],
         parent: JsonSchemaObject,
-        singular_name: bool = True,  # ruff: ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument] -- Preserve the existing producer signature.
+        singular_name: bool = True,  # ruff: ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument]
     ) -> list[DataType]:
         """Retain actual element and union-branch returns without changing guarded item parsing."""
         registrations = len(self.binding_ledger.registrations)
@@ -1916,8 +1916,8 @@ class BindingCaptureMixin(OpenAPIParser):
         name: str,
         obj: JsonSchemaObject,
         path: list[str],
-        singular_name: bool = True,  # ruff: ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument] -- Preserve the producer signature.
-        use_annotated: bool | None = None,  # ruff: ignore[boolean-type-hint-positional-argument] -- Preserve the producer signature.
+        singular_name: bool = True,  # ruff: ignore[boolean-type-hint-positional-argument, boolean-default-value-positional-argument]
+        use_annotated: bool | None = None,  # ruff: ignore[boolean-type-hint-positional-argument]
     ) -> DataModelFieldBase:
         """Keep the current array source only while its ordinary fallback producer runs."""
         self._array_sources.append(obj)
@@ -2011,7 +2011,7 @@ class BindingCaptureMixin(OpenAPIParser):
                 SchemaTypeObservation(None, result[0], self.schema_origins.keyword_locations(obj, "items"))
             )
 
-    def _create_synthetic_enum_obj(  # ruff: ignore[too-many-arguments, too-many-positional-arguments] -- Preserve the original producer signature.
+    def _create_synthetic_enum_obj(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         original: JsonSchemaObject,
         enum_values: list[object],
@@ -2839,7 +2839,7 @@ class BindingCaptureMixin(OpenAPIParser):
                 adopted.append(source)
             self._module_import_sources[id(ctx.imports)] = tuple(adopted)
 
-    def _generate_module_output(  # ruff: ignore[too-many-arguments, too-many-positional-arguments] -- Preserve the existing module producer signature.
+    def _generate_module_output(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         ctx: ModuleContext,
         config: ParseConfig,

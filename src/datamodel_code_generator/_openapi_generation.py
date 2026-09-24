@@ -313,7 +313,7 @@ class OpenAPIGenerationSession:
         for attempt in tuple(self._attempts):
             try:
                 self._release(attempt)
-            except BaseException as error:  # ruff: ignore[blind-except, try-except-in-loop] # lgtm [py/catch-base-exception] -- Close every owner, then propagate the first release failure below.
+            except BaseException as error:  # ruff: ignore[blind-except, try-except-in-loop]
                 if failure is None:
                     failure = error
         clear_capture_tracebacks(self._failure)

@@ -277,7 +277,7 @@ def _unresolved_nodes(
     return frozenset(nodes)
 
 
-def _freeze_inventory(  # ruff: ignore[too-many-locals] -- One bounded pass joins final identities, namespaces, and own fields.
+def _freeze_inventory(  # ruff: ignore[too-many-locals]
     parser: openapi_contract.BindingCaptureMixin,
     results: str | dict[tuple[str, ...], Result],
     *,

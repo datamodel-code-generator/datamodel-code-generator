@@ -50,7 +50,7 @@ def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> 
     builtin = (
         backend is not None
         and kind != "custom"
-        and model._custom_template_dir is None  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] -- Model-owned raw origin.
+        and model._custom_template_dir is None  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         and not model.decorators
         and model.custom_base_class in (None, model.BASE_CLASS, [model.BASE_CLASS])
     )
@@ -64,7 +64,7 @@ def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> 
             for field in model.fields
         )
     )
-    arguments: object = model._internal_template_data.get("typed_dict_kwargs", {})  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] -- Already adopted by the builtin renderer.
+    arguments: object = model._internal_template_data.get("typed_dict_kwargs", {})  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
     extra_items = (
         backend == "typeddict" and kind == "model" and isinstance(arguments, dict) and "extra_items" in arguments
     )

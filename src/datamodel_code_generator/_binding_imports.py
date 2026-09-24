@@ -137,7 +137,7 @@ class FinalImportResolver:
 
         return BoundPythonType(rewrite_python_type_expr(value.expression, leaf), resolved)
 
-    def _type(  # ruff: ignore[too-many-return-statements] -- Preserve each finite immutable type alternative.
+    def _type(  # ruff: ignore[too-many-return-statements]
         self, value: FinalPythonType
     ) -> FinalPythonType:
         match value:

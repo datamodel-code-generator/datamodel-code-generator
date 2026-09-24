@@ -76,7 +76,7 @@ class FinalFieldBuilder:
             for model in inventory.models
             for field, actual in zip(model.fields, self.model_nodes[model.model].fields, strict=True)
         }
-        self.sources = parser._resolve_field_sources()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] -- Parser-owned capture assembly.
+        self.sources = parser._resolve_field_sources()  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         self.policies = {
             model.symbol: freeze_model_policy(self.model_nodes[model.model], parser.data_model_type)
             for model in inventory.models
@@ -263,7 +263,7 @@ class FinalFieldBuilder:
             constructor_policy(facts, "kw_only") if facts is not None else None,
         )
 
-    def _alias_nulls(  # ruff: ignore[too-many-branches] -- Resolve tri-state dependencies without recursion.
+    def _alias_nulls(  # ruff: ignore[too-many-branches]
         self, artifacts: list[FinalArtifactBinding]
     ) -> dict[SymbolId, bool | None]:
         """Resolve producer-owned alias nulls in linear time, leaving opaque cycles unknown."""
