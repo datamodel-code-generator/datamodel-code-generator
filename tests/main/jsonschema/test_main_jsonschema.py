@@ -14464,6 +14464,67 @@ def test_main_jsonschema_recursive_ref_resources(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_path", "expected_file", "extra_args"),
+    [
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "recursive_ref_resources" / "merged.json",
+            "merged_copy_duplicates.py",
+            [],
+            id="recursive",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "merged_copy_duplicates" / "conditional" / "holder.json",
+            "merged_copy_duplicates_conditional.py",
+            ["--generate-schema-validators"],
+            id="conditional",
+        ),
+    ],
+)
+def test_main_jsonschema_merged_copy_duplicates(
+    input_path: Path, expected_file: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Collapse a schema merged from another document into the shared model once its nested models collapse."""
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *extra_args],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=Path(expected_file).stem,
+        model_name="Holder",
+        valid_json='{"tree": {"node": {"kids": []}, "branch": {"children": [{"value": 1}]}}}',
+        invalid_json='{"tree": {"branch": {"children": [{"value": "one"}]}}}',
+        expected_error_type="int_parsing",
+    )
+
+
+def test_main_jsonschema_merged_copy_field_names(output_file: Path) -> None:
+    """Keep a schema merged from another document apart from a same-named model whose fields name other models."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "merged_copy_duplicates" / "field_names" / "holder.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="merged_copy_field_names.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="merged_copy_field_names",
+        model_name="Holder",
+        valid_json='{"other": {"Foo": {"x": 1}}, "tree": {"Bar": {"x": 2}}}',
+        invalid_json='{"other": {"Foo": {"x": "one"}}}',
+        expected_error_type="int_parsing",
+        expected_attribute_path=("other", "Foo_1", "x"),
+        expected_attribute_value=1,
+    )
+
+
 def test_main_jsonschema_external_root_refs(output_file: Path) -> None:
     """Name the root of a document referenced only by pointers after the document when its own schemas refer to it."""
     run_main_and_assert(

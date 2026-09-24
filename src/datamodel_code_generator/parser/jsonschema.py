@@ -10016,6 +10016,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         unique: bool = True,  # noqa: FBT001, FBT002
     ) -> DataType:
         """Parse object schema into a data model."""
+        merged_copy = _MERGED_REF_TARGET_KEY in obj.__dict__
         if self.generate_schema_validators:
             obj = self._merge_conditional_properties(obj)
         if not unique:  # pragma: no cover
@@ -10100,6 +10101,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 dataclass_arguments=self.dataclass_arguments,
             )
             self.generation_store.register_model(data_model_type)
+            if merged_copy:
+                self._merged_copies.add(data_model_type)
         else:
             self._unregister_temporary_field_references(fields)
 
