@@ -1415,6 +1415,36 @@ def _file_uri_path(uri: str) -> Path:
     return Path(url2pathname(uri[5:]))
 
 
+def _pointer_ref(parts: Sequence[str]) -> str:
+    """Return the local reference of a JSON pointer given as decoded parts."""
+    return "#" + "".join(f"/{part.replace('~', '~0').replace('/', '~1')}" for part in parts)
+
+
+def _nearest_recursive_anchor(anchors: Iterable[str], current_ref: str) -> str:
+    """Return the longest $recursiveAnchor reference enclosing a location reference, or the document root."""
+    nearest = "#"
+    for anchor in anchors:
+        if (
+            len(anchor) > len(nearest)
+            and current_ref.startswith(anchor)
+            and current_ref[len(anchor) : len(anchor) + 1] in {"", "/"}
+        ):
+            nearest = anchor
+    return nearest
+
+
+def _unanchored_resource_ref(raw: dict[str, Any], parts: Sequence[str]) -> str | None:
+    """Return the nearest schema along a pointer that declares an $id resource, when it has no $recursiveAnchor.
+
+    A $recursiveRef initially resolves to the root of its schema resource, and stays there without one.
+    """
+    for index in range(len(parts), 0, -1):
+        match _get_model_by_path_or_missing(raw, list(parts[:index])):
+            case {"$id": str() as identifier} as schema if not identifier.startswith("#"):
+                return None if schema.get("$recursiveAnchor") is True else _pointer_ref(parts[:index])
+    return None
+
+
 class _DynamicSpecialization(NamedTuple):
     """A referenced schema to parse again with the $dynamicAnchor bindings of its dynamic scope."""
 
@@ -4138,32 +4168,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if obj.dynamicAnchor:
             self._dynamic_anchor_index.setdefault(root_key, {}).setdefault(obj.dynamicAnchor, ref_path)
 
+    def _enclosing_unanchored_resource_ref(self) -> str | None:
+        """Return the nearest $id resource enclosing the schema being parsed, when it has no $recursiveAnchor."""
+        if (
+            not self._has_embedded_schema_resources
+            or (cached := self._schema_resource_cache.get(self._current_dynamic_document())) is None
+        ):
+            return None
+        raw = cached[1]
+        return _unanchored_resource_ref(raw, split_json_pointer(raw, self._dynamic_scope_pointer))
+
     def _resolve_recursive_ref(self, item: JsonSchemaObject, path: list[str]) -> str | None:
         """Resolve $recursiveRef to an equivalent $ref.
 
         Per JSON Schema 2019-09, $recursiveRef only allows "#" as value.
-        Resolves to the nearest enclosing schema with $recursiveAnchor: true.
+        Resolves to the root of the nearest enclosing $id resource when it has no $recursiveAnchor,
+        and otherwise to the nearest enclosing schema with $recursiveAnchor: true.
         For standalone JSON Schema files, this is the root "#".
         For OpenAPI, this is the component schema definition path.
         """
         if item.recursiveRef != "#":  # pragma: no cover
             return None
+        if (resource := self._enclosing_unanchored_resource_ref()) is not None:
+            return resource
         root_key = tuple(self.model_resolver.current_root)
-        anchors = self._recursive_anchor_index.get(root_key, [])
-        if not anchors:
-            return "#"
-        current_ref = self._anchor_ref_path(root_key, path)
-        best = "#"
-        best_len = 0
-        for anchor_ref in anchors:
-            if anchor_ref != "#" and (
-                len(anchor_ref) > best_len
-                and current_ref.startswith(anchor_ref)
-                and (len(current_ref) == len(anchor_ref) or current_ref[len(anchor_ref)] == "/")
-            ):
-                best = anchor_ref
-                best_len = len(anchor_ref)
-        return best
+        return _nearest_recursive_anchor(
+            self._recursive_anchor_index.get(root_key, ()), self._anchor_ref_path(root_key, path)
+        )
 
     def _resolve_dynamic_ref(self, item: JsonSchemaObject) -> str | None:
         """Resolve $dynamicRef to an equivalent $ref.
@@ -4598,24 +4629,38 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _recursive_ref_target(self, defining_ref: str, path: tuple[str | int, ...]) -> str | None:
         """Return the location a $recursiveRef in a schema dumped from another document names there.
 
-        As in its own document, it names the nearest enclosing $recursiveAnchor, or the document root.
-        The outermost $recursiveAnchor of the dynamic scope extends an anchored target, so the reference
-        is left to it when the document the schema is merged into declares $recursiveAnchor.
+        It resolves as it does when that document is parsed, see _resolve_recursive_ref. The outermost
+        $recursiveAnchor of the dynamic scope extends an anchored target, so the reference is left to it
+        when the document the schema is merged into declares $recursiveAnchor.
         """
         file_part, _, pointer = defining_ref.partition("#")
         _, document = self._prepared_ref_document(file_part)
         parts = [*split_json_pointer(document, pointer), *map(str, path)]
-        depth = 0
-        for index in range(1, len(parts) + 1):
-            match _get_model_by_path_or_missing(document, parts[:index]):
-                case {"$recursiveAnchor": True}:
-                    depth = index
-        if (depth or document.get("$recursiveAnchor") is True) and self._recursive_anchor_index.get(
-            tuple(self.model_resolver.current_root)
-        ):
-            return None
-        target = "".join(f"/{part.replace('~', '~0').replace('/', '~1')}" for part in parts[:depth])
-        return self._schema_location(self._resolve_inherited_child_ref(f"#{target}", defining_ref))
+        if (target := _unanchored_resource_ref(document, parts)) is None:
+            anchors = self._document_recursive_anchors(document)
+            target = _nearest_recursive_anchor(anchors, _pointer_ref(parts))
+            if (target != "#" or "#" in anchors) and self._recursive_anchor_index.get(
+                tuple(self.model_resolver.current_root)
+            ):
+                return None
+        return self._schema_location(self._resolve_inherited_child_ref(target, defining_ref))
+
+    def _document_recursive_anchors(self, raw: dict[str, Any]) -> list[str]:
+        """Return the $recursiveAnchor references a document registers when parsed: its root and definitions."""
+        anchors = ["#"] if raw.get("$recursiveAnchor") is True else []
+        for schema_path, split_schema_path in self.schema_paths:
+            if definitions := get_model_by_path(raw, split_schema_path):
+                entries = chain(
+                    ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),
+                    self._iter_schema_definition_entries(definitions, [schema_path]),
+                )
+                anchors.extend(
+                    self._anchor_ref_path((), path)
+                    for _, model, path in entries
+                    if isinstance(model, dict) and model.get("$recursiveAnchor") is True
+                )
+                break
+        return anchors
 
     def _is_ref_circular(self, resolved_ref: str) -> bool:
         """Check if a resolved $ref target contains a circular reference (cached)."""
@@ -11892,10 +11937,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         include_one_of=include_one_of,
                     )
 
-    def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:  # noqa: ARG002
-        """Resolve $ref in schema object, and the target of $dynamicRef the way its data type resolves it."""
+    def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
+        """Resolve $ref in schema object, and the targets of $dynamicRef and $recursiveRef as their data types do."""
         if obj.ref:
             self.resolve_ref(obj.ref)
+            return
+        if obj.recursiveRef:
+            self.resolve_ref(self._resolve_recursive_ref(obj, path) or "#")
             return
         if not (dynamic_ref := obj.dynamicRef):
             return
