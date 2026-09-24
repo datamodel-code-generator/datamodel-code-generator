@@ -8,7 +8,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from json.encoder import encode_basestring, encode_basestring_ascii
-from typing import Final, Literal, NoReturn
+from typing import Final, Literal, NoReturn, overload
 from urllib.parse import quote, unquote_to_bytes
 
 from .errors import CodecResourceLimitError, ParameterEncodingError, WireIssue, WireValidationError
@@ -144,6 +144,10 @@ def _nesting_limit() -> CodecResourceLimitError:
     return CodecResourceLimitError("JSON text is nested beyond the interpreter recursion limit")
 
 
+@overload
+def encode_json(value: JSONValue, *, ascii_only: bool = False) -> bytes: ...
+@overload
+def encode_json(value: WireValue, *, ascii_only: bool = False) -> bytes: ...
 def encode_json(value: JSONValue | WireValue, *, ascii_only: bool = False) -> bytes:
     """Serialize a JSON-domain value as compact UTF-8 JSON with exact numbers, checking it while writing."""
     return _json_text(value, encode_basestring_ascii if ascii_only else encode_basestring, set()).encode()

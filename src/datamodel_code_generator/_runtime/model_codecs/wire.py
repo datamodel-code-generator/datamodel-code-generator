@@ -8,13 +8,22 @@ from dataclasses import dataclass
 from decimal import Decimal
 from math import isfinite
 from types import MappingProxyType
-from typing import Final, Literal
+from typing import TYPE_CHECKING, Final, Literal, overload
 
 from typing_extensions import TypeAliasType
 
-JSONScalar = TypeAliasType("JSONScalar", "bool | str | int | float | Decimal | None")
-JSONValue = TypeAliasType("JSONValue", "JSONScalar | list[JSONValue] | tuple[JSONValue, ...] | dict[str, JSONValue]")
-WireValue = TypeAliasType("WireValue", "JSONScalar | tuple[WireValue, ...] | Mapping[str, WireValue]")
+if TYPE_CHECKING:
+    from typing import TypeAlias
+
+    JSONScalar: TypeAlias = bool | str | int | float | Decimal | None
+    JSONValue: TypeAlias = JSONScalar | list["JSONValue"] | tuple["JSONValue", ...] | dict[str, "JSONValue"]
+    WireValue: TypeAlias = JSONScalar | tuple["WireValue", ...] | Mapping[str, "WireValue"]
+else:
+    JSONScalar = TypeAliasType("JSONScalar", "bool | str | int | float | Decimal | None")
+    JSONValue = TypeAliasType(
+        "JSONValue", "JSONScalar | list[JSONValue] | tuple[JSONValue, ...] | dict[str, JSONValue]"
+    )
+    WireValue = TypeAliasType("WireValue", "JSONScalar | tuple[WireValue, ...] | Mapping[str, WireValue]")
 
 _SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 
@@ -47,6 +56,10 @@ def escape_pointer_token(token: str | int) -> str:
     return token.replace("~", "~0").replace("/", "~1") if isinstance(token, str) else str(token)
 
 
+@overload
+def freeze_wire(value: JSONValue) -> WireValue: ...
+@overload
+def freeze_wire(value: WireValue) -> WireValue: ...
 def freeze_wire(value: JSONValue | WireValue) -> WireValue:
     """Copy a JSON-domain value into an immutable snapshot, preserving order."""
     return _freeze(value, set())
@@ -57,6 +70,10 @@ def thaw_wire(value: WireValue) -> JSONValue:
     return _thaw(value, set())
 
 
+@overload
+def presence_of(value: JSONValue) -> PresenceTree: ...
+@overload
+def presence_of(value: WireValue) -> PresenceTree: ...
 def presence_of(value: JSONValue | WireValue) -> PresenceTree:
     """Build presence from the actual keys and indices of a JSON-domain value."""
     return _presence(value, "", set())

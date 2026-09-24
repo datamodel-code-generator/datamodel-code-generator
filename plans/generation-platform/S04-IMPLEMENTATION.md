@@ -10,7 +10,7 @@ The isolated implementation checkout is `/private/tmp/dcg-s04`; `/private/tmp/dc
 
 The three native `gh stack` branches, bottom to top, follow PR-STACKS:
 
-1. `generation-platform-codecs-wire`: schema, parameter and media wire rules.
+1. `generation-platform-codecs-wire`: schema, parameter and media wire rules, [PR #4143](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4143).
 2. `generation-platform-codecs-pydantic`: the two Pydantic v2 backends, presence, direction, native and envelope values.
 3. `generation-platform-codecs-adapters`: custom adapters and typed generated surfaces.
 
@@ -57,9 +57,15 @@ Product dependencies are unchanged. The test group adds `google-re2>=1.1.2025110
 
 Tools: mypy 2.3.1, Pyright 1.1.414 and the plan's Pyright 1.1.411 baseline, ty 0.0.84 (latest; the repository gate), Ruff 0.16.8 (pre-commit pin), typing-extensions 4.16.0, types-jsonschema 4.26.0.20260518 in the checking environment only. Strict mypy and both Pyright versions (Python 3.10, `reportUnnecessaryTypeIgnoreComment`, type-ignore comments disabled) report zero diagnostics for every new module. ty with the repository flags reports only the pre-existing `util.py:24` unused `tomli` suppression, which appears because the local environment installs `tomli`.
 
-TY03 samples in `tests/data/generation_platform/codecs/typing/`: positive cases (`positive.py`, `annotations.py`) have zero diagnostics on both checkers. Each line 8–15 of `negative.py` produces exactly one error: mypy `assignment`, `dict-item`, `list-item`, `assignment`, `dict-item`, `arg-type`, `arg-type`, `arg-type`; Pyright `reportAssignmentType` for lines 8–12 and `reportArgumentType` for lines 13–15. They cover `object()` and non-string keys for `JSONValue`, a list for `WireValue`, and invalid arguments to `freeze_wire`, `encode_json` and `ParameterPlan`. A scratchpad script checks the ordered lines, codes and counts. The E2E alias test resolves `get_type_hints(..., include_extras=True)` through private import aliases in another module, on Python 3.10, 3.13 and 3.14.
+TY03 samples in `tests/data/generation_platform/codecs/typing/`: positive cases (`positive.py`, `annotations.py`, `first_use.py`) have zero diagnostics on both checkers. Lines 8–15 of `negative.py` produce: mypy `assignment`, `dict-item`, `list-item`, `assignment`, `dict-item`, `call-overload`, `call-overload`, `arg-type`; Pyright `reportAssignmentType` for lines 8–12, `reportCallIssue` plus `reportArgumentType` for each of lines 13–14, and `reportArgumentType` for line 15. They cover `object()` and non-string keys for `JSONValue`, a list for `WireValue`, and invalid arguments to `freeze_wire`, `encode_json` and `ParameterPlan`. A scratchpad script checks the ordered lines, codes and counts with both Pyright versions. The E2E alias test resolves `get_type_hints(..., include_extras=True)` through private import aliases in another module, on Python 3.10, 3.13 and 3.14.
 
-Counterexample to TYPING §2: its `Union[...]` spelling with quoted inner names makes mypy 2.3.1 report `Cannot resolve name "JSONValue" (possible cyclic definition) [misc]` for all three aliases, while Pyright accepts it. The aliases therefore use one string value per alias, which both checkers, `get_type_hints`, and Pydantic 2.12.5's `TypeAdapter` resolve (the alias's `__module__` is the wire module).
+Counterexamples to TYPING §2, reproduced in isolated probes:
+
+- mypy 2.3.1 rejects its `Union[...]` spelling with quoted inner names: `Cannot resolve name "JSONValue" (possible cyclic definition) [misc]` for each alias.
+- Pyright 1.1.411 and 1.1.414 accept every `TypeAliasType` spelling (the §2 one, a whole-string value, and a stringified `Union[...]`) inside the defining module, but when another module's first reference is a function such as `presence_of`, the alias's recursive members become Unknown (`Type of "presence_of" is partially unknown`). A classic recursive `TypeAlias` does not have this problem.
+- With a `JSONValue | WireValue` parameter, mypy infers a nested dict literal without the union context and reports `arg-type`, so the MODEL-CODECS example `presence_of({'name': 'A', 'tag': None})` fails.
+
+The runtime aliases therefore stay `TypeAliasType` objects with one string value each, which `get_type_hints` and Pydantic 2.12.5's `TypeAdapter` resolve (the alias's `__module__` is the wire module), while type checkers see structurally identical classic `TypeAlias` definitions under `TYPE_CHECKING`. `freeze_wire`, `presence_of` and `encode_json` have one overload for each alias, keeping the documented `JSONValue | WireValue` implementation signature. `first_use.py` pins both the Pyright ordering case and the nested-literal case.
 
 Exception ledger (TYPING §8):
 
@@ -80,6 +86,7 @@ Runtime: CPython 3.13.2 on macOS arm64, locked environment (`--extra all --group
 - JSON Schema Test Suite `fe8c2f0` (2020-12, with 35 remotes): 1,927 pass. The 86 configuration results are all deliberate: `$dynamicRef` requires an adapter; references to unbundled remotes, metaschemas or non-schema keyword values do not resolve offline; Unicode property and `\c` escapes are outside the builtin grammar. The 84 mismatches are also accounted for: formats are asserted, not annotation-only (19); draft-07 `dependencies` is not a 2020-12 keyword (14); a custom metaschema dialect is rejected by the planner (`MC_SCHEMA_DIALECT`), so the runtime always applies the full 2020-12 vocabulary (1); and 50 optional format cases follow the selected jsonschema 4.26 checkers (leap seconds, year 0000, duration grammar, e-mail syntax, IDNA hostnames).
 - Full suite (8 workers): 21,559 passed, 16 skipped, no failures. An earlier run in an environment synced with `--all-extras`, which adds `ryaml`, `httpx2` and `truststore`, had 13 failures; the sampled failures fail identically on main in that environment, and all 13 pass on both revisions after syncing with `--extra all`.
 - Ruff 0.16.8 check and format with the pre-commit arguments, codespell 2.4.3 and pyproject-fmt 2.29.4 pass on the changed files.
+- PR #4143 CI: every required check passes. CodeQL's first run reported 13 `py/uninitialized-local-variable` errors on exhaustive `match` statements, because it does not treat `case _` as exhaustive; those cases now return directly. The remaining CodeQL notes (mixed returns after exhaustive matches, Protocol `...` bodies, the exported `UNSET`) are the same kinds main already carries. CodSpeed walltime reports a uniform slowdown of about 33% across all 39 compared benchmarks, together with its own warnings about unknown hosted-runner and differing runtime environments; no existing module changed, and the local comparison below shows no difference.
 
 ## Performance and memory
 
