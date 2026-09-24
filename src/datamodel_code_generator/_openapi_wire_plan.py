@@ -135,8 +135,12 @@ def _tokens(pointer: str) -> list[str]:
     return [token.replace("~1", "/").replace("~0", "~") for token in pointer[1:].split("/")] if pointer else []
 
 
-def _covers(outer: str, inner: str) -> bool:
-    return inner != outer and inner.startswith(f"{outer}/")
+def _enclosing(roots: Mapping[str, object], pointer: str) -> str | None:
+    while pointer not in roots:
+        if not pointer:
+            return None
+        pointer = pointer[: pointer.rfind("/")]
+    return pointer
 
 
 def _fact(declaration: WireDeclaration, key: str) -> object:
@@ -323,7 +327,11 @@ class _WirePlanner:
     def resources(self) -> tuple[SchemaResource, ...]:
         resources: list[SchemaResource] = []
         for document, roots in sorted(self.roots.items(), key=lambda item: self.logical[item[0]]):
-            covered = tuple(pointer for pointer in sorted(roots) if not any(_covers(other, pointer) for other in roots))
+            covered = tuple(
+                pointer
+                for pointer in sorted(roots)
+                if not pointer or _enclosing(roots, pointer[: pointer.rfind("/")]) is None
+            )
             if covered == ("",):
                 resources.append(SchemaResource(uri=self.logical[document], contents=freeze_wire(roots[""])))
                 continue
