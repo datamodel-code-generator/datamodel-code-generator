@@ -392,7 +392,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         strict = StrictTypes.str in self.strict_types
         if data_type_kwargs:
             if strict:
-                data_type_kwargs["strict"] = True  # ty: ignore[invalid-assignment]
+                data_type_kwargs["strict"] = True
             if self.PATTERN_KEY in data_type_kwargs:
                 data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
             return self.data_type.from_import(IMPORT_CONSTR, kwargs=data_type_kwargs)

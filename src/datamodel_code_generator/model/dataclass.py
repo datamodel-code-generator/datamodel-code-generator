@@ -32,6 +32,8 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Sequence
     from pathlib import Path
 
+    from typing_extensions import Self
+
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Import
 
@@ -149,13 +151,13 @@ class _DataclassReuseMixin:
         """Return whether a dataclass declaration enables keyword-only fields."""
         return bool(cast("DataModel", self).dataclass_arguments.get("kw_only"))
 
-    def create_reuse_model(self, base_ref: Reference) -> DataModel:
+    def create_reuse_model(self, base_ref: Reference) -> Self:
         """Create inherited model with empty fields pointing to base reference."""
         model = cast("DataModel", self)
         model_cls = cast("Any", self.__class__)
         model_attrs = vars(model)
         return cast(
-            "DataModel",
+            "Self",
             model_cls(
                 fields=[],
                 base_classes=[base_ref],

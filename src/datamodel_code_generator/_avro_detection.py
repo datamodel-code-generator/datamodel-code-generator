@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 JsonSchema = dict[str, Any]
 YamlValue: TypeAlias = "dict[str, YamlValue] | list[YamlValue] | str | int | float | bool | None"
@@ -13,7 +16,7 @@ COMPLEX_TYPES = NAMED_TYPES | {"array", "map"}
 JSON_SCHEMA_MARKER_KEYS = frozenset({"$schema", "$defs", "definitions", "properties", "allOf", "anyOf", "oneOf"})
 
 
-def _is_avro_union_item(item: YamlValue) -> bool:
+def _is_avro_union_item(item: object) -> bool:
     match item:
         case str() as type_name:
             return type_name in PRIMITIVE_TYPES or "." in type_name
@@ -24,15 +27,15 @@ def _is_avro_union_item(item: YamlValue) -> bool:
         case {"type": dict() as nested_schema}:
             return _is_avro_union_item(nested_schema)
         case {"type": str() as type_name}:
-            return _is_avro_typed_schema(item, type_name) or "." in type_name
+            return _is_avro_typed_schema(cast("Mapping[str, object]", item), type_name) or "." in type_name
     return False
 
 
-def _is_avro_union(union: list[YamlValue]) -> bool:
+def _is_avro_union(union: Sequence[object]) -> bool:
     return bool(union) and all(_is_avro_union_item(child) for child in union)
 
 
-def _is_avro_typed_schema(schema: JsonSchema, type_name: str) -> bool:
+def _is_avro_typed_schema(schema: Mapping[str, object], type_name: str) -> bool:
     if type_name in PRIMITIVE_TYPES:
         return True
 

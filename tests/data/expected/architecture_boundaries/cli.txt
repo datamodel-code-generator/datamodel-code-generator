@@ -3,7 +3,7 @@ clean stdout: ''
 clean stderr: ''
 failure exit: 1
 Architecture boundary violations found:
-src/datamodel_code_generator/reference.py:584:13: [reference-backend-import] datamodel_code_generator.model.field_name.PydanticFieldNameResolver: reference code must not import concrete output backends except bounded compatibility exports (in _default_field_name_resolver_class)
+src/datamodel_code_generator/reference.py:587:13: [reference-backend-import] datamodel_code_generator.model.field_name.PydanticFieldNameResolver: reference code must not import concrete output backends except bounded compatibility exports (in _default_field_name_resolver_class)
 entrypoint exit: 0
 entrypoint stdout: ''
 entrypoint stderr: ''

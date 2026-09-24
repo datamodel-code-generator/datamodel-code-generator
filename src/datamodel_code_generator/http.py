@@ -603,7 +603,7 @@ def _create_pinned_transport_type(
 ) -> _HTTPTransportFactory[_HTTPTransport]:
     """Create one transport class for a matched HTTP client/core pair."""
 
-    class _PinnedHTTPTransport(httpx_module.BaseTransport):
+    class _PinnedHTTPTransport(httpx_module.BaseTransport):  # ty: ignore[unsupported-base]
         """Transport bound to a DNS-pinned HTTP connection pool."""
 
         __slots__ = ("_pool",)

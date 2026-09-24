@@ -157,7 +157,7 @@ class _AvroSchemaConverter:
     def _collect_named_schemas(self, schema: YamlValue, namespace: str | None = None) -> None:
         match schema:
             case [*_] as union:
-                self._collect_schema_items(union, namespace)
+                self._collect_schema_items(cast("list[YamlValue]", union), namespace)
                 return
             case dict() as schema:
                 pass
@@ -167,7 +167,7 @@ class _AvroSchemaConverter:
         type_value = schema.get("type")
         match type_value:
             case [*_] as union:
-                self._collect_schema_items(union, namespace)
+                self._collect_schema_items(cast("list[YamlValue]", union), namespace)
                 return
             case dict() as nested_schema:
                 self._collect_named_schemas(nested_schema, namespace)
@@ -250,7 +250,7 @@ class _AvroSchemaConverter:
             case str() as type_name:
                 return self._convert_type_name(type_name, namespace)
             case [*_] as union:
-                return self._convert_union(union, namespace)
+                return self._convert_union(cast("list[YamlValue]", union), namespace)
             case dict() as schema:
                 return self._convert_schema_dict(schema, namespace, root=root)
 
@@ -266,7 +266,7 @@ class _AvroSchemaConverter:
     ) -> JsonSchema:
         match schema.get("type"):
             case [*_] as union:
-                converted = self._convert_union(union, namespace)
+                converted = self._convert_union(cast("list[YamlValue]", union), namespace)
                 self._copy_common_metadata(schema, converted)
                 return converted
             case dict() as nested_schema:

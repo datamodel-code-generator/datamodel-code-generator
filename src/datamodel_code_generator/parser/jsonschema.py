@@ -4649,7 +4649,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the $recursiveAnchor references a document registers when parsed: its root and definitions."""
         anchors = ["#"] if raw.get("$recursiveAnchor") is True else []
         for schema_path, split_schema_path in self.schema_paths:
-            if definitions := get_model_by_path(raw, split_schema_path):
+            if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
                 entries = chain(
                     ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),
                     self._iter_schema_definition_entries(definitions, [schema_path]),
@@ -4694,7 +4694,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if fragment:
                 pointer = [p for p in fragment.split("/") if p]
                 raw_obj = get_model_by_path(raw_doc, pointer)
-            return self._walk_for_ref(raw_obj, target, visited)
+            return self._walk_for_ref(cast("dict[str, Any] | list[Any]", raw_obj), target, visited)
 
     def _walk_for_ref(self, data: dict[str, Any] | list[Any], target: str, visited: set[str]) -> bool:
         """Follow references only in schemas, leaving instance values and metadata unvisited."""
@@ -6161,7 +6161,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and len(parent_types) == 1
         ):
             parent_shape["type"] = next(iter(parent_types))
-        result = parent_shape.copy()
+        result: dict[str, Any] = parent_shape.copy()
         for key, value in child_shape.items():
             if key in _INHERITED_NESTED_SCHEMA_FIELDS and key in parent_shape:
                 result[key] = self._merge_inherited_type_shape_keyword(
@@ -8909,7 +8909,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for index, field in enumerate(fields):
                 field_name = _field_source_name(field)
                 if field_name in python_overrides:
-                    parent_name = python_overrides[field_name]
+                    parent_name = python_overrides[cast("str", field_name)]
                     parent_field = inherited_fields.get(parent_name)
                     if parent_field is None and parent_name != field_name:
                         for resolved_ref in self._linearize_inherited_schema_refs(base_classes):
@@ -11405,7 +11405,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 prefix = obj.type if isinstance(obj.type, str) else type(enum_part).__name__
                 field_name = f"{prefix}_{_semantic_value_text(enum_part)}"
             field_name = self.model_resolver.get_valid_field_name(
-                field_name, excludes=exclude_field_names, model_type=ModelType.ENUM
+                cast("str", field_name), excludes=exclude_field_names, model_type=ModelType.ENUM
             )
             exclude_field_names.add(field_name)
             field_extras: dict[str, Any] = {}
@@ -12064,7 +12064,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._schema_resource_locations.setdefault(base, location)
             keys.add(base)
         if nested:
-            self._embedded_resources.setdefault((document, resource), {}).setdefault(cast("str", identifier), pointer)
+            self._embedded_resources.setdefault((document, resource), {}).setdefault(identifier, pointer)
         if nested or not pointer:
             self._schema_resources.setdefault(document, set()).add(pointer)
             resource = pointer
@@ -12354,6 +12354,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             return
 
+        raw = cast("dict[str, YamlValue]", raw)
         # Check null in type array (JSON Schema / OpenAPI 3.1+)
         type_value = raw.get("type")
         if isinstance(type_value, list) and "null" in type_value and not self.schema_features.null_in_type_array:
@@ -12609,7 +12610,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 source_path = self._source_path_for_diagnostics(source.path)
                 raise InvalidFileFormatError(exc, self._input_file_type, source=source_path) from exc
         if isinstance(source.raw_data, dict):
-            return dict(source.raw_data)
+            return {**source.raw_data}
 
         msg = f"Expected dict, got {type(source.raw_data).__name__}"
         error = TypeError(msg)
@@ -12903,7 +12904,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 definitions: dict[str, YamlValue] = {}
                 schema_path = ""
                 for schema_path_candidate, split_schema_path in self.schema_paths:
-                    if definitions := get_model_by_path(raw, split_schema_path):
+                    if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
                         schema_path = schema_path_candidate
                         break
 

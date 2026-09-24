@@ -123,7 +123,7 @@ class SortingHelpFormatter(RawDescriptionHelpFormatter):
 class SuggestingArgumentParser(ArgumentParser):
     """Argument parser that suggests close matches for unknown option names."""
 
-    def parse_args(self, args: Sequence[str] | None = None, namespace: Namespace | None = None) -> Namespace:
+    def parse_args(self, args: Iterable[str] | None = None, namespace: Namespace | None = None) -> Namespace:
         """Parse arguments and suggest close matches for unknown option names."""
         parsed_args, unknown_arguments = self.parse_known_args(args, namespace)
         if not unknown_arguments:

@@ -530,7 +530,7 @@ class _XMLSchemaConverter:
             schema["definitions"] = self._definitions
         schema.setdefault("$schema", "http://json-schema.org/draft-07/schema#")
         self._strip_internal_metadata(schema)
-        return schema
+        return cast("dict[str, YamlValue]", schema)
 
     def _resolve_xmlschema_version(self, root: ET.Element) -> XMLSchemaVersion:
         if self.xmlschema_version is not None and self.xmlschema_version != XMLSchemaVersion.Auto:
