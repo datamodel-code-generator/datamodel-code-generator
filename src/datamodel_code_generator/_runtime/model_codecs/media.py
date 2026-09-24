@@ -189,25 +189,38 @@ def decode_text(data: bytes) -> str:
 
 def lexical(value: WireValue, kind: LexicalKind) -> str:
     """Render one scalar in the canonical lexical form of its declared kind."""
-    match value:
-        case bool() if kind == "boolean":
-            text = "true" if value else "false"
-        case str() if kind == "string":
-            text = value
-        case int() if type(value) is int and kind in {"integer", "number"}:
-            text = _integer_text(value)
-        case float() if kind == "integer" and value.is_integer():
-            text = str(int(value))
-        case Decimal() if kind == "integer" and value == (integral := value.to_integral_value()):
-            text = format(integral, "f")
-        case Decimal() if kind == "number":
-            text = str(value)
-        case float() if kind == "number":
-            text = repr(value)
-        case _:
-            msg = f"The {type(value).__name__} value does not have the {kind} lexical kind"
-            raise ParameterEncodingError(msg)
+    if (text := _lexical_text(value, kind)) is None:
+        msg = f"The {type(value).__name__} value does not have the {kind} lexical kind"
+        raise ParameterEncodingError(msg)
     return text
+
+
+def _lexical_text(value: WireValue, kind: LexicalKind) -> str | None:
+    match value:
+        case bool():
+            return ("true" if value else "false") if kind == "boolean" else None
+        case str():
+            return value if kind == "string" else None
+        case int() | float() | Decimal():
+            return _numeral(value, kind)
+        case _:
+            return None
+
+
+def _numeral(value: float | Decimal, kind: LexicalKind) -> str | None:
+    match value:
+        case int() if kind in {"integer", "number"}:
+            return _integer_text(value)
+        case float() if kind == "integer" and value.is_integer():
+            return str(int(value))
+        case Decimal() if kind == "integer" and value == (integral := value.to_integral_value()):
+            return format(integral, "f")
+        case Decimal() if kind == "number":
+            return str(value)
+        case float() if kind == "number":
+            return repr(value)
+        case _:
+            return None
 
 
 def _integer_text(value: int) -> str:

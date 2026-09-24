@@ -167,15 +167,16 @@ class _Parser:
             raise self.error(message="An assertion cannot be quantified")
 
     def quantifier(self) -> str | None:
-        quantifier: str
         match self.peek():
             case "*" | "+" | "?" as char:
                 self.index += 1
-                quantifier = char
+                return self.lazy(char)
             case "{":
-                quantifier = self.bounds()
+                return self.lazy(self.bounds())
             case _:
                 return None
+
+    def lazy(self, quantifier: str) -> str:
         if self.peek() == "?":
             self.index += 1
             return f"{quantifier}?"

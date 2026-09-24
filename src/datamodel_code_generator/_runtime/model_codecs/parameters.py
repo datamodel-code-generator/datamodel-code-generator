@@ -72,23 +72,25 @@ class ParameterPlan:
 
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form."""
-        if self.content_media_type is not None:
-            valid = self.style is None
-        elif self.style is None or self.style not in _STYLES.get(self.location, ()):
-            valid = False
-        else:
-            match self.style, self.shape, self.explode:
-                case "spaceDelimited" | "pipeDelimited", shape, explode:
-                    valid = shape != "scalar" and not explode
-                case "deepObject", shape, explode:
-                    valid = shape == "object" and explode
-                case _, "array" | "object", False:
-                    valid = self.location != "cookie"
-                case _:
-                    valid = True
-        if not valid:
+        if not _reversible(self):
             msg = f"{self.location} parameter style {self.style!r} has no builtin form for {self.shape} values"
             raise ValueError(msg)
+
+
+def _reversible(plan: ParameterPlan) -> bool:
+    if plan.content_media_type is not None:
+        return plan.style is None
+    if plan.style is None or plan.style not in _STYLES.get(plan.location, ()):
+        return False
+    match plan.style, plan.shape, plan.explode:
+        case "spaceDelimited" | "pipeDelimited", shape, explode:
+            return shape != "scalar" and not explode
+        case "deepObject", shape, explode:
+            return shape == "object" and explode
+        case _, "array" | "object", False:
+            return plan.location != "cookie"
+        case _:
+            return True
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,47 +279,46 @@ def _content(plan: ParameterPlan, value: WireValue) -> str:
             raise ParameterEncodingError(msg)
 
 
-def _encode_querystring(plan: ParameterPlan, value: WireValue) -> bytes:
+def _querystring_bytes(plan: ParameterPlan, value: WireValue) -> bytes:
     match media_kind(plan.content_media_type or ""):
         case "form":
-            raw = encode_form(value, plan.fields, plan.additional)
+            return encode_form(value, plan.fields, plan.additional)
         case _:
-            raw = quote(_content(plan, value), safe="").encode("ascii")
-    if not raw:
-        msg = "An explicit querystring value cannot encode to an empty query"
-        raise ParameterEncodingError(msg)
-    return raw
+            return quote(_content(plan, value), safe="").encode("ascii")
+
+
+def _encode_querystring(plan: ParameterPlan, value: WireValue) -> bytes:
+    if raw := _querystring_bytes(plan, value):
+        return raw
+    msg = "An explicit querystring value cannot encode to an empty query"
+    raise ParameterEncodingError(msg)
 
 
 def _style_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
     entries = _entries(plan, value)
-    pairs: list[_Entry]
     match plan.location:
         case "path":
-            pairs = [(None, _encode_path(plan, entries))]
+            return [(None, _encode_path(plan, entries))]
         case "query":
-            pairs = _encode_query(plan, entries)
+            return _encode_query(plan, entries)
         case "header":
-            pairs = [(plan.name, _encode_header(plan, entries))]
+            return [(plan.name, _encode_header(plan, entries))]
         case _:
-            pairs = _encode_cookie(plan, entries)
-    return pairs
+            return _encode_cookie(plan, entries)
 
 
 def _content_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
     text = _content(plan, value)
-    pairs: list[_Entry]
     match plan.location:
         case "path":
-            pairs = [(None, quote(text, safe=""))]
+            return [(None, quote(text, safe=""))]
         case "query":
-            pairs = [(quote(plan.name, safe=""), quote(text, safe=""))]
+            return [(quote(plan.name, safe=""), quote(text, safe=""))]
         case "header":
-            pairs = [(plan.name, _header_text(text, item=False))]
+            return [(plan.name, _header_text(text, item=False))]
         case _:
             msg = "Cookie content requires an explicit parameter adapter"
             raise ParameterEncodingError(msg)
-    return pairs
 
 
 def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterContribution:
@@ -543,16 +544,15 @@ def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> WireValue | Unse
     """Decode one parameter from its location's ordered raw occurrences, or UNSET when absent."""
     match plan.location:
         case "querystring":
-            value = _decode_querystring(plan, raw.raw_query)
+            return _decode_querystring(plan, raw.raw_query)
         case "path":
-            value = _decode_path_value(plan, raw.fragments)
+            return _decode_path_value(plan, raw.fragments)
         case "query":
-            value = _decode_query_value(plan, raw.fragments)
+            return _decode_query_value(plan, raw.fragments)
         case "header":
-            value = _decode_header_value(plan, raw.fragments)
+            return _decode_header_value(plan, raw.fragments)
         case _:
-            value = _decode_cookie_value(plan, raw.fragments)
-    return value
+            return _decode_cookie_value(plan, raw.fragments)
 
 
 def split_query(raw: bytes | None) -> tuple[ParameterFragment, ...]:

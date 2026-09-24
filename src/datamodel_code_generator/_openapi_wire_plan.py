@@ -286,16 +286,13 @@ class _WirePlanner:
                 if key == "patternProperties":
                     for pattern in item:
                         self.check_pattern(str(pattern), _at(at, str(pattern)))
-                normalized: JSONValue = {
-                    str(name): self.schema(child, _at(at, str(name))) for name, child in item.items()
-                }
+                return {str(name): self.schema(child, _at(at, str(name))) for name, child in item.items()}
             case list() if key in SCHEMA_ARRAY_KEYWORDS:
-                normalized = [self.schema(child, _at(at, index)) for index, child in enumerate(item)]
+                return [self.schema(child, _at(at, index)) for index, child in enumerate(item)]
             case _ if key in SCHEMA_VALUE_KEYWORDS:
-                normalized = self.schema(item, at)
+                return self.schema(item, at)
             case _:
-                normalized = self.data(item, at)
-        return normalized
+                return self.data(item, at)
 
     def data(self, value: YamlValue, location: SourceLocation) -> JSONValue:
         match value:
@@ -607,16 +604,24 @@ def _shape(
         _field(planner, _at(location, "properties", name), name, form=form)
         for name in (properties if isinstance(properties, dict) else {})
     )
-    match value.get("additionalProperties", True):
+    return (
+        "object",
+        "string",
+        fields,
+        _additional(planner, value.get("additionalProperties", True), location, form=form),
+    )
+
+
+def _additional(planner: _WirePlanner, schema: YamlValue, location: SourceLocation, *, form: bool) -> FieldPlan | None:
+    match schema:
         case False:
-            additional = None
+            return None
         case True:
-            additional = FieldPlan("", "string")
-        case dict() as schema if not schema:
-            additional = FieldPlan("", "string")
+            return FieldPlan("", "string")
+        case dict() if not schema:
+            return FieldPlan("", "string")
         case _:
-            additional = _field(planner, _at(location, "additionalProperties"), "", form=form)
-    return "object", "string", fields, additional
+            return _field(planner, _at(location, "additionalProperties"), "", form=form)
 
 
 def _field(planner: _WirePlanner, location: SourceLocation, name: str, *, form: bool) -> FieldPlan:
