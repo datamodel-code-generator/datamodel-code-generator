@@ -14464,6 +14464,26 @@ def test_main_jsonschema_recursive_ref_resources(
     )
 
 
+def test_main_jsonschema_external_root_refs(output_file: Path) -> None:
+    """Name the root of a document referenced only by pointers after the document when its own schemas refer to it."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "external_root_refs" / "holder.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="external_root_refs.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="external_root_refs",
+        model_name="Holder",
+        valid_json='{"trees": [{"value": 1, "children": [{"value": 2}]}], "nodes": [{"label": "a", "children": []}]}',
+        invalid_json='{"trees": [{"value": "one"}]}',
+        expected_error_type="int_parsing",
+    )
+
+
 @pytest.mark.parametrize(
     ("output_model", "expected_file"),
     [

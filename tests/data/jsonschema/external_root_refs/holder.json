@@ -1,0 +1,2 @@
+{"$schema": "https://json-schema.org/draft/2019-09/schema", "title": "Holder", "type": "object",
+ "properties": {"trees": {"$ref": "tree.json#/properties/children"}, "nodes": {"$ref": "node.json#/properties/children"}}}

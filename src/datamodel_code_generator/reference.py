@@ -1312,7 +1312,7 @@ class ModelResolver:  # noqa: PLR0904
         path = self.resolve_ref(ref) if not resolved else ref
         if reference := self.references.get(path):
             return reference
-        original_name = self.ref_original_name(ref, path)
+        original_name = self.ref_original_name(ref, path) or self.ref_original_name(path, path)
         # For PrimaryFirst strategy, use unique=True for external references
         # so that definitions in the main input file get priority for clean names
         use_unique = self.naming_strategy == NamingStrategy.PrimaryFirst and self._is_external_path(path)
