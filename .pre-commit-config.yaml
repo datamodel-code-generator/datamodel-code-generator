@@ -19,7 +19,7 @@ repos:
     - id: pyproject-fmt
       args: ["--max-supported-python=3.14"]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: 'v0.16.7'
+  rev: 'v0.16.8'
   hooks:
   - id: ruff-format
     exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/model/_compiled_templates/"
