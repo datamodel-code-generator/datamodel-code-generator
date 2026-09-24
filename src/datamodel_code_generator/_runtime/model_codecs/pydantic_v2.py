@@ -196,22 +196,31 @@ def _has_models(node: TypeNode | None) -> bool:
     match node:
         case ModelNode():
             return True
-        case ArrayNode(item=item) | MapNode(value=item):
-            return _has_models(item)
-        case TupleNode(items=items) | UnionNode(members=items):
-            return any(_has_models(item) for item in items)
+        case ArrayNode():
+            return _has_models(node.item)
+        case MapNode():
+            return _has_models(node.value)
+        case TupleNode():
+            return any(_has_models(item) for item in node.items)
+        case UnionNode():
+            return any(_has_models(item) for item in node.members)
         case _:
             return False
 
 
 def _model_unions(node: TypeNode | None) -> bool:
     match node:
-        case UnionNode() if len(node.members) > 1 and any(isinstance(item, ModelNode) for item in node.members):
-            return True
-        case UnionNode(members=items) | TupleNode(items=items):
-            return any(_model_unions(item) for item in items)
-        case ArrayNode(item=item) | MapNode(value=item):
-            return _model_unions(item)
+        case UnionNode():
+            members = node.members
+            return (len(members) > 1 and any(isinstance(item, ModelNode) for item in members)) or any(
+                _model_unions(item) for item in members
+            )
+        case TupleNode():
+            return any(_model_unions(item) for item in node.items)
+        case ArrayNode():
+            return _model_unions(node.item)
+        case MapNode():
+            return _model_unions(node.value)
         case _:
             return False
 

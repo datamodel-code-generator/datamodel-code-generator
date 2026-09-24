@@ -103,13 +103,16 @@ def _models(node: TypeNode) -> Iterator[str]:
     match node:
         case ModelNode():
             yield node.symbol
-        case ArrayNode(item=item):
-            yield from _models(item)
-        case TupleNode(items=items) | UnionNode(members=items):
-            for item in items:
+        case ArrayNode():
+            yield from _models(node.item)
+        case MapNode():
+            yield from _models(node.value)
+        case TupleNode():
+            for item in node.items:
                 yield from _models(item)
-        case MapNode(value=value):
-            yield from _models(value)
+        case UnionNode():
+            for item in node.members:
+                yield from _models(item)
         case _:
             return
 
