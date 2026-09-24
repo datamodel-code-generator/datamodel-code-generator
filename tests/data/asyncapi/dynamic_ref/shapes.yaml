@@ -1,0 +1,16 @@
+asyncapi: 3.0.0
+info:
+  title: Shared shapes
+  version: 1.0.0
+components:
+  schemas:
+    Branch:
+      $dynamicAnchor: node
+      type: object
+      properties:
+        label:
+          type: string
+        branches:
+          type: array
+          items:
+            $dynamicRef: '#node'

@@ -1427,6 +1427,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     _cache_parsed_sources_from_path: ClassVar[bool] = True
     _input_file_type: ClassVar[InputFileType] = InputFileType.JsonSchema
     _non_dict_source_is_invalid: ClassVar[bool] = False
+    _component_schemas_are_resources: ClassVar[bool] = False
 
     COMPATIBLE_PYTHON_TYPES: ClassVar[dict[str, frozenset[str]]] = {
         "string": frozenset({"str", "String"}),
@@ -12024,6 +12025,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 cast("dict[str, Any]", parent)[cast("str", path[-1])] = rewritten
         return result
 
+    def _implicit_schema_resources(self, raw: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
+        """Yield the pointers and schemas that a document evaluates as schema resources without an $id.
+
+        Formats such as OpenAPI evaluate each component schema independently.
+        """
+        if not self._component_schemas_are_resources:
+            return
+        match raw.get("components"):
+            case {"schemas": dict() as schemas}:
+                for name, schema in schemas.items():
+                    if isinstance(schema, dict):
+                        yield f"/components/schemas/{name.replace('~', '~0').replace('/', '~1')}", schema
+
     def _prepare_schema_resources(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Cache resource indexing and normalization instead of rescanning on each reference."""
         document = self._schema_resource_document(path_parts)
@@ -12044,6 +12058,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else None
         )
         nested = self._register_schema_resources(raw, document, "", base, keys, id_field=id_field)
+        for pointer, schema in self._implicit_schema_resources(raw):
+            self._schema_resources[document].add(pointer)
+            self._register_schema_resources(schema, document, pointer, base, keys, id_field=id_field, resource=pointer)
         self._schema_resource_keys[document] = keys
         prepared = raw
         if nested:

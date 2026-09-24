@@ -217,6 +217,18 @@ def test_main_asyncapi_external_message_ref(output_file: Path) -> None:
     )
 
 
+def test_main_asyncapi_dynamic_ref(output_file: Path) -> None:
+    """Resolve $dynamicRef in component schemas and in merged references to another document's components."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "dynamic_ref" / "events.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        assert_func=assert_file_content,
+        expected_file="dynamic_ref.py",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
 def test_main_asyncapi_stable_surface(output_file: Path) -> None:
     """Generate models from the stable AsyncAPI schema-bearing surface."""
     run_main_and_assert(

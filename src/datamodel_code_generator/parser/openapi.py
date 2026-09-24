@@ -206,6 +206,7 @@ class OpenAPIParser(JsonSchemaParser):
     SCHEMA_PATHS: ClassVar[list[str]] = ["#/components/schemas"]
     _input_file_type: ClassVar[InputFileType] = InputFileType.OpenAPI
     _non_dict_source_is_invalid: ClassVar[bool] = True
+    _component_schemas_are_resources: ClassVar[bool] = True
     config: OpenAPIParserConfig
 
     @cached_property
@@ -1043,6 +1044,7 @@ class OpenAPIParser(JsonSchemaParser):
                 specification = self._load_source_dict(source)
                 self._cache_source_ref_body(source, specification)
                 self.raw_obj = specification
+                self._prepare_schema_resources(specification, path_parts)
                 with self.openapi_self_context(specification):
                     self._parse_specification(specification, path_parts)
 
