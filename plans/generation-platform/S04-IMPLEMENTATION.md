@@ -8,10 +8,10 @@ Repository: `datamodel-code-generator/datamodel-code-generator`. The authoritati
 
 The isolated implementation checkout is `/private/tmp/dcg-s04`; `/private/tmp/dcg-main-e62b` is a detached checkout of the baseline for comparisons. The original checkout and its untracked `1.tmp` are untouched. No subagents were used. Raw investigation output and measurement scripts stay in the session scratchpad, outside the working tree.
 
-The three native `gh stack` branches, bottom to top, follow PR-STACKS:
+The three native `gh stack` branches, bottom to top, follow PR-STACKS; `gh stack link 4143 4145` created native stack #4146:
 
 1. `generation-platform-codecs-wire`: schema, parameter and media wire rules, [PR #4143](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4143).
-2. `generation-platform-codecs-pydantic`: the two Pydantic v2 backends, presence, direction, native and envelope values (PR pending).
+2. `generation-platform-codecs-pydantic`: the two Pydantic v2 backends, presence, direction, native and envelope values, [PR #4145](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4145).
 3. `generation-platform-codecs-adapters`: custom adapters and typed generated surfaces.
 
 ## Contract hashes
@@ -156,6 +156,8 @@ The only suppressions added are `# noqa: TC001`/`TC003` on imports that public a
 - Full suite (8 workers): 21,586 passed, 16 skipped, no failures.
 - Option sweeps (scratchpad): every planned codec builds for the four fixture sources under 37 generator option sets on both backends (the only failures are `use_pendulum` without pendulum installed and option combinations the generator itself rejects), and the pets and shapes cases give the same wire results under 22 option sets as without them, apart from Python names in native error paths for `no_alias`/`use_serialization_alias` and member order for pydantic dataclasses whose fields D reorders.
 - Ruff with the pre-commit arguments and codespell pass on the changed files.
+- PR #4145 CI: every required check passes. CodSpeed walltime again reports hosted-runner and runtime-environment warnings, with 18 regressed, 1 improved and 20 untouched benchmarks (-12.95%); no existing module changed, and the local comparison below shows no difference.
+- CodeRabbit review of PR #4145: `required` under `if` and `not` was relaxed like a positive branch, so `not: {required: [id]}` rejected every request that omitted a readOnly `id`; relaxation now skips those subtrees, and a relaxed schema that is also reachable under them is `MC_SCHEMA_DIALECT` (the `directions` fixture covers both). The second finding asked for a `pydantic>=2.13.5` guard in the runtime; the floor is the generated package's declared dependency (MODEL-CODECS §1, ENTRY §2), which a later stack writes, and the reply links both sections.
 
 ### Performance and memory
 
