@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Beta",
+  "type": "object",
+  "properties": {"holder": {"$ref": "#/$defs/Holder"}},
+  "$defs": {"Holder": {"type": "object", "properties": {"field": {"$ref": "names.json#/$defs/Field"}}}}
+}

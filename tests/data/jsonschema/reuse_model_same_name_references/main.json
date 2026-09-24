@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Main",
+  "type": "object",
+  "properties": {
+    "sized": {
+      "$ref": "#/$defs/SizedHolder"
+    },
+    "named": {
+      "$ref": "#/$defs/NamedHolder"
+    }
+  },
+  "$defs": {
+    "SizedHolder": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "$ref": "common.json#/$defs/Field"
+        }
+      }
+    },
+    "NamedHolder": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "$ref": "other.json#/$defs/Field"
+        }
+      }
+    }
+  }
+}

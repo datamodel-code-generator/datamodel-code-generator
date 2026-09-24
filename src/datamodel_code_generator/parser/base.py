@@ -1849,21 +1849,7 @@ def _is_any_variant(data_type: DataType) -> bool:
     )
 
 
-_DedupItem = TypeVar("_DedupItem")
 _ModelShape: TypeAlias = tuple[tuple[Any, ...], list[Reference]]
-
-
-def _iter_first_seen_duplicates(
-    items: Iterable[_DedupItem],
-    key_fn: Callable[[_DedupItem], tuple[HashableComparable, ...]],
-) -> Iterator[tuple[_DedupItem, _DedupItem]]:
-    seen: dict[tuple[HashableComparable, ...], _DedupItem] = {}
-    for item in items:
-        key = key_fn(item)
-        if key in seen:
-            yield seen[key], item
-            continue
-        seen[key] = item
 
 
 def _model_references(model: DataModel) -> list[Reference]:
@@ -1938,28 +1924,32 @@ def _referenced_shapes(model: DataModel, shapes: dict[DataModel, _ModelShape]) -
 
 
 def _iter_matching_duplicates(
-    models: Iterable[DataModel], shapes: dict[DataModel, _ModelShape]
+    models: Iterable[DataModel],
+    shapes: dict[DataModel, _ModelShape],
+    key_fn: Callable[[DataModel], tuple[HashableComparable, ...]] | None = None,
 ) -> Iterator[tuple[DataModel, DataModel]]:
-    """Pair each model with the earlier model whose content and references both match.
+    """Pair each model with the earlier model of the same key whose content and references both match.
 
-    Earlier unmatched models never match each other, so at most one matches. A model that references the
-    very same models as one of them is paired at once. Otherwise it is compared in full only with those
-    whose referenced models render alike, so many equally rendered models with different references are
-    not compared pairwise. Referenced models are rendered only once a model is not paired at once.
+    Earlier unmatched models of a key never match each other, so at most one matches. A model that
+    references the very same models as one of them is paired at once. Otherwise it is compared in full
+    only with those whose referenced models render alike, so many equally rendered models with different
+    references are not compared pairwise. Referenced models are rendered only for keys with a model that
+    is not paired at once.
     """
-    by_references: dict[tuple[int, ...], DataModel] = {}
+    by_references: dict[tuple[object, ...], DataModel] = {}
     by_shapes: defaultdict[tuple[object, ...], list[DataModel]] = defaultdict(list)
-    unshaped: list[DataModel] = []
+    unshaped: dict[tuple[HashableComparable, ...] | None, list[DataModel]] = {}
     for model in models:
-        references = tuple(map(id, _model_references(model)))
-        if (canonical := by_references.get(references)) is None and by_references:
-            for candidate in unshaped:
-                by_shapes[_referenced_shapes(candidate, shapes)].append(candidate)
-            unshaped.clear()
-            candidates = by_shapes[_referenced_shapes(model, shapes)]
+        key = key_fn(model) if key_fn else None
+        references = (key, *map(id, _model_references(model)))
+        if (canonical := by_references.get(references)) is None and (pending := unshaped.get(key)) is not None:
+            for candidate in pending:
+                by_shapes[key, _referenced_shapes(candidate, shapes)].append(candidate)
+            pending.clear()
+            candidates = by_shapes[key, _referenced_shapes(model, shapes)]
             canonical = next((c for c in candidates if _referenced_models_match(c, model, shapes)), None)
         if canonical is None:
-            unshaped.append(model)
+            unshaped.setdefault(key, []).append(model)
             by_references[references] = model
             continue
         yield canonical, model
@@ -3694,7 +3684,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for model in self._reuse_optimization_context.eligible_models(models.copy())
             if not (self.collapse_root_models and isinstance(model, self.data_model_root_type))
         )
-        for cached_model, model in _iter_first_seen_duplicates(reuse_candidates, lambda item: item.get_dedup_key()):
+        for cached_model, model in _iter_matching_duplicates(reuse_candidates, {}, lambda item: item.get_dedup_key()):
             cached_model_reference = cached_model.reference
             if isinstance(model, Enum) or self.collapse_reuse_models:
                 self.generation_store.redirect_model_reference_users(model, models, cached_model_reference)
@@ -3713,20 +3703,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self,
         module_models: list[tuple[tuple[str, ...], list[DataModel]]],
     ) -> list[tuple[tuple[str, ...], DataModel, tuple[str, ...], DataModel]]:
-        """Find duplicate models across all modules by comparing render output and imports."""
-        all_models: list[tuple[tuple[str, ...], DataModel]] = []
-        for module, models in module_models:
-            all_models.extend((module, model) for model in self._reuse_optimization_context.eligible_models(models))
+        """Find duplicate models across all modules by comparing render output, imports and referenced models.
 
-        duplicates: list[tuple[tuple[str, ...], DataModel, tuple[str, ...], DataModel]] = []
-
-        for (canonical_module, canonical_model), (module, model) in _iter_first_seen_duplicates(
-            all_models,
-            lambda item: item[1].get_dedup_key(),
-        ):
-            duplicates.append((module, model, canonical_module, canonical_model))
-
-        return duplicates
+        Type hints render references by name before imports are resolved, so equal render output from
+        different modules can still reference different models that share a name.
+        """
+        model_modules = {
+            model: module
+            for module, models in module_models
+            for model in self._reuse_optimization_context.eligible_models(models)
+        }
+        return [
+            (model_modules[model], model, model_modules[canonical], canonical)
+            for canonical, model in _iter_matching_duplicates(model_modules, {}, lambda model: model.get_dedup_key())
+        ]
 
     def __validate_shared_module_name(
         self,

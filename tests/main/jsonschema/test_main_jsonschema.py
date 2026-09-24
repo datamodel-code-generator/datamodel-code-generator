@@ -12688,6 +12688,57 @@ def test_main_jsonschema_reuse_scope_tree_cross_module_users(
     )
 
 
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
+        pytest.param("reuse_scope_tree_same_name_references", [], id="inherit"),
+        pytest.param("reuse_scope_tree_same_name_references_collapsed", ["--collapse-reuse-models"], id="collapse"),
+    ],
+)
+def test_main_jsonschema_reuse_scope_tree_same_name_references(
+    expected_name: str, extra_args: list[str], output_dir: Path
+) -> None:
+    """Keep models of different modules apart when their same-named references point at different models."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_same_name_references",
+        output_path=output_dir,
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / expected_name,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        runtime_validation_module="alpha",
+        runtime_validation_model_name="Alpha",
+        runtime_validation_data={"holder": {"field": {"size": 1}}},
+    )
+
+
+def test_main_jsonschema_reuse_model_same_name_references(output_dir: Path) -> None:
+    """Keep models apart when a reference they share by name is renamed in a module processed later."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_model_same_name_references",
+        output_path=output_dir,
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_model_same_name_references",
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--collapse-reuse-models",
+            "--disable-timestamp",
+        ],
+        runtime_validation_module="main",
+        runtime_validation_model_name="Main",
+        runtime_validation_data={"sized": {"field": {"size": 1}}, "named": {"field": {"name": "one"}}},
+    )
+
+
 def test_main_jsonschema_reuse_scope_tree_enum(output_dir: Path) -> None:
     """Test --reuse-scope=tree to deduplicate enum models across multiple files."""
     run_main_and_assert(
