@@ -707,7 +707,7 @@ class _TypePlacementMatcher:
         msg = "Accepted field annotation does not match its projected type"
         raise BindingCaptureError(msg)
 
-    def _match(  # ruff: ignore[too-many-branches] # Exhaustive finite type alternatives.
+    def _match(  # ruff: ignore[too-many-branches]
         self, expected: FinalPythonType, tokens: Tokens | None, path: tuple[int, ...]
     ) -> None:
         if tokens is None:
@@ -746,7 +746,7 @@ class _TypePlacementMatcher:
     def _match_bound(self, expected: BoundType, tokens: Tokens) -> bool:
         return self._match_python_expression(expected.binding.expression, tokens)
 
-    def _match_python_expression(  # ruff: ignore[too-many-branches] -- One case per retained expression kind.
+    def _match_python_expression(  # ruff: ignore[too-many-branches]
         self, expected: PythonTypeExpr, tokens: Tokens
     ) -> bool:
         tokens = _unparenthesized(tokens)
@@ -1287,10 +1287,10 @@ def _freeze_settings(names: tuple[str, ...], values: dict[str, BackendValue] | N
     )
 
 
-def _model_parameter_values(  # ruff: ignore[too-many-return-statements] # Finite backend alternatives.
+def _model_parameter_values(  # ruff: ignore[too-many-return-statements]
     model: DataModel, backend: BackendName
 ) -> tuple[dict[str, BackendValue] | None, bool]:
-    internal: dict[str, object] = model._internal_template_data  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] # Read-only builtin-owned keys.
+    internal: dict[str, object] = model._internal_template_data  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
     match backend:
         case "dataclass" | "pydantic_dataclass":
             if (arguments := _raw_mapping(model.dataclass_arguments)) is None:
@@ -1322,7 +1322,7 @@ def _model_configuration(
     model: DataModel, backend: Literal["pydantic", "pydantic_dataclass"]
 ) -> dict[str, BackendValue] | None:
     key = "config_items" if backend == "pydantic" else "_safe_config_items"
-    values: object = model._internal_template_data.get(key, ())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access] # Already normalized by the renderer owner.
+    values: object = model._internal_template_data.get(key, ())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
     if type(values) not in {tuple, list}:
         return None
     settings: dict[str, BackendValue] = {}

@@ -1238,7 +1238,7 @@ class BindingCaptureMixin(OpenAPIParser):
         finally:
             self._required_field_lists.pop()
 
-    def _parse_all_of_item(  # ruff: ignore[too-many-arguments, too-many-positional-arguments] -- Preserve the existing producer signature.
+    def _parse_all_of_item(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -1548,7 +1548,7 @@ class BindingCaptureMixin(OpenAPIParser):
             self._root_schema_frames[-1].values.append(RootValueObservation(tuple(sources), result, producer))
         return result
 
-    def _parse_object_common_part(  # ruff: ignore[too-many-arguments] -- Preserve the existing producer signature.
+    def _parse_object_common_part(  # ruff: ignore[too-many-arguments]
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -1636,14 +1636,14 @@ class BindingCaptureMixin(OpenAPIParser):
         )
         return result
 
-    def _create_synthetic_enum_obj(  # ruff: ignore[too-many-arguments, too-many-positional-arguments] -- Preserve the original producer signature.
+    def _create_synthetic_enum_obj(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
         self,
         original: JsonSchemaObject,
         enum_values: list[object],
         varnames: list[str],
         descriptions: list[str],
         enum_type: str | None,
-        nullable: bool,  # ruff: ignore[boolean-type-hint-positional-argument] -- Preserve the existing producer signature.
+        nullable: bool,  # ruff: ignore[boolean-type-hint-positional-argument]
     ) -> JsonSchemaObject:
         """Retain the actual enum producer relation without reevaluating const branches."""
         result: JsonSchemaObject = super()._create_synthetic_enum_obj(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
@@ -1837,7 +1837,7 @@ class BindingCaptureMixin(OpenAPIParser):
         )
 
     @capture_errors
-    def _record_effective_default(  # ruff: ignore[too-many-arguments] -- Preserve the actual default-policy inputs and return.
+    def _record_effective_default(  # ruff: ignore[too-many-arguments]
         self,
         field_name: str,
         class_name: str | None,
@@ -1903,7 +1903,7 @@ class BindingCaptureMixin(OpenAPIParser):
             pending.extend(current.data_types)
         return policy, PreexistingNullObservation(explicit=False, references=tuple(references), opaque=opaque)
 
-    def get_object_field(  # ruff: ignore[too-many-arguments] -- Preserve the existing field producer signature.
+    def get_object_field(  # ruff: ignore[too-many-arguments]
         self,
         *,
         field_name: str | None,
@@ -1945,7 +1945,7 @@ class BindingCaptureMixin(OpenAPIParser):
         )
 
     @capture_errors
-    def _record_field_construction(  # ruff: ignore[too-many-arguments] -- Retain actual constructor arguments at one failure boundary.
+    def _record_field_construction(  # ruff: ignore[too-many-arguments]
         self,
         field: DataModelFieldBase,
         *,

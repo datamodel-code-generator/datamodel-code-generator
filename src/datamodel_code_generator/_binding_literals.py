@@ -40,7 +40,7 @@ def _is_literal_sequence(value: object) -> TypeIs[list[object] | tuple[object, .
     return type(value) in {list, tuple, set, frozenset}
 
 
-def _literal_scalar(value: object) -> LiteralScalar | None:  # ruff: ignore[too-many-return-statements] -- One branch per exact builtin literal kind.
+def _literal_scalar(value: object) -> LiteralScalar | None:  # ruff: ignore[too-many-return-statements]
     match value:
         case None:
             return LiteralScalar("none", None)
