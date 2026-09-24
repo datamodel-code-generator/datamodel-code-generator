@@ -10,6 +10,8 @@ path color label object/string: /.R,100,G,200,B,150 => {"R":100,"G":200,"B":150}
 path color label* scalar/string: /.blue => "blue"
 path color label* array/string: /.blue.black.brown => ["blue","black","brown"]
 path color label* object/string: /.R=100.G=200.B=150 => {"R":100,"G":200,"B":150}
+path pairs simple* object/string: /k%3Dx=v%3Dw => {"k=x":"v=w"}
+path pairs label* object/string: /.k%3Dx=v%3Dw => {"k=x":"v=w"}
 path color matrix scalar/string: /;color=blue => "blue"
 path color matrix array/string: /;color=blue,black,brown => ["blue","black","brown"]
 path color matrix object/string: /;color=R,100,G,200,B,150 => {"R":100,"G":200,"B":150}

@@ -211,6 +211,36 @@
     {
       "plan": {
         "location": "path",
+        "name": "pairs",
+        "style": "simple",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": "*"
+        }
+      },
+      "value": {
+        "k=x": "v=w"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "pairs",
+        "style": "label",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": "*"
+        }
+      },
+      "value": {
+        "k=x": "v=w"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
         "name": "color",
         "style": "matrix",
         "explode": false,

@@ -376,19 +376,26 @@ def _collection(plan: ParameterPlan, parts: list[str], *, exploded_pairs: bool) 
     if plan.shape == "array":
         return tuple(typed(text, plan.kind) for text in parts)
     if exploded_pairs:
-        members = [part.partition("=") for part in parts]
-        if not all(equals for _, equals, _ in members):
-            raise issue(code="parameter.object", message="An exploded object member has no '=' separator")
-        return _object(plan, [(name, text) for name, _, text in members])
+        return _paired(plan, [part.partition("=") for part in parts])
     if len(parts) % 2:
         raise issue(code="parameter.object", message="An object parameter has an unpaired member")
     return _object(plan, list(zip(parts[::2], parts[1::2], strict=True)))
 
 
-def _split(raw: bytes, delimiter: re.Pattern[bytes], *, plus: bool) -> list[str]:
+def _paired(plan: ParameterPlan, members: list[tuple[str, str, str]]) -> WireValue:
+    if not all(equals for _, equals, _ in members):
+        raise issue(code="parameter.object", message="An exploded object member has no '=' separator")
+    return _object(plan, [(name, text) for name, _, text in members])
+
+
+def _parts(raw: bytes, delimiter: re.Pattern[bytes]) -> list[bytes]:
     if not raw:
         raise issue(code="parameter.empty", message="An empty delimited value cannot represent a container")
-    return [percent_decode(part, plus=plus) for part in delimiter.split(raw)]
+    return delimiter.split(raw)
+
+
+def _split(raw: bytes, delimiter: re.Pattern[bytes], *, plus: bool) -> list[str]:
+    return [percent_decode(part, plus=plus) for part in _parts(raw, delimiter)]
 
 
 def _decode_path(plan: ParameterPlan, raw: bytes) -> WireValue:
@@ -401,7 +408,15 @@ def _decode_path(plan: ParameterPlan, raw: bytes) -> WireValue:
     if plan.shape == "scalar":
         return typed(percent_decode(body, plus=False), plan.kind)
     delimiter = _DOT if plan.style == "label" and plan.explode else _COMMA
-    return _collection(plan, _split(body, delimiter, plus=False), exploded_pairs=plan.explode)
+    if plan.shape == "object" and plan.explode:
+        return _paired(
+            plan,
+            [
+                (percent_decode(name, plus=False), equals.decode(), percent_decode(text, plus=False))
+                for name, equals, text in (part.partition(b"=") for part in _parts(body, delimiter))
+            ],
+        )
+    return _collection(plan, _split(body, delimiter, plus=False), exploded_pairs=False)
 
 
 def _decode_matrix(plan: ParameterPlan, parts: list[bytes]) -> WireValue:
