@@ -188,7 +188,7 @@ jobs:
         id: claude
         if: steps.analysis-route.outputs.requires_claude == 'true'
         timeout-minutes: 10
-        uses: anthropics/claude-code-action/base-action@51db78a4b844e144f8d02425cb280435c04a3474 # v1.0.224
+        uses: anthropics/claude-code-action/base-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         env:
           CLAUDE_WORKING_DIR: ${{ steps.pr-diff.outputs.claude_working_dir }}
           # The pinned action also enables raw output through this environment variable.
