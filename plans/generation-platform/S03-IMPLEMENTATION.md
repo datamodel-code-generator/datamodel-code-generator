@@ -152,7 +152,7 @@ CodeQL's possible-uninitialized default_kind report is addressed by initializing
 
 ## Repository ty upgrade
 
-The user requested keeping the repository on the latest ty. The version update and the type fixes it requires in pre-existing modules are a separate PR at the bottom of native stack #4110. This stack keeps only the S03 modules' own adaptations to the newer checker.
+The user requested keeping the repository on the latest ty. The version update and the type fixes it requires in pre-existing modules are a separate PR, #4141, at the bottom of the native stack. This stack keeps only the S03 modules' own adaptations to the newer checker.
 
 ## Third-PR failure lifetime checkpoint
 
