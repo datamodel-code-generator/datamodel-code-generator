@@ -43,13 +43,15 @@ from .wire import (
     JSONValue,
     PresenceTree,
     WireValue,
+    check_array_presence,
+    check_object_presence,
     checked_key,
     checked_scalar,
     escape_pointer_token,
     freeze_wire,
-    pointer_tokens,
     snapshot_presence,
     thaw_wire,
+    without_pointers,
 )
 
 if TYPE_CHECKING:
@@ -57,7 +59,7 @@ if TYPE_CHECKING:
     from typing_extensions import TypeIs
 
     from .context import CodecContext
-    from .schema import SchemaBundle, WireSchemaValidator
+    from .schema import SchemaBundle, WireSchemaValidator, WireValidator
 
 T = TypeVar("T")
 
@@ -129,23 +131,6 @@ def _native_type(binding: ModelBinding, models: Mapping[str, type]) -> tuple[typ
     raise CodecConfigurationError(msg)
 
 
-def _without(wire: WireValue, pointers: tuple[str, ...]) -> WireValue:
-    value = thaw_wire(wire)
-    for *parents, name in (pointer_tokens(pointer) for pointer in pointers if pointer):
-        container: JSONValue = value
-        for token in parents:
-            container = (
-                container.get(token)
-                if isinstance(container, dict)
-                else container[int(token)]
-                if isinstance(container, list)
-                else None
-            )
-        if isinstance(container, dict):
-            container.pop(name, None)
-    return freeze_wire(value)
-
-
 def _at(pointer: str, token: str | int) -> str:
     return f"{pointer}/{escape_pointer_token(token)}"
 
@@ -164,22 +149,6 @@ def _key(key: object, pointer: str) -> str:
     except (TypeError, ValueError) as error:
         msg = f"{error} at {pointer or '/'}"
         raise ModelProjectionError(msg) from None
-
-
-def _array_presence(presence: PresenceTree | None, length: int, pointer: str) -> None:
-    if presence is not None and (
-        presence.container != "array" or [key for key, _ in presence.members] != list(range(length))
-    ):
-        msg = f"The presence tree does not select the whole array at {pointer or '/'}"
-        raise CodecBindingError(msg)
-
-
-def _object_presence(presence: PresenceTree | None, available: set[str], pointer: str) -> None:
-    if presence is not None and (
-        presence.container != "object" or any(key not in available for key, _ in presence.members)
-    ):
-        msg = f"The presence tree does not select existing object members at {pointer or '/'}"
-        raise CodecBindingError(msg)
 
 
 def _sorted_items(items: list[JSONValue]) -> list[JSONValue]:
@@ -265,16 +234,37 @@ class PydanticModelCodec(Generic[T]):
 
     @overload
     def __init__(
-        self, binding: UseBinding, native_type: type[T], models: Mapping[str, type], bundle: SchemaBundle
+        self,
+        binding: UseBinding,
+        native_type: type[T],
+        models: Mapping[str, type],
+        bundle: SchemaBundle,
+        *,
+        validator: WireValidator | None = None,
     ) -> None: ...
     @overload
     def __init__(
-        self, binding: UseBinding, native_type: object, models: Mapping[str, type], bundle: SchemaBundle
+        self,
+        binding: UseBinding,
+        native_type: object,
+        models: Mapping[str, type],
+        bundle: SchemaBundle,
+        *,
+        validator: WireValidator | None = None,
     ) -> None: ...
     def __init__(
-        self, binding: UseBinding, native_type: object, models: Mapping[str, type], bundle: SchemaBundle
+        self,
+        binding: UseBinding,
+        native_type: object,
+        models: Mapping[str, type],
+        bundle: SchemaBundle,
+        *,
+        validator: WireValidator | None = None,
     ) -> None:
-        """Check the binding against the native types and bundle once, before any value is processed."""
+        """Check the binding against the native types and bundle once, before any value is processed.
+
+        A schema adapter's validator replaces the bundle's builtin validator of the use's schema.
+        """
         if binding.converter_strategy != "pydantic_type_adapter" or binding.backend not in _BACKENDS:
             msg = "The binding does not select a Pydantic v2 type adapter"
             raise CodecConfigurationError(msg)
@@ -303,7 +293,7 @@ class PydanticModelCodec(Generic[T]):
             for model in binding.models
         }
         self._members: dict[str, WireSchemaValidator] = {}
-        self._validator = bundle.validator(binding.schema_id)
+        self._validator: WireValidator = validator if validator is not None else bundle.validator(binding.schema_id)
         self._adapter: TypeAdapter[T] = TypeAdapter(native_type)
         self._walk = (
             binding.projection_mode == "envelope"
@@ -337,7 +327,7 @@ class PydanticModelCodec(Generic[T]):
         budget = MatchBudget()
         try:
             snapshot = freeze_wire(wire)
-            if issues := self._validator.validate(snapshot, budget=budget):
+            if issues := self._validator.validate(snapshot, budget=budget, context=context):
                 raise WireValidationError(issues)
             return self._project(snapshot, budget)
         except RecursionError:
@@ -348,7 +338,7 @@ class PydanticModelCodec(Generic[T]):
         self._require(context, inbound=False)
         budget = MatchBudget()
         try:
-            return self._project(self._outbound(freeze_wire(wire), budget), budget)
+            return self._project(self._outbound(freeze_wire(wire), budget, context), budget)
         except RecursionError:
             raise self._nesting() from None
 
@@ -356,7 +346,7 @@ class PydanticModelCodec(Generic[T]):
         """Capture a native value's wire form for sending, using explicit presence when given."""
         self._require(context, inbound=False)
         try:
-            wire = self._outbound(self._native_wire(value, presence), MatchBudget())
+            wire = self._outbound(self._native_wire(value, presence), MatchBudget(), context)
         except RecursionError:
             raise self._nesting() from None
         return ModelValue(
@@ -372,9 +362,9 @@ class PydanticModelCodec(Generic[T]):
                     if value.binding_id != self._binding.binding_id:
                         msg = "The value was captured for a different binding"
                         raise CodecBindingError(msg)
-                    return self._outbound(freeze_wire(value.wire), MatchBudget())
+                    return self._outbound(freeze_wire(value.wire), MatchBudget(), context)
                 case _:
-                    return self._outbound(self._native_wire(value, None), MatchBudget())
+                    return self._outbound(self._native_wire(value, None), MatchBudget(), context)
         except RecursionError:
             raise self._nesting() from None
 
@@ -394,10 +384,10 @@ class PydanticModelCodec(Generic[T]):
             msg = "The codec context does not match the bound use"
             raise CodecBindingError(msg)
 
-    def _outbound(self, wire: WireValue, budget: MatchBudget) -> WireValue:
+    def _outbound(self, wire: WireValue, budget: MatchBudget, context: CodecContext) -> WireValue:
         if excluded := self._validator.excluded(wire, budget=budget):
-            wire = _without(wire, excluded)
-        if issues := self._validator.validate(wire, budget=budget):
+            wire = without_pointers(wire, excluded)
+        if issues := self._validator.validate(wire, budget=budget, context=context):
             raise WireValidationError(issues)
         return wire
 
@@ -642,7 +632,7 @@ class PydanticModelCodec(Generic[T]):
                 return self._sequence_wire(dumped, native, node, presence, pointer)
             case MapNode(value=value) if _is_mapping(dumped) and _is_mapping(native):
                 entries = {_key(key, pointer): (entry, native[key]) for key, entry in dumped.items()}
-                _object_presence(presence, set(entries), pointer)
+                check_object_presence(presence, set(entries), pointer)
                 return {
                     name: self._wire(entries[name][0], entries[name][1], value, child, _at(pointer, name))
                     for name, child in _selected(presence, entries)
@@ -660,7 +650,7 @@ class PydanticModelCodec(Generic[T]):
         presence: PresenceTree | None,
         pointer: str,
     ) -> JSONValue:
-        _array_presence(presence, len(dumped), pointer)
+        check_array_presence(presence, len(dumped), pointer)
         if isinstance(node, ArrayNode) and _is_set(dumped):
             return _sorted_items([self._wire(entry, entry, node.item, None, pointer) for entry in dumped])
         items = (node.item,) * len(dumped) if isinstance(node, ArrayNode) else node.items
@@ -678,7 +668,7 @@ class PydanticModelCodec(Generic[T]):
             return self._wire(dumped, native.root, model.root, presence, pointer)
         fields: Mapping[object, object] = dumped if _is_mapping(dumped) else {}
         extra = (native.model_extra if isinstance(native, BaseModel) else None) or {}
-        _object_presence(presence, {field.wire_name for field in model.fields} | set(extra), pointer)
+        check_object_presence(presence, {field.wire_name for field in model.fields} | set(extra), pointer)
         fields_set = native.model_fields_set if isinstance(native, BaseModel) else None
         members: dict[str, JSONValue] = {}
         for field in model.fields:
@@ -742,12 +732,12 @@ class PydanticModelCodec(Generic[T]):
     ) -> JSONValue:
         if _is_mapping(value):
             entries = {_key(key, pointer): entry for key, entry in value.items()}
-            _object_presence(presence, set(entries), pointer)
+            check_object_presence(presence, set(entries), pointer)
             return {
                 name: self._leaf(entries[name], "value", child, _at(pointer, name))
                 for name, child in _selected(presence, entries)
             }
-        _array_presence(presence, len(value), pointer)
+        check_array_presence(presence, len(value), pointer)
         if _is_set(value):
             return _sorted_items([self._leaf(entry, "value", None, pointer) for entry in value])
         return [

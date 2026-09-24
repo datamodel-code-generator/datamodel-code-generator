@@ -1,0 +1,645 @@
+{
+ "declarations": {
+  "adapters": [
+   {
+    "kind": "parameter",
+    "name": "scripted-path",
+    "import_ref": "app.codecs:scripted_path",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "path"
+     ],
+     "styles": [
+      "simple"
+     ],
+     "explode_values": [
+      false
+     ],
+     "value_kinds": [
+      "object"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1items~1{item}/get",
+      "role": "parameter",
+      "location": "path",
+      "name": "item"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "scripted-query",
+    "import_ref": "app.codecs:scripted_query",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "query"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false
+     ],
+     "value_kinds": [
+      "object"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1items~1{item}/get",
+      "role": "parameter",
+      "location": "query",
+      "name": "q"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "scripted-header",
+    "import_ref": "app.codecs:scripted_header",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "header"
+     ],
+     "styles": [
+      "simple"
+     ],
+     "explode_values": [
+      false
+     ],
+     "value_kinds": [
+      "object"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1items~1{item}/get",
+      "role": "parameter",
+      "location": "header",
+      "name": "X-Echo"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "scripted-cookie",
+    "import_ref": "app.codecs:scripted_cookie",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "cookie"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false
+     ],
+     "value_kinds": [
+      "object"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1items~1{item}/get",
+      "role": "parameter",
+      "location": "cookie",
+      "name": "echo"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "scripted-querystring",
+    "import_ref": "app.codecs:scripted_querystring",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "querystring"
+     ],
+     "styles": [],
+     "explode_values": [],
+     "value_kinds": [
+      "object"
+     ],
+     "media_types": [
+      "application/x-www-form-urlencoded"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1search/get",
+      "role": "parameter",
+      "location": "querystring",
+      "name": "qs",
+      "media_type": "application/x-www-form-urlencoded"
+     }
+    ]
+   }
+  ]
+ },
+ "cases": [
+  {
+   "name": "path",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "location": "path",
+    "fragments": [
+     [
+      null,
+      "a%2Fb"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "path-named",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "location": "path",
+    "fragments": [
+     [
+      "item",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "path-two",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "location": "path",
+    "fragments": [
+     [
+      null,
+      "a"
+     ],
+     [
+      null,
+      "b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "path-space",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "location": "path",
+    "fragments": [
+     [
+      null,
+      "a b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "path-triplet",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "location": "path",
+    "fragments": [
+     [
+      null,
+      "a%zz"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "path-other-location",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      "q",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "path-empty",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {}
+  },
+  {
+   "name": "path-raw",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "raw",
+    "location": "path",
+    "fragments": [
+     "a"
+    ]
+   }
+  },
+  {
+   "name": "path-list",
+   "use": "/paths/~1items~1{item}/get parameter path item",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "list",
+    "location": "path",
+    "fragments": [
+     [
+      null,
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      "q",
+      "a,b"
+     ],
+     [
+      "q",
+      "c%20d"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query-reserved",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      "other",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query-reserved-encoded",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      "oth%65r",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query-unnamed",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      null,
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query-space",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      "q",
+      "a b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query-triplet",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      "q%",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query-raw",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "raw",
+    "location": "query",
+    "fragments": [
+     "q=a"
+    ]
+   }
+  },
+  {
+   "name": "query-text",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "text",
+    "location": "query",
+    "fragments": [
+     [
+      "q",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "query-object",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "object"
+   }
+  },
+  {
+   "name": "query-raise",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "raise"
+   }
+  },
+  {
+   "name": "query-error",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "error"
+   }
+  },
+  {
+   "name": "header",
+   "use": "/paths/~1items~1{item}/get parameter header X-Echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "header",
+    "fragments": [
+     [
+      "X-Echo",
+      "a, b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "header-folded",
+   "use": "/paths/~1items~1{item}/get parameter header X-Echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "header",
+    "fragments": [
+     [
+      "x-echo",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "header-other",
+   "use": "/paths/~1items~1{item}/get parameter header X-Echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "header",
+    "fragments": [
+     [
+      "X-Other",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "header-crlf",
+   "use": "/paths/~1items~1{item}/get parameter header X-Echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "header",
+    "fragments": [
+     [
+      "X-Echo",
+      "a\r\nX-Other: b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "header-token",
+   "use": "/paths/~1items~1{item}/get parameter header X-Echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "header",
+    "fragments": [
+     [
+      "X Echo",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "cookie",
+   "use": "/paths/~1items~1{item}/get parameter cookie echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "cookie",
+    "fragments": [
+     [
+      "echo",
+      "a%2Cb"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "cookie-other",
+   "use": "/paths/~1items~1{item}/get parameter cookie echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "cookie",
+    "fragments": [
+     [
+      "session",
+      "a"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "cookie-octet",
+   "use": "/paths/~1items~1{item}/get parameter cookie echo",
+   "op": "parameter-encode",
+   "value": {
+    "location": "cookie",
+    "fragments": [
+     [
+      "echo",
+      "a;b"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "querystring",
+   "use": "/paths/~1search/get parameter querystring qs",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "querystring",
+    "query": "a=1&b=%20"
+   }
+  },
+  {
+   "name": "querystring-empty",
+   "use": "/paths/~1search/get parameter querystring qs",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "querystring",
+    "query": ""
+   }
+  },
+  {
+   "name": "querystring-triplet",
+   "use": "/paths/~1search/get parameter querystring qs",
+   "op": "parameter-encode",
+   "value": {
+    "kind": "querystring",
+    "query": "a=%zz"
+   }
+  },
+  {
+   "name": "querystring-fragments",
+   "use": "/paths/~1search/get parameter querystring qs",
+   "op": "parameter-encode",
+   "value": {
+    "location": "query",
+    "fragments": [
+     [
+      "a",
+      "1"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "decode",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-decode",
+   "location": "query",
+   "fragments": [
+    [
+     "q",
+     "{\"a\":1}"
+    ]
+   ]
+  },
+  {
+   "name": "decode-unset",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-decode",
+   "location": "query",
+   "fragments": [
+    [
+     "q",
+     "unset"
+    ]
+   ]
+  },
+  {
+   "name": "decode-raise",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-decode",
+   "location": "query",
+   "fragments": [
+    [
+     "q",
+     "raise"
+    ]
+   ]
+  },
+  {
+   "name": "decode-error",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-decode",
+   "location": "query",
+   "fragments": [
+    [
+     "q",
+     "error"
+    ]
+   ]
+  },
+  {
+   "name": "decode-object",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-decode",
+   "location": "query",
+   "fragments": [
+    [
+     "q",
+     "object"
+    ]
+   ]
+  },
+  {
+   "name": "decode-empty",
+   "use": "/paths/~1items~1{item}/get parameter query q",
+   "op": "parameter-decode",
+   "location": "query",
+   "fragments": [
+    [
+     "q",
+     "{}"
+    ]
+   ]
+  },
+  {
+   "name": "decode-querystring",
+   "use": "/paths/~1search/get parameter querystring qs",
+   "op": "parameter-decode",
+   "location": "querystring",
+   "query": "{\"a\":\"1\"}"
+  },
+  {
+   "name": "stream-build",
+   "use": "/paths/~1search/get response_body 200",
+   "op": "build"
+  }
+ ]
+}

@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Two request media for one operation
+  version: "1"
+paths:
+  /notes:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Note"
+          application/merge-patch+json:
+            schema:
+              $ref: "#/components/schemas/NotePatch"
+      responses:
+        "204":
+          description: No content.
+components:
+  schemas:
+    Note:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+    NotePatch:
+      type: object
+      properties:
+        text:
+          type: string

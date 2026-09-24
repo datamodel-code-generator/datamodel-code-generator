@@ -1,3 +1,4 @@
+diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
 use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
 use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
 use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]

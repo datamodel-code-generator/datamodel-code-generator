@@ -1,0 +1,130 @@
+openapi: 3.1.0
+info:
+  title: Codec adapters
+  version: "1"
+paths:
+  /tags:
+    get:
+      parameters:
+        - name: tags
+          in: cookie
+          style: form
+          explode: false
+          schema:
+            $ref: "#/components/schemas/Tags"
+        - name: session
+          in: cookie
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content.
+  /codes:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "200":
+          description: The code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Code"
+  /pets:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "201":
+          description: The pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /keepers:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Keeper"
+      responses:
+        "201":
+          description: The keeper.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Keeper"
+  /secrets:
+    get:
+      responses:
+        "200":
+          description: A secret holder.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Secretive"
+  /zoo:
+    put:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/Pet"
+                - $ref: "#/components/schemas/Keeper"
+      responses:
+        "204":
+          description: No content.
+components:
+  schemas:
+    Tags:
+      type: array
+      items:
+        type: string
+    Code:
+      type: string
+      pattern: "^a(?=b)b$"
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        tag:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        secret:
+          type: string
+          writeOnly: true
+    Secretive:
+      type: object
+      required: [name, password]
+      properties:
+        name:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+    Keeper:
+      type: object
+      required: [badge]
+      properties:
+        badge:
+          type: string

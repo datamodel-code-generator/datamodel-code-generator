@@ -40,6 +40,10 @@ class CodecSelectionError(CodecConfigurationError):
     """Reject a selector that does not name a declared use, status, or media."""
 
 
+class CodecAdapterError(CodecConfigurationError):
+    """Reject a codec adapter that broke its version 1 contract at startup or at a callback boundary."""
+
+
 class CodecBindingError(CodecError):
     """Reject a value, presence tree, or context that belongs to a different binding."""
 

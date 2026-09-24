@@ -26,12 +26,24 @@ from .patterns import (
     plan_pattern,
     search,
 )
-from .wire import JSONValue, WireValue, checked_key, checked_scalar, enter, escape_pointer_token, thaw_wire
+from .wire import (
+    JSONValue,
+    WireValue,
+    checked_key,
+    checked_scalar,
+    enter,
+    escape_pointer_token,
+    freeze_wire,
+    thaw_wire,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from jsonschema.exceptions import ValidationError
+    from referencing.jsonschema import Schema
+
+    from .context import CodecContext
 
 STANDARD_FORMATS: Final = (
     "date",
@@ -184,11 +196,13 @@ class _ResourceCopy:
         index: dict[int, _Location],
         plans: dict[str, PatternPlan],
         schemas: dict[tuple[str, str], dict[str, object]],
+        adapted: frozenset[str],
     ) -> None:
         self.uri = uri
         self.index = index
         self.plans = plans
         self.schemas = schemas
+        self.adapted = adapted
         self.references: list[tuple[int, str, str]] = []
         self.active: set[int] = set()
 
@@ -273,6 +287,8 @@ class _ResourceCopy:
         try:
             planned = plan_pattern(source)
         except (PatternDialectError, PatternResourceError) as error:
+            if source in self.adapted:
+                return
             msg = f"A bundled schema pattern at {self.uri} is outside the builtin grammar"
             raise CodecConfigurationError(msg) from error
         compile_pattern(planned.re2_source)
@@ -347,7 +363,10 @@ def is_multiple(value: float | Decimal, divisor: float | Decimal) -> bool:
 
 def _matches(source: str, subject: str) -> bool:
     state = _CALL.get()
-    return search(state.plans[source], subject, state.budget)
+    if (plan := state.plans.get(source)) is None:
+        msg = "A pattern that only a schema adapter evaluates reached the builtin validator"
+        raise CodecConfigurationError(msg)
+    return search(plan, subject, state.budget)
 
 
 def _error(*, path: tuple[str, ...] = ()) -> ValidationError:
@@ -682,6 +701,20 @@ def _issue(error: ValidationError, index: Mapping[int, _Location]) -> WireIssue:
     )
 
 
+class WireValidator(Protocol):
+    """Validate one use's wire values and list the members its direction excludes."""
+
+    def validate(
+        self, wire: WireValue, *, budget: MatchBudget | None = None, context: CodecContext
+    ) -> tuple[WireIssue, ...]:
+        """Return value-free issues for one codec call; an empty tuple means valid."""
+        ...
+
+    def excluded(self, wire: WireValue, *, budget: MatchBudget | None = None) -> tuple[str, ...]:
+        """Return pointers of members the direction excludes."""
+        ...
+
+
 class WireSchemaValidator:
     """Validate one use's wire values against its bundled offline schema."""
 
@@ -717,8 +750,17 @@ class WireSchemaValidator:
             _CALL.reset(token)
         return tuple(found.pointers)
 
-    def validate(self, wire: WireValue, *, budget: MatchBudget | None = None) -> tuple[WireIssue, ...]:
-        """Return value-free issues in schema-evaluation order; an empty tuple means valid."""
+    def validate(
+        self,
+        wire: WireValue,
+        *,
+        budget: MatchBudget | None = None,
+        context: CodecContext | None = None,  # noqa: ARG002
+    ) -> tuple[WireIssue, ...]:
+        """Return value-free issues in schema-evaluation order; an empty tuple means valid.
+
+        The builtin validator needs no call context; schema adapters receive it.
+        """
         token = _CALL.set(replace(self._state, budget=budget or MatchBudget()))
         try:
             instance = _instance_copy(wire, set())
@@ -732,10 +774,19 @@ class WireSchemaValidator:
 class SchemaBundle:
     """Own offline normalized resources, their pattern plans, and per-use validators."""
 
-    __slots__ = ("_direction", "_flagged", "_index", "_plans", "_registry", "_targets", "_validators")
+    __slots__ = ("_direction", "_flagged", "_index", "_plans", "_registry", "_targets", "_uris", "_validators")
 
-    def __init__(self, resources: Iterable[SchemaResource], view: DirectionalView | None = None) -> None:
-        """Copy resources, apply a directional view, check every reference and pattern, and build a registry."""
+    def __init__(
+        self,
+        resources: Iterable[SchemaResource],
+        view: DirectionalView | None = None,
+        *,
+        adapted_patterns: frozenset[str] = frozenset(),
+    ) -> None:
+        """Copy resources, apply a directional view, check every reference and pattern, and build a registry.
+
+        Patterns that only schema-adapter closures use may stay outside the builtin grammar.
+        """
         from referencing.exceptions import Unresolvable  # noqa: PLC0415
         from referencing.jsonschema import DRAFT202012, EMPTY_REGISTRY  # noqa: PLC0415
 
@@ -751,7 +802,7 @@ class SchemaBundle:
             if resource.uri in copies:
                 msg = f"A schema resource is bundled twice: {resource.uri}"
                 raise CodecConfigurationError(msg)
-            copier = _ResourceCopy(resource.uri, self._index, self._plans, schemas)
+            copier = _ResourceCopy(resource.uri, self._index, self._plans, schemas, adapted_patterns)
             root = (
                 copier.copy(resource.contents, "", resource.uri, schema=True)
                 if "" in resource.roots
@@ -767,6 +818,7 @@ class SchemaBundle:
                 msg = f"A directional view patches no bundled {patch.keyword} keyword in {patch.uri}"
                 raise CodecConfigurationError(msg)
             patched[patch.keyword] = thaw_wire(patch.value)
+        self._uris = tuple(copies)
         self._registry = EMPTY_REGISTRY.with_resources(
             (uri, DRAFT202012.create_resource(contents)) for uri, contents in copies.items()
         ).crawl()
@@ -787,10 +839,33 @@ class SchemaBundle:
         """Return the direction whose view this bundle validates, or None for the neutral view."""
         return self._direction
 
+    def documents(self) -> dict[str, WireValue]:
+        """Return independent snapshots of every bundled document as this direction validates it."""
+        return {uri: freeze_wire(self._registry.contents(uri)) for uri in self._uris}
+
+    def normalized(self, schema_id: str) -> WireValue:
+        """Return a snapshot of one bundled schema as this direction validates it."""
+        return freeze_wire(self._lookup(schema_id)[0])
+
     def validator(self, schema_id: str) -> WireSchemaValidator:
         """Return the cached validator for one bundled schema identifier."""
         if (existing := self._validators.get(schema_id)) is not None:
             return existing
+        contents, root = self._lookup(schema_id)
+        base = schema_id.partition("#")[0] if root is None else root.base
+        created = WireSchemaValidator(
+            schema_id,
+            _validator_factory()(contents, self._registry, self._registry.resolver(base_uri=base)),
+            self._index,
+            _CallState(self._plans, self._targets, MatchBudget(), self._direction),
+            (contents, _EXCLUSIONS[self._direction])
+            if self._direction is not None and schema_id in self._flagged
+            else None,
+        )
+        self._validators[schema_id] = created
+        return created
+
+    def _lookup(self, schema_id: str) -> tuple[Schema, _Location | None]:
         from referencing.exceptions import Unresolvable  # noqa: PLC0415
 
         try:
@@ -801,15 +876,4 @@ class SchemaBundle:
         if (root := self._index.get(id(target.contents))) is None and target.contents is not True:
             msg = f"Schema {schema_id} does not identify a bundled schema"
             raise CodecConfigurationError(msg)
-        base = schema_id.partition("#")[0] if root is None else root.base
-        created = WireSchemaValidator(
-            schema_id,
-            _validator_factory()(target.contents, self._registry, self._registry.resolver(base_uri=base)),
-            self._index,
-            _CallState(self._plans, self._targets, MatchBudget(), self._direction),
-            (target.contents, _EXCLUSIONS[self._direction])
-            if self._direction is not None and schema_id in self._flagged
-            else None,
-        )
-        self._validators[schema_id] = created
-        return created
+        return target.contents, root

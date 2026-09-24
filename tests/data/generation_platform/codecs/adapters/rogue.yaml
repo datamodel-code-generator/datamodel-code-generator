@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: Rogue adapters
+  version: "1"
+paths:
+  /v2:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "204":
+          description: No content.
+  /capabilities:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "204":
+          description: No content.
+  /capabilities-failure:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "204":
+          description: No content.
+  /compile-failure:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "204":
+          description: No content.
+  /compile-refusal:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "204":
+          description: No content.
+  /scripted:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "204":
+          description: No content.
+  /limits:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "204":
+          description: No content.
+  /boxes:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Box"
+      responses:
+        "200":
+          description: The box.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Box"
+components:
+  schemas:
+    Code:
+      type: string
+      pattern: "^a(?=b)b$"
+    Box:
+      type: object
+      required: [code]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          $ref: "#/components/schemas/Code"
+        codes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Code"
+        count:
+          type: integer
+        weight:
+          type: number
+          multipleOf: 0.5
+        secret:
+          type: string
+          writeOnly: true

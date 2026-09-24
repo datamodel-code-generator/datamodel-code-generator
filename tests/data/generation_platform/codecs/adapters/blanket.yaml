@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: Blanket builtin compatibility
+  version: "1"
+paths:
+  /visits:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pet]
+              properties:
+                pet:
+                  $ref: "#/components/schemas/Pet"
+                clinic:
+                  type: object
+                  properties:
+                    city:
+                      type: string
+      responses:
+        "204":
+          description: No content.
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string

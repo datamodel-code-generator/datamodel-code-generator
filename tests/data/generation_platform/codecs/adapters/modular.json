@@ -1,0 +1,12 @@
+{
+  "bindings": true,
+  "declarations": {
+    "exports": [
+      {"schema": {"pointer": "/components/schemas/owners.Owner"}, "module": "adapted.models.owners", "symbol": "Owner"}
+    ]
+  },
+  "cases": [
+    {"name": "pet", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"name": "Rex", "owner": {"name": "Ann"}}},
+    {"name": "owner", "use": "/paths/~1pets/post response_body 201", "op": "outbound", "value": {"name": "Ann"}}
+  ]
+}

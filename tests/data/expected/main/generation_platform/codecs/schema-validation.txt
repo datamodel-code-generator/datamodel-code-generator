@@ -58,6 +58,7 @@ zero-multiple: CodecConfigurationError A bundled schema at https://dcg.invalid/i
 boolean-multiple: CodecConfigurationError A bundled schema at https://dcg.invalid/inputs/root has a non-positive multipleOf
 unknown-schema: CodecConfigurationError Schema https://dcg.invalid/inputs/documents/0#/$defs/Missing is not bundled
 container-root: CodecConfigurationError Schema https://dcg.invalid/inputs/root# does not identify a bundled schema
+adapted-pattern: CodecConfigurationError A pattern that only a schema adapter evaluates reached the builtin validator
 cached-validator: True
 deep-instance: CodecResourceLimitError The wire value is nested beyond the validator recursion limit
 deep-exclusions: CodecResourceLimitError The wire value is nested beyond the validator recursion limit

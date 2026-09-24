@@ -1,0 +1,539 @@
+{
+ "source": true,
+ "declarations": {
+  "adapters": [
+   {
+    "kind": "parameter",
+    "name": "json-cookie",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "cookie"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false
+     ],
+     "value_kinds": [
+      "array"
+     ],
+     "supports_empty_containers": true
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Tags"
+      },
+      "direction": "request"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "lookaround",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Code"
+      },
+      "direction": "request"
+     },
+     {
+      "schema": {
+       "pointer": "/components/schemas/Code"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "pet-model",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ],
+     "presence": "native"
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     },
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "keeper-model",
+    "import_ref": "app.codecs:keeper_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1keepers/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     },
+     {
+      "operation": {
+       "pointer": "/paths/~1keepers/post"
+      },
+      "role": "response_body",
+      "status": "201",
+      "media_type": "application/json"
+     }
+    ]
+   }
+  ]
+ },
+ "cases": [
+  {
+   "name": "cookie-encode",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "parameter-encode",
+   "value": [
+    "a,b",
+    "c"
+   ]
+  },
+  {
+   "name": "cookie-encode-empty",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "parameter-encode",
+   "value": []
+  },
+  {
+   "name": "cookie-decode",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "parameter-decode",
+   "location": "cookie",
+   "fragments": [
+    [
+     "session",
+     "s1"
+    ],
+    [
+     "tags",
+     "%5B%22a%2Cb%22%2C%22c%22%5D"
+    ]
+   ]
+  },
+  {
+   "name": "cookie-decode-empty",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "parameter-decode",
+   "location": "cookie",
+   "fragments": [
+    [
+     "tags",
+     "%5B%5D"
+    ]
+   ]
+  },
+  {
+   "name": "cookie-decode-missing",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "parameter-decode",
+   "location": "cookie",
+   "fragments": [
+    [
+     "session",
+     "s1"
+    ]
+   ]
+  },
+  {
+   "name": "cookie-decode-duplicate",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "parameter-decode",
+   "location": "cookie",
+   "fragments": [
+    [
+     "tags",
+     "%5B%5D"
+    ],
+    [
+     "tags",
+     "%5B%5D"
+    ]
+   ]
+  },
+  {
+   "name": "cookie-model",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "decode",
+   "value": [
+    "a,b",
+    "c"
+   ]
+  },
+  {
+   "name": "cookie-model-invalid",
+   "use": "/paths/~1tags/get parameter cookie tags",
+   "op": "decode",
+   "value": [
+    "a",
+    1
+   ]
+  },
+  {
+   "name": "code-ab",
+   "use": "/paths/~1codes/post request_body",
+   "op": "decode",
+   "value": "ab"
+  },
+  {
+   "name": "code-ac",
+   "use": "/paths/~1codes/post request_body",
+   "op": "decode",
+   "value": "ac"
+  },
+  {
+   "name": "code-empty",
+   "use": "/paths/~1codes/post request_body",
+   "op": "decode",
+   "value": ""
+  },
+  {
+   "name": "code-integer",
+   "use": "/paths/~1codes/post request_body",
+   "op": "decode",
+   "value": 1
+  },
+  {
+   "name": "code-send",
+   "use": "/paths/~1codes/post response_body 200",
+   "op": "outbound",
+   "value": "ab"
+  },
+  {
+   "name": "code-send-invalid",
+   "use": "/paths/~1codes/post response_body 200",
+   "op": "outbound",
+   "value": "abb"
+  },
+  {
+   "name": "pet-decode",
+   "use": "/paths/~1pets/post request_body",
+   "op": "decode",
+   "value": {
+    "name": "Rex"
+   }
+  },
+  {
+   "name": "pet-decode-tag",
+   "use": "/paths/~1pets/post request_body",
+   "op": "decode",
+   "value": {
+    "name": "Rex",
+    "tag": "t"
+   }
+  },
+  {
+   "name": "pet-from-wire",
+   "use": "/paths/~1pets/post request_body",
+   "op": "from_wire",
+   "value": {
+    "name": "Rex"
+   }
+  },
+  {
+   "name": "keeper-decode",
+   "use": "/paths/~1keepers/post request_body",
+   "op": "decode",
+   "value": {
+    "badge": "k"
+   }
+  },
+  {
+   "name": "keeper-decode-invalid",
+   "use": "/paths/~1keepers/post request_body",
+   "op": "decode",
+   "value": {}
+  },
+  {
+   "name": "keeper-decode-failure",
+   "use": "/paths/~1keepers/post request_body",
+   "op": "decode",
+   "value": {
+    "badge": "raise"
+   }
+  },
+  {
+   "name": "keeper-decode-limit",
+   "use": "/paths/~1keepers/post request_body",
+   "op": "decode",
+   "value": {
+    "badge": "limit"
+   }
+  },
+  {
+   "name": "keeper-send",
+   "use": "/paths/~1keepers/post response_body 201",
+   "op": "snapshot",
+   "value": {
+    "model": "Keeper",
+    "args": {
+     "badge": "k"
+    }
+   }
+  },
+  {
+   "name": "pet-decode-read-only",
+   "use": "/paths/~1pets/post request_body",
+   "op": "decode",
+   "value": {
+    "id": 1,
+    "name": "Rex"
+   }
+  },
+  {
+   "name": "pet-decode-invalid",
+   "use": "/paths/~1pets/post request_body",
+   "op": "decode",
+   "value": {
+    "name": 1
+   }
+  },
+  {
+   "name": "pet-decode-native",
+   "use": "/paths/~1pets/post request_body",
+   "op": "decode",
+   "value": {
+    "name": "raise"
+   }
+  },
+  {
+   "name": "pet-send",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "outbound",
+   "value": {
+    "id": 1,
+    "name": "Rex"
+   }
+  },
+  {
+   "name": "pet-send-secret",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "outbound",
+   "value": {
+    "id": 1,
+    "name": "Rex",
+    "secret": "s"
+   }
+  },
+  {
+   "name": "pet-snapshot",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "snapshot",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 2,
+     "name": "Tom"
+    }
+   }
+  },
+  {
+   "name": "pet-snapshot-presence",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "snapshot",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 2,
+     "name": "Tom",
+     "tag": "x"
+    }
+   },
+   "presence": {
+    "id": 2,
+    "name": "Tom"
+   }
+  },
+  {
+   "name": "pet-snapshot-tags",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "snapshot",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 2,
+     "name": "Tom",
+     "tags": [
+      "a",
+      "b"
+     ]
+    }
+   },
+   "presence": {
+    "id": 2,
+    "name": "Tom",
+    "tags": [
+     "a",
+     "b"
+    ]
+   }
+  },
+  {
+   "name": "pet-snapshot-stale",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "snapshot",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 2,
+     "name": "Tom"
+    }
+   },
+   "presence": {
+    "id": {
+     "nested": 1
+    },
+    "name": "Tom"
+   }
+  },
+  {
+   "name": "pet-encode",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "result": "pet-send"
+   }
+  },
+  {
+   "name": "pet-encode-snapshot",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "snapshot": "pet-snapshot"
+   }
+  },
+  {
+   "name": "pet-encode-other",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "snapshot": "cookie-model"
+   }
+  },
+  {
+   "name": "pet-encode-failure",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 3,
+     "name": "raise"
+    }
+   }
+  },
+  {
+   "name": "pet-encode-limit",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 3,
+     "name": "limit"
+    }
+   }
+  },
+  {
+   "name": "pet-encode-object",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 3,
+     "name": "object"
+    }
+   }
+  },
+  {
+   "name": "pet-encode-presence",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 3,
+     "name": "presence"
+    }
+   }
+  },
+  {
+   "name": "pet-encode-invalid",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "construct": "Pet",
+    "args": {
+     "name": "Rex"
+    }
+   }
+  },
+  {
+   "name": "secret-send",
+   "use": "/paths/~1secrets/get response_body 200",
+   "op": "outbound",
+   "value": {
+    "name": "s",
+    "password": "p"
+   }
+  },
+  {
+   "name": "secret-snapshot",
+   "use": "/paths/~1secrets/get response_body 200",
+   "op": "snapshot",
+   "value": {
+    "model": "Secretive",
+    "args": {
+     "name": "s",
+     "password": "p"
+    }
+   }
+  }
+ ]
+}

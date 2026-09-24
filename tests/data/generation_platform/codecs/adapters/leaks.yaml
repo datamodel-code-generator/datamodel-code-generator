@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: Adapter uses before builtin uses
+  version: "1"
+paths:
+  /adapted:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "204":
+          description: No content.
+  /plain:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "204":
+          description: No content.
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        owner:
+          $ref: "#/components/schemas/Owner"
+    Owner:
+      type: object
+      properties:
+        name:
+          type: string

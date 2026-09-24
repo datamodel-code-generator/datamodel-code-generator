@@ -257,6 +257,15 @@ def schema_report(path: Path) -> str:
         ("boolean-multiple", lambda: _bundle([(root, {"multipleOf": True}, ("",))])),
         ("unknown-schema", lambda: bundle.validator(f"{other}#/$defs/Missing")),
         ("container-root", lambda: bundle.validator(f"{root}#")),
+        (
+            "adapted-pattern",
+            lambda: SchemaBundle(
+                (SchemaResource(uri=root, contents=freeze_wire({"pattern": "(?=a)"})),),
+                adapted_patterns=frozenset({"(?=a)"}),
+            )
+            .validator(f"{root}#")
+            .validate("a"),
+        ),
     ]
     lines.extend(f"{name}: {attempt(lambda action=action: str(type(action()).__name__))}" for name, action in failures)
     pet = bundle.validator(f"{root}#/components/schemas/Pet")

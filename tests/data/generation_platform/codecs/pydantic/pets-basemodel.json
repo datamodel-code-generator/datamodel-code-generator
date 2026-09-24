@@ -79,6 +79,8 @@
      "value": {"result": "list-client-decode", "attr": "value"}},
     {"name": "list-server-encode-snapshot", "use": "/paths/~1pets/get response_body 200", "op": "encode",
      "value": {"result": "list-client-decode"}},
+    {"name": "list-server-send-write-only", "use": "/paths/~1pets/get response_body 200", "op": "native-outbound",
+     "value": [{"id": 1, "name": "A", "status": "new", "password": "p"}]},
     {"name": "list-client-decode-duplicate", "use": "/paths/~1pets/get response_body 200", "surface": "client", "op": "decode",
      "value": [{"id": 1, "name": "A", "status": "new", "labels": ["a", "a"]}]},
     {"name": "patch-client-snapshot", "use": "/paths/~1pets~1{id}/patch request_body", "surface": "client", "op": "snapshot",

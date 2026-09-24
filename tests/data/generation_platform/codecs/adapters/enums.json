@@ -1,0 +1,22 @@
+{
+  "scopes": ["schemas", "paths"],
+  "options": {"use_enum_values_in_discriminator": true},
+  "source": true,
+  "declarations": {
+    "adapters": [
+      {
+        "kind": "model",
+        "name": "cat-model",
+        "import_ref": "app.codecs:cat_model",
+        "capabilities": {"record": "CodecCapabilities", "backends": ["pydantic_v2.BaseModel"], "native_kinds": ["model"]},
+        "uses": [{"schema": {"pointer": "/components/schemas/Cat"}, "direction": "request"}]
+      }
+    ]
+  },
+  "cases": [
+    {"name": "cat", "use": "/paths/~1cats/post request_body", "op": "decode", "value": {"kind": "cat"}},
+    {"name": "cat-as-dog", "use": "/paths/~1cats/post request_body", "op": "decode", "value": {"kind": "dog"}},
+    {"name": "pair", "use": "/paths/~1cats/post parameter query pair", "op": "decode", "value": ["a", "b"]},
+    {"name": "pair-short", "use": "/paths/~1cats/post parameter query pair", "op": "decode", "value": ["a"]}
+  ]
+}

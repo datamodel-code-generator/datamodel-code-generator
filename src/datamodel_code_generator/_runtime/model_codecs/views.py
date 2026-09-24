@@ -1,0 +1,174 @@
+"""Version 1 data-only views of bindings, schemas, and parameter plans passed to codec adapter callbacks."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping  # noqa: TC003 - Public annotations support get_type_hints().
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
+
+from .bindings import (  # noqa: TC001 - Public annotations support get_type_hints().
+    BackendId,
+    ConverterStrategy,
+    NativeKind,
+    ProjectionMode,
+)
+from .capabilities import MAX_SUBJECT_BYTES, MAX_TOTAL_SUBJECT_BYTES
+from .context import Direction  # noqa: TC001 - Public annotations support get_type_hints().
+from .parameters import ParameterLocation  # noqa: TC001 - Public annotations support get_type_hints().
+from .wire import WireValue  # noqa: TC001 - Public annotations support get_type_hints().
+
+if TYPE_CHECKING:
+    from referencing import Registry
+
+    from .wire import JSONValue
+
+UseRole: TypeAlias = Literal[
+    "schema",
+    "parameter",
+    "request_body",
+    "response_body",
+    "response_header",
+    "request_encoding_header",
+    "response_encoding_header",
+]
+DefaultKind: TypeAlias = Literal["absent", "none", "value", "factory", "missing", "opaque"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CodecSourceRef:
+    """Point into one logical input document: `/inputs/root` or `/inputs/documents/<index>`."""
+
+    document: str
+    pointer: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CodecUseView:
+    """Identify one directional type use by its owner, role, use site, and selectors."""
+
+    owner_kind: Literal["operation", "schema"]
+    owner: CodecSourceRef
+    role: UseRole
+    use_site: CodecSourceRef
+    schema: CodecSourceRef | None
+    declaration: CodecSourceRef | None
+    direction: Direction | Literal["neutral"]
+    projection: Literal["value", "item_stream_array"]
+    location: ParameterLocation | None
+    name: str | None
+    status: str | None
+    media: str | None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SchemaView:
+    """Show one schema as written and as the directional, version-normalized 2020-12 schema the codec uses."""
+
+    schema_id: str
+    source: CodecSourceRef
+    dialect: str
+    raw: WireValue
+    normalized: WireValue
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CodecFieldView:
+    """Describe one model field's identity, accepted input paths, and directional facts."""
+
+    field_id: str
+    native_name: str
+    wire_name: str
+    schema_id: str | None
+    validation_paths: tuple[tuple[str | int, ...], ...]
+    serialization_alias: str | None
+    required: bool
+    read_only: bool
+    write_only: bool
+    default_kind: DefaultKind
+    excluded: bool | None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelExportView:
+    """Name the import location of a native type, checked against the generated artifacts."""
+
+    module: str
+    symbol: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CodecBindingView:
+    """Describe one bound use to an adapter without native objects."""
+
+    binding_id: str
+    use: CodecUseView
+    schema: SchemaView | None
+    backend: BackendId | None
+    native_kind: NativeKind | None
+    native_export: ModelExportView | None
+    fields: tuple[CodecFieldView, ...]
+    projection_mode: ProjectionMode
+    converter_strategy: ConverterStrategy | None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RuntimeModelBindingView:
+    """Add the resolved native type and field types, for model adapters only."""
+
+    binding: CodecBindingView
+    native_type: object
+    native_field_types: Mapping[str, object]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ParameterPlanView:
+    """Describe one parameter's serialization plan to a parameter adapter."""
+
+    binding: CodecBindingView
+    location: ParameterLocation
+    name: str
+    oas_version: str
+    style: str | None
+    explode: bool | None
+    required: bool
+    allow_reserved: bool
+    allow_empty_value: bool
+    content_media_type: str | None
+    reserved_names: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SchemaResourceLimits:
+    """Bound the subject bytes one matcher call and one codec call may examine."""
+
+    max_subject_bytes: int = MAX_SUBJECT_BYTES
+    max_total_subject_bytes: int = MAX_TOTAL_SUBJECT_BYTES
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SchemaPlanView:
+    """Describe the reachable schema closure a schema adapter must fully own."""
+
+    root: SchemaView
+    direction: Direction
+    required_vocabularies: tuple[str, ...]
+    required_keywords: tuple[str, ...]
+    pattern_dialects: tuple[str, ...]
+    limits: SchemaResourceLimits
+
+
+class OfflineSchemaRegistry(Protocol):
+    """Read the bundled schemas of one direction without network or file access."""
+
+    @property
+    def schema_ids(self) -> tuple[str, ...]:
+        """Return every schema identifier the registry serves."""
+        ...
+
+    def get(self, schema_id: str) -> SchemaView:
+        """Return the view of one bundled schema, raising KeyError for unknown identifiers."""
+        ...
+
+    def as_referencing_registry(self) -> Registry[bool | Mapping[str, JSONValue]]:  # ty: ignore[invalid-type-form]
+        """Return an immutable registry of independent copies of every bundled resource."""
+        ...

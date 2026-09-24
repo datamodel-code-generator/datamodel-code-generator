@@ -1,0 +1,30 @@
+{
+  "scopes": ["schemas", "paths"],
+  "options": {"collapse_root_models": true, "enum_field_as_literal": "all"},
+  "source": true,
+  "declarations": {
+    "adapters": [
+      {
+        "kind": "model",
+        "name": "holder-model",
+        "import_ref": "app.codecs:keeper_model",
+        "capabilities": {"record": "CodecCapabilities", "backends": ["pydantic_v2.BaseModel"], "native_kinds": ["model"]},
+        "uses": [{"schema": {"pointer": "/components/schemas/Holder"}, "direction": "request"}]
+      }
+    ]
+  },
+  "cases": [
+    {"name": "code", "use": "/paths/~1scalars/post parameter query code", "op": "decode", "value": "abc"},
+    {"name": "code-invalid", "use": "/paths/~1scalars/post parameter query code", "op": "decode", "value": "ABC"},
+    {"name": "count", "use": "/paths/~1scalars/post parameter query count", "op": "decode", "value": 2},
+    {"name": "ratio", "use": "/paths/~1scalars/post parameter query ratio", "op": "decode", "value": 1.25},
+    {"name": "when", "use": "/paths/~1scalars/post parameter query when", "op": "decode", "value": "2026-09-25T10:00:00Z"},
+    {"name": "mode", "use": "/paths/~1scalars/post parameter query mode", "op": "decode", "value": "b"},
+    {"name": "price", "use": "/paths/~1scalars/post parameter query price", "op": "decode", "value": "9.5"},
+    {"name": "tags", "use": "/paths/~1scalars/post parameter query tags", "op": "decode", "value": ["x", "y"]},
+    {"name": "pet", "use": "/paths/~1scalars/post parameter query pet", "op": "decode", "value": {"kind": "dog"}},
+    {"name": "holder", "use": "/paths/~1scalars/post request_body", "op": "decode",
+     "value": {"pets": [{"kind": "cat"}, {"kind": "dog"}], "label": "abcd", "mode": "a"}},
+    {"name": "name", "use": "/paths/~1scalars/post response_body 201", "op": "outbound", "value": null}
+  ]
+}

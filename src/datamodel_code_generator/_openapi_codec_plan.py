@@ -5,8 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._codec_declarations import (
+    BuiltinCodecCompatibility,
+    CodecDeclarations,
+    ModelExportBinding,
+    SchemaRef,
+)
+from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._generation_contract import (
     AnnotatedType,
+    BindingCaptureError,
     BuiltinType,
     ConstructorType,
     FieldSlot,
@@ -18,6 +26,7 @@ from datamodel_code_generator._generation_contract import (
     GenericType,
     ImportedType,
     LiteralScalar,
+    ModelArtifactAddress,
     ModelFieldFacts,
     NoneType,
     OperationId,
@@ -25,6 +34,15 @@ from datamodel_code_generator._generation_contract import (
     TypeUseBinding,
     TypeUseId,
     UnionType,
+)
+from datamodel_code_generator._openapi_codec_adapters import (
+    AdapterPlan,
+    AdapterSelection,
+    declared_document,
+    plan_adapters,
+    select_adapters,
+    suppressed,
+    type_nodes,
 )
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, CodecReason, WirePlan
 from datamodel_code_generator._runtime.model_codecs.bindings import (
@@ -42,10 +60,18 @@ from datamodel_code_generator._runtime.model_codecs.bindings import (
     UnionNode,
     UseBinding,
 )
-from datamodel_code_generator.model.binding import KnownBackendValue, OpaqueBackendValue
+from datamodel_code_generator.model.binding import (
+    FrozenImportBindings,
+    KnownBackendValue,
+    OpaqueBackendValue,
+    index_builtin_field_declarations,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator, Mapping
+
+    from datamodel_code_generator._openapi_generation import SourceLease
+    from datamodel_code_generator._runtime.model_codecs.context import Surface
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 ArrayKind: TypeAlias = Literal["list", "set", "frozenset"]
@@ -57,14 +83,17 @@ _SYMBOL_BACKENDS: Final[dict[PydanticBackend, str]] = {
 _ARRAY_KINDS: Final[dict[str, ArrayKind]] = {"set": "set", "frozenset": "frozenset"}
 _OPTIONAL_FALLBACK: Final = ("none", "synthesized_optional_fallback", "optional_fallback")
 _EXTRA_POLICIES: Final[dict[object, ExtraPolicy]] = {"ignore": "ignore", "allow": "allow", "forbid": "forbid"}
+_NO_DECLARATIONS: Final = CodecDeclarations()
 
 
 @dataclass(frozen=True, slots=True)
 class CodecPlan:
-    """Keep every planned directional use binding with the diagnostics that block other uses."""
+    """Keep every planned directional use binding, the selected adapters, and every blocking diagnostic."""
 
     bindings: tuple[tuple[TypeUseId, UseBinding], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
+    adapters: tuple[AdapterPlan, ...] = ()
+    imports: tuple[tuple[int, str], ...] = ()
 
 
 def _setting(symbol: FinalModelSymbol, name: str) -> object:
@@ -100,31 +129,29 @@ def _array_kind(base: FinalPythonType) -> ArrayKind:
 
 
 def _models(node: TypeNode) -> Iterator[str]:
-    match node:
-        case ModelNode():
-            yield node.symbol
-        case ArrayNode():
-            yield from _models(node.item)
-        case MapNode():
-            yield from _models(node.value)
-        case TupleNode():
-            for item in node.items:
-                yield from _models(item)
-        case UnionNode():
-            for item in node.members:
-                yield from _models(item)
-        case _:
-            return
+    return (item.symbol for item in type_nodes(node) if isinstance(item, ModelNode))
 
 
 def _at(location: SourceLocation, *tokens: str | int) -> SourceLocation:
     return replace(location, pointer=location.pointer + "".join(f"/{token}" for token in tokens))
 
 
+def _module(artifact: ModelArtifactAddress) -> str:
+    *parents, name = artifact.relative_path
+    modules = () if artifact.result_key == "single" else (*parents, name.removesuffix(".py"))
+    return ".".join((artifact.model_package, *modules)).removesuffix(".__init__")
+
+
 def _symbol_key(symbol: FinalModelSymbol) -> str:
-    path = symbol.artifact.relative_path if symbol.artifact else ("",)
-    module = ".".join((*path[:-1], path[-1].removesuffix(".py"))).removesuffix(".__init__")
-    return f"{module}:{symbol.name}"
+    return f"{_module(symbol.artifact) if symbol.artifact else ''}:{symbol.name}"
+
+
+def _defined(source: str) -> frozenset[str]:
+    try:
+        index = index_builtin_field_declarations(source, expected=(), imports=FrozenImportBindings(()))
+    except BindingCaptureError:
+        return frozenset()
+    return frozenset(definition.name for definition in index.definitions)
 
 
 def _accepted(facts: ModelFieldFacts, slot: FieldSlot, wire_name: str, *, generated: bool) -> frozenset[str]:
@@ -144,10 +171,21 @@ class _Member:
 
 
 class _CodecPlanner:
-    def __init__(self, batch: GeneratedTypeContractBatch, wire: WirePlan, backend: PydanticBackend) -> None:
+    def __init__(
+        self,
+        batch: GeneratedTypeContractBatch,
+        wire: WirePlan,
+        backend: PydanticBackend,
+        declarations: CodecDeclarations,
+        adapted: frozenset[TypeUseId],
+    ) -> None:
         self.batch = batch
         self.wire = wire
         self.backend: PydanticBackend = backend
+        self.adapted = adapted
+        self.quiet = False
+        self.exports: dict[int, str] = {}
+        self.imports: dict[int, str] = {}
         self.symbols = {symbol.id: symbol for symbol in batch.symbols}
         self.schema_ids = dict(wire.schema_ids)
         self.locations: dict[str, SourceLocation] = {}
@@ -161,14 +199,78 @@ class _CodecPlanner:
         self.members: dict[int, list[FieldUseBinding]] = {}
         for member in batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
-        self.models: dict[str, ModelBinding] = {}
-        self.building: set[str] = set()
+        self.caches: dict[bool, dict[str, ModelBinding]] = {False: {}, True: {}}
+        self.building: set[tuple[bool, str]] = set()
         self.aliases: set[int] = set()
         self.diagnostics: list[CodecDiagnostic] = []
+        self.compatible = frozenset(
+            symbol
+            for declaration in declarations.compatibility
+            if declaration.backend.value == backend
+            for symbol in self.declared(declaration)
+        )
+
+    def declared(self, declaration: BuiltinCodecCompatibility) -> Iterable[int]:
+        if not declaration.schemas:
+            return self.symbols
+        referenced = self.referenced(declaration.schemas)
+        return (symbol for symbol, schema_id in self.symbol_schemas.items() if schema_id in referenced)
+
+    def referenced(self, references: tuple[SchemaRef, ...]) -> frozenset[str]:
+        return frozenset(
+            self.wire.schema_id(SourceLocation(document, reference.pointer, "schema"))
+            for reference in references
+            if (document := declared_document(self.batch, reference.document)) is not None
+        )
+
+    def export(self, binding: ModelExportBinding, sources: Mapping[str, str]) -> None:
+        document = declared_document(self.batch, binding.schema.document)
+        symbols = {
+            use.type.symbol
+            for use in self.batch.type_uses
+            if isinstance(use.type, GeneratedSymbolType)
+            and use.schema is not None
+            and ((resolved := self.wire.schema(use.schema)[0]).document, resolved.pointer)
+            == (document, binding.schema.pointer)
+            and (use.id.role == "schema" if binding.direction == "neutral" else use.id.direction == binding.direction)
+        }
+        source = SourceLocation(document or self.batch.documents[0].id, binding.schema.pointer, "schema")
+        if len(symbols) != 1:
+            code: CodecReason = "MC_ADAPTER_CONTRACT" if symbols else "BND_MODEL_SCOPE_REQUIRED"
+            self.report(code, source, "The export binding selects no single generated model variant")
+            return
+        symbol = self.symbols[next(iter(symbols))]
+        package = symbol.artifact.model_package if symbol.artifact else ""
+        if binding.symbol not in _defined(sources.get(binding.module, "")) or not (
+            binding.module == package or binding.module.startswith(f"{package}.")
+        ):
+            self.report(
+                "BND_SYMBOL_NOT_EMITTED", source, f"{binding.module} does not define or export {binding.symbol}"
+            )
+            return
+        self.exports[symbol.id] = f"{binding.module}:{binding.symbol}"
 
     def report(self, code: CodecReason, source: SourceLocation, message: str) -> None:
         if (diagnostic := CodecDiagnostic(code, source, message)) not in self.diagnostics:
             self.diagnostics.append(diagnostic)
+
+    def locate(self) -> None:
+        self.imports = {
+            symbol.id: _symbol_key(symbol) for symbol in self.batch.symbols if symbol.artifact is not None
+        } | self.exports
+
+    def spelled(self, use: TypeUseBinding, value: FinalPythonType) -> bool:
+        types = [value]
+        if use.id in self.adapted and isinstance(value, GeneratedSymbolType):
+            types.extend(facts.type for member in self.members.get(value.symbol, []) if (facts := member.model_facts))
+        reasons: list[CodecReason] = [
+            reason for item in types if (reason := type_reason(item, self.imports)) is not None
+        ]
+        if reasons:
+            self.report(
+                reasons[0], use.id.use_site, "The use's final type has no expression a generated module can import"
+            )
+        return not reasons
 
     def child(self, schema: SourceLocation | None, *tokens: str | int) -> SourceLocation | None:
         return None if schema is None else _at(self.wire.schema(schema)[0], *tokens)
@@ -211,9 +313,20 @@ class _CodecPlanner:
 
     def symbol_node(self, symbol: FinalModelSymbol, source: SourceLocation) -> TypeNode:
         match symbol.kind:
-            case "model" | "root" if symbol.backend == _SYMBOL_BACKENDS[self.backend] and _builtin(symbol):
+            case "model" | "root" | "custom" if self.quiet or (
+                symbol.kind != "custom"
+                and symbol.backend == _SYMBOL_BACKENDS[self.backend]
+                and (_builtin(symbol) or (symbol.facts is not None and symbol.id in self.compatible))
+            ):
                 self.model(symbol, source)
                 return ModelNode(_symbol_key(symbol))
+            case "model" | "root" if symbol.id in self.compatible and symbol.backend == _SYMBOL_BACKENDS[self.backend]:
+                self.report(
+                    "MC_ADAPTER_REQUIRED",
+                    source,
+                    f"The {symbol.name} model has no captured field facts, so its builtin compatibility cannot bind it",
+                )
+                return LeafNode()
             case "alias" if symbol.id not in self.aliases:
                 self.aliases.add(symbol.id)
                 node = next(
@@ -236,10 +349,14 @@ class _CodecPlanner:
                 )
                 return LeafNode()
 
+    @property
+    def models(self) -> dict[str, ModelBinding]:
+        return self.caches[self.quiet]
+
     def model(self, symbol: FinalModelSymbol, source: SourceLocation) -> None:
-        if (key := _symbol_key(symbol)) in self.models or key in self.building:
+        if (key := _symbol_key(symbol)) in self.models or (self.quiet, key) in self.building:
             return
-        self.building.add(key)
+        self.building.add((self.quiet, key))
         members = self.members.get(symbol.id, [])
         schema_id = self.symbol_schemas.get(symbol.id)
         if symbol.kind == "root":
@@ -334,8 +451,12 @@ class _CodecPlanner:
                 "The use has no generated native type",
             )
             return None
+        if not self.spelled(use, use.type):
+            return None
+        self.quiet = use.id in self.adapted
         node = self.node(use.type, use.schema, source)
         models = self.reachable(node)
+        self.quiet = False
         excluded = "read_only" if direction == "request" else "write_only"
         envelope = any(field.required and getattr(field, excluded) for model in models for field in model.fields)
         return UseBinding(
@@ -346,11 +467,11 @@ class _CodecPlanner:
             media_type=use.id.media,
             backend=self.backend,
             native_kind=self.native_kind(use.type, node, models),
-            native_export=_symbol_key(self.symbols[use.type.symbol])
+            native_export=self.exports.get(use.type.symbol, _symbol_key(self.symbols[use.type.symbol]))
             if isinstance(use.type, GeneratedSymbolType)
             else None,
             projection_mode="envelope" if envelope else "native",
-            converter_strategy="pydantic_type_adapter",
+            converter_strategy="registered_adapter" if use.id in self.adapted else "pydantic_type_adapter",
             type=node,
             models=models,
         )
@@ -371,8 +492,32 @@ class _CodecPlanner:
                 return "scalar"
 
 
-def plan_model_codecs(batch: GeneratedTypeContractBatch, wire: WirePlan, backend: PydanticBackend) -> CodecPlan:
-    """Bind every directional schema-bearing use to its native type graph and projection mode."""
-    planner = _CodecPlanner(batch, wire, backend)
+def plan_model_codecs(  # noqa: PLR0913
+    batch: GeneratedTypeContractBatch,
+    wire: WirePlan,
+    backend: PydanticBackend,
+    *,
+    declarations: CodecDeclarations = _NO_DECLARATIONS,
+    surface: Surface = "server",
+    lease: SourceLease | None = None,
+    sources: Mapping[str, str] | None = None,
+) -> CodecPlan:
+    """Bind every directional use to its native type graph, projection mode, and any registered adapter."""
+    selection: AdapterSelection = select_adapters(batch, wire, declarations, surface)
+    planner = _CodecPlanner(batch, wire, backend, declarations, selection.uses("model"))
+    for export in declarations.exports:
+        planner.export(export, sources or {})
+    planner.locate()
     bindings = tuple((use.id, binding) for use in batch.type_uses if (binding := planner.use(use)) is not None)
-    return CodecPlan(bindings, tuple(planner.diagnostics))
+    adapters, adapter_diagnostics = plan_adapters(selection, batch, wire, dict(bindings), lease)
+    return CodecPlan(
+        bindings,
+        (
+            *suppressed(wire.diagnostics, wire, adapters),
+            *selection.diagnostics,
+            *planner.diagnostics,
+            *adapter_diagnostics,
+        ),
+        adapters,
+        tuple(planner.imports.items()),
+    )

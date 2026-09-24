@@ -1,0 +1,15 @@
+{
+  "options": {"base_class_map": {"Owner": "app.bases.Base"}},
+  "bindings": true,
+  "declarations": {
+    "adapters": [
+      {
+        "kind": "model",
+        "name": "pet-model",
+        "import_ref": "app.codecs:keeper_model",
+        "capabilities": {"record": "CodecCapabilities", "backends": ["pydantic_v2.BaseModel"], "native_kinds": ["model"]},
+        "uses": [{"operation": "/paths/~1adapted/post", "role": "request_body", "media_type": "application/json"}]
+      }
+    ]
+  }
+}

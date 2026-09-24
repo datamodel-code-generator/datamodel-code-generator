@@ -1,0 +1,819 @@
+diagnostic BND_MODEL_SCOPE_REQUIRED /paths/~1scalars/post/parameters/8: The use has no generated native type
+adapter holder-model /paths/~1scalars/post request_body: registered_adapter native
+use /paths/~1scalars/post parameter query code: codec_0 None None
+use /paths/~1scalars/post parameter query count: codec_1 None None
+use /paths/~1scalars/post parameter query ratio: codec_2 None None
+use /paths/~1scalars/post parameter query when: codec_3 None None
+use /paths/~1scalars/post parameter query mode: codec_4 None None
+use /paths/~1scalars/post parameter query price: codec_5 None None
+use /paths/~1scalars/post parameter query tags: codec_6 None None
+use /paths/~1scalars/post parameter query pet: codec_7 None None
+use /paths/~1scalars/post request_body: codec_8 None None
+use /paths/~1scalars/post response_body 201: codec_9 outbound_9 None
+--- _generated/model_bindings.py
+"""Model codec bindings of this generated package; regenerate them instead of editing."""
+
+from __future__ import annotations
+
+from functools import cache
+from typing import Final
+
+import adapted.models as adapted_models
+import app.codecs as app_codecs
+import decimal
+import pydantic
+import types
+import typing
+
+from .._runtime.model_codecs.adapters import AdapterModelCodec, ModelCodecAdapterV1
+from .._runtime.model_codecs.bindings import (
+    ArrayNode,
+    FieldBinding,
+    LeafNode,
+    ModelBinding,
+    ModelNode,
+    UnionNode,
+    UseBinding,
+)
+from .._runtime.model_codecs.capabilities import AdapterManifest, CodecCapabilities
+from .._runtime.model_codecs.context import CodecContext
+from .._runtime.model_codecs.outbound import NativeOutboundCodec
+from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
+from .._runtime.model_codecs.registry import BundleSchemaRegistry, SchemaSource
+from .._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
+from .._runtime.model_codecs.views import (
+    CodecBindingView,
+    CodecFieldView,
+    CodecSourceRef,
+    CodecUseView,
+    ModelExportView,
+    RuntimeModelBindingView,
+)
+from .._runtime.model_codecs.wire import freeze_wire
+
+
+@cache
+def _resources() -> tuple[SchemaResource, ...]:
+    return (
+        SchemaResource(
+            uri='https://dcg.invalid/inputs/root',
+            contents=freeze_wire({
+                'components': {
+                    'schemas': {
+                        'Cat': {
+                            'type': 'object',
+                            'required': ['kind'],
+                            'properties': {'kind': {'type': 'string', 'const': 'cat'}},
+                        },
+                        'Dog': {
+                            'type': 'object',
+                            'required': ['kind'],
+                            'properties': {'kind': {'type': 'string', 'const': 'dog'}},
+                        },
+                        'Holder': {
+                            'type': 'object',
+                            'required': ['pets'],
+                            'properties': {
+                                'pets': {
+                                    'type': 'array',
+                                    'items': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Pets'},
+                                },
+                                'label': {'type': 'string', 'maxLength': 4},
+                                'mode': {'type': 'string', 'enum': ['a', 'b']},
+                            },
+                        },
+                        'Pets': {
+                            'oneOf': [
+                                {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Cat'},
+                                {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Dog'},
+                            ],
+                            'discriminator': {'propertyName': 'kind'},
+                        },
+                    },
+                },
+                'paths': {
+                    '/scalars': {
+                        'post': {
+                            'parameters': [
+                                {'schema': {'type': 'string', 'pattern': '^[a-z]+$'}},
+                                {'schema': {'type': 'integer', 'minimum': 1}},
+                                {'schema': {'type': 'number', 'maximum': 1.5}},
+                                {'schema': {'type': 'string', 'format': 'date-time'}},
+                                {'schema': {'type': 'string', 'enum': ['a', 'b']}},
+                                {'schema': {'type': 'string', 'format': 'decimal', 'maximum': 10}},
+                                {'schema': {'type': 'array', 'items': {'type': 'string'}}},
+                                {
+                                    'schema': {
+                                        'oneOf': [
+                                            {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Cat'},
+                                            {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Dog'},
+                                        ],
+                                        'discriminator': {'propertyName': 'kind'},
+                                    },
+                                },
+                                {'schema': {'type': 'object', 'x-python-type': 'collections.OrderedDict[str, str]'}},
+                            ],
+                            'requestBody': {
+                                'content': {
+                                    'application/json': {
+                                        'schema': {
+                                            '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Holder',
+                                        },
+                                    },
+                                },
+                            },
+                            'responses': {
+                                '201': {'content': {'application/json': {'schema': {'type': ['string', 'null']}}}},
+                            },
+                        },
+                    },
+                },
+            }),
+            roots=(
+                '/components/schemas/Cat',
+                '/components/schemas/Dog',
+                '/components/schemas/Holder',
+                '/components/schemas/Pets',
+                '/paths/~1scalars/post/parameters/0/schema',
+                '/paths/~1scalars/post/parameters/1/schema',
+                '/paths/~1scalars/post/parameters/2/schema',
+                '/paths/~1scalars/post/parameters/3/schema',
+                '/paths/~1scalars/post/parameters/4/schema',
+                '/paths/~1scalars/post/parameters/5/schema',
+                '/paths/~1scalars/post/parameters/6/schema',
+                '/paths/~1scalars/post/parameters/7/schema',
+                '/paths/~1scalars/post/parameters/8/schema',
+                '/paths/~1scalars/post/requestBody/content/application~1json/schema',
+                '/paths/~1scalars/post/responses/201/content/application~1json/schema',
+            ),
+        ),
+    )
+
+
+@cache
+def _request_view() -> DirectionalView:
+    return DirectionalView(direction='request')
+
+
+@cache
+def _response_view() -> DirectionalView:
+    return DirectionalView(direction='response')
+
+
+@cache
+def request_bundle() -> SchemaBundle:
+    return SchemaBundle(_resources(), _request_view())
+
+
+@cache
+def response_bundle() -> SchemaBundle:
+    return SchemaBundle(_resources(), _response_view())
+
+
+@cache
+def request_registry() -> BundleSchemaRegistry:
+    return BundleSchemaRegistry(
+        request_bundle(),
+        (
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/requestBody/content/application~1json/schema',
+                source=CodecSourceRef(
+                    document='/inputs/root',
+                    pointer='/paths/~1scalars/post/requestBody/content/application~1json/schema',
+                ),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'$ref': '#/components/schemas/Holder'}),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_0() -> ModelBinding:
+    return ModelBinding(
+        symbol='adapted.models:Cat',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pets/oneOf/0',
+        fields=(
+            FieldBinding(
+                field_id='adapted.models:Cat.kind',
+                native_name='kind',
+                wire_name='kind',
+                validation_key='kind',
+                validation_keys=('kind',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_1() -> ModelBinding:
+    return ModelBinding(
+        symbol='adapted.models:Dog',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pets/oneOf/1',
+        fields=(
+            FieldBinding(
+                field_id='adapted.models:Dog.kind',
+                native_name='kind',
+                wire_name='kind',
+                validation_key='kind',
+                validation_keys=('kind',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_2() -> ModelBinding:
+    return ModelBinding(
+        symbol='adapted.models:Holder',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder',
+        fields=(
+            FieldBinding(
+                field_id='adapted.models:Holder.pets',
+                native_name='pets',
+                wire_name='pets',
+                validation_key='pets',
+                validation_keys=('pets',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=ArrayNode(
+                    item=UnionNode(
+                        members=(ModelNode(symbol='adapted.models:Cat'), ModelNode(symbol='adapted.models:Dog')),
+                    ),
+                ),
+            ),
+            FieldBinding(
+                field_id='adapted.models:Holder.label',
+                native_name='label',
+                wire_name='label',
+                validation_key='label',
+                validation_keys=('label',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+            FieldBinding(
+                field_id='adapted.models:Holder.mode',
+                native_name='mode',
+                wire_name='mode',
+                validation_key='mode',
+                validation_keys=('mode',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _factory_0() -> ModelCodecAdapterV1[adapted_models.Holder]:
+    return app_codecs.keeper_model()
+
+
+CONTEXT_0: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/0/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_0() -> PydanticModelCodec[str]:
+    """Codec of /paths/~1scalars/post parameter (request query code)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/0/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/0/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        pydantic.constr(pattern=r'^[a-z]+$'),
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_1: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/1/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_1() -> PydanticModelCodec[int]:
+    """Codec of /paths/~1scalars/post parameter (request query count)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/1/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/1/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        pydantic.conint(ge=1),
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_2: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/2/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_2() -> PydanticModelCodec[float]:
+    """Codec of /paths/~1scalars/post parameter (request query ratio)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/2/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/2/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        pydantic.confloat(le=1.5),
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_3: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/3/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_3() -> PydanticModelCodec[pydantic.AwareDatetime]:
+    """Codec of /paths/~1scalars/post parameter (request query when)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/3/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/3/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        pydantic.AwareDatetime,
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_4: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/4/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_4() -> PydanticModelCodec[typing.Literal['a', 'b']]:
+    """Codec of /paths/~1scalars/post parameter (request query mode)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/4/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/4/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        typing.Literal['a', 'b'],
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_5: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/5/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_5() -> PydanticModelCodec[decimal.Decimal]:
+    """Codec of /paths/~1scalars/post parameter (request query price)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/5/schema|LeafNode(representation='decimal_string')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/5/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(representation='decimal_string'),
+            models=(),
+        ),
+        pydantic.condecimal(le=decimal.Decimal('10')),
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_6: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/6/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_6() -> PydanticModelCodec[list[str]]:
+    """Codec of /paths/~1scalars/post parameter (request query tags)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/6/schema|ArrayNode(item=LeafNode(representation='value'), container='list')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/6/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='array',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ArrayNode(item=LeafNode()),
+            models=(),
+        ),
+        list[str],
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_7: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/7/schema',
+    operation_id='/paths/~1scalars/post',
+)
+
+
+@cache
+def codec_7() -> PydanticModelCodec[adapted_models.Cat | adapted_models.Dog]:
+    """Codec of /paths/~1scalars/post parameter (request query pet)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/7/schema|UnionNode(members=(ModelNode(symbol='adapted.models:Cat'), ModelNode(symbol='adapted.models:Dog')), nullable=False)",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/parameters/7/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='union',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=UnionNode(members=(ModelNode(symbol='adapted.models:Cat'), ModelNode(symbol='adapted.models:Dog'))),
+            models=(_model_0(), _model_1()),
+        ),
+        adapted_models.Cat | adapted_models.Dog,
+        {'adapted.models:Cat': adapted_models.Cat, 'adapted.models:Dog': adapted_models.Dog},
+        request_bundle(),
+    )
+
+
+CONTEXT_8: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/requestBody/content/application~1json/schema',
+    operation_id='/paths/~1scalars/post',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_8() -> AdapterModelCodec[adapted_models.Holder]:
+    """Codec of /paths/~1scalars/post request_body (request application/json)."""
+    return AdapterModelCodec(
+        manifest=AdapterManifest(
+            name='holder-model',
+            import_ref='app.codecs:keeper_model',
+            capabilities=CodecCapabilities(backends=('pydantic_v2.BaseModel',), native_kinds=('model',)),
+        ),
+        view=RuntimeModelBindingView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/components/schemas/Holder|ModelNode(symbol='adapted.models:Holder')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1scalars/post'),
+                    role='request_body',
+                    use_site=CodecSourceRef(document='/inputs/root', pointer='/paths/~1scalars/post/requestBody'),
+                    schema=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1scalars/post/requestBody/content/application~1json/schema',
+                    ),
+                    declaration=CodecSourceRef(document='/inputs/root', pointer='/paths/~1scalars/post/requestBody'),
+                    direction='request',
+                    projection='value',
+                    location=None,
+                    name=None,
+                    status=None,
+                    media='application/json',
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1scalars/post/requestBody/content/application~1json/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='model',
+                native_export=ModelExportView(module='adapted.models', symbol='Holder'),
+                fields=(
+                    CodecFieldView(
+                        field_id='adapted.models:Holder.pets',
+                        native_name='pets',
+                        wire_name='pets',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder/properties/pets',
+                        validation_paths=(('pets',),),
+                        serialization_alias=None,
+                        required=True,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='absent',
+                        excluded=None,
+                    ),
+                    CodecFieldView(
+                        field_id='adapted.models:Holder.label',
+                        native_name='label',
+                        wire_name='label',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder/properties/label',
+                        validation_paths=(('label',),),
+                        serialization_alias=None,
+                        required=False,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='none',
+                        excluded=None,
+                    ),
+                    CodecFieldView(
+                        field_id='adapted.models:Holder.mode',
+                        native_name='mode',
+                        wire_name='mode',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder/properties/mode',
+                        validation_paths=(('mode',),),
+                        serialization_alias=None,
+                        required=False,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='none',
+                        excluded=None,
+                    ),
+                ),
+                projection_mode='native',
+                converter_strategy='registered_adapter',
+            ),
+            native_type=adapted_models.Holder,
+            native_field_types=types.MappingProxyType({
+                'adapted.models:Holder.pets': list[typing.Annotated[adapted_models.Cat | adapted_models.Dog, pydantic.Field(discriminator='kind')]],
+                'adapted.models:Holder.label': pydantic.constr(max_length=4),
+                'adapted.models:Holder.mode': typing.Literal['a', 'b'],
+            }),
+        ),
+        adapter=_factory_0(),
+        validator=request_bundle().validator('https://dcg.invalid/inputs/root#/paths/~1scalars/post/requestBody/content/application~1json/schema'),
+    )
+
+
+CONTEXT_9: Final = CodecContext(
+    surface='server',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/responses/201/content/application~1json/schema',
+    operation_id='/paths/~1scalars/post',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_9() -> PydanticModelCodec[str | None]:
+    """Codec of /paths/~1scalars/post response_body (response 201 application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scalars/post/responses/201/content/application~1json/schema|UnionNode(members=(LeafNode(representation='value'),), nullable=True)",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scalars/post/responses/201/content/application~1json/schema',
+            operation_id='/paths/~1scalars/post',
+            media_type='application/json',
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=UnionNode(members=(LeafNode(),), nullable=True),
+            models=(),
+        ),
+        str | None,
+        {},
+        response_bundle(),
+    )
+
+
+@cache
+def outbound_9() -> NativeOutboundCodec[str | None]:
+    return NativeOutboundCodec(codec_9(), CONTEXT_9)
+
+--- model_codecs.py
+"""Public model codec values, errors, views, and adapter protocols of this generated package."""
+
+from ._runtime.model_codecs.adapters import (
+    AsyncByteReader,
+    ByteReader,
+    CompiledSchemaValidatorV1,
+    ModelCodecAdapterV1,
+    ParameterCodecAdapterV1,
+    SchemaCodecAdapterV1,
+    ServerMediaCodecAdapterV1,
+)
+from ._runtime.model_codecs.bindings import BackendId, ConverterStrategy, NativeKind
+from ._runtime.model_codecs.capabilities import (
+    CodecCapabilities,
+    ParameterCodecCapabilities,
+    SchemaCodecCapabilities,
+    ServerMediaCodecCapabilities,
+    WireKind,
+)
+from ._runtime.model_codecs.context import CodecContext
+from ._runtime.model_codecs.errors import (
+    CodecAdapterError,
+    CodecBindingError,
+    CodecConfigurationError,
+    CodecError,
+    CodecResourceLimitError,
+    CodecSelectionError,
+    ModelProjectionError,
+    NativeIssue,
+    NativeValidationError,
+    ParameterEncodingError,
+    WireIssue,
+    WireValidationError,
+)
+from ._runtime.model_codecs.outbound import EnvelopeOutboundCodec, ModelCodec, NativeOutboundCodec, OutboundCodec
+from ._runtime.model_codecs.parameters import (
+    EncodedParameterContribution,
+    FragmentContribution,
+    ParameterFragment,
+    ParameterLocation,
+    QueryStringContribution,
+    RawParameter,
+)
+from ._runtime.model_codecs.unset import UNSET, Unset
+from ._runtime.model_codecs.values import DecodedValue, ModelInput, ModelValue, ProjectionIssue
+from ._runtime.model_codecs.views import (
+    CodecBindingView,
+    CodecFieldView,
+    CodecSourceRef,
+    CodecUseView,
+    ModelExportView,
+    OfflineSchemaRegistry,
+    ParameterPlanView,
+    RuntimeModelBindingView,
+    SchemaPlanView,
+    SchemaResourceLimits,
+    SchemaView,
+)
+from ._runtime.model_codecs.wire import JSONValue, PresenceTree, WireValue, freeze_wire, presence_of, thaw_wire
+
+__all__ = [
+    'AsyncByteReader',
+    'BackendId',
+    'ByteReader',
+    'CodecAdapterError',
+    'CodecBindingError',
+    'CodecBindingView',
+    'CodecCapabilities',
+    'CodecConfigurationError',
+    'CodecContext',
+    'CodecError',
+    'CodecFieldView',
+    'CodecResourceLimitError',
+    'CodecSelectionError',
+    'CodecSourceRef',
+    'CodecUseView',
+    'CompiledSchemaValidatorV1',
+    'ConverterStrategy',
+    'DecodedValue',
+    'EncodedParameterContribution',
+    'EnvelopeOutboundCodec',
+    'FragmentContribution',
+    'JSONValue',
+    'ModelCodec',
+    'ModelCodecAdapterV1',
+    'ModelExportView',
+    'ModelInput',
+    'ModelProjectionError',
+    'ModelValue',
+    'NativeIssue',
+    'NativeKind',
+    'NativeOutboundCodec',
+    'NativeValidationError',
+    'OfflineSchemaRegistry',
+    'OutboundCodec',
+    'ParameterCodecAdapterV1',
+    'ParameterCodecCapabilities',
+    'ParameterEncodingError',
+    'ParameterFragment',
+    'ParameterLocation',
+    'ParameterPlanView',
+    'PresenceTree',
+    'ProjectionIssue',
+    'QueryStringContribution',
+    'RawParameter',
+    'RuntimeModelBindingView',
+    'SchemaCodecAdapterV1',
+    'SchemaCodecCapabilities',
+    'SchemaPlanView',
+    'SchemaResourceLimits',
+    'SchemaView',
+    'ServerMediaCodecAdapterV1',
+    'ServerMediaCodecCapabilities',
+    'UNSET',
+    'Unset',
+    'WireIssue',
+    'WireKind',
+    'WireValidationError',
+    'WireValue',
+    'freeze_wire',
+    'presence_of',
+    'thaw_wire',
+]
+
+code: model str 'abc' wire="abc" presence=['']
+code-invalid: WireValidationError schema.pattern@
+count: model int 2 wire=2 presence=['']
+ratio: model float 1.25 wire=1.25 presence=['']
+when: model datetime datetime.datetime(2026, 9, 25, 10, 0, tzinfo=TzInfo(0)) wire="2026-09-25T10:00:00Z" presence=['']
+mode: model str 'b' wire="b" presence=['']
+price: model Decimal Decimal('9.5') wire="9.5" presence=['']
+tags: model list ['x', 'y'] wire=["x","y"] presence=['', '/0', '/1']
+pet: model Dog {'kind': 'dog'} wire={"kind":"dog"} presence=['', '/kind']
+holder: model Holder {'pets': [{'kind': 'cat'}, {'kind': 'dog'}], 'label': 'abcd', 'mode': 'a'} wire={"pets":[{"kind":"cat"},{"kind":"dog"}],"label":"abcd","mode":"a"} presence=['', '/pets', '/pets/0', '/pets/0/kind', '/pets/1', '/pets/1/kind', '/label', '/mode']
+name: model NoneType None wire=null presence=['']

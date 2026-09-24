@@ -1,0 +1,257 @@
+openapi: 3.2.0
+info:
+  title: Adapter plans
+  version: "1"
+paths:
+  /things:
+    post:
+      parameters:
+        - name: tags
+          in: cookie
+          style: form
+          explode: false
+          schema:
+            $ref: "#/components/schemas/Tags"
+        - name: maybe
+          in: query
+          schema:
+            type: [string, "null"]
+        - name: loose
+          in: query
+          schema: {}
+        - name: mixed
+          in: query
+          schema:
+            oneOf:
+              - type: integer
+              - type: boolean
+        - name: filter
+          in: query
+          schema:
+            type: object
+            properties:
+              limit:
+                type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: ordered
+          in: query
+          explode: false
+          schema:
+            type: object
+            x-python-type: "collections.OrderedDict[str, str]"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "200":
+          description: Pets, one per line.
+          content:
+            application/jsonl:
+              itemSchema:
+                $ref: "#/components/schemas/Pet"
+        "201":
+          description: Flags.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flags"
+        "202":
+          description: A choice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Choice"
+        "206":
+          description: Another choice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Choice"
+        "203":
+          description: A pet or an owner.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/Pet"
+                  - $ref: "#/components/schemas/Owner"
+  /codes:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Code"
+      responses:
+        "200":
+          description: The code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Code"
+  /mixed:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "200":
+          description: The owner.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Owner"
+  /composites:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Composite"
+      responses:
+        "200":
+          description: Nested members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Nested"
+        "201":
+          description: Conditional members.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Choosy"
+        "202":
+          description: A secret shared by a root and a nested member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shared"
+        "203":
+          description: A secret shared by root members only.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Twins"
+  /owners:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Owner"
+      responses:
+        "201":
+          description: The owner.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Owner"
+components:
+  schemas:
+    Tags:
+      type: array
+      items:
+        type: string
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        owner:
+          $ref: "#/components/schemas/Owner"
+    Owner:
+      type: object
+      properties:
+        name:
+          type: string
+    Flags:
+      type: object
+      additionalProperties: false
+      patternProperties:
+        "^x-":
+          type: string
+      $defs:
+        Unused:
+          type: integer
+    Base:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+    Composite:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - $ref: "#/components/schemas/Base"
+        - required: [name]
+      properties:
+        tag: true
+    Nested:
+      type: object
+      properties:
+        inner:
+          type: object
+          properties:
+            secret:
+              type: string
+              writeOnly: true
+    Choosy:
+      type: object
+      if:
+        required: [kind]
+      then:
+        properties:
+          secret:
+            type: string
+            writeOnly: true
+    Secret:
+      type: string
+      writeOnly: true
+    Shared:
+      type: object
+      properties:
+        password:
+          $ref: "#/components/schemas/Secret"
+        profile:
+          type: object
+          properties:
+            password:
+              $ref: "#/components/schemas/Secret"
+    Twins:
+      type: object
+      properties:
+        password:
+          $ref: "#/components/schemas/Secret"
+        confirmation:
+          $ref: "#/components/schemas/Secret"
+        name:
+          type: string
+        profile:
+          type: object
+          properties:
+            nickname:
+              $defs:
+                Unused:
+                  type: string
+                  writeOnly: true
+              type: string
+    Code:
+      type: string
+      pattern: "^a(?=b)b$"
+    Choice:
+      x-bound: .inf
+      anyOf:
+        - type: string
+        - type: integer
+          minimum: 1

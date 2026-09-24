@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Final, Literal, overload
 
 from typing_extensions import TypeAliasType
 
+from .errors import CodecBindingError
+
 if TYPE_CHECKING:
     from typing import TypeAlias
 
@@ -87,6 +89,51 @@ def presence_of(value: JSONValue | WireValue) -> PresenceTree:
 def snapshot_presence(value: WireValue) -> PresenceTree:
     """Build presence for a snapshot that freeze_wire produced, without repeating its domain checks."""
     return _snapshot_presence(value, "")
+
+
+def without_pointers(value: WireValue, pointers: tuple[str, ...]) -> WireValue:
+    """Copy a snapshot without the object members at the given pointers; other pointers are ignored."""
+    thawed = thaw_wire(value)
+    for *parents, name in (pointer_tokens(pointer) for pointer in pointers if pointer):
+        container: JSONValue = thawed
+        for token in parents:
+            container = (
+                container.get(token)
+                if isinstance(container, dict)
+                else container[int(token)]
+                if isinstance(container, list) and _index(token, len(container))
+                else None
+            )
+        if isinstance(container, dict):
+            container.pop(name, None)
+    return freeze_wire(thawed)
+
+
+def _index(digits: str, size: int) -> bool:
+    return digits.isascii() and digits.isdecimal() and (digits == "0" or digits[0] != "0") and int(digits) < size
+
+
+def select_present(value: WireValue, presence: PresenceTree) -> WireValue:
+    """Copy only the members and elements a presence tree names, rejecting trees that do not fit the value."""
+    return freeze_wire(_selected(value, presence))
+
+
+def check_array_presence(presence: PresenceTree | None, length: int, pointer: str) -> None:
+    """Require a presence tree for an array to name every element in order."""
+    if presence is not None and (
+        presence.container != "array" or [key for key, _ in presence.members] != list(range(length))
+    ):
+        msg = f"The presence tree does not select the whole array at {pointer or '/'}"
+        raise CodecBindingError(msg)
+
+
+def check_object_presence(presence: PresenceTree | None, available: set[str], pointer: str) -> None:
+    """Require a presence tree for an object to name only existing members."""
+    if presence is not None and (
+        presence.container != "object" or any(key not in available for key, _ in presence.members)
+    ):
+        msg = f"The presence tree does not select existing object members at {pointer or '/'}"
+        raise CodecBindingError(msg)
 
 
 def checked_text(value: str) -> str:
@@ -180,6 +227,21 @@ def _snapshot_presence(value: WireValue, pointer: str) -> PresenceTree:
             ),
         )
     return PresenceTree(pointer, "value")
+
+
+def _selected(value: WireValue, presence: PresenceTree) -> JSONValue:
+    match value:
+        case tuple():
+            check_array_presence(presence, len(value), presence.pointer)
+            return [_selected(item, child) for item, (_, child) in zip(value, presence.members, strict=True)]
+        case Mapping():
+            check_object_presence(presence, set(value), presence.pointer)
+            return {str(key): _selected(value[str(key)], child) for key, child in presence.members}
+        case _ if presence.container == "value":
+            return value
+        case _:
+            msg = f"The presence tree does not describe a scalar at {presence.pointer or '/'}"
+            raise CodecBindingError(msg)
 
 
 def _presence(value: JSONValue | WireValue, pointer: str, active: set[int]) -> PresenceTree:
