@@ -14422,6 +14422,49 @@ def test_main_jsonschema_merged_recursive_ref(
 
 
 @pytest.mark.parametrize(
+    ("name", "model_name", "valid_json", "invalid_json"),
+    [
+        (
+            "tree",
+            "Tree",
+            '{"node": {"kids": [{"kids": []}]}, "branch": {"children": [{"value": 1}]}}',
+            '{"branch": {"children": [{"value": "one"}]}}',
+        ),
+        (
+            "holder",
+            "Holder",
+            '{"node": {"kids": [{"kids": []}]}, "branch": {"children": [{"value": 1}]}}',
+            '{"branch": {"children": [{"value": "one"}]}}',
+        ),
+    ],
+    ids=["tree", "holder"],
+)
+def test_main_jsonschema_recursive_ref_resources(
+    output_file: Path, name: str, model_name: str, valid_json: str, invalid_json: str
+) -> None:
+    """Resolve $recursiveRef to the root of an enclosing $id resource that declares no $recursiveAnchor.
+
+    Targets that are parsed only through the reference, like the root of a document referenced by pointers, are loaded.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "recursive_ref_resources" / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"recursive_ref_resources_{name}.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"recursive_ref_resources_{name}",
+        model_name=model_name,
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type="int_parsing",
+    )
+
+
+@pytest.mark.parametrize(
     ("output_model", "expected_file"),
     [
         ("typing.TypedDict", "reserved_field_name_schema_typed_dict.py"),
