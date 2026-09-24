@@ -175,7 +175,7 @@ class SchemaUseObservation:
     operation: ApiDeclarationFrame | None
 
 
-class _ObservedDeclarationFrames(list[ApiDeclarationFrame]):  # ruff: ignore[subclass-builtin] -- Preserve the engine list interface; only append observes capture frames.
+class _ObservedDeclarationFrames(list[ApiDeclarationFrame]):  # ruff: ignore[subclass-builtin]
     """Observe actual Api frame insertion exclusively on capture parser instances."""
 
     def __init__(
@@ -336,7 +336,7 @@ class BindingCaptureMixin(OpenAPIParser):
         """Borrow one actual loader result under the recording failure boundary."""
         self.source_lease.register(uri, raw)
 
-    def _process_path_items(  # ruff: ignore[too-many-arguments] -- Preserve the existing hook signature.
+    def _process_path_items(  # ruff: ignore[too-many-arguments]
         self,
         items: dict[str, dict[str, YamlValue]],
         base_path: list[str],
