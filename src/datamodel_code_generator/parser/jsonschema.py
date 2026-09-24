@@ -11570,11 +11570,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._prepare_schema_resources(self._get_ref_body_from_remote(resolved_ref), [resolved_ref])
 
     def _lenient_ref(self, ref: str) -> str:
-        """Return a reference of the current document mapped as its lenient resolution maps it, if it has one."""
+        """Return a reference of the current document mapped as its lenient resolution maps it, if it has one.
+
+        The model resolver registers anchors only while parsing JSON Schema documents, so plain-name references
+        of any document with implicit schema resources, like OpenAPI, resolve through the resource registry.
+        """
+        documents = self._implicit_documents if _is_plain_name_fragment(ref) else self._lenient_documents
         if (
-            not self._lenient_documents
-            or (document := self._schema_resource_document(list(self.model_resolver.current_root)))
-            not in self._lenient_documents
+            not documents
+            or (document := self._schema_resource_document(list(self.model_resolver.current_root))) not in documents
         ):
             return ref
         return self._resolve_lenient_resource_ref(ref, self._schema_resource_root_bases[document], document)
@@ -11969,6 +11973,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._schema_resource_keys: dict[str, set[str]] = {}
         self._has_embedded_schema_resources = False
         self._lenient_documents: dict[str, dict[str, Any]] = {}
+        self._implicit_documents: set[str] = set()
         self._resource_ref_warnings: set[str] = set()
         self._schema_resources: dict[str, set[str]] = {}
         self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = {}
@@ -12110,10 +12115,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         schema resource an $id of the document declares only otherwise. A reference that JSON Schema
         resolves elsewhere warns, so the schema can be fixed to mean the same under both.
         """
-        if (
-            _is_plain_name_fragment(reference)
-            or (location := self._registered_location(urljoin(base, reference))) is None
-        ):
+        if _is_plain_name_fragment(reference):
+            location = self._schema_resource_locations.get(urljoin(base, reference))
+            return reference if location is None else _document_location(location, document)
+        if (location := self._registered_location(urljoin(base, reference))) is None:
             return reference
         if (target := _document_location(location, document)) == reference or not target.startswith("#"):
             return reference
@@ -12212,6 +12217,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._dynamic_anchors.pop((document, resource), None)
             self._embedded_resources.pop((document, resource), None)
         self._lenient_documents.pop(document, None)
+        self._implicit_documents.discard(document)
         keys: set[str] = set()
         base = document if is_url(document) else Path(document).as_uri() if document else f"{self.base_path.as_uri()}/"
         id_field = (
@@ -12227,6 +12233,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             nested |= self._register_schema_resources(
                 schema, document, pointer, base, keys, id_field=id_field, resource=pointer
             )
+        if implicit:
+            self._implicit_documents.add(document)
         if implicit and nested:
             self._lenient_documents[document] = raw
         self._schema_resource_keys[document] = keys
