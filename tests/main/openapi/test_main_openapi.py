@@ -3583,6 +3583,24 @@ def test_main_openapi_const_field(output_model: str, expected_output: str, outpu
     )
 
 
+def test_main_openapi_const_field_type_override(output_file: Path) -> None:
+    """Import only the override type for a field whose const literal is overridden."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "const.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="const_field_type_override.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--type-overrides",
+            '{"Api.version": "my_app.types.Version"}',
+        ],
+    )
+
+
 def test_main_openapi_complex_reference(output_file: Path) -> None:
     """Test OpenAPI generation with complex references."""
     run_main_and_assert(
