@@ -102,24 +102,29 @@ def _selected(presence: PresenceTree | None, names: Iterable[str]) -> list[tuple
     return [(name, child) for name in names if (child := presence.child(name)) is not None]
 
 
-def _native_fields(binding: ModelBinding, native: type) -> Mapping[str, FieldInfo] | None:
+def _read_keys(binding: ModelBinding, native: type) -> Mapping[str, frozenset[str]] | None:
     names = {field.native_name for field in binding.fields}
     match binding.native_kind:
         case "root":
             return {} if issubclass(native, RootModel) and not names else None
         case "model" if issubclass(native, BaseModel) and set(native.model_fields) == names:
-            return native.model_fields
-        case "dataclass" if is_pydantic_dataclass(native) and names <= set(native.__pydantic_fields__):
-            return native.__pydantic_fields__
+            return {name: _validation_keys(info, name) for name, info in native.model_fields.items()}
+        case "dataclass" if is_pydantic_dataclass(native) and names <= (
+            declared := {field.name for field in dataclasses.fields(native)}
+        ):
+            planned = {field.native_name: frozenset(field.validation_keys) for field in binding.fields}
+            return {name: planned.get(name, frozenset({name})) for name in declared}
         case _:
             return None
 
 
 def _native_type(binding: ModelBinding, models: Mapping[str, type]) -> tuple[type, frozenset[str]]:
-    if (native := models.get(binding.symbol)) is not None and (fields := _native_fields(binding, native)) is not None:
-        keys = {name: _validation_keys(info, name) for name, info in fields.items()}
-        if all(field.validation_key in keys[field.native_name] for field in binding.fields):
-            return native, frozenset(chain.from_iterable(keys.values()))
+    if (
+        (native := models.get(binding.symbol)) is not None
+        and (keys := _read_keys(binding, native)) is not None
+        and all(field.validation_key in keys[field.native_name] for field in binding.fields)
+    ):
+        return native, frozenset(chain.from_iterable(keys.values()))
     msg = f"The native type of {binding.symbol} does not match its binding"
     raise CodecConfigurationError(msg)
 

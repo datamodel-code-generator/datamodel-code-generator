@@ -298,6 +298,7 @@ class _CodecPlanner:
             native_name=name,
             wire_name=wire_name,
             validation_key=wire_name if wire_name in accepted else min(accepted),
+            validation_keys=tuple(sorted(accepted)),
             required=facts.required and not facts.has_default and not facts.explicit_default_factory,
             read_only=facts.read_only,
             write_only=facts.write_only,

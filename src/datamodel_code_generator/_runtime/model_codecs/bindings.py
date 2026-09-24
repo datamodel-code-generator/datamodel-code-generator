@@ -75,12 +75,13 @@ TypeNode: TypeAlias = ModelNode | ArrayNode | TupleNode | MapNode | UnionNode | 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class FieldBinding:
-    """Join one wire property to the native attribute and validation key that hold it."""
+    """Join one wire property to the native attribute, the input keys it reads, and the key the codec uses."""
 
     field_id: str
     native_name: str
     wire_name: str
     validation_key: str
+    validation_keys: tuple[str, ...]
     required: bool
     read_only: bool
     write_only: bool
