@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import Literal
 from dataclasses import dataclass
 from .request_v1 import RequestV1
+from . import request_version_enum
 
 
 
 @dataclass
 class Grandchild(RequestV1):
-    version: Literal[RequestVersionEnum.v1]
+    version: Literal[request_version_enum.RequestVersionEnum.v1]

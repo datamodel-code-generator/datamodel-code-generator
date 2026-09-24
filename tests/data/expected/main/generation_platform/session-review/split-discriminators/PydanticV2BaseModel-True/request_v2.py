@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 from .request_base import RequestBase
+from . import request_version_enum
 from typing import Literal
 
 
 class RequestV2(RequestBase):
-    version: Literal[RequestVersionEnum.v2]
+    version: Literal[request_version_enum.RequestVersionEnum.v2]

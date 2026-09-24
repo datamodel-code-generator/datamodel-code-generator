@@ -20,7 +20,7 @@ EXPECTED = DATA / "expected/main/generation_platform/session-review/split-discri
 @pytest.mark.parametrize("enum_values", [False, True])
 @pytest.mark.parametrize("collapse", [False, True])
 def test_forward_discriminator_module_copy(backend: DataModelType, *, enum_values: bool, collapse: bool) -> None:
-    """Retain fixed-main bytes and reject its missing cross-module enum imports explicitly."""
+    """Import enum literal classes across modules and reject their qualified annotations explicitly."""
     config = GenerateConfig(
         input_file_type="openapi",
         openapi_scopes=[OpenAPIScope.Api],
@@ -44,7 +44,7 @@ def test_forward_discriminator_module_copy(backend: DataModelType, *, enum_value
     assert_output(
         "".join(f"{code}\n" for code in sorted({error.code for error in errors})),
         EXPECTED
-        / ("missing-enum-import.txt" if enum_values and backend != DataModelType.TypingTypedDict else "valid.txt"),
+        / ("qualified-enum-literal.txt" if enum_values and backend != DataModelType.TypingTypedDict else "valid.txt"),
     )
     if collapse:
         holder = tuple(

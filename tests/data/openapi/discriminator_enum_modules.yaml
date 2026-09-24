@@ -1,0 +1,73 @@
+openapi: "3.0.0"
+info:
+  title: Enum discriminator variants across modules
+  version: "1.0.0"
+paths: {}
+components:
+  schemas:
+    PetKind:
+      type: string
+      enum:
+        - dog
+        - cat
+        - rabbit
+
+    pets.Beagle:
+      allOf:
+        - $ref: '#/components/schemas/pets.Dog'
+      required:
+        - kind
+
+    pets.Hound:
+      allOf:
+        - $ref: '#/components/schemas/pets.Dog'
+      required:
+        - kind
+
+    pets.PetBase:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/PetKind'
+      required:
+        - kind
+
+    pets.Dog:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/PetKind'
+        bark:
+          type: string
+      required:
+        - kind
+
+    pets.Cat:
+      allOf:
+        - $ref: '#/components/schemas/pets.PetBase'
+        - type: object
+          properties:
+            purr:
+              type: string
+
+    pets.Rabbit:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/PetKind'
+        hop:
+          type: string
+      required:
+        - kind
+
+    pets.Pet:
+      oneOf:
+        - $ref: '#/components/schemas/pets.Dog'
+        - $ref: '#/components/schemas/pets.Cat'
+        - $ref: '#/components/schemas/pets.Rabbit'
+      discriminator:
+        propertyName: kind
+        mapping:
+          dog: '#/components/schemas/pets.Dog'
+          cat: '#/components/schemas/pets.Cat'
+          rabbit: '#/components/schemas/pets.Rabbit'

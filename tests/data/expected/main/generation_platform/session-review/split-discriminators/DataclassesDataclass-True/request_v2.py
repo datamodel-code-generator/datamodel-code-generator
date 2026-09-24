@@ -4,10 +4,11 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from .request_base import RequestBase
+from . import request_version_enum
 from typing import Literal
 
 
 
 @dataclass
 class RequestV2(RequestBase):
-    version: Literal[RequestVersionEnum.v2]
+    version: Literal[request_version_enum.RequestVersionEnum.v2]
