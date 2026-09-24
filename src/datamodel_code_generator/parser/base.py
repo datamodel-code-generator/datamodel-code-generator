@@ -2517,6 +2517,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.target_python_version: PythonVersion = config.target_python_version
         self.builtin_names: frozenset[str] = _get_builtin_names_for_target(self.target_python_version)
         self.generation_store, self.results = self._generation_store_factory()
+        self._merged_copies: set[DataModel] = set()
         self.model_metadata: ModelMetadata | None = None
         self.invalid_dotted_stdout_repair_modules: tuple[ModulePath, ...] = ()
         self.generated_model_inventory: tuple[str, ...] | None = None
@@ -3041,6 +3042,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return None
         return root_reference
 
+    def __renders_as_duplicate(
+        self, model: DataModel, original_model: DataModel, shapes: dict[DataModel, _ModelShape]
+    ) -> bool:
+        """Return whether a model renders like the first model of its class name.
+
+        A copy of a schema merged from another document compares with referenced names masked, since the
+        nested models it names only become the shared ones as they collapse in the same pass.
+        """
+        return model.get_dedup_key(model.duplicate_class_name, use_default=False) == original_model.get_dedup_key(
+            original_model.duplicate_class_name, use_default=False
+        ) or (
+            not self._merged_copies.isdisjoint((model, original_model))
+            and _model_shape(model, shapes)[0] == _model_shape(original_model, shapes)[0]
+        )
+
     def __delete_duplicate_models(self, models: list[DataModel]) -> None:  # noqa: PLR0912
         model_class_names: dict[str, DataModel] = {}
         shapes: dict[DataModel, _ModelShape] = {}
@@ -3084,8 +3100,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 reuse_allowed
                 and (original_model := model_class_names.get(class_name)) is not None
                 and self._reuse_optimization_context.allows_model(original_model)
-                and model.get_dedup_key(model.duplicate_class_name, use_default=False)
-                == original_model.get_dedup_key(original_model.duplicate_class_name, use_default=False)
+                and self.__renders_as_duplicate(model, original_model, shapes)
             ):
                 if _referenced_models_match(original_model, model, shapes):
                     model_to_duplicate_models[original_model].append(model)
