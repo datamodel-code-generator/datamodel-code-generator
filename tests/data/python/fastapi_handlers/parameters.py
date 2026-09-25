@@ -18,4 +18,4 @@ def handlers(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
         return handle
 
-    return {"default": {name: recorder(name) for name in ("search", "repeat", "get_file")}}
+    return {"default": {name: recorder(name) for name in ("search", "repeat", "get_file", "get_menu")}}

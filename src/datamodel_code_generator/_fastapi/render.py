@@ -53,7 +53,6 @@ _IMPORTED: Final = {
     "uuid": ("uuid", "UUID"),
 }
 _METHODS: Final = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace"})
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _RUNTIME_IMPORT: Final = re.compile(r"^from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
 _RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)(\w+(?:\.\w+)*) import", re.MULTILINE)
 _PLAN_DEFAULTS: Final[dict[str, object]] = {
@@ -695,23 +694,11 @@ def _scalar(module: Module, scalar: Scalar, constraints: tuple[tuple[str, object
 
 
 def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> Group | None:
-    wanted = {argument.wire_name for argument in adapters if argument.location == "path"}
-    if not wanted:
+    if not (wanted := {item.wire_name for item in adapters if item.location == "path" and item.wire_name is not None}):
         return None
-    pattern = ""
-    slots: list[tuple[str, str]] = []
-    position = 0
-    for match in _PLACEHOLDER.finditer(path := spec.route.path):
-        pattern += re.escape(path[position : match.start()]) + f"(?P<s{len(slots)}>[^/]+)"
-        slots.append((f"s{len(slots)}", match.group(1)))
-        position = match.end()
-    pattern += re.escape(path[position:]) + r"\Z"
     return Group(
         f"{module.local('_runtime.server.requests', 'RawPath')}(",
-        (
-            ("pattern=", f"{module.namespace.module('re')}.compile({pattern.encode()!r})"),
-            ("slots=", repr(tuple(slot for slot in slots if slot[1] in wanted))),
-        ),
+        (("template=", repr(spec.route.path)), ("names=", _frozenset(wanted))),
         ")",
     )
 

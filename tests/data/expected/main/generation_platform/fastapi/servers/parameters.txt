@@ -34,3 +34,11 @@ serve pydantic_v2.BaseModel
 < 204 - b''
 > GET /files/A.txt
 < 422 application/json {"detail":[{"type":"value_error","loc":["path","file.name"],"msg":"Invalid value"}]}
+> GET /men%C3%BC/tea
+  get_menu(item=FieldMenüItemGetPathItemParameter(root='tea'))
+< 204 - b''
+> GET /%6Den%c3%bc/tea
+  get_menu(item=FieldMenüItemGetPathItemParameter(root='tea'))
+< 204 - b''
+> GET /men%C3%BC/Tea
+< 422 application/json {"detail":[{"type":"value_error","loc":["path","item"],"msg":"Invalid value"}]}

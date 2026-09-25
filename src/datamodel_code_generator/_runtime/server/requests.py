@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
-from urllib.parse import unquote_to_bytes
+from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias
+from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
@@ -24,7 +25,6 @@ from .errors import (
 )
 
 if TYPE_CHECKING:
-    import re
     from collections.abc import Callable, Mapping
 
     from ..model_codecs.context import CodecContext
@@ -34,6 +34,10 @@ if TYPE_CHECKING:
     from .errors import Record
 
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form"]
+
+_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+_HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
+_PATH_SAFE: Final = "/:@!$&'()*+,;="
 
 
 class WireDecoder(Protocol):
@@ -66,10 +70,46 @@ class ParameterArgument:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RawPath:
-    """Find an operation's path slots in the raw request path: a pattern over the route template's suffix."""
+    """Find the named slots of a route template in the raw request path, which ends with the template.
 
-    pattern: re.Pattern[bytes]
-    slots: tuple[tuple[str, str], ...]
+    Literal template text matches in any percent-encoding, as the decoded path FastAPI routes by does.
+    """
+
+    template: str
+    names: frozenset[str]
+    patterns: tuple[re.Pattern[bytes], re.Pattern[bytes]] = field(init=False, repr=False, compare=False)
+    slots: tuple[tuple[str, str], ...] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """Compile the template's patterns once: its usual encoding first, then any percent-encoding."""
+        pieces = _PLACEHOLDER.split(self.template)
+        patterns = tuple(_pattern(pieces[::2], literal) for literal in (_encoded, _any_encoding))
+        object.__setattr__(self, "patterns", patterns)
+        slots = tuple((f"s{index}", name) for index, name in enumerate(pieces[1::2]) if name in self.names)
+        object.__setattr__(self, "slots", slots)
+
+    def search(self, raw: bytes) -> re.Match[bytes] | None:
+        """Return the slots' match at the end of a raw path."""
+        usual, any_encoding = self.patterns
+        return usual.search(raw) or any_encoding.search(raw)
+
+
+def _pattern(literals: list[str], literal: Callable[[str], bytes]) -> re.Pattern[bytes]:
+    *heads, last = literals
+    groups = b"".join(literal(head) + b"(?P<s%d>[^/]+)" % index for index, head in enumerate(heads))
+    return re.compile(groups + literal(last) + rb"\Z")
+
+
+def _encoded(text: str) -> bytes:
+    return re.escape(quote(text, safe=_PATH_SAFE).encode())
+
+
+def _any_encoding(text: str) -> bytes:
+    return b"".join(
+        b"(?:%s|%%%s)"
+        % (re.escape(bytes((byte,))), "".join(_HEX.get(digit, digit) for digit in f"{byte:02X}").encode())
+        for byte in text.encode()
+    )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -122,7 +162,7 @@ class ParameterAdapter:
     @staticmethod
     def _path(scope: Mapping[str, object], path: RawPath) -> dict[str, bytes]:
         raw = scope.get("raw_path")
-        if not isinstance(raw, bytes) or (found := path.pattern.search(raw.partition(b"?")[0])) is None:
+        if not isinstance(raw, bytes) or (found := path.search(raw.partition(b"?")[0])) is None:
             raise malformed_request()
         captured: dict[str, bytes] = {}
         records: list[Record] = []

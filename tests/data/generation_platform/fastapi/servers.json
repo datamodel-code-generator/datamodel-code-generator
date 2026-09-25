@@ -193,6 +193,18 @@
       {
         "method": "GET",
         "url": "/files/A.txt"
+      },
+      {
+        "method": "GET",
+        "url": "/men%C3%BC/tea"
+      },
+      {
+        "method": "GET",
+        "url": "/%6Den%c3%bc/tea"
+      },
+      {
+        "method": "GET",
+        "url": "/men%C3%BC/Tea"
       }
     ]
   },

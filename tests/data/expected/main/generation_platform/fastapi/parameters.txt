@@ -250,7 +250,6 @@ render pydantic_v2.BaseModel
     |
     | from __future__ import annotations
     |
-    | import re
     | from typing import Final, NamedTuple
     |
     | import models
@@ -466,10 +465,7 @@ render pydantic_v2.BaseModel
     |             ),
     |         ),
     |         record=Parameters,
-    |         path=RawPath(
-    |             pattern=re.compile(b'/repeat/(?P<s0>[^/]+)/again/(?P<s1>[^/]+)\\Z'),
-    |             slots=(('s0', 'id'), ('s1', 'id')),
-    |         ),
+    |         path=RawPath(template='/repeat/{id}/again/{id}', names=frozenset({'id'})),
     |     )
     |     RESPONSES: Final = OperationResponses(
     |         responses=(ResponsePlan(status='204'),),
