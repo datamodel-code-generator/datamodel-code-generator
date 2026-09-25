@@ -12,3 +12,8 @@ def transform(context: FastAPIContext) -> FastAPIContextPatch:
             operation.key: f"{operation.tags[0]}_{operation.method}" for operation in context.operations if operation.tags
         }
     )
+
+
+def annotate(context: FastAPIContext) -> FastAPIContextPatch:
+    """Mark the context as tagged without renaming anything."""
+    return FastAPIContextPatch(extras={"tagged": len(context.operations)})

@@ -516,6 +516,10 @@
         },
         {
           "file": "hooks/tagged.py"
+        },
+        {
+          "file": "hooks/tagged.py",
+          "callable": "annotate"
         }
       ]
     },
