@@ -58,9 +58,9 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
             case "formatters":
                 converted[key] = tuple(value)
             case "hooks" if isinstance(value, list):
-                converted[key] = tuple(_hook(item) for item in value)
+                converted[key] = tuple(_hook(item, root) for item in value)
             case "templates" if isinstance(value, str):
-                converted[key] = SOURCE / value
+                converted[key] = _copied(value, root)
             case "update_groups" if isinstance(value, list):
                 converted[key] = tuple(value)
             case _:
@@ -68,10 +68,21 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
     return FastAPIConfig(**converted)
 
 
-def _hook(value: object) -> object:
+def _copied(name: str, root: Path) -> Path:
+    """Copy a fixture file or directory under the target root, so persistent paths stay relative on every drive."""
+    source, target = SOURCE / name, root / name
+    if source.is_dir():
+        shutil.copytree(source, target, dirs_exist_ok=True)
+    elif source.is_file():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    return target
+
+
+def _hook(value: object, root: Path) -> object:
     match value:
         case {"file": str() as file, **rest}:
-            return HookReference(file=SOURCE / file, **rest)
+            return HookReference(file=_copied(file, root), **rest)
         case dict():
             return HookReference(**value)
         case str():
