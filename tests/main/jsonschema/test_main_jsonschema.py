@@ -5975,6 +5975,17 @@ def test_long_description_wrap_string_literal(output_file: Path) -> None:
             ["--extra-fields", "forbid", "--output-model-type", "pydantic_v2.BaseModel"],
             id="config-dict",
         ),
+        pytest.param(
+            "simple_string.json",
+            "builtin_class_docstring_decorators.py",
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--custom-template-dir",
+                str(DATA_PATH / "templates/builtin_class_docstring_decorators"),
+            ],
+            id="class-docstring-decorators",
+        ),
     ],
 )
 def test_main_builtin_generated_formatter_fallbacks(
