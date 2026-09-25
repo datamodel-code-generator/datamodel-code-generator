@@ -7,5 +7,17 @@ from datamodel_code_generator import parser as parser_package
 import datamodel_code_generator.parser
 
 openapi = importlib.import_module("datamodel_code_generator.parser.openapi")
+relative = importlib.import_module(".parser", "datamodel_code_generator")
+unresolved = importlib.import_module("...parser", "datamodel_code_generator")
+unknown = importlib.import_module(".parser", __package__)
 
-__all__ = ["OpenAPIParser", "canonical_bytes", "datamodel_code_generator", "openapi", "parser_package"]
+__all__ = [
+    "OpenAPIParser",
+    "canonical_bytes",
+    "datamodel_code_generator",
+    "openapi",
+    "parser_package",
+    "relative",
+    "unknown",
+    "unresolved",
+]

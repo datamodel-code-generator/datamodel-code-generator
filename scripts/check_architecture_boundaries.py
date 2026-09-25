@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -516,7 +517,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         chain = _attribute_chain(node.func)
         dynamic_target = None
         if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
-            dynamic_target = self._resolved_string(argument)
+            dynamic_target = self._resolved_dynamic_target(node, self._resolved_string(argument))
         if (
             dynamic_target
             and not self._check_target_boundary(node, dynamic_target)
@@ -771,6 +772,25 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 chain = _attribute_chain(node)
                 return len(chain) > 1 and chain[0] in self.dynamic_import_provider_aliases
         return False
+
+    def _resolved_dynamic_target(self, node: ast.Call, target: str | None) -> str | None:
+        match node.func:
+            case ast.Name(id="import_module") | ast.Attribute(attr="import_module") if (
+                target is not None and target.startswith(".")
+            ):
+                package = (
+                    node.args[1]
+                    if len(node.args) > 1
+                    else next((keyword.value for keyword in node.keywords if keyword.arg == "package"), None)
+                )
+                if (anchor := self._resolved_string(package)) is None:
+                    return target
+                try:
+                    return importlib.util.resolve_name(target, anchor)
+                except ImportError:
+                    return target
+            case _:
+                return target
 
     @staticmethod
     def _dynamic_import_target_argument(node: ast.Call) -> ast.expr | None:
