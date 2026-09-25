@@ -139,7 +139,7 @@ def test_target_generate_rollback(failure: BaseException, tmp_path: Path, monkey
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows restores backups through the lexical fallback")
-@pytest.mark.parametrize(("case", "failed_call"), [("rollback-created", 1), ("rollback-backup", 7)])
+@pytest.mark.parametrize(("case", "failed_call"), [("rollback-created", 1), ("rollback-backup", 9)])
 def test_target_generate_rollback_failure(
     case: str, failed_call: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
