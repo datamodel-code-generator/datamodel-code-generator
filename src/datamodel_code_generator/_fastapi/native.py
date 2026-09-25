@@ -453,8 +453,7 @@ def leaf_kind(value: FinalPythonType) -> tuple[str | None, Constraints]:
             return _IMPORTED_LEAVES.get((value.import_.from_ or "", value.import_.import_)), {}
         case LiteralType():
             return "literal", {}
-        case _:
-            return None, {}
+    return None, {}
 
 
 def _setting(symbol: FinalModelSymbol, name: str) -> object:

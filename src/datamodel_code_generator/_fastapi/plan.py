@@ -947,12 +947,11 @@ def _natively_serialized(plan: ParameterPlan, location: ParameterLocation, *, re
             return False
         case "array" if location != "query" or not plan.explode:
             return False
-        case _:
-            return (
-                plan.content_media_type is None
-                and _STYLES.get(location) == plan.style
-                and not (location == "path" and repeated)
-            )
+    return (
+        plan.content_media_type is None
+        and _STYLES.get(location) == plan.style
+        and not (location == "path" and repeated)
+    )
 
 
 def _candidate(  # noqa: PLR0913

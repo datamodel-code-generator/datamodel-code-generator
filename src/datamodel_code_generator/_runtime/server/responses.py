@@ -51,7 +51,6 @@ class PayloadCodec(Protocol):
 
     def encode(self, value: object, context: CodecContext) -> WireValue:
         """Return the validated wire value of a payload."""
-        ...
 
 
 class HeaderCodec(Protocol):
@@ -59,7 +58,6 @@ class HeaderCodec(Protocol):
 
     def from_wire(self, wire: WireValue, context: CodecContext) -> object:
         """Validate a wire value to send."""
-        ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

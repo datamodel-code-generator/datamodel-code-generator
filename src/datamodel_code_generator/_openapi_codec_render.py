@@ -168,8 +168,7 @@ def _json(value: object) -> Doc:
             return Group("{", tuple((f"{key!r}: ", _json(item)) for key, item in value.items()), "}")
         case _ if _is_tuple(value):
             return Group("[", tuple(("", _json(item)) for item in value), "]")
-        case _:
-            return repr(value)
+    return repr(value)
 
 
 def _is_default(field: dataclasses.Field[object], value: object) -> bool:
@@ -231,8 +230,7 @@ class _Records:
                 return Group("frozenset({", tuple(("", repr(item)) for item in sorted(value, key=repr)), "})")
             case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
                 return self.record(value)
-            case _:
-                return repr(value)
+        return repr(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -341,33 +339,31 @@ class _Renderer:
         return UseAccessors(use, f"codec_{index}", f"CONTEXT_{index}", outbound, parameter)
 
     def codec(self, use: TypeUseId, binding: UseBinding, runtime: str, validator: str | None) -> tuple[str, Group]:
-        match self.models.get(use):
-            case None:
-                codec = self.records.name("pydantic_v2", "PydanticModelCodec")
-                models = tuple((f"{model.symbol!r}: ", self.symbol(model.symbol)) for model in binding.models)
-                return codec, Group(
-                    f"{codec}(",
-                    (
-                        ("", self.use_binding(binding)),
-                        ("", runtime),
-                        ("", Group("{", models, "}")),
-                        ("", f"{binding.direction}_bundle()"),
-                        *((("validator=", validator),) if validator else ()),
-                    ),
-                    ")",
-                )
-            case adapter:
-                codec = self.records.name("adapters", "AdapterModelCodec")
-                return codec, Group(
-                    f"{codec}(",
-                    (
-                        ("manifest=", self.manifest(adapter)),
-                        ("view=", self.runtime_view(adapter, runtime)),
-                        ("adapter=", f"_factory_{self.factories[adapter.registration.name][0]}()"),
-                        ("validator=", validator or f"{binding.direction}_bundle().validator({binding.schema_id!r})"),
-                    ),
-                    ")",
-                )
+        if (adapter := self.models.get(use)) is None:
+            codec = self.records.name("pydantic_v2", "PydanticModelCodec")
+            models = tuple((f"{model.symbol!r}: ", self.symbol(model.symbol)) for model in binding.models)
+            return codec, Group(
+                f"{codec}(",
+                (
+                    ("", self.use_binding(binding)),
+                    ("", runtime),
+                    ("", Group("{", models, "}")),
+                    ("", f"{binding.direction}_bundle()"),
+                    *((("validator=", validator),) if validator else ()),
+                ),
+                ")",
+            )
+        codec = self.records.name("adapters", "AdapterModelCodec")
+        return codec, Group(
+            f"{codec}(",
+            (
+                ("manifest=", self.manifest(adapter)),
+                ("view=", self.runtime_view(adapter, runtime)),
+                ("adapter=", f"_factory_{self.factories[adapter.registration.name][0]}()"),
+                ("validator=", validator or f"{binding.direction}_bundle().validator({binding.schema_id!r})"),
+            ),
+            ")",
+        )
 
     def parameter(self, adapter: AdapterPlan, facts: ParameterViewPlan) -> Doc:
         plan = self.records.call(

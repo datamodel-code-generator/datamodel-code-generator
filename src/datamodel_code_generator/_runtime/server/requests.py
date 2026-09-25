@@ -41,7 +41,6 @@ class WireDecoder(Protocol):
 
     def decode(self, wire: WireValue, context: CodecContext) -> object:
         """Return the decoded value or envelope."""
-        ...
 
 
 def absent() -> None:
@@ -158,8 +157,7 @@ def _read(media: BodyMedia, body: bytes) -> WireValue | bytes:
             return decode_text(body)
         case "form":
             return decode_form(body, media.fields, media.additional)
-        case _:
-            return body
+    return body
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

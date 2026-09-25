@@ -392,8 +392,7 @@ class AdapterModelCodec(Generic[T]):
                     msg = "The value was captured for a different binding"
                     raise CodecBindingError(msg)
                 return self._outbound(freeze_wire(value.wire), context)
-            case _:
-                return self._outbound(self._native_wire(value, context, None), context)
+        return self._outbound(self._native_wire(value, context, None), context)
 
     def _require(self, context: CodecContext, *, inbound: bool) -> None:
         key = (context.direction, context.schema_id, context.operation_id, context.media_type)
