@@ -746,7 +746,6 @@ def publish_staged_files(files: Iterable[tuple[Path, Path] | StagedFile]) -> Non
 
 
 BatchAction: TypeAlias = Literal["write", "delete"]
-_NEW_FILE_MODE = 0o666
 
 
 class PublicationRollbackError(Exception):
@@ -769,9 +768,16 @@ class BatchEntry(NamedTuple):
     file: StagedFile
 
 
+def new_file_mode(directory_fd: int | None, directory: Path) -> int:
+    """Return the read and write bits a new file takes from its directory; the umask still applies."""
+    return stat.S_IMODE((directory.stat() if directory_fd is None else os.fstat(directory_fd)).st_mode) & 0o666
+
+
 def stage_content(staging: StagingDirectory, content: bytes, file: StagedFile) -> StagedFile:
-    """Write bytes as a private staged source with the default file mode, bound to *file*'s destination."""
-    file_fd, name = staging.create_file(prefix=f".{file.resolved_target.name}.", mode=_NEW_FILE_MODE)
+    """Write bytes as a private staged source with its destination's new-file mode, bound to that destination."""
+    anchor = file.anchor
+    mode = 0o600 if anchor is None else new_file_mode(anchor.directory_fd, anchor.path)
+    file_fd, name = staging.create_file(prefix=f".{file.resolved_target.name}.", mode=mode)
     try:
         with os.fdopen(file_fd, "wb") as handle:
             handle.write(content)
@@ -786,7 +792,7 @@ def stage_content(staging: StagingDirectory, content: bytes, file: StagedFile) -
     return file._replace(staged_file=None, source_directory_fd=staging.directory_fd, source_name=name)
 
 
-def _apply_entry_at(entry: BatchEntry, directory_fd: int) -> tuple[str | None, int | None]:
+def _backup_before_change_at(entry: BatchEntry, directory_fd: int) -> tuple[str | None, int | None]:
     """Back up the destination a write replaces or a deletion removes, returning the backup and the mode to keep."""
     name = entry.file.resolved_target.name
     try:
@@ -801,16 +807,6 @@ def _apply_entry_at(entry: BatchEntry, directory_fd: int) -> tuple[str | None, i
     return _backup_existing_target_at(directory_fd, name, target_stat), mode
 
 
-def _finish_entry_at(entry: BatchEntry, directory_fd: int, mode: int | None) -> None:
-    name = entry.file.resolved_target.name
-    if entry.action == "delete":
-        _unlink(name, dir_fd=directory_fd)
-        return
-    if mode is not None:
-        _set_staged_mode(entry.file, mode)
-    _replace_source(entry.file, name, directory_fd)
-
-
 def _publish_entry_at(
     entry: BatchEntry,
     journal: list[tuple[_BoundPublishedFile, Path]],
@@ -818,20 +814,22 @@ def _publish_entry_at(
 ) -> None:
     file = entry.file
     _validate_publication_anchor(file)
-    directory_fd = _open_target_directory(
-        file.resolved_target.parent, created_directories, create_missing=entry.action != "delete"
-    )
+    parent = file.resolved_target.parent
+    directory_fd = _open_target_directory(parent, created_directories, create_missing=entry.action != "delete")
+    name = file.resolved_target.name
     journaled = False
     try:
-        backup_name, mode = _apply_entry_at(entry, directory_fd)
-        journal.append((
-            _BoundPublishedFile(file.target, directory_fd, file.resolved_target.name, backup_name),
-            file.resolved_target.parent,
-        ))
+        backup_name, mode = _backup_before_change_at(entry, directory_fd)
+        journal.append((_BoundPublishedFile(file.target, directory_fd, name, backup_name), parent))
         journaled = True
-        _finish_entry_at(entry, directory_fd, mode)
+        if entry.action == "write":
+            if mode is not None:
+                _set_staged_mode(file, mode)
+            _replace_source(file, name, directory_fd)
+        else:
+            _unlink(name, dir_fd=directory_fd)
         _validate_publication_anchor(file)
-        if not _directory_fd_matches_path(directory_fd, file.resolved_target.parent):
+        if not _directory_fd_matches_path(directory_fd, parent):
             raise OSError(f"batch output destination changed during publication: {file.target}")
     finally:
         if not journaled:

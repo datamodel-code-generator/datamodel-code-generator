@@ -39,16 +39,17 @@ def _failure(*, code: str, path: Path, message: str) -> APIGenerationError:
 
 
 def _open_lockfile(path: Path) -> int:
+    from datamodel_code_generator._publication import new_file_mode, open_directory  # noqa: PLC0415
+
     if os.name == "nt":  # pragma: no cover - Windows opens lockfiles by path
         path.parent.mkdir(parents=True, exist_ok=True)
-        descriptor = os.open(path, os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0), 0o666)
+        flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_BINARY", 0)
+        descriptor = os.open(path, flags, new_file_mode(None, path.parent))
     else:
-        from datamodel_code_generator._publication import open_directory  # noqa: PLC0415
-
         directory_fd = open_directory(path.parent)
         try:
             flags = os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC
-            descriptor = os.open(path.name, flags, 0o666, dir_fd=directory_fd)
+            descriptor = os.open(path.name, flags, new_file_mode(directory_fd, path.parent), dir_fd=directory_fd)
         finally:
             os.close(directory_fd)
     if not os.fstat(descriptor).st_size:
