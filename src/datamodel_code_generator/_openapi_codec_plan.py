@@ -108,9 +108,13 @@ def _setting(symbol: FinalModelSymbol, name: str) -> object:
 
 
 def _builtin(symbol: FinalModelSymbol) -> bool:
-    return symbol.facts is not None and not any(
-        isinstance(setting.value, OpaqueBackendValue) and setting.value.reason == "custom_origin"
-        for setting in (*symbol.facts.parameters, *symbol.facts.configuration)
+    return (
+        symbol.facts is not None
+        and not symbol.facts.custom_base
+        and not any(
+            isinstance(setting.value, OpaqueBackendValue) and setting.value.reason == "custom_origin"
+            for setting in (*symbol.facts.parameters, *symbol.facts.configuration)
+        )
     )
 
 

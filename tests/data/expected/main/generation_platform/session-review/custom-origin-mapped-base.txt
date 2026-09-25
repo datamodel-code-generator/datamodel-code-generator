@@ -1,0 +1,3 @@
+Good: builtin, 1 of 1 field facts
+Bad: custom base, 1 of 1 field facts
+/paths/~1bad/post/requestBody: BND_CUSTOM_BINDING_REQUIRED

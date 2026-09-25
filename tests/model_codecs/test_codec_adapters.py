@@ -31,6 +31,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("enums", "enums"),
         ("leaks", "leaks"),
         ("blanket", "blanket"),
+        ("blanket", "decorated"),
         ("media", "media"),
     ],
 )

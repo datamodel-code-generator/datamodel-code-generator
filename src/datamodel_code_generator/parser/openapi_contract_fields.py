@@ -139,7 +139,7 @@ class FinalFieldBuilder:
             for symbol in module.models:
                 identity = self.identities[symbol]
                 policy = self.policies[identity.symbol]
-                if policy.backend is None or not policy.builtin_semantics:
+                if policy.backend is None or not policy.builtin_declarations:
                     self.diagnostics.append(
                         BindingDiagnostic("BND_CUSTOM_BINDING_REQUIRED", details=(("symbol", identity.symbol),))
                     )
@@ -155,12 +155,13 @@ class FinalFieldBuilder:
                         model,
                         projection=ModelProjectionContext(
                             policy.backend,
-                            policy.builtin_semantics,
+                            policy.builtin_declarations,
                             policy.functional_typeddict,
                             extra_items,
+                            policy.custom_base,
                         ),
                     )
-                    if any(
+                    if policy.custom_base or any(
                         setting.present is None or isinstance(setting.value, OpaqueBackendValue)
                         for setting in (*facts.parameters, *facts.configuration)
                     ):
@@ -176,7 +177,7 @@ class FinalFieldBuilder:
         own: dict[FieldSlot, ExpectedFieldDeclaration] = {}
         for model in self.inventory.models:
             policy = self.policies[model.symbol]
-            if policy.backend is None or not policy.builtin_semantics or policy.kind == "enum":
+            if policy.backend is None or not policy.builtin_declarations or policy.kind == "enum":
                 continue
             for field in model.fields:
                 if (projected := field.projection.value) is None:
@@ -257,7 +258,7 @@ class FinalFieldBuilder:
             else None,
             None if not nullable or any(value is None for value in nullable) else any(nullable),
             self.parser.force_optional_for_required_fields,
-            policy.builtin_semantics,
+            policy.builtin_declarations,
             policy.backend,
             constructor_policy(facts, "init") if facts is not None else None,
             constructor_policy(facts, "kw_only") if facts is not None else None,

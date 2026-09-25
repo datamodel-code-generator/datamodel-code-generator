@@ -1,6 +1,6 @@
 # S04 implementation record
 
-Status: S04-1 (shared wire rules), S04-2 (Pydantic v2 model codecs) and S04-3 (codec adapters and model bindings) are implemented, verified locally, and published as the three PRs of the S04 native stack. Nothing in this stack has been merged.
+Status: S04-1 (shared wire rules), S04-2 (Pydantic v2 model codecs) and S04-3 (codec adapters and model bindings) are implemented, verified locally, and published as the first three PRs of the S04 native stack. At the maintainer's request, S04-4 (custom-base declarations) closes the MC12 gap that S04-3 left, as a fourth PR on top. Nothing in this stack has been merged.
 
 ## Baseline and review boundaries
 
@@ -8,11 +8,12 @@ Repository: `datamodel-code-generator/datamodel-code-generator`. The authoritati
 
 The isolated implementation checkout is `/private/tmp/dcg-s04`; `/private/tmp/dcg-main-e62b` is a detached checkout of the baseline for comparisons. The original checkout and its untracked `1.tmp` are untouched. No subagents were used. Raw investigation output and measurement scripts stay in the session scratchpad, outside the working tree.
 
-The three native `gh stack` branches, bottom to top, follow PR-STACKS; `gh stack link 4143 4145` created native stack #4146, and `gh stack link 4143 4145 4147` extended it:
+The native `gh stack` branches, bottom to top, follow PR-STACKS; `gh stack link 4143 4145` created native stack #4146, and `gh stack link 4143 4145 4147` and `gh stack link 4143 4145 4147 4148` extended it:
 
 1. `generation-platform-codecs-wire`: schema, parameter and media wire rules, [PR #4143](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4143).
 2. `generation-platform-codecs-pydantic`: the two Pydantic v2 backends, presence, direction, native and envelope values, [PR #4145](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4145).
 3. `generation-platform-codecs-adapters`: custom adapters and typed generated surfaces, [PR #4147](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4147).
+4. `generation-platform-custom-base-facts`: builtin declarations of custom-base models for builtin compatibility, [PR #4148](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4148).
 
 ## Contract hashes
 
@@ -231,6 +232,27 @@ Branch `generation-platform-codecs-adapters`, stacked on S04-2. It adds the vers
 
 Ordinary generation is unchanged (median 133.7 ms on main and 133.6 ms on this branch over 40 randomized runs per side). On the adapters fixture, planning takes 0.9 ms and rendering 1.3 ms for 50 KiB of bindings; importing the bindings after their dependencies takes 1.6 ms, building every codec, facade and parameter adapter 1.8 ms, and a cached accessor call 13 ns. On a synthetic API with 100 schemas and 200 operations (400 uses): ordinary generation 6.3 s, wire plan 60 ms, codec plan 18 ms, rendering 39 ms for 1.5 MiB of bindings, import 4.0 ms, both bundles 25.5 ms. The first validator imports jsonschema once (371 ms, almost all of it `rfc3987-syntax` building 38 grammars for the `format-nongpl` extra); after that the 600 codecs and facades build in 13 ms (22 µs each). Wrapper cost (best of seven): a model adapter decode of one object 9.14 µs, of which builtin wire validation 5.06 µs and the adapter 1.06 µs; a model adapter encode with a presence mask 36.6 µs; a JSON cookie encode 3.51 µs against 2.20 µs for the adapter alone, and decode 3.25 µs against 2.47 µs; a schema-adapter use decode 4.24 µs, where the checked validation takes 1.32 µs against 0.89 µs for the compiled validator alone. The float scan leaves the limit walk of a 500-item object unchanged within noise (900 µs before, 920 µs after), and converting the floats of the same object with a float in each item takes 640 µs more. These single-host measurements are not a throughput guarantee.
 
+## S04-4: custom-base declarations
+
+Base: S04-3 at `521f7413`. MC12 requires undeclared custom bases and templates to cause `MC_ADAPTER_REQUIRED`, and conforming custom bases declared `builtin-v1` to pass with the builtin codec and no model-byte changes. The S03 capture kept no model or field facts for a custom base, template or decorator, so S04-3 refused declared custom bases.
+
+### Capture
+
+- `model/binding_policies.py`: `BuiltinModelPolicy.custom_base` marks a model that the builtin templates declare, without decorators, under a base class other than the backend's own. `builtin_declarations` covers builtin and custom-base models; `builtin_semantics` keeps its meaning. Custom templates, decorators, unknown backends and custom model types still capture nothing.
+- `parser/openapi_contract_fields.py`: custom-base models get model facts, expected field declarations, artifact verification and field facts exactly like builtin models, and still report `BND_CUSTOM_BINDING_REQUIRED`. A consumer that requires their bindings now sees that diagnostic without `BND_FIELD_UNRESOLVED`.
+- `model/binding.py`: `BackendModelFacts.custom_base` (default `False`) carries the mark, through `ModelProjectionContext.custom_base`. The adopted settings are read as for builtin models, because a `builtin-v1` declaration asserts that the base keeps them.
+- `_openapi_codec_plan.py`: `_builtin` treats marked facts as custom, so an undeclared custom base still needs a declaration or an adapter, and a declared one binds with its captured fields. Declared models without facts (templates, decorators) keep the S04-3 refusal. Type aliases generated under `base_class` also carry the mark, which the planner ignores for aliases; their captured member types now reach the models they name, so `pets-custom` additionally reports the undeclared `Pet` behind two list responses.
+- Generated model bytes are unchanged; the capture reads template data without model getters, as for builtin models.
+
+### Verification
+
+- `tests/main/test_generation_session.py::test_custom_origin_declarations` generates the selection fixture with `base_class`, `base_class_map` and `class_decorators`: custom-base models carry marked facts and field facts and demand only `BND_CUSTOM_BINDING_REQUIRED`; decorated models carry none and also demand `BND_FIELD_UNRESOLVED`.
+- The adapter fixtures: `blanket` decodes through the builtin codec for a declared `app.bases.Base` model (a valid visit, a readOnly member and a missing required member); `decorated` refuses a declared decorated model; `exports` binds the declared custom-base `Keeper` as a model again.
+- The ten model-facts dumps gain `"custom_base": false`; no other expected output changed.
+- Full suite (8 workers): 21,601 passed, 16 skipped. The changed capture and planning modules have 100% line and branch coverage in that run (2,081 statements, 936 branches); the only uncovered lines elsewhere are the environment-dependent ones main already has.
+- Ruff, codespell, ty (only the baseline `util.py:24` suppression), strict mypy on the codec modules, strict Pyright 1.1.414 and 1.1.411, and the architecture and generation-store checks pass.
+- PR #4148 at `acbc10f8`: every required check passes, and CodeRabbit posted no actionable comments. CodSpeed walltime reports all 39 benchmarks about 50% slower, YAML loading included, which this change does not touch, together with its hosted-runner and runtime-environment warnings. Ordinary generation of `api.yaml` over 40 alternating runs per side: median 129.3 ms at S04-3 and 129.0 ms here.
+
 ## Deferred and known limitations
 
 - `$id` and `$anchor` embedded inside OpenAPI documents are reported as `MC_SCHEMA_DIALECT`; standalone JSON Schema roots keep their `$id` as an alias.
@@ -239,9 +261,9 @@ Ordinary generation is unchanged (median 133.7 ms on main and 133.6 ms on this b
 - The `RequestCodecs` and `ResponseCodecs` facades, media adapter wrappers, `ClientMediaCodecAdapterV1`, `RequestMedia` and `ResponseMedia` belong to the targets (S06/S07 and S09), which also expose the declaration records through `api_types` and parse requirement strings.
 - A schema adapter cannot own a use with a union of models or with nested or conditional directional exclusions.
 - `x-python-type` at use level is `BND_TYPE_EXPRESSION_UNSUPPORTED`.
-- Unresolved against MC12: conforming custom bases declared `builtin-v1` should pass with the builtin codec, but the S03 capture keeps no field facts for custom bases, templates or decorators, so S04 refuses them with `MC_ADAPTER_REQUIRED` and they need a model adapter. Closing this needs the capture to record their declared fields (names, aliases, defaults, requiredness) together with a custom-origin mark, so that only a declaration makes them builtin.
+- Custom bases declared `builtin-v1` bind with the builtin codec (S04-4). Models with custom templates or decorators keep no captured declarations, so a compatibility declaration cannot bind them and they need a model adapter (`MC_ADAPTER_REQUIRED`).
 - Parameter defaults are applied by the server integration (S06). Multipart and binary media layers are not part of S04-1. `allowEmptyValue` is informational only.
 
 ## Next action
 
-Bring the three PRs' CI to green and answer their review comments, propagating fixes up the stack with `gh stack rebase`. Decide with the maintainer whether the MC12 custom-base capture (see the unresolved item above) extends S03's capture before the targets expose `builtin_codec_compatibility`. S04 is complete once the maintainer merges the stack; the next stack in PR-STACKS starts from the merged main. Do not merge; the maintainer merges.
+Bring the four PRs' CI to green and answer their review comments, propagating fixes up the stack with `gh stack rebase`. S04 is complete once the maintainer merges the stack; the next stack in PR-STACKS starts from the merged main. Do not merge; the maintainer merges.

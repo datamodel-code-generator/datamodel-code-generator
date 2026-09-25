@@ -25,13 +25,22 @@ _BACKENDS: dict[type[DataModel], BackendName] = {
 
 @dataclass(frozen=True, slots=True)
 class BuiltinModelPolicy:
-    """Keep accepted declaration form and custom origins separate from backend choice."""
+    """Keep accepted declaration form and custom origins separate from backend choice.
+
+    A custom base keeps builtin declarations, whose semantics only a builtin compatibility declaration asserts.
+    """
 
     backend: BackendName | None
     kind: Literal["model", "root", "alias", "enum", "custom"]
     builtin_semantics: bool
+    custom_base: bool
     functional_typeddict: bool
     extra_items_present: bool
+
+    @property
+    def builtin_declarations(self) -> bool:
+        """Return whether the builtin templates declare the model, whatever its base class."""
+        return self.builtin_semantics or self.custom_base
 
 
 def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> BuiltinModelPolicy:
@@ -47,13 +56,13 @@ def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> 
             kind = "root"
         case _:
             pass
-    builtin = (
+    declared = (
         backend is not None
         and kind != "custom"
         and model._custom_template_dir is None  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
         and not model.decorators
-        and model.custom_base_class in (None, model.BASE_CLASS, [model.BASE_CLASS])
     )
+    standard = model.custom_base_class in (None, model.BASE_CLASS, [model.BASE_CLASS])
     functional = (
         backend == "typeddict"
         and kind == "model"
@@ -68,7 +77,7 @@ def freeze_model_policy(model: DataModel, configured_model: type[DataModel]) -> 
     extra_items = (
         backend == "typeddict" and kind == "model" and isinstance(arguments, dict) and "extra_items" in arguments
     )
-    return BuiltinModelPolicy(backend, kind, builtin, functional, extra_items)
+    return BuiltinModelPolicy(backend, kind, declared and standard, declared and not standard, functional, extra_items)
 
 
 def final_field_name(model: DataModel, field_name: str | None) -> str:

@@ -1697,11 +1697,15 @@ class ModelProjectionContext:
     builtin_semantics: bool
     functional_typeddict: bool = False
     extra_items: FinalPythonType | None = None
+    custom_base: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class BackendModelFacts:
-    """Keep finite adopted model declarations independently of runtime defaults."""
+    """Keep finite adopted model declarations independently of runtime defaults.
+
+    Declarations of a model with a custom base describe builtin semantics only under a compatibility declaration.
+    """
 
     backend: BackendName
     parameters: tuple[BackendSetting, ...]
@@ -1709,6 +1713,7 @@ class BackendModelFacts:
     functional_typeddict: bool
     extra_items_present: bool | None
     extra_items: FinalPythonType | None
+    custom_base: bool = False
 
 
 _DATACLASS_PARAMETERS: Final = (
@@ -1856,6 +1861,7 @@ def freeze_builtin_model_facts(model: DataModel, *, projection: ModelProjectionC
         projection.functional_typeddict,
         extra_present if values is not None else None,
         projection.extra_items,
+        projection.custom_base,
     )
 
 
