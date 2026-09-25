@@ -7,9 +7,10 @@
 def {{ route.adder }}(router: {{ router }}, handlers: {{ handlers }}) -> None:
     {{ route.handler }} = handlers[{{ route.key }}]
 
-    {{ route.decorator }}
     {{ route.signature }}
         {{ route.body }}
+
+    {{ route.registration }}
 {%- endfor %}
 
 

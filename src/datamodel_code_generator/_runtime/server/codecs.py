@@ -51,6 +51,10 @@ class ResponseCodecs(Generic[CodecT_co]):
             raise CodecSelectionError(msg)
         return accessor()
 
+    def body(self, *, status_code: int, media_type: str | None = None) -> CodecT_co:
+        """Return the outbound codec of one declared response body."""
+        return self.select(status_code, media_type)
+
     def part(self, *, status_code: int, name: str, media_type: str | None = None) -> Never:  # noqa: PLR6301
         """Refuse part codecs: builtin responses have no multipart bodies with declared non-file parts."""
         msg = f"The {status_code} response declares no part {name!r} for {media_type or 'its default media'}"

@@ -52,7 +52,6 @@ _IMPORTED: Final = {
     "aware_datetime": ("pydantic", "AwareDatetime"),
     "uuid": ("uuid", "UUID"),
 }
-_METHODS: Final = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace"})
 _RUNTIME_IMPORT: Final = re.compile(r"^from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
 _RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)(\w+(?:\.\w+)*) import", re.MULTILINE)
 _PLAN_DEFAULTS: Final[dict[str, object]] = {
@@ -273,7 +272,7 @@ class ServerRenderer:  # noqa: PLR0904
             "adder": f"_add_{spec.python_name}",
             "handler": handler,
             "key": repr(spec.python_name),
-            "decorator": layout(_decorator(module, spec), 4, 0, WIDTH),
+            "registration": layout(_registration(module, spec), 4, 0, WIDTH),
             "signature": layout(signature, 4, 0, WIDTH),
             "body": layout(body, 8, 0, WIDTH),
         }
@@ -357,7 +356,8 @@ class ServerRenderer:  # noqa: PLR0904
         adapters = [argument for argument in spec.arguments if argument.kind == "adapter"]
         if adapters:
             lines.extend((
-                f"    class Parameters({module.name('typing', 'NamedTuple')}):",
+                f"    @{module.name('dataclasses', 'dataclass')}(frozen=True, slots=True, kw_only=True)",
+                "    class Parameters:",
                 f'        """The adapter parameters of {spec.python_name}."""',
                 "",
                 *(f"        {argument.name}: {self.parameter_type(module, argument)}" for argument in adapters),
@@ -551,18 +551,26 @@ class ServerRenderer:  # noqa: PLR0904
         else:
             union = kinds[0] if kinds else module.name("typing_extensions", "Never")
         base = f"{module.local('_runtime.server.codecs', 'ResponseCodecs')}[{union}]"
-        lines = (
+        declaration = (
             alias + layout(Group(f"class {name}(", (("", base),), "):"), 0, 0, WIDTH),
             f'    """Outbound codecs of the {spec.python_name} response bodies."""',
-            "",
-            *_overloads(module, branches, union),
-            f"    {_body_signature('int', 'str | None = None', f'{union}:')}",
-            '        """Return the outbound codec of one declared response body."""',
-            "        return self.select(status_code, media_type)",
         )
-        bindings = module.local("_generated", "model_bindings")
+        overloads = _overloads(module, branches, union)
+        lines = (
+            (
+                *declaration,
+                "",
+                *overloads,
+                f"    {_body_signature('int', 'str | None = None', f'{union}:')}",
+                '        """Return the outbound codec of one declared response body."""',
+                "        return self.select(status_code, media_type)",
+            )
+            if overloads
+            else declaration
+        )
         bodies: dict[str, list[Doc]] = {}
         for status, media_type, _, accessor in branches:
+            bindings = module.local("_generated", "model_bindings")
             bodies.setdefault(status, []).append(f"({media_type!r}, {bindings}.{accessor})")
         statuses = _items(
             Group("(", (("", repr(status)), ("", Group("(", _items(items), ")", ","))), ")")
@@ -634,14 +642,15 @@ def _parameter_plan(module: Module, plan: ParameterPlan) -> Group:
     return Group(f"{module.local('_runtime.model_codecs.parameters', 'ParameterPlan')}(", tuple(items), ")")
 
 
-def _decorator(module: Module, spec: OperationSpec) -> Group:
+def _registration(module: Module, spec: OperationSpec) -> Group:
     contract = spec.contract
     facts = {name: getattr(value, "value", None) for name, value in contract.facts}
-    method = contract.method
-    items: list[tuple[str, Doc]] = [("", repr(spec.route.route_path))]
-    if method not in _METHODS:
-        items.append(("methods=", f"[{method.upper()!r}]"))
-    items.append(("status_code=", str(spec.registration_status)))
+    items: list[tuple[str, Doc]] = [
+        ("", repr(spec.route.route_path)),
+        ("", spec.python_name),
+        ("methods=", f"[{contract.method.upper()!r}]"),
+        ("status_code=", str(spec.registration_status)),
+    ]
     primary = spec.primary
     if spec.native_primary and primary is not None and primary.media is not None and primary.media.use is not None:
         assert primary.media.use.type is not None
@@ -664,7 +673,7 @@ def _decorator(module: Module, spec: OperationSpec) -> Group:
     )
     if facts.get("deprecated") is True:
         items.append(("deprecated=", "True"))
-    return Group(f"@router.{method}(" if method in _METHODS else "@router.api_route(", tuple(items), ")")
+    return Group("router.add_api_route(", tuple(items), ")")
 
 
 def _value(module: Module, spec: OperationSpec, argument: Argument, record: str) -> str:
@@ -675,8 +684,7 @@ def _value(module: Module, spec: OperationSpec, argument: Argument, record: str)
     if argument.kind == "body" and spec.body is not None and len(spec.body.media) > 1:
         return "body[1]"
     if argument.native is not None and argument.native.default is Default.ABSENT:
-        unset = module.local("_runtime.model_codecs.unset", "UNSET")
-        return f"{unset} if {argument.name} is None else {argument.name}"
+        return f"{module.local('_runtime.server.requests', 'present')}({argument.name})"
     return argument.name
 
 

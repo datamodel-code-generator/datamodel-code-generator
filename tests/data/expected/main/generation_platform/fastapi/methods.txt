@@ -39,8 +39,18 @@ render pydantic_v2.BaseModel
     | def _add_search_items(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     search_items_handler = handlers['search_items']
     |
-    |     @router.api_route(
+    |     def search_items(
+    |         *,
+    |         body: Annotated[models.FieldSearchQueryRequest, Body(media_type='application/json')],
+    |     ) -> object:
+    |         return dispatch(
+    |             search_items_handler(body=body),
+    |             contract.SearchItems.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
     |         '/search',
+    |         search_items,
     |         methods=['QUERY'],
     |         status_code=200,
     |         response_model=models.FieldSearchQueryResponse,
@@ -51,29 +61,23 @@ render pydantic_v2.BaseModel
     |         description='Send the search in the request body.',
     |         deprecated=True,
     |     )
-    |     def search_items(
-    |         *,
-    |         body: Annotated[models.FieldSearchQueryRequest, Body(media_type='application/json')],
-    |     ) -> object:
-    |         return dispatch(
-    |             search_items_handler(body=body),
-    |             contract.SearchItems.RESPONSES,
-    |         )
     |
     |
     | def _add_link_items(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     link_items_handler = handlers['link_items']
     |
-    |     @router.api_route(
+    |     def link_items() -> Response:
+    |         return respond(link_items_handler(), contract.LinkItems.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/search',
+    |         link_items,
     |         methods=['LINK'],
     |         status_code=204,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='linkItems',
     |     )
-    |     def link_items() -> Response:
-    |         return respond(link_items_handler(), contract.LinkItems.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (_add_search_items, _add_link_items)

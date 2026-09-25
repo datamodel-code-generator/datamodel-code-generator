@@ -50,53 +50,67 @@ render pydantic_v2.BaseModel
     | def _add_create(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     create_handler = handlers['create']
     |
-    |     @router.post(
+    |     def create() -> Response:
+    |         return respond(create_handler(), contract.Create.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/created',
+    |         create,
+    |         methods=['POST'],
     |         status_code=201,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='create',
     |         tags=['results'],
     |     )
-    |     def create() -> Response:
-    |         return respond(create_handler(), contract.Create.RESPONSES)
     |
     |
     | def _add_only_default(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     only_default_handler = handlers['only_default']
     |
-    |     @router.get(
+    |     def only_default() -> Response:
+    |         return respond(only_default_handler(), contract.OnlyDefault.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/defaults',
+    |         only_default,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='onlyDefault',
     |         tags=['results'],
     |     )
-    |     def only_default() -> Response:
-    |         return respond(only_default_handler(), contract.OnlyDefault.RESPONSES)
     |
     |
     | def _add_only_ranges(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     only_ranges_handler = handlers['only_ranges']
     |
-    |     @router.get(
+    |     def only_ranges() -> Response:
+    |         return respond(only_ranges_handler(), contract.OnlyRanges.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/ranges',
+    |         only_ranges,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='onlyRanges',
     |         tags=['results'],
     |     )
-    |     def only_ranges() -> Response:
-    |         return respond(only_ranges_handler(), contract.OnlyRanges.RESPONSES)
     |
     |
     | def _add_only_errors(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     only_errors_handler = handlers['only_errors']
     |
-    |     @router.get(
+    |     def only_errors() -> object:
+    |         return dispatch(only_errors_handler(), contract.OnlyErrors.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/errors',
+    |         only_errors,
+    |         methods=['GET'],
     |         status_code=404,
     |         response_model=models.Problem,
     |         response_model_by_alias=True,
@@ -104,53 +118,60 @@ render pydantic_v2.BaseModel
     |         operation_id='onlyErrors',
     |         tags=['results'],
     |     )
-    |     def only_errors() -> object:
-    |         return dispatch(only_errors_handler(), contract.OnlyErrors.RESPONSES)
     |
     |
     | def _add_get_optional(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_optional_handler = handlers['get_optional']
     |
-    |     @router.get(
+    |     def get_optional() -> Response:
+    |         return respond(get_optional_handler(), contract.GetOptional.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/optional',
+    |         get_optional,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='getOptional',
     |         tags=['results'],
     |     )
-    |     def get_optional() -> Response:
-    |         return respond(get_optional_handler(), contract.GetOptional.RESPONSES)
     |
     |
     | def _add_get_secret(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_secret_handler = handlers['get_secret']
     |
-    |     @router.get(
+    |     def get_secret() -> Response:
+    |         return respond(get_secret_handler(), contract.GetSecret.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/secret',
+    |         get_secret,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='getSecret',
     |         tags=['results'],
     |     )
-    |     def get_secret() -> Response:
-    |         return respond(get_secret_handler(), contract.GetSecret.RESPONSES)
     |
     |
     | def _add_head_secret(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     head_secret_handler = handlers['head_secret']
     |
-    |     @router.head(
+    |     def head_secret() -> Response:
+    |         return respond(head_secret_handler(), contract.HeadSecret.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/secret',
+    |         head_secret,
+    |         methods=['HEAD'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='headSecret',
     |         tags=['results'],
     |     )
-    |     def head_secret() -> Response:
-    |         return respond(head_secret_handler(), contract.HeadSecret.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (
@@ -188,16 +209,19 @@ render pydantic_v2.BaseModel
     | def _add_download(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     download_handler = handlers['download']
     |
-    |     @router.get(
+    |     def download() -> Response:
+    |         return respond(download_handler(), contract.Download.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/download',
+    |         download,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='download',
     |         tags=['files'],
     |     )
-    |     def download() -> Response:
-    |         return respond(download_handler(), contract.Download.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (_add_download,)
@@ -549,15 +573,6 @@ render pydantic_v2.BaseModel
     | class _OnlyDefaultResponseCodecs(ResponseCodecs[NativeOutboundCodec[models.Problem]]):
     |     """Outbound codecs of the only_default response bodies."""
     |
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.Problem]:
-    |         """Return the outbound codec of one declared response body."""
-    |         return self.select(status_code, media_type)
-    |
     |
     | OnlyDefaultResponseCodecs: Final = _OnlyDefaultResponseCodecs(
     |     (('default', (('application/json', model_bindings.outbound_7),)),),
@@ -574,15 +589,6 @@ render pydantic_v2.BaseModel
     |     ResponseCodecs[NativeOutboundCodec[models.FieldRangesGetResponse]],
     | ):
     |     """Outbound codecs of the only_ranges response bodies."""
-    |
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.FieldRangesGetResponse]:
-    |         """Return the outbound codec of one declared response body."""
-    |         return self.select(status_code, media_type)
     |
     |
     | OnlyRangesResponseCodecs: Final = _OnlyRangesResponseCodecs(
@@ -704,10 +710,6 @@ render pydantic_v2.BaseModel
     |
     | class _HeadSecretResponseCodecs(ResponseCodecs[Never]):
     |     """Outbound codecs of the head_secret response bodies."""
-    |
-    |     def body(self, *, status_code: int, media_type: str | None = None) -> Never:
-    |         """Return the outbound codec of one declared response body."""
-    |         return self.select(status_code, media_type)
     |
     |
     | HeadSecretResponseCodecs: Final = _HeadSecretResponseCodecs(())
@@ -826,53 +828,67 @@ render pydantic_v2.dataclass
     | def _add_create(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     create_handler = handlers['create']
     |
-    |     @router.post(
+    |     def create() -> Response:
+    |         return respond(create_handler(), contract.Create.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/created',
+    |         create,
+    |         methods=['POST'],
     |         status_code=201,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='create',
     |         tags=['results'],
     |     )
-    |     def create() -> Response:
-    |         return respond(create_handler(), contract.Create.RESPONSES)
     |
     |
     | def _add_only_default(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     only_default_handler = handlers['only_default']
     |
-    |     @router.get(
+    |     def only_default() -> Response:
+    |         return respond(only_default_handler(), contract.OnlyDefault.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/defaults',
+    |         only_default,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='onlyDefault',
     |         tags=['results'],
     |     )
-    |     def only_default() -> Response:
-    |         return respond(only_default_handler(), contract.OnlyDefault.RESPONSES)
     |
     |
     | def _add_only_ranges(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     only_ranges_handler = handlers['only_ranges']
     |
-    |     @router.get(
+    |     def only_ranges() -> Response:
+    |         return respond(only_ranges_handler(), contract.OnlyRanges.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/ranges',
+    |         only_ranges,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='onlyRanges',
     |         tags=['results'],
     |     )
-    |     def only_ranges() -> Response:
-    |         return respond(only_ranges_handler(), contract.OnlyRanges.RESPONSES)
     |
     |
     | def _add_only_errors(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     only_errors_handler = handlers['only_errors']
     |
-    |     @router.get(
+    |     def only_errors() -> object:
+    |         return dispatch(only_errors_handler(), contract.OnlyErrors.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/errors',
+    |         only_errors,
+    |         methods=['GET'],
     |         status_code=404,
     |         response_model=models.Problem,
     |         response_model_by_alias=True,
@@ -880,53 +896,60 @@ render pydantic_v2.dataclass
     |         operation_id='onlyErrors',
     |         tags=['results'],
     |     )
-    |     def only_errors() -> object:
-    |         return dispatch(only_errors_handler(), contract.OnlyErrors.RESPONSES)
     |
     |
     | def _add_get_optional(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_optional_handler = handlers['get_optional']
     |
-    |     @router.get(
+    |     def get_optional() -> Response:
+    |         return respond(get_optional_handler(), contract.GetOptional.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/optional',
+    |         get_optional,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='getOptional',
     |         tags=['results'],
     |     )
-    |     def get_optional() -> Response:
-    |         return respond(get_optional_handler(), contract.GetOptional.RESPONSES)
     |
     |
     | def _add_get_secret(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_secret_handler = handlers['get_secret']
     |
-    |     @router.get(
+    |     def get_secret() -> Response:
+    |         return respond(get_secret_handler(), contract.GetSecret.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/secret',
+    |         get_secret,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='getSecret',
     |         tags=['results'],
     |     )
-    |     def get_secret() -> Response:
-    |         return respond(get_secret_handler(), contract.GetSecret.RESPONSES)
     |
     |
     | def _add_head_secret(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     head_secret_handler = handlers['head_secret']
     |
-    |     @router.head(
+    |     def head_secret() -> Response:
+    |         return respond(head_secret_handler(), contract.HeadSecret.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/secret',
+    |         head_secret,
+    |         methods=['HEAD'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='headSecret',
     |         tags=['results'],
     |     )
-    |     def head_secret() -> Response:
-    |         return respond(head_secret_handler(), contract.HeadSecret.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (
@@ -964,16 +987,19 @@ render pydantic_v2.dataclass
     | def _add_download(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     download_handler = handlers['download']
     |
-    |     @router.get(
+    |     def download() -> Response:
+    |         return respond(download_handler(), contract.Download.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/download',
+    |         download,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='download',
     |         tags=['files'],
     |     )
-    |     def download() -> Response:
-    |         return respond(download_handler(), contract.Download.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (_add_download,)
@@ -1325,15 +1351,6 @@ render pydantic_v2.dataclass
     | class _OnlyDefaultResponseCodecs(ResponseCodecs[NativeOutboundCodec[models.Problem]]):
     |     """Outbound codecs of the only_default response bodies."""
     |
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.Problem]:
-    |         """Return the outbound codec of one declared response body."""
-    |         return self.select(status_code, media_type)
-    |
     |
     | OnlyDefaultResponseCodecs: Final = _OnlyDefaultResponseCodecs(
     |     (('default', (('application/json', model_bindings.outbound_7),)),),
@@ -1350,15 +1367,6 @@ render pydantic_v2.dataclass
     |     ResponseCodecs[NativeOutboundCodec[models.FieldRangesGetResponse]],
     | ):
     |     """Outbound codecs of the only_ranges response bodies."""
-    |
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.FieldRangesGetResponse]:
-    |         """Return the outbound codec of one declared response body."""
-    |         return self.select(status_code, media_type)
     |
     |
     | OnlyRangesResponseCodecs: Final = _OnlyRangesResponseCodecs(
@@ -1480,10 +1488,6 @@ render pydantic_v2.dataclass
     |
     | class _HeadSecretResponseCodecs(ResponseCodecs[Never]):
     |     """Outbound codecs of the head_secret response bodies."""
-    |
-    |     def body(self, *, status_code: int, media_type: str | None = None) -> Never:
-    |         """Return the outbound codec of one declared response body."""
-    |         return self.select(status_code, media_type)
     |
     |
     | HeadSecretResponseCodecs: Final = _HeadSecretResponseCodecs(())

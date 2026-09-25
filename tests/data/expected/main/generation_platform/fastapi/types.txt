@@ -40,21 +40,13 @@ render pydantic_v2.BaseModel
     | from fastapi.responses import Response
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET
-    | from .._runtime.server.requests import absent
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
     |
     |
     | def _add_get_values(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_values_handler = handlers['get_values']
     |
-    |     @router.get(
-    |         '/values',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='getValues',
-    |     )
     |     def get_values(
     |         *,
     |         code: Annotated[str, Query(alias='code', max_length=3, default_factory=absent)],
@@ -64,9 +56,9 @@ render pydantic_v2.BaseModel
     |     ) -> Response:
     |         return respond(
     |             get_values_handler(
-    |                 code=UNSET if code is None else code,
-    |                 tags=UNSET if tags is None else tags,
-    |                 kind=UNSET if kind is None else kind,
+    |                 code=present(code),
+    |                 tags=present(tags),
+    |                 kind=present(kind),
     |                 at=parameters.at,
     |                 stamp=parameters.stamp,
     |                 count=parameters.count,
@@ -78,6 +70,16 @@ render pydantic_v2.BaseModel
     |             ),
     |             contract.GetValues.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/values',
+    |         get_values,
+    |         methods=['GET'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='getValues',
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = (_add_get_values,)
@@ -96,7 +98,8 @@ render pydantic_v2.BaseModel
     |
     | from __future__ import annotations
     |
-    | from typing import Final, NamedTuple
+    | from dataclasses import dataclass
+    | from typing import Final
     |
     | import models
     |
@@ -111,7 +114,8 @@ render pydantic_v2.BaseModel
     | class GetValues:
     |     """Plans of the get_values operation."""
     |
-    |     class Parameters(NamedTuple):
+    |     @dataclass(frozen=True, slots=True, kw_only=True)
+    |     class Parameters:
     |         """The adapter parameters of get_values."""
     |
     |         at: models.FieldValuesGetQueryAtParameter | Unset

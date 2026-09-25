@@ -69,23 +69,13 @@ render pydantic_v2.BaseModel
     | from pydantic import Field
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET
-    | from .._runtime.server.requests import absent
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import dispatch
     |
     |
     | def _add_get_part(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_part_handler = handlers['get_part']
     |
-    |     @router.get(
-    |         '/items/{dcg_p0}/parts/{part}',
-    |         status_code=200,
-    |         response_model=models.FieldItemsItemIdPartsPartGetResponse,
-    |         response_model_by_alias=True,
-    |         response_model_exclude_unset=True,
-    |         operation_id='getPart',
-    |         tags=['items'],
-    |     )
     |     def get_part(
     |         *,
     |         item_id: Annotated[int, Path(alias='item-id', ge=-10, lt=100)],
@@ -133,20 +123,32 @@ render pydantic_v2.BaseModel
     |                 item_id=item_id,
     |                 path_part=path_part,
     |                 limit=limit,
-    |                 ratio=UNSET if ratio is None else ratio,
+    |                 ratio=present(ratio),
     |                 flag=flag,
     |                 tags=tags,
-    |                 day=UNSET if day is None else day,
-    |                 ref=UNSET if ref is None else ref,
+    |                 day=present(day),
+    |                 ref=present(ref),
     |                 mode=mode,
-    |                 level=UNSET if level is None else level,
-    |                 x_trace=UNSET if x_trace is None else x_trace,
-    |                 query_request=UNSET if query_request is None else query_request,
-    |                 query_part=UNSET if query_part is None else query_part,
-    |                 p_2fa=UNSET if p_2fa is None else p_2fa,
+    |                 level=present(level),
+    |                 x_trace=present(x_trace),
+    |                 query_request=present(query_request),
+    |                 query_part=present(query_part),
+    |                 p_2fa=present(p_2fa),
     |             ),
     |             contract.GetPart.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/items/{dcg_p0}/parts/{part}',
+    |         get_part,
+    |         methods=['GET'],
+    |         status_code=200,
+    |         response_model=models.FieldItemsItemIdPartsPartGetResponse,
+    |         response_model_by_alias=True,
+    |         response_model_exclude_unset=True,
+    |         operation_id='getPart',
+    |         tags=['items'],
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = ()
@@ -171,22 +173,13 @@ render pydantic_v2.BaseModel
     | from pydantic import AwareDatetime
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET
-    | from .._runtime.server.requests import absent
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
     |
     |
     | def _add_list_adapters(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     list_adapters_handler = handlers['list_adapters']
     |
-    |     @router.get(
-    |         '/adapters',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='listAdapters',
-    |         tags=['adapters'],
-    |     )
     |     def list_adapters(
     |         *,
     |         stamp: Annotated[AwareDatetime, Query(alias='stamp', default_factory=absent)],
@@ -206,24 +199,27 @@ render pydantic_v2.BaseModel
     |                 none=parameters.none,
     |                 count=parameters.count,
     |                 point=parameters.point,
-    |                 stamp=UNSET if stamp is None else stamp,
+    |                 stamp=present(stamp),
     |                 page=page,
     |             ),
     |             contract.ListAdapters.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/adapters',
+    |         list_adapters,
+    |         methods=['GET'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='listAdapters',
+    |         tags=['adapters'],
+    |     )
+    |
     |
     | def _add_get_repeated(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_repeated_handler = handlers['get_repeated']
     |
-    |     @router.get(
-    |         '/repeat/{dcg_p0}/again/{dcg_p1}',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='getRepeated',
-    |         tags=['adapters'],
-    |     )
     |     def get_repeated(
     |         *,
     |         parameters: Annotated[contract.GetRepeated.Parameters, Depends(contract.GetRepeated.PARAMETERS)],
@@ -232,6 +228,17 @@ render pydantic_v2.BaseModel
     |             get_repeated_handler(id=parameters.id),
     |             contract.GetRepeated.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/repeat/{dcg_p0}/again/{dcg_p1}',
+    |         get_repeated,
+    |         methods=['GET'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='getRepeated',
+    |         tags=['adapters'],
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = (_add_list_adapters,)
@@ -250,7 +257,8 @@ render pydantic_v2.BaseModel
     |
     | from __future__ import annotations
     |
-    | from typing import Final, NamedTuple
+    | from dataclasses import dataclass
+    | from typing import Final
     |
     | import models
     |
@@ -287,7 +295,8 @@ render pydantic_v2.BaseModel
     | class ListAdapters:
     |     """Plans of the list_adapters operation."""
     |
-    |     class Parameters(NamedTuple):
+    |     @dataclass(frozen=True, slots=True, kw_only=True)
+    |     class Parameters:
     |         """The adapter parameters of list_adapters."""
     |
     |         session: models.FieldAdaptersGetCookieSessionParameter | Unset
@@ -445,7 +454,8 @@ render pydantic_v2.BaseModel
     | class GetRepeated:
     |     """Plans of the get_repeated operation."""
     |
-    |     class Parameters(NamedTuple):
+    |     @dataclass(frozen=True, slots=True, kw_only=True)
+    |     class Parameters:
     |         """The adapter parameters of get_repeated."""
     |
     |         id: models.FieldRepeatIdAgainIdGetPathIdParameter

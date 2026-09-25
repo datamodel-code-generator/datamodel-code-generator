@@ -42,14 +42,6 @@ render pydantic_v2.BaseModel
     | def _add_post_json(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_json_handler = handlers['post_json']
     |
-    |     @router.post(
-    |         '/json',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postJson',
-    |         tags=['json'],
-    |     )
     |     def post_json(
     |         *,
     |         request: Request,
@@ -59,6 +51,17 @@ render pydantic_v2.BaseModel
     |             post_json_handler(request=request, body=body),
     |             contract.PostJson.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/json',
+    |         post_json,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postJson',
+    |         tags=['json'],
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = (_add_post_json,)
@@ -88,16 +91,19 @@ render pydantic_v2.BaseModel
     | def _add_post_text(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_text_handler = handlers['post_text']
     |
-    |     @router.post(
+    |     def post_text(*, request: Request) -> Response:
+    |         return respond(post_text_handler(request=request), contract.PostText.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/text',
+    |         post_text,
+    |         methods=['POST'],
     |         status_code=204,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='postText',
     |         tags=['raw'],
     |     )
-    |     def post_text(*, request: Request) -> Response:
-    |         return respond(post_text_handler(request=request), contract.PostText.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (_add_post_text,)

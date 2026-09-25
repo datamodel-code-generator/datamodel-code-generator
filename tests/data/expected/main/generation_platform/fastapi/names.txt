@@ -103,37 +103,30 @@ render pydantic_v2.BaseModel
     | from fastapi.responses import Response
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET
-    | from .._runtime.server.requests import absent
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
     |
     |
     | def _add_get__users_me(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get__users_me_handler = handlers['get__users_me']
     |
-    |     @router.get(
+    |     def get__users_me() -> Response:
+    |         return respond(get__users_me_handler(), contract.GetUsersMe.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/users/me',
+    |         get__users_me,
+    |         methods=['GET'],
     |         status_code=204,
     |         response_model=None,
     |         response_class=Response,
     |         tags=['Users', 'admin'],
     |     )
-    |     def get__users_me() -> Response:
-    |         return respond(get__users_me_handler(), contract.GetUsersMe.RESPONSES)
     |
     |
     | def _add_get_user_by_id(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_user_by_id_handler_1 = handlers['get_user_by_id']
     |
-    |     @router.get(
-    |         '/users/{id}',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='GetUserByID',
-    |         tags=['Users'],
-    |         deprecated=True,
-    |     )
     |     def get_user_by_id(
     |         *,
     |         path_id: Annotated[int, Path(alias='id')],
@@ -155,29 +148,33 @@ render pydantic_v2.BaseModel
     |         return respond(
     |             get_user_by_id_handler_1(
     |                 path_id=path_id,
-    |                 query_id=UNSET if query_id is None else query_id,
-    |                 query_body=UNSET if query_body is None else query_body,
-    |                 header_media_type=UNSET if header_media_type is None else header_media_type,
-    |                 dcg_p0=UNSET if dcg_p0 is None else dcg_p0,
-    |                 parameters=UNSET if parameters is None else parameters,
+    |                 query_id=present(query_id),
+    |                 query_body=present(query_body),
+    |                 header_media_type=present(header_media_type),
+    |                 dcg_p0=present(dcg_p0),
+    |                 parameters=present(parameters),
     |                 session=parameters_1.session,
-    |                 get_user_by_id_handler=UNSET if get_user_by_id_handler is None else get_user_by_id_handler,
+    |                 get_user_by_id_handler=present(get_user_by_id_handler),
     |             ),
     |             contract.GetUserById.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/users/{id}',
+    |         get_user_by_id,
+    |         methods=['GET'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='GetUserByID',
+    |         tags=['Users'],
+    |         deprecated=True,
+    |     )
     |
     |
     | def _add_class_(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     class__handler = handlers['class_']
     |
-    |     @router.put(
-    |         '/users/{id}',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='class',
-    |         tags=['Users'],
-    |     )
     |     def class_(
     |         *,
     |         path_id: Annotated[int, Path(alias='id')],
@@ -190,11 +187,22 @@ render pydantic_v2.BaseModel
     |         return respond(
     |             class__handler(
     |                 path_id=path_id,
-    |                 query_principal=UNSET if query_principal is None else query_principal,
-    |                 form_id=UNSET if form_id is None else form_id,
+    |                 query_principal=present(query_principal),
+    |                 form_id=present(form_id),
     |             ),
     |             contract.Class.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/users/{id}',
+    |         class_,
+    |         methods=['PUT'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='class',
+    |         tags=['Users'],
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = (_add_get__users_me,)
@@ -218,22 +226,13 @@ render pydantic_v2.BaseModel
     | from fastapi.responses import Response
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET
-    | from .._runtime.server.requests import absent
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
     |
     |
     | def _add_get_file(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_file_handler = handlers['get_file']
     |
-    |     @router.get(
-    |         '/files/{dcg_p1}/{dcg_p0}',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='getFile',
-    |         tags=['2024 files'],
-    |     )
     |     def get_file(
     |         *,
     |         file_name: Annotated[str, Path(alias='file.name')],
@@ -244,10 +243,21 @@ render pydantic_v2.BaseModel
     |             get_file_handler(
     |                 file_name=file_name,
     |                 dcg_p0=dcg_p0,
-    |                 page_size=UNSET if page_size is None else page_size,
+    |                 page_size=present(page_size),
     |             ),
     |             contract.GetFile.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/files/{dcg_p1}/{dcg_p0}',
+    |         get_file,
+    |         methods=['GET'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='getFile',
+    |         tags=['2024 files'],
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = ()

@@ -85,32 +85,27 @@ render pydantic_v2.BaseModel
     | def _add_post_json(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_json_handler = handlers['post_json']
     |
-    |     @router.post(
-    |         '/json',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postJson',
-    |         tags=['json'],
-    |     )
     |     def post_json(
     |         *,
     |         body: Annotated[models.Item, Body(media_type='application/json')],
     |     ) -> Response:
     |         return respond(post_json_handler(body=body), contract.PostJson.RESPONSES)
     |
+    |     router.add_api_route(
+    |         '/json',
+    |         post_json,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postJson',
+    |         tags=['json'],
+    |     )
+    |
     |
     | def _add_post_optional(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_optional_handler = handlers['post_optional']
     |
-    |     @router.post(
-    |         '/json/optional',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postOptional',
-    |         tags=['json'],
-    |     )
     |     def post_optional(
     |         *,
     |         body: Annotated[models.Item | Unset, Depends(contract.PostOptional.BODY)],
@@ -120,18 +115,21 @@ render pydantic_v2.BaseModel
     |             contract.PostOptional.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/json/optional',
+    |         post_optional,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postOptional',
+    |         tags=['json'],
+    |     )
+    |
     |
     | def _add_post_nullable(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_nullable_handler = handlers['post_nullable']
     |
-    |     @router.post(
-    |         '/json/nullable',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postNullable',
-    |         tags=['json'],
-    |     )
     |     def post_nullable(
     |         *,
     |         body: Annotated[models.FieldJsonNullablePostRequest, Depends(contract.PostNullable.BODY)],
@@ -141,18 +139,21 @@ render pydantic_v2.BaseModel
     |             contract.PostNullable.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/json/nullable',
+    |         post_nullable,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postNullable',
+    |         tags=['json'],
+    |     )
+    |
     |
     | def _add_post_envelope(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_envelope_handler = handlers['post_envelope']
     |
-    |     @router.post(
-    |         '/json/envelope',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postEnvelope',
-    |         tags=['json'],
-    |     )
     |     def post_envelope(
     |         *,
     |         body: Annotated[DecodedValue[models.Account], Depends(contract.PostEnvelope.BODY)],
@@ -162,18 +163,21 @@ render pydantic_v2.BaseModel
     |             contract.PostEnvelope.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/json/envelope',
+    |         post_envelope,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postEnvelope',
+    |         tags=['json'],
+    |     )
+    |
     |
     | def _add_post_many(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_many_handler = handlers['post_many']
     |
-    |     @router.post(
-    |         '/json/many',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postMany',
-    |         tags=['json'],
-    |     )
     |     def post_many(
     |         *,
     |         body: Annotated[tuple[str | None, models.Item], Depends(contract.PostMany.BODY.receive)],
@@ -182,6 +186,17 @@ render pydantic_v2.BaseModel
     |             post_many_handler(body=body[1], media_type=body[0]),
     |             contract.PostMany.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/json/many',
+    |         post_many,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postMany',
+    |         tags=['json'],
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = (
@@ -219,52 +234,61 @@ render pydantic_v2.BaseModel
     | def _add_post_text(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_text_handler = handlers['post_text']
     |
-    |     @router.post(
-    |         '/text',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postText',
-    |         tags=['raw'],
-    |     )
     |     def post_text(
     |         *,
     |         body: Annotated[models.FieldTextPostRequest, Depends(contract.PostText.BODY)],
     |     ) -> Response:
     |         return respond(post_text_handler(body=body), contract.PostText.RESPONSES)
     |
+    |     router.add_api_route(
+    |         '/text',
+    |         post_text,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postText',
+    |         tags=['raw'],
+    |     )
+    |
     |
     | def _add_put_binary(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     put_binary_handler = handlers['put_binary']
     |
-    |     @router.put(
-    |         '/binary',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='putBinary',
-    |         tags=['raw'],
-    |     )
     |     def put_binary(
     |         *,
     |         body: Annotated[bytes | Unset, Depends(contract.PutBinary.BODY)],
     |     ) -> Response:
     |         return respond(put_binary_handler(body=body), contract.PutBinary.RESPONSES)
     |
+    |     router.add_api_route(
+    |         '/binary',
+    |         put_binary,
+    |         methods=['PUT'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='putBinary',
+    |         tags=['raw'],
+    |     )
+    |
     |
     | def _add_post_raw(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_raw_handler = handlers['post_raw']
     |
-    |     @router.post(
+    |     def post_raw(*, request: Request) -> Response:
+    |         return respond(post_raw_handler(request=request), contract.PostRaw.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/raw',
+    |         post_raw,
+    |         methods=['POST'],
     |         status_code=204,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='postRaw',
     |         tags=['raw'],
     |     )
-    |     def post_raw(*, request: Request) -> Response:
-    |         return respond(post_raw_handler(request=request), contract.PostRaw.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (_add_post_text, _add_put_binary, _add_post_raw)
@@ -289,22 +313,14 @@ render pydantic_v2.BaseModel
     | from fastapi.responses import Response
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET, Unset
-    | from .._runtime.server.requests import absent
+    | from .._runtime.model_codecs.unset import Unset
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
     |
     |
     | def _add_post_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_form_handler = handlers['post_form']
     |
-    |     @router.post(
-    |         '/form',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postForm',
-    |         tags=['form'],
-    |     )
     |     def post_form(
     |         *,
     |         name: Annotated[str, Form(alias='name', max_length=20)],
@@ -312,26 +328,25 @@ render pydantic_v2.BaseModel
     |         tags: Annotated[list[str], Form(alias='tags', default_factory=absent)],
     |     ) -> Response:
     |         return respond(
-    |             post_form_handler(
-    |                 name=name,
-    |                 count=count,
-    |                 tags=UNSET if tags is None else tags,
-    |             ),
+    |             post_form_handler(name=name, count=count, tags=present(tags)),
     |             contract.PostForm.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/form',
+    |         post_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postForm',
+    |         tags=['form'],
+    |     )
     |
     |
     | def _add_post_optional_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_optional_form_handler = handlers['post_optional_form']
     |
-    |     @router.post(
-    |         '/form/optional',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postOptionalForm',
-    |         tags=['form'],
-    |     )
     |     def post_optional_form(
     |         *,
     |         body: Annotated[models.FieldFormOptionalPostRequest | Unset, Depends(contract.PostOptionalForm.BODY)],
@@ -341,18 +356,21 @@ render pydantic_v2.BaseModel
     |             contract.PostOptionalForm.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/form/optional',
+    |         post_optional_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postOptionalForm',
+    |         tags=['form'],
+    |     )
+    |
     |
     | def _add_post_either_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_either_form_handler = handlers['post_either_form']
     |
-    |     @router.post(
-    |         '/form/either',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postEitherForm',
-    |         tags=['form'],
-    |     )
     |     def post_either_form(
     |         *,
     |         body: Annotated[models.FieldFormEitherPostRequest, Depends(contract.PostEitherForm.BODY)],
@@ -362,18 +380,21 @@ render pydantic_v2.BaseModel
     |             contract.PostEitherForm.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/form/either',
+    |         post_either_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postEitherForm',
+    |         tags=['form'],
+    |     )
+    |
     |
     | def _add_post_nested_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_nested_form_handler = handlers['post_nested_form']
     |
-    |     @router.post(
-    |         '/form/nested',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postNestedForm',
-    |         tags=['form'],
-    |     )
     |     def post_nested_form(
     |         *,
     |         body: Annotated[models.FieldFormNestedPostRequest, Depends(contract.PostNestedForm.BODY)],
@@ -383,18 +404,21 @@ render pydantic_v2.BaseModel
     |             contract.PostNestedForm.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/form/nested',
+    |         post_nested_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postNestedForm',
+    |         tags=['form'],
+    |     )
+    |
     |
     | def _add_post_closed_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_closed_form_handler = handlers['post_closed_form']
     |
-    |     @router.post(
-    |         '/form/closed',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postClosedForm',
-    |         tags=['form'],
-    |     )
     |     def post_closed_form(
     |         *,
     |         body: Annotated[models.FieldFormClosedPostRequest, Depends(contract.PostClosedForm.BODY)],
@@ -404,18 +428,21 @@ render pydantic_v2.BaseModel
     |             contract.PostClosedForm.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/form/closed',
+    |         post_closed_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postClosedForm',
+    |         tags=['form'],
+    |     )
+    |
     |
     | def _add_post_choice_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     post_choice_form_handler = handlers['post_choice_form']
     |
-    |     @router.post(
-    |         '/form/choice',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='postChoiceForm',
-    |         tags=['form'],
-    |     )
     |     def post_choice_form(
     |         *,
     |         body: Annotated[models.FieldFormChoicePostRequest, Depends(contract.PostChoiceForm.BODY)],
@@ -425,18 +452,21 @@ render pydantic_v2.BaseModel
     |             contract.PostChoiceForm.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/form/choice',
+    |         post_choice_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postChoiceForm',
+    |         tags=['form'],
+    |     )
+    |
     |
     | def _add_upload(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     upload_handler = handlers['upload']
     |
-    |     @router.post(
-    |         '/upload',
-    |         status_code=204,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='upload',
-    |         tags=['form'],
-    |     )
     |     def upload(
     |         *,
     |         file: Annotated[UploadFile, File(alias='file')],
@@ -444,13 +474,20 @@ render pydantic_v2.BaseModel
     |         note: Annotated[str, Form(alias='note', default_factory=absent)],
     |     ) -> Response:
     |         return respond(
-    |             upload_handler(
-    |                 file=file,
-    |                 extra=UNSET if extra is None else extra,
-    |                 note=UNSET if note is None else note,
-    |             ),
+    |             upload_handler(file=file, extra=present(extra), note=present(note)),
     |             contract.Upload.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/upload',
+    |         upload,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='upload',
+    |         tags=['form'],
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = (

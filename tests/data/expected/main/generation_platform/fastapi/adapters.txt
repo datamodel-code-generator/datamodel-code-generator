@@ -53,23 +53,13 @@ render pydantic_v2.BaseModel
     | from pydantic import AwareDatetime
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET
-    | from .._runtime.server.requests import absent
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import dispatch, respond
     |
     |
     | def _add_list_pets(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     list_pets_handler = handlers['list_pets']
     |
-    |     @router.get(
-    |         '/pets',
-    |         status_code=200,
-    |         response_model=models.FieldPetsGetResponse,
-    |         response_model_by_alias=True,
-    |         response_model_exclude_unset=True,
-    |         operation_id='listPets',
-    |         tags=['pets'],
-    |     )
     |     def list_pets(
     |         *,
     |         tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
@@ -88,21 +78,41 @@ render pydantic_v2.BaseModel
     |         return dispatch(
     |             list_pets_handler(
     |                 limit=parameters.limit,
-    |                 tags=UNSET if tags is None else tags,
-    |                 kind=UNSET if kind is None else kind,
-    |                 x_request_id=UNSET if x_request_id is None else x_request_id,
-    |                 since=UNSET if since is None else since,
+    |                 tags=present(tags),
+    |                 kind=present(kind),
+    |                 x_request_id=present(x_request_id),
+    |                 since=present(since),
     |                 session=parameters.session,
     |             ),
     |             contract.ListPets.RESPONSES,
     |         )
     |
+    |     router.add_api_route(
+    |         '/pets',
+    |         list_pets,
+    |         methods=['GET'],
+    |         status_code=200,
+    |         response_model=models.FieldPetsGetResponse,
+    |         response_model_by_alias=True,
+    |         response_model_exclude_unset=True,
+    |         operation_id='listPets',
+    |         tags=['pets'],
+    |     )
+    |
     |
     | def _add_create_pet(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     create_pet_handler = handlers['create_pet']
     |
-    |     @router.post(
+    |     def create_pet(
+    |         *,
+    |         body: Annotated[models.NewPet, Depends(contract.CreatePet.BODY)],
+    |     ) -> object:
+    |         return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/pets',
+    |         create_pet,
+    |         methods=['POST'],
     |         status_code=201,
     |         response_model=models.Pet,
     |         response_model_by_alias=True,
@@ -110,18 +120,18 @@ render pydantic_v2.BaseModel
     |         operation_id='createPet',
     |         tags=['pets'],
     |     )
-    |     def create_pet(
-    |         *,
-    |         body: Annotated[models.NewPet, Depends(contract.CreatePet.BODY)],
-    |     ) -> object:
-    |         return dispatch(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
     |
     |
     | def _add_list_my_pets(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     list_my_pets_handler = handlers['list_my_pets']
     |
-    |     @router.get(
+    |     def list_my_pets() -> object:
+    |         return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/pets/mine',
+    |         list_my_pets,
+    |         methods=['GET'],
     |         status_code=200,
     |         response_model=models.FieldPetsMineGetResponse,
     |         response_model_by_alias=True,
@@ -129,44 +139,48 @@ render pydantic_v2.BaseModel
     |         operation_id='listMyPets',
     |         tags=['pets'],
     |     )
-    |     def list_my_pets() -> object:
-    |         return dispatch(list_my_pets_handler(), contract.ListMyPets.RESPONSES)
     |
     |
     | def _add_get_pet(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_pet_handler = handlers['get_pet']
     |
-    |     @router.get(
-    |         '/pets/{petId}',
-    |         status_code=200,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='getPet',
-    |         tags=['pets'],
-    |     )
     |     def get_pet(
     |         *,
     |         pet_id: Annotated[int, Path(alias='petId', ge=1, le=9223372036854775807)],
     |     ) -> Response:
     |         return respond(get_pet_handler(pet_id=pet_id), contract.GetPet.RESPONSES)
     |
+    |     router.add_api_route(
+    |         '/pets/{petId}',
+    |         get_pet,
+    |         methods=['GET'],
+    |         status_code=200,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='getPet',
+    |         tags=['pets'],
+    |     )
+    |
     |
     | def _add_delete_pet(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     delete_pet_handler = handlers['delete_pet']
     |
-    |     @router.delete(
+    |     def delete_pet(
+    |         *,
+    |         pet_id: Annotated[int, Path(alias='petId', ge=1, le=9223372036854775807)],
+    |     ) -> Response:
+    |         return respond(delete_pet_handler(pet_id=pet_id), contract.DeletePet.RESPONSES)
+    |
+    |     router.add_api_route(
     |         '/pets/{petId}',
+    |         delete_pet,
+    |         methods=['DELETE'],
     |         status_code=204,
     |         response_model=None,
     |         response_class=Response,
     |         operation_id='deletePet',
     |         tags=['pets'],
     |     )
-    |     def delete_pet(
-    |         *,
-    |         pet_id: Annotated[int, Path(alias='petId', ge=1, le=9223372036854775807)],
-    |     ) -> Response:
-    |         return respond(delete_pet_handler(pet_id=pet_id), contract.DeletePet.RESPONSES)
     |
     |
     | LITERAL_ROUTES: Final = (_add_list_pets, _add_create_pet, _add_list_my_pets)
@@ -185,7 +199,8 @@ render pydantic_v2.BaseModel
     |
     | from __future__ import annotations
     |
-    | from typing import Final, NamedTuple
+    | from dataclasses import dataclass
+    | from typing import Final
     |
     | import models
     |
@@ -200,7 +215,8 @@ render pydantic_v2.BaseModel
     | class ListPets:
     |     """Plans of the list_pets operation."""
     |
-    |     class Parameters(NamedTuple):
+    |     @dataclass(frozen=True, slots=True, kw_only=True)
+    |     class Parameters:
     |         """The adapter parameters of list_pets."""
     |
     |         limit: models.FieldPetsGetQueryLimitParameter

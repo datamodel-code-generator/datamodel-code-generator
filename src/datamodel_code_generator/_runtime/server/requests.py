@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from .errors import Record
 
 RequestKind: TypeAlias = Literal["json", "text", "binary", "form"]
+ValueT = TypeVar("ValueT")
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
@@ -50,6 +51,11 @@ class WireDecoder(Protocol):
 
 def absent() -> None:
     """Stand in for an omitted optional native parameter; the endpoint passes UNSET to the handler instead."""
+
+
+def present(value: ValueT | None) -> ValueT | Unset:
+    """Return an optional native parameter's value, or UNSET when the request omits it."""
+    return UNSET if value is None else value
 
 
 def _is_model(value: object) -> TypeIs[ModelValue[object]]:

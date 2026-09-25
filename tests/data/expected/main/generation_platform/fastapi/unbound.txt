@@ -33,22 +33,13 @@ render pydantic_v2.BaseModel
     | from pydantic import AwareDatetime
     |
     | from .._generated import contract
-    | from .._runtime.model_codecs.unset import UNSET
-    | from .._runtime.server.requests import absent
+    | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import dispatch
     |
     |
     | def _add_get_value(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
     |     get_value_handler = handlers['get_value']
     |
-    |     @router.get(
-    |         '/values/{id}',
-    |         status_code=200,
-    |         response_model=models.Value,
-    |         response_model_by_alias=True,
-    |         response_model_exclude_unset=True,
-    |         operation_id='getValue',
-    |     )
     |     def get_value(
     |         *,
     |         id: Annotated[int, Path(alias='id', ge=1)],
@@ -56,13 +47,20 @@ render pydantic_v2.BaseModel
     |         tags: Annotated[list[str], Query(alias='tags', default_factory=absent)],
     |     ) -> object:
     |         return dispatch(
-    |             get_value_handler(
-    |                 id=id,
-    |                 at=UNSET if at is None else at,
-    |                 tags=UNSET if tags is None else tags,
-    |             ),
+    |             get_value_handler(id=id, at=present(at), tags=present(tags)),
     |             contract.GetValue.RESPONSES,
     |         )
+    |
+    |     router.add_api_route(
+    |         '/values/{id}',
+    |         get_value,
+    |         methods=['GET'],
+    |         status_code=200,
+    |         response_model=models.Value,
+    |         response_model_by_alias=True,
+    |         response_model_exclude_unset=True,
+    |         operation_id='getValue',
+    |     )
     |
     |
     | LITERAL_ROUTES: Final = ()
