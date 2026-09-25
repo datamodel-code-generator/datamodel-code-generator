@@ -1,0 +1,16 @@
+{
+ "options": {
+  "class_decorators": [
+   "@functools.total_ordering"
+  ]
+ },
+ "bindings": true,
+ "declarations": {
+  "compatibility": [
+   {
+    "name": "everything",
+    "backend": "pydantic_v2.BaseModel"
+   }
+  ]
+ }
+}

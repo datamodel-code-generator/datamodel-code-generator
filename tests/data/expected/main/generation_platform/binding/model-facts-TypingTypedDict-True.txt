@@ -34,5 +34,6 @@
   "configuration": [],
   "functional_typeddict": false,
   "extra_items_present": false,
-  "extra_items": null
+  "extra_items": null,
+  "custom_base": false
 }

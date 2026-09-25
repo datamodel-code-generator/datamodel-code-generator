@@ -1421,6 +1421,50 @@ def test_ambiguous_yaml_response_status() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("case", "options"),
+    [
+        ("custom-base", {"base_class": "app.Base"}),
+        ("mapped-base", {"base_class_map": {"Bad": "app.Base"}}),
+        ("decorated", {"class_decorators": ["@functools.total_ordering"]}),
+    ],
+)
+def test_custom_origin_declarations(case: str, options: dict[str, object]) -> None:
+    """Keep builtin declarations of custom-base models behind their mark; decorated models keep none."""
+    product, retained = generate_product(
+        (SOURCE / "binding/session-selection.json").resolve(),
+        GenerateConfig(
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Api],
+            input_filename="selection.json",
+            formatters=[],
+            disable_timestamp=True,
+            **options,
+        ),
+    )
+    product.close()
+    fields: dict[object, list[object]] = {}
+    for member in product.batch.fields:
+        fields.setdefault(member.consumer, []).append(member.model_facts)
+    assert_output(
+        "".join(
+            f"{symbol.name}: "
+            f"{'no facts' if symbol.facts is None else 'custom base' if symbol.facts.custom_base else 'builtin'}, "
+            f"{sum(facts is not None for facts in fields.get(symbol.id, ()))} of {len(fields.get(symbol.id, ()))} "
+            "field facts\n"
+            for symbol in product.batch.symbols
+        )
+        + "".join(
+            f"{use.id.use_site.pointer}: {code}\n"
+            for use in product.batch.type_uses
+            if use.id.role == "request_body"
+            for code in dict.fromkeys(item.code for item in require_type_bindings(product.batch, (use.id,)))
+        ),
+        EXPECTED / f"session-review/custom-origin-{case}.txt",
+    )
+    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
+
+
 def test_artifact_imported_base_redefinition() -> None:
     """Reject replacement of a proven imported base before its generated subclass."""
     product, retained = generate_product(

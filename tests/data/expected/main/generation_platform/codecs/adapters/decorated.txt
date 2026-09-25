@@ -1,0 +1,3 @@
+diagnostic MC_ADAPTER_REQUIRED /paths/~1visits/post/requestBody: The FieldVisitsPostRequest model has no captured field facts, so its builtin compatibility cannot bind it
+binding /paths/~1visits/post request_body: adapted.models:FieldVisitsPostRequest scalar pydantic_type_adapter native
+use /paths/~1visits/post request_body: codec_0 None None

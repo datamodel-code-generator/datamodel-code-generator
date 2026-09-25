@@ -1,0 +1,6 @@
+Good: no facts, 0 of 1 field facts
+Bad: no facts, 0 of 1 field facts
+/paths/~1good/post/requestBody: BND_FIELD_UNRESOLVED
+/paths/~1good/post/requestBody: BND_CUSTOM_BINDING_REQUIRED
+/paths/~1bad/post/requestBody: BND_FIELD_UNRESOLVED
+/paths/~1bad/post/requestBody: BND_CUSTOM_BINDING_REQUIRED

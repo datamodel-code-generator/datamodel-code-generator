@@ -11,5 +11,41 @@
     "backend": "pydantic_v2.BaseModel"
    }
   ]
- }
+ },
+ "cases": [
+  {
+   "name": "visit",
+   "use": "/paths/~1visits/post request_body",
+   "op": "decode",
+   "value": {
+    "pet": {
+     "name": "Rex"
+    },
+    "clinic": {
+     "city": "Oslo"
+    }
+   }
+  },
+  {
+   "name": "visit-read-only",
+   "use": "/paths/~1visits/post request_body",
+   "op": "decode",
+   "value": {
+    "pet": {
+     "id": 1,
+     "name": "Rex"
+    }
+   }
+  },
+  {
+   "name": "visit-missing-pet",
+   "use": "/paths/~1visits/post request_body",
+   "op": "decode",
+   "value": {
+    "clinic": {
+     "city": "Oslo"
+    }
+   }
+  }
+ ]
 }
