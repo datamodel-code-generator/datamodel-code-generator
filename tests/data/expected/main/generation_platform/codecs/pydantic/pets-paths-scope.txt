@@ -1,0 +1,12 @@
+diagnostic BND_MODEL_SCOPE_REQUIRED /paths/~1pets~1{id}~1photo/get/parameters/0: The use has no generated native type
+diagnostic BND_MODEL_SCOPE_REQUIRED /paths/~1pets~1{id}/patch/parameters/0: The use has no generated native type
+use /paths/~1pets/get parameter query limit: native scalar None models=[]
+use /paths/~1pets/get parameter query tags: native array None models=[]
+use /paths/~1pets/get parameter query filter: native map None models=[]
+use /paths/~1pets/get parameter query choice: native union None models=[]
+use /paths/~1pets/get response_body 200: native root models:PetsGetResponse models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True), ('models:PetsGetResponse', 'root', 'ignore', True)]
+use /paths/~1pets/post request_body: envelope model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets/post response_body 201: native model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets~1lookup/get response_body 200: native root models:PetsLookupGetResponse models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True), ('models:PetsLookupGetResponse', 'root', 'ignore', True)]
+use /paths/~1pets~1{id}/patch request_body: native model models:PetPatch models=[('models:PetPatch', 'model', 'ignore', True)]
+use /paths/~1pets~1{id}/patch response_body 200: native model models:PetPatch models=[('models:PetPatch', 'model', 'ignore', True)]

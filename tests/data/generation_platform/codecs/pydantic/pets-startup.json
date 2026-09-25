@@ -1,0 +1,19 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_startup",
+  "options": {"use_unique_items_as_set": true},
+  "startup": [
+    {"name": "matching", "use": "/paths/~1pets/post response_body 201"},
+    {"name": "plain-validation-alias", "use": "/paths/~1pets/post response_body 201",
+     "models": {"models:Pet": "tests.data.python.model_codec_base:AliasPet"}},
+    {"name": "aliases-refused", "use": "/paths/~1pets/post response_body 201",
+     "models": {"models:Pet": "tests.data.python.model_codec_base:NamePet"}},
+    {"name": "converter", "use": "/paths/~1pets/post response_body 201", "binding": {"converter_strategy": "registered_adapter"}},
+    {"name": "backend", "use": "/paths/~1pets/post response_body 201", "binding": {"backend": "msgspec.Struct"}},
+    {"name": "bundle-direction", "use": "/paths/~1pets/post response_body 201", "bundle": "request"},
+    {"name": "missing-model", "use": "/paths/~1pets/post response_body 201", "models": {"models:Owner": ""}},
+    {"name": "other-model", "use": "/paths/~1pets/post response_body 201", "models": {"models:Pet": "models:Owner"}},
+    {"name": "root-model", "use": "/paths/~1pets/get response_body 200", "models": {"models:FieldPetsGetResponse": "models:Pet"}},
+    {"name": "unknown-schema", "use": "/paths/~1pets/post response_body 201", "binding": {"schema_id": "https://dcg.invalid/inputs/missing#"}}
+  ]
+}

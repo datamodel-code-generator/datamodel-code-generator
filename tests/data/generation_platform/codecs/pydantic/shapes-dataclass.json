@@ -1,0 +1,28 @@
+{
+  "backend": "pydantic_v2.dataclass",
+  "package": "codec_shapes_dataclass",
+  "cases": [
+    {"name": "animal-client-cat", "use": "/paths/~1animals/post request_body", "surface": "client", "op": "from_wire",
+     "value": {"id": 3, "meow": true}},
+    {"name": "animal-server-dog-extra", "use": "/paths/~1animals/post request_body", "op": "decode",
+     "value": {"meow": true, "bark": 1}},
+    {"name": "animal-client-decode-dog", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"id": 2, "bark": 3, "x": 1}},
+    {"name": "animal-server-encode-dog", "use": "/paths/~1animals/post response_body 200", "op": "encode",
+     "value": {"result": "animal-client-decode-dog", "attr": "value"}},
+    {"name": "animal-client-decode-null", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "decode",
+     "value": null},
+    {"name": "animal-server-encode-null", "use": "/paths/~1animals/post response_body 200", "op": "encode",
+     "value": {"result": "animal-client-decode-null", "attr": "value"}},
+    {"name": "animal-server-encode-wrong-type", "use": "/paths/~1animals/post response_body 200", "op": "encode",
+     "value": {"call": "Node", "args": {"value": 1}}},
+    {"name": "tree-client-decode", "use": "/paths/~1tree/put response_body 200", "surface": "client", "op": "decode",
+     "value": {"value": 1, "children": [{"value": 2, "extra": 1}], "index": {"a": {"value": 3, "deep": true}}}},
+    {"name": "tree-server-encode", "use": "/paths/~1tree/put response_body 200", "op": "encode",
+     "value": {"result": "tree-client-decode", "attr": "value"}},
+    {"name": "values-server-decode", "use": "/paths/~1values/post request_body", "op": "decode",
+     "value": {"amount": 2, "secret": "pw", "level": 1}},
+    {"name": "values-client-encode", "use": "/paths/~1values/post request_body", "surface": "client", "op": "encode",
+     "value": {"result": "values-server-decode", "attr": "value"}}
+  ]
+}

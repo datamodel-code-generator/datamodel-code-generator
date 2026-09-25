@@ -1,0 +1,9 @@
+{
+  "backend": "pydantic_v2.dataclass",
+  "package": "codec_pets_startup_dataclass",
+  "startup": [
+    {"name": "matching", "use": "/paths/~1pets/post response_body 201"},
+    {"name": "model-for-dataclass", "use": "/paths/~1pets/post response_body 201",
+     "models": {"models:Pet": "tests.data.python.model_codec_base:AliasPet"}}
+  ]
+}

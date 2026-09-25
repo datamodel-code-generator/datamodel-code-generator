@@ -1,0 +1,15 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_missing",
+  "options": {"use_missing_sentinel": true},
+  "cases": [
+    {"name": "created-client-decode", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "tag": "t"}},
+    {"name": "created-server-encode", "use": "/paths/~1pets/post response_body 201", "op": "encode",
+     "value": {"result": "created-client-decode", "attr": "value"}},
+    {"name": "created-server-encode-native", "use": "/paths/~1pets/post response_body 201", "op": "encode",
+     "value": {"call": "Pet", "args": {"id": 1, "name": "Mimi", "status": "new"}}},
+    {"name": "patch-client-encode-native", "use": "/paths/~1pets~1{id}/patch request_body", "surface": "client", "op": "encode",
+     "value": {"call": "PetPatch", "args": {"name": "B"}}}
+  ]
+}

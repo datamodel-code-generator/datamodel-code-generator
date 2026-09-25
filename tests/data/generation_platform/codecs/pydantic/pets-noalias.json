@@ -1,0 +1,25 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_noalias",
+  "options": {"no_alias": true, "snake_case_field": true},
+  "cases": [
+    {"name": "created-client-decode", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "nick-name": "Mi", "owner": {"name": "Ann", "e-mail": "ann@example.com"}}},
+    {"name": "created-server-encode", "use": "/paths/~1pets/post response_body 201", "op": "encode",
+     "value": {"result": "created-client-decode", "attr": "value"}},
+    {"name": "created-client-decode-native-email", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "owner": {"name": "Ann", "e-mail": "ann@example"}}},
+    {"name": "list-client-decode-native-email", "use": "/paths/~1pets/get response_body 200", "surface": "client", "op": "decode",
+     "value": [{"id": 1, "name": "Mimi", "status": "new", "owner": {"name": "Ann", "e-mail": "ann@example"}, "scores": {"x": 1}}]},
+    {"name": "create-server-decode", "use": "/paths/~1pets/post request_body", "op": "decode",
+     "value": {"name": "Mimi", "status": "new", "nick-name": "Mi", "hint": 1}},
+    {"name": "create-client-from-wire", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "from_wire",
+     "value": {"id": 3, "name": "Mimi", "status": "new", "owner": {"name": "Ann", "e-mail": "ann@example.com", "x": 1}}},
+    {"name": "created-client-decode-shadow", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "nick_name": "x", "owner": {"name": "Ann", "e-mail": "ann@example.com", "e_mail": "kay@example.com"}}},
+    {"name": "created-server-encode-shadow", "use": "/paths/~1pets/post response_body 201", "op": "encode",
+     "value": {"result": "created-client-decode-shadow"}},
+    {"name": "create-server-decode-shadow", "use": "/paths/~1pets/post request_body", "op": "decode",
+     "value": {"name": "Mimi", "status": "new", "nick-name": "Mi", "nick_name": "x"}}
+  ]
+}

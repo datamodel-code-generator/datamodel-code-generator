@@ -1,0 +1,410 @@
+{
+  "resources": [
+    {
+      "uri": "https://dcg.invalid/inputs/root",
+      "roots": [
+        "/components/schemas/ContextA",
+        "/components/schemas/ContextB",
+        "/components/schemas/Guarded",
+        "/components/schemas/Item",
+        "/components/schemas/Mode",
+        "/components/schemas/Shared",
+        "/components/schemas/Stamp",
+        "/paths/~1contexts/post/requestBody/content/application~1json/schema",
+        "/paths/~1contexts/post/responses/201/content/application~1json/schema",
+        "/paths/~1contexts/put/requestBody/content/application~1json/schema",
+        "/paths/~1guarded/post/requestBody/content/application~1json/schema",
+        "/paths/~1items/post/requestBody/content/application~1json/schema",
+        "/paths/~1items/post/responses/200/content/application~1json/schema"
+      ],
+      "contents": {
+        "components": {
+          "schemas": {
+            "ContextA": {
+              "allOf": [
+                {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Shared"
+                },
+                {
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "readOnly": true
+                    }
+                  }
+                }
+              ]
+            },
+            "ContextB": {
+              "allOf": [
+                {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Shared"
+                },
+                {
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    }
+                  }
+                }
+              ]
+            },
+            "Guarded": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "readOnly": true
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "not": {
+                "required": [
+                  "id"
+                ]
+              },
+              "if": {
+                "required": [
+                  "id"
+                ]
+              },
+              "then": {
+                "required": [
+                  "note"
+                ]
+              },
+              "allOf": [
+                {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Stamp"
+                }
+              ],
+              "anyOf": [
+                {
+                  "not": {
+                    "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Stamp"
+                  }
+                },
+                {
+                  "type": "object"
+                }
+              ]
+            },
+            "Item": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "token",
+                "mode",
+                "both"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "readOnly": true
+                },
+                "name": {
+                  "type": "string"
+                },
+                "token": {
+                  "type": "string",
+                  "writeOnly": true
+                },
+                "mode": {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Mode"
+                },
+                "both": {
+                  "type": "string",
+                  "readOnly": true,
+                  "writeOnly": true
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "label",
+                      "secret"
+                    ],
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "string",
+                        "writeOnly": true
+                      }
+                    }
+                  }
+                },
+                "pair": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "key"
+                      ],
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "readOnly": true
+                        }
+                      }
+                    }
+                  ],
+                  "items": false
+                }
+              },
+              "patternProperties": {
+                "^x-": {
+                  "type": "object",
+                  "required": [
+                    "hidden"
+                  ],
+                  "properties": {
+                    "hidden": {
+                      "type": "string",
+                      "writeOnly": true
+                    }
+                  }
+                }
+              },
+              "dependentRequired": {
+                "name": [
+                  "id",
+                  "token"
+                ]
+              },
+              "dependentSchemas": {
+                "token": {
+                  "required": [
+                    "id"
+                  ]
+                }
+              },
+              "if": {
+                "required": [
+                  "name"
+                ]
+              },
+              "then": {
+                "required": [
+                  "id"
+                ]
+              },
+              "else": {
+                "required": [
+                  "token"
+                ]
+              },
+              "not": {
+                "required": [
+                  "missing"
+                ]
+              }
+            },
+            "Mode": {
+              "anyOf": [
+                {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Mode"
+                },
+                {
+                  "type": "integer",
+                  "readOnly": true
+                }
+              ]
+            },
+            "Shared": {
+              "required": [
+                "key"
+              ]
+            },
+            "Stamp": {
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "readOnly": true
+                },
+                "parent": {
+                  "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Stamp"
+                }
+              }
+            }
+          }
+        },
+        "paths": {
+          "/contexts": {
+            "post": {
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "https://dcg.invalid/inputs/root#/components/schemas/ContextA"
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "https://dcg.invalid/inputs/root#/components/schemas/ContextB"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "put": {
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "https://dcg.invalid/inputs/root#/components/schemas/ContextB"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/guarded": {
+            "post": {
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Guarded"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/items": {
+            "post": {
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Item"
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Item"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "schemas": [
+    "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1contexts/post/requestBody/content/application~1json/schema",
+    "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1contexts/put/requestBody/content/application~1json/schema",
+    "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1guarded/post/requestBody/content/application~1json/schema",
+    "request_body - - - application/json https://dcg.invalid/inputs/root#/paths/~1items/post/requestBody/content/application~1json/schema",
+    "response_body - - 200 application/json https://dcg.invalid/inputs/root#/paths/~1items/post/responses/200/content/application~1json/schema",
+    "response_body - - 201 application/json https://dcg.invalid/inputs/root#/paths/~1contexts/post/responses/201/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/ContextA",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/ContextA/allOf/1/properties/key",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/ContextB",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/ContextB/allOf/1/properties/key",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/anyOf/0",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/anyOf/1",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/properties/id",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/properties/name",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Guarded/properties/note",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/both",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/id",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/mode",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/name",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/pair",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/pair/prefixItems/0",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/pair/prefixItems/0/properties/key",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/tags",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/tags/items",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/tags/items/properties/label",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/tags/items/properties/secret",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Item/properties/token",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Mode",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Mode/anyOf/0",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Mode/anyOf/1",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Shared",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Stamp",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Stamp/properties/id",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Stamp/properties/parent",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1contexts/post/requestBody/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1contexts/post/responses/201/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1contexts/put/requestBody/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1guarded/post/requestBody/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/post/requestBody/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1items/post/responses/200/content/application~1json/schema"
+  ],
+  "parameters": {
+    "/paths/~1items/post": [],
+    "/paths/~1contexts/post": [],
+    "/paths/~1contexts/put": [],
+    "/paths/~1guarded/post": []
+  },
+  "views": {
+    "request": {
+      "patches": [
+        "https://dcg.invalid/inputs/root#/components/schemas/Item required=[\"name\", \"token\", \"mode\"]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item dependentRequired={\"name\": [\"token\"]}",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item/properties/pair/prefixItems/0 required=[]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item/then required=[]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item/dependentSchemas/token required=[]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Shared required=[]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Stamp required=[]"
+      ],
+      "flagged": [
+        "https://dcg.invalid/inputs/root#/paths/~1contexts/post/requestBody/content/application~1json/schema",
+        "https://dcg.invalid/inputs/root#/paths/~1guarded/post/requestBody/content/application~1json/schema",
+        "https://dcg.invalid/inputs/root#/paths/~1items/post/requestBody/content/application~1json/schema"
+      ]
+    },
+    "response": {
+      "patches": [
+        "https://dcg.invalid/inputs/root#/components/schemas/Item required=[\"id\", \"name\", \"mode\"]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item dependentRequired={\"name\": [\"id\"]}",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item/properties/tags/items required=[\"label\"]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item/patternProperties/^x- required=[]",
+        "https://dcg.invalid/inputs/root#/components/schemas/Item/else required=[]"
+      ],
+      "flagged": [
+        "https://dcg.invalid/inputs/root#/paths/~1items/post/responses/200/content/application~1json/schema"
+      ]
+    }
+  },
+  "diagnostics": [
+    "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Item/required: A required property's readOnly or writeOnly annotation is conditional",
+    "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Item/properties/both: A property cannot be both read-only and write-only",
+    "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Shared/required: The directional required members of a shared schema depend on how it is referenced",
+    "MC_SCHEMA_DIALECT directions.yaml#/components/schemas/Stamp/required: The directional required members of a shared schema depend on how it is referenced"
+  ]
+}

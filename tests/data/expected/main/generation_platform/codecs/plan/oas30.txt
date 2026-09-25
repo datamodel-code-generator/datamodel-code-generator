@@ -293,6 +293,16 @@
       }
     ]
   },
+  "views": {
+    "request": {
+      "patches": [],
+      "flagged": []
+    },
+    "response": {
+      "patches": [],
+      "flagged": []
+    }
+  },
   "diagnostics": [],
   "validation": [
     "https://dcg.invalid/inputs/root#/components/schemas/Item {\"id\": 1, \"name\": null, \"tag\": \"a\", \"other\": \"b\", \"score\": \"9.5\", \"choice\": \"a\"} -> valid",

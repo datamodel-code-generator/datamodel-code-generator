@@ -1,0 +1,9 @@
+use /paths/~1animals/post request_body: envelope root models:FieldAnimalsPostRequest models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostRequest', 'root', 'ignore', True)]
+use /paths/~1animals/post response_body 200: native root models:FieldAnimalsPostResponse models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostResponse', 'root', 'ignore', True)]
+use /paths/~1tree/put request_body: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
+use /paths/~1tree/put response_body 200: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
+use /paths/~1mixed/post request_body: native root models:Mixed models=[('models:Large', 'model', 'ignore', True), ('models:Mixed', 'root', 'ignore', True), ('models:Small', 'model', 'ignore', True)]
+use /paths/~1values/post request_body: native model models:Values models=[('models:Values', 'model', 'ignore', True)]
+use /paths/~1values/post response_body 200: native model models:Values models=[('models:Values', 'model', 'ignore', True)]
+values-server-decode: model Values(amount=Decimal('2.5'), day=None, clock=None, span=None, uid=None, secret=None, blob=None, level=None, link=None, any=None, list_=None, codes=None, un=None, mark=None) set=['amount'] wire={"amount":2.5} presence=['', '/amount'] extras={}
+values-server-response: wire={"amount":2.5}

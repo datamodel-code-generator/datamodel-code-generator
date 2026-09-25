@@ -1,0 +1,12 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_pets_strict",
+  "options": {"strict_types": ["int"]},
+  "cases": [
+    {"name": "created-client-decode-integral-number", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1.0, "name": "Mimi", "status": "new"}},
+    {"name": "created-client-decode", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
+     "value": {"id": 1, "name": "Mimi", "status": "new"}},
+    {"name": "limit-server-decode-integral-number", "use": "/paths/~1pets/get parameter query limit", "op": "decode", "value": 5.0}
+  ]
+}

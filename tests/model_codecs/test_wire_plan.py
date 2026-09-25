@@ -22,7 +22,7 @@ def test_wire_plan_bundles_validate(name: str) -> None:
     )
 
 
-@pytest.mark.parametrize("name", ["oas32", "dialects", "dialects32"])
+@pytest.mark.parametrize("name", ["oas32", "dialects", "dialects32", "directions"])
 def test_wire_plan_rules(name: str) -> None:
     """Plan OpenAPI 3.2 parameter forms and report every rule that needs an explicit adapter."""
     assert_output(wire_plan_report((PLANS / f"{name}.yaml").resolve()), EXPECTED / f"{name}.txt")

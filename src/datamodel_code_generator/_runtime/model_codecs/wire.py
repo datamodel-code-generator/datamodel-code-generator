@@ -56,6 +56,11 @@ def escape_pointer_token(token: str | int) -> str:
     return token.replace("~", "~0").replace("/", "~1") if isinstance(token, str) else str(token)
 
 
+def pointer_tokens(pointer: str) -> list[str]:
+    """Split an RFC 6901 pointer into its unescaped reference tokens."""
+    return [token.replace("~1", "/").replace("~0", "~") for token in pointer[1:].split("/")] if pointer else []
+
+
 @overload
 def freeze_wire(value: JSONValue) -> WireValue: ...
 @overload
@@ -77,6 +82,11 @@ def presence_of(value: WireValue) -> PresenceTree: ...
 def presence_of(value: JSONValue | WireValue) -> PresenceTree:
     """Build presence from the actual keys and indices of a JSON-domain value."""
     return _presence(value, "", set())
+
+
+def snapshot_presence(value: WireValue) -> PresenceTree:
+    """Build presence for a snapshot that freeze_wire produced, without repeating its domain checks."""
+    return _snapshot_presence(value, "")
 
 
 def checked_text(value: str) -> str:
@@ -151,6 +161,25 @@ def _thaw(value: JSONValue | WireValue, active: set[int]) -> JSONValue:
         active.discard(identity)
         return thawed_items
     return checked_scalar(value)
+
+
+def _snapshot_presence(value: WireValue, pointer: str) -> PresenceTree:
+    if isinstance(value, tuple):
+        return PresenceTree(
+            pointer,
+            "array",
+            tuple((index, _snapshot_presence(item, f"{pointer}/{index}")) for index, item in enumerate(value)),
+        )
+    if isinstance(value, Mapping):
+        return PresenceTree(
+            pointer,
+            "object",
+            tuple(
+                (name, _snapshot_presence(item, f"{pointer}/{escape_pointer_token(name)}"))
+                for name, item in value.items()
+            ),
+        )
+    return PresenceTree(pointer, "value")
 
 
 def _presence(value: JSONValue | WireValue, pointer: str, active: set[int]) -> PresenceTree:

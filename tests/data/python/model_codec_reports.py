@@ -10,7 +10,13 @@ from enum import IntEnum
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._runtime.model_codecs.errors import CodecError, WireIssue, WireValidationError
+from datamodel_code_generator._runtime.model_codecs.errors import (
+    CodecError,
+    NativeIssue,
+    NativeValidationError,
+    WireIssue,
+    WireValidationError,
+)
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     decode_json,
@@ -31,7 +37,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     raw_parameter,
 )
 from datamodel_code_generator._runtime.model_codecs.patterns import MatchBudget, compile_pattern, plan_pattern, search
-from datamodel_code_generator._runtime.model_codecs.schema import SchemaBundle, SchemaResource
+from datamodel_code_generator._runtime.model_codecs.schema import DirectionalView, SchemaBundle, SchemaResource
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire, presence_of, thaw_wire
 
@@ -215,8 +221,10 @@ def _issues(issues: tuple[WireIssue, ...]) -> str:
     )
 
 
-def _bundle(resources: list[tuple[str, object, tuple[str, ...]]]) -> SchemaBundle:
-    return SchemaBundle(SchemaResource(uri=uri, contents=freeze_wire(contents), roots=roots) for uri, contents, roots in resources)
+def _bundle(resources: list[tuple[str, object, tuple[str, ...]]], view: DirectionalView | None = None) -> SchemaBundle:
+    return SchemaBundle(
+        (SchemaResource(uri=uri, contents=freeze_wire(contents), roots=roots) for uri, contents, roots in resources), view
+    )
 
 
 def schema_report(path: Path) -> str:
@@ -254,11 +262,15 @@ def schema_report(path: Path) -> str:
     pet = bundle.validator(f"{root}#/components/schemas/Pet")
     lines.append(f"cached-validator: {pet is bundle.validator(f'{root}#/components/schemas/Pet')}")
     recursive = _bundle([(root, {"items": {"$ref": "#"}}, ("",))]).validator(f"{root}#")
+    directional = _bundle(
+        [(root, {"items": {"$ref": "#"}}, ("",))], DirectionalView(direction="response", flagged=(f"{root}#",))
+    ).validator(f"{root}#")
     deep: object = []
     for _ in range(100_000):
         deep = [deep]
     lines.extend((
         f"deep-instance: {attempt(lambda: _issues(recursive.validate(deep)))}",
+        f"deep-exclusions: {attempt(lambda: str(directional.excluded(deep)))}",
         f"pattern-budget: {attempt(lambda: _issues(pet.validate({'name': 'Rex'}, budget=MatchBudget(remaining=2))))}",
         f"pattern-subject: {attempt(lambda: _issues(pet.validate({'name': 'R' + 'a' * (1 << 20)})))}",
         f"bundled-boolean: {_issues(_bundle([(root, True, ('',))]).validator(f'{root}#').validate(None))}",
@@ -414,6 +426,9 @@ def media_report(path: Path) -> str:
         f"error-empty: {WireValidationError(())}",
         f"error-pointer: {WireValidationError((issue, root_issue))}",
         f"error-root: {WireValidationError((root_issue,))}",
+        f"native-empty: {NativeValidationError(())}",
+        f"native-pointer: {NativeValidationError((NativeIssue(code='native.missing', pointer='/a', native_path=('a',)),))}",
+        f"native-root: {NativeValidationError((NativeIssue(code='native.model_type', pointer='', native_path=()),))}",
         f"unset: {UNSET!r} {bool(UNSET)} {UNSET is Unset.UNSET}",
     ))
     return "\n".join(lines) + "\n"

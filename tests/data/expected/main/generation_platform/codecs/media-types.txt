@@ -21,4 +21,7 @@ issue-message: ValueError A wire issue message must not exceed 1024 characters
 error-empty: The wire value is invalid
 error-pointer: Wrong type at /a
 error-root: Wrong type at /
+native-empty: The native type rejected the value
+native-pointer: The native type rejected the value (native.missing) at /a
+native-root: The native type rejected the value (native.model_type) at /
 unset: UNSET False True

@@ -1,0 +1,10 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_shapes_annotated",
+  "options": {"use_annotated": true, "field_constraints": true},
+  "cases": [
+    {"name": "values-server-decode", "use": "/paths/~1values/post request_body", "op": "decode", "value": {"amount": 2.5}},
+    {"name": "values-server-response", "use": "/paths/~1values/post response_body 200", "op": "encode",
+     "value": {"result": "values-server-decode", "attr": "value"}}
+  ]
+}

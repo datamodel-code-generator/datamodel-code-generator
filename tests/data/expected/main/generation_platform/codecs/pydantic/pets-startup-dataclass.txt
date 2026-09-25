@@ -1,0 +1,2 @@
+matching: built
+model-for-dataclass: CodecConfigurationError The native type of models:Pet does not match its binding

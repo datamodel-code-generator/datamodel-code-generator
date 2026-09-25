@@ -1,0 +1,21 @@
+use /paths/~1pets/get parameter query limit: native root models:FieldPetsGetQueryLimitParameter models=[('models:FieldPetsGetQueryLimitParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get parameter query tags: native root models:FieldPetsGetQueryTagsParameter models=[('models:FieldPetsGetQueryTagsParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get parameter query filter: native root models:FieldPetsGetQueryFilterParameter models=[('models:FieldPetsGetQueryFilterParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get parameter query choice: native root models:FieldPetsGetQueryChoiceParameter models=[('models:FieldPetsGetQueryChoiceParameter', 'root', 'ignore', True)]
+use /paths/~1pets/get response_body 200: native root models:FieldPetsGetResponse models=[('models:FieldPetsGetResponse', 'root', 'ignore', True), ('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets/post request_body: envelope model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets/post response_body 201: native model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets~1lookup/get response_body 200: native root models:FieldPetsLookupGetResponse models=[('models:FieldPetsLookupGetResponse', 'root', 'ignore', True), ('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
+use /paths/~1pets~1{id}~1photo/get parameter path id: native root models:FieldPetsIdPhotoGetPathIdParameter models=[('models:FieldPetsIdPhotoGetPathIdParameter', 'root', 'ignore', True)]
+use /paths/~1pets~1{id}/patch parameter path id: native root models:FieldPetsIdPatchPathIdParameter models=[('models:FieldPetsIdPatchPathIdParameter', 'root', 'ignore', True)]
+use /paths/~1pets~1{id}/patch request_body: native model models:PetPatch models=[('models:PetPatch', 'model', 'ignore', True)]
+use /paths/~1pets~1{id}/patch response_body 200: native model models:PetPatch models=[('models:PetPatch', 'model', 'ignore', True)]
+created-client-decode: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name='Mi', password=None, kind=None, owner=Owner(name='Ann', e_mail='ann@example.com', phone=None), co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) set=['id', 'name', 'nick_name', 'owner', 'status'] wire={"id":1,"name":"Mimi","status":"new","nick-name":"Mi","owner":{"name":"Ann","e-mail":"ann@example.com"}} presence=['', '/id', '/name', '/status', '/nick-name', '/owner', '/owner/name', '/owner/e-mail'] extras={}
+created-server-encode: wire={"id":1,"name":"Mimi","status":"new","nick-name":"Mi","owner":{"name":"Ann","e-mail":"ann@example.com"}}
+created-client-decode-native-email: NativeValidationError native.value_error@/owner/e-mail['owner', 'e_mail']
+list-client-decode-native-email: NativeValidationError native.value_error@/0/owner/e-mail[0, 'owner', 'e_mail']
+create-server-decode: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","nick-name":"Mi","hint":1} extras={"/hint":1}
+create-client-from-wire: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","owner":{"name":"Ann","e-mail":"ann@example.com","x":1}} extras={}
+created-client-decode-shadow: model Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=None, owner=Owner(name='Ann', e_mail='ann@example.com', phone=None), co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0) set=['id', 'name', 'owner', 'status'] wire={"id":1,"name":"Mimi","status":"new","nick_name":"x","owner":{"name":"Ann","e-mail":"ann@example.com","e_mail":"kay@example.com"}} presence=['', '/id', '/name', '/status', '/nick_name', '/owner', '/owner/name', '/owner/e-mail', '/owner/e_mail'] extras={"/nick_name":"x","/owner/e_mail":"kay@example.com"}
+created-server-encode-shadow: wire={"id":1,"name":"Mimi","status":"new","nick_name":"x","owner":{"name":"Ann","e-mail":"ann@example.com","e_mail":"kay@example.com"}}
+create-server-decode-shadow: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","nick-name":"Mi","nick_name":"x"} extras={"/nick_name":"x"}

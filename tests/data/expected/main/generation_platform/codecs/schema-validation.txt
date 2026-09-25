@@ -60,6 +60,7 @@ unknown-schema: CodecConfigurationError Schema https://dcg.invalid/inputs/docume
 container-root: CodecConfigurationError Schema https://dcg.invalid/inputs/root# does not identify a bundled schema
 cached-validator: True
 deep-instance: CodecResourceLimitError The wire value is nested beyond the validator recursion limit
+deep-exclusions: CodecResourceLimitError The wire value is nested beyond the validator recursion limit
 pattern-budget: CodecResourceLimitError Pattern subjects exceed the cumulative byte limit for one codec call
 pattern-subject: CodecResourceLimitError A pattern subject exceeds 1048576 bytes
 bundled-boolean: valid

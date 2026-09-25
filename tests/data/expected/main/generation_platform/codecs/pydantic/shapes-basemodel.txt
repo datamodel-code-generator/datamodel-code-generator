@@ -1,0 +1,42 @@
+use /paths/~1animals/post request_body: envelope root models:FieldAnimalsPostRequest models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostRequest', 'root', 'ignore', True)]
+use /paths/~1animals/post response_body 200: native root models:FieldAnimalsPostResponse models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostResponse', 'root', 'ignore', True)]
+use /paths/~1tree/put request_body: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
+use /paths/~1tree/put response_body 200: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
+use /paths/~1mixed/post request_body: native root models:Mixed models=[('models:Large', 'model', 'ignore', True), ('models:Mixed', 'root', 'ignore', True), ('models:Small', 'model', 'ignore', True)]
+use /paths/~1values/post request_body: native model models:Values models=[('models:Values', 'model', 'ignore', True)]
+use /paths/~1values/post response_body 200: native model models:Values models=[('models:Values', 'model', 'ignore', True)]
+animal-client-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true} extras={}
+animal-server-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":1,"name":"Rex"} extras={}
+animal-server-dog-extra: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"meow":true,"bark":1} extras={"/meow":true}
+animal-server-both: WireValidationError schema.oneOf@
+animal-client-decode-cat: model FieldAnimalsPostResponse(root=Cat(id=1, name=None, nick_name=None, meow=True)) set=['root'] wire={"id":1,"meow":true} presence=['', '/id', '/meow'] extras={}
+animal-client-decode-dog: model FieldAnimalsPostResponse(root=Dog(id=2, name=None, nick_name=None, bark=3)) set=['root'] wire={"id":2,"bark":3,"x":1} presence=['', '/id', '/bark', '/x'] extras={"/x":1}
+animal-client-decode-null: model FieldAnimalsPostResponse(root=None) set=['root'] wire=null presence=[''] extras={}
+animal-server-encode-dog: wire={"id":2,"bark":3}
+animal-server-encode-null: wire=null
+tree-client-decode: model Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=(1, 'a@example.com'), contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) set=['children', 'index', 'pair', 'value'] wire={"value":1,"children":[{"value":2,"extra":1}],"index":{"a":{"value":3,"deep":true}},"pair":[1,"a@example.com"]} presence=['', '/value', '/children', '/children/0', '/children/0/value', '/children/0/extra', '/index', '/index/a', '/index/a/value', '/index/a/deep', '/pair', '/pair/0', '/pair/1'] extras={"/children/0/extra":1,"/index/a/deep":true}
+tree-server-encode: wire={"value":1,"children":[{"value":2}],"pair":[1,"a@example.com"],"index":{"a":{"value":3}}}
+tree-server-snapshot-presence: model Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=(1, 'a@example.com'), contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) set=['children', 'index', 'pair', 'value'] wire={"value":1,"index":{"a":{"value":3}}} presence=['', '/value', '/index', '/index/a', '/index/a/value'] extras={}
+tree-server-snapshot-missing-key: CodecBindingError The presence tree does not select existing object members at /index
+tree-server-decode-nested-type: WireValidationError schema.type@/children/1/index/k/value
+values-server-decode: model Values(amount=Decimal('1.1'), day=datetime.date(2020, 1, 2), clock=datetime.time(10, 20, 30, tzinfo=TzInfo(0)), span=datetime.timedelta(days=1, seconds=3600), uid=UUID('00000000-0000-0000-0000-000000000001'), secret=SecretStr('**********'), blob='hello', level=<Level.integer_2: 2>, link=AnyUrl('https://example.com/a'), any={'k': [1, {'z': None}]}, list_=[1, 2], codes=None, un=5, mark=(1, 'a')) set=['amount', 'any', 'blob', 'clock', 'day', 'level', 'link', 'list_', 'mark', 'secret', 'span', 'uid', 'un'] wire={"amount":1.10,"day":"2020-01-02","clock":"10:20:30Z","span":"P1DT1H","uid":"00000000-0000-0000-0000-000000000001","secret":"pw","blob":"aGVsbG8=","level":2,"link":"https://example.com/a","any":{"k":[1,{"z":null}]},"x-y":"z","list":[1,2],"un":5,"mark":[1,"a"]} presence=['', '/amount', '/day', '/clock', '/span', '/uid', '/secret', '/blob', '/level', '/link', '/any', '/any/k', '/any/k/0', '/any/k/1', '/any/k/1/z', '/x-y', '/list', '/list/0', '/list/1', '/un', '/mark', '/mark/0', '/mark/1'] extras={"/x-y":"z"}
+values-client-encode: wire={"amount":1.1,"day":"2020-01-02","clock":"10:20:30Z","span":"P1DT1H","uid":"00000000-0000-0000-0000-000000000001","secret":"pw","blob":"aGVsbG8=","level":2,"link":"https://example.com/a","any":{"k":[1,{"z":null}]},"list":[1,2],"un":5,"mark":[1,"a"]}
+values-server-response: wire={"amount":1.1,"day":"2020-01-02","clock":"10:20:30Z","span":"P1DT1H","uid":"00000000-0000-0000-0000-000000000001","blob":"aGVsbG8=","level":2,"link":"https://example.com/a","any":{"k":[1,{"z":null}]},"list":[1,2],"un":5,"mark":[1,"a"]}
+values-server-response-presence: model Values(amount=Decimal('1.1'), day=datetime.date(2020, 1, 2), clock=datetime.time(10, 20, 30, tzinfo=TzInfo(0)), span=datetime.timedelta(days=1, seconds=3600), uid=UUID('00000000-0000-0000-0000-000000000001'), secret=SecretStr('**********'), blob='hello', level=<Level.integer_2: 2>, link=AnyUrl('https://example.com/a'), any={'k': [1, {'z': None}]}, list_=[1, 2], codes=None, un=5, mark=(1, 'a')) set=['amount', 'any', 'blob', 'clock', 'day', 'level', 'link', 'list_', 'mark', 'secret', 'span', 'uid', 'un'] wire={"level":2,"any":{"k":[1,{}]}} presence=['', '/level', '/any', '/any/k', '/any/k/0', '/any/k/1'] extras={}
+values-server-response-presence-array: CodecBindingError The presence tree does not select the whole array at /any/k
+values-client-decode-secret: WireValidationError schema.writeOnly@/secret
+values-server-decode-union: NativeValidationError native.value_error@/un['un', 'function-after[_validate(), str]'],native.int_parsing@/un['un', 'int']
+values-server-response-set: wire={"any":{"k":[1,2]}}
+values-server-response-object: ModelProjectionError The value at /any/k has no JSON representation
+values-server-response-integer-key: ModelProjectionError A wire object key must be a string at /any/k
+values-client-from-wire-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
+tree-client-decode-native: NativeValidationError native.value_error@/pair/1['pair', 1],native.value_error@/index/k/contact['index', 'k', 'contact']
+tree-server-mutate-pair: mutated pair
+tree-server-encode-mutated: ModelProjectionError The value at /pair does not have its bound shape
+values-server-response-codes: WireValidationError schema.writeOnly@/codes/0
+values-client-encode-codes: wire={"codes":["a"]}
+values-server-decode-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
+values-server-snapshot-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
+values-server-encode-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
+mixed-server-decode: model Mixed(root=Small(size='small', contact=None)) set=['root'] wire={"size":"small","zz":1} presence=['', '/size', '/zz'] extras={"/zz":1}
+mixed-server-decode-native: NativeValidationError native.value_error@/contact['small', 'contact']

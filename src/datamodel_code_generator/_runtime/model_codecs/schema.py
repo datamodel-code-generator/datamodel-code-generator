@@ -10,11 +10,12 @@ from decimal import Decimal
 from functools import cache
 from importlib import import_module
 from math import gcd
-from typing import TYPE_CHECKING, Final, Protocol
+from typing import TYPE_CHECKING, Final, Literal, Protocol
 from urllib.parse import urljoin
 
 from typing_extensions import TypeIs
 
+from .context import Direction  # noqa: TC001 - Public annotations support get_type_hints().
 from .errors import CodecConfigurationError, CodecResourceLimitError, WireIssue
 from .patterns import (
     MatchBudget,
@@ -25,7 +26,7 @@ from .patterns import (
     plan_pattern,
     search,
 )
-from .wire import JSONValue, WireValue, checked_key, checked_scalar, enter, escape_pointer_token
+from .wire import JSONValue, WireValue, checked_key, checked_scalar, enter, escape_pointer_token, thaw_wire
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -75,13 +76,16 @@ _DATE_WIDTHS: Final = [4, 2, 2]
 _TIME_LIMITS: Final = (23, 59, 59)
 _INTEGER_FORMATS: Final = {"int32": (-(2**31), 2**31 - 1), "int64": (-(2**63), 2**63 - 1)}
 _NUMBER_TYPES: Final = frozenset({int, float, Decimal})
+_EXCLUSIONS: Final[dict[Direction, str]] = {"request": "readOnly", "response": "writeOnly"}
 _MESSAGES: Final = {
     "additionalProperties": "The property is not allowed by additionalProperties",
     "dependentRequired": "A property required by another present property is missing",
     "false": "No value is allowed at this location",
+    "readOnly": "The value is read-only and cannot appear in a request",
     "required": "A required property is missing",
     "type": "The value does not have an allowed type",
     "unevaluatedProperties": "The property is not allowed by unevaluatedProperties",
+    "writeOnly": "The value is write-only and cannot appear in a response",
 }
 
 
@@ -92,6 +96,25 @@ class SchemaResource:
     uri: str
     contents: WireValue
     roots: tuple[str, ...] = ("",)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SchemaPatch:
+    """Replace one bundled schema object's required keyword with its directional value."""
+
+    uri: str
+    pointer: str
+    keyword: Literal["required", "dependentRequired"]
+    value: WireValue
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DirectionalView:
+    """Relax required members excluded in one direction and assert its readOnly or writeOnly values."""
+
+    direction: Direction
+    patches: tuple[SchemaPatch, ...] = ()
+    flagged: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,6 +130,7 @@ class _CallState:
     plans: Mapping[str, PatternPlan]
     targets: Mapping[int, tuple[object, object]]
     budget: MatchBudget
+    direction: Direction | None = None
 
 
 _CALL: ContextVar[_CallState] = ContextVar("model_codec_schema_call")
@@ -127,6 +151,10 @@ class _KeywordValidator(Protocol):
     def is_valid(self, instance: object) -> bool: ...
 
     def iter_errors(self, instance: object) -> Iterator[ValidationError]: ...
+
+
+def _nesting() -> CodecResourceLimitError:
+    return CodecResourceLimitError("The wire value is nested beyond the validator recursion limit")
 
 
 def _number(value: object) -> object:
@@ -150,10 +178,17 @@ def _instance_copy(value: JSONValue | WireValue, active: set[int]) -> object:
 class _ResourceCopy:
     """Copy one resource into validator-owned containers, indexing every schema object."""
 
-    def __init__(self, uri: str, index: dict[int, _Location], plans: dict[str, PatternPlan]) -> None:
+    def __init__(
+        self,
+        uri: str,
+        index: dict[int, _Location],
+        plans: dict[str, PatternPlan],
+        schemas: dict[tuple[str, str], dict[str, object]],
+    ) -> None:
         self.uri = uri
         self.index = index
         self.plans = plans
+        self.schemas = schemas
         self.references: list[tuple[int, str, str]] = []
         self.active: set[int] = set()
 
@@ -213,6 +248,7 @@ class _ResourceCopy:
             base = urljoin(base, identifier)
         copied = self.members(value, pointer, lambda name, item, at: self.member(name, item, at, base))
         self.index[id(copied)] = _Location(self.uri, pointer, base)
+        self.schemas[self.uri, pointer] = copied
         if "$dynamicRef" in copied:
             msg = f"A dynamic schema reference at {self.uri} requires an explicit schema adapter"
             raise CodecConfigurationError(msg)
@@ -358,6 +394,16 @@ def _required(_: _KeywordValidator, required: list[str], instance: object, __: o
         yield from (_error(path=(name,)) for name in required if name not in instance)
 
 
+def _read_only(_: _KeywordValidator, flag: object, __: object, ___: object) -> Iterator[ValidationError]:
+    if flag is True and _CALL.get().direction == "request":
+        yield _error()
+
+
+def _write_only(_: _KeywordValidator, flag: object, __: object, ___: object) -> Iterator[ValidationError]:
+    if flag is True and _CALL.get().direction == "response":
+        yield _error()
+
+
 def _dependent_required(
     _: _KeywordValidator, dependencies: Mapping[str, list[str]], instance: object, __: object
 ) -> Iterator[ValidationError]:
@@ -431,6 +477,62 @@ def _evaluated_keys(validator: _KeywordValidator, instance: dict[str, object], s
     if _is_object(patterns := schema.get("patternProperties")):
         evaluated.update(name for name in instance if any(_matches(pattern, name) for pattern in patterns))
     return evaluated
+
+
+def _applicable(validator: _KeywordValidator, instance: object, schema: dict[str, object]) -> Iterator[object]:
+    if _is_array(members := schema.get("allOf")):
+        yield from members
+    for keyword in ("oneOf", "anyOf"):
+        if _is_array(members := schema.get(keyword)):
+            yield from (member for member in members if _is_valid(validator.descend(instance, member)))
+    if "if" in schema:
+        yield schema.get("then" if validator.evolve(schema=schema["if"]).is_valid(instance) else "else")
+    if _is_object(dependencies := schema.get("dependentSchemas")) and _is_object(instance):
+        yield from (subschema for name, subschema in dependencies.items() if name in instance)
+
+
+def _member_schemas(schema: dict[str, object], name: str) -> Iterator[object]:
+    if _is_object(properties := schema.get("properties")) and name in properties:
+        yield properties[name]
+    if _is_object(patterns := schema.get("patternProperties")):
+        yield from (subschema for pattern, subschema in patterns.items() if _matches(pattern, name))
+    if "additionalProperties" in schema and _is_additional(name, schema):
+        yield schema["additionalProperties"]
+
+
+def _item_schemas(schema: dict[str, object], index: int) -> Iterator[object]:
+    prefix = schema.get("prefixItems")
+    if _is_array(prefix) and index < len(prefix):
+        yield prefix[index]
+    elif "items" in schema:
+        yield schema["items"]
+
+
+@dataclass(slots=True)
+class _Exclusions:
+    flag: str
+    pointers: list[str]
+
+
+def _flagged(validator: _KeywordValidator, instance: object, schema: object, pointer: str, found: _Exclusions) -> None:
+    if not _is_object(schema):
+        return
+    if schema.get(found.flag) is True:
+        found.pointers.append(pointer)
+        return
+    if (target := _CALL.get().targets.get(id(schema))) is not None:
+        contents, resolver = target
+        _flagged(validator.evolve(schema=contents, _resolver=resolver), instance, contents, pointer, found)
+    for subschema in _applicable(validator, instance, schema):
+        _flagged(validator, instance, subschema, pointer, found)
+    if _is_object(instance):
+        for name, value in instance.items():
+            for subschema in _member_schemas(schema, name):
+                _flagged(validator, value, subschema, f"{pointer}/{escape_pointer_token(name)}", found)
+    elif _is_array(instance):
+        for index, value in enumerate(instance):
+            for subschema in _item_schemas(schema, index):
+                _flagged(validator, value, subschema, f"{pointer}/{index}", found)
 
 
 def _unevaluated_properties(
@@ -545,8 +647,10 @@ def _validator_factory() -> Callable[[object, object, object], _KeywordValidator
             "multipleOf": _multiple_of,
             "pattern": _pattern,
             "patternProperties": _pattern_properties,
+            "readOnly": _read_only,
             "required": _required,
             "unevaluatedProperties": _unevaluated_properties,
+            "writeOnly": _write_only,
         },
         type_checker=Draft202012Validator.TYPE_CHECKER.redefine_many({"number": _is_number, "integer": _is_integer}),
         format_checker=checker,
@@ -581,7 +685,7 @@ def _issue(error: ValidationError, index: Mapping[int, _Location]) -> WireIssue:
 class WireSchemaValidator:
     """Validate one use's wire values against its bundled offline schema."""
 
-    __slots__ = ("_index", "_state", "_validator", "schema_id")
+    __slots__ = ("_exclusion", "_index", "_state", "_validator", "schema_id")
 
     def __init__(
         self,
@@ -589,12 +693,29 @@ class WireSchemaValidator:
         validator: _KeywordValidator,
         index: Mapping[int, _Location],
         state: _CallState,
+        exclusion: tuple[object, str] | None = None,
     ) -> None:
         """Keep the bundle-owned validator, identity index, pattern plans, and reference targets."""
         self.schema_id = schema_id
         self._validator = validator
         self._index = index
         self._state = state
+        self._exclusion = exclusion
+
+    def excluded(self, wire: WireValue, *, budget: MatchBudget | None = None) -> tuple[str, ...]:
+        """Return pointers of values annotated as excluded in this direction, following only valid branches."""
+        if self._exclusion is None:
+            return ()
+        root, flag = self._exclusion
+        token = _CALL.set(replace(self._state, budget=budget or MatchBudget(), direction=None))
+        found = _Exclusions(flag, [])
+        try:
+            _flagged(self._validator, _instance_copy(wire, set()), root, "", found)
+        except RecursionError:
+            raise _nesting() from None
+        finally:
+            _CALL.reset(token)
+        return tuple(found.pointers)
 
     def validate(self, wire: WireValue, *, budget: MatchBudget | None = None) -> tuple[WireIssue, ...]:
         """Return value-free issues in schema-evaluation order; an empty tuple means valid."""
@@ -603,8 +724,7 @@ class WireSchemaValidator:
             instance = _instance_copy(wire, set())
             return tuple(_issue(error, self._index) for error in self._validator.iter_errors(instance))
         except RecursionError:
-            msg = "The wire value is nested beyond the validator recursion limit"
-            raise CodecResourceLimitError(msg) from None
+            raise _nesting() from None
         finally:
             _CALL.reset(token)
 
@@ -612,23 +732,26 @@ class WireSchemaValidator:
 class SchemaBundle:
     """Own offline normalized resources, their pattern plans, and per-use validators."""
 
-    __slots__ = ("_index", "_plans", "_registry", "_targets", "_validators")
+    __slots__ = ("_direction", "_flagged", "_index", "_plans", "_registry", "_targets", "_validators")
 
-    def __init__(self, resources: Iterable[SchemaResource]) -> None:
-        """Copy resources, check every reference and pattern, and build an immutable registry."""
+    def __init__(self, resources: Iterable[SchemaResource], view: DirectionalView | None = None) -> None:
+        """Copy resources, apply a directional view, check every reference and pattern, and build a registry."""
         from referencing.exceptions import Unresolvable  # noqa: PLC0415
         from referencing.jsonschema import DRAFT202012, EMPTY_REGISTRY  # noqa: PLC0415
 
         self._index: dict[int, _Location] = {}
         self._plans: dict[str, PatternPlan] = {}
         self._validators: dict[str, WireSchemaValidator] = {}
+        self._direction: Direction | None = None if view is None else view.direction
+        self._flagged = frozenset(() if view is None else view.flagged)
+        schemas: dict[tuple[str, str], dict[str, object]] = {}
         copies: dict[str, bool | dict[str, object]] = {}
         references: list[tuple[str, int, str, str]] = []
         for resource in resources:
             if resource.uri in copies:
                 msg = f"A schema resource is bundled twice: {resource.uri}"
                 raise CodecConfigurationError(msg)
-            copier = _ResourceCopy(resource.uri, self._index, self._plans)
+            copier = _ResourceCopy(resource.uri, self._index, self._plans, schemas)
             root = (
                 copier.copy(resource.contents, "", resource.uri, schema=True)
                 if "" in resource.roots
@@ -639,6 +762,11 @@ class SchemaBundle:
                 raise CodecConfigurationError(msg)
             copies[resource.uri] = root
             references.extend((resource.uri, *reference) for reference in copier.references)
+        for patch in () if view is None else view.patches:
+            if (patched := schemas.get((patch.uri, patch.pointer))) is None or patch.keyword not in patched:
+                msg = f"A directional view patches no bundled {patch.keyword} keyword in {patch.uri}"
+                raise CodecConfigurationError(msg)
+            patched[patch.keyword] = thaw_wire(patch.value)
         self._registry = EMPTY_REGISTRY.with_resources(
             (uri, DRAFT202012.create_resource(contents)) for uri, contents in copies.items()
         ).crawl()
@@ -653,6 +781,11 @@ class SchemaBundle:
                 msg = f"A bundled schema reference from {uri} does not target a schema"
                 raise CodecConfigurationError(msg)
             self._targets[schema] = (target.contents, target.resolver)
+
+    @property
+    def direction(self) -> Direction | None:
+        """Return the direction whose view this bundle validates, or None for the neutral view."""
+        return self._direction
 
     def validator(self, schema_id: str) -> WireSchemaValidator:
         """Return the cached validator for one bundled schema identifier."""
@@ -673,7 +806,10 @@ class SchemaBundle:
             schema_id,
             _validator_factory()(target.contents, self._registry, self._registry.resolver(base_uri=base)),
             self._index,
-            _CallState(self._plans, self._targets, MatchBudget()),
+            _CallState(self._plans, self._targets, MatchBudget(), self._direction),
+            (target.contents, _EXCLUSIONS[self._direction])
+            if self._direction is not None and schema_id in self._flagged
+            else None,
         )
         self._validators[schema_id] = created
         return created

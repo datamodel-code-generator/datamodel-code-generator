@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info:
+  title: Codec collisions
+  version: "1"
+paths:
+  /choices:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Choices"
+      responses:
+        "204":
+          description: Accepted.
+  /names:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Names"
+      responses:
+        "204":
+          description: Accepted.
+components:
+  schemas:
+    Choices:
+      type: object
+      properties:
+        nick-name:
+          type: string
+        nickName:
+          type: string
+    Names:
+      type: object
+      properties:
+        a-b:
+          type: integer
+        a_b:
+          type: integer

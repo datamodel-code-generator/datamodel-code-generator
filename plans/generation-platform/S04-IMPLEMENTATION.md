@@ -1,6 +1,6 @@
 # S04 implementation record
 
-Status: S04-1 (shared wire rules) is implemented and verified locally, and is published as the bottom PR of the S04 native stack. S04-2 and S04-3 have not started. Nothing in this stack has been merged.
+Status: S04-1 (shared wire rules) and S04-2 (Pydantic v2 model codecs) are implemented, verified locally, and published as the bottom two PRs of the S04 native stack. S04-3 has not started. Nothing in this stack has been merged.
 
 ## Baseline and review boundaries
 
@@ -8,10 +8,10 @@ Repository: `datamodel-code-generator/datamodel-code-generator`. The authoritati
 
 The isolated implementation checkout is `/private/tmp/dcg-s04`; `/private/tmp/dcg-main-e62b` is a detached checkout of the baseline for comparisons. The original checkout and its untracked `1.tmp` are untouched. No subagents were used. Raw investigation output and measurement scripts stay in the session scratchpad, outside the working tree.
 
-The three native `gh stack` branches, bottom to top, follow PR-STACKS:
+The three native `gh stack` branches, bottom to top, follow PR-STACKS; `gh stack link 4143 4145` created native stack #4146:
 
 1. `generation-platform-codecs-wire`: schema, parameter and media wire rules, [PR #4143](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4143).
-2. `generation-platform-codecs-pydantic`: the two Pydantic v2 backends, presence, direction, native and envelope values.
+2. `generation-platform-codecs-pydantic`: the two Pydantic v2 backends, presence, direction, native and envelope values, [PR #4145](https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4145).
 3. `generation-platform-codecs-adapters`: custom adapters and typed generated surfaces.
 
 ## Contract hashes
@@ -77,7 +77,7 @@ Exception ledger (TYPING §8):
 
 There are no `Any` annotations, casts, or type-ignore comments. The only suppressions are `# noqa: PLC0415` on the lazy jsonschema/referencing imports.
 
-## Verification
+## S04-1 verification
 
 Runtime: CPython 3.13.2 on macOS arm64, locked environment (`--extra all --group test --group type`).
 
@@ -90,18 +90,89 @@ Runtime: CPython 3.13.2 on macOS arm64, locked environment (`--extra all --group
 - CodeRabbit review of PR #4143: all four findings are fixed and covered by fixtures. First, alternative security requirements that repeat an `apiKey` scheme, or name the same header with different case, no longer report a false header collision; with no header declaration, that false collision had also crashed planning with `StopIteration`. The planner now deduplicates the auth names, case-insensitively for headers. Second, `ParameterPlan` now rejects content media without a builtin codec (cookie content, form content outside `querystring`, and media other than JSON, text or form) through the same `builtin_content` rule the planner uses. Third, the suite helper re-raises a bundle error that names no remote instead of retrying forever. Fourth, text parameter content whose schema is not exactly a string (for example an integer, or a nullable string) is reported as `MC_PARAMETER_ENCODING`, because text content only carries strings; text content without a schema stays accepted.
 - CodeRabbit's second review of PR #4143, two findings, both fixed. Exploded `simple` and `label` path objects were percent-decoded before being split on `=`, so a member name with an encoded `=` decoded as a shorter name and a longer value; path members are now split on the raw delimiter and `=` first (`parameter-encoding`: the `pairs` round trips). An exploded query or cookie object with additional properties reserved only its siblings' parameter names, so it absorbed the members of an exploded sibling object and the `name[key]` members of a `deepObject` sibling. Every plan now also reserves the member names that its exploded siblings own, and an absorbing object that shares the query with a `deepObject` parameter is `MC_PARAMETER_ENCODING`. Exploded header objects never absorb other headers, so they no longer count as absorbing, and two header maps no longer collide (`oas32`: `/spread` and `/deep`).
 
-## Performance and memory
+## S04-1 performance and memory
 
 Ordinary generation is unchanged: in 40 randomized, balanced runs per side, OpenAPI `api.yaml` generation had a median of 125.9 ms on main and 125.8 ms on this branch. The new modules are not imported by ordinary generation. Codec hot paths on the same host (best of five): decoding a 7.9 KB, 100-object JSON body 253 µs; encoding 282 µs; freezing 203 µs; validating it against a 2020-12 schema with a pattern, `multipleOf` and `additionalProperties: false` 1.84 ms; encoding or decoding an exploded form array parameter 3.1 µs and 2.0 µs. Compiled patterns are cached (at most 128), validators are cached per bundle, and per-call state lives in a context variable, not on shared validators. `$ref` is evaluated through the targets that bundle construction already resolved, instead of a registry lookup on every evaluation: validating 100 array items that each reference an object schema with a nested reference took 2.70 ms with upstream lookups and 2.18 ms with the resolved targets (best of seven, two alternating rounds), and a schema without references is unchanged. A non-string `$ref` is therefore a bundle configuration error. These single-host measurements are not a throughput guarantee.
+
+## S04-2: Pydantic v2 model codecs
+
+Branch `generation-platform-codecs-pydantic`, stacked on S04-1. It adds the model codec for the two server backends, `pydantic_v2.BaseModel` and `pydantic_v2.dataclass`, directional schema views, the native and envelope value records, and the generation-time codec plan. No existing module changes, and neither planner has a production caller yet: S04-3 renders the bindings and S06 consumes them.
+
+### Runtime
+
+The new runtime modules use relative imports only (pinned in `runtime-imports.txt`); only `pydantic_v2.py` imports Pydantic.
+
+- `context.py`: `CodecContext(surface, direction, schema_id, operation_id=None, media_type=None)`, frozen and keyword-only; `inbound` is true for client responses and server requests.
+- `values.py`: `ProjectionIssue`; `ModelValue[T]` and `ModelInput[T]` with `kind`, `binding_id`, `wire`, `presence` and `extras`; `DecodedValue[T]` as a generic `TypeAliasType`. `ModelInput.require_model()` raises `ModelProjectionError` naming every gap by code and pointer.
+- `bindings.py`: the static records that S04-3 renders into `_generated/model_bindings.py`. A type graph (`ModelNode`, `ArrayNode` with its list, set or frozenset container, `TupleNode`, `MapNode`, `UnionNode` with nullability, `LeafNode` with a `value` or `decimal_string` representation), `FieldBinding` (field identity, native name, wire name, every input key the field reads and the one the codec uses, required, readOnly, writeOnly, and whether `None` is D's synthesized optional fallback), `ModelBinding` (module-qualified symbol, `model`, `dataclass` or `root`, schema ID, fields or root, extra policy, open schema) and `UseBinding` (binding ID, direction, schema ID, operation ID, media type, backend, native kind and export, projection mode, converter strategy, type graph and reachable models).
+- `errors.py`: value-free `NativeIssue(code, pointer, native_path)` records carried by `NativeValidationError`.
+- `schema.py`: `DirectionalView(direction, patches, flagged)` of `SchemaPatch` values. `SchemaBundle(resources, view)` replaces the patched `required` and `dependentRequired` values after copying (a patch that finds no bundled keyword is a configuration error), and asserts `readOnly: true` in requests and `writeOnly: true` in responses (`schema.readOnly`, `schema.writeOnly`). `WireSchemaValidator.excluded()` lists the pointers of members annotated as excluded in the direction, following references, `allOf`, the `oneOf`/`anyOf` members that the value satisfies, `if`/`then`/`else`, `dependentSchemas`, and property and item subschemas. Only roots whose closure contains the annotation (`flagged`) walk at all.
+- `pydantic_v2.py`: `PydanticModelCodec[T]`, described below.
+- `outbound.py`: the `ModelCodec[T]` Protocol and the sending facades `OutboundCodec[T]`, `NativeOutboundCodec[T]` (its `from_wire` returns `ModelValue[T]`) and `EnvelopeOutboundCodec[T]`. They reject receiving contexts.
+- `wire.py`: `pointer_tokens`, and `snapshot_presence`, which builds presence for a snapshot that `freeze_wire` just produced without repeating its domain checks.
+
+### Planning
+
+- `plan_wire` also returns request and response `DirectionalView`s and the logical document URIs. For each direction it groups schemas through `$ref` and `allOf`, removes `required` and `dependentRequired` members whose property is readOnly (requests) or writeOnly (responses) anywhere in the group, carries property declarations into the positive `anyOf`, `oneOf`, `then`, `else` and `dependentSchemas` branches, and visits property, item, additional and pattern schemas. `required` under `if` and `not` is never relaxed, because relaxing a condition or a negation inverts its meaning (`not: {required: [id]}` would reject every request). `MC_SCHEMA_DIALECT` reports a property that is both readOnly and writeOnly, a required property whose annotation only exists in a conditional branch, and a shared schema whose directional required members depend on how it is referenced, including a relaxed schema that is also reachable under `if` or `not`.
+- `plan_model_codecs(batch, wire, backend)` binds every directional schema-bearing use. The final type becomes the type graph: annotated types are unwrapped, generics are classified by arity (fixed tuple, one argument for arrays, two for maps), aliases are followed, and enums and other types are leaves; a `Decimal` whose schema type is string uses `decimal_string`. The use is `envelope` when a reachable model requires a field that the direction excludes, otherwise `native`. `binding_id` is the resolved schema ID plus the type graph, so request and response uses of one schema and type share `ModelValue`s. A field's validation key is one of its validation aliases, its alias (unless `use_serialization_alias` emits it as a serialization alias only), the alias generator's output (the wire name, because D omits an alias the generator reproduces), or its Python name.
+- Diagnostics: `MC_ADAPTER_REQUIRED` for models with a custom origin (base class, custom template, decorator) or generated for the other backend; `BND_MODEL_SCOPE_REQUIRED` for `not_generated` uses, with other binding reasons passed through; and `MC_ALIAS_COLLISION` when a field's validation key is also read by another field, for example `aliases` giving `nick-name` the alternative `nickName` while `nickName` is its own property.
+
+### Codec behavior
+
+- Construction checks the converter strategy and backend, that the bundle validates the binding's direction, and every reachable model's native type: kind (BaseModel, RootModel or pydantic dataclass), field names, and that each field accepts its validation key. BaseModel keys come from `model_fields`; pydantic dataclass keys come from the planned field facts and `dataclasses.fields`, because MODEL-CODECS §6 forbids relying on private `__pydantic_*` layouts. `TypeAdapter(T)` is built once. A context whose direction, schema ID, operation ID, media type or receiving side differs from the binding raises `CodecBindingError`.
+- `decode` freezes the value, validates it in the binding's direction and projects it. `from_wire` freezes, drops members excluded in the sending direction, validates and projects; excluded array elements and roots cannot be dropped, so validation reports them. `snapshot` and `encode` read a native value, drop excluded members and validate the wire before returning it.
+- Projection constructs natively with `validate_json` of the re-encoded JSON and `by_alias=True, by_name=False`, so each field is read only by its validation key. A pre-native walk runs only for envelope uses or when keys must be remapped or kept out: declared members move to their validation keys, `DIRECTIONAL_REQUIRED` gaps are recorded, and unknown members whose names another field reads (a Python name without an alias, an unused `AliasChoices` alternative) are kept out of native input. They are retained as extras, or reported as `native.extra_forbidden` for `extra='forbid'` models. Without gaps the result is `ModelValue`; with gaps, envelope uses return `ModelInput` and native uses raise `ModelProjectionError`.
+- Extras: schema-permitted unknown members that the native model does not store (`extra='ignore'`, pydantic dataclasses with `extra='allow'`, and the shadowed names above) are retained in `extras` by pointer. BaseModels with `extra='allow'` keep the others in `model_extra`, and `extra='forbid'` rejects them natively.
+- Unions: native construction keeps Pydantic's own union selection (smart or discriminated). The walk that collects extras also checks, for every union with more than one model member, that the constructed member's schema matches the wire at that position (MODEL-CODECS §8); otherwise it raises `ModelProjectionError` rather than returning a value of another shape. For example, with `anyOf: [Crowd, Solo]` where only `Crowd` has `minProperties: 2`, Pydantic's smart union constructs `Crowd` for `{"size": 1}`, which only `Solo` matches.
+- Native errors become `NativeIssue`s. Their pointers map Pydantic's location through validation keys, indices, map keys and union tags; at a union the member is chosen by matching the wire value against each member's schema, so discriminator values and class-name tags both map.
+- Presence when reading a native value: an explicit `PresenceTree` first, then BaseModel `model_fields_set`, then the dataclass rule (omit only fields that are `None` through D's synthesized optional fallback). Values are read with `dump_python(mode="python", by_alias=False, round_trip=True)` alongside the original objects. Leaves: enum values, secret values, `Decimal` as a number or, for `decimal_string`, as a string, and anything else through `to_jsonable_python`; set members are ordered by their JSON bytes, and enum map keys (from `propertyNames` references) are written as their values.
+- `RecursionError` at any entry point becomes `CodecResourceLimitError`.
+
+### Decisions and deviations
+
+- Alias-only native validation implements MODEL-CODECS §5 ("the binding places values under accepted Pydantic validation keys"). With configuration-dependent lookup, `populate_by_name` made the wire property `a_b` fill both `a_b` (alias `a-b`) and `a_b_1` (alias `a_b`); the `collisions` fixture pins the corrected behavior.
+- Pydantic's JSON mode parses numbers through float, so a `Decimal` field read from a JSON number keeps only float precision: `0.1000000000000000055511151231257827` becomes `Decimal('0.1')` and `1.10` becomes `Decimal('1.1')`, on both 2.12.5 and 2.13.5. `ModelValue.wire` keeps the exact lexeme, and `decimal_string` fields keep every digit.
+- A union that Pydantic resolves to a member outside the schema-matching set is an error, not a fallback: the codec does not retry with another member.
+- A model without a schema ID (request/response variant models) matches any object in a union.
+- `FIELD_NOT_CONSTRUCTIBLE` and `MODEL_PROJECTION_GAP` are never produced for D's Pydantic output; model adapters (S04-3) and the other backends (S08) own them.
+- An earlier revision removed the annotated-type unwrapping as unreachable. `collapse_root_models` reaches it (`list[Annotated[Cat | Dog, Field(discriminator=...)]]`): without it, the items were leaves and encoding wrote Python field names. The `zoo-collapsed` fixture covers it.
+
+### Typing
+
+TY06 samples in `tests/data/generation_platform/codecs/typing/`: `codecs.py` has zero diagnostics on strict mypy 2.3.1 and strict Pyright 1.1.414 and 1.1.411. It covers the invariant codec Protocol, `DecodedValue[T]` narrowing through `match`, `require_model()` on the union, native and envelope `from_wire` and `snapshot` types, a union of the two facades, and `encode` accepting `T`, `ModelValue[T]` and `ModelInput[T]`. Each of lines 23–30 of `codecs_negative.py` produces exactly one error: mypy `assignment`, `arg-type`, `arg-type`, `assignment`, `assignment`, `arg-type`, `assignment`, `assignment`, and on both Pyright versions `reportAssignmentType` or `reportArgumentType` on the same lines. They widen an invariant codec, encode and snapshot another model, assign `ModelValue[Pet]` to `ModelValue[Owner]`, treat `DecodedValue[Pet]` as `Pet` or as `ModelValue[Pet]`, encode another binding's `DecodedValue`, and use an envelope facade as a native one. The TY03 samples pass unchanged.
+
+Strict mypy and both Pyright versions report zero diagnostics for all 14 runtime and planning modules, and ty reports only the pre-existing `util.py:24` suppression. Ledger addition:
+
+| Symbol | Location | Origin | Scope and validation | Tests |
+| --- | --- | --- | --- | --- |
+| `native_type: object` overload | `pydantic_v2.py` `PydanticModelCodec.__init__` | uses whose native type is a type expression (`list[Pet]`, a union, `Annotated[...]`) rather than a class; Pydantic's `TypeAdapter` accepts `Any` there | T is left to the caller (S04-3's generated facades bind it); every reachable model is checked against its binding at construction, and every value passes wire validation before native validation | the Pydantic codec fixtures |
+
+The only suppressions added are `# noqa: TC001`/`TC003` on imports that public annotations need at runtime for `get_type_hints`, and `# noqa: PLR0911` on the type projection's exhaustive `match`.
+
+### Verification
+
+- 22 fixtures run the codecs over really generated models (both backends; aliases, `AliasChoices`, `no_alias`, an alias generator, serialization aliases, the `MISSING` sentinel, strict types, forbid and allow extras, a custom base class, a backend mismatch, request/response variant models, schemas and paths scopes, unions, recursion, tuples, maps, sets, formats, secrets, decimals, discriminated unions, annotated fields, collapsed root models, enum-keyed maps, overlapping unions and alias collisions), 3 fixtures refuse mismatched bindings, bundles and native types at construction, and the `directions` plan fixture covers the directional views. The 43 codec tests (42 run; the suite comparison is gated) give 100% line and branch coverage of the 15 runtime and planning modules and the 3 test modules: 3,061 statements, 1,186 branches. Expected outputs are reviewed `.txt` files compared with the existing `assert_output`; no assertion helper was added, and the only mock is S04-1's missing-format case.
+- JSON Schema Test Suite `fe8c2f0`: unchanged from S04-1.
+- Full suite (8 workers): 21,586 passed, 16 skipped, no failures.
+- Option sweeps (scratchpad): every planned codec builds for the four fixture sources under 37 generator option sets on both backends (the only failures are `use_pendulum` without pendulum installed and option combinations the generator itself rejects), and the pets and shapes cases give the same wire results under 22 option sets as without them, apart from Python names in native error paths for `no_alias`/`use_serialization_alias` and member order for pydantic dataclasses whose fields D reorders.
+- Ruff with the pre-commit arguments and codespell pass on the changed files.
+- PR #4145 CI: every required check passes. CodSpeed walltime again reports hosted-runner and runtime-environment warnings, with 18 regressed, 1 improved and 20 untouched benchmarks (-12.95%); no existing module changed, and the local comparison below shows no difference.
+- CodeRabbit review of PR #4145: `required` under `if` and `not` was relaxed like a positive branch, so `not: {required: [id]}` rejected every request that omitted a readOnly `id`; relaxation now skips those subtrees, and a relaxed schema that is also reachable under them is `MC_SCHEMA_DIALECT` (the `directions` fixture covers both). The second finding asked for a `pydantic>=2.13.5` guard in the runtime; the floor is the generated package's declared dependency (MODEL-CODECS §1, ENTRY §2), which a later stack writes, and the reply links both sections.
+- CodeRabbit's second review of PR #4145: `WireSchemaValidator.excluded()` let `RecursionError` escape to direct callers such as S04-3's model adapter codec, while `validate()` maps it to `CodecResourceLimitError`; both now raise the same error (`schema-validation`: `deep-exclusions`). PR #4145 at `22ba984d` passed every check.
+
+### Performance and memory
+
+Ordinary generation is unchanged (median 125.9 ms on main and 126.1 ms on this branch over 40 randomized runs per side), and it imports no codec module. Codec hot paths for a 100-object list body whose items reference an object schema with a nested reference (best of five, CPython 3.13.2, macOS arm64): direct `TypeAdapter.validate_json` 78 µs and `dump_json` 71 µs, against codec decode 3.95 ms (JSON decoding 0.34, freezing 0.29, directional validation 2.30, presence 0.42, native construction 0.44, extras 0.12), encoding the native list 3.78 ms, encoding a `ModelValue` 2.96 ms, and snapshot 3.83 ms. One object: decode 48 µs against 0.9 µs. The dataclass backend is within 2%. Wire validation dominates, because MODEL-CODECS requires it on every codec call; the rest is schema conformance, presence and extras, not Pydantic. Resolved reference targets (S04-1), presence built from the frozen snapshot, and extras collection that skips leaf fields reduced decode from 5.55 ms to 3.95 ms. These single-host measurements are not a throughput guarantee.
 
 ## Deferred and known limitations
 
 - `$id` and `$anchor` embedded inside OpenAPI documents are reported as `MC_SCHEMA_DIALECT`; standalone JSON Schema roots keep their `$id` as an alias.
 - `$dynamicRef` requires an explicit schema adapter (S04-3 owns adapter registration).
 - The Python pattern dialect for msgspec `Meta` belongs to S08.
-- Directional request/response schema views, presence decisions from models and native versus envelope values are S04-2. `SchemaView`, `OfflineSchemaRegistry` and adapter capability records are S04-3.
+- `SchemaView`, `OfflineSchemaRegistry`, adapter protocols and capability records, rendered `_generated/model_bindings.py`, and the typed `RequestCodecs`/`ResponseCodecs` facades are S04-3.
+- Native types for uses without a generated symbol (a list or union body) are type expressions that S04-3 renders; the S04-2 fixtures build codecs for uses with a generated symbol.
 - Parameter defaults are applied by the server integration (S06). Multipart and binary media layers are not part of S04-1. `allowEmptyValue` is informational only.
 
 ## Next action
 
-Publish S04-1 as the bottom PR of the native stack (empty body, CodeRabbit fills it) and bring its CI to green, answering review comments. Then implement S04-2 on `generation-platform-codecs-pydantic`, stacked above it. Do not merge; the maintainer merges. Stop after S04.
+Bring the S04-2 PR's CI to green and answer its review comments, keeping S04-1's PR green as well. Then implement S04-3 on `generation-platform-codecs-adapters`, stacked above S04-2: adapter V1 protocols and registration/capability records, `SchemaView`/`OfflineSchemaRegistry`, rendered `_generated/model_bindings.py`, the typed `RequestCodecs`/`ResponseCodecs` facades, and their TY tests. Do not merge; the maintainer merges. Stop after S04.

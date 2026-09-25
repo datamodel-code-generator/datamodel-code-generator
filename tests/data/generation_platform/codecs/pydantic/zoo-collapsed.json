@@ -1,0 +1,21 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_zoo_collapsed",
+  "options": {"collapse_root_models": true},
+  "cases": [
+    {"name": "zoo-server-decode", "use": "/paths/~1zoo/put request_body", "op": "decode",
+     "value": {"animals": [{"kind": "cat", "nick-name": "Mi", "x": 1}, {"kind": "dog", "bark-level": 2}]}},
+    {"name": "zoo-server-encode", "use": "/paths/~1zoo/put response_body 200", "op": "encode",
+     "value": {"result": "zoo-server-decode", "attr": "value"}},
+    {"name": "zoo-server-decode-native", "use": "/paths/~1zoo/put request_body", "op": "decode",
+     "value": {"animals": [{"kind": "dog"}, {"kind": "cat", "contact": "bad@x"}]}},
+    {"name": "zoo-server-decode-keepers", "use": "/paths/~1zoo/put request_body", "op": "decode",
+     "value": {"keepers": {"cat": {"name": "Ann", "x": 1}, "dog": {}}}},
+    {"name": "zoo-server-encode-keepers", "use": "/paths/~1zoo/put response_body 200", "op": "encode",
+     "value": {"result": "zoo-server-decode-keepers", "attr": "value"}},
+    {"name": "zoo-server-decode-pick-both", "use": "/paths/~1zoo/put request_body", "op": "decode",
+     "value": {"pick": {"size": 1, "x": 2}}},
+    {"name": "zoo-server-decode-pick-solo", "use": "/paths/~1zoo/put request_body", "op": "decode",
+     "value": {"pick": {"size": 1}}}
+  ]
+}
