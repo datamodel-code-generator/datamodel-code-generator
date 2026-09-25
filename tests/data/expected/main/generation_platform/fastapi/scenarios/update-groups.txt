@@ -1,0 +1,34 @@
+# update-groups
+spec api.yaml <- groups.yaml
+generate {}
+  written models.py
+  written server/__init__.py
+  written server/application.py
+  written server/routers/__init__.py
+  written server/routers/pets.py
+  written server/routers/store.py
+  written server/_generated/__init__.py
+  written server/_generated/contract.py
+  written server/_generated/model_bindings.py
+  written server/model_codecs.py
+  written server/responses.py
+  written server/errors.py
+  written server/auth_types.py
+  written server/services.py
+  written server/py.typed
+  written server/dcg-runtime-requirements.txt
+  written server/.dcg-state/model-artifacts.json
+  written server/.dcg-target-manifest.json
+spec api.yaml <- groups-pets-changed.yaml
+generate {"config": {"update_groups": ["tag:pets"]}}
+  written server/routers/pets.py
+  written server/.dcg-target-manifest.json
+spec api.yaml <- groups-store-changed.yaml
+generate {"config": {"update_groups": ["tag:pets"]}}
+  APIGenerationError
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: /paths/~1orders~1{orderId}/get changed outside the updated groups
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: The model artifact models.py changed; update every group
+spec api.yaml <- groups-model-changed.yaml
+generate {"config": {"update_groups": ["tag:pets"]}}
+  APIGenerationError
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: The model artifact models.py changed; update every group

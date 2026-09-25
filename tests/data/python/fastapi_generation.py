@@ -11,7 +11,7 @@ from types import FunctionType
 from typing import Any
 
 from datamodel_code_generator import DataModelType, GenerateConfig
-from datamodel_code_generator._api_generation import render_target
+from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_manifest import MANIFEST_NAME
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, GeneratedProject, OperationSelection
 from datamodel_code_generator._codec_declarations import OperationRef
@@ -61,6 +61,8 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                 converted[key] = tuple(_hook(item) for item in value)
             case "templates" if isinstance(value, str):
                 converted[key] = SOURCE / value
+            case "update_groups" if isinstance(value, list):
+                converted[key] = tuple(value)
             case _:
                 converted[key] = value
     return FastAPIConfig(**converted)
@@ -95,7 +97,8 @@ def _setting(value: object, root: Path) -> str:
 
 
 def _diagnostic(item: Diagnostic) -> str:
-    location = " ".join(str(field) for field in (item.stage, item.option_path, item.source_pointer) if field is not None)
+    fields = (item.stage, item.option_path, item.source_pointer, item.artifact_path)
+    location = " ".join(str(field) for field in fields if field is not None)
     return f"  {item.code} {location}: {item.message}"
 
 
@@ -183,6 +186,60 @@ def _render(case: dict[str, Any], backend: str, root: Path) -> list[str]:
         lines.append(f"  show {name}")
         lines.extend(f"    | {line}" if line else "    |" for line in (content or b"").decode().splitlines())
     return lines
+
+
+def _generate(overrides: dict[str, Any], root: Path) -> list[str]:
+    model = GenerateConfig(
+        output=root / "models.py",
+        input_file_type="openapi",
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    try:
+        report = generate_target(
+            root / overrides.get("input", "api.yaml"),
+            model_config=model,
+            config=fastapi_config(overrides.get("config", {}), root),
+            generator=FastAPITarget(),
+        )
+    except APIGenerationError as error:
+        return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+    changes = [
+        f"  {action} {record.path.relative_to(root).as_posix()}"
+        for action, records in (("written", report.written_files), ("deleted", report.deleted_files))
+        for record in records
+        if "_runtime" not in record.path.parts
+    ]
+    return [*changes, *(_diagnostic(item) for item in report.diagnostics)]
+
+
+def fastapi_scenario_report(case_name: str, root: Path) -> str:
+    """Replay one regeneration scenario of spec changes and manifest edits, reporting each generation's writes."""
+    root = root.resolve()
+    lines = [f"# {case_name}"]
+    for step in json.loads((SOURCE / "scenarios.json").read_text(encoding="utf-8"))[case_name]:
+        ((action, value),) = step.items()
+        match action, value:
+            case "spec", [str() as name, str() as fixture]:
+                shutil.copy2(SOURCE / fixture, root / name)
+                lines.append(f"spec {name} <- {fixture}")
+            case "generate", dict() as overrides:
+                lines.append(f"generate {json.dumps(overrides, sort_keys=True)}")
+                lines.extend(_generate(overrides, root))
+            case "patch", [str() as name, str() as pointer, replacement]:
+                data = json.loads((root / name).read_text(encoding="utf-8"))
+                *parents, last = pointer.removeprefix("/").split("/")
+                container = data
+                for token in parents:
+                    container = container[int(token)] if isinstance(container, list) else container[token]
+                container[last] = replacement
+                (root / name).write_text(json.dumps(data, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+                lines.append(f"patch {name} {pointer}")
+            case _:
+                raise AssertionError(step)
+    return "\n".join(lines) + "\n"
 
 
 def fastapi_render_report(case_name: str, root: Path) -> str:

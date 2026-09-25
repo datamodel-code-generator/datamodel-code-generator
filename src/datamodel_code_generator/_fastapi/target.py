@@ -4,29 +4,36 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import replace
-from typing import TYPE_CHECKING, Final
+from pathlib import PurePosixPath
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._codec_declarations import CodecDeclarations, OperationRef
 from datamodel_code_generator._fastapi.config import FastAPIConfig
+from datamodel_code_generator._fastapi.fingerprints import codec_digest, plan_digest
 from datamodel_code_generator._fastapi.hooks import Extensions, HookRunner, extended
+from datamodel_code_generator._fastapi.partial import check_partial
 from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
 from datamodel_code_generator._fastapi.render import ServerRenderer
-from datamodel_code_generator._fastapi.templates import TemplateSet
+from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, TemplateSet
 from datamodel_code_generator._fastapi.views import ContextBuilder
+from datamodel_code_generator._generation_contract import GeneratedSymbolType
 from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import plan_wire
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._api_generation import TargetRequest
+    from collections.abc import Iterable
+
+    from datamodel_code_generator._api_generation import RenderedFile, TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
-    from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._api_types import DiagnosticSeverity, TargetKind
     from datamodel_code_generator._fastapi.context import FastAPIContext
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
-    from datamodel_code_generator._generation_contract import OperationContract, OperationId, TypeUseId
+    from datamodel_code_generator._fastapi.templates import ExtraFile
+    from datamodel_code_generator._generation_contract import OperationContract, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
@@ -84,12 +91,19 @@ class FastAPITarget:
             templates=templates,
             context=context,
         )
+        files = renderer.files()
+        target_data = _TargetData(
+            plan=plan, config=config, request=request, codecs=codecs, renderer=renderer, files=files, wire=stage.wire
+        ).data()
+        if config.update_groups is not None:
+            check_partial(plan, config, request, target_data)
         return TargetRender(
-            files=renderer.files(),
-            target_data=_target_data(plan, config, request),
+            files=files,
+            target_data=target_data,
             dependencies=_dependencies(plan, stage.wire),
             bindings=_bindings(codecs, _BACKENDS[request.model_config.output_model_type]),
             persistent_diagnostics=excluded,
+            update_groups=None if config.update_groups is None else frozenset(config.update_groups),
         )
 
 
@@ -244,57 +258,149 @@ def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:
     )
 
 
-def _target_data(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest) -> JSONObject:
-    selected = {operation.id: index for index, operation in enumerate(request.operations)}
-    indexes = {spec.key: index for index, spec in enumerate(plan.operations)}
-    return {
-        "context_version": 1,
-        "layout": config.layout,
-        "operations": [_operation_data(spec, selected, config, request) for spec in plan.operations],
-        "groups": [
-            {
-                "key": group.key,
-                "file_stem": group.stem,
-                "primary_tag": group.primary_tag,
-                "service": group.service,
-                "operations": [f"/target_data/fastapi/operations/{indexes[spec.key]}" for spec in group.operations],
-            }
-            for group in plan.groups
-        ],
-    }
+class _TargetData:
+    """Record the server's operations, groups, and files in the target manifest, with each operation's fingerprints."""
 
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        plan: ServerPlan,
+        config: FastAPIConfig,
+        request: TargetRequest,
+        codecs: CodecPlan,
+        renderer: ServerRenderer,
+        files: tuple[RenderedFile, ...],
+        wire: WirePlan,
+    ) -> None:
+        """Index the rendered files, the codec bindings, and the model artifacts the records point to."""
+        self.plan = plan
+        self.config = config
+        self.request = request
+        self.renderer = renderer
+        self.wire = wire
+        self.files = {file.path: index for index, file in enumerate(files)}
+        self.rendered = files
+        self.bindings = {use: index for index, (use, _) in enumerate(codecs.bindings)}
+        self.use_bindings = dict(codecs.bindings)
+        self.type_uses = {use.id: use for use in request.batch.type_uses}
+        self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
+        addresses = {address.relative_path: artifact_module(address) for address in request.batch.artifacts}
+        self.artifacts = {
+            addresses[artifact.path]: index
+            for index, artifact in enumerate(request.models)
+            if artifact.path in addresses
+        }
+        self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
+        self.operation_files = {spec.key: self.paths_of(spec) for spec in plan.operations}
+        self.group_files = {group.key: self.paths_of_group(group.stem) for group in plan.groups}
 
-def _operation_data(
-    spec: OperationSpec, selected: dict[OperationId, int], config: FastAPIConfig, request: TargetRequest
-) -> JSONValue:
-    documents = request.documents
-    primary = spec.primary
-    return {
-        "operation": f"/selection/selected_operations/{selected[spec.contract.id]}",
-        "python_name": spec.python_name,
-        "method": spec.contract.method,
-        "path": spec.contract.path,
-        "route_path": spec.route.route_path,
-        "group_key": spec.group,
-        "handler_mode": spec.mode,
-        "body_mode": "request" if spec.body is not None and spec.body.decision.transport == "raw_request" else "typed",
-        "primary_response": None
-        if primary is None
-        else {"status_code": primary.status, "media_type": None if primary.media is None else primary.media.media_type},
-        "registration_status": spec.registration_status,
-        "response_payload_alias": f"{spec.pascal}ResponsePayload",
-        "response_codecs_name": f"{spec.pascal}ResponseCodecs",
-        "projections": [
-            {
-                "use_ids": [documents.use(use) for use in decision.uses],
-                "site": decision.site,
-                "transport": decision.transport,
-                "reason": decision.reason,
-                "source": None if decision.source is None else documents.source(decision.source),
-            }
-            for decision in spec.decisions()
-        ],
-        "path_slots": [
-            {"wire_name": slot.wire_name, "slot": slot.slot, "occurrence": slot.occurrence} for slot in spec.route.slots
-        ],
-    }
+    def data(self) -> JSONObject:
+        """Return the target data of the manifest."""
+        indexes = {spec.key: index for index, spec in enumerate(self.plan.operations)}
+        specific = {path for paths in (*self.operation_files.values(), *self.group_files.values()) for path in paths}
+        return {
+            "context_version": 1,
+            "layout": self.config.layout,
+            "update_groups": None if self.config.update_groups is None else list(self.config.update_groups),
+            "operations": [self.operation(spec) for spec in self.plan.operations],
+            "groups": [
+                {
+                    "key": group.key,
+                    "file_stem": group.stem,
+                    "primary_tag": group.primary_tag,
+                    "service": group.service,
+                    "operations": [f"/target_data/fastapi/operations/{indexes[spec.key]}" for spec in group.operations],
+                    "files": self.pointers(self.group_files[group.key]),
+                }
+                for group in self.plan.groups
+            ],
+            "shared_files": self.pointers(file.path for file in self.rendered if file.path not in specific),
+            "runtime_revision": "/generator/runtime_revision",
+        }
+
+    def operation(self, spec: OperationSpec) -> JSONValue:
+        """Return the manifest record of one operation."""
+        request = self.request
+        documents = request.documents
+        primary = spec.primary
+        uses = _uses(spec.contract)
+        return {
+            "operation": f"/selection/selected_operations/{self.selected[spec.contract.id]}",
+            "python_name": spec.python_name,
+            "method": spec.contract.method,
+            "path": spec.contract.path,
+            "route_path": spec.route.route_path,
+            "group_key": spec.group,
+            "handler_mode": spec.mode,
+            "body_mode": "request"
+            if spec.body is not None and spec.body.decision.transport == "raw_request"
+            else "typed",
+            "primary_response": None
+            if primary is None
+            else {
+                "status_code": primary.status,
+                "media_type": None if primary.media is None else primary.media.media_type,
+            },
+            "registration_status": spec.registration_status,
+            "response_payload_alias": f"{spec.pascal}ResponsePayload",
+            "response_codecs_name": f"{spec.pascal}ResponseCodecs",
+            "binding_uses": [f"/bindings/{self.bindings[use]}" for use in uses if use in self.bindings],
+            "model_artifacts": [f"/model/artifacts/{index}" for index in self.model_artifacts(uses)],
+            "files": self.pointers(self.operation_files[spec.key]),
+            "plan_sha256": plan_digest(spec, documents),
+            "signature_sha256": self.renderer.signature_digest(spec),
+            "codec_sha256": codec_digest(uses, self.use_bindings, self.type_uses, self.wire),
+            "projections": [
+                {
+                    "use_ids": [documents.use(use) for use in decision.uses],
+                    "site": decision.site,
+                    "transport": decision.transport,
+                    "reason": decision.reason,
+                    "source": None if decision.source is None else documents.source(decision.source),
+                }
+                for decision in spec.decisions()
+            ],
+            "path_slots": [
+                {"wire_name": slot.wire_name, "slot": slot.slot, "occurrence": slot.occurrence}
+                for slot in spec.route.slots
+            ],
+        }
+
+    def model_artifacts(self, uses: tuple[TypeUseId, ...]) -> list[int]:
+        """Return the model artifacts of an operation's bound types and codec model graphs, in artifact order."""
+        modules: set[str] = set()
+        for use in uses:
+            if (binding := self.use_bindings.get(use)) is not None:
+                modules.update(model.symbol.partition(":")[0] for model in binding.models)
+            match self.type_uses[use].type:
+                case GeneratedSymbolType(symbol=symbol) if (artifact := self.symbols[symbol].artifact) is not None:
+                    modules.add(artifact_module(artifact))
+                case _:
+                    pass
+        return sorted(index for module, index in self.artifacts.items() if module in modules)
+
+    def paths_of(self, spec: OperationSpec) -> list[PurePosixPath]:
+        """Return the files of one operation: its operation-scoped template files."""
+        package = self.request.layout.package
+        return [
+            package / extra.path.replace(OPERATION, spec.python_name)
+            for extra in self.extras()
+            if extra.scope == "operation"
+        ]
+
+    def paths_of_group(self, stem: str) -> list[PurePosixPath]:
+        """Return the files of one router group: its router module and its router-scoped template files."""
+        package = self.request.layout.package
+        router = package / "routes.py" if self.config.layout == "single" else package / "routers" / f"{stem}.py"
+        return [
+            router,
+            *(package / extra.path.replace(ROUTER, stem) for extra in self.extras() if extra.scope == "router"),
+        ]
+
+    def extras(self) -> tuple[ExtraFile, ...]:
+        """Return the extra files the template directory declares."""
+        return () if (templates := self.renderer.templates) is None else templates.extras
+
+    def pointers(self, paths: Iterable[PurePosixPath]) -> list[JSONValue]:
+        """Return pointers to the manifest file records of rendered paths, in artifact order."""
+        return [f"/files/{index}" for index in sorted(self.files[path] for path in paths if path in self.files)]

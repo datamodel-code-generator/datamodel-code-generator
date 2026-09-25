@@ -7,7 +7,11 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import assert_output
-from tests.data.python.fastapi_generation import fastapi_config_report, fastapi_render_report
+from tests.data.python.fastapi_generation import (
+    fastapi_config_report,
+    fastapi_render_report,
+    fastapi_scenario_report,
+)
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi"
 
@@ -70,6 +74,23 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
 def test_fastapi_render(case: str, tmp_path: Path) -> None:
     """Plan each operation's parameters, body, and responses, and render the package they need."""
     assert_output(fastapi_render_report(case, tmp_path), EXPECTED / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "update-initial",
+        "update-invalid",
+        "update-groups",
+        "update-layout",
+        "update-templates",
+        "update-selection",
+        "update-runtime",
+    ],
+)
+def test_fastapi_regeneration(case: str, tmp_path: Path) -> None:
+    """Regenerate after spec, setting, and runtime changes, updating only the groups a partial update names."""
+    assert_output(fastapi_scenario_report(case, tmp_path), EXPECTED / "scenarios" / f"{case}.txt")
 
 
 @pytest.mark.parametrize(

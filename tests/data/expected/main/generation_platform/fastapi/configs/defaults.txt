@@ -11,3 +11,4 @@ parameter_names=mappingproxy({})
 codec_adapters=()
 hooks=()
 templates=None
+update_groups=None

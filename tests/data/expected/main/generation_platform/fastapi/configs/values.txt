@@ -11,3 +11,4 @@ parameter_names=mappingproxy({'/paths/~1pets/get': mappingproxy({'query:limit': 
 codec_adapters=()
 hooks=(HookReference(module='project.hooks', file=None, callable='rename'), HookReference(module=None, file=PurePosixPath('hooks/extra.py'), callable='transform'), <function tests.data.python.fastapi_hooks.rename>)
 templates=PurePosixPath('templates/custom')
+update_groups=('tag:pets',)

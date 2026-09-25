@@ -1,0 +1,211 @@
+{
+  "update-initial": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    }
+  ],
+  "update-invalid": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:nope"
+          ]
+        }
+      }
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": []
+        }
+      }
+    }
+  ],
+  "update-groups": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "spec": [
+        "api.yaml",
+        "groups-pets-changed.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    },
+    {
+      "spec": [
+        "api.yaml",
+        "groups-store-changed.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    },
+    {
+      "spec": [
+        "api.yaml",
+        "groups-model-changed.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    }
+  ],
+  "update-layout": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "generate": {
+        "config": {
+          "layout": "single",
+          "update_groups": [
+            "all"
+          ]
+        }
+      }
+    }
+  ],
+  "update-templates": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "templates": "templates/custom"
+        }
+      }
+    },
+    {
+      "generate": {
+        "config": {
+          "templates": "templates/roles",
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets",
+            "tag:store"
+          ]
+        }
+      }
+    }
+  ],
+  "update-selection": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ],
+          "selection": {
+            "include_tags": [
+              "pets"
+            ],
+            "reason": "Pets only."
+          }
+        }
+      }
+    }
+  ],
+  "update-runtime": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "patch": [
+        "server/.dcg-target-manifest.json",
+        "/generator/runtime_revision",
+        "0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    }
+  ]
+}

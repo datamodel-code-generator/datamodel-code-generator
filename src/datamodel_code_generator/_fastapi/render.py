@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile
+from datamodel_code_generator._api_manifest import sha256
 from datamodel_code_generator._api_types import APIGenerationError
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
@@ -16,7 +17,7 @@ from datamodel_code_generator._fastapi._compiled_templates import router as rout
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, Default
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
-from datamodel_code_generator._fastapi.templates import invalid
+from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, invalid
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -198,25 +199,29 @@ class ServerRenderer:  # noqa: PLR0904
         if (templates := self.templates) is None or (context := self.context) is None:
             return
         for extra in templates.extras:
-            frames: list[tuple[str, dict[str, object]]]
+            frames: list[tuple[str, str | None, dict[str, object]]]
             if extra.scope == "project":
-                frames = [(extra.path, {})]
+                frames = [(extra.path, None, {})]
             elif extra.scope == "router":
                 frames = [
-                    (extra.path.replace("{router}", view.file_stem), {"router": view, "tag": view.primary_tag})
+                    (
+                        extra.path.replace(ROUTER, view.file_stem),
+                        view.key,
+                        {"router": view, "tag": view.primary_tag},
+                    )
                     for view in context.routers
                 ]
             else:
                 frames = [
-                    (extra.path.replace("{operation}", view.python_name), {"operation": view})
+                    (extra.path.replace(OPERATION, view.python_name), view.group_key, {"operation": view})
                     for view in context.operations
                 ]
-            for path, frame in frames:
+            for path, group, frame in frames:
                 text = templates.render(extra.template, {"context": context, **frame})
                 if (problem := invalid(extra.format, text)) is not None:
                     raise APIGenerationError((templates.problem(f"{path} is not valid {extra.format}: {problem}"),))
                 yield RenderedFile(
-                    path=self.package / path, kind="template", text=text, header=extra.header
+                    path=self.package / path, kind="template", text=text, group=group, header=extra.header
                 )
 
     def placed(self, files: tuple[RenderedFile, ...], extras: tuple[RenderedFile, ...]) -> None:
@@ -513,6 +518,11 @@ class ServerRenderer:  # noqa: PLR0904
             f") -> {returns}: ...",
         )
         return layout(signature, 4, 0, WIDTH)
+
+    def signature_digest(self, spec: OperationSpec) -> str:
+        """Return the fingerprint of an operation's service method, spelled in a module of its own."""
+        module = Module({"PrincipalT_contra"}, self.symbols, level=1, public=True)
+        return sha256(f"{self.method(module, spec)}\n{module.imports()}".encode())
 
     def parameters(self, module: Module, spec: OperationSpec, principal: str) -> list[Doc]:
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""

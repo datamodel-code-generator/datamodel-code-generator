@@ -51,7 +51,9 @@ _EXTENSIONS: Final[dict[str, Format]] = {
     ".xml": "xml",
     ".txt": "text",
 }
-_TOKENS: Final[dict[Scope, str | None]] = {"project": None, "router": "{router}", "operation": "{operation}"}
+ROUTER: Final = "{router}"
+OPERATION: Final = "{operation}"
+_TOKENS: Final[dict[Scope, str | None]] = {"project": None, "router": ROUTER, "operation": OPERATION}
 _KEYS: Final = frozenset({"template", "path", "scope", "format", "header"})
 
 

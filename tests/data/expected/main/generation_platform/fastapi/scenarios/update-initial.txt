@@ -1,0 +1,5 @@
+# update-initial
+spec api.yaml <- groups.yaml
+generate {"config": {"update_groups": ["tag:pets"]}}
+  APIGenerationError
+  F_SELECTION_INVALID selection update_groups: update_groups needs an earlier generation of this target
