@@ -10,7 +10,7 @@ from dataclasses import dataclass, field, fields, is_dataclass
 from enum import Enum
 from functools import cache
 from math import isfinite
-from pathlib import Path, PurePath, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import urlsplit
@@ -331,6 +331,11 @@ def _is_hash(value: object) -> TypeIs[str]:
     )
 
 
+def _is_contained(path: str) -> bool:
+    posix, windows = PurePosixPath(path), PureWindowsPath(path)
+    return bool(posix.parts) and posix.as_posix() == path and not windows.anchor and ".." not in windows.parts
+
+
 def _read_json(path: Path, relative: PurePosixPath, target_id: str) -> JSONObject:
     try:
         value = json.loads(path.read_bytes())
@@ -366,7 +371,13 @@ def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
             "sha256": digest,
             "size": int() as size,
             "group": str() | None as group,
-        } if len(entry) == len(_FILE_KEYS) and _is_hash(digest) and not isinstance(size, bool) and size >= 0:
+        } if (
+            len(entry) == len(_FILE_KEYS)
+            and _is_contained(path)
+            and _is_hash(digest)
+            and not isinstance(size, bool)
+            and size >= 0
+        ):
             return RecordedFile(path=PurePosixPath(path), kind=kind, ownership="owned", sha256=digest, group=group)
         case {
             "path": str() as path,
@@ -375,7 +386,7 @@ def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
             "sha256": None,
             "size": None,
             "group": str() | None as group,
-        } if len(entry) == len(_FILE_KEYS):
+        } if len(entry) == len(_FILE_KEYS) and _is_contained(path):
             return RecordedFile(path=PurePosixPath(path), kind=kind, ownership="create_only", sha256=None, group=group)
         case _:
             raise _state_error(

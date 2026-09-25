@@ -72,6 +72,18 @@ patch server/.dcg-target-manifest.json {"set": {"/files/1/path": "__init__.py"}}
 render
   APIGenerationError
   E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The manifest repeats a file
+patch server/.dcg-target-manifest.json {"set": {"/files/1/path": "../victim.py"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
+patch server/.dcg-target-manifest.json {"set": {"/files/2/path": "handlers\\..\\..\\victim.py"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
+patch server/.dcg-target-manifest.json {"set": {"/files/3/path": "C:/victim.py"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
 patch server/.dcg-target-manifest.json {}
 render
   target=fastapi schema_version=1

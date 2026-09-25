@@ -87,6 +87,12 @@
       {"render": {}},
       {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/1/path": "__init__.py"}}},
       {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/1/path": "../victim.py"}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/2/path": "handlers\\..\\..\\victim.py"}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/3/path": "C:/victim.py"}}},
+      {"render": {}},
       {"patch": {"file": "server/.dcg-target-manifest.json"}},
       {"render": {}}
     ]
