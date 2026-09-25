@@ -1820,11 +1820,13 @@ def _collect_function_boolean_replacements(
     return replacements
 
 
-def _statement_start(statement: ast.stmt) -> int:
-    return min(
-        (decorator.lineno for decorator in getattr(statement, "decorator_list", [])),
-        default=statement.lineno,
-    )
+def _statement_start(statement: ast.stmt, lines: list[str]) -> int:
+    if not (decorators := getattr(statement, "decorator_list", None)):
+        return statement.lineno
+    start = decorators[0].lineno
+    while not lines[start - 1].lstrip().startswith("@"):
+        start -= 1
+    return start
 
 
 def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
@@ -1864,7 +1866,7 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
                 replacements.append((node.lineno, node.lineno, _split_python_lines(formatted_definition)))
             if len(node.body) > 1 and (docstring_node := _docstring_node(node.body[0])) is not None:
                 docstring_end = docstring_node.end_lineno or docstring_node.lineno
-                next_start = _statement_start(node.body[1])
+                next_start = _statement_start(node.body[1], lines)
                 if docstring_end + 1 == next_start:
                     replacements.append((docstring_end, docstring_end, [lines[docstring_end - 1], ""]))
                 elif docstring_end + 2 < next_start:
@@ -1873,7 +1875,7 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
                 if previous_statement is node.body[0] and _docstring_node(previous_statement) is not None:
                     continue
                 previous_end = previous_statement.end_lineno or previous_statement.lineno
-                next_start = _statement_start(next_statement)
+                next_start = _statement_start(next_statement, lines)
                 if previous_end + 2 < next_start:
                     replacements.append((previous_end + 1, next_start - 1, [""]))
             for statement in node.body:

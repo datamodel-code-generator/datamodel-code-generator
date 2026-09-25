@@ -10,8 +10,14 @@ from pydantic import BaseModel
 class Model(BaseModel):
     """Model with a derived label."""
 
-    @property
+    @(
+        property
+    )
     def label(self) -> str:
         return repr(self)
+
+    @property
+    def size(self) -> int:
+        return len(self.label)
 
     s: str
