@@ -1,0 +1,4 @@
+# target-grammar-misplaced
+render
+  APIGenerationError
+  E_TARGET_SOURCE error target __init__.py: The generated Python source is invalid: 'return' outside function

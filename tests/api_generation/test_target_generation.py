@@ -55,6 +55,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "layout-external",
         "layout-errors",
         "format-errors",
+        "target-grammar-modern",
+        "target-grammar-misplaced",
     ],
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

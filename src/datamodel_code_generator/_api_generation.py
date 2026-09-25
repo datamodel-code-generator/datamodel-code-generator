@@ -6,6 +6,7 @@ import ast
 import codecs
 import json
 import os
+import sys
 import tempfile
 import unicodedata
 from contextlib import ExitStack
@@ -954,9 +955,17 @@ class _Finisher:
 
 
 def _syntax_error(filename: str, text: str, version: tuple[int, int]) -> str | None:
+    """Return why a source is invalid for the target grammar, reading PEP 695 aliases older hosts cannot parse."""
     try:
         compile(ast.parse(text, filename, feature_version=version), filename, "exec", dont_inherit=True)
     except SyntaxError as error:
+        if version >= (3, 12) > sys.version_info[:2]:
+            from datamodel_code_generator._builtin_formatter import (  # noqa: PLC0415
+                _replace_pep695_type_aliases_with_placeholders,
+            )
+
+            if (replaced := _replace_pep695_type_aliases_with_placeholders(text)) != text:
+                return _syntax_error(filename, replaced, version)
         return error.msg
     return None
 
