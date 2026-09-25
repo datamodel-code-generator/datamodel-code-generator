@@ -1,9 +1,16 @@
 class {{ class_name }}({{ base_class }}):
     """{{ class_name }} with a derived label."""
 
-    @property
+    @(
+        property
+    )
     def label(self) -> str:
         return repr(self)
+
+
+    @property
+    def size(self) -> int:
+        return len(self.label)
 {% for field in fields %}
     {{ field.name }}: {{ field.type_hint }}
 {%- endfor %}
