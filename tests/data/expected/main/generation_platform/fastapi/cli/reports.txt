@@ -30,6 +30,14 @@ write settings.json
 cli --diagnostics-json settings.json
   exit 2
   stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report
+write client.json
+cli --diagnostics-json client.json
+  exit 2
+  stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report
+write entries.json
+cli --diagnostics-json entries.json
+  exit 2
+  stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report
 write pyproject.toml
 cli --diagnostics-json pyproject.toml
   exit 2
@@ -50,7 +58,9 @@ cli --check --diagnostics-json diagnostics.json
   stderr | E_CONFIG_VALUE error config: --diagnostics-json cannot be written: Permission denied
 tree
   api.yaml
+  client.json
   diagnostics.json
+  entries.json
   fastapi.toml
   models.py
   notes.md

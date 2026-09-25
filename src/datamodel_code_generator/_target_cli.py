@@ -26,6 +26,19 @@ _ERROR: Final = 2
 _JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _TARGET: Final = "fastapi"
+_REPORT: Final = frozenset({"schema_version", "target", "diagnostics"})
+_FIELDS: Final = frozenset({
+    "code",
+    "severity",
+    "stage",
+    "message",
+    "source_uri",
+    "source_pointer",
+    "operation",
+    "option_path",
+    "artifact_path",
+    "target_id",
+})
 
 
 def run_target(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path: Path | None) -> int:
@@ -109,11 +122,22 @@ def _is_report(path: Path) -> bool:
         document: object = json.loads(path.read_bytes())
     except (OSError, ValueError):
         return False
-    return _is_mapping(document) and document.get("schema_version") == 1 and "diagnostics" in document
+    return (
+        _is_mapping(document)
+        and frozenset(document) == _REPORT
+        and document["schema_version"] == 1
+        and document["target"] == _TARGET
+        and _is_list(entries := document["diagnostics"])
+        and all(_is_mapping(entry) and frozenset(entry) == _FIELDS for entry in entries)
+    )
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
     return isinstance(value, Mapping)
+
+
+def _is_list(value: object) -> TypeIs[list[object]]:
+    return isinstance(value, list)
 
 
 def _conflict(message: str) -> Diagnostic:
