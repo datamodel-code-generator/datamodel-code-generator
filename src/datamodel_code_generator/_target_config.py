@@ -67,8 +67,7 @@ def _json(value: object) -> bool:
             return all(_json(item) for item in value)
         case Mapping():
             return all(type(key) is str and _json(item) for key, item in value.items())
-        case _:
-            return False
+    return False
 
 
 def _selection_problems(selection: object) -> Iterator[Diagnostic]:

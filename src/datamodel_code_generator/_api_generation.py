@@ -123,21 +123,17 @@ class TargetGenerator(Protocol):
     @property
     def kind(self) -> TargetKind:
         """Return the target kind recorded in manifests and reports."""
-        ...
 
     @property
     def backends(self) -> frozenset[DataModelType]:
         """Return the model backends the target accepts."""
-        ...
 
     @property
     def unsupported_backend(self) -> str:
         """Return the diagnostic code for a backend the target does not accept."""
-        ...
 
     def render(self, request: TargetRequest) -> TargetRender:
         """Render the target's files from one accepted model generation."""
-        ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -192,8 +188,7 @@ def _root_problem(input_: _GenerationInput, effective: GenerateConfig) -> tuple[
             return "input", "Target generation reads one root document, not a directory"
         case _ if effective.input_file_type not in {InputFileType.Auto, InputFileType.OpenAPI}:
             return "model_config.input_file_type", "Target generation reads an OpenAPI document"
-        case _:
-            return None
+    return None
 
 
 def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
@@ -205,8 +200,7 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
             return RootInput("url", input_.geturl(), cwd)
         case str():
             return RootInput("text", ROOT_URN, cwd)
-        case _:
-            return RootInput("mapping", ROOT_URN, cwd)
+    return RootInput("mapping", ROOT_URN, cwd)
 
 
 def _remote_lock(
@@ -445,12 +439,11 @@ class _Planner:
                 return self.documents.operation(operation.id)
             case SchemaRef() if (located := self.documents.pointer(reference.document, self.cwd)) is not None:
                 return {"document": located, "pointer": reference.pointer}
-            case _:
-                raise config_error(
-                    code="E_OPERATION_REF" if isinstance(reference, OperationRef) else "E_CONFIG_VALUE",
-                    option_path=option_path,
-                    message="The reference names no operation or document of the accepted input",
-                )
+        raise config_error(
+            code="E_OPERATION_REF" if isinstance(reference, OperationRef) else "E_CONFIG_VALUE",
+            option_path=option_path,
+            message="The reference names no operation or document of the accepted input",
+        )
 
     def portable(self, value: object, option_path: str) -> JSONValue:
         return portable(

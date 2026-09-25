@@ -108,8 +108,7 @@ def json_projection(value: YamlValue) -> JSONValue:
             return [json_projection(item) for item in value]
         case float() if not isfinite(value):
             return None
-        case _:
-            return value
+    return value
 
 
 def config_error(*, code: str, option_path: str, message: str) -> APIGenerationError:
@@ -139,8 +138,7 @@ def document_identity(document: str, base: Path) -> str:
             return Path(url2pathname(parts.path)).resolve().as_uri()
         case scheme if len(scheme) > 1:
             return document
-        case _:
-            return (base / document).resolve().as_uri()
+    return (base / document).resolve().as_uri()
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,8 +162,7 @@ def persistent_uri(identity: str, root: Path, option_path: str) -> str:
             return relative_uri(Path(url2pathname(parts.path)), root, option_path)
         case "http" | "https":
             return _display_url(identity)
-        case _:
-            return identity
+    return identity
 
 
 def _digest(lease: SourceLease, document: SourceDocumentId) -> str:
@@ -264,8 +261,7 @@ def portable(  # noqa: PLR0911
             return [portable(item, locate, refer) for item in value]
         case _ if is_dataclass(value) and not isinstance(value, type):
             return {item.name: portable(getattr(value, item.name), locate, refer) for item in fields(value)}
-        case _:
-            raise TypeError(type(value).__qualname__)
+    raise TypeError(type(value).__qualname__)
 
 
 def model_record(*, output_uri: str, package: str, mode: str, artifacts: Sequence[ModelArtifact]) -> JSONObject:
@@ -353,13 +349,12 @@ def _read_json(path: Path, relative: PurePosixPath, target_id: str) -> JSONObjec
                 message="The management file has an unknown version",
                 target_id=target_id,
             )
-        case _:
-            raise _state_error(
-                code="E_STATE_CORRUPT",
-                path=relative,
-                message="The management file has no schema version",
-                target_id=target_id,
-            )
+    raise _state_error(
+        code="E_STATE_CORRUPT",
+        path=relative,
+        message="The management file has no schema version",
+        target_id=target_id,
+    )
 
 
 def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
@@ -388,13 +383,12 @@ def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
             "group": str() | None as group,
         } if len(entry) == len(_FILE_KEYS) and _is_contained(path):
             return RecordedFile(path=PurePosixPath(path), kind=kind, ownership="create_only", sha256=None, group=group)
-        case _:
-            raise _state_error(
-                code="E_STATE_CORRUPT",
-                path=PurePosixPath(MANIFEST_NAME),
-                message="A manifest file record is invalid",
-                target_id=target_id,
-            )
+    raise _state_error(
+        code="E_STATE_CORRUPT",
+        path=PurePosixPath(MANIFEST_NAME),
+        message="A manifest file record is invalid",
+        target_id=target_id,
+    )
 
 
 def _check_manifest(manifest: JSONObject, kind: TargetKind, package: str, target_id: str) -> list[JSONValue]:
@@ -435,10 +429,9 @@ def _check_manifest(manifest: JSONObject, kind: TargetKind, package: str, target
             recorded_package,
         ) == (target_id, kind, package):
             return files
-        case _:
-            raise _state_error(
-                code="E_STATE_CORRUPT", path=name, message="The manifest target record is invalid", target_id=target_id
-            )
+    raise _state_error(
+        code="E_STATE_CORRUPT", path=name, message="The manifest target record is invalid", target_id=target_id
+    )
 
 
 def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState:

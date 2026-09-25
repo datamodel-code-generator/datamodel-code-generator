@@ -779,8 +779,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 return (
                     self.current_module if self.path.name == "__init__.py" else self.current_module.rpartition(".")[0]
                 )
-            case _:
-                return self._resolved_string(node)
+        return self._resolved_string(node)
 
     def _resolved_dynamic_target(self, node: ast.Call, target: str | None) -> str | None:
         match node.func:
@@ -798,8 +797,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                     return importlib.util.resolve_name(target, anchor)
                 except ImportError:
                     return target
-            case _:
-                return target
+        return target
 
     @staticmethod
     def _dynamic_import_target_argument(node: ast.Call) -> ast.expr | None:
