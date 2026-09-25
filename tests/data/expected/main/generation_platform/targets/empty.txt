@@ -1,0 +1,169 @@
+# empty
+render
+  target=client schema_version=1
+  write target server/__init__.py (target) 0 lines
+  write target server/routes/default.py (target) 1 lines
+  create_only target server/handlers/default.py (target) 1 lines
+  write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
+  write target_manifest server/.dcg-target-manifest.json (target) 1 lines
+  I_FIXTURE_GROUP info target: The default group has 1 operations
+{
+  "bindings": [],
+  "diagnostics": [
+    {
+      "artifact_path": null,
+      "code": "I_FIXTURE_GROUP",
+      "message": "The default group has 1 operations",
+      "operation": null,
+      "option_path": null,
+      "severity": "info",
+      "source_pointer": null,
+      "source_uri": null,
+      "stage": "target",
+      "target_id": "<sha256>"
+    }
+  ],
+  "extensions": {
+    "formatters": [],
+    "hooks": [],
+    "templates": []
+  },
+  "files": [
+    {
+      "group": null,
+      "kind": "package",
+      "ownership": "owned",
+      "path": "__init__.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "default",
+      "kind": "routes",
+      "ownership": "owned",
+      "path": "routes/default.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "default",
+      "kind": "handler",
+      "ownership": "create_only",
+      "path": "handlers/default.py",
+      "sha256": null,
+      "size": null
+    }
+  ],
+  "generator": {
+    "name": "datamodel-code-generator",
+    "runtime_revision": "<masked>",
+    "version": "<masked>"
+  },
+  "inputs": {
+    "documents": [],
+    "provenance": [
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.disable_timestamp"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.formatters"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.openapi_scopes"
+      }
+    ],
+    "root": {
+      "digest": "<sha256>",
+      "kind": "file",
+      "uri": "../spec/empty.yaml"
+    },
+    "target_config": {
+      "opaque_options": [],
+      "protocol_metadata": {
+        "models": 0
+      },
+      "public_options": {
+        "builtin_codec_compatibility": [],
+        "custom_formatter_kwargs": {},
+        "custom_formatters": [],
+        "distribution_name": null,
+        "encoding": "utf-8",
+        "export_bindings": [],
+        "failure": null,
+        "formatter_settings": null,
+        "formatters": [
+          "builtin"
+        ],
+        "header": null,
+        "hook": null,
+        "include_timestamp": false,
+        "labels": [],
+        "model_dependency": null,
+        "model_mode": "generate",
+        "model_package": "example.models",
+        "output": ".",
+        "package": "example.server",
+        "package_mode": "embedded",
+        "package_version": null,
+        "primary": null,
+        "token": null
+      },
+      "runtime_defaults": {}
+    }
+  },
+  "model": {
+    "artifacts": [],
+    "fingerprint": "<sha256>",
+    "mode": "generate",
+    "output_uri": "../models.py",
+    "package": "example.models"
+  },
+  "schema_version": 1,
+  "selection": {
+    "excluded_operations": [],
+    "reason": null,
+    "rules": {
+      "exclude_operations": [],
+      "exclude_tags": [],
+      "include_operations": [],
+      "include_tags": [],
+      "reason": null
+    },
+    "selected_operations": [
+      {
+        "document": "/inputs/root",
+        "pointer": "/paths/~1ping/get"
+      }
+    ]
+  },
+  "target": {
+    "id": "<sha256>",
+    "kind": "client",
+    "package": "example.server",
+    "root_uri": "."
+  },
+  "target_data": {
+    "client": {
+      "excluded": 0,
+      "groups": {
+        "default": [
+          {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1ping/get"
+          }
+        ]
+      }
+    }
+  }
+}
+render
+  Error: Models not found in the input data

@@ -1,0 +1,5 @@
+# conflict
+write server/routes/pets.py
+render
+  APIGenerationError
+  E_OUTPUT_CONFLICT error ownership routes/pets.py: An unmanaged file occupies a path the target owns

@@ -1,0 +1,413 @@
+# first-run
+render
+  target=fastapi schema_version=1
+  write model models.py 22 lines
+  write target server/__init__.py (target) 0 lines
+  write target server/routes/pets.py (target) 2 lines
+  create_only target server/handlers/pets.py (target) 1 lines
+  write target server/routes/store.py (target) 1 lines
+  create_only target server/handlers/store.py (target) 1 lines
+  write target server/routes/default.py (target) 1 lines
+  create_only target server/handlers/default.py (target) 1 lines
+  write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
+  write target_manifest server/.dcg-target-manifest.json (target) 1 lines
+  I_FIXTURE_GROUP info target: The pets group has 2 operations
+  I_FIXTURE_GROUP info target: The store group has 1 operations
+  I_FIXTURE_GROUP info target: The default group has 1 operations
+{
+  "bindings": [
+    {
+      "adapter_identity": null,
+      "backend": "pydantic_v2.BaseModel",
+      "converter_strategy": "pydantic_type_adapter",
+      "strategy": "native",
+      "use_id": {
+        "declaration": null,
+        "direction": "response",
+        "location": null,
+        "media": "application/json",
+        "name": null,
+        "owner": {
+          "kind": "operation",
+          "source": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1pets/get"
+          }
+        },
+        "projection": "value",
+        "role": "response_body",
+        "schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1pets/get/responses/200/content/application~1json/schema"
+        },
+        "status": "200",
+        "use_site": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1pets/get/responses/200"
+        }
+      }
+    },
+    {
+      "adapter_identity": null,
+      "backend": "pydantic_v2.BaseModel",
+      "converter_strategy": "pydantic_type_adapter",
+      "strategy": "native",
+      "use_id": {
+        "declaration": null,
+        "direction": "request",
+        "location": null,
+        "media": "application/json",
+        "name": null,
+        "owner": {
+          "kind": "operation",
+          "source": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1pets/post"
+          }
+        },
+        "projection": "value",
+        "role": "request_body",
+        "schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1pets/post/requestBody/content/application~1json/schema"
+        },
+        "status": null,
+        "use_site": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1pets/post/requestBody"
+        }
+      }
+    },
+    {
+      "adapter_identity": null,
+      "backend": "pydantic_v2.BaseModel",
+      "converter_strategy": "pydantic_type_adapter",
+      "strategy": "native",
+      "use_id": {
+        "declaration": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1store~1orders/get/parameters/0"
+        },
+        "direction": "request",
+        "location": "query",
+        "media": null,
+        "name": "limit",
+        "owner": {
+          "kind": "operation",
+          "source": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1store~1orders/get"
+          }
+        },
+        "projection": "value",
+        "role": "parameter",
+        "schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1store~1orders/get/parameters/0/schema"
+        },
+        "status": null,
+        "use_site": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1store~1orders/get/parameters/0"
+        }
+      }
+    },
+    {
+      "adapter_identity": null,
+      "backend": "pydantic_v2.BaseModel",
+      "converter_strategy": "pydantic_type_adapter",
+      "strategy": "native",
+      "use_id": {
+        "declaration": null,
+        "direction": "response",
+        "location": null,
+        "media": "application/json",
+        "name": null,
+        "owner": {
+          "kind": "operation",
+          "source": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1store~1orders/get"
+          }
+        },
+        "projection": "value",
+        "role": "response_body",
+        "schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1store~1orders/get/responses/200/content/application~1json/schema"
+        },
+        "status": "200",
+        "use_site": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1store~1orders/get/responses/200"
+        }
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "artifact_path": null,
+      "code": "I_FIXTURE_GROUP",
+      "message": "The pets group has 2 operations",
+      "operation": null,
+      "option_path": null,
+      "severity": "info",
+      "source_pointer": null,
+      "source_uri": null,
+      "stage": "target",
+      "target_id": "<sha256>"
+    },
+    {
+      "artifact_path": null,
+      "code": "I_FIXTURE_GROUP",
+      "message": "The store group has 1 operations",
+      "operation": null,
+      "option_path": null,
+      "severity": "info",
+      "source_pointer": null,
+      "source_uri": null,
+      "stage": "target",
+      "target_id": "<sha256>"
+    },
+    {
+      "artifact_path": null,
+      "code": "I_FIXTURE_GROUP",
+      "message": "The default group has 1 operations",
+      "operation": null,
+      "option_path": null,
+      "severity": "info",
+      "source_pointer": null,
+      "source_uri": null,
+      "stage": "target",
+      "target_id": "<sha256>"
+    }
+  ],
+  "extensions": {
+    "formatters": [],
+    "hooks": [],
+    "templates": []
+  },
+  "files": [
+    {
+      "group": null,
+      "kind": "package",
+      "ownership": "owned",
+      "path": "__init__.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "pets",
+      "kind": "routes",
+      "ownership": "owned",
+      "path": "routes/pets.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "pets",
+      "kind": "handler",
+      "ownership": "create_only",
+      "path": "handlers/pets.py",
+      "sha256": null,
+      "size": null
+    },
+    {
+      "group": "store",
+      "kind": "routes",
+      "ownership": "owned",
+      "path": "routes/store.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "store",
+      "kind": "handler",
+      "ownership": "create_only",
+      "path": "handlers/store.py",
+      "sha256": null,
+      "size": null
+    },
+    {
+      "group": "default",
+      "kind": "routes",
+      "ownership": "owned",
+      "path": "routes/default.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "default",
+      "kind": "handler",
+      "ownership": "create_only",
+      "path": "handlers/default.py",
+      "sha256": null,
+      "size": null
+    }
+  ],
+  "generator": {
+    "name": "datamodel-code-generator",
+    "runtime_revision": "<masked>",
+    "version": "<masked>"
+  },
+  "inputs": {
+    "documents": [
+      {
+        "digest": "<sha256>",
+        "uri": "../spec/common.yaml"
+      }
+    ],
+    "provenance": [
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.disable_timestamp"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.formatters"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.openapi_scopes"
+      }
+    ],
+    "root": {
+      "digest": "<sha256>",
+      "kind": "file",
+      "uri": "../spec/api.yaml"
+    },
+    "target_config": {
+      "opaque_options": [],
+      "protocol_metadata": {},
+      "public_options": {
+        "builtin_codec_compatibility": [],
+        "custom_formatter_kwargs": {},
+        "custom_formatters": [],
+        "distribution_name": null,
+        "encoding": "utf-8",
+        "export_bindings": [],
+        "failure": null,
+        "formatter_settings": null,
+        "formatters": [
+          "builtin"
+        ],
+        "header": null,
+        "hook": null,
+        "include_timestamp": false,
+        "labels": [],
+        "model_dependency": null,
+        "model_mode": "generate",
+        "model_package": "example.models",
+        "output": ".",
+        "package": "example.server",
+        "package_mode": "embedded",
+        "package_version": null,
+        "primary": null,
+        "token": null
+      },
+      "runtime_defaults": {}
+    }
+  },
+  "model": {
+    "artifacts": [
+      {
+        "kind": "model",
+        "path": "models.py",
+        "sha256": "<sha256>",
+        "size": "<masked>"
+      }
+    ],
+    "fingerprint": "<sha256>",
+    "mode": "generate",
+    "output_uri": "../models.py",
+    "package": "example.models"
+  },
+  "schema_version": 1,
+  "selection": {
+    "excluded_operations": [],
+    "reason": null,
+    "rules": {
+      "exclude_operations": [],
+      "exclude_tags": [],
+      "include_operations": [],
+      "include_tags": [],
+      "reason": null
+    },
+    "selected_operations": [
+      {
+        "document": "/inputs/root",
+        "pointer": "/paths/~1pets/get"
+      },
+      {
+        "document": "/inputs/root",
+        "pointer": "/paths/~1pets/post"
+      },
+      {
+        "document": "/inputs/root",
+        "pointer": "/paths/~1store~1orders/get"
+      },
+      {
+        "document": "/inputs/root",
+        "pointer": "/paths/~1health/get"
+      }
+    ]
+  },
+  "target": {
+    "id": "<sha256>",
+    "kind": "fastapi",
+    "package": "example.server",
+    "root_uri": "."
+  },
+  "target_data": {
+    "fastapi": {
+      "excluded": 0,
+      "groups": {
+        "default": [
+          {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1health/get"
+          }
+        ],
+        "pets": [
+          {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1pets/get"
+          },
+          {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1pets/post"
+          }
+        ],
+        "store": [
+          {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1store~1orders/get"
+          }
+        ]
+      }
+    }
+  }
+}
+publish
+render
+  target=fastapi schema_version=1
+  unchanged model models.py 22 lines
+  unchanged target server/__init__.py (target) 0 lines
+  unchanged target server/routes/pets.py (target) 2 lines
+  unchanged target server/handlers/pets.py (target) 1 lines
+  unchanged target server/routes/store.py (target) 1 lines
+  unchanged target server/handlers/store.py (target) 1 lines
+  unchanged target server/routes/default.py (target) 1 lines
+  unchanged target server/handlers/default.py (target) 1 lines
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
+  unchanged target_manifest server/.dcg-target-manifest.json (target) 1 lines
+  I_FIXTURE_GROUP info target: The pets group has 2 operations
+  I_FIXTURE_GROUP info target: The store group has 1 operations
+  I_FIXTURE_GROUP info target: The default group has 1 operations
+relocated manifest identical: True

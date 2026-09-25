@@ -1,0 +1,289 @@
+{
+  "first-run": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {}},
+      {"manifest": null},
+      {"publish": null},
+      {"render": {}},
+      {"relocate": "elsewhere"}
+    ]
+  },
+  "ownership": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {}},
+      {"publish": null},
+      {"write": ["server/handlers/pets.py", "# Handwritten.\n"]},
+      {"remove": "server/handlers/store.py"},
+      {"render": {}},
+      {"write": ["server/routes/pets.py", "# Edited.\n"]},
+      {"remove": "server/routes/store.py"},
+      {"render": {}}
+    ]
+  },
+  "deletion": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {}},
+      {"publish": null},
+      {"remove": "server/routes/store.py"},
+      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {"write": ["server/routes/store.py", "# GET /store/orders\n"]},
+      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {"publish": null},
+      {"manifest": null},
+      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}}
+    ]
+  },
+  "conflict": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"write": ["server/routes/pets.py", "# Someone else's module.\n"]},
+      {"render": {}}
+    ]
+  },
+  "state": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {}},
+      {"publish": null},
+      {"remove": "server/.dcg-state/model-artifacts.json"},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-state/model-artifacts.json"}},
+      {"remove": "server/.dcg-target-manifest.json"},
+      {"render": {}},
+      {"write": ["server/.dcg-target-manifest.json", "{"]},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/schema_version": 2}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/schema_version": true}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/extra": 1}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "delete": ["/generator/name"]}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files": {}}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/target_data": {"client": {}}}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/target/package": "example.other"}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/target/id": "0"}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/model/mode": "verify"}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/0/sha256": "0"}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/1/path": "__init__.py"}}},
+      {"render": {}},
+      {"patch": {"file": "server/.dcg-target-manifest.json"}},
+      {"render": {}}
+    ]
+  },
+  "verify": {
+    "input": {"path": "api.yaml"},
+    "target": "client",
+    "model": {
+      "openapi_scopes": ["api"],
+      "output_model_type": "typing.TypedDict",
+      "emit_model_metadata": "meta/deep/models.json"
+    },
+    "steps": [
+      {"render": {}},
+      {"publish": null},
+      {"render": {"config": {"model_mode": "verify"}}},
+      {"manifest": null},
+      {"write": ["models.py", "# Edited.\n"]},
+      {"render": {"config": {"model_mode": "verify"}}},
+      {"remove": "models.py"},
+      {"render": {"config": {"model_mode": "verify"}}}
+    ]
+  },
+  "selection": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"config": {"selection": {
+        "include_tags": ["pets"],
+        "exclude_operations": ["/paths/~1pets/post"],
+        "reason": "Only reading pets"
+      }}}},
+      {"manifest": null},
+      {"render": {"config": {"selection": {"exclude_tags": ["admin"], "reason": "Administration runs elsewhere"}}}},
+      {"render": {"config": {"selection": {
+        "include_operations": [
+          "/paths/~1nope/get",
+          "/webhooks/petAdded/post",
+          {"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"},
+          "/paths/~1pets/get",
+          {"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}
+        ],
+        "include_tags": ["missing"],
+        "exclude_tags": ["absent"],
+        "reason": "Broken selection"
+      }}}},
+      {"render": {"config": {"selection": {"include_operations": ["/paths/~1pets/get"], "reason": "One operation"}}}},
+      {"remember": "shorthand"},
+      {"render": {"config": {"selection": {
+        "include_operations": [{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}],
+        "reason": "One operation"
+      }}}},
+      {"compare": "shorthand"},
+      {"render": {"config": {"selection": {
+        "include_operations": [{"pointer": "/paths/~1pets/get", "document": "{root}/spec/api.yaml"}],
+        "reason": "One operation"
+      }}}},
+      {"compare": "shorthand"}
+    ]
+  },
+  "inputs": {
+    "input": {"text": "inline.yaml"},
+    "target": "client",
+    "model": {"openapi_scopes": ["api"], "output_model_type": "msgspec.Struct"},
+    "steps": [
+      {"render": {"config": {"selection": {
+        "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
+        "reason": "Items only"
+      }}}},
+      {"manifest": null},
+      {"render": {"input": {"mapping": "inline.yaml"}, "model": {"input_file_type": "openapi"}}},
+      {"render": {"input": {"path": "inline.yaml"}, "config": {"selection": {
+        "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
+        "reason": "Items only"
+      }}}},
+      {"render": {"input": {"list": ["inline.yaml"]}}},
+      {"render": {"input": {"directory": "."}}},
+      {"render": {"model": {"input_file_type": "jsonschema"}}}
+    ]
+  },
+  "validation": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"output": null}}},
+      {"render": {"model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
+      {"render": {"model": {"output_model_type": "pydantic_v2.dataclass"}}}
+    ]
+  },
+  "empty": {
+    "input": {"path": "empty.yaml"},
+    "target": "client",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {}},
+      {"manifest": null},
+      {"render": {"model": {"openapi_scopes": ["schemas"]}}}
+    ]
+  },
+  "modular": {
+    "input": {"path": "modular.yaml"},
+    "target": "client",
+    "model": {"openapi_scopes": ["api"], "output": "models", "output_model_type": "dataclasses.dataclass"},
+    "steps": [
+      {"render": {}},
+      {"publish": null},
+      {"render": {}},
+      {"manifest": null}
+    ]
+  },
+  "provenance": {
+    "input": {"path": "api.yaml"},
+    "target": "client",
+    "model": {
+      "openapi_scopes": ["api"],
+      "custom_file_header_path": "spec/header.txt",
+      "http_headers": [["Authorization", "Bearer secret"]],
+      "http_timeout": 5.0,
+      "custom_class_name_generator": true,
+      "lockfile": "locks/remote.lock",
+      "update_lock": true
+    },
+    "config": {
+      "formatter_settings": "pyproject.toml",
+      "custom_formatters": ["formatters.fixture"],
+      "custom_formatter_kwargs": {"width": 100},
+      "hook": true,
+      "token": true,
+      "labels": ["b", "a"],
+      "primary": {"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"},
+      "export_bindings": [
+        {"schema": {"pointer": "/components/schemas/Pet"}, "module": "example.models", "symbol": "FixturePet"}
+      ],
+      "builtin_codec_compatibility": [
+        {
+          "name": "orders",
+          "backend": "pydantic_v2.BaseModel",
+          "schemas": [{"pointer": "/Order", "document": "spec/common.yaml"}]
+        }
+      ]
+    },
+    "steps": [
+      {"render": {}},
+      {"manifest": null}
+    ]
+  },
+  "references": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"config": {"primary": {"pointer": "/paths/~1nope/get"}}}},
+      {"render": {"config": {"export_bindings": [
+        {"schema": {"pointer": "/Order", "document": "spec/missing.yaml"}, "module": "example.models", "symbol": "Order"}
+      ]}}},
+      {"render": {"config": {"failure": "E_FIXTURE_REFUSED"}}}
+    ]
+  },
+  "locks": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"resolved_lock": "update"}}},
+      {"render": {"model": {"resolved_lock": "readonly"}}}
+    ]
+  },
+  "lock-failure": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"], "lockfile": "remote.lock", "update_lock": true},
+    "steps": [
+      {"render": {}}
+    ]
+  },
+  "relative-failure": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {}}
+    ]
+  },
+  "http": {
+    "input": {"url": "api.json"},
+    "target": "client",
+    "model": {
+      "openapi_scopes": ["api"],
+      "input_file_type": "openapi",
+      "allow_private_network": true,
+      "allow_remote_refs": true
+    },
+    "steps": [
+      {"render": {}},
+      {"manifest": null}
+    ]
+  }
+}

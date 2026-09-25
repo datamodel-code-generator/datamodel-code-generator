@@ -1,0 +1,4 @@
+APIGenerationError
+  E_CONFIG_VALUE error config selection.include_operations: selection.include_operations must be a tuple
+  E_SELECTION error config selection.include_tags: selection.include_tags repeats an entry
+  E_SELECTION error config selection.reason: A selection needs a reason with non-whitespace text

@@ -22,6 +22,7 @@ Layer: TypeAlias = Literal[
     "model-composition",
     "output-model",
     "shared-model",
+    "target",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -56,6 +57,12 @@ _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE: Final = (
     "shared model code must not inspect a concrete backend through sys.modules; "
     "move backend lifecycle or cache management to the backend or composition root"
 )
+_TARGET_MODULES: Final = frozenset({
+    "datamodel_code_generator._api_generation",
+    "datamodel_code_generator._api_manifest",
+    "datamodel_code_generator._api_types",
+    "datamodel_code_generator._target_config",
+})
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
     "enum.py",
@@ -222,6 +229,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "model-composition": "datamodel_code_generator.model.composition_fixture",
             "output-model": "datamodel_code_generator.model.fixture",
             "shared-model": "datamodel_code_generator.model.shared_fixture",
+            "target": "datamodel_code_generator.target_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -930,6 +938,26 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 _SHARED_MODEL_BACKEND_IMPORT_MESSAGE,
             )
             return
+        if self.layer == "target" and (
+            target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser.")
+        ):
+            self._add(
+                node,
+                "target-parser-import",
+                target,
+                "target generation must consume accepted contracts, not parser modules",
+            )
+            return
+        if self.layer != "target" and any(
+            target == module or target.startswith(f"{module}.") for module in _TARGET_MODULES
+        ):
+            self._add(
+                node,
+                "target-reverse-import",
+                target,
+                "model generation must not depend on target generation; targets depend on the core",
+            )
+            return
         if (
             self.layer != "parser"
             and target.startswith("datamodel_code_generator.parser.")
@@ -985,6 +1013,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
+        case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:
+            layer = "target"
         case ("model", "__init__.py"):
             layer = "model-composition"
         case ("model", filename) if filename in _NEUTRAL_MODEL_FILENAMES:
