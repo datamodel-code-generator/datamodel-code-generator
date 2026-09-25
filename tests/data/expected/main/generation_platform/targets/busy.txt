@@ -8,12 +8,12 @@ generate
   written target server/routes/default.py (target) 14 bytes
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-hold thread lock
+hold thread lock on server
 generate
   APIGenerationError
   E_OUTPUT_BUSY error publication <root>/server: Another generation in this process holds the output lock
 release
-hold os lock
+hold os lock on server
 generate
   APIGenerationError
   E_OUTPUT_BUSY error publication <root>/server: Another generation holds the output lock

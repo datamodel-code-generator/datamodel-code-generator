@@ -808,9 +808,11 @@ def generate_target(
     models = planner.models
     output = planner.effective.output
     assert output is not None
-    resources = (
-        (models.cwd / output.expanduser()).resolve(),
-        planner.root,
-        *(() if models.lock is None else (models.lock.path,)),
-    )
+    resources = [(models.cwd / output.expanduser()).resolve(), planner.root]
+    if models.metadata is not None and config.model_mode == "generate":
+        metadata = (models.cwd / models.metadata[0].expanduser()).resolve()
+        if not any(metadata.is_relative_to(resource) for resource in resources):
+            resources.append(metadata)
+    if models.lock is not None:
+        resources.append(models.lock.path)
     return publish_project(project, planner.observed, cwd=models.cwd, resources=resources, lock=models.lock)

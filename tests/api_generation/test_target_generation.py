@@ -45,6 +45,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "publish-verify",
         "publish-lock",
         "busy",
+        "busy-metadata",
         "collision",
         "interference",
         "directory",

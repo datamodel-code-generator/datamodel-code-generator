@@ -182,7 +182,7 @@ def publish_project(
     observed: Mapping[Path, Observed],
     *,
     cwd: Path,
-    resources: tuple[Path, ...],
+    resources: Iterable[Path],
     lock: RemoteReferenceLock | None,
 ) -> GenerationReport:
     """Recheck every planned file inside the resource locks, then publish the changes as one journal."""

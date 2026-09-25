@@ -344,6 +344,20 @@
       {"generate": {}}
     ]
   },
+  "busy-metadata": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"], "emit_model_metadata": "meta/models.json"},
+    "steps": [
+      {"generate": {}},
+      {"hold": "thread:meta/models.json"},
+      {"generate": {}},
+      {"generate": {"config": {"model_mode": "verify"}}},
+      {"release": null},
+      {"generate": {"input": {"path": "modular.yaml"}, "model": {"output": "models", "emit_model_metadata": "models/meta.json"}}},
+      {"tree": null}
+    ]
+  },
   "collision": {
     "input": {"path": "api.yaml"},
     "target": "server",

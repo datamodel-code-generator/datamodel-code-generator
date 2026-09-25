@@ -404,8 +404,9 @@ class _Scenario:
             case project:
                 raise AssertionError(project)
 
-    def hold(self, kind: str) -> None:
-        resource = (self.root / "server").resolve()
+    def hold(self, value: str) -> None:
+        kind, _, name = value.partition(":")
+        resource = (self.root / (name or "server")).resolve()
         match kind:
             case "thread":
                 self.held.enter_context(resource_locks([resource]))
@@ -414,7 +415,7 @@ class _Scenario:
                 self.held.callback(os.close, descriptor)
                 _api_publication._acquire(descriptor, resource)
                 self.held.callback(_api_publication._release, descriptor)
-        self.lines.append(f"hold {kind} lock")
+        self.lines.append(f"hold {kind} lock on {name or 'server'}")
 
     def release(self, _: None) -> None:
         self.held.close()
