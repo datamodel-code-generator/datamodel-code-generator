@@ -128,6 +128,7 @@ class _Stage:
         )
         self.adapters = select_adapters(request.batch, self.wire, self.declarations, "server")
         self.latest: tuple[Revision, ServerPlan, CodecPlan] | None = None
+        self.view: tuple[Revision, FastAPIContext] | None = None
 
     def planned(self, revision: Revision) -> tuple[ServerPlan, CodecPlan]:
         """Return the plan and codecs of a revision, planning them unless the latest revision was the same."""
@@ -152,17 +153,22 @@ class _Stage:
         return plan, codecs
 
     def context(self, revision: Revision, extensions: Extensions) -> FastAPIContext:
-        """Return the context of a revision's plan, with the hooks' extras and imports."""
-        plan, codecs = self.planned(revision)
-        renderer = ServerRenderer(
-            config=self.config,
-            package=self.request.layout.package,
-            plan=plan,
-            batch=self.request.batch,
-            wire=self.wire,
-            codecs=codecs,
-        )
-        return extended(ContextBuilder(renderer, self.request).context(), extensions)
+        """Return the context of a revision's plan, with the hooks' extras and imports.
+
+        The context of the latest revision is built once, however many hooks only add extras.
+        """
+        if (view := self.view) is None or view[0] != revision:
+            plan, codecs = self.planned(revision)
+            renderer = ServerRenderer(
+                config=self.config,
+                package=self.request.layout.package,
+                plan=plan,
+                batch=self.request.batch,
+                wire=self.wire,
+                codecs=codecs,
+            )
+            view = self.view = (revision, ContextBuilder(renderer, self.request).context())
+        return extended(view[1], extensions)
 
 
 def _excluded(plan: ServerPlan, request: TargetRequest) -> tuple[Diagnostic, ...]:
