@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import errno
 import os
+import sys
 from contextlib import contextmanager
 from itertools import count
 from pathlib import Path
@@ -59,6 +60,12 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Generate models once, select operations, plan target files, and publish them under the resource locks."""
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
+def test_target_render_target_grammar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reject syntax the running Python accepts but the configured target Python does not."""
+    assert_output(target_render_report("target-grammar", tmp_path, monkeypatch), EXPECTED / "target-grammar.txt")
 
 
 def test_target_render_timestamp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

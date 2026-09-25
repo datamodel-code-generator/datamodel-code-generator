@@ -904,10 +904,18 @@ class _Finisher:
         )
 
     def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:
+        version = self.effective.target_python_version.version_key
         if problems := tuple(
-            problem
+            Diagnostic(
+                code="E_TARGET_SOURCE",
+                severity="error",
+                stage=stage,
+                message=f"The generated Python source is invalid: {error}",
+                artifact_path=path.as_posix(),
+                target_id=self.target_id,
+            )
             for path, text in files
-            if _is_python(path) and (problem := _source_problem(path, text, stage, self.target_id)) is not None
+            if _is_python(path) and (error := _syntax_error(path.as_posix(), text, version)) is not None
         ):
             raise APIGenerationError(problems)
 
@@ -945,18 +953,11 @@ class _Finisher:
         )
 
 
-def _source_problem(path: PurePosixPath, text: str, stage: DiagnosticStage, target_id: str) -> Diagnostic | None:
+def _syntax_error(filename: str, text: str, version: tuple[int, int]) -> str | None:
     try:
-        ast.parse(text, filename=path.as_posix())
+        compile(ast.parse(text, filename, feature_version=version), filename, "exec", dont_inherit=True)
     except SyntaxError as error:
-        return Diagnostic(
-            code="E_TARGET_SOURCE",
-            severity="error",
-            stage=stage,
-            message=f"The generated Python source is invalid: {error.msg}",
-            artifact_path=path.as_posix(),
-            target_id=target_id,
-        )
+        return error.msg
     return None
 
 

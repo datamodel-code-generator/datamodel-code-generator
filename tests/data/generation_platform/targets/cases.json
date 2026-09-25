@@ -513,7 +513,17 @@
     "steps": [
       {"render": {"config": {"header": "Caf\u00e9 \u6f22", "encoding": "latin-1"}}},
       {"render": {"target": "broken"}},
+      {"render": {"target": "misplaced"}},
       {"render": {"config": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
+    ]
+  },
+  "target-grammar": {
+    "input": {"path": "api.yaml"},
+    "target": "modern",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"target_python_version": "3.10"}}},
+      {"render": {"model": {"target_python_version": "3.12"}}}
     ]
   }
 }

@@ -89,14 +89,14 @@ class FixtureTarget:
         backends: frozenset[DataModelType],
         *,
         interfere: str | None = None,
-        broken: bool = False,
+        package: str = "",
     ) -> None:
-        """Declare the target kind, its model backends, a file it appends to, and whether it emits bad Python."""
+        """Declare the target kind, its model backends, a file it appends to, and its package module source."""
         self.kind: TargetKind = kind
         self.backends = backends
         self.unsupported_backend = f"E_{kind.upper()}_BACKEND_UNSUPPORTED"
         self.interfere = interfere
-        self.broken = broken
+        self.package = package
 
     def render(self, request: TargetRequest) -> TargetRender:
         """Plan files, bindings, and manifest data from the coordinator's request."""
@@ -107,7 +107,7 @@ class FixtureTarget:
             tags = dict(operation.facts).get("tags")
             first = tags.items[0] if isinstance(tags, LiteralSequence) and tags.items else None
             groups.setdefault(str(first.value) if isinstance(first, LiteralScalar) else "default", []).append(operation)
-        files = [RenderedFile(path=package / "__init__.py", kind="package", text="def (" if self.broken else "")]
+        files = [RenderedFile(path=package / "__init__.py", kind="package", text=self.package)]
         for group, operations in groups.items():
             routes = ", ".join(repr(f"{operation.method.upper()} {operation.path}") for operation in operations)
             files.append(
@@ -173,7 +173,9 @@ TARGETS = {
         frozenset({DataModelType.PydanticV2BaseModel}),
         interfere="server/.dcg-target-manifest.json",
     ),
-    "broken": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), broken=True),
+    "broken": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), package="def ("),
+    "misplaced": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), package="return 42\n"),
+    "modern": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), package="type Alias = int\n"),
 }
 
 
