@@ -291,5 +291,141 @@
       {"render": {}},
       {"manifest": null}
     ]
+  },
+  "publish": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}},
+      {"tree": null},
+      {"generate": {}},
+      {"generate": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {"tree": null},
+      {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}}
+    ]
+  },
+  "publish-verify": {
+    "input": {"path": "api.yaml"},
+    "target": "client",
+    "model": {
+      "openapi_scopes": ["api"],
+      "output_model_type": "typing.TypedDict",
+      "emit_model_metadata": "meta/models.json"
+    },
+    "steps": [
+      {"generate": {}},
+      {"generate": {"config": {"model_mode": "verify"}}},
+      {"tree": null}
+    ]
+  },
+  "publish-lock": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"], "lockfile": "locks/remote.lock", "update_lock": true},
+    "steps": [
+      {"generate": {}},
+      {"tree": null},
+      {"generate": {}}
+    ]
+  },
+  "busy": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}},
+      {"hold": "thread"},
+      {"generate": {}},
+      {"release": null},
+      {"hold": "os"},
+      {"generate": {}},
+      {"release": null},
+      {"generate": {}}
+    ]
+  },
+  "collision": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"emit_model_metadata": "server/__INIT__.py"}}},
+      {"render": {"model": {"output": "server/models.py"}}},
+      {"render": {"model": {"output": "."}}}
+    ]
+  },
+  "interference": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}},
+      {"render": {"target": "interfering"}}
+    ]
+  },
+  "directory": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"mkdir": "server/routes/pets.py"},
+      {"generate": {}},
+      {"tree": null}
+    ]
+  },
+  "publish-failure": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"], "lockfile": "remote.lock", "update_lock": true},
+    "steps": [
+      {"generate": {}},
+      {"tree": null},
+      {"generate": {}},
+      {"generate": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {"tree": null}
+    ]
+  },
+  "rollback-created": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}}
+    ]
+  },
+  "rollback-backup": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}},
+      {"generate": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {"tree": null}
+    ]
+  },
+  "publication-check": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}},
+      {"tree": null}
+    ]
+  },
+  "lock-unsupported": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}}
+    ]
+  },
+  "state-changed": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}}
+    ]
   }
 }

@@ -16,7 +16,7 @@ import tempfile
 from contextlib import suppress
 from pathlib import Path
 from secrets import token_hex
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypeAlias, cast
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
@@ -125,6 +125,16 @@ def _open_target_directory(
     return directory_fd
 
 
+def open_directory(path: Path) -> int:
+    """Open an absolute directory without following links, creating missing components."""
+    created_directories: list[_CreatedDirectoryAt] = []
+    try:
+        return _open_target_directory(path, created_directories)
+    finally:
+        for directory in created_directories:
+            os.close(directory.parent_fd)
+
+
 def publication_anchor(path: Path) -> PublicationAnchor:
     """Snapshot and hold the deepest existing concrete directory for *path*."""
     while not path.is_dir():
@@ -229,7 +239,7 @@ class StagingDirectory:
         ) != fallback.anchor_identity:
             raise OSError(f"private staging directory changed: {self.path}")
 
-    def create_file(self, *, prefix: str) -> tuple[int, str]:
+    def create_file(self, *, prefix: str, mode: int = 0o600) -> tuple[int, str]:
         """Create a no-follow, exclusive staged source through the held directory fd."""
         if self._closed:
             raise OSError("private staging directory is already closed")
@@ -243,7 +253,7 @@ class StagingDirectory:
         for _ in range(100):
             name = _private_name(prefix)
             try:
-                file_fd = os.open(name, flags, 0o600, dir_fd=self.directory_fd)
+                file_fd = os.open(name, flags, mode, dir_fd=self.directory_fd)
             except FileExistsError:
                 continue
             self._files.add(name)
@@ -733,3 +743,197 @@ def publish_staged_files(files: Iterable[tuple[Path, Path] | StagedFile]) -> Non
         _publish_staged_files_by_path(planned_files)
         return
     _publish_staged_files_at(planned_files)
+
+
+BatchAction: TypeAlias = Literal["write", "delete"]
+_NEW_FILE_MODE = 0o666
+
+
+class PublicationRollbackError(Exception):
+    """Report a failed publication whose rollback could not restore every destination.
+
+    The original failure is the ``__cause__``. Backups of destinations that were not restored stay in place.
+    """
+
+    def __init__(self, unrestored: tuple[Path, ...], backups: tuple[Path, ...]) -> None:
+        """Keep the destinations that were not restored and the backups left for recovery."""
+        self.unrestored = unrestored
+        self.backups = backups
+        super().__init__(f"Publication rollback failed for {', '.join(path.as_posix() for path in unrestored)}")
+
+
+class BatchEntry(NamedTuple):
+    """One journaled change: replace with a staged source, or delete."""
+
+    action: BatchAction
+    file: StagedFile
+
+
+def stage_content(staging: StagingDirectory, content: bytes, file: StagedFile) -> StagedFile:
+    """Write bytes as a private staged source with the default file mode, bound to *file*'s destination."""
+    file_fd, name = staging.create_file(prefix=f".{file.resolved_target.name}.", mode=_NEW_FILE_MODE)
+    try:
+        with os.fdopen(file_fd, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except BaseException:
+        with suppress(OSError):
+            staging.discard_file(name)
+        raise
+    if staging.directory_fd is None:  # pragma: no cover - Windows lexical fallback
+        return file._replace(staged_file=staging.path / name)
+    return file._replace(staged_file=None, source_directory_fd=staging.directory_fd, source_name=name)
+
+
+def _apply_entry_at(entry: BatchEntry, directory_fd: int) -> tuple[str | None, int | None]:
+    """Back up the destination a write replaces or a deletion removes, returning the backup and the mode to keep."""
+    name = entry.file.resolved_target.name
+    try:
+        target_stat = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        if entry.action == "delete":
+            raise
+        return None, None
+    if stat.S_ISDIR(target_stat.st_mode):
+        raise IsADirectoryError(f"[Errno 21] Is a directory: '{entry.file.target}'")
+    mode = stat.S_IMODE(target_stat.st_mode) if stat.S_ISREG(target_stat.st_mode) else None
+    return _backup_existing_target_at(directory_fd, name, target_stat), mode
+
+
+def _finish_entry_at(entry: BatchEntry, directory_fd: int, mode: int | None) -> None:
+    name = entry.file.resolved_target.name
+    if entry.action == "delete":
+        _unlink(name, dir_fd=directory_fd)
+        return
+    if mode is not None:
+        _set_staged_mode(entry.file, mode)
+    _replace_source(entry.file, name, directory_fd)
+
+
+def _publish_entry_at(
+    entry: BatchEntry,
+    journal: list[tuple[_BoundPublishedFile, Path]],
+    created_directories: list[_CreatedDirectoryAt],
+) -> None:
+    file = entry.file
+    _validate_publication_anchor(file)
+    directory_fd = _open_target_directory(
+        file.resolved_target.parent, created_directories, create_missing=entry.action != "delete"
+    )
+    journaled = False
+    try:
+        backup_name, mode = _apply_entry_at(entry, directory_fd)
+        journal.append((
+            _BoundPublishedFile(file.target, directory_fd, file.resolved_target.name, backup_name),
+            file.resolved_target.parent,
+        ))
+        journaled = True
+        _finish_entry_at(entry, directory_fd, mode)
+        _validate_publication_anchor(file)
+        if not _directory_fd_matches_path(directory_fd, file.resolved_target.parent):
+            raise OSError(f"batch output destination changed during publication: {file.target}")
+    finally:
+        if not journaled:
+            os.close(directory_fd)
+
+
+def _roll_back_batch_at(
+    journal: list[tuple[_BoundPublishedFile, Path]], created_directories: list[_CreatedDirectoryAt]
+) -> tuple[list[Path], list[Path]]:
+    unrestored: list[Path] = []
+    backups: list[Path] = []
+    for published_file, parent in reversed(journal):
+        if failures := _rollback_bound_file(published_file):
+            unrestored.extend(failures)
+            if published_file.backup_name is not None:
+                backups.append(parent / published_file.backup_name)
+    for directory in reversed(created_directories):
+        try:
+            _rmdir(directory.name, dir_fd=directory.parent_fd)
+        except OSError:
+            unrestored.append(directory.path)
+    return unrestored, backups
+
+
+def _publish_batch_at(entries: Sequence[BatchEntry]) -> None:
+    journal: list[tuple[_BoundPublishedFile, Path]] = []
+    created_directories: list[_CreatedDirectoryAt] = []
+    try:
+        for entry in entries:
+            _publish_entry_at(entry, journal, created_directories)
+    except BaseException as failure:
+        unrestored, backups = _roll_back_batch_at(journal, created_directories)
+        if unrestored:
+            raise PublicationRollbackError(tuple(unrestored), tuple(backups)) from failure
+        raise
+    else:
+        for published_file, _ in journal:
+            if published_file.backup_name is not None:
+                with suppress(OSError):
+                    _unlink(published_file.backup_name, dir_fd=published_file.directory_fd)
+    finally:
+        for published_file, _ in journal:
+            os.close(published_file.directory_fd)
+        for directory in created_directories:
+            os.close(directory.parent_fd)
+
+
+def _publish_entry_by_path(
+    entry: BatchEntry, journal: list[_PublishedFile], created_directories: list[Path]
+) -> None:  # pragma: no cover - Windows fallback
+    file = entry.file
+    _validate_publication_anchor(file)
+    _validate_planned_target(file)
+    if entry.action != "delete":
+        _create_target_parent(file.target, created_directories)
+    match entry.action:
+        case "write":
+            if file.target.is_dir():
+                raise IsADirectoryError(f"[Errno 21] Is a directory: '{file.target}'")
+            exists = file.target.exists() or file.target.is_symlink()
+            backup = _backup_existing_target(file.target) if exists else None
+            journal.append(_PublishedFile(file.target, backup))
+            if backup is not None and file.staged_file is not None:
+                _preserve_target_mode(file.staged_file, file.target)
+            _replace_source(file, file.target, None)
+        case _:
+            journal.append(_PublishedFile(file.target, _backup_existing_target(file.target)))
+            _unlink(file.target)
+    _validate_planned_target(file)
+    _validate_publication_anchor(file)
+
+
+def _publish_batch_by_path(entries: Sequence[BatchEntry]) -> None:  # pragma: no cover - Windows fallback
+    """Publish a batch through the checked Windows backup and rollback journal."""
+    journal: list[_PublishedFile] = []
+    created_directories: list[Path] = []
+    try:
+        for entry in entries:
+            _publish_entry_by_path(entry, journal, created_directories)
+    except BaseException as failure:
+        unrestored: list[Path] = []
+        for published_file in reversed(journal):
+            unrestored.extend(_rollback_published_file(published_file))
+        for directory in reversed(created_directories):
+            unrestored.extend(_remove_created_directory(directory))
+        if unrestored:
+            backups = tuple(
+                published_file.backup
+                for published_file in journal
+                if published_file.backup is not None and published_file.backup in unrestored
+            )
+            raise PublicationRollbackError(tuple(unrestored), backups) from failure
+        raise
+    for published_file in journal:
+        if published_file.backup is not None:
+            with suppress(OSError):
+                _unlink(published_file.backup)
+
+
+def publish_batch(entries: Sequence[BatchEntry]) -> None:
+    """Apply writes and deletions of distinct destinations in order, undoing all on failure."""
+    if os.name == "nt":  # pragma: no cover - Windows keeps a checked lexical fallback
+        _publish_batch_by_path(entries)
+        return
+    _publish_batch_at(entries)

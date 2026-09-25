@@ -1,0 +1,7 @@
+# directory
+mkdir server/routes/pets.py
+generate
+  IsADirectoryError: [Errno 21] Is a directory: '<root>/server/routes/pets.py'
+tree
+  .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
+  .dcg-api-state/locks/dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100b.lock

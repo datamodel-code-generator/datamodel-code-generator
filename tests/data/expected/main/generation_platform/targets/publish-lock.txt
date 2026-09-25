@@ -1,0 +1,33 @@
+# publish-lock
+generate
+  target=fastapi schema_version=1
+  written model models.py
+  written target server/__init__.py (target) 0 bytes
+  written target server/routes/pets.py (target) 25 bytes
+  written target server/routes/store.py (target) 20 bytes
+  written target server/routes/default.py (target) 14 bytes
+  written remote_lock locks/remote.lock
+  written model_inventory server/.dcg-state/model-artifacts.json (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+tree
+  .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
+  .dcg-api-state/locks/dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100b.lock
+  locks/.dcg-api-state/locks/1e579b583a374987401e4850f339cb7efa7d6668053239e4eebc5c04fcfa2869.lock
+  locks/remote.lock
+  models.py
+  server/.dcg-state/model-artifacts.json
+  server/.dcg-target-manifest.json
+  server/__init__.py
+  server/routes/default.py
+  server/routes/pets.py
+  server/routes/store.py
+generate
+  target=fastapi schema_version=1
+  unchanged model models.py
+  unchanged target server/__init__.py (target) 0 bytes
+  unchanged target server/routes/pets.py (target) 25 bytes
+  unchanged target server/routes/store.py (target) 20 bytes
+  unchanged target server/routes/default.py (target) 14 bytes
+  unchanged remote_lock locks/remote.lock
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
+  unchanged target_manifest server/.dcg-target-manifest.json (target)

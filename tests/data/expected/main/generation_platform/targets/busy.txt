@@ -1,0 +1,29 @@
+# busy
+generate
+  target=fastapi schema_version=1
+  written model models.py
+  written target server/__init__.py (target) 0 bytes
+  written target server/routes/pets.py (target) 25 bytes
+  written target server/routes/store.py (target) 20 bytes
+  written target server/routes/default.py (target) 14 bytes
+  written model_inventory server/.dcg-state/model-artifacts.json (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+hold thread lock
+generate
+  APIGenerationError
+  E_OUTPUT_BUSY error publication <root>/server: Another generation in this process holds the output lock
+release
+hold os lock
+generate
+  APIGenerationError
+  E_OUTPUT_BUSY error publication <root>/server: Another generation holds the output lock
+release
+generate
+  target=fastapi schema_version=1
+  unchanged model models.py
+  unchanged target server/__init__.py (target) 0 bytes
+  unchanged target server/routes/pets.py (target) 25 bytes
+  unchanged target server/routes/store.py (target) 20 bytes
+  unchanged target server/routes/default.py (target) 14 bytes
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
+  unchanged target_manifest server/.dcg-target-manifest.json (target)
