@@ -172,8 +172,10 @@ class ParameterAdapter:
 
     @staticmethod
     def _path(scope: Mapping[str, object], path: RawPath) -> dict[str, bytes]:
-        raw = scope.get("raw_path")
-        if not isinstance(raw, bytes) or (found := path.search(raw.partition(b"?")[0])) is None:
+        if not isinstance(raw := scope.get("raw_path"), bytes):
+            decoded = scope.get("path")
+            raw = quote(decoded, safe=_PATH_SAFE).encode() if isinstance(decoded, str) else b""
+        if (found := path.search(raw.partition(b"?")[0])) is None:
             raise malformed_request()
         captured: dict[str, bytes] = {}
         records: list[Record] = []
@@ -235,7 +237,7 @@ class BodyAdapter:
         """Return the received media type with the decoded body, or UNSET for an omitted optional body."""
         header = request.headers.get("content-type")
         body = await request.body()
-        if header is None and not body:
+        if not body and (header is None or not self.required):
             if self.required:
                 raise RequestValidationError([missing(("body",))])
             return None, UNSET
@@ -253,9 +255,12 @@ class BodyAdapter:
         if header is None:
             return None
         try:
-            received = normalize_media_type(header).partition(";")[0]
+            normalized = normalize_media_type(header)
         except ValueError:
             return None
+        if (exact := next((media for media in self.media if media.media_type == normalized), None)) is not None:
+            return exact, exact.media_type
+        received = normalized.partition(";")[0]
         kind = received.partition("/")[0]
         for essence, media in self._essences:
             if essence in {received, f"{kind}/*", "*/*"}:

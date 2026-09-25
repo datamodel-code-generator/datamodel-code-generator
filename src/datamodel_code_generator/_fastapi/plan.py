@@ -574,14 +574,12 @@ class Planner:  # noqa: PLR0904
             if (extra := _extra(value, allowed)) is not None:
                 return None, extra[0], at(value_location, extra[1])
         keywords = dict(_documentation(declaration, schema))
-        items = _constraints(item, scalar)
+        items = {**_constraints(item, scalar), **({"allow_inf_nan": False} if scalar.kind == "float" else {})}
         if array:
             keywords.update({name: schema[source] for source, name in ARRAY_LENGTHS.items() if source in schema})
         else:
             keywords.update(items)
             items = {}
-            if scalar.kind == "float":
-                keywords["allow_inf_nan"] = False
         default: object = Default.REQUIRED if required else Default.ABSENT
         if "default" in schema and not required:
             if not _typed_default(schema["default"], scalar, array=array):
@@ -933,7 +931,8 @@ class Planner:  # noqa: PLR0904
             for key in names
             if key not in known
         )
-        arguments = _prefixed(candidates)
+        request = (Argument(name="request", kind="request", location="request"),)
+        arguments = (*(request if raw or self.config.include_request else ()), *_prefixed(candidates))
         self.problems.extend(
             _problem(
                 "F_NAME_CONFLICT", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
@@ -941,9 +940,7 @@ class Planner:  # noqa: PLR0904
             for name, count in sorted(Counter(argument.name for argument in arguments).items())
             if count > 1
         )
-        if raw or self.config.include_request:
-            return (Argument(name="request", kind="request", location="request"), *arguments)
-        return tuple(arguments)
+        return arguments
 
 
 def _natively_serialized(plan: ParameterPlan, location: ParameterLocation, *, repeated: bool) -> bool:

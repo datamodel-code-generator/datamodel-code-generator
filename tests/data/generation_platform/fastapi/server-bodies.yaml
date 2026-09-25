@@ -20,6 +20,17 @@ paths:
             schema: {$ref: "#/components/schemas/Account"}
       responses:
         "204": {description: Done.}
+  /profiles:
+    post:
+      operationId: postProfile
+      requestBody:
+        content:
+          application/json; profile=a:
+            schema: {type: object, additionalProperties: false, properties: {a: {type: integer}}}
+          application/json; profile=b:
+            schema: {type: object, additionalProperties: false, properties: {b: {type: string}}}
+      responses:
+        "204": {description: Done.}
   /documents:
     put:
       operationId: putDocument

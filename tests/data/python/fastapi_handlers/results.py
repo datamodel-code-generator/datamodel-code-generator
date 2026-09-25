@@ -53,6 +53,12 @@ def handlers(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         "head-none": lambda: None,
         "text": lambda: models.FieldPlainGetResponse("abc"),
         "too-long": lambda: models.FieldPlainGetResponse.model_construct(root="abcd"),
+        "response-created": lambda: Response(content=b"{}", status_code=201, headers={"Location": "/things/1"}),
+        "response-created-without-location": lambda: Response(content=b"{}", status_code=201),
+        "response-negative-rate": lambda: Response(content=b"{}", status_code=200, headers={"X-Rate": "-1"}),
+        "response-no-content-body": lambda: Response(content=b"{}", status_code=204),
+        "latin": lambda: models.FieldLatinGetResponse("café"),
+        "euro": lambda: models.FieldLatinGetResponse("€"),
         "undeclared": lambda: result(status_code=404),
         "response-undeclared": lambda: Response(status_code=500),
         "anything": lambda: result(status_code=200, body=models.FieldNothingGetResponse()),
@@ -67,4 +73,4 @@ def handlers(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
 
         return respond
 
-    return {"default": {name: responder(name) for name in ("get_result", "head_result", "get_plain", "get_nothing", "post_empty")}}
+    return {"default": {name: responder(name) for name in ("get_result", "head_result", "get_plain", "get_latin", "get_nothing", "post_empty")}}

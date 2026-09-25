@@ -23,6 +23,20 @@ serve pydantic_v2.BaseModel
 < 422 application/json {"detail":[{"type":"value_error","loc":["body","id"],"msg":"Invalid value"}]}
 > POST /accounts
 < 422 application/json {"detail":[{"type":"missing","loc":["body"],"msg":"Field required"}]}
+> POST /profiles
+  post_profile(body=FieldProfilesPostRequest1(b='x'), media_type='application/json; profile=b')
+< 204 - b''
+> POST /profiles
+  post_profile(body=FieldProfilesPostRequest(a=1), media_type='application/json; profile=a')
+< 204 - b''
+> POST /profiles
+< 422 application/json {"detail":[{"type":"extra_forbidden","loc":["body","b"],"msg":"Unexpected field"}]}
+> POST /profiles
+  post_profile(body=FieldProfilesPostRequest(a=2), media_type='application/json; profile=a')
+< 204 - b''
+> POST /profiles
+  post_profile(body=UNSET, media_type=None)
+< 204 - b''
 > PUT /documents
   put_document(body=Item(name='a'), media_type='application/json')
 < 204 - b''

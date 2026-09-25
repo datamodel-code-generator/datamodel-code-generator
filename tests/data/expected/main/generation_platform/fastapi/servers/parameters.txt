@@ -18,6 +18,13 @@ serve pydantic_v2.BaseModel
 < 400 application/json {"detail":"Invalid request"}
 > GET /search?filter%5Bname%5D=n&filter%5Bid%5D=1
 < 422 application/json {"detail":[{"type":"value_error","loc":["query","filter","id"],"msg":"Invalid value"}]}
+> GET /ratios?ratios=1&ratios=2.5
+  get_ratios(ratios=[1.0, 2.5])
+< 204 - b''
+> GET /ratios?ratios=nan
+< 422 application/json {"detail":[{"type":"finite_number","loc":["query","ratios",0],"msg":"Input should be a finite number","input":"nan"}]}
+> GET /ratios?ratios=inf
+< 422 application/json {"detail":[{"type":"finite_number","loc":["query","ratios",0],"msg":"Input should be a finite number","input":"inf"}]}
 > GET /repeat/1/again/1
   repeat(id=FieldRepeatIdAgainIdGetPathIdParameter(root=1))
 < 204 - b''
@@ -27,6 +34,9 @@ serve pydantic_v2.BaseModel
 < 422 application/json {"detail":[{"type":"value_error","loc":["path","id"],"msg":"Invalid value"}]}
 > GET /repeat/x/again/x
 < 422 application/json {"detail":[{"type":"type_error","loc":["path","id"],"msg":"Invalid value type"}]}
+> GET /repeat/1/again/1
+  repeat(id=FieldRepeatIdAgainIdGetPathIdParameter(root=1))
+< 204 - b''
 > GET /repeat/1/again/1
 < 400 application/json {"detail":"Invalid request"}
 > GET /files/a.txt

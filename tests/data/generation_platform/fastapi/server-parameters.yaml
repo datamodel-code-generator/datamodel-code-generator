@@ -14,6 +14,13 @@ paths:
         - {name: note, in: query, content: {text/plain: {}}}
       responses:
         "204": {description: Done.}
+  /ratios:
+    get:
+      operationId: getRatios
+      parameters:
+        - {name: ratios, in: query, required: true, schema: {type: array, items: {type: number}}}
+      responses:
+        "204": {description: Done.}
   /repeat/{id}/again/{id}:
     get:
       operationId: repeat

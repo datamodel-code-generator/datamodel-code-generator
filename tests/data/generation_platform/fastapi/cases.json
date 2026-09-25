@@ -375,5 +375,21 @@
         "schemas"
       ]
     }
+  },
+  "argument-errors": {
+    "input": "argument-errors.yaml",
+    "config": {
+      "include_request": true,
+      "parameter_names": [
+        [
+          "/paths/~1items/get",
+          {
+            "query:req": "request",
+            "query:page": "limit",
+            "header:size": "limit"
+          }
+        ]
+      ]
+    }
   }
 }

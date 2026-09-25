@@ -67,14 +67,17 @@ def _forget(package: str) -> None:
 
 
 class _WithoutRawPath:
-    """Serve like an ASGI server that omits the optional raw_path for requests that ask for it."""
+    """Serve like an ASGI server that omits or rewrites the optional raw_path for requests that ask for it."""
 
     def __init__(self, app: FastAPI) -> None:
         self.app = app
 
     async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:  # noqa: ANN401
-        if any(name == b"x-without-raw-path" for name, _ in scope.get("headers", ())):
+        headers = dict(scope.get("headers", ()))
+        if b"x-without-raw-path" in headers:
             scope = {key: value for key, value in scope.items() if key != "raw_path"}
+        if (raw := headers.get(b"x-raw-path")) is not None:
+            scope = {**scope, "raw_path": raw}
         await self.app(scope, receive, send)
 
 

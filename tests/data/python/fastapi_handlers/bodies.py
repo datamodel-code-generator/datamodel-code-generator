@@ -24,5 +24,14 @@ def handlers(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     def post_raw(*, request: object) -> None:
         calls.append(f"post_raw(request={request.method} {request.url.path})")
 
-    names = ("post_item", "post_account", "put_document", "put_blob", "post_form", "post_native_form", "post_check")
+    names = (
+        "post_item",
+        "post_profile",
+        "post_account",
+        "put_document",
+        "put_blob",
+        "post_form",
+        "post_native_form",
+        "post_check",
+    )
     return {"default": {**{name: recorder(name) for name in names}, "upload": upload, "post_raw": post_raw}}

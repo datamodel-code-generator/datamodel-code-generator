@@ -167,19 +167,28 @@ def respond(value: object, plan: OperationResponses) -> Response:
 
 
 def _checked(response: Response, plan: OperationResponses) -> Response:
-    if (declared := plan.find(response.status_code)) is None:
-        msg = f"The operation declares no {response.status_code} response"
+    if (declared := plan.find(status := response.status_code)) is None:
+        msg = f"The operation declares no {status} response"
         raise response_failure(msg)
-    for name, value in response.raw_headers:
-        if b"\r" in value or b"\n" in value or not _TOKEN.fullmatch(name.decode("latin-1")):
-            msg = "The response has an invalid header"
-            raise response_failure(msg)
+    pairs = tuple((name.decode("latin-1"), value.decode("latin-1")) for name, value in response.raw_headers)
+    if any("\r" in value or "\n" in value or not _TOKEN.fullmatch(name) for name, value in pairs):
+        msg = "The response has an invalid header"
+        raise response_failure(msg)
+    _declared(pairs, declared)
+    if (plan.head or status < _MIN_CONTENT_STATUS or status in _EMPTY_STATUSES) and _has_body(response):
+        msg = f"The {status} response carries no body"
+        raise response_failure(msg)
     if (media_type := response.headers.get("content-type")) is not None and (
         not declared.media or declared.select(media_type) is None
     ):
         msg = f"The {response.status_code} response does not declare {media_type}"
         raise response_failure(msg)
     return response
+
+
+def _has_body(response: Response) -> bool:
+    body: object = getattr(response, "body", b"")
+    return bool(body)
 
 
 def _result(result: HTTPResult[object], plan: OperationResponses) -> Response:
@@ -234,7 +243,11 @@ def _encode(media: MediaPlan, value: object) -> bytes:
         return encode_json(_json(value) if codec is None else codec[0]().encode(value, codec[1]))
     payload = value if codec is None else codec[0]().encode(value, codec[1])
     if media.kind == "text" and isinstance(payload, str):
-        return payload.encode()
+        try:
+            return payload.encode(_charset(media.media_type))
+        except (LookupError, UnicodeEncodeError) as error:
+            msg = f"The text payload cannot be encoded as {media.media_type}"
+            raise response_failure(msg) from error
     if media.kind == "binary" and isinstance(payload, bytes):
         return payload
     msg = f"A {media.kind} payload must be {'a string' if media.kind == 'text' else 'bytes'}"
@@ -268,8 +281,16 @@ def _pair(item: object) -> tuple[str, str]:
     raise response_failure(msg)
 
 
+def _charset(media_type: str) -> str:
+    parameters = (parameter.partition("=") for parameter in media_type.split(";")[1:])
+    return next((value.strip().strip('"') for name, _, value in parameters if name.strip() == "charset"), "utf-8")
+
+
 def _headers(headers: object, declared: ResponsePlan) -> tuple[tuple[str, str], ...]:
-    pairs = _pairs(headers)
+    return _declared(_pairs(headers), declared)
+
+
+def _declared(pairs: tuple[tuple[str, str], ...], declared: ResponsePlan) -> tuple[tuple[str, str], ...]:
     for header in declared.headers:
         key = header.name.lower()
         if not (values := [value for name, value in pairs if name.lower() == key]):
