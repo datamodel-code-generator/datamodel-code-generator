@@ -25,6 +25,6 @@ classes: FastAPIOptions = {"contact": {"model": Settings}}
 response_class: FastAPIOptions = {"default_response_class": dict}
 flag: FastAPIOptions = {"debug": "yes"}
 dependencies: OperationDependencies = {"/paths/~1nope/get": []}
-scheme = Credential(scheme_name="nope", payload=CustomSecret(value="x"))
+scheme = Credential[str](scheme_name="nope", payload=CustomSecret(value="x"))
 narrow: Authorizer[int, str] = authorize
 extractor: CredentialExtractor[bytes] = wrong_scheme

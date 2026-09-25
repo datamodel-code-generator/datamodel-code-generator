@@ -47,12 +47,14 @@ async def authorize_async(context: AuthContext[Certificate | str]) -> str:
 
 def digest(request: Request) -> Credential[str] | None:
     value = request.headers.get("x-digest")
-    return None if value is None else Credential(scheme_name="digest", payload=CustomSecret(value=value))
+    return None if value is None else Credential[str](scheme_name="digest", payload=CustomSecret(value=value))
 
 
 async def certificate(request: Request) -> Credential[Certificate] | None:
     subject = request.headers.get("x-client-cert")
-    return None if subject is None else Credential(scheme_name="mtls", payload=CustomSecret(value=Certificate(subject)))
+    if subject is None:
+        return None
+    return Credential[Certificate](scheme_name="mtls", payload=CustomSecret(value=Certificate(subject)))
 
 
 def unique_id(route: APIRoute) -> str:
@@ -61,6 +63,30 @@ def unique_id(route: APIRoute) -> str:
 
 def record(request: Request) -> None:
     request.state.recorded = True
+
+
+class Pets:
+    def list_pets(self, *, principal: object) -> list[str]:
+        return [str(principal)]
+
+
+class Public:
+    def get_public(self) -> None:
+        return None
+
+
+class Untagged:
+    async def get_maybe(self, *, principal: object) -> None:
+        return None
+
+    def put_pet(self, *, principal: object, pet_id: int) -> None:
+        return None
+
+    def get_session(self, *, principal: object) -> None:
+        return None
+
+    async def get_custom(self, *, principal: object) -> None:
+        return None
 
 
 extractors: CredentialExtractors[Certificate | str] = {"digest": digest, "mtls": certificate}
@@ -83,9 +109,10 @@ options: FastAPIOptions = {
     "generate_unique_id_function": unique_id,
     "strict_content_type": False,
 }
-handlers = {"list_pets": lambda **_: ["rex"]}
 app: FastAPI = create_app(
-    handlers=handlers,
+    pets=Pets(),
+    public=Public(),
+    untagged=Untagged(),
     authorizer=authorizer,
     credential_extractors=extractors,
     dependencies=dependencies,
@@ -93,4 +120,6 @@ app: FastAPI = create_app(
     prefix="/api",
     fastapi_options=options,
 )
-router: APIRouter = build_router(handlers=handlers, authorizer=async_authorizer, credential_extractors=extractors)
+router: APIRouter = build_router(
+    pets=Pets(), public=Public(), untagged=Untagged(), authorizer=async_authorizer, credential_extractors=extractors
+)

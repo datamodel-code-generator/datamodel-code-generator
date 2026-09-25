@@ -4,6 +4,7 @@ build no-authorizer: AuthConfigurationError: An authorizer is required because t
 build no-extractors: AuthConfigurationError: The schemes digest, mtls have no builtin helper and need credential_extractors
 build unknown-extractor: AuthConfigurationError: credential_extractors names schemes no selected operation uses: nope
 build extractor-list: AuthConfigurationError: credential_extractors must map scheme names to callables
+build extractor-value: AuthConfigurationError: credential_extractors must map scheme names to callables
 build missing-method: HandlerConfigurationError: The untagged service needs a callable put_pet method
 build sync-in-async: HandlerConfigurationError: The untagged.get_maybe method is synchronous, but its operation awaits it
 build async-in-sync: HandlerConfigurationError: The untagged.put_pet method is asynchronous, but its operation calls it synchronously

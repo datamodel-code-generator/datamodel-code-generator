@@ -170,6 +170,7 @@ def builds(server: ModuleType, models: ModuleType, calls: list[str]) -> Iterator
     yield "no-extractors", partial(build, authorizer=authorize)
     yield "unknown-extractor", partial(build, authorizer=authorize, credential_extractors={**extractors, "nope": print})
     yield "extractor-list", partial(build, authorizer=authorize, credential_extractors=[print])
+    yield "extractor-value", partial(build, authorizer=authorize, credential_extractors={**extractors, "digest": "d"})
     for label, methods in (
         ("missing-method", {"put_pet": None}),
         ("sync-in-async", {"get_maybe": untagged.put_pet}),
