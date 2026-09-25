@@ -20,7 +20,7 @@ from datamodel_code_generator._codec_declarations import (
     OperationRef,
     SchemaRef,
 )
-from datamodel_code_generator._generation_contract import BindingCaptureError, LiteralSequence
+from datamodel_code_generator._generation_contract import BindingCaptureError, LiteralScalar, LiteralSequence
 from datamodel_code_generator._source import load_yaml
 from datamodel_code_generator._target_config import TargetConfig, load_target_config
 from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
@@ -77,11 +77,9 @@ class FixtureTarget:
         config = request.config
         groups: dict[str, list[OperationContract]] = {}
         for operation in request.operations:
-            match dict(operation.facts).get("tags"):
-                case LiteralSequence(items=(first, *_)):
-                    groups.setdefault(str(first.value), []).append(operation)
-                case _:
-                    groups.setdefault("default", []).append(operation)
+            tags = dict(operation.facts).get("tags")
+            first = tags.items[0] if isinstance(tags, LiteralSequence) and tags.items else None
+            groups.setdefault(str(first.value) if isinstance(first, LiteralScalar) else "default", []).append(operation)
         files = [PlannedFile(path=PurePosixPath("__init__.py"), kind="package", ownership="owned", content=b"")]
         for group, operations in groups.items():
             routes = "".join(f"# {operation.method.upper()} {operation.path}\n" for operation in operations)
@@ -156,13 +154,9 @@ TARGETS = {
 
 
 def _selector(value: str | dict[str, str]) -> OperationRef | str:
-    match value:
-        case str():
-            return value
-        case {"document": str() as document, **rest}:
-            return OperationRef(document=document.replace("{root}", Path.cwd().as_uri()), **rest)
-        case _:
-            return OperationRef(**value)
+    if isinstance(value, str):
+        return value
+    return OperationRef(**{key: item.replace("{root}", Path.cwd().as_uri()) for key, item in value.items()})
 
 
 def _schema(value: dict[str, str]) -> SchemaRef:

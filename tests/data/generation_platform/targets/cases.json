@@ -241,6 +241,7 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"config": {"primary": {"pointer": "/paths/~1nope/get"}}}},
+      {"render": {"config": {"primary": {"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}}}},
       {"render": {"config": {"export_bindings": [
         {"schema": {"pointer": "/Order", "document": "spec/missing.yaml"}, "module": "example.models", "symbol": "Order"}
       ]}}},

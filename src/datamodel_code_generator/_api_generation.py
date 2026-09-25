@@ -158,7 +158,7 @@ def prepare_target(
     from datamodel_code_generator import (  # noqa: PLC0415
         _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
     )
-    from datamodel_code_generator.enums import DataModelType, InputFileType  # noqa: PLC0415
+    from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
     if model_config.output is None:
         raise config_error(
@@ -174,18 +174,26 @@ def prepare_target(
             option_path="model_config.output_model_type",
             message=f"The {generator.kind} target does not support {backend.value!r}; use {allowed}",
         )
-    match input_:
-        case list():
-            option_path, message = "input", "Target generation reads one root document, not a list"
-        case Path() if input_.is_dir():
-            option_path, message = "input", "Target generation reads one root document, not a directory"
-        case _ if effective.input_file_type not in {InputFileType.Auto, InputFileType.OpenAPI}:
-            option_path, message = "model_config.input_file_type", "Target generation reads an OpenAPI document"
-        case _:
-            return effective
+    if (problem := _root_problem(input_, effective)) is None:
+        return effective
+    option_path, message = problem
     raise APIGenerationError((
         Diagnostic(code="E_INPUT_ROOT", severity="error", stage="input", message=message, option_path=option_path),
     ))
+
+
+def _root_problem(input_: _GenerationInput, effective: GenerateConfig) -> tuple[str, str] | None:
+    from datamodel_code_generator.enums import InputFileType  # noqa: PLC0415
+
+    match input_:
+        case list():
+            return "input", "Target generation reads one root document, not a list"
+        case Path() if input_.is_dir():
+            return "input", "Target generation reads one root document, not a directory"
+        case _ if effective.input_file_type not in {InputFileType.Auto, InputFileType.OpenAPI}:
+            return "model_config.input_file_type", "Target generation reads an OpenAPI document"
+        case _:
+            return None
 
 
 def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
@@ -294,13 +302,9 @@ def _generate_models(
 def _tags(operation: OperationContract) -> tuple[str, ...]:
     from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence  # noqa: PLC0415
 
-    match dict(operation.facts).get("tags"):
-        case LiteralSequence(items=items):
-            return tuple(
-                item.value for item in items if isinstance(item, LiteralScalar) and isinstance(item.value, str)
-            )
-        case _:
-            return ()
+    if not isinstance(tags := dict(operation.facts).get("tags"), LiteralSequence):
+        return ()
+    return tuple(item.value for item in tags.items if isinstance(item, LiteralScalar) and isinstance(item.value, str))
 
 
 class _Selector:
@@ -429,17 +433,18 @@ class _Planner:
     def locate(self, path: Path, *, option_path: str) -> str:
         return relative_uri(self.cwd / path.expanduser(), self.root, option_path)
 
+    def operation(self, reference: OperationRef) -> OperationContract | None:
+        document = reference.document
+        if document is None or document_identity(document, self.cwd) == self.models.source.identity:
+            return self.operations.get(reference.pointer)
+        return None
+
     def refer(self, reference: OperationRef | SchemaRef, *, option_path: str) -> JSONValue:
-        source = self.models.source
         match reference:
-            case OperationRef(pointer=pointer, document=document) if (
-                document is None or document_identity(document, self.cwd) == source.identity
-            ) and (operation := self.operations.get(pointer)) is not None:
+            case OperationRef() if (operation := self.operation(reference)) is not None:
                 return self.documents.operation(operation.id)
-            case SchemaRef(pointer=pointer, document=document) if (
-                located := self.documents.pointer(document, self.cwd)
-            ) is not None:
-                return {"document": located, "pointer": pointer}
+            case SchemaRef() if (located := self.documents.pointer(reference.document, self.cwd)) is not None:
+                return {"document": located, "pointer": reference.pointer}
             case _:
                 raise config_error(
                     code="E_OPERATION_REF" if isinstance(reference, OperationRef) else "E_CONFIG_VALUE",

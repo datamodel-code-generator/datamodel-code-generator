@@ -34,7 +34,6 @@ Converter: TypeAlias = Callable[[object, Path, str], object]
 ConfigT = TypeVar("ConfigT", bound="TargetConfig")
 
 _MODEL_MODES: Final = frozenset({"generate", "verify"})
-_PACKAGE_MODES: Final = frozenset({"embedded", "standalone"})
 _STANDALONE_FIELDS: Final = ("package_version", "distribution_name", "model_dependency")
 _SELECTION_COLLECTIONS: Final = ("include_operations", "include_tags", "exclude_operations", "exclude_tags")
 

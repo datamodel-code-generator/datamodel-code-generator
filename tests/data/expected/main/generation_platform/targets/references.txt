@@ -4,6 +4,9 @@ render
   E_OPERATION_REF error config primary: The reference names no operation or document of the accepted input
 render
   APIGenerationError
+  E_OPERATION_REF error config primary: The reference names no operation or document of the accepted input
+render
+  APIGenerationError
   E_CONFIG_VALUE error config export_bindings: The reference names no operation or document of the accepted input
 render
   APIGenerationError
