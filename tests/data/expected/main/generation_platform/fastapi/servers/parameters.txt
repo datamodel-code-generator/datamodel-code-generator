@@ -39,6 +39,11 @@ serve pydantic_v2.BaseModel
 < 204 - b''
 > GET /repeat/1/again/1
 < 400 application/json {"detail":"Invalid request"}
+> GET /notes/7
+  get_note(note_id=7)
+< 204 - b''
+> GET /notes/seven
+< 422 application/json {"detail":[{"type":"int_parsing","loc":["path","dcg_p0"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"seven"}]}
 > GET /files/a.txt
   get_file(file_name=FieldFilesFileNameGetPathFileNameParameter(root='a.txt'))
 < 204 - b''

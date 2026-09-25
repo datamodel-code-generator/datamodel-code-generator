@@ -235,7 +235,7 @@ render pydantic_v2.BaseModel
     |
     |     def get_file(
     |         *,
-    |         file_name: Annotated[str, Path(alias='file.name')],
+    |         file_name: Annotated[str, Path(alias='dcg_p1')],
     |         dcg_p0: Annotated[str, Path(alias='dcg_p0')],
     |         page_size: Annotated[int, Query(alias='limit', default_factory=absent)],
     |     ) -> Response:

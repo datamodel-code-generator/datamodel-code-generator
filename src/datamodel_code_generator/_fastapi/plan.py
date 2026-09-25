@@ -469,18 +469,20 @@ class Planner:  # noqa: PLR0904
         responses = tuple(self.response(operation, response) for response in operation.responses)
         primary = self.primary(operation, responses)
         arguments = self.arguments(operation, parameters, body, names)
+        route = self.route(operation, arguments, wire_names)
+        slots = {slot.wire_name: slot.slot for slot in route.slots}
         return OperationSpec(
             contract=operation,
             python_name=name,
             pascal=pascal(name),
             group=group_key(operation, single=self.config.layout == "single"),
-            route=self.route(operation, arguments, wire_names),
+            route=route,
             parameters=parameters,
             body=body,
             responses=responses,
             primary=primary,
             registration_status=_registration(responses, primary),
-            arguments=arguments,
+            arguments=tuple(_slotted(argument, slots) for argument in arguments),
         )
 
     def route(
@@ -989,6 +991,14 @@ def _prefixed(candidates: list[tuple[str, bool, Argument]]) -> list[Argument]:
         else argument
         for name, fixed, argument in candidates
     ]
+
+
+def _slotted(argument: Argument, slots: Mapping[str, str]) -> Argument:
+    """Declare a native path argument by the slot its placeholder takes in the route path."""
+    native = argument.native
+    if native is None or argument.location != "path" or (slot := slots.get(native.alias)) is None:
+        return argument
+    return replace(argument, native=replace(native, alias=slot))
 
 
 def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | None) -> int:

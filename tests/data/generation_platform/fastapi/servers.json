@@ -207,6 +207,14 @@
       },
       {
         "method": "GET",
+        "url": "/notes/7"
+      },
+      {
+        "method": "GET",
+        "url": "/notes/seven"
+      },
+      {
+        "method": "GET",
         "url": "/files/a.txt"
       },
       {
@@ -379,7 +387,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "\u00ff",
+        "content": "ÿ",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }

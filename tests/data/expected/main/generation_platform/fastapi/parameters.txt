@@ -78,7 +78,7 @@ render pydantic_v2.BaseModel
     |
     |     def get_part(
     |         *,
-    |         item_id: Annotated[int, Path(alias='item-id', ge=-10, lt=100)],
+    |         item_id: Annotated[int, Path(alias='dcg_p0', ge=-10, lt=100)],
     |         path_part: Annotated[str, Path(alias='part', min_length=1, max_length=8)],
     |         limit: Annotated[int, Query(
     |             alias='limit',

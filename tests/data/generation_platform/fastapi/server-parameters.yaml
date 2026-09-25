@@ -28,6 +28,13 @@ paths:
         - {name: id, in: path, required: true, schema: {type: integer}}
       responses:
         "204": {description: Done.}
+  /notes/{note.id}:
+    get:
+      operationId: getNote
+      parameters:
+        - {name: note.id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
   /files/{file.name}:
     get:
       operationId: getFile
