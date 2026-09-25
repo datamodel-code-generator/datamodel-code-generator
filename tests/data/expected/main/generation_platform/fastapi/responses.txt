@@ -549,13 +549,6 @@ render pydantic_v2.BaseModel
     | class _OnlyDefaultResponseCodecs(ResponseCodecs[NativeOutboundCodec[models.Problem]]):
     |     """Outbound codecs of the only_default response bodies."""
     |
-    |     @overload
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.Problem]: ...
     |     def body(
     |         self,
     |         *,
@@ -582,13 +575,6 @@ render pydantic_v2.BaseModel
     | ):
     |     """Outbound codecs of the only_ranges response bodies."""
     |
-    |     @overload
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.FieldRangesGetResponse]: ...
     |     def body(
     |         self,
     |         *,
@@ -1339,13 +1325,6 @@ render pydantic_v2.dataclass
     | class _OnlyDefaultResponseCodecs(ResponseCodecs[NativeOutboundCodec[models.Problem]]):
     |     """Outbound codecs of the only_default response bodies."""
     |
-    |     @overload
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.Problem]: ...
     |     def body(
     |         self,
     |         *,
@@ -1372,13 +1351,6 @@ render pydantic_v2.dataclass
     | ):
     |     """Outbound codecs of the only_ranges response bodies."""
     |
-    |     @overload
-    |     def body(
-    |         self,
-    |         *,
-    |         status_code: int,
-    |         media_type: str | None = None,
-    |     ) -> NativeOutboundCodec[models.FieldRangesGetResponse]: ...
     |     def body(
     |         self,
     |         *,

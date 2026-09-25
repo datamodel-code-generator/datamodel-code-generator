@@ -555,7 +555,7 @@ class ServerRenderer:  # noqa: PLR0904
             alias + layout(Group(f"class {name}(", (("", base),), "):"), 0, 0, WIDTH),
             f'    """Outbound codecs of the {spec.python_name} response bodies."""',
             "",
-            *_overloads(module.name("typing", "overload"), module.name("typing", "Literal"), branches, union),
+            *_overloads(module, branches, union),
             f"    {_body_signature('int', 'str | None = None', f'{union}:')}",
             '        """Return the outbound codec of one declared response body."""',
             "        return self.select(status_code, media_type)",
@@ -703,22 +703,25 @@ def _raw_path(module: Module, spec: OperationSpec, adapters: list[Argument]) -> 
     )
 
 
-def _overloads(overload: str, literal: str, branches: list[tuple[str, str, str, str]], union: str) -> Iterator[str]:
+def _overloads(module: Module, branches: list[tuple[str, str, str, str]], union: str) -> list[str]:
     statuses: dict[str, list[tuple[str, str]]] = {}
     for status, media_type, kind, _ in branches:
-        statuses.setdefault(status, []).append((media_type, kind))
+        if status.isdigit():
+            statuses.setdefault(status, []).append((media_type, kind))
+    if not statuses:
+        return []
+    overload, literal = module.name("typing", "overload"), module.name("typing", "Literal")
+    lines: list[str] = []
     for status, media in statuses.items():
-        if not status.isdigit():
-            continue
         code = f"{literal}[{status}]"
         if len(media) == 1:
-            yield from _overload(overload, code, f"{literal}[{media[0][0]!r}] | None = None", media[0][1])
+            lines.extend(_overload(overload, code, f"{literal}[{media[0][0]!r}] | None = None", media[0][1]))
             continue
         for media_type, kind in media:
-            yield from _overload(overload, code, f"{literal}[{media_type!r}]", kind)
-        yield from _overload(overload, code, "None = None", _default_kind(media))
-    if branches:
-        yield from _overload(overload, "int", "str | None = None", union)
+            lines.extend(_overload(overload, code, f"{literal}[{media_type!r}]", kind))
+        lines.extend(_overload(overload, code, "None = None", _default_kind(media)))
+    lines.extend(_overload(overload, "int", "str | None = None", union))
+    return lines
 
 
 def _default_kind(media: list[tuple[str, str]]) -> str:
