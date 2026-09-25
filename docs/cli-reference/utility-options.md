@@ -132,7 +132,8 @@ the diagnostics in the order stderr shows them. A usage error, such as `--genera
 ```
 
 A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
-and nothing is written to it; the check runs before any setting is read. A directory, a path in a missing
+and nothing is written to it; the check runs before any setting is read. An existing file is replaced only
+when it is an earlier diagnostics document. A directory, a path in a missing
 directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
 
 ---
