@@ -8,13 +8,19 @@ import re
 import shutil
 from contextlib import ExitStack
 from dataclasses import dataclass, field, fields
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, _api_publication
-from datamodel_code_generator._api_generation import TargetBinding, TargetRender, generate_target, render_target
-from datamodel_code_generator._api_manifest import MANIFEST_NAME, PlannedFile
+from datamodel_code_generator._api_generation import (
+    RenderedFile,
+    TargetBinding,
+    TargetRender,
+    generate_target,
+    render_target,
+)
+from datamodel_code_generator._api_manifest import MANIFEST_NAME
 from datamodel_code_generator._api_publication import lock_path, resource_locks
 from datamodel_code_generator._api_types import (
     APIGenerationError,
@@ -77,26 +83,35 @@ class FixtureConfig(TargetConfig):
 class FixtureTarget:
     """Group selected operations by first tag into route modules the target owns."""
 
-    def __init__(self, kind: TargetKind, backends: frozenset[DataModelType], interfere: str | None = None) -> None:
-        """Declare the target kind, the model backends it accepts, and a file it appends to while rendering."""
+    def __init__(
+        self,
+        kind: TargetKind,
+        backends: frozenset[DataModelType],
+        *,
+        interfere: str | None = None,
+        broken: bool = False,
+    ) -> None:
+        """Declare the target kind, its model backends, a file it appends to, and whether it emits bad Python."""
         self.kind: TargetKind = kind
         self.backends = backends
         self.unsupported_backend = f"E_{kind.upper()}_BACKEND_UNSUPPORTED"
         self.interfere = interfere
+        self.broken = broken
 
     def render(self, request: TargetRequest) -> TargetRender:
         """Plan files, bindings, and manifest data from the coordinator's request."""
         config = request.config
+        package = request.layout.package
         groups: dict[str, list[OperationContract]] = {}
         for operation in request.operations:
             tags = dict(operation.facts).get("tags")
             first = tags.items[0] if isinstance(tags, LiteralSequence) and tags.items else None
             groups.setdefault(str(first.value) if isinstance(first, LiteralScalar) else "default", []).append(operation)
-        files = [PlannedFile(path=PurePosixPath("__init__.py"), kind="package", content=b"")]
+        files = [RenderedFile(path=package / "__init__.py", kind="package", text="def (" if self.broken else "")]
         for group, operations in groups.items():
-            routes = "".join(f"# {operation.method.upper()} {operation.path}\n" for operation in operations)
+            routes = ", ".join(repr(f"{operation.method.upper()} {operation.path}") for operation in operations)
             files.append(
-                PlannedFile(path=PurePosixPath("routes", f"{group}.py"), kind="routes", content=routes.encode(), group=group)
+                RenderedFile(path=package / "routes" / f"{group}.py", kind="routes", text=f"ROUTES = [{routes}]", group=group)
             )
         selected = {operation.id for operation in request.operations}
         failure = getattr(config, "failure", None)
@@ -112,6 +127,7 @@ class FixtureTarget:
                 },
                 "excluded": len(request.excluded),
             },
+            dependencies=(f"{self.kind}-runtime>=1,<2",),
             bindings=tuple(
                 TargetBinding(
                     use=use.id,
@@ -157,6 +173,7 @@ TARGETS = {
         frozenset({DataModelType.PydanticV2BaseModel}),
         interfere="server/.dcg-target-manifest.json",
     ),
+    "broken": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), broken=True),
 }
 
 
@@ -343,7 +360,7 @@ def _run(
         unrestored = ", ".join(_relative(path, root) for path in error.unrestored)
         cause = type(error.__cause__).__name__
         return f"  PublicationRollbackError after {cause}: unrestored {unrestored}; {len(error.backups)} backups kept"
-    except (BindingCaptureError, Error, RemoteLockError, OSError, KeyboardInterrupt) as error:
+    except (BindingCaptureError, Error, RemoteLockError, OSError, UnicodeError, KeyboardInterrupt) as error:
         return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>").replace("\\", "/")
 
 
@@ -421,6 +438,11 @@ class _Scenario:
         self.held.close()
         self.lines.append("release")
 
+    def show(self, path: str) -> None:
+        self.lines.append(f"show {path}")
+        text = (self.root / path).read_bytes().decode("utf-8", errors="backslashreplace")
+        self.lines.extend(f"  | {line}" for line in text.splitlines())
+
     def mkdir(self, path: str) -> None:
         (self.root / path).mkdir(parents=True)
         self.lines.append(f"mkdir {path}")
@@ -449,6 +471,10 @@ class _Scenario:
         (self.root / path).parent.mkdir(parents=True, exist_ok=True)
         (self.root / path).write_bytes(text.encode())
         self.lines.append(f"write {path}")
+
+    def restore(self, path: str) -> None:
+        (self.root / path).write_bytes(self.published[path])
+        self.lines.append(f"restore {path}")
 
     def remove(self, path: str) -> None:
         (self.root / path).unlink()

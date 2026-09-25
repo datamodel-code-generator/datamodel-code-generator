@@ -2,10 +2,12 @@
 render
   target=client schema_version=1
   write model models.py 22 lines
-  write target server/__init__.py (target) 0 lines
-  write target server/routes/pets.py (target) 2 lines
-  write target server/routes/store.py (target) 1 lines
-  write target server/routes/default.py (target) 1 lines
+  write target server/__init__.py (target) 2 lines
+  write target server/routes/pets.py (target) 3 lines
+  write target server/routes/store.py (target) 3 lines
+  write target server/routes/default.py (target) 3 lines
+  write target server/py.typed (target) 0 lines
+  write target server/dcg-runtime-requirements.txt (target) 1 lines
   write remote_lock locks/remote.lock 4 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
@@ -190,7 +192,7 @@ render
       },
       {
         "digest": null,
-        "identity": "formatters.fixture",
+        "identity": "tests.data.python.custom_formatters.add_comment",
         "opaque": false,
         "uri": null
       }
@@ -224,6 +226,20 @@ render
       "group": "default",
       "kind": "routes",
       "path": "routes/default.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "typing",
+      "path": "py.typed",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "requirements",
+      "path": "dcg-runtime-requirements.txt",
       "sha256": "<sha256>",
       "size": "<masked>"
     }
@@ -335,7 +351,7 @@ render
           "width": 100
         },
         "custom_formatters": [
-          "formatters.fixture"
+          "tests.data.python.custom_formatters.add_comment"
         ],
         "distribution_name": null,
         "encoding": "utf-8",

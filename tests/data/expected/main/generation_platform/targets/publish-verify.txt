@@ -2,10 +2,12 @@
 generate
   target=client schema_version=1
   written model models.py
-  written target server/__init__.py (target) 0 bytes
-  written target server/routes/pets.py (target) 25 bytes
-  written target server/routes/store.py (target) 20 bytes
-  written target server/routes/default.py (target) 14 bytes
+  written target server/__init__.py (target) 73 bytes
+  written target server/routes/pets.py (target) 110 bytes
+  written target server/routes/store.py (target) 104 bytes
+  written target server/routes/default.py (target) 98 bytes
+  written target server/py.typed (target) 0 bytes
+  written target server/dcg-runtime-requirements.txt (target) 21 bytes
   written model_metadata meta/models.json
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
@@ -14,10 +16,12 @@ generate
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   unchanged model models.py
-  unchanged target server/__init__.py (target) 0 bytes
-  unchanged target server/routes/pets.py (target) 25 bytes
-  unchanged target server/routes/store.py (target) 20 bytes
-  unchanged target server/routes/default.py (target) 14 bytes
+  unchanged target server/__init__.py (target) 73 bytes
+  unchanged target server/routes/pets.py (target) 110 bytes
+  unchanged target server/routes/store.py (target) 104 bytes
+  unchanged target server/routes/default.py (target) 98 bytes
+  unchanged target server/py.typed (target) 0 bytes
+  unchanged target server/dcg-runtime-requirements.txt (target) 21 bytes
 tree
   .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
   .dcg-api-state/locks/dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100b.lock
@@ -27,6 +31,8 @@ tree
   server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/__init__.py
+  server/dcg-runtime-requirements.txt
+  server/py.typed
   server/routes/default.py
   server/routes/pets.py
   server/routes/store.py

@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import ast
+import codecs
+import json
 import os
 import tempfile
 import unicodedata
 from contextlib import ExitStack
 from dataclasses import dataclass, field, fields
+from datetime import datetime, timezone
 from functools import partial
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 from urllib.parse import ParseResult
 
@@ -19,6 +23,7 @@ from datamodel_code_generator._api_manifest import (
     ROOT_POINTER,
     ROOT_URN,
     DocumentTable,
+    PlannedFile,
     RootInput,
     canonical_bytes,
     canonical_document,
@@ -41,13 +46,14 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, PlannedFile, TargetState
+    from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, TargetState
     from datamodel_code_generator._api_types import (
         ArtifactAction,
         ArtifactKind,
+        DiagnosticStage,
         GenerationReport,
         OperationSelection,
         OperationSelector,
@@ -93,10 +99,29 @@ class TargetBinding:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class TargetLayout:
+    """Where the Python package lives below the target root, and whether that root is a distribution."""
+
+    package: PurePosixPath
+    distribution: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RenderedFile:
+    """One text file a target rendered; the coordinator formats, heads, and encodes it."""
+
+    path: PurePosixPath
+    kind: str
+    text: str
+    group: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRequest:
     """Everything a target renders from: settings, the accepted model contracts, and the selection."""
 
     config: TargetConfig
+    layout: TargetLayout
     model_config: GenerateConfig
     target_id: str
     batch: GeneratedTypeContractBatch
@@ -112,8 +137,9 @@ class TargetRequest:
 class TargetRender:
     """A target's planned files and manifest data; run diagnostics are reported but never persisted."""
 
-    files: tuple[PlannedFile, ...]
+    files: tuple[RenderedFile, ...]
     target_data: JSONObject
+    dependencies: tuple[str, ...] = ()
     bindings: tuple[TargetBinding, ...] = ()
     diagnostics: tuple[Diagnostic, ...] = ()
     persistent_diagnostics: tuple[Diagnostic, ...] = ()
@@ -208,14 +234,47 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     return RootInput("mapping", ROOT_URN, cwd)
 
 
-def _check_roots(config: TargetConfig, output: Path, cwd: Path) -> None:
+def target_layout(config: TargetConfig) -> TargetLayout:
+    """Return the package root below the target root: the root itself, or `src/<package>` in a distribution."""
+    if config.package_mode == "standalone":
+        return TargetLayout(package=PurePosixPath("src", *config.package.split(".")), distribution=True)
+    return TargetLayout(package=PurePosixPath(), distribution=False)
+
+
+def _bundled_models(root: Path, models: Path, model_package: str) -> PurePosixPath | None:
+    *parents, name = ("src", *model_package.split("."))
+    for candidate in (root.joinpath(*parents, name), root.joinpath(*parents, f"{name}.py")):
+        if models == candidate:
+            return PurePosixPath(*candidate.relative_to(root).parts)
+    return None
+
+
+def _check_layout(config: TargetConfig, output: Path, cwd: Path) -> None:
     root, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
-    if root == models or root in models.parents or models in root.parents:
+    package = root.joinpath(*target_layout(config).package.parts)
+    if package == models or package in models.parents or models in package.parents:
         raise config_error(
             code="E_PATH_COLLISION",
             option_path="output",
-            message="The target root and the model output must not contain each other",
+            message="The target package and the model output must not contain each other",
         )
+    if config.package_mode != "standalone":
+        return
+    match _bundled_models(root, models, config.model_package), config.model_dependency:
+        case PurePosixPath(), str():
+            raise config_error(
+                code="E_CONFIG_CONFLICT",
+                option_path="model_dependency",
+                message="A distribution that bundles its models declares no model_dependency",
+            )
+        case None, None:
+            raise config_error(
+                code="E_CONFIG_VALUE",
+                option_path="model_dependency",
+                message="A distribution needs its models under src/ or an explicit model_dependency",
+            )
+        case _:
+            pass
 
 
 def _remote_lock(
@@ -264,7 +323,7 @@ def _generate_models(
     source = _root_input(input_, cwd)
     output = config.output
     assert output is not None
-    _check_roots(target, output, cwd)
+    _check_layout(target, output, cwd)
     prepared, lock = _remote_lock(input_, config, cwd)
     lock_state = None if lock is None else observe_file(lock.path)
     output = prepared.output
@@ -303,6 +362,19 @@ def _generate_models(
             source=source,
             cwd=cwd,
         )
+
+
+def _is_python(path: PurePosixPath) -> bool:
+    return path.suffix in {".py", ".pyi"}
+
+
+def _normalized(text: str) -> str:
+    text = text.replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
+    return f"{text}\n" if text else ""
+
+
+def _toml_array(values: Iterable[str]) -> str:
+    return f"[{', '.join(json.dumps(value) for value in values)}]"
 
 
 def _tags(operation: OperationContract) -> tuple[str, ...]:
@@ -436,6 +508,7 @@ class _Planner:
         self.operations: dict[str, OperationContract] = {}
         self.observed: dict[Path, Observed] = {}
         self.version, self.revision = get_version(), runtime_revision()
+        self.layout = target_layout(config)
 
     def locate(self, path: Path, *, option_path: str) -> str:
         return relative_uri(self.cwd / path.expanduser(), self.root, option_path)
@@ -693,6 +766,7 @@ class _Planner:
         rendered = generator.render(
             TargetRequest(
                 config=config,
+                layout=self.layout,
                 model_config=self.effective,
                 target_id=self.target_id,
                 batch=models.product.batch,
@@ -708,7 +782,7 @@ class _Planner:
             raise APIGenerationError(rendered.diagnostics)
         if verifying := config.model_mode == "verify":
             self.verify()
-        plans = plan_files(self.root, state, rendered.files, self.target_id)
+        plans = plan_files(self.root, state, _Finisher(self).finish(rendered), self.target_id)
         output = self.effective.output
         assert output is not None
         model = model_record(
@@ -765,6 +839,125 @@ class _Planner:
             generator_version=self.version,
             runtime_revision=self.revision,
         )
+
+
+class _Finisher:
+    def __init__(self, planner: _Planner) -> None:
+        self.config = planner.config
+        self.effective = planner.effective
+        self.kind = planner.generator.kind
+        self.root = planner.root
+        self.cwd = planner.cwd
+        self.layout = planner.layout
+        self.target_id = planner.target_id
+        self.timestamp = (
+            datetime.now(timezone.utc).isoformat(timespec="seconds") if self.config.include_timestamp else None
+        )
+
+    def header(self) -> str:
+        config = self.config
+        lines = [] if codecs.lookup(config.encoding).name == "utf-8" else [f"-*- coding: {config.encoding} -*-"]
+        lines += (
+            [f"Generated by datamodel-code-generator; target={self.kind}; schema_version=1"]
+            if config.header is None
+            else config.header.splitlines()
+        )
+        if self.timestamp is not None:
+            lines.append(f"timestamp: {self.timestamp}")
+        return "".join(f"# {line}\n" if line else "#\n" for line in lines)
+
+    def pyproject(self, rendered: TargetRender) -> str:
+        config, output = self.config, self.effective.output
+        assert output is not None
+        bundled = _bundled_models(self.root, (self.cwd / output.expanduser()).resolve(), config.model_package)
+        included = (self.layout.package.as_posix(), *(() if bundled is None else (bundled.as_posix(),)))
+        model = () if config.model_dependency is None else (config.model_dependency,)
+        return "\n".join((
+            "[build-system]",
+            'requires = ["hatchling>=1.27,<2"]',
+            'build-backend = "hatchling.build"',
+            "",
+            "[project]",
+            f"name = {json.dumps(config.distribution_name)}",
+            f"version = {json.dumps(config.package_version)}",
+            f'requires-python = ">={self.effective.target_python_version.value}"',
+            f"dependencies = {_toml_array((*rendered.dependencies, *model))}",
+            "",
+            "[tool.hatch.build.targets.wheel]",
+            f"only-include = {_toml_array(included)}",
+            'sources = ["src"]',
+            "",
+            "[tool.hatch.build.targets.sdist]",
+            f"only-include = {_toml_array((*included, 'pyproject.toml'))}",
+        ))
+
+    def layout_files(self, rendered: TargetRender) -> tuple[RenderedFile, ...]:
+        package = self.layout.package
+        typed = RenderedFile(path=package / "py.typed", kind="typing", text="")
+        if self.layout.distribution:
+            return typed, RenderedFile(
+                path=PurePosixPath("pyproject.toml"), kind="pyproject", text=self.pyproject(rendered)
+            )
+        requirements = "".join(f"{dependency}\n" for dependency in rendered.dependencies)
+        return typed, RenderedFile(
+            path=package / "dcg-runtime-requirements.txt", kind="requirements", text=requirements
+        )
+
+    def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:
+        if problems := tuple(
+            problem
+            for path, text in files
+            if _is_python(path) and (problem := _source_problem(path, text, stage, self.target_id)) is not None
+        ):
+            raise APIGenerationError(problems)
+
+    def finish(self, rendered: TargetRender) -> tuple[PlannedFile, ...]:
+        from datamodel_code_generator.format import CodeFormatter  # noqa: PLC0415
+
+        config = self.config
+        files = (*rendered.files, *self.layout_files(rendered))
+        self.check_sources(((file.path, file.text) for file in files), "target")
+        settings = config.formatter_settings
+        formatter = CodeFormatter(
+            self.effective.target_python_version,
+            self.cwd if settings is None else self.cwd / settings.expanduser(),
+            None,
+            skip_string_normalization=True,
+            known_third_party=None,
+            custom_formatters=list(config.custom_formatters),
+            custom_formatters_kwargs=dict(config.custom_formatter_kwargs),
+            encoding=config.encoding,
+            formatters=list(config.formatters),
+            builtin_format_line_length=None,
+            use_type_checking_imports=False,
+            defer_formatting=False,
+            formatter_cwd=self.cwd,
+        )
+        header = self.header()
+        texts = [
+            (file, _normalized(header + formatter.format_code(file.text) if _is_python(file.path) else file.text))
+            for file in files
+        ]
+        self.check_sources(((file.path, text) for file, text in texts), "format")
+        return tuple(
+            PlannedFile(path=file.path, kind=file.kind, content=text.encode(config.encoding), group=file.group)
+            for file, text in texts
+        )
+
+
+def _source_problem(path: PurePosixPath, text: str, stage: DiagnosticStage, target_id: str) -> Diagnostic | None:
+    try:
+        ast.parse(text, filename=path.as_posix())
+    except SyntaxError as error:
+        return Diagnostic(
+            code="E_TARGET_SOURCE",
+            severity="error",
+            stage=stage,
+            message=f"The generated Python source is invalid: {error.msg}",
+            artifact_path=path.as_posix(),
+            target_id=target_id,
+        )
+    return None
 
 
 def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig) -> _Models:

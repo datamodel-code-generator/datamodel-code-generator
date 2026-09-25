@@ -1,0 +1,29 @@
+# layout-external
+generate
+  target=client schema_version=1
+  written model models.py
+  written target server/src/example/server/__init__.py (target) 73 bytes
+  written target server/src/example/server/routes/pets.py (target) 110 bytes
+  written target server/src/example/server/routes/store.py (target) 104 bytes
+  written target server/src/example/server/routes/default.py (target) 98 bytes
+  written target server/src/example/server/py.typed (target) 0 bytes
+  written target server/pyproject.toml (target) 407 bytes
+  written model_inventory server/.dcg-state/model-artifacts.json (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+show server/pyproject.toml
+  | [build-system]
+  | requires = ["hatchling>=1.27,<2"]
+  | build-backend = "hatchling.build"
+  | 
+  | [project]
+  | name = "example-client"
+  | version = "0.1.0"
+  | requires-python = ">=3.10"
+  | dependencies = ["client-runtime>=1,<2", "example-models>=1,<2"]
+  | 
+  | [tool.hatch.build.targets.wheel]
+  | only-include = ["src/example/server"]
+  | sources = ["src"]
+  | 
+  | [tool.hatch.build.targets.sdist]
+  | only-include = ["src/example/server", "pyproject.toml"]

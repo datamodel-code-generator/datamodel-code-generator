@@ -4,7 +4,7 @@ model_package='example.models'
 model_mode='generate'
 selection=OperationSelection(include_operations=(), include_tags=(), exclude_operations=(), exclude_tags=(), reason=None)
 formatters=(<Formatter.BUILTIN: 'builtin'>,)
-formatter_settings=None
+formatter_settings='.'
 custom_formatters=()
 custom_formatter_kwargs=mappingproxy({})
 encoding='utf-8'
