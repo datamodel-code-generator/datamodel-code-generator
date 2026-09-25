@@ -42,6 +42,8 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
         ("shapes", "shapes-variants"),
         ("shapes", "shapes-annotated"),
         ("collisions", "collisions"),
+        ("extras", "extras-basemodel"),
+        ("extras", "extras-dataclass"),
         ("zoo", "zoo-collapsed"),
     ],
 )
