@@ -22,16 +22,35 @@ write reports/.keep
 cli --diagnostics-json reports
   exit 2
   stderr | E_CONFIG_VALUE error config: --diagnostics-json cannot be written: it is not a file in an existing directory
-cli
+write notes.md
+cli --diagnostics-json notes.md
+  exit 2
+  stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report
+write pyproject.toml
+cli --diagnostics-json pyproject.toml
+  exit 2
+  stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report
+cli --diagnostics-json diagnostics.json
   exit 0
+cli --check --diagnostics-json diagnostics.json
+  exit 0
+show diagnostics.json
+  | {
+  |   "schema_version": 1,
+  |   "target": "fastapi",
+  |   "diagnostics": []
+  | }
 break write
 cli --check --diagnostics-json diagnostics.json
   exit 2
   stderr | E_CONFIG_VALUE error config: --diagnostics-json cannot be written: Permission denied
 tree
   api.yaml
+  diagnostics.json
   fastapi.toml
   models.py
+  notes.md
+  pyproject.toml
   reports/.keep
   server/.dcg-target-manifest.json
   server/README.md

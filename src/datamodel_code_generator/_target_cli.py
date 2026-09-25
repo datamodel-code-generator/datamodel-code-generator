@@ -101,6 +101,14 @@ def _target_config(path: Path, output: Path | None) -> FastAPIConfig:
         )) from None
 
 
+def _is_report(path: Path) -> bool:
+    try:
+        document = json.loads(path.read_bytes())
+    except (OSError, ValueError):
+        return False
+    return isinstance(document, dict) and document.get("schema_version") == 1 and "diagnostics" in document
+
+
 def _conflict(message: str) -> Diagnostic:
     return Diagnostic(code="E_CONFIG_CONFLICT", severity="error", stage="config", message=message)
 
@@ -130,6 +138,9 @@ class _Report:
         if written.is_dir() or not written.parent.is_dir():
             self.destination = None
             raise APIGenerationError((_unwritable("it is not a file in an existing directory"),))
+        if written.is_file() and not _is_report(written):
+            self.destination = None
+            raise APIGenerationError((_conflict("--diagnostics-json names an existing file that is not a report"),))
 
     def extend(self, diagnostics: Iterable[Diagnostic]) -> None:
         for diagnostic in diagnostics:
