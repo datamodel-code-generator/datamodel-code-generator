@@ -1429,6 +1429,7 @@ pet-encode-snapshot: wire={"id":2,"name":"Tom"}
 pet-encode-other: CodecBindingError The value was captured for a different binding
 pet-encode-failure: CodecAdapterError The model adapter failed to read the native value (from RuntimeError)
 pet-encode-limit: CodecResourceLimitError The value exceeds the adapter's budget
+pet-encode-dict: ModelProjectionError The value is not a Pet value
 pet-encode-object: CodecAdapterError The model adapter returned a value outside the wire domain (from TypeError)
 pet-encode-presence: CodecAdapterError The model adapter returned presence outside its declared capability
 pet-encode-invalid: WireValidationError schema.required@/id

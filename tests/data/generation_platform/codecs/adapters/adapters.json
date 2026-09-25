@@ -480,6 +480,14 @@
    }
   },
   {
+   "name": "pet-encode-dict",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "encode",
+   "value": {
+    "name": "rex"
+   }
+  },
+  {
    "name": "pet-encode-object",
    "use": "/paths/~1pets/post response_body 201",
    "op": "encode",

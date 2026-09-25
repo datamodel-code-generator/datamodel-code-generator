@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Awaitable, Callable, Mapping
 from decimal import Decimal
-from types import MappingProxyType
+from types import GenericAlias, MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeVar
 from urllib.parse import unquote_to_bytes
 
@@ -322,6 +322,7 @@ class AdapterModelCodec(Generic[T]):
 
     __slots__ = (
         "_adapter",
+        "_class",
         "_context",
         "_encode_native",
         "_excluded",
@@ -347,6 +348,8 @@ class AdapterModelCodec(Generic[T]):
         self._encode_native: Callable[..., WireValue] = adapter.encode_native
         self._native_presence: Callable[..., object] = adapter.presence
         self._view = view
+        native = view.native_type
+        self._class = native if isinstance(native, type) and not isinstance(native, GenericAlias) else None
         self._validator = validator
         self._context = _context_key(binding)
         self._presence = manifest.capabilities.presence == "native"
@@ -434,7 +437,7 @@ class AdapterModelCodec(Generic[T]):
         )
 
     def _native_wire(self, value: object, context: CodecContext, presence: PresenceTree | None) -> WireValue:
-        if isinstance(native := self._view.native_type, type) and not isinstance(value, native):
+        if (native := self._class) is not None and not isinstance(value, native):
             msg = f"The value is not a {native.__name__} value"
             raise ModelProjectionError(msg)
         try:
