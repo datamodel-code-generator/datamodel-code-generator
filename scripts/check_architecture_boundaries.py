@@ -507,22 +507,25 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 self._check_import(node, target)
                 continue
             self._record_import_alias(alias.asname or alias.name, module)
-            self._check_import(node, target if self.layer == "reference" or alias.name.startswith("_") else module)
+            self._check_import(
+                node, target if self.layer in {"reference", "target"} or alias.name.startswith("_") else module
+            )
 
     def visit_Call(self, node: ast.Call) -> None:
         """Check dynamic imports, semantic getattr, and backend module identity helpers."""
         chain = _attribute_chain(node.func)
         dynamic_target = None
-        if (
-            self.layer in {"parser", "config", "reference", "shared-model"}
-            and self._is_dynamic_import(node.func)
-            and (argument := self._dynamic_import_target_argument(node)) is not None
-        ):
+        if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
             dynamic_target = self._resolved_string(argument)
-        if dynamic_target and (
-            _is_reference_backend_import(dynamic_target)
-            if self.layer == "reference"
-            else _concrete_backend_module(dynamic_target)
+        if (
+            dynamic_target
+            and not self._check_target_boundary(node, dynamic_target)
+            and self.layer in {"parser", "config", "reference", "shared-model"}
+            and (
+                _is_reference_backend_import(dynamic_target)
+                if self.layer == "reference"
+                else _concrete_backend_module(dynamic_target)
+            )
         ):
             match self.layer:
                 case "reference":
@@ -905,6 +908,29 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         if backend := _concrete_backend_module(target):
             self.backend_aliases[alias] = backend
 
+    def _check_target_boundary(self, node: ast.AST, target: str) -> bool:
+        if self.layer == "target" and (
+            target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser.")
+        ):
+            self._add(
+                node,
+                "target-parser-import",
+                target,
+                "target generation must consume accepted contracts, not parser modules",
+            )
+            return True
+        if self.layer != "target" and any(
+            target == module or target.startswith(f"{module}.") for module in _TARGET_MODULES
+        ):
+            self._add(
+                node,
+                "target-reverse-import",
+                target,
+                "model generation must not depend on target generation; targets depend on the core",
+            )
+            return True
+        return False
+
     def _check_import(self, node: ast.AST, target: str) -> None:
         if self.layer == "reference" and _is_reference_backend_import(target):
             self._add(
@@ -938,25 +964,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 _SHARED_MODEL_BACKEND_IMPORT_MESSAGE,
             )
             return
-        if self.layer == "target" and (
-            target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser.")
-        ):
-            self._add(
-                node,
-                "target-parser-import",
-                target,
-                "target generation must consume accepted contracts, not parser modules",
-            )
-            return
-        if self.layer != "target" and any(
-            target == module or target.startswith(f"{module}.") for module in _TARGET_MODULES
-        ):
-            self._add(
-                node,
-                "target-reverse-import",
-                target,
-                "model generation must not depend on target generation; targets depend on the core",
-            )
+        if self._check_target_boundary(node, target):
             return
         if (
             self.layer != "parser"
