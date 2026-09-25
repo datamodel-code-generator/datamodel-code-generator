@@ -55,6 +55,16 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "hook-failing",
         "hook-not-callable",
         "hook-broken-file",
+        "templates",
+        "template-roles",
+        "template-invalid",
+        "template-not-toml",
+        "template-not-array",
+        "template-not-tables",
+        "template-conflict-builtin",
+        "template-conflict-extras",
+        "template-bad-json",
+        "template-missing",
     ],
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:

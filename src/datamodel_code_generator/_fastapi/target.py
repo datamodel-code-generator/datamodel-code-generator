@@ -10,9 +10,10 @@ from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._codec_declarations import CodecDeclarations, OperationRef
 from datamodel_code_generator._fastapi.config import FastAPIConfig
-from datamodel_code_generator._fastapi.hooks import HookRunner, extended
+from datamodel_code_generator._fastapi.hooks import Extensions, HookRunner, extended
 from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
 from datamodel_code_generator._fastapi.render import ServerRenderer
+from datamodel_code_generator._fastapi.templates import TemplateSet
 from datamodel_code_generator._fastapi.views import ContextBuilder
 from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._fastapi.context import FastAPIContext
-    from datamodel_code_generator._fastapi.hooks import Extensions
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
     from datamodel_code_generator._generation_contract import OperationContract, OperationId, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
@@ -65,11 +65,15 @@ class FastAPITarget:
             raise APIGenerationError(
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
             ) from None
+        templates = None if config.templates is None else TemplateSet(config.templates, request.target_id)
         excluded: tuple[Diagnostic, ...] = ()
+        context = None
         if config.hooks:
-            revision, _, _ = HookRunner(config.hooks, request.target_id).run(stage)
+            revision, _, context = HookRunner(config.hooks, request.target_id).run(stage)
             plan, codecs = stage.planned(revision)
             excluded = _excluded(plan, request)
+        elif templates is not None:
+            context = stage.context(Revision(), Extensions())
         renderer = ServerRenderer(
             config=config,
             package=request.layout.package,
@@ -77,6 +81,8 @@ class FastAPITarget:
             batch=request.batch,
             wire=stage.wire,
             codecs=codecs,
+            templates=templates,
+            context=context,
         )
         return TargetRender(
             files=renderer.files(),

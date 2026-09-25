@@ -67,6 +67,7 @@ class FastAPIConfig(TargetConfig):
     parameter_names: Mapping[OperationSelector, Mapping[str, str]] = field(default_factory=lambda: MappingProxyType({}))
     codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
     hooks: tuple[HookReference | FastAPIHook, ...] = ()
+    templates: Path | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]]
 
@@ -100,6 +101,8 @@ class FastAPIConfig(TargetConfig):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
         if not _registrations(self.codec_adapters):
             yield _diagnostic("E_CONFIG_VALUE", "codec_adapters", "codec_adapters must be a tuple of registrations")
+        if self.templates is not None and not _is_path(self.templates):
+            yield _diagnostic("E_CONFIG_VALUE", "templates", "templates must be the path of a template directory")
         if not _is_tuple(self.hooks):
             yield _diagnostic("E_CONFIG_VALUE", "hooks", "hooks must be a tuple of hook references and callables")
             return
@@ -115,6 +118,10 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 def _is_bool(value: object) -> TypeIs[bool]:
     return isinstance(value, bool)
+
+
+def _is_path(value: object) -> TypeIs[Path]:
+    return isinstance(value, Path)
 
 
 def _frozen(value: object) -> object:
@@ -258,4 +265,5 @@ FastAPIConfig.toml_converters = MappingProxyType({
     "router_names": _router_names,
     "parameter_names": _parameter_name_entries,
     "hooks": _records(_hook),
+    "templates": _path,
 })

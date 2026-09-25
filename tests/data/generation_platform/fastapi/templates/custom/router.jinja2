@@ -1,4 +1,7 @@
-"""{{ docstring }}"""
+"""{{ docstring }}
+
+Router {{ router.key }} of {{ context.info.title }}{% if tag %}, tagged {{ tag }}{% endif %}, with {{ router.operations | length }} operations.
+"""
 
 {{ imports }}
 {%- for route in routes %}

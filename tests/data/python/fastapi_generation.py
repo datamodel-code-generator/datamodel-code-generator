@@ -59,6 +59,8 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                 converted[key] = tuple(value)
             case "hooks" if isinstance(value, list):
                 converted[key] = tuple(_hook(item) for item in value)
+            case "templates" if isinstance(value, str):
+                converted[key] = SOURCE / value
             case _:
                 converted[key] = value
     return FastAPIConfig(**converted)
@@ -86,6 +88,8 @@ def _setting(value: object, root: Path) -> str:
             return repr(replace(value, file=PurePosixPath(relative.as_posix())))
         case FunctionType(__module__=module, __qualname__=name):
             return f"<function {module}.{name}>"
+        case Path():
+            return repr(PurePosixPath(value.relative_to(root if value.is_relative_to(root) else SOURCE).as_posix()))
         case _:
             return repr(value)
 

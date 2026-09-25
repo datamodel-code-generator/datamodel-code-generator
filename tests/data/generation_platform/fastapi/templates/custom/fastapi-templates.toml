@@ -1,0 +1,37 @@
+schema_version = 1
+
+[[files]]
+template = "README.md.jinja2"
+path = "README.md"
+scope = "project"
+header = false
+
+[[files]]
+template = "router.json.jinja2"
+path = "routers/{router}.json"
+scope = "router"
+header = false
+
+[[files]]
+template = "operation.yaml.jinja2"
+path = "docs/{operation}.yml"
+scope = "operation"
+header = false
+
+[[files]]
+template = "settings.toml.jinja2"
+path = "settings.toml"
+scope = "project"
+header = false
+
+[[files]]
+template = "check.py.jinja2"
+path = "checks/{operation}.py"
+scope = "operation"
+
+[[files]]
+template = "notes.txt.jinja2"
+path = "NOTES"
+scope = "project"
+format = "text"
+header = false

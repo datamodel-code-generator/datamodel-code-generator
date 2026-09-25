@@ -1,0 +1,15 @@
+# template-invalid
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_TEMPLATE_INVALID target templates: fastapi-templates.toml needs schema_version = 1
+  F_TEMPLATE_INVALID target templates: fastapi-templates.toml has no setting 'extra'
+  F_TEMPLATE_INVALID target templates: files[0] needs the string keys template, path, and scope
+  F_TEMPLATE_INVALID target templates: files[1] has no key 'when'
+  F_TEMPLATE_INVALID target templates: files[2] scope must be 'project', 'router', or 'operation'
+  F_TEMPLATE_INVALID target templates: files[3] template 'missing.jinja2' is not a file inside the template directory
+  F_TEMPLATE_INVALID target templates: files[4] path '/etc/a.txt' must be a relative path inside the package
+  F_TEMPLATE_INVALID target templates: files[5] path '../a.txt' must be a relative path inside the package
+  F_TEMPLATE_INVALID target templates: files[6] path '{operation}.txt' may only use {router} in the router scope
+  F_TEMPLATE_INVALID target templates: files[7] path 'a.data' needs a known format
+  F_TEMPLATE_INVALID target templates: files[8] header must be a boolean, and false for files that are not Python
+  F_TEMPLATE_INVALID target templates: files[9] header must be a boolean, and false for files that are not Python

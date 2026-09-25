@@ -1,0 +1,4 @@
+# template-not-tables
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_TEMPLATE_INVALID target templates: files[0] must be a table

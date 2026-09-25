@@ -635,5 +635,179 @@
         }
       ]
     }
+  },
+  "templates": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/custom"
+    },
+    "show": [
+      "README.md",
+      "routers/pets.json",
+      "docs/get_pet.yml",
+      "settings.toml",
+      "checks/get_pet.py",
+      "NOTES",
+      "routers/pets.py",
+      "services.py"
+    ]
+  },
+  "template-roles": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/roles"
+    },
+    "show": [
+      "application.py",
+      "services.py"
+    ]
+  },
+  "template-invalid": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/invalid"
+    }
+  },
+  "template-not-toml": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/not-toml"
+    }
+  },
+  "template-not-array": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/not-array"
+    }
+  },
+  "template-conflict-builtin": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/conflict-builtin"
+    }
+  },
+  "template-conflict-extras": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/conflict-extras"
+    }
+  },
+  "template-bad-json": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/bad-json"
+    }
+  },
+  "template-missing": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/missing"
+    }
+  },
+  "template-not-tables": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/not-tables"
+    }
   }
 }

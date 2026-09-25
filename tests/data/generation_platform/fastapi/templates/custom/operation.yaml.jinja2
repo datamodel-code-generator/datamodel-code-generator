@@ -1,0 +1,6 @@
+operation: {{ operation.key | tojson }}
+arguments:
+{%- for argument in operation.arguments %}
+  - {{ argument.python_name | tojson }}
+{%- else %} []
+{%- endfor %}

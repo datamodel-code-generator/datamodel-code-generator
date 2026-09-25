@@ -121,6 +121,7 @@ class RenderedFile:
     text: str
     group: str | None = None
     verbatim: bool = False
+    header: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -952,7 +953,14 @@ class _Finisher:
         )
         header = self.header()
         texts = [
-            (file, _normalized(header + _formatted(file, formatter) if _is_python(file.path) else file.text))
+            (
+                file,
+                _normalized(
+                    (header if file.header else "") + _formatted(file, formatter)
+                    if _is_python(file.path)
+                    else file.text
+                ),
+            )
             for file in files
         ]
         self.check_sources(((file.path, text) for file, text in texts if not file.verbatim), "format")
