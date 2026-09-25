@@ -578,11 +578,8 @@ class DocsBuilder:  # noqa: PLR0904
     def base(self, schema_id: str) -> str:
         """Return the readable part of a component name: the source component name or the model's name."""
         tokens = pointer_tokens(unquote(urldefrag(schema_id)[1]))
-        match tokens:
-            case ["components", "schemas", name] | [*_, ("$defs" | "definitions"), name]:
-                base = name
-            case _:
-                base = self.symbols.get(schema_id, "Schema")
+        named = tokens[:-1] == ["components", "schemas"] or (len(tokens) > 1 and tokens[-2] in _DEFINITIONS)
+        base = tokens[-1] if named else self.symbols.get(schema_id, "Schema")
         return base if _COMPONENT.fullmatch(base) else normalize(base, empty="schema", digit="s_")
 
 
