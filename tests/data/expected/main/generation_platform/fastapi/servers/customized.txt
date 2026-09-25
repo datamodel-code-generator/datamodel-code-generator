@@ -1,0 +1,15 @@
+# customized
+serve pydantic_v2.BaseModel
+service PetsService: handle_delete_pet, handle_list_pets
+service PetsService without its methods: TypeError
+service UntaggedService: handle_get_health
+service UntaggedService without its methods: TypeError
+> GET /pets
+  handle_list_pets()
+< 200 application/json ["rex"]
+> DELETE /pets/1
+  handle_delete_pet(pet_id=1)
+< 204 - b''
+> GET /health
+  handle_get_health()
+< 204 - b''

@@ -1009,5 +1009,30 @@
         ]
       }
     ]
+  },
+  "customized": {
+    "input": "services.yaml",
+    "services": "customized",
+    "config": {
+      "hooks": [
+        "rename",
+        "asynchronous"
+      ],
+      "templates": "templates/custom"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "DELETE",
+        "url": "/pets/1"
+      },
+      {
+        "method": "GET",
+        "url": "/health"
+      }
+    ]
   }
 }

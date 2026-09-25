@@ -20,7 +20,7 @@ def record(context: FastAPIContext) -> FastAPIContextPatch:
 
 
 def rename(context: FastAPIContext) -> FastAPIContextPatch:
-    """Name every operation's handler explicitly, with a handle_ prefix."""
+    """Name every operation's method explicitly, with a handle_ prefix."""
     return FastAPIContextPatch(
         operation_names={operation.key: f"handle_{operation.python_name}" for operation in context.operations}
     )
@@ -32,7 +32,7 @@ def reverse(context: FastAPIContext) -> FastAPIContextPatch:
 
 
 def asynchronous(context: FastAPIContext) -> FastAPIContextPatch:
-    """Make every handler asynchronous."""
+    """Make every operation's method asynchronous."""
     return FastAPIContextPatch(handler_modes={operation.key: "async" for operation in context.operations})
 
 
@@ -48,7 +48,7 @@ def annotate(context: FastAPIContext) -> FastAPIContextPatch:
 
 
 def collide(context: FastAPIContext) -> FastAPIContextPatch:
-    """Give every operation the same handler name."""
+    """Give every operation the same method name."""
     return FastAPIContextPatch(operation_names={operation.key: "same" for operation in context.operations})
 
 
