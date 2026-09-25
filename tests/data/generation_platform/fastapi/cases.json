@@ -465,5 +465,175 @@
       "_generated/model_bindings.py",
       "services.py"
     ]
+  },
+  "hooks": {
+    "input": "hooks.yaml",
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        "rename",
+        "reverse",
+        "asynchronous",
+        "annotate",
+        "record"
+      ]
+    },
+    "show": [
+      "routers/pets_routes.py",
+      "services.py"
+    ],
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
+  "hook-file": {
+    "input": "hooks.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        {
+          "file": "hooks/tagged.py"
+        },
+        {
+          "module": "tests.data.python.fastapi_hooks",
+          "callable": "rename"
+        },
+        {
+          "file": "hooks/tagged.py"
+        }
+      ]
+    },
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
+  "hook-invalid": {
+    "input": "hooks.yaml",
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        "invalid"
+      ]
+    },
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
+  "hook-untyped": {
+    "input": "hooks.yaml",
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        "untyped"
+      ]
+    },
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
+  "hook-collide": {
+    "input": "hooks.yaml",
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        "collide"
+      ]
+    },
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
+  "hook-failing": {
+    "input": "hooks.yaml",
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        "failing"
+      ]
+    },
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
+  "hook-not-callable": {
+    "input": "hooks.yaml",
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        {
+          "module": "tests.data.python.fastapi_hooks",
+          "callable": "NOT_CALLABLE"
+        }
+      ]
+    },
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
+  "hook-broken-file": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        {
+          "file": "hooks/broken.py"
+        }
+      ]
+    }
   }
 }

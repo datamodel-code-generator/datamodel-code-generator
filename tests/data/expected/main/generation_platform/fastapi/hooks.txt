@@ -1,0 +1,2516 @@
+# hooks
+render pydantic_v2.BaseModel
+  __init__.py
+  application.py
+  routers/__init__.py
+  routers/untagged_routes.py
+  routers/files_routes.py
+  routers/pets_routes.py
+  _generated/__init__.py
+  _generated/contract.py
+  _generated/model_bindings.py
+  model_codecs.py
+  responses.py
+  errors.py
+  auth_types.py
+  services.py
+  py.typed
+  dcg-runtime-requirements.txt
+  .dcg-state/model-artifacts.json
+  .dcg-target-manifest.json
+  layout routers
+  handle_put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler async
+    body /paths/~1notes/put/requestBody: codec_adapter unsupported_wire_shape
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1notes/put/responses/204
+  handle_post__uploads: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler async
+    body /paths/~1uploads/post/requestBody: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1uploads/post/responses/204
+  handle_add_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler async
+    body /paths/~1pets/post/requestBody: fastapi_native native_supported
+    primary_response /paths/~1pets/post/responses/201: fastapi_native native_supported
+  handle_get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler async
+    parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/1: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/2: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/3: codec_adapter opaque_native_semantics at /paths/~1pets~1{petId}/get/parameters/3/schema
+    parameter /paths/~1pets~1{petId}/get/parameters/4: codec_adapter unsupported_wire_shape
+    primary_response /paths/~1pets~1{petId}/get/responses/200: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/get/responses/200
+  group untagged -> untagged_routes (1)
+  group tag:files -> files_routes (1)
+  group tag:pets -> pets_routes (2)
+  S_OPERATION_EXCLUDED hook /paths/~1raw/post: POST /raw is removed by a hook
+  context
+    | {
+    |   "info": {
+    |     "title": "Hooked pets",
+    |     "version": "1.0"
+    |   },
+    |   "operations": [
+    |     {
+    |       "key": "/paths/~1notes/put",
+    |       "source": {
+    |         "uri": "../hooks.yaml",
+    |         "pointer": "/paths/~1notes/put"
+    |       },
+    |       "declaration": {
+    |         "uri": "../hooks.yaml",
+    |         "pointer": "/paths/~1notes/put"
+    |       },
+    |       "method": "put",
+    |       "path": "/notes",
+    |       "route_path": "/notes",
+    |       "operation_id": null,
+    |       "python_name": "handle_put__notes",
+    |       "handler_mode": "async",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": false,
+    |       "tags": [],
+    |       "group_key": "untagged",
+    |       "arguments": [
+    |         {
+    |           "python_name": "request",
+    |           "wire_name": null,
+    |           "location": "request",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "request",
+    |             "value": "Request",
+    |             "imports": [
+    |               {
+    |                 "module": "fastapi",
+    |                 "name": "Request",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": true,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "principal",
+    |           "wire_name": null,
+    |           "location": "principal",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "principal",
+    |             "value": "PrincipalT | None",
+    |             "imports": [
+    |               {
+    |                 "module": "server._runtime.server.security",
+    |                 "name": "PrincipalT",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": false,
+    |           "is_principal": true,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "body",
+    |           "wire_name": null,
+    |           "location": "body",
+    |           "required": false,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "models.FieldNotesPutRequest | models.FieldNotesPutRequest1 | Unset",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               },
+    |               {
+    |                 "module": "server._runtime.model_codecs.unset",
+    |                 "name": "Unset",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1notes/put/requestBody",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1notes/put"
+    |                   }
+    |                 },
+    |                 "role": "request_body",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put/requestBody"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put/requestBody/content/text~1plain/schema"
+    |                 },
+    |                 "declaration": null,
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": null,
+    |                 "name": null,
+    |                 "status": null,
+    |                 "media": "text/plain"
+    |               },
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1notes/put"
+    |                   }
+    |                 },
+    |                 "role": "request_body",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put/requestBody"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put/requestBody/content/application~1json/schema"
+    |                 },
+    |                 "declaration": null,
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": null,
+    |                 "name": null,
+    |                 "status": null,
+    |                 "media": "application/json"
+    |               }
+    |             ],
+    |             "site": "body",
+    |             "transport": "codec_adapter",
+    |             "reason": "unsupported_wire_shape",
+    |             "source": null
+    |           },
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "media_type",
+    |           "wire_name": null,
+    |           "location": "media_type",
+    |           "required": false,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "media_type",
+    |             "value": "str | None",
+    |             "imports": []
+    |           },
+    |           "source_pointer": "/paths/~1notes/put/requestBody",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         }
+    |       ],
+    |       "request": {
+    |         "required": false,
+    |         "media": [
+    |           {
+    |             "media_type": "text/plain",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema",
+    |             "type": {
+    |               "binding_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema|ModelNode(symbol='models:FieldNotesPutRequest')",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema",
+    |               "kind": "root",
+    |               "value": "models.FieldNotesPutRequest",
+    |               "imports": [
+    |                 {
+    |                   "module": "models",
+    |                   "name": null,
+    |                   "alias": null,
+    |                   "type_checking": false
+    |                 }
+    |               ]
+    |             },
+    |             "source_pointer": "/paths/~1notes/put/requestBody/content/text~1plain"
+    |           },
+    |           {
+    |             "media_type": "application/json",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema",
+    |             "type": {
+    |               "binding_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema|ModelNode(symbol='models:FieldNotesPutRequest1')",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema",
+    |               "kind": "model",
+    |               "value": "models.FieldNotesPutRequest1",
+    |               "imports": [
+    |                 {
+    |                   "module": "models",
+    |                   "name": null,
+    |                   "alias": null,
+    |                   "type_checking": false
+    |                 }
+    |               ]
+    |             },
+    |             "source_pointer": "/paths/~1notes/put/requestBody/content/application~1json"
+    |           }
+    |         ],
+    |         "body_mode": "typed",
+    |         "body_projection": {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody/content/text~1plain/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "text/plain"
+    |             },
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": null
+    |         },
+    |         "source_pointer": "/paths/~1notes/put/requestBody"
+    |       },
+    |       "responses": [
+    |         {
+    |           "status_key": "204",
+    |           "description": "Saved.",
+    |           "media": [],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1notes/put/responses/204"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 204,
+    |         "media_type": null
+    |       },
+    |       "registration_status": 204,
+    |       "primary_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "None",
+    |         "imports": []
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "HandlePutNotesResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandlePutNotesResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "HandlePutNotesResponsePayload",
+    |       "response_codecs_name": "HandlePutNotesResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "None | HTTPResult[HandlePutNotesResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandlePutNotesResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": [
+    |         [],
+    |         [
+    |           [
+    |             "bearer",
+    |             []
+    |           ]
+    |         ]
+    |       ],
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody/content/text~1plain/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "text/plain"
+    |             },
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1notes/put"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1notes/put/requestBody/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [],
+    |           "site": "primary_response",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": {
+    |             "uri": "../hooks.yaml",
+    |             "pointer": "/paths/~1notes/put/responses/204"
+    |           }
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {
+    |         "audited": true,
+    |         "method": "put"
+    |       }
+    |     },
+    |     {
+    |       "key": "/paths/~1uploads/post",
+    |       "source": {
+    |         "uri": "../hooks.yaml",
+    |         "pointer": "/paths/~1uploads/post"
+    |       },
+    |       "declaration": {
+    |         "uri": "../hooks-paths.yaml",
+    |         "pointer": "/uploads/post"
+    |       },
+    |       "method": "post",
+    |       "path": "/uploads",
+    |       "route_path": "/uploads",
+    |       "operation_id": null,
+    |       "python_name": "handle_post__uploads",
+    |       "handler_mode": "async",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": false,
+    |       "tags": [
+    |         "files"
+    |       ],
+    |       "group_key": "tag:files",
+    |       "arguments": [
+    |         {
+    |           "python_name": "request",
+    |           "wire_name": null,
+    |           "location": "request",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "request",
+    |             "value": "Request",
+    |             "imports": [
+    |               {
+    |                 "module": "fastapi",
+    |                 "name": "Request",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": true,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "file",
+    |           "wire_name": "file",
+    |           "location": "file",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "upload",
+    |             "value": "UploadFile",
+    |             "imports": [
+    |               {
+    |                 "module": "fastapi",
+    |                 "name": "UploadFile",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1uploads/post/requestBody",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": true,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1uploads/post"
+    |                   }
+    |                 },
+    |                 "role": "request_body",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1uploads/post/requestBody"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema"
+    |                 },
+    |                 "declaration": null,
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": null,
+    |                 "name": null,
+    |                 "status": null,
+    |                 "media": "multipart/form-data"
+    |               }
+    |             ],
+    |             "site": "body",
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
+    |           },
+    |           "native_declaration": {
+    |             "api": "File",
+    |             "alias": "file",
+    |             "required": true,
+    |             "default_kind": "required",
+    |             "kwargs": {},
+    |             "media_type": null
+    |           }
+    |         },
+    |         {
+    |           "python_name": "note",
+    |           "wire_name": "note",
+    |           "location": "form",
+    |           "required": false,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "str | Unset",
+    |             "imports": [
+    |               {
+    |                 "module": "server._runtime.model_codecs.unset",
+    |                 "name": "Unset",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1uploads/post/requestBody",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1uploads/post"
+    |                   }
+    |                 },
+    |                 "role": "request_body",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1uploads/post/requestBody"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema"
+    |                 },
+    |                 "declaration": null,
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": null,
+    |                 "name": null,
+    |                 "status": null,
+    |                 "media": "multipart/form-data"
+    |               }
+    |             ],
+    |             "site": "body",
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
+    |           },
+    |           "native_declaration": {
+    |             "api": "Form",
+    |             "alias": "note",
+    |             "required": false,
+    |             "default_kind": "literal",
+    |             "kwargs": {},
+    |             "media_type": null
+    |           }
+    |         }
+    |       ],
+    |       "request": {
+    |         "required": true,
+    |         "media": [
+    |           {
+    |             "media_type": "multipart/form-data",
+    |             "schema_id": null,
+    |             "type": {
+    |               "binding_id": null,
+    |               "schema_id": null,
+    |               "kind": "surface",
+    |               "value": "models.FieldUploadsPostRequest",
+    |               "imports": [
+    |                 {
+    |                   "module": "models",
+    |                   "name": null,
+    |                   "alias": null,
+    |                   "type_checking": false
+    |                 }
+    |               ]
+    |             },
+    |             "source_pointer": "/paths/~1uploads/post/requestBody/content/multipart~1form-data"
+    |           }
+    |         ],
+    |         "body_mode": "typed",
+    |         "body_projection": {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1uploads/post"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1uploads/post/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "multipart/form-data"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         },
+    |         "source_pointer": "/paths/~1uploads/post/requestBody"
+    |       },
+    |       "responses": [
+    |         {
+    |           "status_key": "204",
+    |           "description": "Stored.",
+    |           "media": [],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1uploads/post/responses/204"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 204,
+    |         "media_type": null
+    |       },
+    |       "registration_status": 204,
+    |       "primary_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "None",
+    |         "imports": []
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "HandlePostUploadsResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandlePostUploadsResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "HandlePostUploadsResponsePayload",
+    |       "response_codecs_name": "HandlePostUploadsResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "None | HTTPResult[HandlePostUploadsResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandlePostUploadsResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": null,
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1uploads/post"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1uploads/post/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "multipart/form-data"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [],
+    |           "site": "primary_response",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": {
+    |             "uri": "../hooks.yaml",
+    |             "pointer": "/paths/~1uploads/post/responses/204"
+    |           }
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {
+    |         "audited": true,
+    |         "method": "post"
+    |       }
+    |     },
+    |     {
+    |       "key": "/paths/~1pets/post",
+    |       "source": {
+    |         "uri": "../hooks.yaml",
+    |         "pointer": "/paths/~1pets/post"
+    |       },
+    |       "declaration": {
+    |         "uri": "../hooks.yaml",
+    |         "pointer": "/paths/~1pets/post"
+    |       },
+    |       "method": "post",
+    |       "path": "/pets",
+    |       "route_path": "/pets",
+    |       "operation_id": "addPet",
+    |       "python_name": "handle_add_pet",
+    |       "handler_mode": "async",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": true,
+    |       "tags": [
+    |         "pets"
+    |       ],
+    |       "group_key": "tag:pets",
+    |       "arguments": [
+    |         {
+    |           "python_name": "request",
+    |           "wire_name": null,
+    |           "location": "request",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "request",
+    |             "value": "Request",
+    |             "imports": [
+    |               {
+    |                 "module": "fastapi",
+    |                 "name": "Request",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": true,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "principal",
+    |           "wire_name": null,
+    |           "location": "principal",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "principal",
+    |             "value": "PrincipalT",
+    |             "imports": [
+    |               {
+    |                 "module": "server._runtime.server.security",
+    |                 "name": "PrincipalT",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": false,
+    |           "is_principal": true,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "body",
+    |           "wire_name": null,
+    |           "location": "body",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "models.Pet",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1pets/post/requestBody",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "models.Pet",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1pets/post"
+    |                   }
+    |                 },
+    |                 "role": "request_body",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets/post/requestBody"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets/post/requestBody/content/application~1json/schema"
+    |                 },
+    |                 "declaration": null,
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": null,
+    |                 "name": null,
+    |                 "status": null,
+    |                 "media": "application/json"
+    |               }
+    |             ],
+    |             "site": "body",
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
+    |           },
+    |           "native_declaration": null
+    |         }
+    |       ],
+    |       "request": {
+    |         "required": true,
+    |         "media": [
+    |           {
+    |             "media_type": "application/json",
+    |             "schema_id": null,
+    |             "type": {
+    |               "binding_id": null,
+    |               "schema_id": null,
+    |               "kind": "surface",
+    |               "value": "models.Pet",
+    |               "imports": [
+    |                 {
+    |                   "module": "models",
+    |                   "name": null,
+    |                   "alias": null,
+    |                   "type_checking": false
+    |                 }
+    |               ]
+    |             },
+    |             "source_pointer": "/paths/~1pets/post/requestBody/content/application~1json"
+    |           }
+    |         ],
+    |         "body_mode": "typed",
+    |         "body_projection": {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets/post"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets/post/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets/post/requestBody/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         },
+    |         "source_pointer": "/paths/~1pets/post/requestBody"
+    |       },
+    |       "responses": [
+    |         {
+    |           "status_key": "201",
+    |           "description": "Added.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
+    |                 "kind": "model",
+    |                 "value": "models.Pet",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1pets/post/responses/201/content/application~1json"
+    |             }
+    |           ],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1pets/post/responses/201"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 201,
+    |         "media_type": "application/json"
+    |       },
+    |       "registration_status": 201,
+    |       "primary_return_type": {
+    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
+    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets/post/responses/201/content/application~1json/schema",
+    |         "kind": "model",
+    |         "value": "models.Pet | ModelValue[models.Pet]",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "HandleAddPetResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandleAddPetResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "HandleAddPetResponsePayload",
+    |       "response_codecs_name": "HandleAddPetResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "models.Pet | ModelValue[models.Pet] | HTTPResult[HandleAddPetResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandleAddPetResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": [
+    |         [
+    |           [
+    |             "api_key",
+    |             []
+    |           ]
+    |         ]
+    |       ],
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets/post"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets/post/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets/post/requestBody/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets/post"
+    |                 }
+    |               },
+    |               "role": "response_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets/post/responses/201"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets/post/responses/201/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "response",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": "201",
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "primary_response",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {
+    |         "audited": true,
+    |         "method": "post"
+    |       }
+    |     },
+    |     {
+    |       "key": "/paths/~1pets~1{petId}/get",
+    |       "source": {
+    |         "uri": "../hooks.yaml",
+    |         "pointer": "/paths/~1pets~1{petId}/get"
+    |       },
+    |       "declaration": {
+    |         "uri": "../hooks.yaml",
+    |         "pointer": "/paths/~1pets~1{petId}/get"
+    |       },
+    |       "method": "get",
+    |       "path": "/pets/{petId}",
+    |       "route_path": "/pets/{petId}",
+    |       "operation_id": "getPet",
+    |       "python_name": "handle_get_pet",
+    |       "handler_mode": "async",
+    |       "summary": "Read one pet.",
+    |       "description": "Reads a pet by identifier.",
+    |       "deprecated": false,
+    |       "tags": [
+    |         "pets"
+    |       ],
+    |       "group_key": "tag:pets",
+    |       "arguments": [
+    |         {
+    |           "python_name": "request",
+    |           "wire_name": null,
+    |           "location": "request",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "request",
+    |             "value": "Request",
+    |             "imports": [
+    |               {
+    |                 "module": "fastapi",
+    |                 "name": "Request",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": true,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "principal",
+    |           "wire_name": null,
+    |           "location": "principal",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "principal",
+    |             "value": "PrincipalT",
+    |             "imports": [
+    |               {
+    |                 "module": "server._runtime.server.security",
+    |                 "name": "PrincipalT",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": false,
+    |           "is_principal": true,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "pet_id",
+    |           "wire_name": "petId",
+    |           "location": "path",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "int",
+    |             "imports": []
+    |           },
+    |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/0",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "models.FieldPetsPetIdGetPathPetIdParameter",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1pets~1{petId}/get"
+    |                   }
+    |                 },
+    |                 "role": "parameter",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/0"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/0/schema"
+    |                 },
+    |                 "declaration": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/0"
+    |                 },
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": "path",
+    |                 "name": "petId",
+    |                 "status": null,
+    |                 "media": null
+    |               }
+    |             ],
+    |             "site": "parameter",
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
+    |           },
+    |           "native_declaration": {
+    |             "api": "Path",
+    |             "alias": "petId",
+    |             "required": true,
+    |             "default_kind": "required",
+    |             "kwargs": {
+    |               "ge": 1
+    |             },
+    |             "media_type": null
+    |           }
+    |         },
+    |         {
+    |           "python_name": "limit",
+    |           "wire_name": "limit",
+    |           "location": "query",
+    |           "required": false,
+    |           "default_present": true,
+    |           "default_value": 10,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "int",
+    |             "imports": []
+    |           },
+    |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/1",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "models.FieldPetsPetIdGetQueryLimitParameter",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1pets~1{petId}/get"
+    |                   }
+    |                 },
+    |                 "role": "parameter",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/1"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/1/schema"
+    |                 },
+    |                 "declaration": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/1"
+    |                 },
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": "query",
+    |                 "name": "limit",
+    |                 "status": null,
+    |                 "media": null
+    |               }
+    |             ],
+    |             "site": "parameter",
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
+    |           },
+    |           "native_declaration": {
+    |             "api": "Query",
+    |             "alias": "limit",
+    |             "required": false,
+    |             "default_kind": "literal",
+    |             "kwargs": {},
+    |             "media_type": null
+    |           }
+    |         },
+    |         {
+    |           "python_name": "x_trace",
+    |           "wire_name": "X-Trace",
+    |           "location": "header",
+    |           "required": false,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "str | Unset",
+    |             "imports": [
+    |               {
+    |                 "module": "server._runtime.model_codecs.unset",
+    |                 "name": "Unset",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/2",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "surface",
+    |             "value": "models.FieldPetsPetIdGetHeaderXTraceParameter",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1pets~1{petId}/get"
+    |                   }
+    |                 },
+    |                 "role": "parameter",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/2"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/2/schema"
+    |                 },
+    |                 "declaration": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/2"
+    |                 },
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": "header",
+    |                 "name": "X-Trace",
+    |                 "status": null,
+    |                 "media": null
+    |               }
+    |             ],
+    |             "site": "parameter",
+    |             "transport": "fastapi_native",
+    |             "reason": "native_supported",
+    |             "source": null
+    |           },
+    |           "native_declaration": {
+    |             "api": "Header",
+    |             "alias": "X-Trace",
+    |             "required": false,
+    |             "default_kind": "literal",
+    |             "kwargs": {},
+    |             "media_type": null
+    |           }
+    |         },
+    |         {
+    |           "python_name": "after",
+    |           "wire_name": "after",
+    |           "location": "query",
+    |           "required": false,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": true,
+    |           "type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldPetsPetIdGetQueryAfterParameter')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema",
+    |             "kind": "root",
+    |             "value": "models.FieldPetsPetIdGetQueryAfterParameter | Unset",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               },
+    |               {
+    |                 "module": "server._runtime.model_codecs.unset",
+    |                 "name": "Unset",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/3",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldPetsPetIdGetQueryAfterParameter')",
+    |           "bound_type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldPetsPetIdGetQueryAfterParameter')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema",
+    |             "kind": "root",
+    |             "value": "models.FieldPetsPetIdGetQueryAfterParameter",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1pets~1{petId}/get"
+    |                   }
+    |                 },
+    |                 "role": "parameter",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/3"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/3/schema"
+    |                 },
+    |                 "declaration": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/3"
+    |                 },
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": "query",
+    |                 "name": "after",
+    |                 "status": null,
+    |                 "media": null
+    |               }
+    |             ],
+    |             "site": "parameter",
+    |             "transport": "codec_adapter",
+    |             "reason": "opaque_native_semantics",
+    |             "source": {
+    |               "uri": "../hooks.yaml",
+    |               "pointer": "/paths/~1pets~1{petId}/get/parameters/3/schema"
+    |             }
+    |           },
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "session",
+    |           "wire_name": "session",
+    |           "location": "cookie",
+    |           "required": false,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema|ModelNode(symbol='models:FieldPetsPetIdGetCookieSessionParameter')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema",
+    |             "kind": "root",
+    |             "value": "models.FieldPetsPetIdGetCookieSessionParameter | Unset",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               },
+    |               {
+    |                 "module": "server._runtime.model_codecs.unset",
+    |                 "name": "Unset",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1pets~1{petId}/get/parameters/4",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema|ModelNode(symbol='models:FieldPetsPetIdGetCookieSessionParameter')",
+    |           "bound_type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema|ModelNode(symbol='models:FieldPetsPetIdGetCookieSessionParameter')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema",
+    |             "kind": "root",
+    |             "value": "models.FieldPetsPetIdGetCookieSessionParameter",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1pets~1{petId}/get"
+    |                   }
+    |                 },
+    |                 "role": "parameter",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/4"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/4/schema"
+    |                 },
+    |                 "declaration": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get/parameters/4"
+    |                 },
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": "cookie",
+    |                 "name": "session",
+    |                 "status": null,
+    |                 "media": null
+    |               }
+    |             ],
+    |             "site": "parameter",
+    |             "transport": "codec_adapter",
+    |             "reason": "unsupported_wire_shape",
+    |             "source": null
+    |           },
+    |           "native_declaration": null
+    |         }
+    |       ],
+    |       "request": null,
+    |       "responses": [
+    |         {
+    |           "status_key": "200",
+    |           "description": "The pet.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
+    |                 "kind": "model",
+    |                 "value": "models.Pet",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1pets~1{petId}/get/responses/200/content/application~1json"
+    |             }
+    |           ],
+    |           "headers": [
+    |             {
+    |               "name": "X-Rate",
+    |               "required": true,
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/headers/X-Rate/schema|ModelNode(symbol='models:FieldPetsPetIdGetResponse200XRateHeader')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/headers/X-Rate/schema",
+    |                 "kind": "root",
+    |                 "value": "models.FieldPetsPetIdGetResponse200XRateHeader",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               }
+    |             }
+    |           ],
+    |           "source_pointer": "/paths/~1pets~1{petId}/get/responses/200"
+    |         },
+    |         {
+    |           "status_key": "404",
+    |           "description": "Missing.",
+    |           "media": [],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1pets~1{petId}/get/responses/404"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 200,
+    |         "media_type": "application/json"
+    |       },
+    |       "registration_status": 200,
+    |       "primary_return_type": {
+    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
+    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
+    |         "kind": "model",
+    |         "value": "models.Pet | ModelValue[models.Pet]",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "HandleGetPetResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandleGetPetResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "HandleGetPetResponsePayload",
+    |       "response_codecs_name": "HandleGetPetResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "models.Pet | ModelValue[models.Pet] | HTTPResult[HandleGetPetResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "HandleGetPetResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": [
+    |         [
+    |           [
+    |             "api_key",
+    |             []
+    |           ]
+    |         ]
+    |       ],
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get"
+    |                 }
+    |               },
+    |               "role": "parameter",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/0"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/0/schema"
+    |               },
+    |               "declaration": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/0"
+    |               },
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": "path",
+    |               "name": "petId",
+    |               "status": null,
+    |               "media": null
+    |             }
+    |           ],
+    |           "site": "parameter",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get"
+    |                 }
+    |               },
+    |               "role": "parameter",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/1"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/1/schema"
+    |               },
+    |               "declaration": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/1"
+    |               },
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": "query",
+    |               "name": "limit",
+    |               "status": null,
+    |               "media": null
+    |             }
+    |           ],
+    |           "site": "parameter",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get"
+    |                 }
+    |               },
+    |               "role": "parameter",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/2"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/2/schema"
+    |               },
+    |               "declaration": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/2"
+    |               },
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": "header",
+    |               "name": "X-Trace",
+    |               "status": null,
+    |               "media": null
+    |             }
+    |           ],
+    |           "site": "parameter",
+    |           "transport": "fastapi_native",
+    |           "reason": "native_supported",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get"
+    |                 }
+    |               },
+    |               "role": "parameter",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/3"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/3/schema"
+    |               },
+    |               "declaration": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/3"
+    |               },
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": "query",
+    |               "name": "after",
+    |               "status": null,
+    |               "media": null
+    |             }
+    |           ],
+    |           "site": "parameter",
+    |           "transport": "codec_adapter",
+    |           "reason": "opaque_native_semantics",
+    |           "source": {
+    |             "uri": "../hooks.yaml",
+    |             "pointer": "/paths/~1pets~1{petId}/get/parameters/3/schema"
+    |           }
+    |         },
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get"
+    |                 }
+    |               },
+    |               "role": "parameter",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/4"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/4/schema"
+    |               },
+    |               "declaration": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/parameters/4"
+    |               },
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": "cookie",
+    |               "name": "session",
+    |               "status": null,
+    |               "media": null
+    |             }
+    |           ],
+    |           "site": "parameter",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1pets~1{petId}/get"
+    |                 }
+    |               },
+    |               "role": "response_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/responses/200"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1pets~1{petId}/get/responses/200/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "response",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": "200",
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "primary_response",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": {
+    |             "uri": "../hooks.yaml",
+    |             "pointer": "/paths/~1pets~1{petId}/get/responses/200"
+    |           }
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {
+    |         "audited": true,
+    |         "method": "get"
+    |       }
+    |     }
+    |   ],
+    |   "routers": [
+    |     {
+    |       "key": "untagged",
+    |       "file_stem": "untagged_routes",
+    |       "primary_tag": null,
+    |       "operations": [
+    |         "/paths/~1notes/put"
+    |       ],
+    |       "extras": {
+    |         "owner": [
+    |           "pets",
+    |           "team"
+    |         ]
+    |       }
+    |     },
+    |     {
+    |       "key": "tag:files",
+    |       "file_stem": "files_routes",
+    |       "primary_tag": "files",
+    |       "operations": [
+    |         "/paths/~1uploads/post"
+    |       ],
+    |       "extras": {
+    |         "owner": [
+    |           "pets",
+    |           "team"
+    |         ]
+    |       }
+    |     },
+    |     {
+    |       "key": "tag:pets",
+    |       "file_stem": "pets_routes",
+    |       "primary_tag": "pets",
+    |       "operations": [
+    |         "/paths/~1pets/post",
+    |         "/paths/~1pets~1{petId}/get"
+    |       ],
+    |       "extras": {
+    |         "owner": [
+    |           "pets",
+    |           "team"
+    |         ]
+    |       }
+    |     }
+    |   ],
+    |   "models": [
+    |     {
+    |       "binding_id": "models:Pet",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Pet",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldPetsPetIdGetPathPetIdParameter",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldPetsPetIdGetPathPetIdParameter",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldPetsPetIdGetQueryLimitParameter",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldPetsPetIdGetQueryLimitParameter",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldPetsPetIdGetHeaderXTraceParameter",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldPetsPetIdGetHeaderXTraceParameter",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldPetsPetIdGetQueryAfterParameter",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldPetsPetIdGetQueryAfterParameter",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldPetsPetIdGetCookieSessionParameter",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldPetsPetIdGetCookieSessionParameter",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldPetsPetIdGetResponse200XRateHeader",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldPetsPetIdGetResponse200XRateHeader",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldUploadsPostRequest",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "FieldUploadsPostRequest",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldNotesPutRequest",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldNotesPutRequest",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldNotesPutRequest1",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "FieldNotesPutRequest1",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldRawPostRequest",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldRawPostRequest",
+    |       "path": "models.py"
+    |     }
+    |   ],
+    |   "imports": [
+    |     {
+    |       "module": "logging",
+    |       "name": null,
+    |       "alias": null,
+    |       "type_checking": false
+    |     },
+    |     {
+    |       "module": "json",
+    |       "name": "dumps",
+    |       "alias": "dump_json",
+    |       "type_checking": false
+    |     }
+    |   ],
+    |   "extras": {
+    |     "generated_by": "hooks",
+    |     "revision": 2
+    |   },
+    |   "context_version": 1
+    | }
+  show routers/pets_routes.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """Endpoints of the pets_routes operations; regenerate them instead of editing."""
+    |
+    | from collections.abc import Sequence
+    | from typing import Annotated, Final
+    |
+    | import models
+    | from fastapi import APIRouter, Body, Depends, Header, Path, Query, Request
+    | from fastapi.responses import Response
+    |
+    | from .._generated import contract
+    | from .._generated.contract import OperationDependencies
+    | from .._runtime.server.application import Dependency, Wiring, build
+    | from .._runtime.server.requests import absent, present
+    | from .._runtime.server.responses import dispatch, respond
+    | from .._runtime.server.security import PrincipalT, SecretT
+    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
+    | from ..services import PetsRoutesService
+    |
+    |
+    | def _add_handle_add_pet(router: APIRouter, wiring: Wiring) -> None:
+    |     handle_add_pet_handler = wiring.async_handlers['handle_add_pet']
+    |     handle_add_pet_principal = wiring.authenticators['/paths/~1pets/post']
+    |
+    |     async def handle_add_pet(
+    |         *,
+    |         request: Request,
+    |         principal: Annotated[object, Depends(handle_add_pet_principal)],
+    |         body: Annotated[models.Pet, Body(media_type='application/json')],
+    |     ) -> object:
+    |         return dispatch(
+    |             await handle_add_pet_handler(
+    |                 request=request,
+    |                 principal=principal,
+    |                 body=body,
+    |             ),
+    |             contract.HandleAddPet.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/pets',
+    |         handle_add_pet,
+    |         methods=['POST'],
+    |         status_code=201,
+    |         response_model=models.Pet,
+    |         response_model_by_alias=True,
+    |         response_model_exclude_unset=True,
+    |         operation_id='addPet',
+    |         tags=['pets'],
+    |         deprecated=True,
+    |         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+    |     )
+    |
+    |
+    | def _add_handle_get_pet(router: APIRouter, wiring: Wiring) -> None:
+    |     handle_get_pet_handler = wiring.async_handlers['handle_get_pet']
+    |     handle_get_pet_principal = wiring.authenticators['/paths/~1pets~1{petId}/get']
+    |
+    |     async def handle_get_pet(
+    |         *,
+    |         request: Request,
+    |         principal: Annotated[object, Depends(handle_get_pet_principal)],
+    |         pet_id: Annotated[int, Path(alias='petId', ge=1)],
+    |         limit: Annotated[int, Query(alias='limit')] = 10,
+    |         x_trace: Annotated[str, Header(
+    |             alias='X-Trace',
+    |             convert_underscores=False,
+    |             default_factory=absent,
+    |         )],
+    |         parameters: Annotated[contract.HandleGetPet.Parameters, Depends(contract.HandleGetPet.PARAMETERS)],
+    |     ) -> Response:
+    |         return respond(
+    |             await handle_get_pet_handler(
+    |                 request=request,
+    |                 principal=principal,
+    |                 pet_id=pet_id,
+    |                 limit=limit,
+    |                 x_trace=present(x_trace),
+    |                 after=parameters.after,
+    |                 session=parameters.session,
+    |             ),
+    |             contract.HandleGetPet.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/pets/{petId}',
+    |         handle_get_pet,
+    |         methods=['GET'],
+    |         status_code=200,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='getPet',
+    |         tags=['pets'],
+    |         summary='Read one pet.',
+    |         description='Reads a pet by identifier.',
+    |         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
+    |     )
+    |
+    |
+    | LITERAL_ROUTES: Final = ((contract.HandleAddPet.OPERATION, _add_handle_add_pet),)
+    | TEMPLATED_ROUTES: Final = ((contract.HandleGetPet.OPERATION, _add_handle_get_pet),)
+    |
+    |
+    | def build_router(
+    |     *,
+    |     pets_routes: PetsRoutesService[PrincipalT],
+    |     authorizer: Authorizer[SecretT, PrincipalT] | AsyncAuthorizer[SecretT, PrincipalT],
+    |     credential_extractors: CredentialExtractors[SecretT] | None = None,
+    |     dependencies: Sequence[Dependency] = (),
+    |     operation_dependencies: OperationDependencies | None = None,
+    |     prefix: str = "",
+    | ) -> APIRouter:
+    |     """Check the service and settings, then register the pets_routes operations on a new router, literal paths first."""
+    |     return build(
+    |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+    |         contract.SCHEMES,
+    |         services={'pets_routes': pets_routes},
+    |         authorizer=authorizer,
+    |         credential_extractors=credential_extractors,
+    |         dependencies=dependencies,
+    |         operation_dependencies=operation_dependencies,
+    |         prefix=prefix,
+    |     )
+  show services.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """Service interfaces of this package's router groups; regenerate them instead of editing."""
+    |
+    | from __future__ import annotations
+    |
+    | from abc import abstractmethod
+    | from typing import Protocol
+    |
+    | import models
+    | from fastapi import Request, UploadFile
+    | from fastapi.responses import Response
+    | from typing_extensions import TypeVar
+    |
+    | from .model_codecs import ModelValue, Unset
+    | from .responses import (
+    |     HandleAddPetResponsePayload,
+    |     HandleGetPetResponsePayload,
+    |     HandlePostUploadsResponsePayload,
+    |     HandlePutNotesResponsePayload,
+    |     HTTPResult,
+    | )
+    |
+    | PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
+    |
+    |
+    | class UntaggedRoutesService(Protocol[PrincipalT_contra]):
+    |     """Implement the untagged_routes operations: subclass this Protocol, or give an object its methods."""
+    |
+    |     @abstractmethod
+    |     async def handle_put__notes(
+    |         self,
+    |         *,
+    |         request: Request,
+    |         principal: PrincipalT_contra | None,
+    |         body: models.FieldNotesPutRequest | models.FieldNotesPutRequest1 | Unset,
+    |         media_type: str | None,
+    |     ) -> None | HTTPResult[HandlePutNotesResponsePayload] | Response: ...
+    |
+    |
+    | class FilesRoutesService(Protocol):
+    |     """Implement the files_routes operations: subclass this Protocol, or give an object its methods."""
+    |
+    |     @abstractmethod
+    |     async def handle_post__uploads(
+    |         self,
+    |         *,
+    |         request: Request,
+    |         file: UploadFile,
+    |         note: str | Unset,
+    |     ) -> None | HTTPResult[HandlePostUploadsResponsePayload] | Response: ...
+    |
+    |
+    | class PetsRoutesService(Protocol[PrincipalT_contra]):
+    |     """Implement the pets_routes operations: subclass this Protocol, or give an object its methods."""
+    |
+    |     @abstractmethod
+    |     async def handle_add_pet(
+    |         self,
+    |         *,
+    |         request: Request,
+    |         principal: PrincipalT_contra,
+    |         body: models.Pet,
+    |     ) -> (
+    |         models.Pet
+    |         | ModelValue[models.Pet]
+    |         | HTTPResult[HandleAddPetResponsePayload]
+    |         | Response
+    |     ): ...
+    |
+    |     @abstractmethod
+    |     async def handle_get_pet(
+    |         self,
+    |         *,
+    |         request: Request,
+    |         principal: PrincipalT_contra,
+    |         pet_id: int,
+    |         limit: int,
+    |         x_trace: str | Unset,
+    |         after: models.FieldPetsPetIdGetQueryAfterParameter | Unset,
+    |         session: models.FieldPetsPetIdGetCookieSessionParameter | Unset,
+    |     ) -> (
+    |         models.Pet
+    |         | ModelValue[models.Pet]
+    |         | HTTPResult[HandleGetPetResponsePayload]
+    |         | Response
+    |     ): ...

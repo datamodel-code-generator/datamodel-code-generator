@@ -1,0 +1,16 @@
+uploads:
+  post:
+    tags: [files]
+    security: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [file]
+            properties:
+              file: {type: string, format: binary}
+              note: {type: string}
+    responses:
+      "204": {description: Stored.}

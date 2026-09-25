@@ -1,0 +1,4 @@
+# hook-untyped
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned dict, not a patch

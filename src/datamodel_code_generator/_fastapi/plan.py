@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from enum import Enum
 from functools import cached_property
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
@@ -78,6 +79,9 @@ Site: TypeAlias = Literal["parameter", "body", "primary_response"]
 Transport: TypeAlias = Literal["fastapi_native", "codec_adapter", "raw_request"]
 ScalarKind: TypeAlias = Literal["str", "int", "float", "bool", "date", "aware_datetime", "uuid", "literal"]
 ArgumentKind: TypeAlias = Literal["request", "principal", "native", "adapter", "body", "media_type"]
+ArgumentLocation: TypeAlias = Literal[
+    "path", "query", "querystring", "header", "cookie", "form", "file", "body", "request", "principal", "media_type"
+]
 SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "custom"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Form", "File"]
@@ -184,6 +188,7 @@ class ParameterSpec:
     use: TypeUseBinding | None
     plan: ParameterPlan | None
     decision: Decision
+    source: SourceLocation
     native: NativeField | None = None
     default: WireValue | Unset = UNSET
 
@@ -267,7 +272,7 @@ class Argument:
 
     name: str
     kind: ArgumentKind
-    location: str
+    location: ArgumentLocation
     wire_name: str | None = None
     required: bool = True
     native: NativeField | None = None
@@ -388,15 +393,34 @@ def _uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Revision:
+    """Plan changes that hooks ask for, keyed by operation or group key, applied over the configuration.
+
+    An order selects and orders the planned operations; None keeps the selection's.
+    """
+
+    order: tuple[str, ...] | None = None
+    operation_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
+    router_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
+    handler_modes: Mapping[str, HandlerMode] = field(default_factory=lambda: MappingProxyType({}))
+
+
 class Planner:  # noqa: PLR0904
     """Plan every selected operation of one server target from the accepted batch and its wire plan."""
 
     def __init__(
-        self, request: TargetRequest, config: FastAPIConfig, wire: WirePlan, selection: AdapterSelection
+        self,
+        request: TargetRequest,
+        config: FastAPIConfig,
+        wire: WirePlan,
+        selection: AdapterSelection,
+        revision: Revision | None = None,
     ) -> None:
         """Index the batch, and resolve the per-operation settings to operation keys."""
         self.request = request
         self.config = config
+        self.revision = revision or Revision()
         self.wire = wire
         self.adapted = frozenset(use for _, use in selection.chosen)
         self.uses = {use.id: use for use in request.batch.type_uses}
@@ -420,11 +444,14 @@ class Planner:  # noqa: PLR0904
         self.schemes: dict[str, SchemeSpec] = {}
         self.backend = request.model_config.output_model_type.value
         self.problems: list[Diagnostic] = []
-        self.names = self.selected("operation_names", config.operation_names)
+        self.names = {**self.selected("operation_names", config.operation_names), **self.revision.operation_names}
         self.body_modes = self.selected("body_modes", config.body_modes)
         self.primaries = self.selected("primary_responses", config.primary_responses)
         self.parameter_names = self.selected("parameter_names", config.parameter_names)
-        self.modes = self.selected("handler_modes", config.handler_modes)
+        self.modes: dict[str, HandlerMode] = {
+            **self.selected("handler_modes", config.handler_modes),
+            **self.revision.handler_modes,
+        }
         self.raise_problems()
 
     @cached_property
@@ -460,6 +487,9 @@ class Planner:  # noqa: PLR0904
     def plan(self) -> ServerPlan:
         """Plan names, then each operation's boundaries, arguments, and route, then the router groups."""
         operations = self.request.operations
+        if (order := self.revision.order) is not None:
+            keyed = {operation.id.use_site.pointer: operation for operation in operations}
+            operations = tuple(keyed[key] for key in order)
         names = {operation.id.use_site.pointer: self.operation_name(operation) for operation in operations}
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
@@ -482,7 +512,8 @@ class Planner:  # noqa: PLR0904
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        stems = {key: self.config.router_names.get(key) or group_stem(key) for key in members}
+        router_names = {**self.config.router_names, **self.revision.router_names}
+        stems = {key: router_names.get(key) or group_stem(key) for key in members}
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(stem_conflicts(stems.values()))
@@ -632,6 +663,7 @@ class Planner:  # noqa: PLR0904
             use=use,
             plan=plan,
             decision=Decision(site="parameter", transport="codec_adapter", reason="unsupported_wire_shape", uses=uses),
+            source=declaration.use_site,
             default=self.default(use),
         )
         if any(item in self.adapted for item in uses):
@@ -1137,7 +1169,7 @@ def _natively_serialized(plan: ParameterPlan, location: ParameterLocation, *, re
 
 def _candidate(  # noqa: PLR0913
     names: Mapping[str, str],
-    location: str,
+    location: ArgumentLocation,
     wire_name: str,
     *,
     required: bool,

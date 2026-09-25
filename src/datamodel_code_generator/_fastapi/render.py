@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import keyword
 import re
-from functools import cache
+from functools import cache, cached_property
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._generation_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
-    from datamodel_code_generator._openapi_codec_render import UseAccessors
+    from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
@@ -153,15 +153,26 @@ class ServerRenderer:  # noqa: PLR0904
         wire: WirePlan,
         codecs: CodecPlan,
     ) -> None:
-        """Keep the plans and index the codec accessors of every bound use."""
+        """Keep the plans; the model bindings module and its accessors are rendered when first used."""
         self.config = config
         self.package = package
         self.plan = plan
+        self.batch = batch
+        self.wire = wire
+        self.codecs = codecs
         self.symbols = dict(codecs.imports)
-        self.bindings = render_model_bindings(codecs, wire, batch, surface="server")
-        self.accessors: dict[TypeUseId, UseAccessors] = {item.use: item for item in self.bindings.uses}
         self.use_bindings: dict[TypeUseId, UseBinding] = dict(codecs.bindings)
         self.services = {group.key: group.stem for group in plan.groups}
+
+    @cached_property
+    def bindings(self) -> RenderedBindings:
+        """Return the model bindings module of every bound use, rendered once."""
+        return render_model_bindings(self.codecs, self.wire, self.batch, surface="server")
+
+    @cached_property
+    def accessors(self) -> dict[TypeUseId, UseAccessors]:
+        """Return the codec accessors of every bound use."""
+        return {item.use: item for item in self.bindings.uses}
 
     def file(
         self, path: PurePosixPath, kind: str, text: str, group: str | None = None, *, verbatim: bool = False
@@ -465,9 +476,13 @@ class ServerRenderer:  # noqa: PLR0904
 
     def returns(self, module: Module, spec: OperationSpec) -> Chain:
         """Return a method's result type: the bare primary payload, an HTTPResult of any payload, or a Response."""
+        return Chain("|", tuple(self.results(module, spec)))
+
+    def results(self, module: Module, spec: OperationSpec) -> list[str]:
+        """Return the members of a method's result type, in the order the result type spells them."""
         payload = module.local("responses", f"{spec.pascal}ResponsePayload")
         result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{payload}]"
-        return Chain("|", (*self.bare(module, spec), result, module.name("fastapi.responses", "Response")))
+        return [*self.bare(module, spec), result, module.name("fastapi.responses", "Response")]
 
     def bare(self, module: Module, spec: OperationSpec) -> list[str]:
         """Return the members of the type a method returns bare: the primary payload, None, or nothing.
@@ -476,12 +491,7 @@ class ServerRenderer:  # noqa: PLR0904
         """
         if (primary := spec.primary) is None or any(header.required for header in primary.response.headers):
             return []
-        if (
-            (media := primary.media) is None
-            or spec.head
-            or primary.status < _MIN_CONTENT_STATUS
-            or primary.status in BODYLESS_STATUSES
-        ):
+        if (media := primary.media) is None or spec.head or not _content_status(primary.status):
             return ["None"]
         return self.media_type(module, media, sent=True).split(" | ")
 
@@ -1003,6 +1013,10 @@ def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
         ("authorizer", Chain("|", tuple(f"{item}[{secret}, {principal}]" for item in authorizers)), ""),
         ("credential_extractors", f"{module.local('auth_types', 'CredentialExtractors')}[{secret}] | None", " = None"),
     )
+
+
+def _content_status(status: int) -> bool:
+    return status >= _MIN_CONTENT_STATUS and status not in BODYLESS_STATUSES
 
 
 def _surface(module: Module, field: NativeField) -> str:

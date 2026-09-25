@@ -1,0 +1,3 @@
+# hook-broken-file
+render pydantic_v2.BaseModel
+  LookupError: The hook file could not load its settings

@@ -47,6 +47,16 @@
             "query:limit": "page_size"
           }
         ]
+      ],
+      "hooks": [
+        {
+          "module": "project.hooks",
+          "callable": "rename"
+        },
+        {
+          "file": "hooks/extra.py"
+        },
+        "rename"
       ]
     }
   },
@@ -93,7 +103,21 @@
           }
         ]
       ],
-      "codec_adapters": "none"
+      "codec_adapters": "none",
+      "hooks": [
+        {
+          "module": "project hooks"
+        },
+        {
+          "module": "project.hooks",
+          "file": "hooks.py"
+        },
+        {
+          "file": "hooks.py",
+          "callable": "not-a-name"
+        },
+        7
+      ]
     }
   },
   "invalid-shapes": {
@@ -120,7 +144,8 @@
           "limit"
         ]
       ],
-      "handler_modes": "async"
+      "handler_modes": "async",
+      "hooks": "hooks.py"
     }
   },
   "invalid-mappings": {
@@ -129,9 +154,9 @@
     }
   },
   "toml-values": {
-    "toml": "schema_version = 1\noutput = \"server\"\npackage = \"server\"\nmodel_package = \"models\"\nlayout = \"single\"\nhandler_mode = \"async\"\ninclude_request = true\nbody_mode = \"request\"\nrouter_names = { \"tag:pets\" = \"animals\" }\n\n[[body_modes]]\noperation = \"/paths/~1pets/post\"\nmode = \"typed\"\n\n[[primary_responses]]\noperation = { pointer = \"/paths/~1pets/post\" }\nstatus_code = 201\nmedia_type = \"application/json\"\n\n[[primary_responses]]\noperation = \"/paths/~1pets/get\"\nstatus_code = 200\n\n[[operation_names]]\noperation = \"/paths/~1pets/get\"\nname = \"list_all\"\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"query:limit\"\nname = \"page_size\"\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"header:X-Trace\"\nname = \"trace\"\n\n[[handler_modes]]\noperation = \"/paths/~1pets/get\"\nmode = \"sync\"\n"
+    "toml": "schema_version = 1\noutput = \"server\"\npackage = \"server\"\nmodel_package = \"models\"\nlayout = \"single\"\nhandler_mode = \"async\"\ninclude_request = true\nbody_mode = \"request\"\nrouter_names = { \"tag:pets\" = \"animals\" }\n\n[[body_modes]]\noperation = \"/paths/~1pets/post\"\nmode = \"typed\"\n\n[[primary_responses]]\noperation = { pointer = \"/paths/~1pets/post\" }\nstatus_code = 201\nmedia_type = \"application/json\"\n\n[[primary_responses]]\noperation = \"/paths/~1pets/get\"\nstatus_code = 200\n\n[[operation_names]]\noperation = \"/paths/~1pets/get\"\nname = \"list_all\"\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"query:limit\"\nname = \"page_size\"\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"header:X-Trace\"\nname = \"trace\"\n\n[[handler_modes]]\noperation = \"/paths/~1pets/get\"\nmode = \"sync\"\n\n[[hooks]]\nmodule = \"project.hooks\"\n\n[[hooks]]\nfile = \"hooks/extra.py\"\ncallable = \"rename\"\n"
   },
   "toml-errors": {
-    "toml": "schema_version = 1\noutput = \"server\"\npackage = \"server\"\nmodel_package = \"models\"\nbody_modes = \"request\"\nhandler_modes = \"sync\"\nrouter_names = \"animals\"\n\n[[primary_responses]]\noperation = \"/paths/~1pets/post\"\nstatus_code = \"201\"\n\n[[operation_names]]\noperation = \"/paths/~1pets/get\"\nname = 7\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"query:limit\"\nname = \"page_size\"\nwhere = \"query\"\n"
+    "toml": "schema_version = 1\noutput = \"server\"\npackage = \"server\"\nmodel_package = \"models\"\nbody_modes = \"request\"\nhandler_modes = \"sync\"\nrouter_names = \"animals\"\n\n[[primary_responses]]\noperation = \"/paths/~1pets/post\"\nstatus_code = \"201\"\n\n[[operation_names]]\noperation = \"/paths/~1pets/get\"\nname = 7\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"query:limit\"\nname = \"page_size\"\nwhere = \"query\"\n\n[[hooks]]\nmodule = \"project.hooks\"\nwhen = \"always\"\n"
   }
 }

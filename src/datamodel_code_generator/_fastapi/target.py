@@ -8,10 +8,12 @@ from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
-from datamodel_code_generator._codec_declarations import CodecDeclarations
+from datamodel_code_generator._codec_declarations import CodecDeclarations, OperationRef
 from datamodel_code_generator._fastapi.config import FastAPIConfig
-from datamodel_code_generator._fastapi.plan import PlanError, Planner
+from datamodel_code_generator._fastapi.hooks import HookRunner, extended
+from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
 from datamodel_code_generator._fastapi.render import ServerRenderer
+from datamodel_code_generator._fastapi.views import ContextBuilder
 from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import plan_wire
@@ -21,6 +23,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._fastapi.context import FastAPIContext
+    from datamodel_code_generator._fastapi.hooks import Extensions
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
     from datamodel_code_generator._generation_contract import OperationContract, OperationId, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
@@ -43,7 +47,6 @@ _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
 }
 _PATTERN_KEYWORDS: Final = frozenset({"pattern", "patternProperties"})
 
-
 class FastAPITarget:
     """Render a FastAPI server package for the two Pydantic v2 backends."""
 
@@ -52,51 +55,112 @@ class FastAPITarget:
     unsupported_backend: str = "E_FASTAPI_BACKEND_UNSUPPORTED"
 
     def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301
-        """Plan the selected operations, bind their codecs, and render the server package."""
+        """Plan the selected operations, let the hooks revise the plan, bind codecs, and render the package."""
         config = request.config
         assert isinstance(config, FastAPIConfig)
-        batch = request.batch
-        selected = frozenset(operation.id for operation in request.operations)
-        wire = plan_wire(
-            batch,
-            request.lease,
-            [use for operation in request.operations for use in _uses(operation)],
-            operations=selected,
-            documents=request.documents.pointers,
-        )
-        declarations = CodecDeclarations(
-            compatibility=config.builtin_codec_compatibility,
-            exports=config.export_bindings,
-            adapters=config.codec_adapters,
-        )
+        stage = _Stage(request, config)
         try:
-            plan = Planner(request, config, wire, select_adapters(batch, wire, declarations, "server")).plan()
+            plan, codecs = stage.planned(Revision())
         except PlanError as error:
             raise APIGenerationError(
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
             ) from None
-        backend = _BACKENDS[request.model_config.output_model_type]
-        uses = _codec_uses(plan)
-        codecs = plan_model_codecs(
-            batch,
-            replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
-            backend,
-            declarations=declarations,
-            surface="server",
-            lease=request.lease,
-            sources=_sources(request),
-        )
-        if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+        excluded: tuple[Diagnostic, ...] = ()
+        if config.hooks:
+            revision, _, _ = HookRunner(config.hooks, request.target_id).run(stage)
+            plan, codecs = stage.planned(revision)
+            excluded = _excluded(plan, request)
         renderer = ServerRenderer(
-            config=config, package=request.layout.package, plan=plan, batch=batch, wire=wire, codecs=codecs
+            config=config,
+            package=request.layout.package,
+            plan=plan,
+            batch=request.batch,
+            wire=stage.wire,
+            codecs=codecs,
         )
         return TargetRender(
             files=renderer.files(),
             target_data=_target_data(plan, config, request),
-            dependencies=_dependencies(plan, wire),
-            bindings=_bindings(codecs, backend),
+            dependencies=_dependencies(plan, stage.wire),
+            bindings=_bindings(codecs, _BACKENDS[request.model_config.output_model_type]),
+            persistent_diagnostics=excluded,
         )
+
+
+class _Stage:
+    """Plan the server and bind its codecs under a hook revision, keeping the latest plan."""
+
+    def __init__(self, request: TargetRequest, config: FastAPIConfig) -> None:
+        """Plan the wire of the selected operations and choose their codec adapters once."""
+        self.request = request
+        self.config = config
+        self.wire = plan_wire(
+            request.batch,
+            request.lease,
+            [use for operation in request.operations for use in _uses(operation)],
+            operations=frozenset(operation.id for operation in request.operations),
+            documents=request.documents.pointers,
+        )
+        self.declarations = CodecDeclarations(
+            compatibility=config.builtin_codec_compatibility,
+            exports=config.export_bindings,
+            adapters=config.codec_adapters,
+        )
+        self.adapters = select_adapters(request.batch, self.wire, self.declarations, "server")
+        self.latest: tuple[Revision, ServerPlan, CodecPlan] | None = None
+
+    def planned(self, revision: Revision) -> tuple[ServerPlan, CodecPlan]:
+        """Return the plan and codecs of a revision, planning them unless the latest revision was the same."""
+        if (latest := self.latest) is not None and latest[0] == revision:
+            return latest[1], latest[2]
+        request = self.request
+        plan = Planner(request, self.config, self.wire, self.adapters, revision).plan()
+        uses = _codec_uses(plan)
+        codecs = plan_model_codecs(
+            request.batch,
+            replace(self.wire, schema_ids=tuple(item for item in self.wire.schema_ids if item[0] in uses)),
+            _BACKENDS[request.model_config.output_model_type],
+            declarations=self.declarations,
+            surface="server",
+            lease=request.lease,
+            sources=_sources(request),
+        )
+        selected = {operation.contract.id for operation in plan.operations}
+        if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
+            raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+        self.latest = (revision, plan, codecs)
+        return plan, codecs
+
+    def context(self, revision: Revision, extensions: Extensions) -> FastAPIContext:
+        """Return the context of a revision's plan, with the hooks' extras and imports."""
+        plan, codecs = self.planned(revision)
+        renderer = ServerRenderer(
+            config=self.config,
+            package=self.request.layout.package,
+            plan=plan,
+            batch=self.request.batch,
+            wire=self.wire,
+            codecs=codecs,
+        )
+        return extended(ContextBuilder(renderer, self.request).context(), extensions)
+
+
+def _excluded(plan: ServerPlan, request: TargetRequest) -> tuple[Diagnostic, ...]:
+    kept = {spec.key for spec in plan.operations}
+    return tuple(
+        Diagnostic(
+            code="S_OPERATION_EXCLUDED",
+            severity="info",
+            stage="hook",
+            message=f"{operation.method.upper()} {operation.path} is removed by a hook",
+            source_uri=request.documents.root_uri,
+            source_pointer=key,
+            operation=OperationRef(pointer=key),
+            target_id=request.target_id,
+        )
+        for operation in request.operations
+        if (key := operation.id.use_site.pointer) not in kept
+    )
 
 
 def _uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
@@ -180,7 +244,7 @@ def _target_data(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest
     return {
         "context_version": 1,
         "layout": config.layout,
-        "operations": [_operation_data(spec, selected, request) for spec in plan.operations],
+        "operations": [_operation_data(spec, selected, config, request) for spec in plan.operations],
         "groups": [
             {
                 "key": group.key,
@@ -194,7 +258,9 @@ def _target_data(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest
     }
 
 
-def _operation_data(spec: OperationSpec, selected: dict[OperationId, int], request: TargetRequest) -> JSONValue:
+def _operation_data(
+    spec: OperationSpec, selected: dict[OperationId, int], config: FastAPIConfig, request: TargetRequest
+) -> JSONValue:
     documents = request.documents
     primary = spec.primary
     return {
