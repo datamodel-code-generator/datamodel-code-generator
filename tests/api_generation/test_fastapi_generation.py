@@ -54,6 +54,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "hooks",
         "hook-file",
         "hook-invalid",
+        "hook-unhashable",
         "hook-untyped",
         "hook-collide",
         "hook-failing",

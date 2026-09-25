@@ -541,6 +541,24 @@
       "hooks-paths.yaml"
     ]
   },
+  "hook-unhashable": {
+    "input": "hooks.yaml",
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "hooks": [
+        "unhashable"
+      ]
+    },
+    "files": [
+      "hooks-paths.yaml"
+    ]
+  },
   "hook-untyped": {
     "input": "hooks.yaml",
     "config": {

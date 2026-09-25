@@ -134,14 +134,12 @@ def _problems(patch: FastAPIContextPatch, context: FastAPIContext) -> Iterator[s
     keys = {operation.key for operation in context.operations}
     groups = {router.key for router in context.routers}
     order: object = patch.operation_order
-    if order is not None and not (
-        _is_tuple(order) and len(set(order)) == len(order) and all(key in keys for key in order)
-    ):
+    if order is not None and not (_distinct_texts(order) and all(key in keys for key in order)):
         yield "returned an operation_order that is not a tuple of distinct operation keys of the context"
     checks: tuple[tuple[str, object, set[str], Callable[[object], bool]], ...] = (
         ("operation_names", patch.operation_names, keys, _identifier),
         ("router_names", patch.router_names, groups, _identifier),
-        ("handler_modes", patch.handler_modes, keys, _MODES.__contains__),
+        ("handler_modes", patch.handler_modes, keys, _mode),
         ("operation_extras", patch.operation_extras, keys, _json_map),
         ("router_extras", patch.router_extras, groups, _json_map),
     )
@@ -157,6 +155,14 @@ def _problems(patch: FastAPIContextPatch, context: FastAPIContext) -> Iterator[s
 
 def _identifier(value: object) -> bool:
     return isinstance(value, str) and explicit(value)
+
+
+def _mode(value: object) -> bool:
+    return isinstance(value, str) and value in _MODES
+
+
+def _distinct_texts(value: object) -> TypeIs[tuple[str, ...]]:
+    return _is_tuple(value) and all(isinstance(item, str) for item in value) and len(set(value)) == len(value)
 
 
 def _keyed(value: object, known: set[str], valid: Callable[[object], bool]) -> bool:

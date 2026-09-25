@@ -67,6 +67,15 @@ def invalid(context: FastAPIContext) -> FastAPIContextPatch:
     )
 
 
+def unhashable(context: FastAPIContext) -> FastAPIContextPatch:
+    """Return a patch whose operation order and handler mode hold lists."""
+    first = context.operations[0].key
+    return FastAPIContextPatch(
+        operation_order=([first],),  # type: ignore[arg-type]
+        handler_modes={first: ["async"]},  # type: ignore[dict-item]
+    )
+
+
 def untyped(context: FastAPIContext) -> dict[str, object]:
     """Return a mapping instead of a patch."""
     return {"operation_order": tuple(operation.key for operation in context.operations)}
