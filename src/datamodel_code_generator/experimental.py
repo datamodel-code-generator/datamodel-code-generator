@@ -12,6 +12,7 @@ ExperimentalFeatureKind = Literal["input-format", "formatter", "cli-option", "py
 ExperimentalFeatureFormat = Literal["table", "json", "markdown"]
 ExperimentalFeatureId = Literal[
     "behavior.batch-generation-jobs",
+    "behavior.openapi-api-scope",
     "behavior.remote-reference-lock",
     "cli-option.generate-schema-validators",
     "cli-option.install-skill",
@@ -56,6 +57,21 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "Define named generation jobs in [tool.datamodel-codegen.jobs] and select them with --job or "
             "--all-jobs. Each selected job has its own input and output, and the full selection is validated "
             "before generation begins."
+        ),
+    ),
+    "behavior.openapi-api-scope": ExperimentalFeature(
+        id="behavior.openapi-api-scope",
+        kind="behavior",
+        target="--openapi-scopes api and OpenAPIScope.Api",
+        message=(
+            "The OpenAPI API scope is experimental; the declarations it collects and the models it generates for "
+            "them may change while API-level generation is completed."
+        ),
+        since_version="0.83.0",
+        note=(
+            "Only an explicit api scope selects it, and the default remains schemas. It collects component schemas, "
+            "typed parameter, request-body, response and header components, root paths, webhooks, reusable Path "
+            "Items, and callbacks, including every request and response media."
         ),
     ),
     "behavior.remote-reference-lock": ExperimentalFeature(

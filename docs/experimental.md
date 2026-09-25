@@ -6,6 +6,7 @@ This page lists features that are available but still experimental.
 
 | ID | Kind | Target | Since | Tracking |
 |----|------|--------|-------|----------|
+| `behavior.openapi-api-scope` | behavior | `--openapi-scopes api and OpenAPIScope.Api` | 0.83.0 | - |
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
@@ -23,6 +24,16 @@ This page lists features that are available but still experimental.
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
 
 ## Details
+
+### `behavior.openapi-api-scope`
+
+- **Kind:** behavior
+- **Target:** `--openapi-scopes api and OpenAPIScope.Api`
+- **Since:** 0.83.0
+
+The OpenAPI API scope is experimental; the declarations it collects and the models it generates for them may change while API-level generation is completed.
+
+Only an explicit api scope selects it, and the default remains schemas. It collects component schemas, typed parameter, request-body, response and header components, root paths, webhooks, reusable Path Items, and callbacks, including every request and response media.
 
 ### `behavior.batch-generation-jobs`
 

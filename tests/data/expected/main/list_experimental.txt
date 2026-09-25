@@ -1,5 +1,6 @@
 ID                                     Kind          Target                                                           Since   Tracking
 -------------------------------------  ------------  ---------------------------------------------------------------  ------  --------
+behavior.openapi-api-scope             behavior      --openapi-scopes api and OpenAPIScope.Api                        0.83.0  -
 behavior.batch-generation-jobs         behavior      [tool.datamodel-codegen.jobs], --job, --all-jobs                 0.72.3  -
 behavior.remote-reference-lock         behavior      datamodel-codegen.lock, --lockfile, --update-lock, and --locked  0.72.3  -
 cli-option.generate-schema-validators  cli-option    --generate-schema-validators                                     0.66.1  -
@@ -17,6 +18,10 @@ input-format.protobuf                  input-format  --input-file-type protobuf 
 input-format.xmlschema                 input-format  --input-file-type xmlschema                                      0.59.0  -
 
 Notes:
+behavior.openapi-api-scope:
+  Only an explicit api scope selects it, and the default remains schemas. It collects component
+  schemas, typed parameter, request-body, response and header components, root paths, webhooks,
+  reusable Path Items, and callbacks, including every request and response media.
 behavior.batch-generation-jobs:
   Define named generation jobs in [tool.datamodel-codegen.jobs] and select them with --job or
   --all-jobs. Each selected job has its own input and output, and the full selection is validated

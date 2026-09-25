@@ -1,5 +1,14 @@
 [
   {
+    "id": "behavior.openapi-api-scope",
+    "kind": "behavior",
+    "message": "The OpenAPI API scope is experimental; the declarations it collects and the models it generates for them may change while API-level generation is completed.",
+    "note": "Only an explicit api scope selects it, and the default remains schemas. It collects component schemas, typed parameter, request-body, response and header components, root paths, webhooks, reusable Path Items, and callbacks, including every request and response media.",
+    "since_version": "0.83.0",
+    "target": "--openapi-scopes api and OpenAPIScope.Api",
+    "tracking_issue": null
+  },
+  {
     "id": "behavior.batch-generation-jobs",
     "kind": "behavior",
     "message": "Named batch jobs are experimental; their configuration schema, batch output, and transactional/watch execution contracts may change.",

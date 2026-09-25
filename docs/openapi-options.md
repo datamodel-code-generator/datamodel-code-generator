@@ -27,7 +27,7 @@ Controls which sections of the OpenAPI specification to generate models from.
 | Scope | Description |
 |-------|-------------|
 | `schemas` | Generate from `#/components/schemas` (default) |
-| `api` | Generate schema declarations throughout the API, including typed components, parameters, headers, callbacks, and webhooks |
+| `api` | Generate schema declarations throughout the API, including typed components, parameters, headers, callbacks, and webhooks (experimental) |
 | `parameters` | Include parameter models for operations selected by `paths` or `webhooks` |
 | `paths` | Generate models from path operation request bodies and responses |
 | `webhooks` | Generate models from webhook operation request bodies and responses |
@@ -41,6 +41,10 @@ datamodel-codegen --input openapi.yaml --output models.py
 Generates models only from `#/components/schemas`.
 
 ### Generate all API declarations
+
+!!! warning "Experimental"
+    The `api` scope is experimental; the declarations it collects and the models it generates for them may change
+    while API-level generation is completed.
 
 ```bash
 datamodel-codegen --input openapi.yaml --output models.py --openapi-scopes api
