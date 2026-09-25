@@ -153,10 +153,23 @@ def _python_type_union_from_ast(node: ast.BinOp) -> PythonTypeUnion:
     return PythonTypeUnion(tuple(items))
 
 
+def _is_literal_base(base: PythonTypeExpr) -> bool:
+    """Report whether a subscript base is ``Literal`` or a ``….Literal`` alias.
+
+    Only ``Literal[...]`` arguments may carry string/bytes values. Elsewhere a
+    string constant would render as a quoted forward reference, which Pydantic v2
+    evaluates via ``eval()`` during ``model_rebuild()`` — a code-execution sink.
+    """
+    if isinstance(base, PythonTypeQualifiedName):
+        return base.parts[-1] == "Literal"
+    return getattr(base, "value", None) == "Literal"
+
+
 def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
     node: ast.expr,
     *,
     allow_literal: bool,
+    allow_string_literal: bool = False,
 ) -> PythonTypeExpr:
     match node:
         case ast.Name(id=name):
@@ -167,17 +180,31 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
             return PythonTypeQualifiedName(parts)
         case ast.Subscript(value=value, slice=slice_node):
             base = _python_type_expr_from_ast(value, allow_literal=False)
+            strings_allowed = _is_literal_base(base)
             if isinstance(slice_node, ast.Tuple):
-                arguments = tuple(_python_type_expr_from_ast(item, allow_literal=True) for item in slice_node.elts)
+                arguments = tuple(
+                    _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=strings_allowed)
+                    for item in slice_node.elts
+                )
             else:
-                arguments = (_python_type_expr_from_ast(slice_node, allow_literal=True),)
+                arguments = (
+                    _python_type_expr_from_ast(slice_node, allow_literal=True, allow_string_literal=strings_allowed),
+                )
             return PythonTypeSubscript(base, arguments)
         case ast.List(elts=items) if allow_literal:
             return PythonTypeParameterList(
-                tuple(_python_type_expr_from_ast(item, allow_literal=True) for item in items)
+                tuple(
+                    _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=allow_string_literal)
+                    for item in items
+                )
             )
         case ast.Tuple(elts=items) if allow_literal:
-            return PythonTypeTuple(tuple(_python_type_expr_from_ast(item, allow_literal=True) for item in items))
+            return PythonTypeTuple(
+                tuple(
+                    _python_type_expr_from_ast(item, allow_literal=True, allow_string_literal=allow_string_literal)
+                    for item in items
+                )
+            )
         case ast.Starred(value=value) if allow_literal:
             return PythonTypeStarred(_python_type_expr_from_ast(value, allow_literal=False))
         case ast.BinOp(op=ast.BitOr()):
@@ -186,6 +213,13 @@ def _python_type_expr_from_ast(  # noqa: PLR0911, PLR0912
             return _python_type_name("None")
         case ast.Constant(value=value) if allow_literal and value is Ellipsis:
             return PythonTypeEllipsis()
+        case ast.Constant(value=value) if allow_literal and isinstance(value, (str, bytes)):
+            # String/bytes constants are only valid as ``Literal[...]`` members.
+            # In any other position they render as a quoted forward reference
+            # that Pydantic v2 later evaluates, so reject them here.
+            if not allow_string_literal:
+                raise _InvalidPythonTypeAnnotationError
+            return PythonTypeLiteralValue(value)
         case ast.Constant(value=value) if allow_literal and isinstance(value, _LITERAL_VALUE_TYPES):
             return PythonTypeLiteralValue(value)
         case ast.UnaryOp(op=ast.UAdd() | ast.USub() as operator, operand=ast.Constant(value=value)) if (

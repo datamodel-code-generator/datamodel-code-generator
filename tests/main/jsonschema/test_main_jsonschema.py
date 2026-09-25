@@ -16230,6 +16230,10 @@ def test_main_jsonschema_x_python_import_unused(output_file: Path) -> None:
         "Callable[[str], __import__('builtins').print('XPT_EXEC')]",
         "str\nprint('XPT_EXEC')\n#",
         "tuple[*Ts",
+        "list[\"__import__('builtins').print('XPT_EXEC')\"]",
+        "Optional[\"__import__('builtins').print('XPT_EXEC')\"]",
+        "dict[str, \"__import__('builtins').print('XPT_EXEC')\"]",
+        'list["str"]',
     ],
 )
 @pytest.mark.parametrize(
