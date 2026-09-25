@@ -1,0 +1,127 @@
+remotes: 35
+configuration: 86
+mismatch: 84
+pass: 1927
+defs.json [0] validate definition against metaschema: CodecConfigurationError
+dynamicRef.json [0] A $dynamicRef to a $dynamicAnchor in the same schema resource behaves like a normal $ref to an $anchor: CodecConfigurationError
+dynamicRef.json [1] A $dynamicRef to an $anchor in the same schema resource behaves like a normal $ref to an $anchor: CodecConfigurationError
+dynamicRef.json [3] A $dynamicRef resolves to the first $dynamicAnchor still in scope that is encountered when the schema is evaluated: CodecConfigurationError
+dynamicRef.json [4] A $dynamicRef without anchor in fragment behaves identical to $ref: CodecConfigurationError
+dynamicRef.json [5] A $dynamicRef with intermediate scopes that don't include a matching $dynamicAnchor does not affect dynamic scope resolution: CodecConfigurationError
+dynamicRef.json [6] An $anchor with the same name as a $dynamicAnchor is not used for dynamic scope resolution: CodecConfigurationError
+dynamicRef.json [7] A $dynamicRef without a matching $dynamicAnchor in the same schema resource behaves like a normal $ref to $anchor: CodecConfigurationError
+dynamicRef.json [8] A $dynamicRef with a non-matching $dynamicAnchor in the same schema resource behaves like a normal $ref to $anchor: CodecConfigurationError
+dynamicRef.json [9] A $dynamicRef that initially resolves to a schema with a matching $dynamicAnchor resolves to the first $dynamicAnchor in the dynamic scope: CodecConfigurationError
+dynamicRef.json [10] A $dynamicRef that initially resolves to a schema without a matching $dynamicAnchor behaves like a normal $ref to $anchor: CodecConfigurationError
+dynamicRef.json [11] multiple dynamic paths to the $dynamicRef keyword: CodecConfigurationError
+dynamicRef.json [12] after leaving a dynamic scope, it is not used by a $dynamicRef: CodecConfigurationError
+dynamicRef.json [13] strict-tree schema, guards against misspelled properties: CodecConfigurationError
+dynamicRef.json [14] tests for implementation dynamic anchor and reference link: CodecConfigurationError
+dynamicRef.json [15] $ref and $dynamicAnchor are independent of order - $defs first: CodecConfigurationError
+dynamicRef.json [16] $ref and $dynamicAnchor are independent of order - $ref first: CodecConfigurationError
+dynamicRef.json [17] $ref to $dynamicRef finds detached $dynamicAnchor: CodecConfigurationError
+dynamicRef.json [18] $dynamicRef points to a boolean schema: CodecConfigurationError
+dynamicRef.json [19] $dynamicRef skips over intermediate resources - direct reference: CodecConfigurationError
+dynamicRef.json [20] $dynamicRef avoids the root of each schema, but scopes are still registered: CodecConfigurationError
+format.json [0] email format / invalid email string is only an annotation by default
+format.json [1] idn-email format / invalid idn-email string is only an annotation by default
+format.json [2] regex format / invalid regex string is only an annotation by default
+format.json [3] ipv4 format / invalid ipv4 string is only an annotation by default
+format.json [4] ipv6 format / invalid ipv6 string is only an annotation by default
+format.json [5] idn-hostname format / invalid idn-hostname string is only an annotation by default
+format.json [6] hostname format / invalid hostname string is only an annotation by default
+format.json [7] date format / invalid date string is only an annotation by default
+format.json [8] date-time format / invalid date-time string is only an annotation by default
+format.json [9] time format / invalid time string is only an annotation by default
+format.json [10] json-pointer format / invalid json-pointer string is only an annotation by default
+format.json [11] relative-json-pointer format / invalid relative-json-pointer string is only an annotation by default
+format.json [12] iri format / invalid iri string is only an annotation by default
+format.json [13] iri-reference format / invalid iri-reference string is only an annotation by default
+format.json [14] uri format / invalid uri string is only an annotation by default
+format.json [15] uri-reference format / invalid uri-reference string is only an annotation by default
+format.json [16] uri-template format / invalid uri-template string is only an annotation by default
+format.json [17] uuid format / invalid uuid string is only an annotation by default
+format.json [18] duration format / invalid duration string is only an annotation by default
+optional/cross-draft.json [0] refs to historic drafts are processed as historic drafts: CodecConfigurationError
+optional/dependencies-compatibility.json [0] single dependency / missing dependency
+optional/dependencies-compatibility.json [2] multiple dependents required / missing dependency
+optional/dependencies-compatibility.json [2] multiple dependents required / missing other dependency
+optional/dependencies-compatibility.json [2] multiple dependents required / missing both dependencies
+optional/dependencies-compatibility.json [3] dependencies with escaped characters / CRLF missing dependent
+optional/dependencies-compatibility.json [3] dependencies with escaped characters / quoted quotes missing dependent
+optional/dependencies-compatibility.json [4] single schema dependency / wrong type
+optional/dependencies-compatibility.json [4] single schema dependency / wrong type other
+optional/dependencies-compatibility.json [4] single schema dependency / wrong type both
+optional/dependencies-compatibility.json [5] boolean subschemas / object with property having schema false is invalid
+optional/dependencies-compatibility.json [5] boolean subschemas / object with both properties is invalid
+optional/dependencies-compatibility.json [6] schema dependencies with escaped characters / quoted quote
+optional/dependencies-compatibility.json [6] schema dependencies with escaped characters / quoted tab invalid under dependent schema
+optional/dependencies-compatibility.json [6] schema dependencies with escaped characters / quoted quote invalid under dependent schema
+optional/dynamicRef.json [0] $dynamicRef skips over intermediate resources - pointer reference across resource boundary: CodecConfigurationError
+optional/ecmascript-regex.json [2] ECMA 262 regex escapes control codes with \c and upper letter: CodecConfigurationError
+optional/ecmascript-regex.json [3] ECMA 262 regex escapes control codes with \c and lower letter: CodecConfigurationError
+optional/ecmascript-regex.json [10] patterns always use unicode semantics with pattern: CodecConfigurationError
+optional/ecmascript-regex.json [14] pattern with non-ASCII digits: CodecConfigurationError
+optional/ecmascript-regex.json [15] patterns always use unicode semantics with patternProperties: CodecConfigurationError
+optional/ecmascript-regex.json [19] patternProperties with non-ASCII digits: CodecConfigurationError
+optional/format/date-time.json [0] validation of date-time strings / a valid date-time with a leap second, UTC
+optional/format/date-time.json [0] validation of date-time strings / a valid date-time with a leap second, with minus offset
+optional/format/date.json [0] validation of date strings / year 0000 is a leap year (0 % 400 == 0)
+optional/format/duration.json [0] validation of duration strings / fractional duration is not allowed by RFC 3339 ABNF
+optional/format/duration.json [0] validation of duration strings / years and days cannot appear without months
+optional/format/duration.json [0] validation of duration strings / hours and seconds cannot appear without minutes
+optional/format/email.json [0] validation of e-mail addresses / dot before local part is not valid
+optional/format/email.json [0] validation of e-mail addresses / dot after local part is not valid
+optional/format/email.json [0] validation of e-mail addresses / two subsequent dots inside local part are not valid
+optional/format/email.json [0] validation of e-mail addresses / an invalid domain
+optional/format/email.json [0] validation of e-mail addresses / an invalid IPv4-address-literal
+optional/format/email.json [0] validation of e-mail addresses / two email addresses is not valid
+optional/format/email.json [0] validation of e-mail addresses / full "From" header is invalid
+optional/format/email.json [0] validation of e-mail addresses / local part is required
+optional/format/email.json [0] validation of e-mail addresses / domain is required
+optional/format/email.json [0] validation of e-mail addresses / unquoted space in local part is invalid
+optional/format/hostname.json [0] validation of host names / trailing dot
+optional/format/hostname.json [1] validation of A-label (punycode) host names / invalid Punycode
+optional/format/hostname.json [1] validation of A-label (punycode) host names / contains illegal char U+302E Hangul single dot tone mark
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Begins with a Spacing Combining Mark
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Begins with a Nonspacing Mark
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Begins with an Enclosing Mark
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Exceptions that are DISALLOWED, right-to-left chars
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Exceptions that are DISALLOWED, left-to-right chars
+optional/format/hostname.json [1] validation of A-label (punycode) host names / MIDDLE DOT with no preceding 'l'
+optional/format/hostname.json [1] validation of A-label (punycode) host names / MIDDLE DOT with nothing preceding
+optional/format/hostname.json [1] validation of A-label (punycode) host names / MIDDLE DOT with no following 'l'
+optional/format/hostname.json [1] validation of A-label (punycode) host names / MIDDLE DOT with nothing following
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Greek KERAIA not followed by Greek
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Greek KERAIA not followed by anything
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Hebrew GERESH not preceded by Hebrew
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Hebrew GERESH not preceded by anything
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Hebrew GERSHAYIM not preceded by Hebrew
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Hebrew GERSHAYIM not preceded by anything
+optional/format/hostname.json [1] validation of A-label (punycode) host names / KATAKANA MIDDLE DOT with no Hiragana, Katakana, or Han
+optional/format/hostname.json [1] validation of A-label (punycode) host names / KATAKANA MIDDLE DOT with no other characters
+optional/format/hostname.json [1] validation of A-label (punycode) host names / Arabic-Indic digits mixed with Extended Arabic-Indic digits
+optional/format/hostname.json [1] validation of A-label (punycode) host names / ZERO WIDTH JOINER not preceded by Virama
+optional/format/hostname.json [1] validation of A-label (punycode) host names / ZERO WIDTH JOINER not preceded by anything
+optional/format/hostname.json [1] validation of A-label (punycode) host names / contains "--" in the 3rd and 4th position
+optional/format/idn-hostname.json [1] validation of separators in internationalized host names / trailing dot
+optional/format/idn-hostname.json [1] validation of separators in internationalized host names / trailing ideographic full stop
+optional/format/idn-hostname.json [1] validation of separators in internationalized host names / trailing fullwidth full stop
+optional/format/idn-hostname.json [1] validation of separators in internationalized host names / trailing halfwidth ideographic full stop
+optional/format/time.json [0] validation of time strings / a valid time string with leap second, Zulu
+optional/format/time.json [0] validation of time strings / valid leap second, zero time-offset
+optional/format/time.json [0] validation of time strings / valid leap second, positive time-offset
+optional/format/time.json [0] validation of time strings / valid leap second, large positive time-offset
+optional/format/time.json [0] validation of time strings / valid leap second, negative time-offset
+optional/format/time.json [0] validation of time strings / valid leap second, large negative time-offset
+optional/refOfUnknownKeyword.json [0] reference of a root arbitrary keyword : CodecConfigurationError
+optional/refOfUnknownKeyword.json [1] reference of a root arbitrary keyword with encoded ref: CodecConfigurationError
+optional/refOfUnknownKeyword.json [2] reference of an arbitrary keyword of a sub-schema: CodecConfigurationError
+optional/refOfUnknownKeyword.json [3] reference internals of known non-applicator: CodecConfigurationError
+optional/refOfUnknownKeyword.json [4] reference of an arbitrary keyword of a sub-schema with encoded ref: CodecConfigurationError
+pattern.json [2] pattern with Unicode property escape requires unicode mode: CodecConfigurationError
+patternProperties.json [5] patternProperties with Unicode property escape: CodecConfigurationError
+ref.json [6] remote ref, containing refs itself: CodecConfigurationError
+unevaluatedItems.json [18] unevaluatedItems with $dynamicRef: CodecConfigurationError
+unevaluatedProperties.json [21] unevaluatedProperties with $dynamicRef: CodecConfigurationError
+vocabulary.json [0] schema that uses custom metaschema with with no validation vocabulary / no validation: invalid number, but it still validates

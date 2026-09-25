@@ -1,0 +1,32 @@
+{
+  "normalize": [
+    "Application/JSON",
+    " text/plain ; Charset=UTF-8 ",
+    "multipart/form-data; boundary=\"a;b\"",
+    "application/vnd.api+json;version=2;q=0.5",
+    "json",
+    "text/",
+    "text/plain; charset",
+    "text/plain; =x"
+  ],
+  "kinds": [
+    "application/json",
+    "application/problem+json",
+    "application/x-www-form-urlencoded",
+    "multipart/mixed",
+    "text/csv",
+    "application/octet-stream",
+    "image/png"
+  ],
+  "text": [
+    {
+      "hex": "616263"
+    },
+    {
+      "hex": "c3a9"
+    },
+    {
+      "hex": "ff"
+    }
+  ]
+}

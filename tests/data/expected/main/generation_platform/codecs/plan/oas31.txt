@@ -1,0 +1,400 @@
+{
+  "resources": [
+    {
+      "uri": "https://dcg.invalid/inputs/documents/0",
+      "roots": [
+        ""
+      ],
+      "contents": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "https://dcg.invalid/inputs/documents/0#/$defs/Code"
+          }
+        },
+        "$defs": {
+          "Code": {
+            "type": "string",
+            "pattern": "^[0-9]{3}$"
+          }
+        }
+      }
+    },
+    {
+      "uri": "https://dcg.invalid/inputs/documents/1",
+      "roots": [
+        "/Shared"
+      ],
+      "contents": {
+        "Shared": {
+          "type": "object",
+          "properties": {
+            "note": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "uri": "https://dcg.invalid/inputs/root",
+      "roots": [
+        "/components/schemas/Coords",
+        "/components/schemas/Filter",
+        "/components/schemas/Pet",
+        "/paths/~1pets~1{petId}/get/parameters/0/schema",
+        "/paths/~1pets~1{petId}/get/parameters/1/schema",
+        "/paths/~1pets~1{petId}/get/parameters/2/schema",
+        "/paths/~1pets~1{petId}/get/parameters/3/schema",
+        "/paths/~1pets~1{petId}/get/parameters/4/content/application~1json/schema",
+        "/paths/~1pets~1{petId}/get/parameters/5/schema",
+        "/paths/~1pets~1{petId}/get/parameters/6/schema",
+        "/paths/~1pets~1{petId}/get/responses/200/content/application~1json/schema",
+        "/paths/~1pets~1{petId}/parameters/0/schema"
+      ],
+      "contents": {
+        "components": {
+          "schemas": {
+            "Coords": {
+              "type": "object",
+              "properties": {
+                "lat": {
+                  "type": "number"
+                }
+              }
+            },
+            "Filter": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            },
+            "Pet": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[A-Z]"
+                },
+                "code": {
+                  "$ref": "https://dcg.invalid/inputs/documents/0#/$defs/Code"
+                },
+                "shared": {
+                  "$ref": "https://dcg.invalid/inputs/documents/1#/Shared"
+                },
+                "tag": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "default": null
+                },
+                "count": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "multipleOf": 0.5
+                },
+                "document": {
+                  "$ref": "https://dcg.invalid/inputs/documents/0#"
+                }
+              }
+            }
+          }
+        },
+        "paths": {
+          "/pets/{petId}": {
+            "get": {
+              "parameters": [
+                {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Filter"
+                  }
+                },
+                {
+                  "schema": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Coords"
+                      }
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "enum": [
+                        1,
+                        2,
+                        3
+                      ]
+                    }
+                  }
+                },
+                {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "https://dcg.invalid/inputs/root#/components/schemas/Pet"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "parameters": [
+              {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "schemas": [
+    "parameter cookie session - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema",
+    "parameter header X-Trace - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/2/schema",
+    "parameter path petId - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/parameters/0/schema",
+    "parameter query coords - application/json https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/content/application~1json/schema",
+    "parameter query filter - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/1/schema",
+    "parameter query ids - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/5/schema",
+    "parameter query tags - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/0/schema",
+    "parameter query when - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/6/schema",
+    "response_body - - 200 application/json https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/documents/0#",
+    "schema - - - - https://dcg.invalid/inputs/documents/0#/$defs/Code",
+    "schema - - - - https://dcg.invalid/inputs/documents/1#/Shared",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Coords",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Coords/properties/lat",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Filter",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Filter/properties/kind",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Filter/properties/size",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Pet",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Pet/properties/code",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Pet/properties/count",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Pet/properties/document",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Pet/properties/name",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Pet/properties/shared",
+    "schema - - - - https://dcg.invalid/inputs/root#/components/schemas/Pet/properties/tag",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/0/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/0/schema/items",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/1/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/2/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/5/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/5/schema/items",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/6/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/6/schema/oneOf/0",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/6/schema/oneOf/1",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
+    "schema - - - - https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/parameters/0/schema"
+  ],
+  "parameters": {
+    "/paths/~1pets~1{petId}/get": [
+      {
+        "location": "query",
+        "name": "tags",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "array",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "api_key",
+          "coords",
+          "filter",
+          "ids",
+          "when"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "filter",
+        "style": "deepObject",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "object",
+        "kind": "string",
+        "fields": [
+          {
+            "name": "kind",
+            "kind": "string",
+            "repeated": false
+          },
+          {
+            "name": "size",
+            "kind": "integer",
+            "repeated": false
+          }
+        ],
+        "additional": null,
+        "reserved_names": [
+          "api_key",
+          "coords",
+          "ids",
+          "tags",
+          "when"
+        ]
+      },
+      {
+        "location": "header",
+        "name": "X-Trace",
+        "style": "simple",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": []
+      },
+      {
+        "location": "cookie",
+        "name": "session",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": []
+      },
+      {
+        "location": "query",
+        "name": "coords",
+        "style": null,
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": "application/json",
+        "shape": "scalar",
+        "kind": "string",
+        "fields": [],
+        "additional": null,
+        "reserved_names": []
+      },
+      {
+        "location": "query",
+        "name": "ids",
+        "style": "pipeDelimited",
+        "explode": false,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "array",
+        "kind": "integer",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "api_key",
+          "coords",
+          "filter",
+          "tags",
+          "when"
+        ]
+      },
+      {
+        "location": "query",
+        "name": "when",
+        "style": "form",
+        "explode": true,
+        "required": false,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "number",
+        "fields": [],
+        "additional": null,
+        "reserved_names": [
+          "api_key",
+          "coords",
+          "filter",
+          "ids",
+          "tags"
+        ]
+      },
+      {
+        "location": "path",
+        "name": "petId",
+        "style": "simple",
+        "explode": false,
+        "required": true,
+        "allow_reserved": false,
+        "content_media_type": null,
+        "shape": "scalar",
+        "kind": "integer",
+        "fields": [],
+        "additional": null,
+        "reserved_names": []
+      }
+    ]
+  },
+  "diagnostics": [],
+  "validation": [
+    "https://dcg.invalid/inputs/root#/components/schemas/Pet {\"name\": \"Rex\", \"code\": \"123\", \"shared\": {\"note\": \"x\"}, \"tag\": null, \"count\": 1} -> valid",
+    "https://dcg.invalid/inputs/root#/components/schemas/Pet {\"name\": \"rex\", \"code\": \"12\", \"tag\": \"\", \"count\": 0} -> schema.pattern@/name,schema.pattern@/code,schema.minLength@/tag,schema.exclusiveMinimum@/count",
+    "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/1/schema {\"kind\": \"a\", \"extra\": 1} -> schema.false@/extra",
+    "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/parameters/0/schema 5 -> valid"
+  ]
+}

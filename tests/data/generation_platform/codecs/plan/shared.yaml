@@ -1,0 +1,6 @@
+Shared:
+  type: object
+  properties:
+    note: {type: string}
+Unused:
+  type: string

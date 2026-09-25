@@ -1,0 +1,364 @@
+{
+  "matches": [
+    {
+      "pattern": "^\\s$",
+      "subjects": [
+        "\t",
+        "\n",
+        "\u000b",
+        "\f",
+        "\r",
+        " ",
+        "\u00a0",
+        "\u1680",
+        "\u2000",
+        "\u2001",
+        "\u2002",
+        "\u2003",
+        "\u2004",
+        "\u2005",
+        "\u2006",
+        "\u2007",
+        "\u2008",
+        "\u2009",
+        "\u200a",
+        "\u2028",
+        "\u2029",
+        "\u202f",
+        "\u205f",
+        "\u3000",
+        "\ufeff",
+        "\b",
+        "\u000e",
+        "\u001f",
+        "!",
+        "\u0085",
+        "\u009f",
+        "\u00a1",
+        "\u167f",
+        "\u1681",
+        "\u180e",
+        "\u1fff",
+        "\u200b",
+        "\u2027",
+        "\u202a",
+        "\u202e",
+        "\u2030",
+        "\u205e",
+        "\u2060",
+        "\u2fff",
+        "\u3001",
+        "\ufefe",
+        "\uff00"
+      ]
+    },
+    {
+      "pattern": "^\\S+$",
+      "subjects": [
+        "abc",
+        "a b",
+        "a\ufeffb",
+        "a\u0085b",
+        "a\u180eb",
+        ""
+      ]
+    },
+    {
+      "pattern": "^[\\w\\s-]+$",
+      "subjects": [
+        "a b-c_9",
+        "a\u3000b",
+        "a.b",
+        "\u00e9"
+      ]
+    },
+    {
+      "pattern": "^\\d+$",
+      "subjects": [
+        "0123456789",
+        "\u0663",
+        "\uff11"
+      ]
+    },
+    {
+      "pattern": "^\\w$",
+      "subjects": [
+        "_",
+        "Z",
+        "\u00e9",
+        "\u212a"
+      ]
+    },
+    {
+      "pattern": "^\\D\\W$",
+      "subjects": [
+        "a!",
+        "\u0663\u00e9",
+        "1!"
+      ]
+    },
+    {
+      "pattern": "a\\b",
+      "subjects": [
+        "a",
+        "ab",
+        "a\u00e9",
+        "a-"
+      ]
+    },
+    {
+      "pattern": "\u00e9\\b",
+      "subjects": [
+        "\u00e9a",
+        "\u00e9\u00e9",
+        "\u00e9"
+      ]
+    },
+    {
+      "pattern": "\\b",
+      "subjects": [
+        "",
+        "-",
+        "a"
+      ]
+    },
+    {
+      "pattern": "\\B",
+      "subjects": [
+        "",
+        "-",
+        "a"
+      ]
+    },
+    {
+      "pattern": "^[\\b]$",
+      "subjects": [
+        "\b",
+        "b",
+        "\\"
+      ]
+    },
+    {
+      "pattern": "^.$",
+      "subjects": [
+        "\ud83d\ude00",
+        "\n",
+        "\r",
+        "\u2028",
+        "\u2029",
+        "\u0085",
+        "a"
+      ]
+    },
+    {
+      "pattern": "^..$",
+      "subjects": [
+        "\ud83d\ude00"
+      ]
+    },
+    {
+      "pattern": "a$",
+      "subjects": [
+        "a",
+        "a\n",
+        "ba"
+      ]
+    },
+    {
+      "pattern": "^a",
+      "subjects": [
+        "ab",
+        "\na",
+        "ba"
+      ]
+    },
+    {
+      "pattern": "^a|b$",
+      "subjects": [
+        "ax",
+        "xb",
+        "xa",
+        "bx"
+      ]
+    },
+    {
+      "pattern": "^(?:a|b)$",
+      "subjects": [
+        "a",
+        "ab"
+      ]
+    },
+    {
+      "pattern": "^(a+)+$",
+      "subjects": [
+        "aaaa",
+        "aaaa!"
+      ]
+    },
+    {
+      "pattern": "^\\x41\\u0042\\uD83D\\uDE00\\/\\.\\*$",
+      "subjects": [
+        "AB\ud83d\ude00/.*",
+        "AB\ud83d\ude00/x*"
+      ]
+    },
+    {
+      "pattern": "^[\\-a-c]+$",
+      "subjects": [
+        "a-c",
+        "d"
+      ]
+    },
+    {
+      "pattern": "^[a-]$",
+      "subjects": [
+        "-",
+        "a",
+        "b"
+      ]
+    },
+    {
+      "pattern": "^[-a]$",
+      "subjects": [
+        "-"
+      ]
+    },
+    {
+      "pattern": "^[^\\s]$",
+      "subjects": [
+        "a",
+        " "
+      ]
+    },
+    {
+      "pattern": "^[\\s\\S]$",
+      "subjects": [
+        "\n",
+        "\ud83d\ude00"
+      ]
+    },
+    {
+      "pattern": "^[^\\d\\D]$",
+      "subjects": [
+        "a",
+        "1"
+      ]
+    },
+    {
+      "pattern": "^[]$",
+      "subjects": [
+        "",
+        "a"
+      ]
+    },
+    {
+      "pattern": "^[^]$",
+      "subjects": [
+        "\n",
+        ""
+      ]
+    },
+    {
+      "pattern": "^a{2}$",
+      "subjects": [
+        "aa",
+        "aaa"
+      ]
+    },
+    {
+      "pattern": "^a{2,}$",
+      "subjects": [
+        "a",
+        "aaaa"
+      ]
+    },
+    {
+      "pattern": "^a{2,3}?b$",
+      "subjects": [
+        "aab",
+        "aaaab"
+      ]
+    },
+    {
+      "pattern": "^a*?b+?c??$",
+      "subjects": [
+        "bc",
+        "aabb"
+      ]
+    },
+    {
+      "pattern": "",
+      "subjects": [
+        ""
+      ]
+    },
+    {
+      "pattern": "()",
+      "subjects": [
+        "x"
+      ]
+    },
+    {
+      "pattern": "\\t\\n\\r\\f\\v",
+      "subjects": [
+        "\t\n\r\f\u000b"
+      ]
+    },
+    {
+      "pattern": "^[\\x41\\u00e9\\t\\]\\/]+$",
+      "subjects": [
+        "A\u00e9\t]/",
+        "B"
+      ]
+    }
+  ],
+  "invalid": [
+    "(?=a)",
+    "(?!a)",
+    "(?<=a)",
+    "(?<!a)",
+    "(?<n>a)",
+    "(?i:a)",
+    "\\1",
+    "\\k<n>",
+    "\\p{L}",
+    "\\P{L}",
+    "\\cA",
+    "\\0",
+    "\\e",
+    "\\uD83D",
+    "\\uDE00",
+    "\\uD83Da",
+    "\\uD83D\\u0041",
+    "\\u{1F600}",
+    "\\x4",
+    "\\x4g",
+    "\\",
+    "[\\B]",
+    "[a",
+    "[\\",
+    "[\\d-z]",
+    "[z-a]",
+    "(a",
+    "a)",
+    "*a",
+    "a**",
+    "a{2}{3}",
+    "{",
+    "}",
+    "]",
+    "a{3,2}",
+    "a{,2}",
+    "a{2",
+    "^*",
+    "a$b",
+    "(^a)",
+    "(a$)",
+    "a^",
+    "$$",
+    "\\b+",
+    "\ud800",
+    "[\\c]",
+    "[\\e]"
+  ]
+}

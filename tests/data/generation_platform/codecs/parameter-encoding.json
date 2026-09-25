@@ -1,0 +1,1507 @@
+{
+  "encode": [
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "explode": false,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "simple",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "explode": false,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "label",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "pairs",
+        "style": "simple",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": "*"
+        }
+      },
+      "value": {
+        "k=x": "v=w"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "pairs",
+        "style": "label",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": "*"
+        }
+      },
+      "value": {
+        "k=x": "v=w"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "explode": false,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "color",
+        "style": "matrix",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": false,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "spaceDelimited",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "spaceDelimited",
+        "explode": false,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "pipeDelimited",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "pipeDelimited",
+        "explode": false,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "color",
+        "style": "deepObject",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "color",
+        "style": "simple",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "color",
+        "style": "simple",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "color",
+        "style": "simple",
+        "explode": false,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "color",
+        "style": "simple",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "cookie",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": "blue"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "cookie",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "blue",
+        "black",
+        "brown"
+      ]
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "color",
+        "style": "cookie",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "R",
+            "kind": "integer"
+          },
+          {
+            "name": "G",
+            "kind": "integer"
+          },
+          {
+            "name": "B",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "R": 100,
+        "G": 200,
+        "B": 150
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "username",
+        "style": "simple",
+        "shape": "scalar"
+      },
+      "value": "di\u1e45n\u0101ga"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "username",
+        "style": "simple",
+        "shape": "scalar"
+      },
+      "value": "\u0627\u0644\u062e\u0648\u0627\u0631\u0632\u0645\u064a\u0651"
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "thing",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "one thing",
+        "another thing"
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "freeForm",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": "",
+          "kind": "integer"
+        }
+      },
+      "value": {
+        "page": 4,
+        "pageSize": 50
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-Token",
+        "style": "simple",
+        "shape": "array",
+        "kind": "integer"
+      },
+      "value": [
+        12345678,
+        90099
+      ]
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "greeting",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "Hello, world!"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "cookie",
+        "style": "cookie",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "greeting"
+          },
+          {
+            "name": "code",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "greeting": "Hello%2C%20world!",
+        "code": 42
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar",
+        "allow_reserved": true
+      },
+      "value": "a/b?c#d&e=f+g[h]%41%zz,i"
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": false,
+        "shape": "array",
+        "allow_reserved": true
+      },
+      "value": [
+        "a,b",
+        "c/d"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple",
+        "shape": "scalar",
+        "allow_reserved": true
+      },
+      "value": "a/b,c;d=e:f@g!%2F"
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "n",
+        "style": "form",
+        "explode": true,
+        "shape": "array",
+        "kind": "number"
+      },
+      "value": [
+        1,
+        1.50,
+        1e400,
+        -0.0
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "i",
+        "style": "form",
+        "explode": true,
+        "shape": "array",
+        "kind": "integer"
+      },
+      "value": [
+        10,
+        1e1,
+        -3.0
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "b",
+        "style": "form",
+        "explode": true,
+        "shape": "array",
+        "kind": "boolean"
+      },
+      "value": [
+        true,
+        false
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "e",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        ""
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "m",
+        "style": "matrix",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "",
+        "x"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "m",
+        "style": "matrix",
+        "explode": false,
+        "shape": "scalar"
+      },
+      "value": ""
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "m",
+        "style": "matrix",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "value": {
+        "a": ""
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "m",
+        "style": "label",
+        "explode": false,
+        "shape": "array"
+      },
+      "value": [
+        "a.b",
+        "c"
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "d",
+        "style": "deepObject",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": ""
+        }
+      },
+      "value": {
+        "a]b": "1",
+        "": "2"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "c",
+        "shape": "scalar",
+        "content_media_type": "application/json"
+      },
+      "value": {
+        "a": [
+          1,
+          "x y"
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "c",
+        "shape": "scalar",
+        "content_media_type": "text/plain"
+      },
+      "value": "a b+c"
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X-C",
+        "shape": "scalar",
+        "content_media_type": "application/vnd.api+json"
+      },
+      "value": {
+        "a": "\u00e9"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          },
+          {
+            "name": "tags",
+            "repeated": true
+          },
+          {
+            "name": "n",
+            "kind": "integer"
+          }
+        ]
+      },
+      "value": {
+        "q": "a b+c~*",
+        "tags": [
+          "x",
+          "y"
+        ],
+        "n": 3
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/json"
+      },
+      "value": {
+        "a": [
+          1,
+          "x&y"
+        ]
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "text/plain"
+      },
+      "value": "a b+c"
+    }
+  ],
+  "failures": [
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": null
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": []
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "value": {}
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": "a"
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        [
+          "nested"
+        ]
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "object",
+        "fields": [
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "value": {
+        "b": "1"
+      }
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": 1
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar",
+        "kind": "integer"
+      },
+      "value": 1.5
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "form",
+        "explode": true,
+        "shape": "scalar",
+        "kind": "boolean"
+      },
+      "value": 1
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple",
+        "shape": "array"
+      },
+      "value": [
+        ""
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "label",
+        "explode": true,
+        "shape": "array"
+      },
+      "value": [
+        "a.b"
+      ]
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "label",
+        "explode": true,
+        "shape": "array",
+        "kind": "number"
+      },
+      "value": [
+        1.5
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "spaceDelimited",
+        "shape": "array"
+      },
+      "value": [
+        "a b"
+      ]
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "q",
+        "style": "pipeDelimited",
+        "shape": "array"
+      },
+      "value": [
+        "a|b"
+      ]
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X",
+        "style": "simple",
+        "shape": "scalar"
+      },
+      "value": "a\r\nInjected: 1"
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X",
+        "style": "simple",
+        "shape": "scalar"
+      },
+      "value": " padded"
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X",
+        "style": "simple",
+        "shape": "array"
+      },
+      "value": [
+        "a,b"
+      ]
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X",
+        "style": "simple",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": ""
+        }
+      },
+      "value": {
+        "a=b": "c"
+      }
+    },
+    {
+      "plan": {
+        "location": "header",
+        "name": "X",
+        "style": "simple",
+        "explode": true,
+        "shape": "object",
+        "additional": {
+          "name": ""
+        }
+      },
+      "value": {
+        "a": "b\tc "
+      }
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "c",
+        "style": "cookie",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "a b"
+    },
+    {
+      "plan": {
+        "location": "cookie",
+        "name": "c d",
+        "style": "cookie",
+        "explode": true,
+        "shape": "scalar"
+      },
+      "value": "ab"
+    },
+    {
+      "plan": {
+        "location": "query",
+        "name": "c",
+        "shape": "scalar",
+        "content_media_type": "text/plain"
+      },
+      "value": 1
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "text/plain"
+      },
+      "value": ""
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded"
+      },
+      "value": {}
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          }
+        ]
+      },
+      "value": "x"
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "q"
+          }
+        ]
+      },
+      "value": {
+        "z": "1"
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "t",
+            "repeated": true
+          }
+        ]
+      },
+      "value": {
+        "t": []
+      }
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "content_media_type": "application/x-www-form-urlencoded",
+        "fields": [
+          {
+            "name": "t",
+            "repeated": true
+          }
+        ]
+      },
+      "value": {
+        "t": "x"
+      }
+    }
+  ],
+  "invalid_plans": [
+    {
+      "location": "query",
+      "name": "q",
+      "style": "spaceDelimited",
+      "shape": "scalar"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "style": "pipeDelimited",
+      "explode": true,
+      "shape": "array"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "style": "deepObject",
+      "explode": false,
+      "shape": "object"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "style": "deepObject",
+      "explode": true,
+      "shape": "array"
+    },
+    {
+      "location": "cookie",
+      "name": "c",
+      "style": "form",
+      "explode": false,
+      "shape": "array"
+    },
+    {
+      "location": "cookie",
+      "name": "c",
+      "style": "cookie",
+      "explode": false,
+      "shape": "object"
+    },
+    {
+      "location": "querystring",
+      "name": "q",
+      "style": "form"
+    },
+    {
+      "location": "querystring",
+      "name": "q"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "style": "form",
+      "content_media_type": "application/json"
+    },
+    {
+      "location": "cookie",
+      "name": "c",
+      "content_media_type": "application/json"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "content_media_type": "application/xml"
+    },
+    {
+      "location": "query",
+      "name": "q",
+      "content_media_type": "application/x-www-form-urlencoded"
+    },
+    {
+      "location": "header",
+      "name": "h",
+      "style": "form"
+    },
+    {
+      "location": "path",
+      "name": "p"
+    }
+  ]
+}

@@ -1,0 +1,490 @@
+{
+  "resources": [
+    {
+      "uri": "https://dcg.invalid/inputs/root",
+      "roots": [
+        "/components/schemas/Pet",
+        "/components/schemas/Strict",
+        "/components/schemas/Numbers",
+        "/components/schemas/Formats",
+        "/components/schemas/Conditional",
+        "/components/schemas/Dependent",
+        "/components/schemas/Never",
+        "/components/schemas/Remote",
+        "/components/schemas/Halves",
+        "/components/schemas/IfOnly",
+        "/paths/~1pets/get/parameters/0/schema"
+      ],
+      "contents": {
+        "openapi": "3.1.0",
+        "paths": {
+          "/pets": {
+            "get": {
+              "parameters": [
+                {
+                  "name": "limit",
+                  "schema": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "components": {
+          "schemas": {
+            "Pet": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^[A-Z]"
+                },
+                "tag": false,
+                "id": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              },
+              "patternProperties": {
+                "^x-": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "Strict": {
+              "$ref": "#/components/schemas/Pet",
+              "unevaluatedProperties": false,
+              "properties": {
+                "extra": true,
+                "alias": {
+                  "pattern": "^[A-Z]"
+                }
+              }
+            },
+            "Numbers": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number",
+                  "multipleOf": 0.1
+                },
+                {
+                  "type": "integer",
+                  "multipleOf": 3
+                }
+              ],
+              "items": false
+            },
+            "Formats": {
+              "type": "object",
+              "properties": {
+                "byte": {
+                  "format": "byte"
+                },
+                "i32": {
+                  "format": "int32"
+                },
+                "local": {
+                  "format": "date-time-local"
+                },
+                "time": {
+                  "format": "time-local"
+                },
+                "rx": {
+                  "format": "regex"
+                },
+                "mail": {
+                  "format": "email"
+                },
+                "custom": {
+                  "format": "unknown-format"
+                },
+                "enum": {
+                  "enum": [
+                    1,
+                    "1",
+                    true,
+                    null,
+                    {
+                      "a": [
+                        1
+                      ]
+                    }
+                  ]
+                },
+                "const": {
+                  "const": {
+                    "$ref": "not-a-reference"
+                  }
+                }
+              }
+            },
+            "Conditional": {
+              "if": {
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "const": "a"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "a"
+                ],
+                "properties": {
+                  "a": true
+                }
+              },
+              "else": {
+                "properties": {
+                  "b": true
+                }
+              },
+              "unevaluatedProperties": false
+            },
+            "Dependent": {
+              "dependentRequired": {
+                "card": [
+                  "billing"
+                ]
+              },
+              "dependentSchemas": {
+                "card": {
+                  "properties": {
+                    "cvv": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "anyOf": [
+                {
+                  "properties": {
+                    "x": true
+                  }
+                },
+                {
+                  "properties": {
+                    "y": true
+                  }
+                }
+              ],
+              "oneOf": [
+                {
+                  "required": [
+                    "x"
+                  ]
+                },
+                {
+                  "required": [
+                    "y"
+                  ]
+                }
+              ],
+              "allOf": [
+                {
+                  "properties": {
+                    "z": true,
+                    "card": true,
+                    "billing": true
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            },
+            "Never": false,
+            "Remote": {
+              "$ref": "https://dcg.invalid/inputs/documents/0#/$defs/Code"
+            },
+            "Halves": {
+              "multipleOf": 0.5
+            },
+            "IfOnly": {
+              "if": {
+                "required": [
+                  "k"
+                ],
+                "properties": {
+                  "k": true
+                }
+              },
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "uri": "https://dcg.invalid/inputs/documents/0",
+      "roots": [
+        ""
+      ],
+      "contents": {
+        "$id": "https://example.invalid/codes.json",
+        "$defs": {
+          "Code": {
+            "$anchor": "code",
+            "type": "string",
+            "pattern": "^[0-9]{3}$"
+          }
+        },
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#code"
+          },
+          "self": {
+            "$ref": "https://example.invalid/codes.json#/$defs/Code"
+          }
+        }
+      }
+    }
+  ],
+  "cases": [
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Pet",
+      "instances": [
+        {
+          "name": "Rex",
+          "id": 1,
+          "x-a": "s",
+          "weight": 1.5
+        },
+        {
+          "name": "rex",
+          "tag": "t",
+          "id": 9223372036854775808,
+          "x-b": 1,
+          "extra": "s"
+        },
+        {},
+        [],
+        {
+          "name": ""
+        }
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Strict",
+      "instances": [
+        {
+          "name": "Rex",
+          "extra": 1,
+          "other": 2
+        },
+        {
+          "name": "Rex",
+          "other": "s"
+        }
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Numbers",
+      "instances": [
+        [
+          0.3,
+          9
+        ],
+        [
+          0.35,
+          10,
+          "x"
+        ],
+        [
+          true
+        ],
+        [
+          1e400,
+          3000000000000000000000
+        ],
+        [
+          0,
+          0
+        ]
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Formats",
+      "instances": [
+        {
+          "byte": "QQ==",
+          "i32": 2147483647,
+          "local": "2024-02-29T23:59:59.123",
+          "time": "00:00:00",
+          "rx": "^a+$",
+          "mail": "a@b.c",
+          "custom": "anything",
+          "enum": {
+            "a": [
+              1
+            ]
+          },
+          "const": {
+            "$ref": "not-a-reference"
+          }
+        },
+        {
+          "byte": "QQ=",
+          "i32": 2147483648,
+          "local": "2023-02-29T10:00:00",
+          "time": "24:00:00",
+          "rx": "(?=a)",
+          "mail": "not-an-email",
+          "enum": 1.0,
+          "const": {
+            "$ref": "x"
+          }
+        },
+        {
+          "byte": "",
+          "i32": true,
+          "local": "2024-01-01t00:00:00",
+          "time": "12:00:00.5",
+          "rx": 123,
+          "enum": true
+        },
+        {
+          "byte": "A===",
+          "i32": 1.5,
+          "local": "2024-01-01T00:00",
+          "time": "1a:00:00",
+          "enum": 1.5
+        },
+        {
+          "byte": "QQ=a",
+          "i32": -2147483648.0,
+          "local": "2024-1-01T00:00:00",
+          "time": "00:00:60"
+        },
+        {
+          "byte": "Q!==",
+          "local": "2024-01-01T00:00:00."
+        },
+        {
+          "local": "2024-01-01 00:00:00"
+        },
+        {
+          "local": "2024-01-01T00:60:00"
+        },
+        {
+          "local": "2024-0a-01T00:00:00"
+        },
+        {
+          "byte": 1,
+          "local": 1
+        }
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Conditional",
+      "instances": [
+        {
+          "kind": "a",
+          "a": 1
+        },
+        {
+          "kind": "a"
+        },
+        {
+          "kind": "b",
+          "b": 1
+        },
+        {
+          "b": 1
+        }
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Dependent",
+      "instances": [
+        {
+          "card": "1",
+          "billing": "x",
+          "cvv": "1",
+          "x": 1,
+          "z": 1
+        },
+        {
+          "card": "1",
+          "cvv": 2,
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "w": 1
+        },
+        "s"
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Never",
+      "instances": [
+        null,
+        {}
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Remote",
+      "instances": [
+        "123",
+        "12",
+        123
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/Halves",
+      "instances": [
+        1,
+        0.25,
+        250
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/components/schemas/IfOnly",
+      "instances": [
+        {
+          "k": 1
+        },
+        {
+          "j": 1
+        }
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/documents/0#",
+      "instances": [
+        {
+          "code": "123",
+          "self": "456"
+        },
+        {
+          "code": "x",
+          "self": "4567"
+        }
+      ]
+    },
+    {
+      "schema": "https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/0/schema",
+      "instances": [
+        0,
+        5,
+        1.0,
+        true,
+        "5"
+      ]
+    }
+  ]
+}

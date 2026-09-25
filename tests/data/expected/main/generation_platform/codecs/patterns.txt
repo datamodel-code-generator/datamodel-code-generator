@@ -1,0 +1,201 @@
+"^\\s$" "\t" -> True
+"^\\s$" "\n" -> True
+"^\\s$" "\u000b" -> True
+"^\\s$" "\f" -> True
+"^\\s$" "\r" -> True
+"^\\s$" " " -> True
+"^\\s$" "\u00a0" -> True
+"^\\s$" "\u1680" -> True
+"^\\s$" "\u2000" -> True
+"^\\s$" "\u2001" -> True
+"^\\s$" "\u2002" -> True
+"^\\s$" "\u2003" -> True
+"^\\s$" "\u2004" -> True
+"^\\s$" "\u2005" -> True
+"^\\s$" "\u2006" -> True
+"^\\s$" "\u2007" -> True
+"^\\s$" "\u2008" -> True
+"^\\s$" "\u2009" -> True
+"^\\s$" "\u200a" -> True
+"^\\s$" "\u2028" -> True
+"^\\s$" "\u2029" -> True
+"^\\s$" "\u202f" -> True
+"^\\s$" "\u205f" -> True
+"^\\s$" "\u3000" -> True
+"^\\s$" "\ufeff" -> True
+"^\\s$" "\b" -> False
+"^\\s$" "\u000e" -> False
+"^\\s$" "\u001f" -> False
+"^\\s$" "!" -> False
+"^\\s$" "\u0085" -> False
+"^\\s$" "\u009f" -> False
+"^\\s$" "\u00a1" -> False
+"^\\s$" "\u167f" -> False
+"^\\s$" "\u1681" -> False
+"^\\s$" "\u180e" -> False
+"^\\s$" "\u1fff" -> False
+"^\\s$" "\u200b" -> False
+"^\\s$" "\u2027" -> False
+"^\\s$" "\u202a" -> False
+"^\\s$" "\u202e" -> False
+"^\\s$" "\u2030" -> False
+"^\\s$" "\u205e" -> False
+"^\\s$" "\u2060" -> False
+"^\\s$" "\u2fff" -> False
+"^\\s$" "\u3001" -> False
+"^\\s$" "\ufefe" -> False
+"^\\s$" "\uff00" -> False
+"^\\S+$" "abc" -> True
+"^\\S+$" "a b" -> False
+"^\\S+$" "a\ufeffb" -> False
+"^\\S+$" "a\u0085b" -> True
+"^\\S+$" "a\u180eb" -> True
+"^\\S+$" "" -> False
+"^[\\w\\s-]+$" "a b-c_9" -> True
+"^[\\w\\s-]+$" "a\u3000b" -> True
+"^[\\w\\s-]+$" "a.b" -> False
+"^[\\w\\s-]+$" "\u00e9" -> False
+"^\\d+$" "0123456789" -> True
+"^\\d+$" "\u0663" -> False
+"^\\d+$" "\uff11" -> False
+"^\\w$" "_" -> True
+"^\\w$" "Z" -> True
+"^\\w$" "\u00e9" -> False
+"^\\w$" "\u212a" -> False
+"^\\D\\W$" "a!" -> True
+"^\\D\\W$" "\u0663\u00e9" -> True
+"^\\D\\W$" "1!" -> False
+"a\\b" "a" -> True
+"a\\b" "ab" -> False
+"a\\b" "a\u00e9" -> True
+"a\\b" "a-" -> True
+"\u00e9\\b" "\u00e9a" -> True
+"\u00e9\\b" "\u00e9\u00e9" -> False
+"\u00e9\\b" "\u00e9" -> False
+"\\b" "" -> False
+"\\b" "-" -> False
+"\\b" "a" -> True
+"\\B" "" -> True
+"\\B" "-" -> True
+"\\B" "a" -> False
+"^[\\b]$" "\b" -> True
+"^[\\b]$" "b" -> False
+"^[\\b]$" "\\" -> False
+"^.$" "\ud83d\ude00" -> True
+"^.$" "\n" -> False
+"^.$" "\r" -> False
+"^.$" "\u2028" -> False
+"^.$" "\u2029" -> False
+"^.$" "\u0085" -> True
+"^.$" "a" -> True
+"^..$" "\ud83d\ude00" -> False
+"a$" "a" -> True
+"a$" "a\n" -> False
+"a$" "ba" -> True
+"^a" "ab" -> True
+"^a" "\na" -> False
+"^a" "ba" -> False
+"^a|b$" "ax" -> True
+"^a|b$" "xb" -> True
+"^a|b$" "xa" -> False
+"^a|b$" "bx" -> False
+"^(?:a|b)$" "a" -> True
+"^(?:a|b)$" "ab" -> False
+"^(a+)+$" "aaaa" -> True
+"^(a+)+$" "aaaa!" -> False
+"^\\x41\\u0042\\uD83D\\uDE00\\/\\.\\*$" "AB\ud83d\ude00/.*" -> True
+"^\\x41\\u0042\\uD83D\\uDE00\\/\\.\\*$" "AB\ud83d\ude00/x*" -> False
+"^[\\-a-c]+$" "a-c" -> True
+"^[\\-a-c]+$" "d" -> False
+"^[a-]$" "-" -> True
+"^[a-]$" "a" -> True
+"^[a-]$" "b" -> False
+"^[-a]$" "-" -> True
+"^[^\\s]$" "a" -> True
+"^[^\\s]$" " " -> False
+"^[\\s\\S]$" "\n" -> True
+"^[\\s\\S]$" "\ud83d\ude00" -> True
+"^[^\\d\\D]$" "a" -> False
+"^[^\\d\\D]$" "1" -> False
+"^[]$" "" -> False
+"^[]$" "a" -> False
+"^[^]$" "\n" -> True
+"^[^]$" "" -> False
+"^a{2}$" "aa" -> True
+"^a{2}$" "aaa" -> False
+"^a{2,}$" "a" -> False
+"^a{2,}$" "aaaa" -> True
+"^a{2,3}?b$" "aab" -> True
+"^a{2,3}?b$" "aaaab" -> False
+"^a*?b+?c??$" "bc" -> True
+"^a*?b+?c??$" "aabb" -> True
+"" "" -> True
+"()" "x" -> True
+"\\t\\n\\r\\f\\v" "\t\n\r\f\u000b" -> True
+"^[\\x41\\u00e9\\t\\]\\/]+$" "A\u00e9\t]/" -> True
+"^[\\x41\\u00e9\\t\\]\\/]+$" "B" -> False
+"(?=a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
+"(?!a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
+"(?<=a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
+"(?<!a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
+"(?<n>a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
+"(?i:a)" -> PatternDialectError Lookaround, named groups, and flags require a schema adapter at offset 1
+"\\1" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
+"\\k<n>" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
+"\\p{L}" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
+"\\P{L}" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
+"\\cA" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
+"\\0" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 1
+"\\e" -> PatternDialectError Unsupported identity escape at offset 1
+"\\uD83D" -> PatternDialectError Lone surrogates are not supported at offset 6
+"\\uDE00" -> PatternDialectError Lone surrogates are not supported at offset 6
+"\\uD83Da" -> PatternDialectError Lone surrogates are not supported at offset 6
+"\\uD83D\\u0041" -> PatternDialectError Lone surrogates are not supported at offset 12
+"\\u{1F600}" -> PatternDialectError Invalid hexadecimal escape at offset 2
+"\\x4" -> PatternDialectError Invalid hexadecimal escape at offset 2
+"\\x4g" -> PatternDialectError Invalid hexadecimal escape at offset 2
+"\\" -> PatternDialectError A pattern cannot end with '\' at offset 1
+"[\\B]" -> PatternDialectError '\B' is not allowed in a character class at offset 2
+"[a" -> PatternDialectError Unterminated character class at offset 2
+"[\\" -> PatternDialectError A pattern cannot end with '\' at offset 2
+"[\\d-z]" -> PatternDialectError A class escape cannot bound a range at offset 5
+"[z-a]" -> PatternDialectError Character class range is out of order at offset 4
+"(a" -> PatternDialectError Unterminated group at offset 2
+"a)" -> PatternDialectError Unmatched ')' at offset 1
+"*a" -> PatternDialectError Nothing to repeat or an unescaped syntax character at offset 0
+"a**" -> PatternDialectError Nothing to repeat or an unescaped syntax character at offset 2
+"a{2}{3}" -> PatternDialectError Nothing to repeat or an unescaped syntax character at offset 4
+"{" -> PatternDialectError Nothing to repeat or an unescaped syntax character at offset 0
+"}" -> PatternDialectError Nothing to repeat or an unescaped syntax character at offset 0
+"]" -> PatternDialectError Nothing to repeat or an unescaped syntax character at offset 0
+"a{3,2}" -> PatternDialectError Quantifier bounds are out of order at offset 6
+"a{,2}" -> PatternDialectError Invalid quantifier bounds at offset 2
+"a{2" -> PatternDialectError Invalid quantifier bounds at offset 3
+"^*" -> PatternDialectError An assertion cannot be quantified at offset 1
+"a$b" -> PatternDialectError '$' is only supported at the end of a top-level branch at offset 2
+"(^a)" -> PatternDialectError '^' is only supported at the start of a top-level branch at offset 1
+"(a$)" -> PatternDialectError '$' is only supported at the end of a top-level branch at offset 3
+"a^" -> PatternDialectError '^' is only supported at the start of a top-level branch at offset 1
+"$$" -> PatternDialectError '$' is only supported at the end of a top-level branch at offset 1
+"\\b+" -> PatternDialectError An assertion cannot be quantified at offset 2
+"\ud800" -> PatternDialectError Lone surrogates are not supported at offset 1
+"[\\c]" -> PatternDialectError Property, back-reference, control, and NUL escapes require a schema adapter at offset 2
+"[\\e]" -> PatternDialectError Unsupported identity escape at offset 2
+source-4096: ok
+source-4097: PatternResourceError Pattern source exceeds 4096 UTF-8 bytes
+source-utf8-4096: ok
+source-utf8-4098: PatternResourceError Pattern source exceeds 4096 UTF-8 bytes
+depth-32: ok
+depth-33: PatternResourceError Group depth exceeds 32
+repeat-1000: ok
+repeat-1001: PatternResourceError Repeat bound 1001 exceeds 1000
+repeat-upper-1001: PatternResourceError Repeat bound 1001 exceeds 1000
+program-size: CodecConfigurationError A compiled pattern exceeds the program size limit of 4096
+re2-rejected: CodecConfigurationError RE2 rejected a planned pattern
+subject-1MiB: True
+subject-1MiB+1: CodecResourceLimitError A pattern subject exceeds 1048576 bytes
+subject-utf8-1MiB: True
+subject-utf8-1MiB+1: CodecResourceLimitError A pattern subject exceeds 1048576 bytes
+cumulative-32MiB: True
+cumulative-32MiB+1: CodecResourceLimitError Pattern subjects exceed the cumulative byte limit for one codec call
+cache: 128/128

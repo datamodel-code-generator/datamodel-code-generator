@@ -1,0 +1,65 @@
+root#/components/schemas/Pet [0] -> valid
+root#/components/schemas/Pet [1] -> schema.pattern /name root#/components/schemas/Pet/properties/name/pattern The value does not satisfy pattern | schema.false /tag root#/components/schemas/Pet/properties/tag No value is allowed at this location | schema.format /id root#/components/schemas/Pet/properties/id/format The value does not match format 'int64' | schema.type /x-b root#/components/schemas/Pet/patternProperties/^x-/type The value does not have an allowed type | schema.type /extra root#/components/schemas/Pet/additionalProperties/type The value does not have an allowed type
+root#/components/schemas/Pet [2] -> schema.required /name root#/components/schemas/Pet/required A required property is missing
+root#/components/schemas/Pet [3] -> schema.type / root#/components/schemas/Pet/type The value does not have an allowed type
+root#/components/schemas/Pet [4] -> schema.minLength /name root#/components/schemas/Pet/properties/name/minLength The value does not satisfy minLength | schema.pattern /name root#/components/schemas/Pet/properties/name/pattern The value does not satisfy pattern
+root#/components/schemas/Strict [0] -> valid
+root#/components/schemas/Strict [1] -> schema.type /other root#/components/schemas/Pet/additionalProperties/type The value does not have an allowed type | schema.false /other root#/components/schemas/Strict/unevaluatedProperties No value is allowed at this location
+root#/components/schemas/Numbers [0] -> valid
+root#/components/schemas/Numbers [1] -> schema.multipleOf /0 root#/components/schemas/Numbers/prefixItems/0/multipleOf The value does not satisfy multipleOf | schema.multipleOf /1 root#/components/schemas/Numbers/prefixItems/1/multipleOf The value does not satisfy multipleOf | schema.false /2 root#/components/schemas/Numbers/items No value is allowed at this location
+root#/components/schemas/Numbers [2] -> schema.type /0 root#/components/schemas/Numbers/prefixItems/0/type The value does not have an allowed type
+root#/components/schemas/Numbers [3] -> valid
+root#/components/schemas/Numbers [4] -> valid
+root#/components/schemas/Formats [0] -> valid
+root#/components/schemas/Formats [1] -> schema.format /byte root#/components/schemas/Formats/properties/byte/format The value does not match format 'byte' | schema.format /i32 root#/components/schemas/Formats/properties/i32/format The value does not match format 'int32' | schema.format /local root#/components/schemas/Formats/properties/local/format The value does not match format 'date-time-local' | schema.format /time root#/components/schemas/Formats/properties/time/format The value does not match format 'time-local' | schema.format /rx root#/components/schemas/Formats/properties/rx/format The value does not match format 'regex' | schema.format /mail root#/components/schemas/Formats/properties/mail/format The value does not match format 'email' | schema.const /const root#/components/schemas/Formats/properties/const/const The value does not satisfy const
+root#/components/schemas/Formats [2] -> valid
+root#/components/schemas/Formats [3] -> schema.format /byte root#/components/schemas/Formats/properties/byte/format The value does not match format 'byte' | schema.format /i32 root#/components/schemas/Formats/properties/i32/format The value does not match format 'int32' | schema.format /local root#/components/schemas/Formats/properties/local/format The value does not match format 'date-time-local' | schema.format /time root#/components/schemas/Formats/properties/time/format The value does not match format 'time-local' | schema.enum /enum root#/components/schemas/Formats/properties/enum/enum The value does not satisfy enum
+root#/components/schemas/Formats [4] -> schema.format /byte root#/components/schemas/Formats/properties/byte/format The value does not match format 'byte' | schema.format /local root#/components/schemas/Formats/properties/local/format The value does not match format 'date-time-local' | schema.format /time root#/components/schemas/Formats/properties/time/format The value does not match format 'time-local'
+root#/components/schemas/Formats [5] -> schema.format /byte root#/components/schemas/Formats/properties/byte/format The value does not match format 'byte' | schema.format /local root#/components/schemas/Formats/properties/local/format The value does not match format 'date-time-local'
+root#/components/schemas/Formats [6] -> schema.format /local root#/components/schemas/Formats/properties/local/format The value does not match format 'date-time-local'
+root#/components/schemas/Formats [7] -> schema.format /local root#/components/schemas/Formats/properties/local/format The value does not match format 'date-time-local'
+root#/components/schemas/Formats [8] -> schema.format /local root#/components/schemas/Formats/properties/local/format The value does not match format 'date-time-local'
+root#/components/schemas/Formats [9] -> valid
+root#/components/schemas/Conditional [0] -> valid
+root#/components/schemas/Conditional [1] -> schema.required /a root#/components/schemas/Conditional/then/required A required property is missing
+root#/components/schemas/Conditional [2] -> schema.false /kind root#/components/schemas/Conditional/unevaluatedProperties No value is allowed at this location
+root#/components/schemas/Conditional [3] -> valid
+root#/components/schemas/Dependent [0] -> valid
+root#/components/schemas/Dependent [1] -> schema.dependentRequired /billing root#/components/schemas/Dependent/dependentRequired A property required by another present property is missing | schema.type /cvv root#/components/schemas/Dependent/dependentSchemas/card/properties/cvv/type The value does not have an allowed type | schema.oneOf / root#/components/schemas/Dependent/oneOf The value does not satisfy oneOf
+root#/components/schemas/Dependent [2] -> schema.false /w root#/components/schemas/Dependent/unevaluatedProperties No value is allowed at this location
+root#/components/schemas/Dependent [3] -> schema.oneOf / root#/components/schemas/Dependent/oneOf The value does not satisfy oneOf
+root#/components/schemas/Never [0] -> schema.false / root#/components/schemas/Never No value is allowed at this location
+root#/components/schemas/Never [1] -> schema.false / root#/components/schemas/Never No value is allowed at this location
+root#/components/schemas/Remote [0] -> valid
+root#/components/schemas/Remote [1] -> schema.pattern / documents/0#/$defs/Code/pattern The value does not satisfy pattern
+root#/components/schemas/Remote [2] -> schema.type / documents/0#/$defs/Code/type The value does not have an allowed type
+root#/components/schemas/Halves [0] -> valid
+root#/components/schemas/Halves [1] -> schema.multipleOf / root#/components/schemas/Halves/multipleOf The value does not satisfy multipleOf
+root#/components/schemas/Halves [2] -> valid
+root#/components/schemas/IfOnly [0] -> valid
+root#/components/schemas/IfOnly [1] -> schema.false /j root#/components/schemas/IfOnly/unevaluatedProperties No value is allowed at this location
+documents/0# [0] -> valid
+documents/0# [1] -> schema.pattern /code documents/0#/$defs/Code/pattern The value does not satisfy pattern | schema.pattern /self documents/0#/$defs/Code/pattern The value does not satisfy pattern
+root#/paths/~1pets/get/parameters/0/schema [0] -> schema.minimum / root#/paths/~1pets/get/parameters/0/schema/minimum The value does not satisfy minimum
+root#/paths/~1pets/get/parameters/0/schema [1] -> valid
+root#/paths/~1pets/get/parameters/0/schema [2] -> valid
+root#/paths/~1pets/get/parameters/0/schema [3] -> schema.type / root#/paths/~1pets/get/parameters/0/schema/type The value does not have an allowed type
+root#/paths/~1pets/get/parameters/0/schema [4] -> schema.type / root#/paths/~1pets/get/parameters/0/schema/type The value does not have an allowed type
+duplicate-resource: CodecConfigurationError A schema resource is bundled twice: https://dcg.invalid/inputs/root
+scalar-root: CodecConfigurationError A schema resource root must be a boolean or an object: https://dcg.invalid/inputs/root
+unresolved-reference: CodecConfigurationError A bundled schema reference cannot be resolved offline from https://dcg.invalid/inputs/root
+missing-pointer: CodecConfigurationError A bundled schema reference cannot be resolved offline from https://dcg.invalid/inputs/root
+non-schema-target: CodecConfigurationError A bundled schema reference from https://dcg.invalid/inputs/root does not target a schema
+non-string-reference: CodecConfigurationError A bundled schema reference at https://dcg.invalid/inputs/root must be a string
+dialect-pattern: CodecConfigurationError A bundled schema pattern at https://dcg.invalid/inputs/root is outside the builtin grammar
+program-size-pattern: CodecConfigurationError A compiled pattern exceeds the program size limit of 4096
+dynamic-reference: CodecConfigurationError A dynamic schema reference at https://dcg.invalid/inputs/root requires an explicit schema adapter
+zero-multiple: CodecConfigurationError A bundled schema at https://dcg.invalid/inputs/root has a non-positive multipleOf
+boolean-multiple: CodecConfigurationError A bundled schema at https://dcg.invalid/inputs/root has a non-positive multipleOf
+unknown-schema: CodecConfigurationError Schema https://dcg.invalid/inputs/documents/0#/$defs/Missing is not bundled
+container-root: CodecConfigurationError Schema https://dcg.invalid/inputs/root# does not identify a bundled schema
+cached-validator: True
+deep-instance: CodecResourceLimitError The wire value is nested beyond the validator recursion limit
+pattern-budget: CodecResourceLimitError Pattern subjects exceed the cumulative byte limit for one codec call
+pattern-subject: CodecResourceLimitError A pattern subject exceeds 1048576 bytes
+bundled-boolean: valid

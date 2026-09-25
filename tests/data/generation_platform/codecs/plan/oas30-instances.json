@@ -1,0 +1,37 @@
+[
+  {
+    "schema": "https://dcg.invalid/inputs/root#/components/schemas/Item",
+    "value": {
+      "id": 1,
+      "name": null,
+      "tag": "a",
+      "other": "b",
+      "score": 9.5,
+      "choice": "a"
+    }
+  },
+  {
+    "schema": "https://dcg.invalid/inputs/root#/components/schemas/Item",
+    "value": {
+      "id": 1,
+      "name": null,
+      "tag": "a",
+      "other": "b",
+      "score": 9.5,
+      "choice": null
+    }
+  },
+  {
+    "schema": "https://dcg.invalid/inputs/root#/components/schemas/Item",
+    "value": {
+      "id": 0,
+      "other": null,
+      "score": 10,
+      "choice": "c"
+    }
+  },
+  {
+    "schema": "https://dcg.invalid/inputs/root#/paths/~1items/get/parameters/0/schema",
+    "value": 1
+  }
+]

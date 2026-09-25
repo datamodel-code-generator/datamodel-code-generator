@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info: {title: Wire plan, version: "1"}
+security:
+  - ApiKey: []
+  - Bearer: []
+paths:
+  /pets/{petId}:
+    parameters:
+      - {name: petId, in: path, required: true, schema: {type: integer, format: int64}}
+    get:
+      parameters:
+        - {name: tags, in: query, schema: {type: array, items: {type: string}}}
+        - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Filter"}}
+        - {name: X-Trace, in: header, schema: {type: [string, "null"]}}
+        - {name: session, in: cookie, schema: {type: string}}
+        - name: coords
+          in: query
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Coords"}
+        - {name: ids, in: query, style: pipeDelimited, explode: false, schema: {type: array, items: {enum: [1, 2, 3]}}}
+        - {name: when, in: query, schema: {oneOf: [{type: integer}, {type: number}]}}
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+components:
+  securitySchemes:
+    ApiKey: {type: apiKey, in: query, name: api_key}
+    Bearer: {type: http, scheme: bearer}
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string, pattern: "^[A-Z]"}
+        code: {$ref: "codes.json#/$defs/Code"}
+        shared: {$ref: "shared.yaml#/Shared"}
+        tag: {type: [string, "null"], minLength: 1, default: null}
+        count: {type: integer, exclusiveMinimum: 0, multipleOf: 0.5}
+        document: {$ref: "codes.json"}
+    Filter:
+      type: object
+      properties:
+        kind: {type: string}
+        size: {type: integer}
+      additionalProperties: false
+    Coords:
+      type: object
+      properties:
+        lat: {type: number}

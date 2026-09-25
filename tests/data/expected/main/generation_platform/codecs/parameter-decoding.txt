@@ -1,0 +1,86 @@
+path color simple scalar/integer {"path":"42"}: 42
+path color simple scalar/integer {"path":"042"}: WireValidationError parameter.lexical
+path color simple scalar/integer {"path":"4.0"}: WireValidationError parameter.lexical
+path color simple scalar/integer {"path":"11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"}: CodecResourceLimitError An integer exceeds the interpreter's decimal conversion limit
+path color simple scalar/number {"path":"-1.5e3"}: -1.5E+3
+path color simple scalar/number {"path":"1"}: 1
+path color simple scalar/number {"path":"+1"}: WireValidationError parameter.lexical
+path color simple scalar/boolean {"path":"true"}: true
+path color simple scalar/boolean {"path":"True"}: WireValidationError parameter.lexical
+path color simple scalar/string {"path":"a%2Fb%zz"}: WireValidationError parameter.percent
+path color simple scalar/string {"path":"%C3%A9"}: "é"
+path color simple scalar/string {"path":{"hex":"c3a9"}}: "é"
+path color simple scalar/string {"path":"%C3"}: WireValidationError parameter.encoding
+path color simple scalar/string {}: UNSET
+path color simple array/string {"path":""}: WireValidationError parameter.empty
+path color simple object/string {"path":"R,1,G"}: WireValidationError parameter.object
+path color simple* object/string {"path":"R=1,G"}: WireValidationError parameter.object
+path color simple* object/string {"path":"R=1,R=2"}: WireValidationError parameter.duplicate
+path color simple* object/string {"path":"X=1"}: WireValidationError parameter.undeclared
+path color label scalar/string {"path":"blue"}: WireValidationError parameter.syntax
+path color label* array/string {"path":"."}: WireValidationError parameter.empty
+path color label* array/string {"path":".a.b"}: ["a","b"]
+path color matrix scalar/string {"path":";color"}: ""
+path color matrix scalar/string {"path":";color="}: ""
+path color matrix scalar/string {"path":";other=x"}: WireValidationError parameter.syntax
+path color matrix scalar/string {"path":";color=a;color=b"}: WireValidationError parameter.duplicate
+path color matrix array/string {"path":";color="}: WireValidationError parameter.empty
+path color matrix* array/string {"path":";color=a;color"}: ["a",""]
+path color matrix* object/string {"path":";a;b=%3B"}: {"a":"","b":";"}
+path color application/json scalar/string {"path":"%7B%22a%22%3A1%7D"}: {"a":1}
+path color application/json scalar/string {"path":"%7B"}: WireValidationError json.syntax
+path color application/json scalar/string {}: UNSET
+query color form scalar/string {"query":"color=blue&color=red"}: WireValidationError parameter.duplicate
+query color form scalar/string {"query":"other=1"}: UNSET
+query color form scalar/string {"query":"color"}: ""
+query color form scalar/string {"query":"color=a+b%2Bc&&"}: "a b+c"
+query color form* array/string {"query":"color=a&color=&x=1&color=b"}: ["a","","b"]
+query color form* array/string {"query":"x=1"}: UNSET
+query color form array/string {"query":"color=a,b%2Cc"}: ["a","b,c"]
+query color form array/string {"query":"color="}: WireValidationError parameter.empty
+query color spaceDelimited array/string {"query":"color=a%20b+c d"}: ["a","b","c","d"]
+query color pipeDelimited array/string {"query":"color=a%7Cb%7cc|d"}: ["a","b","c","d"]
+query color deepObject* object/string {"query":"color%5BR%5D=1&color[G]=2&x=3"}: {"R":1,"G":2}
+query color deepObject* object/string {"query":"x=3"}: UNSET
+query color deepObject* object/string {"query":"color[R]=1&color[R]=2"}: WireValidationError parameter.duplicate
+query color form* object/string {"query":"a=1&limit=2&b=3"}: {"a":"1","b":"3"}
+query color form* object/string {"query":"limit=2"}: UNSET
+query color form* object/string {"query":"a=1&b=2"}: {"a":"1"}
+query color application/json scalar/string {"query":"color=%7B%22a%22%3A%5B1%5D%7D"}: {"a":[1]}
+query color application/json scalar/string {"query":"color=1&color=2"}: WireValidationError parameter.duplicate
+query color application/json scalar/string {"query":"x=1"}: UNSET
+query color text/plain scalar/string {"query":"color=a+b"}: "a b"
+query color form* scalar/string {"query":"%zz=1"}: WireValidationError parameter.percent
+header X-Rate simple scalar/integer {"headers":[["X-Rate"," 5 "]]}: 5
+header X-Rate simple scalar/integer {"headers":[["x-rate","5"],["X-RATE","6"]]}: WireValidationError parameter.duplicate
+header X-Rate simple scalar/integer {"headers":[["Other","5"]]}: UNSET
+header X-Rate simple scalar/string {"headers":[["X-Rate",{"hex":"ff"}]]}: WireValidationError parameter.encoding
+header X-Rate simple array/string {"headers":[["X-Rate","a, b"],["X-Rate","c"]]}: ["a","b","c"]
+header X-Rate simple array/string {"headers":[["X-Rate",""]]}: WireValidationError parameter.empty
+header X-Rate simple* object/string {"headers":[["X-Rate","R=1, G=2"]]}: {"R":1,"G":2}
+header X-Rate application/json scalar/string {"headers":[["X-Rate"," {\"a\":1} "]]}: {"a":1}
+header X-Rate application/json scalar/string {"headers":[["X-Rate","1"],["X-Rate","2"]]}: WireValidationError parameter.duplicate
+header X-Rate application/json scalar/string {}: UNSET
+header X-Rate application/json scalar/string {"headers":[["X-Rate",{"hex":"ff"}]]}: WireValidationError parameter.encoding
+cookie color form* scalar/string {"headers":[["Cookie","other=x; color=blue"]]}: "blue"
+cookie color form* scalar/string {"headers":[["Cookie","color=a; color=b"]]}: WireValidationError parameter.duplicate
+cookie color form* scalar/string {"headers":[["Cookie","other=x"]]}: UNSET
+cookie color form* scalar/string {"headers":[["Cookie","color=a%2Cb"]]}: "a,b"
+cookie color form* scalar/string {"headers":[["Cookie","color=%zz"]]}: WireValidationError parameter.percent
+cookie color form* array/string {"headers":[["Cookie","color=a"],["Accept","x"],["cookie"," color=b ;;color"]]}: ["a","b",""]
+cookie color form* array/string {"headers":[["Cookie","other=a"]]}: UNSET
+cookie color cookie* object/string {"headers":[["Cookie","R=1; G=2; X=3"]]}: {"R":1,"G":2}
+cookie color cookie* object/string {"headers":[["Cookie","X=3"]]}: UNSET
+cookie color cookie* scalar/string {"headers":[["Cookie","color=a%2Cb"]]}: "a%2Cb"
+cookie color cookie* scalar/string {"headers":[["Cookie",{"hex":"636f6c6f723dff"}]]}: WireValidationError parameter.encoding
+querystring qs application/x-www-form-urlencoded scalar/string {"query":"q=a+b%2Bc&tags=x&tags=y&n=3"}: {"q":"a b+c","tags":["x","y"],"n":3}
+querystring qs application/x-www-form-urlencoded scalar/string {"query":""}: UNSET
+querystring qs application/x-www-form-urlencoded scalar/string {}: UNSET
+querystring qs application/x-www-form-urlencoded scalar/string {"query":"z=1"}: WireValidationError form.undeclared
+querystring qs application/x-www-form-urlencoded scalar/string {"query":"q=1&q=2"}: WireValidationError form.duplicate
+querystring qs application/x-www-form-urlencoded scalar/string {"query":"n=x"}: WireValidationError parameter.lexical
+querystring qs application/json scalar/string {"query":"%7B%22a%22%3A1%7D"}: {"a":1}
+querystring qs application/json scalar/string {"query":"%7B"}: WireValidationError json.syntax
+querystring qs text/plain scalar/string {"query":"a+b%20c"}: "a+b c"
+operation: path.id=7, query.q="a", query.page=2, header.X-Rate=5, cookie.session="abc"
+operation: parameter.lexical The path parameter 'id': The value is not a canonical integer | parameter.required The query parameter 'q' is required | parameter.duplicate The query parameter 'page': A single-valued parameter occurs more than once | parameter.duplicate The header parameter 'X-Rate': A single-valued header occurs more than once
