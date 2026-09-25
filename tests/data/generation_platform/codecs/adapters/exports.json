@@ -1,0 +1,683 @@
+{
+ "options": {
+  "base_class": "app.bases.Base"
+ },
+ "bindings": true,
+ "sources": {
+  "adapted.exports": "from adapted.models import Pet\n\nPetAlias = Pet\n",
+  "adapted.dynamic": "exec('Tags = list')\n"
+ },
+ "declarations": {
+  "compatibility": [
+   {
+    "name": "keepers",
+    "backend": "pydantic_v2.BaseModel",
+    "schemas": [
+     {
+      "pointer": "/components/schemas/Keeper"
+     }
+    ]
+   },
+   {
+    "name": "dataclasses",
+    "backend": "pydantic_v2.dataclass"
+   },
+   {
+    "name": "other-document",
+    "backend": "pydantic_v2.BaseModel",
+    "schemas": [
+     {
+      "pointer": "/components/schemas/Pet",
+      "document": "other.yaml"
+     }
+    ]
+   }
+  ],
+  "exports": [
+   {
+    "schema": {
+     "pointer": "/components/schemas/Keeper"
+    },
+    "module": "adapted.models",
+    "symbol": "Keeper"
+   },
+   {
+    "schema": {
+     "pointer": "/components/schemas/Pet"
+    },
+    "module": "adapted.exports",
+    "symbol": "PetAlias",
+    "direction": "request"
+   },
+   {
+    "schema": {
+     "pointer": "/components/schemas/Pet"
+    },
+    "module": "elsewhere",
+    "symbol": "Pet",
+    "direction": "response"
+   },
+   {
+    "schema": {
+     "pointer": "/components/schemas/Missing"
+    },
+    "module": "adapted.models",
+    "symbol": "Missing"
+   },
+   {
+    "schema": {
+     "pointer": "/components/schemas/Tags"
+    },
+    "module": "adapted.dynamic",
+    "symbol": "Tags"
+   }
+  ]
+ },
+ "invalid": [
+  [
+   "exports",
+   {
+    "schema": {
+     "pointer": "/components/schemas/Pet"
+    },
+    "module": "not a module",
+    "symbol": "Pet"
+   }
+  ],
+  [
+   "exports",
+   {
+    "schema": {
+     "pointer": "/components/schemas/Pet"
+    },
+    "module": "adapted.models",
+    "symbol": "models.Pet"
+   }
+  ],
+  [
+   "compatibility",
+   {
+    "name": "",
+    "backend": "pydantic_v2.BaseModel"
+   }
+  ],
+  [
+   "compatibility",
+   {
+    "name": "v2",
+    "backend": "pydantic_v2.BaseModel",
+    "contract": "builtin-v2"
+   }
+  ],
+  [
+   "compatibility",
+   {
+    "name": "requirement",
+    "backend": "pydantic_v2.BaseModel",
+    "dependencies": [
+     "pydantic",
+     ""
+    ]
+   }
+  ],
+  [
+   "compatibility",
+   {
+    "name": "specifier",
+    "backend": "pydantic_v2.BaseModel",
+    "python_requires": ""
+   }
+  ],
+  [
+   "compatibility",
+   {
+    "name": "repeated",
+    "backend": "pydantic_v2.BaseModel",
+    "dependencies": [
+     "pydantic",
+     "pydantic"
+    ]
+   }
+  ],
+  [
+   "compatibility",
+   {
+    "name": "pinned",
+    "backend": "pydantic_v2.BaseModel",
+    "dependencies": [
+     "pydantic>=2.13.5,<3"
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "schema",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ],
+    "api_version": 2
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": []
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     },
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ],
+    "dependencies": [
+     "app-codecs==1.0"
+    ],
+    "python_requires": ">=3.10,<4"
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v1.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model",
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ],
+     "presence": "sometimes"
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "parameter",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "query"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [],
+     "value_kinds": [
+      "string"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "parameter",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "query"
+     ],
+     "styles": [],
+     "explode_values": [],
+     "value_kinds": [
+      "string"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "schema",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [],
+     "max_subject_bytes": 0
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "media",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "ClientMediaCodecCapabilities",
+     "media_types": [
+      "application/xml"
+     ],
+     "surfaces": [
+      "server"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "media",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "ClientMediaCodecCapabilities",
+     "media_types": [
+      "application/xml"
+     ],
+     "supports_sync": false
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "media",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "ClientMediaCodecCapabilities",
+     "media_types": [
+      "application/xml"
+     ],
+     "incremental_request": true
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "media",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "ClientMediaCodecCapabilities",
+     "media_types": [
+      "application/xml"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "media",
+    "name": "pets",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "ServerMediaCodecCapabilities",
+     "media_types": [
+      "application/xml"
+     ],
+     "surfaces": [
+      "client"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   }
+  ],
+  [
+   "uses",
+   {
+    "operation": "/paths/~1pets/post",
+    "role": "parameter",
+    "location": "query"
+   }
+  ],
+  [
+   "uses",
+   {
+    "operation": "/paths/~1pets/post",
+    "role": "request_body",
+    "media_type": "application/json",
+    "status": "200"
+   }
+  ],
+  [
+   "uses",
+   {
+    "operation": "/paths/~1pets/post",
+    "role": "parameter",
+    "location": "query",
+    "name": "q",
+    "media_type": "application/json"
+   }
+  ]
+ ]
+}

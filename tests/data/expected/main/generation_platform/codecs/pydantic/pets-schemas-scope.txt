@@ -1,3 +1,4 @@
+diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
 diagnostic BND_MODEL_SCOPE_REQUIRED /paths/~1pets/get/parameters/0: The use has no generated native type
 diagnostic BND_MODEL_SCOPE_REQUIRED /paths/~1pets/get/parameters/1: The use has no generated native type
 diagnostic BND_MODEL_SCOPE_REQUIRED /paths/~1pets/get/parameters/2: The use has no generated native type

@@ -1,0 +1,6 @@
+binding /paths/~1pets/post request_body: adapted.models.pets:Pet model pydantic_type_adapter native
+binding /paths/~1pets/post response_body 201: adapted.models.owners:Owner model pydantic_type_adapter native
+use /paths/~1pets/post request_body: codec_0 None None
+use /paths/~1pets/post response_body 201: codec_1 outbound_1 None
+pet: model Pet {'name': 'Rex', 'owner': {'name': 'Ann'}} wire={"name":"Rex","owner":{"name":"Ann"}} presence=['', '/name', '/owner', '/owner/name']
+owner: model Owner {'name': 'Ann'} wire={"name":"Ann"} presence=['', '/name']

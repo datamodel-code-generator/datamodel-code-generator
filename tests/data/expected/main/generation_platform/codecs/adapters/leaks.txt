@@ -1,0 +1,6 @@
+diagnostic MC_ADAPTER_REQUIRED /components/schemas/Pet/properties/owner: The Owner model needs a builtin compatibility declaration or a model adapter
+adapter pet-model /paths/~1adapted/post request_body: registered_adapter native
+binding /paths/~1adapted/post request_body: adapted.models:Pet model registered_adapter native
+binding /paths/~1plain/post request_body: adapted.models:Pet model pydantic_type_adapter native
+use /paths/~1adapted/post request_body: codec_0 None None
+use /paths/~1plain/post request_body: codec_1 None None

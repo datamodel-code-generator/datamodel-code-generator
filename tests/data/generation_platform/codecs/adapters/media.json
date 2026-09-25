@@ -1,0 +1,25 @@
+{
+ "bindings": true,
+ "cases": [
+  {
+   "name": "note",
+   "use": "/paths/~1notes/post request_body application/json",
+   "op": "decode",
+   "value": {
+    "text": "a"
+   }
+  },
+  {
+   "name": "note-missing-text",
+   "use": "/paths/~1notes/post request_body application/json",
+   "op": "decode",
+   "value": {}
+  },
+  {
+   "name": "patch",
+   "use": "/paths/~1notes/post request_body application/merge-patch+json",
+   "op": "decode",
+   "value": {}
+  }
+ ]
+}

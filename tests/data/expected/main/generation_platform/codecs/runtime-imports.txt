@@ -1,6 +1,8 @@
 __init__.py: -
 model_codecs/__init__.py: -
+model_codecs/adapters.py: .capabilities, .context, .errors, .parameters, .patterns, .schema, .unset, .values, .views, .wire, __future__, collections.abc, decimal, re, types, typing, typing_extensions, urllib.parse
 model_codecs/bindings.py: .context, __future__, dataclasses, typing
+model_codecs/capabilities.py: .bindings, .context, .parameters, __future__, dataclasses, typing, typing_extensions
 model_codecs/context.py: __future__, dataclasses, typing
 model_codecs/errors.py: __future__, dataclasses, typing
 model_codecs/media.py: .errors, .wire, __future__, collections.abc, dataclasses, decimal, json, json.encoder, re, typing, urllib.parse
@@ -8,7 +10,9 @@ model_codecs/outbound.py: .context, .errors, .values, .wire, __future__, typing
 model_codecs/parameters.py: .errors, .media, .unset, .wire, __future__, collections.abc, dataclasses, itertools, re, typing, urllib.parse
 model_codecs/patterns.py: .errors, __future__, dataclasses, functools, importlib, string, typing
 model_codecs/pydantic_v2.py: .bindings, .context, .errors, .media, .patterns, .schema, .values, .wire, __future__, collections.abc, dataclasses, decimal, enum, itertools, pydantic, pydantic.dataclasses, pydantic.fields, pydantic_core, types, typing, typing_extensions
+model_codecs/registry.py: .schema, .views, .wire, __future__, collections.abc, dataclasses, referencing, referencing.jsonschema, typing, typing_extensions
 model_codecs/schema.py: .context, .errors, .patterns, .wire, __future__, collections.abc, contextvars, dataclasses, datetime, decimal, functools, importlib, jsonschema, jsonschema.exceptions, math, referencing.exceptions, referencing.jsonschema, typing, typing_extensions, urllib.parse
 model_codecs/unset.py: __future__, enum, typing
 model_codecs/values.py: .errors, .wire, __future__, collections.abc, dataclasses, typing, typing_extensions
-model_codecs/wire.py: __future__, collections.abc, dataclasses, decimal, math, re, types, typing, typing_extensions
+model_codecs/views.py: .bindings, .capabilities, .context, .parameters, .wire, __future__, collections.abc, dataclasses, referencing, typing
+model_codecs/wire.py: .errors, __future__, collections.abc, dataclasses, decimal, math, re, types, typing, typing_extensions

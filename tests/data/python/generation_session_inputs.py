@@ -345,11 +345,12 @@ def generate_product(
     artifact_rewrite: tuple[str, str] | None = None,
     artifact_failure: str = "",
     artifact_append: str = "",
+    model_package: str = "models",
 ) -> tuple[ModelGenerationProduct, int]:
     """Finish ordinary emission, then transfer real immutable values and borrowed sources."""
     observer = GenerationSessionObserver()
     session = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
+        output=Path("models.py"), model_package=model_package, root_selector_document=source.as_uri()
     )
     previous = sys.getprofile()
     sys.setprofile(observer.record)

@@ -1,0 +1,53 @@
+adapter scripted-path /paths/~1items~1{item}/get parameter path item: pydantic_type_adapter native
+adapter scripted-query /paths/~1items~1{item}/get parameter query q: pydantic_type_adapter native
+adapter scripted-header /paths/~1items~1{item}/get parameter header X-Echo: pydantic_type_adapter native
+adapter scripted-cookie /paths/~1items~1{item}/get parameter cookie echo: pydantic_type_adapter native
+adapter scripted-querystring /paths/~1search/get parameter querystring qs: pydantic_type_adapter native
+use /paths/~1items~1{item}/get parameter path item: codec_0 None parameter_0
+use /paths/~1items~1{item}/get parameter query q: codec_1 None parameter_1
+use /paths/~1items~1{item}/get parameter query other: codec_2 None None
+use /paths/~1items~1{item}/get parameter header X-Echo: codec_3 None parameter_3
+use /paths/~1items~1{item}/get parameter cookie echo: codec_4 None parameter_4
+use /paths/~1search/get parameter querystring qs: codec_5 None parameter_5
+use /paths/~1search/get response_body 200: codec_6 outbound_6 None
+use /paths/~1search/get response_body 200 item_stream_array: codec_7 outbound_7 None
+path: fragments path [None=b'a%2Fb']
+path-named: CodecAdapterError A parameter adapter returned anything but one unnamed path fragment
+path-two: CodecAdapterError A parameter adapter returned anything but one unnamed path fragment
+path-space: CodecAdapterError A parameter adapter returned a path fragment outside its syntax or ownership
+path-triplet: CodecAdapterError A parameter adapter returned a path fragment outside its syntax or ownership
+path-other-location: CodecAdapterError A parameter adapter returned a contribution for another location
+path-empty: ParameterEncodingError The item parameter adapter cannot encode an empty array or object
+path-raw: CodecAdapterError A parameter adapter returned a malformed fragment
+path-list: CodecAdapterError A parameter adapter returned a malformed fragment
+query: fragments query [b'q'=b'a,b', b'q'=b'c%20d']
+query-reserved: CodecAdapterError A parameter adapter returned a query fragment outside its syntax or ownership
+query-reserved-encoded: CodecAdapterError A parameter adapter returned a query fragment outside its syntax or ownership
+query-unnamed: CodecAdapterError A parameter adapter returned a query fragment outside its syntax or ownership
+query-space: CodecAdapterError A parameter adapter returned a query fragment outside its syntax or ownership
+query-triplet: CodecAdapterError A parameter adapter returned a query fragment outside its syntax or ownership
+query-raw: CodecAdapterError A parameter adapter returned a malformed fragment
+query-text: CodecAdapterError A parameter adapter returned a malformed fragment
+query-object: CodecAdapterError A parameter adapter returned a contribution for another location
+query-raise: CodecAdapterError A parameter adapter failed to encode a value (from RuntimeError)
+query-error: ParameterEncodingError The value cannot be encoded
+header: fragments header [b'X-Echo'=b'a, b']
+header-folded: fragments header [b'x-echo'=b'a']
+header-other: CodecAdapterError A parameter adapter returned a header fragment outside its syntax or ownership
+header-crlf: CodecAdapterError A parameter adapter returned a header fragment outside its syntax or ownership
+header-token: CodecAdapterError A parameter adapter returned a header fragment outside its syntax or ownership
+cookie: fragments cookie [b'echo'=b'a%2Cb']
+cookie-other: CodecAdapterError A parameter adapter returned a cookie fragment outside its syntax or ownership
+cookie-octet: CodecAdapterError A parameter adapter returned a cookie fragment outside its syntax or ownership
+querystring: querystring b'a=1&b=%20'
+querystring-empty: CodecAdapterError A parameter adapter returned an empty or malformed query
+querystring-triplet: CodecAdapterError A parameter adapter returned an empty or malformed query
+querystring-fragments: CodecAdapterError A parameter adapter returned a contribution for another location
+decode: wire={"a":1}
+decode-unset: UNSET
+decode-raise: CodecAdapterError A parameter adapter failed to decode a value (from RuntimeError)
+decode-error: ParameterEncodingError The value cannot be decoded
+decode-object: CodecAdapterError A parameter adapter returned a value outside the wire domain (from TypeError)
+decode-empty: CodecAdapterError A parameter adapter returned an empty array or object its capabilities exclude
+decode-querystring: wire={"a":"1"}
+stream-build: built

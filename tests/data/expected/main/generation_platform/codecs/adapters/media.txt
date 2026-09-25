@@ -1,0 +1,7 @@
+binding /paths/~1notes/post request_body application/json: adapted.models:Note model pydantic_type_adapter native
+binding /paths/~1notes/post request_body application/merge-patch+json: adapted.models:NotePatch model pydantic_type_adapter native
+use /paths/~1notes/post request_body application/json: codec_0 None None
+use /paths/~1notes/post request_body application/merge-patch+json: codec_1 None None
+note: model Note {'text': 'a'} wire={"text":"a"} presence=['', '/text']
+note-missing-text: WireValidationError schema.required@/text
+patch: model NotePatch {'text': None} wire={} presence=['']

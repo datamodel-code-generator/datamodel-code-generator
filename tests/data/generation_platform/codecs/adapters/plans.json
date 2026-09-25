@@ -1,0 +1,783 @@
+{
+ "scopes": [
+  "schemas",
+  "paths"
+ ],
+ "declarations": {
+  "adapters": [
+   {
+    "kind": "model",
+    "name": "duplicate",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Owner"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "duplicate",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Owner"
+      },
+      "direction": "request"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "client-only",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ],
+     "surfaces": [
+      "client"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "nowhere-exact",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1missing/get",
+      "role": "request_body",
+      "media_type": "application/json"
+     },
+     {
+      "operation": "/paths/~1missing/put",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "nowhere-schema",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Missing"
+      },
+      "direction": "request"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "stream",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "response_body",
+      "status": "200",
+      "media_type": "application/jsonl"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "pet-default",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "pet-exact",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "owner-exact",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "operation": {
+       "pointer": "/paths/~1owners/post"
+      },
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "owner-default",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Owner"
+      },
+      "direction": "request"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "conflict-a",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "additionalProperties",
+      "patternProperties",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Flags"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "conflict-b",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "additionalProperties",
+      "patternProperties",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Flags"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "dataclass-only",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.dataclass"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1owners/post",
+      "role": "response_body",
+      "status": "201",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "media",
+    "name": "xml-media",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ServerMediaCodecCapabilities",
+     "media_types": [
+      "application/xml"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ]
+   },
+   {
+    "kind": "media",
+    "name": "json-media",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ServerMediaCodecCapabilities",
+     "media_types": [
+      "application/json"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Owner"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "narrow-cookie",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "cookie"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false,
+      true
+     ],
+     "value_kinds": [
+      "string"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Tags"
+      },
+      "direction": "request"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "nullable-query",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "query"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false,
+      true
+     ],
+     "value_kinds": [
+      "string"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "parameter",
+      "location": "query",
+      "name": "maybe"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "loose-query",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "query"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false,
+      true
+     ],
+     "value_kinds": [
+      "null",
+      "boolean",
+      "integer",
+      "number",
+      "string",
+      "array",
+      "object"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "parameter",
+      "location": "query",
+      "name": "loose"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "ordered-query",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "query"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false,
+      true
+     ],
+     "value_kinds": [
+      "object"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "parameter",
+      "location": "query",
+      "name": "ordered"
+     }
+    ]
+   },
+   {
+    "kind": "parameter",
+    "name": "body-parameter",
+    "import_ref": "app.codecs:json_cookie",
+    "capabilities": {
+     "record": "ParameterCodecCapabilities",
+     "locations": [
+      "cookie"
+     ],
+     "styles": [
+      "form"
+     ],
+     "explode_values": [
+      false,
+      true
+     ],
+     "value_kinds": [
+      "object"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Owner"
+      },
+      "direction": "response"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "choice",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "anyOf",
+      "minimum",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "response_body",
+      "status": "202",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "pets-or-owners",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "anyOf",
+      "properties",
+      "required",
+      "type",
+      "$ref"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "response_body",
+      "status": "203",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "narrow-choice",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1things/post",
+      "role": "response_body",
+      "status": "206",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "code-request",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1codes/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "model",
+    "name": "mixed",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "operation": {
+       "pointer": "/paths/~1mixed/post",
+       "document": "plans.yaml"
+      },
+      "role": "request_body",
+      "media_type": "application/json"
+     },
+     {
+      "operation": "/paths/~1mixed/post",
+      "role": "response_body",
+      "status": "200",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "composite",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "$ref",
+      "allOf",
+      "anyOf",
+      "if",
+      "properties",
+      "required",
+      "then",
+      "type"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1composites/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "nested",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "$ref",
+      "allOf",
+      "anyOf",
+      "if",
+      "properties",
+      "required",
+      "then",
+      "type"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1composites/post",
+      "role": "response_body",
+      "status": "200",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "choosy",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "$ref",
+      "allOf",
+      "anyOf",
+      "if",
+      "properties",
+      "required",
+      "then",
+      "type"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1composites/post",
+      "role": "response_body",
+      "status": "201",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "shared",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "$ref",
+      "properties",
+      "type"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1composites/post",
+      "role": "response_body",
+      "status": "202",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "twins",
+    "import_ref": "app.codecs:lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "$ref",
+      "properties",
+      "type"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1composites/post",
+      "role": "response_body",
+      "status": "203",
+      "media_type": "application/json"
+     }
+    ]
+   }
+  ]
+ }
+}

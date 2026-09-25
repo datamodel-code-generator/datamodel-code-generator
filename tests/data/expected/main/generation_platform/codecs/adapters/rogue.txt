@@ -1,0 +1,37 @@
+adapter version-two /paths/~1v2/post request_body: pydantic_type_adapter native excluded=[]
+adapter other-capabilities /paths/~1capabilities/post request_body: pydantic_type_adapter native excluded=[]
+adapter failing-capabilities /paths/~1capabilities-failure/post request_body: pydantic_type_adapter native excluded=[]
+adapter failing-compile /paths/~1compile-failure/post request_body: pydantic_type_adapter native excluded=[]
+adapter refusing-compile /paths/~1compile-refusal/post request_body: pydantic_type_adapter native excluded=[]
+adapter scripted-lookaround /paths/~1scripted/post request_body: pydantic_type_adapter native excluded=[]
+adapter small-lookaround /paths/~1limits/post request_body: pydantic_type_adapter native excluded=[]
+adapter box-lookaround /paths/~1boxes/post request_body: pydantic_type_adapter native excluded=['id']
+adapter box-lookaround /paths/~1boxes/post response_body 200: pydantic_type_adapter native excluded=['secret']
+use /paths/~1v2/post request_body: codec_0 None None
+use /paths/~1capabilities/post request_body: codec_1 None None
+use /paths/~1capabilities-failure/post request_body: codec_2 None None
+use /paths/~1compile-failure/post request_body: codec_3 None None
+use /paths/~1compile-refusal/post request_body: codec_4 None None
+use /paths/~1scripted/post request_body: codec_5 None None
+use /paths/~1limits/post request_body: codec_6 None None
+use /paths/~1boxes/post request_body: codec_7 None None
+use /paths/~1boxes/post response_body 200: codec_8 outbound_8 None
+version-two: CodecAdapterError The version-two adapter does not implement codec adapter API version 1
+other-capabilities: CodecAdapterError The other-capabilities adapter reports capabilities that differ from its registration
+failing-capabilities: CodecAdapterError The failing-capabilities adapter failed to report its capabilities (from RuntimeError)
+failing-compile: CodecAdapterError The failing-compile schema adapter failed to compile its schema (from RuntimeError)
+refusing-compile: CodecConfigurationError The schema is outside this adapter
+scripted-valid: model Code 'ab' wire="ab" presence=['']
+scripted-raise: CodecAdapterError A schema adapter failed while validating a value (from RuntimeError)
+scripted-limit: CodecResourceLimitError The subject exceeds the matcher budget
+scripted-list: CodecAdapterError A schema adapter returned something other than a tuple of WireIssue records
+small-fits: model Code 'ab' wire="ab" presence=['']
+small-exceeds: CodecResourceLimitError A pattern subject exceeds 2 bytes
+box-decode: model Box {'id': None, 'code': 'ab', 'codes': ['ab', 'ab'], 'count': 1, 'weight': None, 'secret': 's'} wire={"code":"ab","codes":["ab","ab"],"count":1,"secret":"s"} presence=['', '/code', '/codes', '/codes/0', '/codes/1', '/count', '/secret']
+box-decode-invalid: WireValidationError schema.pattern@/codes/1
+box-decode-read-only: WireValidationError schema.readOnly@/id
+box-send: model Box {'id': 1, 'code': 'ab', 'codes': None, 'count': None, 'weight': None, 'secret': None} wire={"id":1,"code":"ab"} presence=['', '/id', '/code']
+box-send-invalid: WireValidationError schema.pattern@/code
+box-snapshot-float: model Box {'id': 1, 'code': 'ab', 'codes': ['ab'], 'count': None, 'weight': 1.5, 'secret': None} wire={"id":1,"code":"ab","codes":["ab"],"weight":1.5} presence=['', '/id', '/code', '/codes', '/codes/0', '/weight']
+box-decode-decimal: model Box {'id': None, 'code': 'ab', 'codes': None, 'count': None, 'weight': 2.5, 'secret': None} wire={"code":"ab","weight":2.5} presence=['', '/code', '/weight']
+box-decode-decimal-invalid: WireValidationError schema.multipleOf@/weight

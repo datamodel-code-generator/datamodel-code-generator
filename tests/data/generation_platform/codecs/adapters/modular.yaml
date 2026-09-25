@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: Modular codecs
+  version: "1"
+paths:
+  /pets:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/pets.Pet"
+      responses:
+        "201":
+          description: The owner.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/owners.Owner"
+components:
+  schemas:
+    pets.Pet:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        owner:
+          $ref: "#/components/schemas/owners.Owner"
+    owners.Owner:
+      type: object
+      properties:
+        name:
+          type: string

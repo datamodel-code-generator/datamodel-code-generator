@@ -1,3 +1,4 @@
+diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
 use /paths/~1pets/get parameter query limit: native root models:FieldPetsGetQueryLimitParameter models=[('models:FieldPetsGetQueryLimitParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query tags: native root models:FieldPetsGetQueryTagsParameter models=[('models:FieldPetsGetQueryTagsParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query filter: native root models:FieldPetsGetQueryFilterParameter models=[('models:FieldPetsGetQueryFilterParameter', 'root', 'ignore', True)]
@@ -52,6 +53,7 @@ created-server-foreign-binding: CodecBindingError The value was captured for a d
 list-client-decode: model FieldPetsGetResponse(root=[Pet(id=1, name='A', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0), Pet(id=2, name='B', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels={'a', 'b'}, scores={'x': 1}, visits=0)]) set=['root'] wire=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["b","a"],"scores":{"x":1}}] presence=['', '/0', '/0/id', '/0/name', '/0/status', '/0/zz', '/1', '/1/id', '/1/name', '/1/status', '/1/labels', '/1/labels/0', '/1/labels/1', '/1/scores', '/1/scores/x'] extras={"/0/zz":1}
 list-server-encode-plain: wire=[{"id":1,"name":"A","status":"new"},{"id":2,"name":"B","status":"new","labels":["a","b"],"scores":{"x":1}}]
 list-server-encode-snapshot: wire=[{"id":1,"name":"A","status":"new","zz":1},{"id":2,"name":"B","status":"new","labels":["b","a"],"scores":{"x":1}}]
+list-server-send-write-only: model FieldPetsGetResponse(root=[Pet(id=1, name='A', status='new', tag=None, nick_name=None, password=None, kind=None, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0)]) set=['root'] wire=[{"id":1,"name":"A","status":"new"}] presence=['', '/0', '/0/id', '/0/name', '/0/status'] extras={}
 list-client-decode-duplicate: WireValidationError schema.uniqueItems@/0/labels
 patch-client-snapshot: model PetPatch(name='B', tag=None) set=['name'] wire={"name":"B"} presence=['', '/name'] extras={}
 patch-client-from-wire-null: model PetPatch(name='B', tag=None) set=['name', 'tag'] wire={"name":"B","tag":null} presence=['', '/name', '/tag'] extras={}

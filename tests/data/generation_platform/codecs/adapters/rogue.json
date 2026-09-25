@@ -1,0 +1,379 @@
+{
+ "declarations": {
+  "adapters": [
+   {
+    "kind": "schema",
+    "name": "version-two",
+    "import_ref": "app_codecs:version_two",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1v2/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "other-capabilities",
+    "import_ref": "app.codecs:other_capabilities",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1capabilities/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "failing-capabilities",
+    "import_ref": "app.codecs:failing_capabilities",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1capabilities-failure/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "failing-compile",
+    "import_ref": "app.codecs:failing_compile",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1compile-failure/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "refusing-compile",
+    "import_ref": "app.codecs:refusing_compile",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1compile-refusal/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "scripted-lookaround",
+    "import_ref": "app.codecs:scripted_lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1scripted/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "small-lookaround",
+    "import_ref": "app.codecs:small_lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "pattern",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ],
+     "max_subject_bytes": 2
+    },
+    "uses": [
+     {
+      "operation": "/paths/~1limits/post",
+      "role": "request_body",
+      "media_type": "application/json"
+     }
+    ]
+   },
+   {
+    "kind": "schema",
+    "name": "box-lookaround",
+    "import_ref": "app.codecs:box_lookaround",
+    "capabilities": {
+     "record": "SchemaCodecCapabilities",
+     "dialects": [
+      "https://json-schema.org/draft/2020-12/schema"
+     ],
+     "vocabularies": [],
+     "keywords": [
+      "$ref",
+      "items",
+      "multipleOf",
+      "pattern",
+      "properties",
+      "required",
+      "type"
+     ],
+     "pattern_dialects": [
+      "ecma262-u"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Box"
+      },
+      "direction": "request"
+     },
+     {
+      "schema": {
+       "pointer": "/components/schemas/Box"
+      },
+      "direction": "response"
+     }
+    ]
+   }
+  ]
+ },
+ "cases": [
+  {
+   "name": "version-two",
+   "use": "/paths/~1v2/post request_body",
+   "op": "build"
+  },
+  {
+   "name": "other-capabilities",
+   "use": "/paths/~1capabilities/post request_body",
+   "op": "build"
+  },
+  {
+   "name": "failing-capabilities",
+   "use": "/paths/~1capabilities-failure/post request_body",
+   "op": "build"
+  },
+  {
+   "name": "failing-compile",
+   "use": "/paths/~1compile-failure/post request_body",
+   "op": "build"
+  },
+  {
+   "name": "refusing-compile",
+   "use": "/paths/~1compile-refusal/post request_body",
+   "op": "build"
+  },
+  {
+   "name": "scripted-valid",
+   "use": "/paths/~1scripted/post request_body",
+   "op": "decode",
+   "value": "ab"
+  },
+  {
+   "name": "scripted-raise",
+   "use": "/paths/~1scripted/post request_body",
+   "op": "decode",
+   "value": "raise"
+  },
+  {
+   "name": "scripted-limit",
+   "use": "/paths/~1scripted/post request_body",
+   "op": "decode",
+   "value": "limit"
+  },
+  {
+   "name": "scripted-list",
+   "use": "/paths/~1scripted/post request_body",
+   "op": "decode",
+   "value": "list"
+  },
+  {
+   "name": "small-fits",
+   "use": "/paths/~1limits/post request_body",
+   "op": "decode",
+   "value": "ab"
+  },
+  {
+   "name": "small-exceeds",
+   "use": "/paths/~1limits/post request_body",
+   "op": "decode",
+   "value": "abc"
+  },
+  {
+   "name": "box-decode",
+   "use": "/paths/~1boxes/post request_body",
+   "op": "decode",
+   "value": {
+    "code": "ab",
+    "codes": [
+     "ab",
+     "ab"
+    ],
+    "count": 1,
+    "secret": "s"
+   }
+  },
+  {
+   "name": "box-decode-invalid",
+   "use": "/paths/~1boxes/post request_body",
+   "op": "decode",
+   "value": {
+    "code": "ab",
+    "codes": [
+     "ab",
+     "ac"
+    ],
+    "count": 1
+   }
+  },
+  {
+   "name": "box-decode-read-only",
+   "use": "/paths/~1boxes/post request_body",
+   "op": "decode",
+   "value": {
+    "id": 1,
+    "code": "ab"
+   }
+  },
+  {
+   "name": "box-send",
+   "use": "/paths/~1boxes/post response_body 200",
+   "op": "outbound",
+   "value": {
+    "id": 1,
+    "code": "ab",
+    "secret": "s"
+   }
+  },
+  {
+   "name": "box-send-invalid",
+   "use": "/paths/~1boxes/post response_body 200",
+   "op": "outbound",
+   "value": {
+    "id": 1,
+    "code": "b"
+   }
+  },
+  {
+   "name": "box-snapshot-float",
+   "use": "/paths/~1boxes/post response_body 200",
+   "op": "snapshot",
+   "value": {
+    "model": "Box",
+    "args": {
+     "id": 1,
+     "code": "ab",
+     "codes": [
+      "ab"
+     ],
+     "weight": 1.5
+    }
+   }
+  },
+  {
+   "name": "box-decode-decimal",
+   "use": "/paths/~1boxes/post request_body",
+   "op": "decode",
+   "value": {
+    "code": "ab",
+    "weight": 2.5
+   }
+  },
+  {
+   "name": "box-decode-decimal-invalid",
+   "use": "/paths/~1boxes/post request_body",
+   "op": "decode",
+   "value": {
+    "code": "ab",
+    "weight": 2.25
+   }
+  }
+ ]
+}

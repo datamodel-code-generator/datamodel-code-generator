@@ -1,0 +1,60 @@
+diagnostic MC_PATTERN_DIALECT /components/schemas/Code/pattern: The pattern is outside the builtin ECMA-262 Unicode grammar
+diagnostic MC_PARAMETER_ENCODING /paths/~1things/post/parameters/3/schema: A parameter value needs one unambiguous scalar kind
+diagnostic MC_PARAMETER_ENCODING /paths/~1things/post/parameters/1: Expanded query parameter names collide
+diagnostic MC_ADAPTER_CONTRACT : The duplicate adapter is registered twice
+diagnostic MC_ADAPTER_CONTRACT : The nowhere-exact adapter selects no processed use
+diagnostic BND_MODEL_SCOPE_REQUIRED : The nowhere-schema adapter selects no processed use
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/200: The stream adapter selector matches several uses; select a schema direction instead
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/201: The conflict-a and conflict-b adapters both select this use
+diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED /paths/~1things/post/parameters/6: The use's final type has no expression a generated module can import
+diagnostic MC_ADAPTER_CONTRACT /paths/~1owners/post/responses/201: The dataclass-only adapter does not cover this use's backend, native kind, media, or direction
+diagnostic MC_ADAPTER_CONTRACT /paths/~1mixed/post/requestBody: The mixed adapter serves uses of different native types
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/requestBody: The xml-media adapter does not cover this use's backend, native kind, media, or direction
+diagnostic MC_ADAPTER_CONTRACT /paths/~1mixed/post/requestBody: The xml-media adapter does not cover this use's backend, native kind, media, or direction
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/parameters/0: The narrow-cookie adapter does not cover this parameter's location, style, media, or wire kinds
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/parameters/1: The nullable-query adapter does not cover this parameter's location, style, media, or wire kinds
+diagnostic MC_ADAPTER_CONTRACT /paths/~1mixed/post/responses/200: The body-parameter adapter selects no parameter
+diagnostic MC_ADAPTER_CONTRACT /paths/~1owners/post/responses/201: The body-parameter adapter selects no parameter
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/203: The pets-or-owners adapter cannot own a schema whose model unions the codec verifies per member
+diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/206: The narrow-choice adapter does not cover every keyword or pattern dialect of this schema
+diagnostic MC_ADAPTER_CONTRACT /paths/~1composites/post/responses/200: The nested adapter cannot own a schema whose nested or conditional members its direction excludes
+diagnostic MC_ADAPTER_CONTRACT /paths/~1composites/post/responses/201: The choosy adapter cannot own a schema whose nested or conditional members its direction excludes
+diagnostic MC_ADAPTER_CONTRACT /paths/~1composites/post/responses/202: The shared adapter cannot own a schema whose nested or conditional members its direction excludes
+adapter mixed /paths/~1mixed/post response_body 200: registered_adapter native
+adapter pet-exact /paths/~1things/post request_body: registered_adapter native
+adapter owner-exact /paths/~1owners/post request_body: registered_adapter native
+adapter conflict-a /paths/~1things/post response_body 201: pydantic_type_adapter native excluded=[]
+adapter json-media /paths/~1mixed/post response_body 200: registered_adapter native
+adapter json-media /paths/~1owners/post response_body 201: registered_adapter native
+adapter narrow-cookie /paths/~1things/post parameter cookie tags: pydantic_type_adapter native
+adapter nullable-query /paths/~1things/post parameter query maybe: pydantic_type_adapter native
+adapter loose-query /paths/~1things/post parameter query loose: pydantic_type_adapter native
+adapter choice /paths/~1things/post response_body 202: pydantic_type_adapter native excluded=[]
+adapter narrow-choice /paths/~1things/post response_body 206: pydantic_type_adapter native excluded=[]
+adapter code-request /paths/~1codes/post request_body: pydantic_type_adapter native excluded=[]
+adapter composite /paths/~1composites/post request_body: pydantic_type_adapter native excluded=['id']
+adapter twins /paths/~1composites/post response_body 203: pydantic_type_adapter native excluded=['confirmation', 'password']
+use /paths/~1things/post parameter cookie tags: codec_0 None parameter_0
+use /paths/~1things/post parameter query maybe: codec_1 None parameter_1
+use /paths/~1things/post parameter query loose: codec_2 None parameter_2
+use /paths/~1things/post parameter query mixed: codec_3 None None
+use /paths/~1things/post parameter query filter: codec_4 None None
+use /paths/~1things/post parameter query limit: codec_5 None None
+use /paths/~1things/post request_body: codec_6 None None
+use /paths/~1things/post response_body 200: codec_7 outbound_7 None
+use /paths/~1things/post response_body 200 item_stream_array: codec_8 outbound_8 None
+use /paths/~1things/post response_body 201: codec_9 outbound_9 None
+use /paths/~1things/post response_body 202: codec_10 outbound_10 None
+use /paths/~1things/post response_body 206: codec_11 outbound_11 None
+use /paths/~1things/post response_body 203: codec_12 outbound_12 None
+use /paths/~1codes/post request_body: codec_13 None None
+use /paths/~1codes/post response_body 200: codec_14 outbound_14 None
+use /paths/~1mixed/post request_body: codec_15 None None
+use /paths/~1mixed/post response_body 200: codec_16 outbound_16 None
+use /paths/~1composites/post request_body: codec_17 None None
+use /paths/~1composites/post response_body 200: codec_18 outbound_18 None
+use /paths/~1composites/post response_body 201: codec_19 outbound_19 None
+use /paths/~1composites/post response_body 202: codec_20 outbound_20 None
+use /paths/~1composites/post response_body 203: codec_21 outbound_21 None
+use /paths/~1owners/post request_body: codec_22 None None
+use /paths/~1owners/post response_body 201: codec_23 outbound_23 None

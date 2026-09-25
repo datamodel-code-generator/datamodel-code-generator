@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: Codec type expressions
+  version: "1"
+paths:
+  /scalars:
+    post:
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+            pattern: "^[a-z]+$"
+        - name: count
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: ratio
+          in: query
+          schema:
+            type: number
+            maximum: 1.5
+        - name: when
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: mode
+          in: query
+          schema:
+            type: string
+            enum: [a, b]
+        - name: price
+          in: query
+          schema:
+            type: string
+            format: decimal
+            maximum: 10
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: pet
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/Cat"
+              - $ref: "#/components/schemas/Dog"
+            discriminator:
+              propertyName: kind
+        - name: X-Ordered
+          in: header
+          schema:
+            type: object
+            x-python-type: "collections.OrderedDict[str, str]"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Holder"
+      responses:
+        "201":
+          description: A name.
+          content:
+            application/json:
+              schema:
+                type: [string, "null"]
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: cat
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: dog
+    Pets:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+    Holder:
+      type: object
+      required: [pets]
+      properties:
+        pets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pets"
+        label:
+          type: string
+          maxLength: 4
+        mode:
+          type: string
+          enum: [a, b]

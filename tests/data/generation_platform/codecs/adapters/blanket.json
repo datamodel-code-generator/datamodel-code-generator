@@ -1,0 +1,15 @@
+{
+ "options": {
+  "base_class": "app.bases.Base",
+  "read_only_write_only_model_type": "request-response"
+ },
+ "bindings": true,
+ "declarations": {
+  "compatibility": [
+   {
+    "name": "everything",
+    "backend": "pydantic_v2.BaseModel"
+   }
+  ]
+ }
+}

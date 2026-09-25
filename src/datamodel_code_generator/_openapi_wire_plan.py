@@ -61,6 +61,7 @@ if TYPE_CHECKING:
 CodecReason: TypeAlias = (
     BindingReason
     | Literal[
+        "MC_ADAPTER_CONTRACT",
         "MC_ADAPTER_REQUIRED",
         "MC_ALIAS_COLLISION",
         "MC_BINDING_MISSING",
@@ -120,6 +121,7 @@ class CodecDiagnostic:
     source: SourceLocation
     message: str
     operation: OperationId | None = None
+    uses: tuple[TypeUseId, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +134,7 @@ class WirePlan:
     diagnostics: tuple[CodecDiagnostic, ...]
     views: tuple[DirectionalView, ...] = ()
     documents: tuple[tuple[SourceDocumentId, str], ...] = ()
+    version: str = ""
 
     def schema_id(self, location: SourceLocation) -> str:
         """Return the bundled schema identifier of a planned source location."""
@@ -666,6 +669,47 @@ def plan_wire(
         tuple(planner.diagnostics),
         tuple(views),
         tuple(sorted(planner.logical.items())),
+        planner.version,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class ParameterViewPlan:
+    """The effective serialization facts of one parameter declaration, as a parameter adapter sees them."""
+
+    location: ParameterLocation
+    name: str
+    oas_version: str
+    style: str | None
+    explode: bool | None
+    required: bool
+    allow_reserved: bool
+    allow_empty_value: bool
+    content_media_type: str | None
+    reserved_names: tuple[str, ...]
+
+
+def parameter_view(
+    batch: GeneratedTypeContractBatch, version: str, operation: OperationContract, declaration: WireDeclaration
+) -> ParameterViewPlan:
+    """Return one declaration's effective style, explode, and content facts and the names others own."""
+    location = _LOCATIONS[_fact(declaration, "in")]
+    name = declaration.name or ""
+    content = normalize_media_type(declaration.children[0].name or "") if declaration.children else None
+    style = None if content is not None else str(_fact(declaration, "style") or _DEFAULT_STYLES.get(location, "form"))
+    explode = _fact(declaration, "explode")
+    names = [*((_fact(item, "in"), item.name or "") for item in operation.parameters), *_auth_names(batch, operation)]
+    return ParameterViewPlan(
+        location=location,
+        name=name,
+        oas_version=version,
+        style=style,
+        explode=None if style is None else explode if isinstance(explode, bool) else style in {"form", "cookie"},
+        required=_fact(declaration, "required") is True,
+        allow_reserved=_fact(declaration, "allowReserved") is True,
+        allow_empty_value=_fact(declaration, "allowEmptyValue") is True,
+        content_media_type=content,
+        reserved_names=tuple(sorted({other for kind, other in names if kind == location and other != name})),
     )
 
 
@@ -675,7 +719,13 @@ def _planned(
     try:
         return _parameter(planner, declaration, names)
     except _PlanError as error:
-        planner.diagnostics.append(replace(error.diagnostic, operation=operation))
+        planner.diagnostics.append(
+            replace(
+                error.diagnostic,
+                operation=operation,
+                uses=(*declaration.schemas, *(use for child in declaration.children for use in child.schemas)),
+            )
+        )
     return None
 
 
@@ -693,8 +743,8 @@ def _requirement_names(value: FrozenLiteral | None) -> list[str]:
             return []
 
 
-def _auth_names(planner: _WirePlanner, operation: OperationContract) -> list[tuple[object, str]]:
-    schemes = {scheme.name: scheme for scheme in planner.batch.security_schemes}
+def _auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
+    schemes = {scheme.name: scheme for scheme in batch.security_schemes}
     requirements = next((value for name, value in operation.facts if name == "security"), None)
     return list(
         dict.fromkeys(
@@ -730,7 +780,7 @@ def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan
 
 def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[ParameterPlan, ...]:
     declarations = operation.parameters
-    auth = _auth_names(planner, operation)
+    auth = _auth_names(planner.batch, operation)
     names = [*((_fact(item, "in"), item.name or "") for item in declarations), *auth]
     plans = [
         plan
