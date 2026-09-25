@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import json
+import shutil
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
 
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
     generate_target(
-        SOURCE / case["input"],
+        shutil.copy2(SOURCE / case["input"], root / case["input"]),
         model_config=GenerateConfig(
             output=root / f"{package}_models.py",
             input_file_type="openapi",

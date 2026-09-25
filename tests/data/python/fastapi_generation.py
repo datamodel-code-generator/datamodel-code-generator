@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import fields
 from pathlib import Path
 from typing import Any
@@ -102,9 +103,11 @@ def _render(case: dict[str, Any], backend: str, root: Path) -> list[str]:
         "formatters": [Formatter.BUILTIN],
         **case.get("model", {}),
     }
+    root.mkdir(parents=True, exist_ok=True)
+    source = shutil.copy2(SOURCE / case["input"], root / case["input"])
     try:
         project = render_target(
-            SOURCE / case["input"],
+            source,
             model_config=GenerateConfig(**model),
             config=fastapi_config(case.get("config", {}), root),
             generator=FastAPITarget(),
