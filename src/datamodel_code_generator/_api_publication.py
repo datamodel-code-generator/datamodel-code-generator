@@ -162,8 +162,7 @@ class _Batch:
                 return BatchEntry("write", staged._replace(anchor=file.anchor))
             case "write", bytes() as content:
                 return BatchEntry("write", stage_content(self.staging(base), content, file))
-            case _:
-                return BatchEntry("delete", file)
+        return BatchEntry("delete", file)
 
 
 def _quietly(cleanup: Callable[[], None]) -> None:
