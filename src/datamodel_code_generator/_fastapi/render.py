@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import keyword
 import re
+from functools import cache
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
@@ -53,6 +54,8 @@ _IMPORTED: Final = {
 }
 _METHODS: Final = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace"})
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+_RUNTIME_IMPORT: Final = re.compile(r"^from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
+_RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)(\w+(?:\.\w+)*) import", re.MULTILINE)
 _PLAN_DEFAULTS: Final[dict[str, object]] = {
     "style": None,
     "explode": False,
@@ -142,7 +145,7 @@ class ServerRenderer:  # noqa: PLR0904
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered server file in the fixed artifact order."""
         generated = PurePosixPath("_generated")
-        return (
+        files = (
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("application.py"), "application", self.application()),
             *self.routers(),
@@ -152,18 +155,21 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("server")),
             self.file(PurePosixPath("responses.py"), "responses", self.responses()),
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
-            *self.runtime(),
         )
+        return (*files, *self.runtime(files))
 
-    def runtime(self) -> Iterator[RenderedFile]:
-        """Copy the private codec and server runtime sources, in path order."""
-        yield self.file(
-            PurePosixPath("_runtime/__init__.py"), "runtime", (_RUNTIME / "__init__.py").read_text(), verbatim=True
-        )
-        for directory in ("model_codecs", "server"):
-            for source in sorted((_RUNTIME / directory).glob("*.py")):
-                path = PurePosixPath("_runtime", directory, source.name)
-                yield self.file(path, "runtime", source.read_text(), verbatim=True)
+    def runtime(self, files: tuple[RenderedFile, ...]) -> Iterator[RenderedFile]:
+        """Copy the runtime modules the package imports, with their own imports, in ascending path order."""
+        graph = _runtime_imports()
+        pending = [f"{package}/{module}.py" for file in files for package, module in _RUNTIME_IMPORT.findall(file.text)]
+        needed: set[str] = set()
+        while pending:
+            if (module := pending.pop()) not in needed:
+                needed.add(module)
+                pending.extend(graph[module])
+        packages = {f"{PurePosixPath(module).parent}/__init__.py" for module in needed}
+        for path in sorted({"__init__.py", *packages, *needed}):
+            yield self.file(PurePosixPath("_runtime", path), "runtime", (_RUNTIME / path).read_text(), verbatim=True)
 
     def application(self) -> str:
         """Return the application module, rendered from its builtin template."""
@@ -742,6 +748,19 @@ def _overload(overload: str, status: str, media: str, returns: str) -> list[str]
 def _body_signature(status: str, media: str, returns: str) -> str:
     parameters = _items(("self", "*", f"status_code: {status}", f"media_type: {media}"))
     return layout(Group("def body(", parameters, f") -> {returns}"), 4, 0, WIDTH)
+
+
+@cache
+def _runtime_imports() -> dict[str, tuple[str, ...]]:
+    """Map every runtime module to the runtime modules it imports relatively."""
+    graph: dict[str, tuple[str, ...]] = {}
+    for source in _RUNTIME.rglob("*.py"):
+        module = PurePosixPath(source.relative_to(_RUNTIME).as_posix())
+        graph[module.as_posix()] = tuple(
+            f"{module.parents[len(dots) - 1].joinpath(*target.split('.')).as_posix()}.py"
+            for dots, target in _RELATIVE_IMPORT.findall(source.read_text())
+        )
+    return graph
 
 
 def _handlers(module: Module) -> str:
