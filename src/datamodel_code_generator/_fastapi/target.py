@@ -11,7 +11,7 @@ from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._codec_declarations import CodecDeclarations, OperationRef
 from datamodel_code_generator._fastapi.config import FastAPIConfig
-from datamodel_code_generator._fastapi.fingerprints import codec_digest, plan_digest
+from datamodel_code_generator._fastapi.fingerprints import Fingerprints
 from datamodel_code_generator._fastapi.hooks import Extensions, HookRunner, extended
 from datamodel_code_generator._fastapi.partial import check_partial
 from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
@@ -291,6 +291,7 @@ class _TargetData:
             if artifact.path in addresses
         }
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
+        self.fingerprints = Fingerprints()
         self.operation_files = {spec.key: self.paths_of(spec) for spec in plan.operations}
         self.group_files = {group.key: self.paths_of_group(group.stem) for group in plan.groups}
 
@@ -324,6 +325,16 @@ class _TargetData:
         documents = request.documents
         primary = spec.primary
         uses = _uses(spec.contract)
+        projections: list[JSONValue] = [
+            {
+                "use_ids": [documents.use(use) for use in decision.uses],
+                "site": decision.site,
+                "transport": decision.transport,
+                "reason": decision.reason,
+                "source": None if decision.source is None else documents.source(decision.source),
+            }
+            for decision in spec.decisions()
+        ]
         return {
             "operation": f"/selection/selected_operations/{self.selected[spec.contract.id]}",
             "python_name": spec.python_name,
@@ -347,19 +358,10 @@ class _TargetData:
             "binding_uses": [f"/bindings/{self.bindings[use]}" for use in uses if use in self.bindings],
             "model_artifacts": [f"/model/artifacts/{index}" for index in self.model_artifacts(uses)],
             "files": self.pointers(self.operation_files[spec.key]),
-            "plan_sha256": plan_digest(spec, documents),
+            "plan_sha256": self.fingerprints.plan(spec, documents, projections),
             "signature_sha256": self.renderer.signature_digest(spec),
-            "codec_sha256": codec_digest(uses, self.use_bindings, self.type_uses, self.wire),
-            "projections": [
-                {
-                    "use_ids": [documents.use(use) for use in decision.uses],
-                    "site": decision.site,
-                    "transport": decision.transport,
-                    "reason": decision.reason,
-                    "source": None if decision.source is None else documents.source(decision.source),
-                }
-                for decision in spec.decisions()
-            ],
+            "codec_sha256": self.fingerprints.codec(uses, self.use_bindings, self.type_uses, self.wire),
+            "projections": projections,
             "path_slots": [
                 {"wire_name": slot.wire_name, "slot": slot.slot, "occurrence": slot.occurrence}
                 for slot in spec.route.slots
