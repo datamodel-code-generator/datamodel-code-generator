@@ -6,9 +6,15 @@ import inspect
 from collections.abc import Callable, Mapping
 from types import MappingProxyType
 
+from typing_extensions import TypeIs
+
 
 class HandlerConfigurationError(TypeError):
     """Reject a handler mapping that does not provide exactly one fitting callable per operation."""
+
+
+def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
+    return isinstance(value, Mapping)
 
 
 def checked_handlers(
@@ -19,7 +25,7 @@ def checked_handlers(
     Each operation is named with the keywords the endpoint passes. The check reads signatures only; it
     never evaluates annotations, so it proves shapes, not argument or return types.
     """
-    if not isinstance(handlers, Mapping):
+    if not _is_mapping(handlers):
         msg = "handlers must map each operation name to its handler"
         raise HandlerConfigurationError(msg)
     names = {name for name, _ in operations}

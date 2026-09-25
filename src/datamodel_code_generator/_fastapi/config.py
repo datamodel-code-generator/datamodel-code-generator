@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 
+from typing_extensions import TypeIs
+
 from datamodel_code_generator._codec_declarations import CodecAdapterRegistration, OperationRef
 from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._target_config import (
@@ -63,16 +65,11 @@ class FastAPIConfig(TargetConfig):
     def __post_init__(self) -> None:
         """Freeze the given mappings, then reject values the server settings do not allow."""
         for name in ("body_modes", "primary_responses", "operation_names", "router_names"):
-            if isinstance(value := getattr(self, name), Mapping):
-                object.__setattr__(self, name, MappingProxyType(dict(value)))
-        if isinstance(self.parameter_names, Mapping):
+            object.__setattr__(self, name, _frozen(getattr(self, name)))
+        names: object = self.parameter_names
+        if _is_mapping(names):
             object.__setattr__(
-                self,
-                "parameter_names",
-                MappingProxyType({
-                    key: MappingProxyType(dict(names)) if isinstance(names, Mapping) else names
-                    for key, names in self.parameter_names.items()
-                }),
+                self, "parameter_names", MappingProxyType({key: _frozen(value) for key, value in names.items()})
             )
         TargetConfig.__post_init__(self)
 
@@ -80,7 +77,7 @@ class FastAPIConfig(TargetConfig):
         yield from TargetConfig._problems(self)  # noqa: SLF001
         if self.layout not in _LAYOUTS:
             yield _diagnostic("E_CONFIG_VALUE", "layout", "layout must be 'routers' or 'single'")
-        if not isinstance(self.include_request, bool):
+        if not _is_bool(self.include_request):
             yield _diagnostic("E_CONFIG_VALUE", "include_request", "include_request must be a boolean")
         if self.body_mode not in _BODY_MODES:
             yield _diagnostic("E_CONFIG_VALUE", "body_mode", "body_mode must be 'typed' or 'request'")
@@ -88,18 +85,38 @@ class FastAPIConfig(TargetConfig):
         yield from _selector_problems(self.primary_responses, "primary_responses", _response_choice)
         yield from _selector_problems(self.operation_names, "operation_names", _identifier)
         yield from _selector_problems(self.parameter_names, "parameter_names", _parameter_names)
-        if not isinstance(self.router_names, Mapping) or not all(
-            isinstance(key, str) and _identifier(value) for key, value in self.router_names.items()
-        ):
+        if not _router_names_valid(self.router_names):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
-        if not isinstance(self.codec_adapters, tuple) or not all(
-            isinstance(item, CodecAdapterRegistration) for item in self.codec_adapters
-        ):
+        if not _registrations(self.codec_adapters):
             yield _diagnostic("E_CONFIG_VALUE", "codec_adapters", "codec_adapters must be a tuple of registrations")
+
+
+def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
+    return isinstance(value, Mapping)
+
+
+def _is_bool(value: object) -> TypeIs[bool]:
+    return isinstance(value, bool)
+
+
+def _frozen(value: object) -> object:
+    return MappingProxyType(dict(value)) if _is_mapping(value) else value
 
 
 def _identifier(value: object) -> bool:
     return isinstance(value, str) and explicit(value)
+
+
+def _router_names_valid(value: object) -> bool:
+    return _is_mapping(value) and all(isinstance(key, str) and _identifier(name) for key, name in value.items())
+
+
+def _registrations(value: object) -> bool:
+    return _is_tuple(value) and all(isinstance(item, CodecAdapterRegistration) for item in value)
+
+
+def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
+    return isinstance(value, tuple)
 
 
 def _response_choice(value: object) -> bool:
@@ -107,12 +124,16 @@ def _response_choice(value: object) -> bool:
         isinstance(value, ResponseChoice)
         and type(value.status_code) is int
         and _MIN_STATUS <= value.status_code <= _MAX_STATUS
-        and (value.media_type is None or isinstance(value.media_type, str))
+        and _optional_text(value.media_type)
     )
 
 
+def _optional_text(value: object) -> bool:
+    return value is None or isinstance(value, str)
+
+
 def _parameter_names(value: object) -> bool:
-    return isinstance(value, Mapping) and all(
+    return _is_mapping(value) and all(
         isinstance(key, str)
         and key.partition(":")[0] in _PARAMETER_LOCATIONS
         and key.partition(":")[2]
@@ -122,7 +143,7 @@ def _parameter_names(value: object) -> bool:
 
 
 def _selector_problems(value: object, name: str, valid: Callable[[object], bool]) -> Iterator[Diagnostic]:
-    if not isinstance(value, Mapping):
+    if not _is_mapping(value):
         yield _diagnostic("E_CONFIG_VALUE", name, f"{name} must map operation selectors to values")
         return
     for key, item in value.items():
@@ -170,7 +191,7 @@ def _operation_names(value: object, base: Path, option_path: str) -> Mapping[Ope
 
 
 def _router_names(value: object, base: Path, option_path: str) -> Mapping[str, str]:
-    if not isinstance(value, Mapping):
+    if not _is_mapping(value):
         raise _ConfigValueError(option_path, f"{option_path} must be a table")
     return {str(key): _string(name, base, f"{option_path}.{key}") for key, name in value.items()}
 

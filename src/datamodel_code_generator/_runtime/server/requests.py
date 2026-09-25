@@ -9,6 +9,7 @@ from urllib.parse import quote, unquote_to_bytes
 
 from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
+from typing_extensions import TypeIs
 
 from ..model_codecs.media import decode_form, decode_json, decode_text, normalize_media_type
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
@@ -51,10 +52,14 @@ def absent() -> None:
     """Stand in for an omitted optional native parameter; the endpoint passes UNSET to the handler instead."""
 
 
+def _is_model(value: object) -> TypeIs[ModelValue[object]]:
+    return isinstance(value, ModelValue)
+
+
 def _projected(codec: tuple[Callable[[], WireDecoder], CodecContext], wire: WireValue, *, envelope: bool) -> object:
     get, context = codec
     decoded = get().decode(wire, context)
-    return decoded.value if not envelope and isinstance(decoded, ModelValue) else decoded
+    return decoded.value if not envelope and _is_model(decoded) else decoded
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -197,6 +202,8 @@ def _read(media: BodyMedia, body: bytes) -> WireValue | bytes:
             return decode_text(body)
         case "form":
             return decode_form(body, media.fields, media.additional)
+        case _:
+            pass
     return body
 
 

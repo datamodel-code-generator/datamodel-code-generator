@@ -168,6 +168,8 @@ def _json(value: object) -> Doc:
             return Group("{", tuple((f"{key!r}: ", _json(item)) for key, item in value.items()), "}")
         case _ if _is_tuple(value):
             return Group("[", tuple(("", _json(item)) for item in value), "]")
+        case _:
+            pass
     return repr(value)
 
 
@@ -230,6 +232,8 @@ class _Records:
                 return Group("frozenset({", tuple(("", repr(item)) for item in sorted(value, key=repr)), "})")
             case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
                 return self.record(value)
+            case _:
+                pass
         return repr(value)
 
 

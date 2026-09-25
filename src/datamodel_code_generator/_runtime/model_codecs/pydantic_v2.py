@@ -366,6 +366,8 @@ class PydanticModelCodec(Generic[T]):
                         msg = "The value was captured for a different binding"
                         raise CodecBindingError(msg)
                     return self._outbound(freeze_wire(value.wire), MatchBudget(), context)
+                case _:
+                    pass
             return self._outbound(self._native_wire(value, None), MatchBudget(), context)
         except RecursionError:
             raise self._nesting() from None

@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
 
 from starlette.responses import Response
-from typing_extensions import TypeVar
+from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import encode_json, normalize_media_type
@@ -33,7 +33,6 @@ _EMPTY_STATUSES: Final = frozenset({204, 205, 304})
 _MIN_STATUS: Final = 100
 _MAX_STATUS: Final = 599
 _MIN_CONTENT_STATUS: Final = 200
-_PAIR: Final = 2
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -139,9 +138,17 @@ class OperationResponses:
         return self._exact.get(status) or self._ranges.get(status // 100) or self._default
 
 
+def _wrapped(value: object) -> bool:
+    return isinstance(value, (Response, HTTPResult, ModelValue, ModelInput))
+
+
+def _is_result(value: object) -> TypeIs[HTTPResult[object]]:
+    return isinstance(value, HTTPResult)
+
+
 def dispatch(value: object, plan: OperationResponses) -> object:
     """Pass a bare value to FastAPI's response_model unchanged; check and encode an explicit wrapper."""
-    if isinstance(value, (Response, HTTPResult, ModelValue, ModelInput)):
+    if _wrapped(value):
         return respond(value, plan)
     return value
 
@@ -151,7 +158,7 @@ def respond(value: object, plan: OperationResponses) -> Response:
     try:
         if isinstance(value, Response):
             return _checked(value, plan)
-        if isinstance(value, HTTPResult):
+        if _is_result(value):
             return _result(value, plan)
         return _primary(value, plan)
     except CodecError as error:
@@ -234,23 +241,31 @@ def _encode(media: MediaPlan, value: object) -> bytes:
     raise response_failure(msg)
 
 
+def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
+    return isinstance(value, tuple)
+
+
 def _pairs(headers: object) -> tuple[tuple[str, str], ...]:
-    msg = "Result headers must be a tuple of name and value pairs"
-    if not isinstance(headers, tuple):
+    if not _is_tuple(headers):
+        msg = "Result headers must be a tuple of name and value pairs"
         raise response_failure(msg)
-    pairs: list[tuple[str, str]] = []
-    for item in headers:
-        if not (isinstance(item, tuple) and len(item) == _PAIR and all(isinstance(part, str) for part in item)):
-            raise response_failure(msg)
-        name, value = item
-        if not _TOKEN.fullmatch(name) or not _FIELD_VALUE.fullmatch(value):
+    return tuple(_pair(item) for item in headers)
+
+
+def _pair(item: object) -> tuple[str, str]:
+    match item:
+        case tuple((str() as name, str() as value)) if not _TOKEN.fullmatch(name) or not _FIELD_VALUE.fullmatch(value):
             msg = "A result header has an invalid name or value"
             raise response_failure(msg)
-        if name.lower() in _OWNED_HEADERS:
+        case tuple((str() as name, str())) if name.lower() in _OWNED_HEADERS:
             msg = f"The runtime sets the {name} header"
             raise response_failure(msg)
-        pairs.append((name, value))
-    return tuple(pairs)
+        case tuple((str() as name, str() as value)):
+            return name, value
+        case _:
+            pass
+    msg = "Result headers must be a tuple of name and value pairs"
+    raise response_failure(msg)
 
 
 def _headers(headers: object, declared: ResponsePlan) -> tuple[tuple[str, str], ...]:

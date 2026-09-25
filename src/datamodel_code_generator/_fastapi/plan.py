@@ -564,7 +564,7 @@ class Planner:  # noqa: PLR0904
         required: bool,
     ) -> tuple[NativeField | None, Reason, SourceLocation | None]:
         """Return the native declaration of a scalar or one-level list value, or why the adapter reads it."""
-        array = (kinds(schema) or frozenset()) - {"null"} == {"array"}
+        array = (kinds(schema) or frozenset()) - {"null"} == frozenset({"array"})
         item_location, item = self.wire.schema(at(location, "items")) if array else (location, schema)
         scalar, reason = self.scalar(item, bound)
         if scalar is None:
@@ -731,9 +731,12 @@ class Planner:  # noqa: PLR0904
             return None, "unsupported_wire_shape", media.declaration.use_site
         properties = schema.get("properties")
         required = schema.get("required")
-        names = frozenset(str(name) for name in required) if isinstance(required, tuple) else frozenset()
+        names: frozenset[str] = (
+            frozenset(str(name) for name in required) if isinstance(required, tuple) else frozenset()
+        )
+        declared: Mapping[str, WireValue] = properties if isinstance(properties, Mapping) else {}
         fields: list[FormField] = []
-        for name in properties if isinstance(properties, Mapping) else {}:
+        for name in declared:
             field_location, value = self.wire.schema(at(location, "properties", name))
             native, reason, source = self.form_field(
                 name, field_location, value, required=name in names, multipart=media.kind == "multipart"
@@ -747,9 +750,13 @@ class Planner:  # noqa: PLR0904
         self, name: str, location: SourceLocation, schema: Schema, *, required: bool, multipart: bool
     ) -> tuple[NativeField | None, Reason, SourceLocation | None]:
         """Return one native form property, or the reason it needs an adapter."""
-        array = (kinds(schema) or frozenset()) - {"null"} == {"array"}
+        array = (kinds(schema) or frozenset()) - {"null"} == frozenset({"array"})
         _, item = self.wire.schema(at(location, "items")) if array else (location, schema)
-        if multipart and item.get("format") == "binary" and (kinds(item) or frozenset()) - {"null"} == {"string"}:
+        if (
+            multipart
+            and item.get("format") == "binary"
+            and (kinds(item) or frozenset()) - {"null"} == frozenset({"string"})
+        ):
             default = Default.REQUIRED if required else Default.ABSENT
             field = NativeField(api="File", alias=name, scalar=None, array=array, default=default)
             return field, "native_supported", None
@@ -761,10 +768,8 @@ class Planner:  # noqa: PLR0904
             return (), FieldPlan("", "string")
         location, schema = self.wire.schema(media.use.schema)
         properties = schema.get("properties")
-        fields = tuple(
-            self.form_plan(name, *self.wire.schema(at(location, "properties", name)))
-            for name in (properties if isinstance(properties, Mapping) else {})
-        )
+        declared: Mapping[str, WireValue] = properties if isinstance(properties, Mapping) else {}
+        fields = tuple(self.form_plan(name, *self.wire.schema(at(location, "properties", name))) for name in declared)
         additional = schema.get("additionalProperties", True)
         if additional is False:
             return fields, None
@@ -774,7 +779,7 @@ class Planner:  # noqa: PLR0904
 
     def form_plan(self, name: str, location: SourceLocation, schema: Schema) -> FieldPlan:
         """Return the lexical kind of one URL-encoded member and whether it repeats."""
-        if (kinds(schema) or frozenset()) - {"null"} == {"array"}:
+        if (kinds(schema) or frozenset()) - {"null"} == frozenset({"array"}):
             return FieldPlan(name, _lexical(self.wire.schema(at(location, "items"))[1]), repeated=True)
         return FieldPlan(name, _lexical(schema))
 
@@ -947,6 +952,8 @@ def _natively_serialized(plan: ParameterPlan, location: ParameterLocation, *, re
             return False
         case "array" if location != "query" or not plan.explode:
             return False
+        case _:
+            pass
     return (
         plan.content_media_type is None
         and _STYLES.get(location) == plan.style
@@ -1043,8 +1050,8 @@ def _constraints(schema: Schema, scalar: Scalar) -> dict[str, object]:
         keywords.update({name: schema[source] for source, name in STRING_LENGTHS.items() if source in schema})
     if scalar.kind == "int" and (limits := INTEGER_RANGES.get(str(schema.get("format")))) is not None:
         low, high = limits
-        lower = next(((name, value) for name in ("ge", "gt") if number(value := keywords.pop(name, None))), None)
-        upper = next(((name, value) for name in ("le", "lt") if number(value := keywords.pop(name, None))), None)
+        lower = next(((name, bound) for name in ("ge", "gt") if number(bound := keywords.pop(name, None))), None)
+        upper = next(((name, bound) for name in ("le", "lt") if number(bound := keywords.pop(name, None))), None)
         keywords.update((lower,) if lower is not None and Decimal(str(lower[1])) >= low else (("ge", low),))
         keywords.update((upper,) if upper is not None and Decimal(str(upper[1])) <= high else (("le", high),))
     return keywords

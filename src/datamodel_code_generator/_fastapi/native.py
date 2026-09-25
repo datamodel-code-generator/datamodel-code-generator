@@ -230,7 +230,7 @@ class GraphCheck:
     ) -> None:
         """Keep the batch's indexed symbols and field bindings for one direction and one Pydantic backend."""
         self.wire = wire
-        self.direction = direction
+        self.direction: Direction = direction
         self.backend = _SYMBOL_BACKENDS[backend]
         self.flag = "readOnly" if direction == "request" else "writeOnly"
         self.symbols = symbols
@@ -327,9 +327,11 @@ class GraphCheck:
         if kinds(schema) not in {None, frozenset({"object"})}:
             self.report("native_shape_mismatch", location)
         properties = schema.get("properties")
-        declared = properties if isinstance(properties, Mapping) else {}
+        declared: Mapping[str, WireValue] = properties if isinstance(properties, Mapping) else {}
         required = schema.get("required")
-        names = frozenset(str(name) for name in required) if isinstance(required, tuple) else frozenset()
+        names: frozenset[str] = (
+            frozenset(str(name) for name in required) if isinstance(required, tuple) else frozenset()
+        )
         additional = schema.get("additionalProperties", True)
         if (additional is False) != (_setting(symbol, "extra") == "forbid") or (
             isinstance(additional, Mapping) and additional
@@ -391,7 +393,7 @@ class GraphCheck:
     def array(self, location: SourceLocation, schema: Schema, value: GenericType, constraints: Constraints) -> None:
         """Compare a list with an array schema, its item schema, and its item count assertions."""
         self.keywords(location, schema, frozenset({"type", "items", *ARRAY_LENGTHS}))
-        if (kinds(schema) or frozenset()) - {"null"} != {"array"} or "items" not in schema:
+        if (kinds(schema) or frozenset()) - {"null"} != frozenset({"array"}) or "items" not in schema:
             self.report("native_shape_mismatch", location)
             return
         if not assertions_projected(schema, constraints, ARRAY_LENGTHS, None):
@@ -402,7 +404,7 @@ class GraphCheck:
         """Compare a string-keyed dict with an object schema that only constrains its additional values."""
         self.keywords(location, schema, frozenset({"type", "additionalProperties"}))
         additional = schema.get("additionalProperties", True)
-        if (kinds(schema) or frozenset()) - {"null"} != {"object"} or additional is False:
+        if (kinds(schema) or frozenset()) - {"null"} != frozenset({"object"}) or additional is False:
             self.report("native_shape_mismatch", location)
         elif isinstance(additional, Mapping) and additional:
             self.value(at(location, "additionalProperties"), value.arguments[-1], {})
@@ -453,6 +455,8 @@ def leaf_kind(value: FinalPythonType) -> tuple[str | None, Constraints]:
             return _IMPORTED_LEAVES.get((value.import_.from_ or "", value.import_.import_)), {}
         case LiteralType():
             return "literal", {}
+        case _:
+            pass
     return None, {}
 
 

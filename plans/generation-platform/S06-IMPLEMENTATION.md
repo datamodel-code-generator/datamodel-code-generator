@@ -43,6 +43,7 @@ Tests:
 - `tests/api_generation/test_fastapi_generation.py` (main suite, no FastAPI needed) renders the fixtures under `tests/data/generation_platform/fastapi` for both backends and compares the files, the target manifest's decisions, and the diagnostics; it also constructs and loads `FastAPIConfig`. It covers the `_fastapi` package completely.
 - `tests/api_generation/test_fastapi_server.py` runs in the new `fastapi-e2e` tox environment (dependency group `fastapi`: FastAPI, python-multipart, HTTPX2 for Starlette's test client) and in the CI job of the same name, whose coverage the combined report includes. It generates servers, imports them with their private runtime resolved to the installed runtime so coverage lands on the source files, builds routers from handlers in `tests/data/python/fastapi_handlers`, and replays requests. It covers `_runtime/server` completely.
 - The `type` dependency group includes the `fastapi` group so `ty` resolves the server runtime's FastAPI and Starlette imports.
+- Strict mypy 2.3.1 and strict Pyright 1.1.414 and 1.1.411 (Python 3.10) report zero diagnostics for the `_fastapi` package, `_runtime/server`, `_runtime/model_codecs` and `_openapi_codec_render.py`, and ty passes with the repository flags. Matches whose fallback follows them end with `case _: pass`, which keeps them exhaustive for Pyright without the wildcard returns CodeQL reports as mixed returns, and values of unknown static type are narrowed with `TypeIs` helpers to `object`-typed containers.
 
 ## Next action
 
