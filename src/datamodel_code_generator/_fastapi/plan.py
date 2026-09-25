@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
+    from datamodel_code_generator._fastapi.context import ArgumentLocation
     from datamodel_code_generator._fastapi.native import Reason, Schema
     from datamodel_code_generator._generation_contract import (
         FieldUseBinding,
@@ -79,9 +80,6 @@ Site: TypeAlias = Literal["parameter", "body", "primary_response"]
 Transport: TypeAlias = Literal["fastapi_native", "codec_adapter", "raw_request"]
 ScalarKind: TypeAlias = Literal["str", "int", "float", "bool", "date", "aware_datetime", "uuid", "literal"]
 ArgumentKind: TypeAlias = Literal["request", "principal", "native", "adapter", "body", "media_type"]
-ArgumentLocation: TypeAlias = Literal[
-    "path", "query", "querystring", "header", "cookie", "form", "file", "body", "request", "principal", "media_type"
-]
 SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "custom"]
 Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Form", "File"]

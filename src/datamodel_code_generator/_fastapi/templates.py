@@ -58,7 +58,9 @@ _KEYS: Final = frozenset({"template", "path", "scope", "format", "header"})
 
 
 class _Renderable(Protocol):
-    def render(self, **values: object) -> str: ...
+    def render(self, **values: object) -> str:
+        """Return the template rendered with the values."""
+        raise NotImplementedError
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

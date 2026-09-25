@@ -182,17 +182,21 @@ def _json_map(value: object) -> bool:
 
 
 def _import(value: object) -> bool:
-    match value:
-        case ImportSpec(module=str() as module, name=str() | None as name, alias=str() | None as alias):
-            return (
-                all(part.isidentifier() for part in module.split("."))
-                and (name is None or name.isidentifier())
-                and (alias is None or alias.isidentifier())
-                and type(value.type_checking) is bool
-            )
-        case _:
-            pass
-    return False
+    return (
+        isinstance(value, ImportSpec)
+        and _dotted(value.module)
+        and _optional_identifier(value.name)
+        and _optional_identifier(value.alias)
+        and type(value.type_checking) is bool
+    )
+
+
+def _dotted(value: object) -> bool:
+    return isinstance(value, str) and all(part.isidentifier() for part in value.split("."))
+
+
+def _optional_identifier(value: object) -> bool:
+    return value is None or (isinstance(value, str) and value.isidentifier())
 
 
 def _frozen(value: Mapping[str, object]) -> FrozenJSONMap:

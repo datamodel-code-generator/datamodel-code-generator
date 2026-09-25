@@ -280,12 +280,11 @@ class ContextBuilder:
 
     def nullable(self, use: TypeUseBinding | None) -> bool:
         """Return whether the model a type use is bound to accepts null."""
-        match None if use is None else use.type:
-            case GeneratedSymbolType(symbol=symbol):
-                return self.symbols[symbol].nullable
-            case _:
-                pass
-        return False
+        return (
+            use is not None
+            and isinstance(bound := use.type, GeneratedSymbolType)
+            and self.symbols[bound.symbol].nullable
+        )
 
 
 def _body_pointer(spec: OperationSpec) -> str:

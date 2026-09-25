@@ -8,15 +8,18 @@ from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hi
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
+from datamodel_code_generator._runtime.model_codecs.bindings import NativeKind
+
 if TYPE_CHECKING:
-    from datamodel_code_generator._fastapi.plan import ArgumentLocation
-    from datamodel_code_generator._runtime.model_codecs.bindings import NativeKind
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 CONTEXT_VERSION: Final = 1
 
 FrozenJSONMap: TypeAlias = "Mapping[str, WireValue]"
-RenderKind: TypeAlias = "NativeKind | Literal['surface', 'request', 'principal', 'upload', 'media_type', 'result']"
+RenderKind: TypeAlias = NativeKind | Literal["surface", "request", "principal", "upload", "media_type", "result"]
+ArgumentLocation: TypeAlias = Literal[
+    "path", "query", "querystring", "header", "cookie", "form", "file", "body", "request", "principal", "media_type"
+]
 
 
 def _empty() -> FrozenJSONMap:
