@@ -10,23 +10,24 @@ render pydantic_v2.BaseModel
   model_codecs.py
   responses.py
   errors.py
+  auth_types.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
   .dcg-target-manifest.json
   layout routers
-  post_named: POST /named -> /named [untagged] status 204 primary 204 None body typed
+  post_named: POST /named -> /named [untagged] status 204 primary 204 None body typed handler sync
     body /paths/~1named/post/requestBody: codec_adapter native_alias_mismatch at /components/schemas/Named/properties/my-name
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1named/post/responses/204
-  post_titled: POST /titled -> /titled [untagged] status 204 primary 204 None body typed
+  post_titled: POST /titled -> /titled [untagged] status 204 primary 204 None body typed handler sync
     body /paths/~1titled/post/requestBody: codec_adapter native_alias_mismatch at /components/schemas/Titled/properties/title
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1titled/post/responses/204
-  post_strict: POST /strict -> /strict [untagged] status 204 primary 204 None body typed
+  post_strict: POST /strict -> /strict [untagged] status 204 primary 204 None body typed handler sync
     body /paths/~1strict/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Strict/properties/count
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1strict/post/responses/204
-  post_wrapped: POST /wrapped -> /wrapped [untagged] status 204 primary 204 None body typed
+  post_wrapped: POST /wrapped -> /wrapped [untagged] status 204 primary 204 None body typed handler sync
     body /paths/~1wrapped/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Amount
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1wrapped/post/responses/204
-  get_loose: GET /loose -> /loose [untagged] status 200 primary 200 application/json body typed
+  get_loose: GET /loose -> /loose [untagged] status 200 primary 200 application/json body typed handler sync
     primary_response /paths/~1loose/get/responses/200: fastapi_native native_supported
   group untagged -> untagged (5)

@@ -1,4 +1,5 @@
 APIGenerationError
+  E_CONFIG_VALUE config handler_modes: handler_modes must map operation selectors to values
   E_CONFIG_VALUE config body_modes: body_modes must map operation selectors to values
   E_CONFIG_VALUE config primary_responses: primary_responses has an invalid entry
   E_CONFIG_VALUE config operation_names: operation_names has an invalid entry

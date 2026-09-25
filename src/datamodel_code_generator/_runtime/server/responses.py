@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Coroutine
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
 
@@ -15,6 +16,7 @@ from ..model_codecs.parameters import ParameterFragment, ParameterPlan, RawParam
 from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.values import ModelInput, ModelValue
 from ..model_codecs.wire import checked_wire
+from .application import HandlerConfigurationError
 from .errors import response_failure
 
 if TYPE_CHECKING:
@@ -150,6 +152,8 @@ def dispatch(value: object, plan: OperationResponses) -> object:
     """Pass a bare value to FastAPI's response_model unchanged; check and encode an explicit wrapper."""
     if _wrapped(value):
         return respond(value, plan)
+    if hasattr(type(value), "__await__"):
+        raise _awaitable(value)
     return value
 
 
@@ -160,10 +164,19 @@ def respond(value: object, plan: OperationResponses) -> Response:
             return _checked(value, plan)
         if _is_result(value):
             return _result(value, plan)
+        if hasattr(type(value), "__await__"):
+            raise _awaitable(value)
         return _primary(value, plan)
     except CodecError as error:
         msg = "The handler result does not match its declared response"
         raise response_failure(msg) from error
+
+
+def _awaitable(value: object) -> HandlerConfigurationError:
+    if isinstance(value, Coroutine):
+        value.close()
+    msg = "The handler returned an awaitable; an asynchronous handler needs handler_mode='async'"
+    return HandlerConfigurationError(msg)
 
 
 def _checked(response: Response, plan: OperationResponses) -> Response:

@@ -4,8 +4,11 @@
 {%- for route in routes %}
 
 
-def {{ route.adder }}(router: {{ router }}, handlers: {{ handlers }}) -> None:
-    {{ route.handler }} = handlers[{{ route.key }}]
+def {{ route.adder }}(router: {{ router }}, wiring: {{ wiring }}) -> None:
+    {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
+{%- if route.principal %}
+    {{ route.principal }} = wiring.authenticators[{{ route.key }}]
+{%- endif %}
 
     {{ route.signature }}
         {{ route.body }}
@@ -14,11 +17,17 @@ def {{ route.adder }}(router: {{ router }}, handlers: {{ handlers }}) -> None:
 {%- endfor %}
 
 
-OPERATIONS: {{ final }} = {{ operations }}
 LITERAL_ROUTES: {{ final }} = {{ literal }}
 TEMPLATED_ROUTES: {{ final }} = {{ templated }}
 
 
 {{ signature }}
-    """Check the service, then register {{ group }} on a new router, literal paths first."""
-    {{ body }}
+    """Check the service and settings, then register {{ group }} on a new router, literal paths first."""
+    return {{ build }}(
+        (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+        {{ schemes }},
+        services={{ services }},
+{%- for name in settings %}
+        {{ name }}={{ name }},
+{%- endfor %}
+    )

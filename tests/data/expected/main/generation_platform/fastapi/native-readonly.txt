@@ -10,12 +10,13 @@ render pydantic_v2.BaseModel
   model_codecs.py
   responses.py
   errors.py
+  auth_types.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
   .dcg-target-manifest.json
   layout routers
-  post_envelope: POST /json/envelope -> /json/envelope [tag:json] status 204 primary 204 None body typed
+  post_envelope: POST /json/envelope -> /json/envelope [tag:json] status 204 primary 204 None body typed handler sync
     body /paths/~1json~1envelope/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Account/properties/id
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1envelope/post/responses/204
   group tag:json -> json (1)

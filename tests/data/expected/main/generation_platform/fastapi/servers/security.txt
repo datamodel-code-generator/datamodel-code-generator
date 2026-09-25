@@ -1,0 +1,176 @@
+# security
+serve pydantic_v2.BaseModel
+build no-authorizer: AuthConfigurationError: An authorizer is required because the selected operations use security
+build no-extractors: AuthConfigurationError: The schemes digest, mtls have no builtin helper and need credential_extractors
+build unknown-extractor: AuthConfigurationError: credential_extractors names schemes no selected operation uses: nope
+build extractor-list: AuthConfigurationError: credential_extractors must map scheme names to callables
+build missing-method: HandlerConfigurationError: The untagged service needs a callable put_pet method
+build sync-in-async: HandlerConfigurationError: The untagged.get_maybe method is synchronous, but its operation awaits it
+build async-in-sync: HandlerConfigurationError: The untagged.put_pet method is asynchronous, but its operation calls it synchronously
+build keywords: HandlerConfigurationError: The untagged.put_pet method does not accept exactly the keywords principal, pet_id
+build prefix 'api': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
+build prefix '/api/': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
+build prefix '/api?x=1': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
+build prefix '/{api}': HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
+build prefix 7: HandlerConfigurationError: prefix must be empty or a literal path that starts with '/', does not end with '/', and has no ?, #, {, or }
+build dependencies-object: HandlerConfigurationError: dependencies must be a sequence of Depends(...) values
+build dependencies-text: HandlerConfigurationError: dependencies must be a sequence of Depends(...) values
+build operation-dependencies-unknown: HandlerConfigurationError: operation_dependencies names no operation of this router: /paths/~1nope/get
+build operation-dependencies-list: HandlerConfigurationError: operation_dependencies must map operation keys to sequences of dependencies
+build operation-dependencies-items: HandlerConfigurationError: operation_dependencies['/paths/~1pets/get'] must be a sequence of Depends(...) values
+build group public: ok
+build group pets: ok
+build options-list: OpenAPIConfigurationError: fastapi_options must map FastAPI setting names to values
+build options-unknown: OpenAPIConfigurationError: fastapi_options has no setting called 'lifespan'
+build options-flag: OpenAPIConfigurationError: fastapi_options['debug'] has a value of the wrong type
+build options-text: OpenAPIConfigurationError: fastapi_options['title'] has a value of the wrong type
+build options-json: OpenAPIConfigurationError: fastapi_options['contact'] has a value of the wrong type
+build options-object: OpenAPIConfigurationError: fastapi_options['license_info'] has a value of the wrong type
+build options-objects: OpenAPIConfigurationError: fastapi_options['servers'] has a value of the wrong type
+build options-object-items: OpenAPIConfigurationError: fastapi_options['openapi_tags'] has a value of the wrong type
+build options-responses: OpenAPIConfigurationError: fastapi_options['responses'] has a value of the wrong type
+build options-response-code: OpenAPIConfigurationError: fastapi_options['responses'] has a value of the wrong type
+build options-dependencies: OpenAPIConfigurationError: fastapi_options['dependencies'] has a value of the wrong type
+build options-response-class: OpenAPIConfigurationError: fastapi_options['default_response_class'] has a value of the wrong type
+build options-unique-id-type: OpenAPIConfigurationError: fastapi_options['generate_unique_id_function'] has a value of the wrong type
+build options-unique-id: ok
+build options-unique-id-result: OpenAPIConfigurationError: fastapi_options['generate_unique_id_function'] returned something other than a string
+build candidate-index: AuthConfigurationError: requirement_index must be an integer
+build candidate-names: AuthConfigurationError: A candidate credential is filed under another scheme's name
+build candidate: ok
+app default
+openapi info {"title": "Secured pets", "summary": "Pets behind every builtin credential helper.", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Pets team", "email": "pets@example.com"}, "license": {"name": "MIT", "identifier": "MIT"}, "version": "2.0"}
+openapi servers [{"url": "https://pets.example.com/v2"}]
+openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "public"}]
+> GET /pets
+  global /pets
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey
+> GET /pets
+  global /pets
+  authorize AuthContext(operation_key='/paths/~1pets/get', requirements=((SchemeRequirement(scheme_name='api_key', scopes=()),),), candidates=(RequirementCandidate(requirement_index=0, credentials=mappingproxy({'api_key': Credential(scheme_name='api_key', kind='api_key', payload=<redacted>)})),))
+    secrets ['ApiKeySecret(<redacted>)=abc']
+  list_pets(principal='user-0')
+< 200 application/json ["rex"]
+> GET /pets
+  global /pets
+  authorize AuthContext(operation_key='/paths/~1pets/get', requirements=((SchemeRequirement(scheme_name='api_key', scopes=()),),), candidates=(RequirementCandidate(requirement_index=0, credentials=mappingproxy({'api_key': Credential(scheme_name='api_key', kind='api_key', payload=<redacted>)})),))
+    secrets ['ApiKeySecret(<redacted>)=denied']
+< 403 application/json {"detail":"Forbidden"}
+> GET /pets
+  global /pets
+< 400 application/json {"detail":"Invalid request"}
+> GET /pets
+  global /pets
+  authorize AuthContext(operation_key='/paths/~1pets/get', requirements=((SchemeRequirement(scheme_name='api_key', scopes=()),),), candidates=(RequirementCandidate(requirement_index=0, credentials=mappingproxy({'api_key': Credential(scheme_name='api_key', kind='api_key', payload=<redacted>)})),))
+    secrets ['ApiKeySecret(<redacted>)=a']
+  list_pets(principal='user-0')
+< 200 application/json ["rex"]
+> GET /pets
+  global /pets
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey
+> GET /public
+  global /public
+  public /public
+  get_public()
+< 204 - b''
+> GET /maybe
+  global /maybe
+  get_maybe(principal=None, query_principal=UNSET)
+< 204 - b''
+> GET /maybe?principal=x
+  global /maybe
+  authorize AuthContext(operation_key='/paths/~1maybe/get', requirements=((), (SchemeRequirement(scheme_name='bearer', scopes=()),)), candidates=(RequirementCandidate(requirement_index=1, credentials=mappingproxy({'bearer': Credential(scheme_name='bearer', kind='bearer', payload=<redacted>)})),))
+    secrets ['BearerSecret(<redacted>)=tok']
+  get_maybe(principal='user-1', query_principal='x')
+< 204 - b''
+> GET /maybe
+  global /maybe
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer
+> GET /maybe
+  global /maybe
+  get_maybe(principal=None, query_principal=UNSET)
+< 204 - b''
+> PUT /pets/1
+  global /pets/1
+  authorize AuthContext(operation_key='/paths/~1pets~1{petId}/put', requirements=((SchemeRequirement(scheme_name='oauth', scopes=('write:pets', 'read:pets')),), (SchemeRequirement(scheme_name='query_key', scopes=()), SchemeRequirement(scheme_name='basic', scopes=()))), candidates=(RequirementCandidate(requirement_index=0, credentials=mappingproxy({'oauth': Credential(scheme_name='oauth', kind='bearer', payload=<redacted>)})),))
+    secrets ['BearerSecret(<redacted>)=tok']
+  put_pet(principal='user-0', pet_id=1)
+< 204 - b''
+> PUT /pets/1?key=k
+  global /pets/1
+  authorize AuthContext(operation_key='/paths/~1pets~1{petId}/put', requirements=((SchemeRequirement(scheme_name='oauth', scopes=('write:pets', 'read:pets')),), (SchemeRequirement(scheme_name='query_key', scopes=()), SchemeRequirement(scheme_name='basic', scopes=()))), candidates=(RequirementCandidate(requirement_index=1, credentials=mappingproxy({'query_key': Credential(scheme_name='query_key', kind='api_key', payload=<redacted>), 'basic': Credential(scheme_name='basic', kind='basic', payload=<redacted>)})),))
+    secrets ['ApiKeySecret(<redacted>)=k', 'BasicSecret(<redacted>)=user']
+  put_pet(principal='user-1', pet_id=1)
+< 204 - b''
+> PUT /pets/1?key=k
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Bearer, APIKey, Basic
+> PUT /pets/1
+  global /pets/1
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: Basic
+> PUT /pets/1
+  global /pets/1
+< 400 application/json {"detail":"Invalid request"}
+> GET /session
+  global /session
+  authorize AuthContext(operation_key='/paths/~1session/get', requirements=((SchemeRequirement(scheme_name='cookie_key', scopes=()),), (SchemeRequirement(scheme_name='oidc', scopes=('openid',)),), (SchemeRequirement(scheme_name='api_key', scopes=()),)), candidates=(RequirementCandidate(requirement_index=0, credentials=mappingproxy({'cookie_key': Credential(scheme_name='cookie_key', kind='api_key', payload=<redacted>)})),))
+    secrets ['ApiKeySecret(<redacted>)=s1']
+  get_session(principal='user-0')
+< 204 - b''
+> GET /session
+  global /session
+< 400 application/json {"detail":"Invalid request"}
+> GET /session
+  global /session
+  authorize AuthContext(operation_key='/paths/~1session/get', requirements=((SchemeRequirement(scheme_name='cookie_key', scopes=()),), (SchemeRequirement(scheme_name='oidc', scopes=('openid',)),), (SchemeRequirement(scheme_name='api_key', scopes=()),)), candidates=(RequirementCandidate(requirement_index=1, credentials=mappingproxy({'oidc': Credential(scheme_name='oidc', kind='bearer', payload=<redacted>)})), RequirementCandidate(requirement_index=2, credentials=mappingproxy({'api_key': Credential(scheme_name='api_key', kind='api_key', payload=<redacted>)}))))
+    secrets ['BearerSecret(<redacted>)=idt', 'ApiKeySecret(<redacted>)=abc']
+  get_session(principal='user-1')
+< 204 - b''
+> GET /custom
+  global /custom
+  authorize AuthContext(operation_key='/paths/~1custom/get', requirements=((SchemeRequirement(scheme_name='digest', scopes=()),), (SchemeRequirement(scheme_name='mtls', scopes=()),), (SchemeRequirement(scheme_name='query_key', scopes=()),)), candidates=(RequirementCandidate(requirement_index=0, credentials=mappingproxy({'digest': Credential(scheme_name='digest', kind='custom', payload=<redacted>)})),))
+    secrets ['CustomSecret(<redacted>)=d1']
+  get_custom(principal='user-0')
+< 204 - b''
+> GET /custom
+  global /custom
+  authorize AuthContext(operation_key='/paths/~1custom/get', requirements=((SchemeRequirement(scheme_name='digest', scopes=()),), (SchemeRequirement(scheme_name='mtls', scopes=()),), (SchemeRequirement(scheme_name='query_key', scopes=()),)), candidates=(RequirementCandidate(requirement_index=1, credentials=mappingproxy({'mtls': Credential(scheme_name='mtls', kind='custom', payload=<redacted>)})),))
+    secrets ['CustomSecret(<redacted>)=CN=client']
+  get_custom(principal='user-1')
+< 204 - b''
+> GET /custom
+  global /custom
+< AuthConfigurationError: The digest credential extractor returned something other than a digest Credential
+> GET /custom
+  global /custom
+< AuthConfigurationError: The digest credential extractor returned something other than a digest Credential
+> GET /custom
+  global /custom
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey
+app async
+openapi info {"title": "Renamed pets", "description": "Each operation names its own alternatives.", "termsOfService": "https://example.com/terms", "contact": {"name": "Other team"}, "license": {"name": "MIT", "identifier": "MIT"}, "version": "2.0"}
+openapi servers null
+openapi tags [{"name": "pets", "description": "Renamed."}]
+> GET /api/pets
+  app /api/pets
+  async authorize /paths/~1pets/get [0]
+  list_pets(principal='async-user')
+< 200 application/json ["rex"]
+> GET /pets
+< 404 application/json {"detail":"Not Found"}
+> GET /api/public
+  app /api/public
+< 418 application/json {"detail":"I'm a teapot"}
+app awaitables
+> GET /pets
+  authorize AuthContext(operation_key='/paths/~1pets/get', requirements=((SchemeRequirement(scheme_name='api_key', scopes=()),),), candidates=(RequirementCandidate(requirement_index=0, credentials=mappingproxy({'api_key': Credential(scheme_name='api_key', kind='api_key', payload=<redacted>)})),))
+    secrets ['ApiKeySecret(<redacted>)=abc']
+< HandlerConfigurationError: The handler returned an awaitable; an asynchronous handler needs handler_mode='async'
+> GET /public
+< HandlerConfigurationError: The handler returned an awaitable; an asynchronous handler needs handler_mode='async'

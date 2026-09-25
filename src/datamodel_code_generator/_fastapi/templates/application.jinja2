@@ -1,11 +1,38 @@
-"""Build the router of every selected operation from the services that implement them."""
+"""Build the router and the application of every selected operation from the services that implement them."""
 
 {{ imports }}
 
-OPERATIONS: {{ final }} = {{ operations }}
 ROUTES: {{ final }} = {{ routes }}
+INFO: {{ final }}[{{ options }}] = {{ info }}
 
 
-{{ signature }}
-    """Check the services, then register every operation, literal paths first."""
-    {{ body }}
+{{ build_signature }}
+    """Check the services and settings, then register every operation, literal paths first."""
+    return {{ build }}(
+        ROUTES,
+        {{ schemes }},
+        services={{ services }},
+{%- for name in settings %}
+        {{ name }}={{ name }},
+{%- endfor %}
+    )
+
+
+{{ app_signature }}
+    """Create the application from the source info and fastapi_options, then include every operation's route."""
+    app = {{ fastapi }}(**{{ application_options }}(fastapi_options, INFO))
+    app.include_router(
+        build_router(
+{%- for name in arguments %}
+            {{ name }}={{ name }},
+{%- endfor %}
+        )
+    )
+    return app
+
+
+__all__ = [
+{%- for name in exports %}
+    {{ name }},
+{%- endfor %}
+]

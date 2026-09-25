@@ -10,12 +10,13 @@ render pydantic_v2.BaseModel
   model_codecs.py
   responses.py
   errors.py
+  auth_types.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
   .dcg-target-manifest.json
   layout routers
-  post_thing: POST /things -> /things [untagged] status 204 primary 204 None body typed
+  post_thing: POST /things -> /things [untagged] status 204 primary 204 None body typed handler sync
     body /paths/~1things/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Thing
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1things/post/responses/204
   group untagged -> untagged (1)

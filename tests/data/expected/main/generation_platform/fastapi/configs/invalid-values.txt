@@ -1,5 +1,7 @@
 APIGenerationError
   E_CONFIG_VALUE config layout: layout must be 'routers' or 'single'
+  E_CONFIG_VALUE config handler_mode: handler_mode must be 'sync' or 'async'
+  E_CONFIG_VALUE config handler_modes: handler_modes has an invalid entry
   E_CONFIG_VALUE config include_request: include_request must be a boolean
   E_CONFIG_VALUE config body_mode: body_mode must be 'typed' or 'request'
   E_CONFIG_VALUE config body_modes: body_modes has an invalid entry

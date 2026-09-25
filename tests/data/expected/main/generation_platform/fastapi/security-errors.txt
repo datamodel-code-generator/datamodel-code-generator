@@ -1,0 +1,10 @@
+# security-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_SECURITY_INVALID target /paths/~1undeclared/get: GET /undeclared requires the undeclared security scheme 'missing'
+  F_SECURITY_INVALID target /components/securitySchemes/body_key: The apiKey security scheme 'body_key' needs a name and a location of header, query, or cookie
+  F_SECURITY_INVALID target /components/securitySchemes/nameless: The apiKey security scheme 'nameless' needs a name and a location of header, query, or cookie
+  F_SECURITY_INVALID target /paths/~1shaped/get: The security of GET /shaped is not a list of security requirement objects
+  F_SECURITY_INVALID target /paths/~1scoped/get: The security of GET /scoped is not a list of security requirement objects
+  F_SECURITY_INVALID target /paths/~1listed/get: The security of GET /listed is not a list of security requirement objects
+  F_SECURITY_INVALID target /paths/~1typed/get: The security of GET /typed is not a list of security requirement objects

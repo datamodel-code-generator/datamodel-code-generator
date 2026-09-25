@@ -18,7 +18,21 @@ if TYPE_CHECKING:
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SLOT_PREFIX: Final = "dcg_p"
-_BUILDER_NAMES: Final = frozenset({"OPERATIONS", "ROUTES", "LITERAL_ROUTES", "TEMPLATED_ROUTES"})
+BUILDER_NAMES: Final = frozenset({
+    "ROUTES",
+    "INFO",
+    "LITERAL_ROUTES",
+    "TEMPLATED_ROUTES",
+    "app",
+    "build_router",
+    "create_app",
+    "authorizer",
+    "credential_extractors",
+    "dependencies",
+    "operation_dependencies",
+    "prefix",
+    "fastapi_options",
+})
 
 
 class RouteError(ValueError):
@@ -144,4 +158,4 @@ def stem_conflicts(stems: Iterable[str]) -> set[str]:
     """
     names = list(stems)
     folded = Counter(name.casefold() for name in names)
-    return {name for name in names if folded[name.casefold()] > 1 or file_stem_conflict(name) or name in _BUILDER_NAMES}
+    return {name for name in names if folded[name.casefold()] > 1 or file_stem_conflict(name) or name in BUILDER_NAMES}

@@ -741,5 +741,273 @@
         "status_code": 200
       }
     ]
+  },
+  "security": {
+    "input": "server-security.yaml",
+    "services": "security",
+    "config": {
+      "handler_modes": [
+        [
+          "/paths/~1maybe/get",
+          "async"
+        ],
+        [
+          "/paths/~1custom/get",
+          "async"
+        ]
+      ]
+    },
+    "apps": [
+      {
+        "set": "default",
+        "openapi": [
+          "info",
+          "servers",
+          "tags"
+        ],
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/pets",
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "denied"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": [
+              [
+                "X-API-Key",
+                "a"
+              ],
+              [
+                "X-API-Key",
+                "b"
+              ]
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": [
+              [
+                "X-API-Key",
+                "a"
+              ],
+              [
+                "X-API-Key",
+                "a"
+              ]
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": ""
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/public"
+          },
+          {
+            "method": "GET",
+            "url": "/maybe"
+          },
+          {
+            "method": "GET",
+            "url": "/maybe?principal=x",
+            "headers": {
+              "Authorization": "Bearer tok"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/maybe",
+            "headers": {
+              "Authorization": "Bearer "
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/maybe",
+            "headers": {
+              "Authorization": "Basic dXNlcjpwdw=="
+            }
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1",
+            "headers": {
+              "Authorization": "Bearer tok"
+            }
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1?key=k",
+            "headers": {
+              "Authorization": "Basic dXNlcjpwdw=="
+            }
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1?key=k",
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1",
+            "headers": {
+              "Authorization": "Basic !!!"
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "PUT",
+            "url": "/pets/1",
+            "headers": [
+              [
+                "Authorization",
+                "Bearer a"
+              ],
+              [
+                "Authorization",
+                "Basic dXNlcjpwdw=="
+              ]
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Cookie": "session=s1"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Cookie": "session=a; session=b"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Bearer idt",
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/custom",
+            "headers": {
+              "X-Digest": "d1"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/custom",
+            "headers": {
+              "X-Client-Cert": "CN=client"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/custom",
+            "headers": {
+              "X-Digest": "wrong-type"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/custom",
+            "headers": {
+              "X-Digest": "wrong-scheme"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/custom",
+            "show_headers": [
+              "www-authenticate"
+            ]
+          }
+        ]
+      },
+      {
+        "set": "async",
+        "openapi": [
+          "info",
+          "servers",
+          "tags"
+        ],
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/api/pets",
+            "headers": {
+              "X-API-Key": "abc"
+            },
+            "show_headers": [
+              "content-encoding"
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/api/public"
+          }
+        ]
+      },
+      {
+        "set": "awaitables",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/pets",
+            "headers": {
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/public"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -12,54 +12,55 @@ render pydantic_v2.BaseModel
   model_codecs.py
   responses.py
   errors.py
+  auth_types.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
   .dcg-target-manifest.json
   layout routers
-  post_json: POST /json -> /json [tag:json] status 204 primary 204 None body typed
+  post_json: POST /json -> /json [tag:json] status 204 primary 204 None body typed handler sync
     body /paths/~1json/post/requestBody: fastapi_native native_supported
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json/post/responses/204
-  post_optional: POST /json/optional -> /json/optional [tag:json] status 204 primary 204 None body typed
+  post_optional: POST /json/optional -> /json/optional [tag:json] status 204 primary 204 None body typed handler sync
     body /paths/~1json~1optional/post/requestBody: codec_adapter native_required_mismatch at /paths/~1json~1optional/post/requestBody/content/application~1json
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1optional/post/responses/204
-  post_nullable: POST /json/nullable -> /json/nullable [tag:json] status 204 primary 204 None body typed
+  post_nullable: POST /json/nullable -> /json/nullable [tag:json] status 204 primary 204 None body typed handler sync
     body /paths/~1json~1nullable/post/requestBody: codec_adapter native_nullable_mismatch at /paths/~1json~1nullable/post/requestBody/content/application~1json/schema
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1nullable/post/responses/204
-  post_envelope: POST /json/envelope -> /json/envelope [tag:json] status 204 primary 204 None body typed
+  post_envelope: POST /json/envelope -> /json/envelope [tag:json] status 204 primary 204 None body typed handler sync
     body /paths/~1json~1envelope/post/requestBody: codec_adapter envelope_required at /components/schemas/Account/properties/id/readOnly
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1envelope/post/responses/204
-  post_many: POST /json/many -> /json/many [tag:json] status 204 primary 204 None body typed
+  post_many: POST /json/many -> /json/many [tag:json] status 204 primary 204 None body typed handler sync
     body /paths/~1json~1many/post/requestBody: codec_adapter unsupported_wire_shape
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1many/post/responses/204
-  post_text: POST /text -> /text [tag:raw] status 204 primary 204 None body typed
+  post_text: POST /text -> /text [tag:raw] status 204 primary 204 None body typed handler sync
     body /paths/~1text/post/requestBody: codec_adapter unsupported_wire_shape
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1text/post/responses/204
-  put_binary: PUT /binary -> /binary [tag:raw] status 204 primary 204 None body typed
+  put_binary: PUT /binary -> /binary [tag:raw] status 204 primary 204 None body typed handler sync
     body -: codec_adapter unsupported_wire_shape
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1binary/put/responses/204
-  post_raw: POST /raw -> /raw [tag:raw] status 204 primary 204 None body request
+  post_raw: POST /raw -> /raw [tag:raw] status 204 primary 204 None body request handler sync
     body /paths/~1raw/post/requestBody: raw_request explicit_raw
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1raw/post/responses/204
-  post_form: POST /form -> /form [tag:form] status 204 primary 204 None body typed
+  post_form: POST /form -> /form [tag:form] status 204 primary 204 None body typed handler sync
     body /paths/~1form/post/requestBody: fastapi_native native_supported
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form/post/responses/204
-  post_optional_form: POST /form/optional -> /form/optional [tag:form] status 204 primary 204 None body typed
+  post_optional_form: POST /form/optional -> /form/optional [tag:form] status 204 primary 204 None body typed handler sync
     body /paths/~1form~1optional/post/requestBody: codec_adapter native_required_mismatch at /paths/~1form~1optional/post/requestBody/content/application~1x-www-form-urlencoded
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1optional/post/responses/204
-  post_either_form: POST /form/either -> /form/either [tag:form] status 204 primary 204 None body typed
+  post_either_form: POST /form/either -> /form/either [tag:form] status 204 primary 204 None body typed handler sync
     body /paths/~1form~1either/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1either/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/either
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1either/post/responses/204
-  post_nested_form: POST /form/nested -> /form/nested [tag:form] status 204 primary 204 None body typed
+  post_nested_form: POST /form/nested -> /form/nested [tag:form] status 204 primary 204 None body typed handler sync
     body /paths/~1form~1nested/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1nested/post/requestBody/content/application~1x-www-form-urlencoded/schema
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1nested/post/responses/204
-  post_closed_form: POST /form/closed -> /form/closed [tag:form] status 204 primary 204 None body typed
+  post_closed_form: POST /form/closed -> /form/closed [tag:form] status 204 primary 204 None body typed handler sync
     body /paths/~1form~1closed/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1closed/post/requestBody/content/application~1x-www-form-urlencoded/schema
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1closed/post/responses/204
-  post_choice_form: POST /form/choice -> /form/choice [tag:form] status 204 primary 204 None body typed
+  post_choice_form: POST /form/choice -> /form/choice [tag:form] status 204 primary 204 None body typed handler sync
     body /paths/~1form~1choice/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1choice/post/requestBody/content/application~1x-www-form-urlencoded/schema/minProperties
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1choice/post/responses/204
-  upload: POST /upload -> /upload [tag:form] status 204 primary 204 None body typed
+  upload: POST /upload -> /upload [tag:form] status 204 primary 204 None body typed handler sync
     body /paths/~1upload/post/requestBody: fastapi_native native_supported
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1upload/post/responses/204
   group tag:json -> json (5)
@@ -69,7 +70,7 @@ render pydantic_v2.BaseModel
     | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
     | """Endpoints of the json operations; regenerate them instead of editing."""
     |
-    | from collections.abc import Callable, Mapping
+    | from collections.abc import Sequence
     | from typing import Annotated, Final
     |
     | import models
@@ -77,14 +78,17 @@ render pydantic_v2.BaseModel
     | from fastapi.responses import Response
     |
     | from .._generated import contract
+    | from .._generated.contract import OperationDependencies
     | from .._runtime.model_codecs.unset import Unset
     | from .._runtime.model_codecs.values import DecodedValue
-    | from .._runtime.server.application import build
+    | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
+    | from .._runtime.server.security import SecretT
+    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
-    | def _add_post_json(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_json_handler = handlers['post_json']
+    | def _add_post_json(router: APIRouter, wiring: Wiring) -> None:
+    |     post_json_handler = wiring.handlers['post_json']
     |
     |     def post_json(
     |         *,
@@ -101,11 +105,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postJson',
     |         tags=['json'],
+    |         dependencies=wiring.dependencies.get('/paths/~1json/post'),
     |     )
     |
     |
-    | def _add_post_optional(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_optional_handler = handlers['post_optional']
+    | def _add_post_optional(router: APIRouter, wiring: Wiring) -> None:
+    |     post_optional_handler = wiring.handlers['post_optional']
     |
     |     def post_optional(
     |         *,
@@ -125,11 +130,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postOptional',
     |         tags=['json'],
+    |         dependencies=wiring.dependencies.get('/paths/~1json~1optional/post'),
     |     )
     |
     |
-    | def _add_post_nullable(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_nullable_handler = handlers['post_nullable']
+    | def _add_post_nullable(router: APIRouter, wiring: Wiring) -> None:
+    |     post_nullable_handler = wiring.handlers['post_nullable']
     |
     |     def post_nullable(
     |         *,
@@ -149,11 +155,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postNullable',
     |         tags=['json'],
+    |         dependencies=wiring.dependencies.get('/paths/~1json~1nullable/post'),
     |     )
     |
     |
-    | def _add_post_envelope(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_envelope_handler = handlers['post_envelope']
+    | def _add_post_envelope(router: APIRouter, wiring: Wiring) -> None:
+    |     post_envelope_handler = wiring.handlers['post_envelope']
     |
     |     def post_envelope(
     |         *,
@@ -173,11 +180,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postEnvelope',
     |         tags=['json'],
+    |         dependencies=wiring.dependencies.get('/paths/~1json~1envelope/post'),
     |     )
     |
     |
-    | def _add_post_many(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_many_handler = handlers['post_many']
+    | def _add_post_many(router: APIRouter, wiring: Wiring) -> None:
+    |     post_many_handler = wiring.handlers['post_many']
     |
     |     def post_many(
     |         *,
@@ -197,34 +205,41 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postMany',
     |         tags=['json'],
+    |         dependencies=wiring.dependencies.get('/paths/~1json~1many/post'),
     |     )
     |
     |
-    | OPERATIONS: Final = (
-    |     ('json', 'post_json', ('body',)),
-    |     ('json', 'post_optional', ('body',)),
-    |     ('json', 'post_nullable', ('body',)),
-    |     ('json', 'post_envelope', ('body',)),
-    |     ('json', 'post_many', ('body', 'media_type')),
-    | )
     | LITERAL_ROUTES: Final = (
-    |     _add_post_json,
-    |     _add_post_optional,
-    |     _add_post_nullable,
-    |     _add_post_envelope,
-    |     _add_post_many,
+    |     (contract.PostJson.OPERATION, _add_post_json),
+    |     (contract.PostOptional.OPERATION, _add_post_optional),
+    |     (contract.PostNullable.OPERATION, _add_post_nullable),
+    |     (contract.PostEnvelope.OPERATION, _add_post_envelope),
+    |     (contract.PostMany.OPERATION, _add_post_many),
     | )
     | TEMPLATED_ROUTES: Final = ()
     |
     |
-    | def build_router(*, json: object) -> APIRouter:
-    |     """Check the service, then register the json operations on a new router, literal paths first."""
-    |     return build((*LITERAL_ROUTES, *TEMPLATED_ROUTES), OPERATIONS, {'json': json})
+    | def build_router(
+    |     *,
+    |     json: object,
+    |     dependencies: Sequence[Dependency] = (),
+    |     operation_dependencies: OperationDependencies | None = None,
+    |     prefix: str = "",
+    | ) -> APIRouter:
+    |     """Check the service and settings, then register the json operations on a new router, literal paths first."""
+    |     return build(
+    |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+    |         contract.SCHEMES,
+    |         services={'json': json},
+    |         dependencies=dependencies,
+    |         operation_dependencies=operation_dependencies,
+    |         prefix=prefix,
+    |     )
   show routers/raw.py
     | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
     | """Endpoints of the raw operations; regenerate them instead of editing."""
     |
-    | from collections.abc import Callable, Mapping
+    | from collections.abc import Sequence
     | from typing import Annotated, Final
     |
     | import models
@@ -232,13 +247,16 @@ render pydantic_v2.BaseModel
     | from fastapi.responses import Response
     |
     | from .._generated import contract
+    | from .._generated.contract import OperationDependencies
     | from .._runtime.model_codecs.unset import Unset
-    | from .._runtime.server.application import build
+    | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
+    | from .._runtime.server.security import SecretT
+    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
-    | def _add_post_text(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_text_handler = handlers['post_text']
+    | def _add_post_text(router: APIRouter, wiring: Wiring) -> None:
+    |     post_text_handler = wiring.handlers['post_text']
     |
     |     def post_text(
     |         *,
@@ -255,11 +273,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postText',
     |         tags=['raw'],
+    |         dependencies=wiring.dependencies.get('/paths/~1text/post'),
     |     )
     |
     |
-    | def _add_put_binary(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     put_binary_handler = handlers['put_binary']
+    | def _add_put_binary(router: APIRouter, wiring: Wiring) -> None:
+    |     put_binary_handler = wiring.handlers['put_binary']
     |
     |     def put_binary(
     |         *,
@@ -276,11 +295,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='putBinary',
     |         tags=['raw'],
+    |         dependencies=wiring.dependencies.get('/paths/~1binary/put'),
     |     )
     |
     |
-    | def _add_post_raw(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_raw_handler = handlers['post_raw']
+    | def _add_post_raw(router: APIRouter, wiring: Wiring) -> None:
+    |     post_raw_handler = wiring.handlers['post_raw']
     |
     |     def post_raw(*, request: Request) -> Response:
     |         return respond(post_raw_handler(request=request), contract.PostRaw.RESPONSES)
@@ -294,26 +314,39 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postRaw',
     |         tags=['raw'],
+    |         dependencies=wiring.dependencies.get('/paths/~1raw/post'),
     |     )
     |
     |
-    | OPERATIONS: Final = (
-    |     ('raw', 'post_text', ('body',)),
-    |     ('raw', 'put_binary', ('body',)),
-    |     ('raw', 'post_raw', ('request',)),
+    | LITERAL_ROUTES: Final = (
+    |     (contract.PostText.OPERATION, _add_post_text),
+    |     (contract.PutBinary.OPERATION, _add_put_binary),
+    |     (contract.PostRaw.OPERATION, _add_post_raw),
     | )
-    | LITERAL_ROUTES: Final = (_add_post_text, _add_put_binary, _add_post_raw)
     | TEMPLATED_ROUTES: Final = ()
     |
     |
-    | def build_router(*, raw: object) -> APIRouter:
-    |     """Check the service, then register the raw operations on a new router, literal paths first."""
-    |     return build((*LITERAL_ROUTES, *TEMPLATED_ROUTES), OPERATIONS, {'raw': raw})
+    | def build_router(
+    |     *,
+    |     raw: object,
+    |     dependencies: Sequence[Dependency] = (),
+    |     operation_dependencies: OperationDependencies | None = None,
+    |     prefix: str = "",
+    | ) -> APIRouter:
+    |     """Check the service and settings, then register the raw operations on a new router, literal paths first."""
+    |     return build(
+    |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+    |         contract.SCHEMES,
+    |         services={'raw': raw},
+    |         dependencies=dependencies,
+    |         operation_dependencies=operation_dependencies,
+    |         prefix=prefix,
+    |     )
   show routers/form.py
     | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
     | """Endpoints of the form operations; regenerate them instead of editing."""
     |
-    | from collections.abc import Callable, Mapping
+    | from collections.abc import Sequence
     | from typing import Annotated, Final
     |
     | import models
@@ -321,14 +354,17 @@ render pydantic_v2.BaseModel
     | from fastapi.responses import Response
     |
     | from .._generated import contract
+    | from .._generated.contract import OperationDependencies
     | from .._runtime.model_codecs.unset import Unset
-    | from .._runtime.server.application import build
+    | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
+    | from .._runtime.server.security import SecretT
+    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
-    | def _add_post_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_form_handler = handlers['post_form']
+    | def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
+    |     post_form_handler = wiring.handlers['post_form']
     |
     |     def post_form(
     |         *,
@@ -350,11 +386,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postForm',
     |         tags=['form'],
+    |         dependencies=wiring.dependencies.get('/paths/~1form/post'),
     |     )
     |
     |
-    | def _add_post_optional_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_optional_form_handler = handlers['post_optional_form']
+    | def _add_post_optional_form(router: APIRouter, wiring: Wiring) -> None:
+    |     post_optional_form_handler = wiring.handlers['post_optional_form']
     |
     |     def post_optional_form(
     |         *,
@@ -374,11 +411,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postOptionalForm',
     |         tags=['form'],
+    |         dependencies=wiring.dependencies.get('/paths/~1form~1optional/post'),
     |     )
     |
     |
-    | def _add_post_either_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_either_form_handler = handlers['post_either_form']
+    | def _add_post_either_form(router: APIRouter, wiring: Wiring) -> None:
+    |     post_either_form_handler = wiring.handlers['post_either_form']
     |
     |     def post_either_form(
     |         *,
@@ -398,11 +436,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postEitherForm',
     |         tags=['form'],
+    |         dependencies=wiring.dependencies.get('/paths/~1form~1either/post'),
     |     )
     |
     |
-    | def _add_post_nested_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_nested_form_handler = handlers['post_nested_form']
+    | def _add_post_nested_form(router: APIRouter, wiring: Wiring) -> None:
+    |     post_nested_form_handler = wiring.handlers['post_nested_form']
     |
     |     def post_nested_form(
     |         *,
@@ -422,11 +461,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postNestedForm',
     |         tags=['form'],
+    |         dependencies=wiring.dependencies.get('/paths/~1form~1nested/post'),
     |     )
     |
     |
-    | def _add_post_closed_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_closed_form_handler = handlers['post_closed_form']
+    | def _add_post_closed_form(router: APIRouter, wiring: Wiring) -> None:
+    |     post_closed_form_handler = wiring.handlers['post_closed_form']
     |
     |     def post_closed_form(
     |         *,
@@ -446,11 +486,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postClosedForm',
     |         tags=['form'],
+    |         dependencies=wiring.dependencies.get('/paths/~1form~1closed/post'),
     |     )
     |
     |
-    | def _add_post_choice_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     post_choice_form_handler = handlers['post_choice_form']
+    | def _add_post_choice_form(router: APIRouter, wiring: Wiring) -> None:
+    |     post_choice_form_handler = wiring.handlers['post_choice_form']
     |
     |     def post_choice_form(
     |         *,
@@ -470,11 +511,12 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postChoiceForm',
     |         tags=['form'],
+    |         dependencies=wiring.dependencies.get('/paths/~1form~1choice/post'),
     |     )
     |
     |
-    | def _add_upload(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
-    |     upload_handler = handlers['upload']
+    | def _add_upload(router: APIRouter, wiring: Wiring) -> None:
+    |     upload_handler = wiring.handlers['upload']
     |
     |     def upload(
     |         *,
@@ -496,50 +538,106 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='upload',
     |         tags=['form'],
+    |         dependencies=wiring.dependencies.get('/paths/~1upload/post'),
     |     )
     |
     |
-    | OPERATIONS: Final = (
-    |     ('form', 'post_form', ('name', 'count', 'tags')),
-    |     ('form', 'post_optional_form', ('body',)),
-    |     ('form', 'post_either_form', ('body',)),
-    |     ('form', 'post_nested_form', ('body',)),
-    |     ('form', 'post_closed_form', ('body',)),
-    |     ('form', 'post_choice_form', ('body',)),
-    |     ('form', 'upload', ('file', 'extra', 'note')),
-    | )
     | LITERAL_ROUTES: Final = (
-    |     _add_post_form,
-    |     _add_post_optional_form,
-    |     _add_post_either_form,
-    |     _add_post_nested_form,
-    |     _add_post_closed_form,
-    |     _add_post_choice_form,
-    |     _add_upload,
+    |     (contract.PostForm.OPERATION, _add_post_form),
+    |     (contract.PostOptionalForm.OPERATION, _add_post_optional_form),
+    |     (contract.PostEitherForm.OPERATION, _add_post_either_form),
+    |     (contract.PostNestedForm.OPERATION, _add_post_nested_form),
+    |     (contract.PostClosedForm.OPERATION, _add_post_closed_form),
+    |     (contract.PostChoiceForm.OPERATION, _add_post_choice_form),
+    |     (contract.Upload.OPERATION, _add_upload),
     | )
     | TEMPLATED_ROUTES: Final = ()
     |
     |
-    | def build_router(*, form: object) -> APIRouter:
-    |     """Check the service, then register the form operations on a new router, literal paths first."""
-    |     return build((*LITERAL_ROUTES, *TEMPLATED_ROUTES), OPERATIONS, {'form': form})
+    | def build_router(
+    |     *,
+    |     form: object,
+    |     dependencies: Sequence[Dependency] = (),
+    |     operation_dependencies: OperationDependencies | None = None,
+    |     prefix: str = "",
+    | ) -> APIRouter:
+    |     """Check the service and settings, then register the form operations on a new router, literal paths first."""
+    |     return build(
+    |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+    |         contract.SCHEMES,
+    |         services={'form': form},
+    |         dependencies=dependencies,
+    |         operation_dependencies=operation_dependencies,
+    |         prefix=prefix,
+    |     )
   show _generated/contract.py
     | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
     | """Operation plans of this package; regenerate them instead of editing."""
     |
     | from __future__ import annotations
     |
-    | from typing import Final
+    | from collections.abc import Sequence
+    | from typing import Final, Literal, TypeAlias, TypedDict
+    |
+    | from typing_extensions import Never
     |
     | from .._runtime.model_codecs.media import FieldPlan
+    | from .._runtime.server.application import Dependency, OperationPlan
     | from .._runtime.server.requests import BodyAdapter, BodyMedia
     | from .._runtime.server.responses import OperationResponses, ResponsePlan
     | from . import model_bindings
+    |
+    | OperationKey: TypeAlias = Literal[
+    |     '/paths/~1json/post',
+    |     '/paths/~1json~1optional/post',
+    |     '/paths/~1json~1nullable/post',
+    |     '/paths/~1json~1envelope/post',
+    |     '/paths/~1json~1many/post',
+    |     '/paths/~1text/post',
+    |     '/paths/~1binary/put',
+    |     '/paths/~1raw/post',
+    |     '/paths/~1form/post',
+    |     '/paths/~1form~1optional/post',
+    |     '/paths/~1form~1either/post',
+    |     '/paths/~1form~1nested/post',
+    |     '/paths/~1form~1closed/post',
+    |     '/paths/~1form~1choice/post',
+    |     '/paths/~1upload/post',
+    | ]
+    | SchemeKey: TypeAlias = Never
+    | OperationDependencies = TypedDict(
+    |     'OperationDependencies',
+    |     {
+    |         '/paths/~1json/post': Sequence[Dependency],
+    |         '/paths/~1json~1optional/post': Sequence[Dependency],
+    |         '/paths/~1json~1nullable/post': Sequence[Dependency],
+    |         '/paths/~1json~1envelope/post': Sequence[Dependency],
+    |         '/paths/~1json~1many/post': Sequence[Dependency],
+    |         '/paths/~1text/post': Sequence[Dependency],
+    |         '/paths/~1binary/put': Sequence[Dependency],
+    |         '/paths/~1raw/post': Sequence[Dependency],
+    |         '/paths/~1form/post': Sequence[Dependency],
+    |         '/paths/~1form~1optional/post': Sequence[Dependency],
+    |         '/paths/~1form~1either/post': Sequence[Dependency],
+    |         '/paths/~1form~1nested/post': Sequence[Dependency],
+    |         '/paths/~1form~1closed/post': Sequence[Dependency],
+    |         '/paths/~1form~1choice/post': Sequence[Dependency],
+    |         '/paths/~1upload/post': Sequence[Dependency],
+    |     },
+    |     total=False,
+    | )
+    | SCHEMES: Final = ()
     |
     |
     | class PostJson:
     |     """Plans of the post_json operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_json',
+    |         key='/paths/~1json/post',
+    |         service='json',
+    |         keywords=('body',),
+    |     )
     |     RESPONSES: Final = OperationResponses(
     |         responses=(ResponsePlan(status='204'),),
     |         primary=(204, None),
@@ -549,6 +647,12 @@ render pydantic_v2.BaseModel
     | class PostOptional:
     |     """Plans of the post_optional operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_optional',
+    |         key='/paths/~1json~1optional/post',
+    |         service='json',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -569,6 +673,12 @@ render pydantic_v2.BaseModel
     | class PostNullable:
     |     """Plans of the post_nullable operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_nullable',
+    |         key='/paths/~1json~1nullable/post',
+    |         service='json',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -588,6 +698,12 @@ render pydantic_v2.BaseModel
     | class PostEnvelope:
     |     """Plans of the post_envelope operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_envelope',
+    |         key='/paths/~1json~1envelope/post',
+    |         service='json',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -608,6 +724,12 @@ render pydantic_v2.BaseModel
     | class PostMany:
     |     """Plans of the post_many operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_many',
+    |         key='/paths/~1json~1many/post',
+    |         service='json',
+    |         keywords=('body', 'media_type'),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -632,6 +754,12 @@ render pydantic_v2.BaseModel
     | class PostText:
     |     """Plans of the post_text operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_text',
+    |         key='/paths/~1text/post',
+    |         service='raw',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -650,6 +778,12 @@ render pydantic_v2.BaseModel
     | class PutBinary:
     |     """Plans of the put_binary operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='put_binary',
+    |         key='/paths/~1binary/put',
+    |         service='raw',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
     |         required=False,
@@ -663,6 +797,12 @@ render pydantic_v2.BaseModel
     | class PostRaw:
     |     """Plans of the post_raw operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_raw',
+    |         key='/paths/~1raw/post',
+    |         service='raw',
+    |         keywords=('request',),
+    |     )
     |     RESPONSES: Final = OperationResponses(
     |         responses=(ResponsePlan(status='204'),),
     |         primary=(204, None),
@@ -672,6 +812,12 @@ render pydantic_v2.BaseModel
     | class PostForm:
     |     """Plans of the post_form operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_form',
+    |         key='/paths/~1form/post',
+    |         service='form',
+    |         keywords=('name', 'count', 'tags'),
+    |     )
     |     RESPONSES: Final = OperationResponses(
     |         responses=(ResponsePlan(status='204'),),
     |         primary=(204, None),
@@ -681,6 +827,12 @@ render pydantic_v2.BaseModel
     | class PostOptionalForm:
     |     """Plans of the post_optional_form operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_optional_form',
+    |         key='/paths/~1form~1optional/post',
+    |         service='form',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -707,6 +859,12 @@ render pydantic_v2.BaseModel
     | class PostEitherForm:
     |     """Plans of the post_either_form operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_either_form',
+    |         key='/paths/~1form~1either/post',
+    |         service='form',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -731,6 +889,12 @@ render pydantic_v2.BaseModel
     | class PostNestedForm:
     |     """Plans of the post_nested_form operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_nested_form',
+    |         key='/paths/~1form~1nested/post',
+    |         service='form',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -752,6 +916,12 @@ render pydantic_v2.BaseModel
     | class PostClosedForm:
     |     """Plans of the post_closed_form operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_closed_form',
+    |         key='/paths/~1form~1closed/post',
+    |         service='form',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -772,6 +942,12 @@ render pydantic_v2.BaseModel
     | class PostChoiceForm:
     |     """Plans of the post_choice_form operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='post_choice_form',
+    |         key='/paths/~1form~1choice/post',
+    |         service='form',
+    |         keywords=('body',),
+    |     )
     |     BODY: Final = BodyAdapter(
     |         media=(
     |             BodyMedia(
@@ -793,6 +969,12 @@ render pydantic_v2.BaseModel
     | class Upload:
     |     """Plans of the upload operation."""
     |
+    |     OPERATION: Final = OperationPlan(
+    |         name='upload',
+    |         key='/paths/~1upload/post',
+    |         service='form',
+    |         keywords=('file', 'extra', 'note'),
+    |     )
     |     RESPONSES: Final = OperationResponses(
     |         responses=(ResponsePlan(status='204'),),
     |         primary=(204, None),

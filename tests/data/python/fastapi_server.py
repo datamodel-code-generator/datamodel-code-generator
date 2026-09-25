@@ -7,6 +7,7 @@ import importlib.util
 import json
 import shutil
 import sys
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -22,6 +23,7 @@ from datamodel_code_generator.format import Formatter
 from tests.data.python.fastapi_generation import SOURCE, fastapi_config
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from types import ModuleType
 
     import pytest
@@ -81,7 +83,9 @@ class _WithoutRawPath:
         await self.app(scope, receive, send)
 
 
-def _exchange(client: TestClient, request: dict[str, Any], calls: list[str], lines: list[str]) -> None:
+def _exchange(
+    client: TestClient, request: dict[str, Any], calls: list[str], lines: list[str], errors: tuple[type[Exception], ...]
+) -> None:
     method, url = request["method"], request["url"]
     lines.append(f"> {method} {url}")
     options = {key: request[key] for key in ("headers", "json", "content", "data", "files") if key in request}
@@ -94,6 +98,9 @@ def _exchange(client: TestClient, request: dict[str, Any], calls: list[str], lin
     except ResponseValidationError as error:
         lines.extend(f"  {call}" for call in calls)
         lines.append(f"< ResponseValidationError: {[item['msg'] for item in error.errors()]}")
+    except errors as error:
+        lines.extend(f"  {call}" for call in calls)
+        lines.append(f"< {type(error).__name__}: {error}")
     else:
         lines.extend(f"  {call}" for call in calls)
         media = response.headers.get("content-type", "-")
@@ -118,8 +125,27 @@ def _codec(server: ModuleType, selector: dict[str, Any], lines: list[str]) -> No
     lines.append(f"codec {selector['facade']} {arguments}: {type(codec).__name__}")
 
 
+def _build(label: str, build: Callable[[], object], errors: tuple[type[Exception], ...]) -> str:
+    try:
+        build()
+    except errors as error:
+        return f"build {label}: {type(error).__name__}: {error}"
+    return f"build {label}: ok"
+
+
+def _serve(
+    server: ModuleType, app_case: dict[str, Any], sets: dict[str, Any], settings: dict[str, Any], lines: list[str]
+) -> FastAPI:
+    options = {**settings.get(app_case["set"], {})}
+    if "options" in app_case:
+        options["fastapi_options"] = app_case["options"]
+    app = server.create_app(**sets[app_case["set"]], **options)
+    lines.extend(f"openapi {key} {json.dumps(app.openapi().get(key))}" for key in app_case.get("openapi", ()))
+    return app
+
+
 def fastapi_server_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
-    """Generate one server per backend, then replay the case's requests, router builds, and codec selections."""
+    """Generate one server per backend, then replay the case's builds, applications, requests, and codecs."""
     case = json.loads((SOURCE / "servers.json").read_text(encoding="utf-8"))[case_name]
     services = importlib.import_module(f"tests.data.python.fastapi_handlers.{case['services']}")
     lines = [f"# {case_name}"]
@@ -132,18 +158,21 @@ def fastapi_server_report(case_name: str, root: Path, monkeypatch: pytest.Monkey
             server, models = _import(package)
             calls: list[str] = []
             sets = services.services(server, models, calls)
-            for name in case.get("builds", ()):
-                try:
-                    server.build_router(**sets[name])
-                except server.HandlerConfigurationError as error:
-                    lines.append(f"build {name}: HandlerConfigurationError: {error}")
-                else:
-                    lines.append(f"build {name}: ok")
-            app = FastAPI()
-            app.include_router(server.build_router(**sets["default"]))
-            with TestClient(_WithoutRawPath(app)) as client:
-                for request in case.get("requests", ()):
-                    _exchange(client, request, calls, lines)
+            settings = services.settings(server, models, calls) if hasattr(services, "settings") else {}
+            errors = (server.HandlerConfigurationError, server.AuthConfigurationError, server.OpenAPIConfigurationError)
+            lines.extend(
+                _build(name, partial(server.build_router, **sets[name]), errors)
+                for name in case.get("builds", ())
+            )
+            if hasattr(services, "builds"):
+                lines.extend(_build(label, build, errors) for label, build in services.builds(server, models, calls))
+            for app_case in case.get("apps", [{"set": "default", "requests": case.get("requests", [])}]):
+                if "apps" in case:
+                    lines.append(f"app {app_case['set']}")
+                app = _serve(server, app_case, sets, settings, lines)
+                with TestClient(_WithoutRawPath(app)) as client:
+                    for request in app_case.get("requests", ()):
+                        _exchange(client, request, calls, lines, errors)
             for selector in case.get("codecs", ()):
                 _codec(server, selector, lines)
         finally:

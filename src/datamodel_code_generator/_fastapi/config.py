@@ -29,10 +29,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
 
 Layout: TypeAlias = Literal["routers", "single"]
+HandlerMode: TypeAlias = Literal["sync", "async"]
 BodyMode: TypeAlias = Literal["typed", "request"]
 
 _PARAMETER_LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie", "form", "file"})
 _LAYOUTS: Final = frozenset({"routers", "single"})
+_HANDLER_MODES: Final = frozenset({"sync", "async"})
 _BODY_MODES: Final = frozenset({"typed", "request"})
 _MIN_STATUS: Final = 100
 _MAX_STATUS: Final = 599
@@ -51,6 +53,8 @@ class FastAPIConfig(TargetConfig):
     """Settings of one FastAPI server target; model settings stay in the model configuration."""
 
     layout: Layout = "routers"
+    handler_mode: HandlerMode = "sync"
+    handler_modes: Mapping[OperationSelector, HandlerMode] = field(default_factory=lambda: MappingProxyType({}))
     include_request: bool = False
     body_mode: BodyMode = "typed"
     body_modes: Mapping[OperationSelector, BodyMode] = field(default_factory=lambda: MappingProxyType({}))
@@ -64,7 +68,7 @@ class FastAPIConfig(TargetConfig):
 
     def __post_init__(self) -> None:
         """Freeze the given mappings, then reject values the server settings do not allow."""
-        for name in ("body_modes", "primary_responses", "operation_names", "router_names"):
+        for name in ("handler_modes", "body_modes", "primary_responses", "operation_names", "router_names"):
             object.__setattr__(self, name, _frozen(getattr(self, name)))
         names: object = self.parameter_names
         if _is_mapping(names):
@@ -77,6 +81,9 @@ class FastAPIConfig(TargetConfig):
         yield from TargetConfig._problems(self)  # noqa: SLF001
         if self.layout not in _LAYOUTS:
             yield _diagnostic("E_CONFIG_VALUE", "layout", "layout must be 'routers' or 'single'")
+        if self.handler_mode not in _HANDLER_MODES:
+            yield _diagnostic("E_CONFIG_VALUE", "handler_mode", "handler_mode must be 'sync' or 'async'")
+        yield from _selector_problems(self.handler_modes, "handler_modes", lambda value: value in _HANDLER_MODES)
         if not _is_bool(self.include_request):
             yield _diagnostic("E_CONFIG_VALUE", "include_request", "include_request must be a boolean")
         if self.body_mode not in _BODY_MODES:
@@ -161,7 +168,7 @@ def _selector_entries(
         yield _operation(table.get("operation"), base, f"{at}.operation"), table, at
 
 
-def _body_modes(value: object, base: Path, option_path: str) -> Mapping[OperationSelector, str]:
+def _modes(value: object, base: Path, option_path: str) -> Mapping[OperationSelector, str]:
     return {
         selector: _string(table.get("mode"), base, f"{at}.mode")
         for selector, table, at in _selector_entries(value, base, option_path, frozenset({"mode"}))
@@ -209,9 +216,11 @@ def _parameter_name_entries(
 
 FastAPIConfig.toml_converters = MappingProxyType({
     "layout": _string,
+    "handler_mode": _string,
+    "handler_modes": _modes,
     "include_request": _boolean,
     "body_mode": _string,
-    "body_modes": _body_modes,
+    "body_modes": _modes,
     "primary_responses": _primary_responses,
     "operation_names": _operation_names,
     "router_names": _router_names,

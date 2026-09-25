@@ -1,4 +1,6 @@
 layout='single'
+handler_mode='async'
+handler_modes=mappingproxy({'/paths/~1pets/get': 'sync'})
 include_request=True
 body_mode='request'
 body_modes=mappingproxy({'/paths/~1pets/post': 'typed'})
