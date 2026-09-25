@@ -64,7 +64,10 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._api_publication",
     "datamodel_code_generator._api_types",
     "datamodel_code_generator._fastapi",
+    "datamodel_code_generator._target_cli",
     "datamodel_code_generator._target_config",
+    "datamodel_code_generator.api_types",
+    "datamodel_code_generator.fastapi",
 })
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
@@ -131,6 +134,12 @@ class Violation:
 
 
 DEFAULT_ALLOWLIST: Final[dict[BoundaryKey, AllowlistEntry]] = {
+    BoundaryKey(
+        "src/datamodel_code_generator/__main__.py",
+        "_run_target",
+        "target-reverse-import",
+        "datamodel_code_generator._target_cli",
+    ): AllowlistEntry("The CLI hands a selected generation target to its lazily imported runner"),
     BoundaryKey(
         "src/datamodel_code_generator/config.py",
         "<module>",
@@ -1050,7 +1059,7 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
-        case ("_fastapi", *_):
+        case ("_fastapi" | "fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:
             layer = "target"

@@ -1,0 +1,9 @@
+# stdin
+spec api.yaml <- pets.yaml
+stdin api.yaml
+  exit 0
+stdin api.yaml --check
+  exit 0
+stdin api.yaml --output-model-type msgspec.Struct
+  exit 2
+  stderr | E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'

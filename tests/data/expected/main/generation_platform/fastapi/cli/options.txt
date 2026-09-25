@@ -1,0 +1,77 @@
+# options
+spec api.yaml <- pets.yaml
+toml
+  | [selection]
+  | exclude_tags = ["store"]
+  | reason = "The store is internal"
+cli --target-output service --diagnostics-json diagnostics.json
+  exit 0
+  stderr | S_OPERATION_EXCLUDED info selection /paths/~1store~1inventory/get: GET /store/inventory is excluded by exclude_tags 'store': The store is internal
+show diagnostics.json
+  | {
+  |   "schema_version": 1,
+  |   "target": "fastapi",
+  |   "diagnostics": [
+  |     {
+  |       "code": "S_OPERATION_EXCLUDED",
+  |       "severity": "info",
+  |       "stage": "selection",
+  |       "message": "GET /store/inventory is excluded by exclude_tags 'store': The store is internal",
+  |       "source_uri": "../api.yaml",
+  |       "source_pointer": "/paths/~1store~1inventory/get",
+  |       "operation": {
+  |         "pointer": "/paths/~1store~1inventory/get",
+  |         "document": null
+  |       },
+  |       "option_path": null,
+  |       "artifact_path": null,
+  |       "target_id": "3deca778a5f2d7af77744b6d85b16a8880b9708b45cff200725233911affaeba"
+  |     }
+  |   ]
+  | }
+cli --target-output service --check --diagnostics-json -
+  exit 0
+  stderr | S_OPERATION_EXCLUDED info selection /paths/~1store~1inventory/get: GET /store/inventory is excluded by exclude_tags 'store': The store is internal
+  stdout | {
+  stdout |   "schema_version": 1,
+  stdout |   "target": "fastapi",
+  stdout |   "diagnostics": [
+  stdout |     {
+  stdout |       "code": "S_OPERATION_EXCLUDED",
+  stdout |       "severity": "info",
+  stdout |       "stage": "selection",
+  stdout |       "message": "GET /store/inventory is excluded by exclude_tags 'store': The store is internal",
+  stdout |       "source_uri": "../api.yaml",
+  stdout |       "source_pointer": "/paths/~1store~1inventory/get",
+  stdout |       "operation": {
+  stdout |         "pointer": "/paths/~1store~1inventory/get",
+  stdout |         "document": null
+  stdout |       },
+  stdout |       "option_path": null,
+  stdout |       "artifact_path": null,
+  stdout |       "target_id": "3deca778a5f2d7af77744b6d85b16a8880b9708b45cff200725233911affaeba"
+  stdout |     }
+  stdout |   ]
+  stdout | }
+tree
+  api.yaml
+  diagnostics.json
+  fastapi.toml
+  models.py
+  service/.dcg-target-manifest.json
+  service/README.md
+  service/__init__.py
+  service/_generated/__init__.py
+  service/_generated/contract.py
+  service/_generated/model_bindings.py
+  service/_generated/openapi.py
+  service/application.py
+  service/auth_types.py
+  service/dcg-runtime-requirements.txt
+  service/errors.py
+  service/model_codecs.py
+  service/py.typed
+  service/responses.py
+  service/routers/__init__.py
+  service/routers/pets.py
+  service/services.py

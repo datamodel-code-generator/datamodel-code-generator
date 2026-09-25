@@ -238,7 +238,9 @@ datamodel-codegen [OPTIONS]
 |--------|-------------|
 | [`--all-jobs`](utility-options.md#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](utility-options.md#debug) | Show debug messages during code generation |
+| [`--diagnostics-json`](utility-options.md#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](utility-options.md#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
+| [`--generate-server`](utility-options.md#generate-server) | Generate a FastAPI server package with the models (experimental) |
 | [`--help`](utility-options.md#help) | Show help message and exit |
 | [`--install-skill`](utility-options.md#install-skill) | Install the bundled Agent Skill (experimental) |
 | [`--job`](utility-options.md#job) | Run a named generation job from pyproject.toml (experimental) |
@@ -250,6 +252,8 @@ datamodel-codegen [OPTIONS]
 | [`--overwrite-skill`](utility-options.md#overwrite-skill) | Replace an existing Agent Skill installation |
 | [`--profile`](utility-options.md#profile) | Use a named profile from pyproject.toml |
 | [`--skill-scope`](utility-options.md#skill-scope) | Choose an Agent Skill installation scope |
+| [`--target-config`](utility-options.md#target-config) | Read the generation target's settings from a TOML file |
+| [`--target-output`](utility-options.md#target-output) | Override the generation target's output directory |
 | [`--version`](utility-options.md#version) | Show program version and exit |
 
 ---
@@ -293,6 +297,7 @@ All options sorted alphabetically:
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...
+- [`--diagnostics-json`](utility-options.md#diagnostics-json) - Write the generation target's diagnostics as JSON
 - [`--diff-against`](general-options.md#diff-against) - Compare generated code from a baseline input with the curren...
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix) - Disable appending 'Item' suffix to array item types.
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports) - Prevent automatic addition of __future__ imports in generate...
@@ -324,6 +329,7 @@ All options sorted alphabetically:
 - [`--generate-prompt`](utility-options.md#generate-prompt) - Generate a prompt for consulting LLMs about CLI options
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config) - Generate pyproject.toml configuration from CLI arguments.
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators) - Generate experimental Pydantic v2 model validators for JSON ...
+- [`--generate-server`](utility-options.md#generate-server) - Generate a FastAPI server package with the models (experimental)
 - [`--graphql-no-typename`](graphql-only-options.md#graphql-no-typename) - Exclude __typename field from generated GraphQL models.
 - [`--help`](utility-options.md#help) - Show help message and exit
 - [`--http-backend`](base-options.md#http-backend) - Select the HTTP client backend for remote schemas.
@@ -397,6 +403,8 @@ All options sorted alphabetically:
 - [`--strict-refs`](general-options.md#strict-refs) - Treat unresolved local `$ref` JSON pointers as errors.
 - [`--strict-types`](typing-customization.md#strict-types) - Enable strict type validation for specified Python types.
 - [`--strip-default-none`](model-customization.md#strip-default-none) - Remove fields with None as default value from generated mode...
+- [`--target-config`](utility-options.md#target-config) - Read the generation target's settings from a TOML file
+- [`--target-output`](utility-options.md#target-output) - Override the generation target's output directory
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version) - Target Pydantic version for generated code compatibility.
 - [`--target-python-version`](model-customization.md#target-python-version) - Target Python version for generated code syntax and imports.
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module) - Treat dots in schema names as module separators.

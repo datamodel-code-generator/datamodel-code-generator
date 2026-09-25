@@ -43,7 +43,13 @@ from datamodel_code_generator._api_manifest import (
     sha256,
     target_identity,
 )
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, GeneratedArtifact, GeneratedProject
+from datamodel_code_generator._api_types import (
+    APIGenerationError,
+    Diagnostic,
+    GeneratedArtifact,
+    GeneratedProject,
+    attach_diagnostic,
+)
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
@@ -87,6 +93,7 @@ ConverterStrategy: TypeAlias = Literal[
 Exclusion: TypeAlias = "tuple[OperationContract, str]"
 
 _SECRET_MODEL_OPTIONS = frozenset({"http_headers", "http_query_parameters"})
+_README = PurePosixPath("README.md")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -193,6 +200,7 @@ def prepare_target(
 ) -> GenerateConfig:
     """Validate target settings in the contract order and return the effective model settings."""
     from datamodel_code_generator import (  # noqa: PLC0415
+        Error,
         _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
@@ -203,7 +211,13 @@ def prepare_target(
             option_path="model_config.output",
             message=f"The {generator.kind} target needs model_config.output",
         )
-    effective = _prepare_generate_facade_config(model_config)
+    try:
+        effective = _prepare_generate_facade_config(model_config)
+    except Error as error:
+        attach_diagnostic(
+            error, Diagnostic(code="E_MODEL_CONFIG", severity="error", stage="config", message=str(error))
+        )
+        raise
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = " or ".join(repr(item.value) for item in DataModelType if item in generator.backends)
         raise config_error(
@@ -921,6 +935,7 @@ class _Finisher:
         bundled = _bundled_models(self.root, (self.cwd / output.expanduser()).resolve(), config.model_package)
         included = (self.layout.package.as_posix(), *(() if bundled is None else (bundled.as_posix(),)))
         model = () if config.model_dependency is None else (config.model_dependency,)
+        readme = ("README.md",) if any(file.path == _README for file in rendered.files) else ()
         return "\n".join((
             "[build-system]",
             'requires = ["hatchling>=1.27,<2"]',
@@ -930,6 +945,7 @@ class _Finisher:
             f"name = {json.dumps(config.distribution_name)}",
             f"version = {json.dumps(config.package_version)}",
             f'requires-python = ">={self.effective.target_python_version.value}"',
+            *(f'readme = "{path}"' for path in readme),
             f"dependencies = {_toml_array((*rendered.dependencies, *model))}",
             "",
             "[tool.hatch.build.targets.wheel]",
@@ -937,7 +953,7 @@ class _Finisher:
             'sources = ["src"]',
             "",
             "[tool.hatch.build.targets.sdist]",
-            f"only-include = {_toml_array((*included, 'pyproject.toml'))}",
+            f"only-include = {_toml_array((*included, *readme, 'pyproject.toml'))}",
         ))
 
     def layout_files(self, rendered: TargetRender) -> tuple[RenderedFile, ...]:
@@ -1044,8 +1060,14 @@ def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: Tar
 def _plan(
     input_: _GenerationInput, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> tuple[_Planner, GeneratedProject]:
+    from datamodel_code_generator import Error  # noqa: PLC0415
+
     effective = prepare_target(input_, model_config, generator)
-    models = _run_models(input_, effective, config)
+    try:
+        models = _run_models(input_, effective, config)
+    except Error as error:
+        attach_diagnostic(error, Diagnostic(code="E_MODEL_PARSE", severity="error", stage="model", message=str(error)))
+        raise
     try:
         planner = _Planner(models, effective, config, generator)
         return planner, planner.project()

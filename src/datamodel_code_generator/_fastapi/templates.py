@@ -23,6 +23,7 @@ ROLES: Final = frozenset({
     "application.jinja2",
     "router.jinja2",
     "services.jinja2",
+    "readme.jinja2",
 })
 
 Scope: TypeAlias = Literal["project", "router", "operation"]

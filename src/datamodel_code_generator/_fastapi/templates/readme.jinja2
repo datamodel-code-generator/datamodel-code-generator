@@ -1,0 +1,134 @@
+# {{ title }}
+
+The `{{ package }}` package serves the {{ title }} API with FastAPI.
+datamodel-code-generator generated it from the OpenAPI document, together with the `{{ model_package }}` models of the `{{ backend }}` backend.
+Every file of the package belongs to the generator: keep your code in your own modules and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+
+FastAPI server generation is experimental.
+The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
+Custom templates, base classes, Python types, codec adapters, and codec compatibility declarations stay within these two backends.
+
+## Operations
+
+| Service | Method | HTTP method | Path | Operation key |
+| --- | --- | --- | --- | --- |
+{%- for operation in operations %}
+| `{{ operation.service }}` | `{{ operation.name }}` | {{ operation.method }} | `{{ operation.path }}` | `{{ operation.key }}` |
+{%- endfor %}
+
+`install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+
+## Implementing the services
+
+`services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
+A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
+Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+{%- if schemes %}
+The Protocols of groups with secured operations take the type of the principal your authorizer returns.
+{%- endif %}
+
+```python
+{%- if schemes %}
+from typing import Never
+{% endif %}
+from {{ package }} import create_app
+{%- if schemes %}
+from {{ package }}.auth_types import AuthContext
+{%- endif %}
+{%- if protocols %}
+from {{ package }}.services import {{ protocols }}
+{%- endif %}
+{%- for service in services %}
+
+
+class {{ service.implementation }}({{ service.protocol }}{% if service.secured %}[Principal]{% endif %}):
+    """Implement {{ service.methods }}."""
+{%- endfor %}
+{%- if schemes %}
+
+
+def authorize(context: AuthContext[Never]) -> Principal:
+    ...
+{%- endif %}
+
+
+app = create_app({{ arguments }})
+```
+
+Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
+To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+
+```python
+from fastapi import FastAPI
+
+from {{ package }} import build_router, install_openapi
+
+app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+app.include_router(build_router({{ arguments }}))
+install_openapi(app)
+app.openapi()  # Check the document once every router is included.
+```
+{%- if schemes %}
+
+## Authentication
+
+The secured operations use these security schemes:
+{% for scheme in schemes %}
+- `{{ scheme.name }}`: {{ scheme.credential }}
+{%- endfor %}
+
+Each secured operation receives the principal the authorizer returns.
+The authorizer reads the credentials of each security alternative from `AuthContext` and rejects a request by raising `HTTPException`, such as `403`.
+A request that presents no complete alternative answers `401`, and missing authentication settings never fall back to anonymous access.
+`SecretT` is `Never` while every scheme uses a builtin credential.
+`credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none; `SecretT` is then the union of the secret types the extractors return.
+Bearer credentials, including OAuth2 and OpenID Connect tokens, reach the authorizer as they are: the package never contacts a token endpoint, and the authorizer checks tokens and scopes.
+{%- if basic %}
+HTTP Basic credentials are decoded as ASCII, as FastAPI's `HTTPBasic` decodes them, so other usernames and passwords answer `401`; register a credential extractor for the scheme to accept UTF-8.
+{%- endif %}
+{%- endif %}
+
+## Served OpenAPI document
+
+`create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
+Pass `operation_keys` when the application includes only some of the operations.
+If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
+The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+
+## Validation boundaries
+
+Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
+The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+{%- if forms %}
+Native form bodies follow FastAPI's form extraction, which treats an empty field as missing and applies its default; set the operation's `body_modes` entry to `request` when the exact submitted values matter.
+{%- endif %}
+{%- if raw_request %}
+Operations with the `request` body mode receive the Starlette `Request` and read and validate their body themselves.
+{%- endif %}
+{%- if dataclass and codecs %}
+
+A `pydantic_v2.dataclass` value cannot tell an omitted optional field from one set to `None`, and a `PATCH` body may mean a different change for each.
+To send a response that keeps a field omitted, return the value a response codec builds from the wire value, or snapshot a dataclass with its explicit presence:
+
+```python
+from {{ package }}.model_codecs import presence_of
+from {{ package }}.responses import {{ codecs }}
+
+codec = {{ codecs }}.body(status_code={{ status }})
+value = codec.from_wire(wire)
+value = codec.snapshot(instance, presence=presence_of(wire))
+```
+{%- endif %}
+
+## Regenerating
+
+Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
+When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
+{%- if standalone %}
+`pyproject.toml` declares the runtime dependencies of the package.
+{%- else %}
+Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+{%- endif %}

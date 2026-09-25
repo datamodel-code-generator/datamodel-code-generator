@@ -6,7 +6,9 @@
 |--------|-------------|
 | [`--all-jobs`](#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](#debug) | Show debug messages during code generation |
+| [`--diagnostics-json`](#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
+| [`--generate-server`](#generate-server) | Generate a FastAPI server package with the models (experimental) |
 | [`--help`](#help) | Show help message and exit |
 | [`--install-skill`](#install-skill) | Install the bundled Agent Skill (experimental) |
 | [`--job`](#job) | Run a named generation job from pyproject.toml (experimental) |
@@ -18,6 +20,8 @@
 | [`--overwrite-skill`](#overwrite-skill) | Replace an existing Agent Skill installation |
 | [`--profile`](#profile) | Use a named profile from pyproject.toml |
 | [`--skill-scope`](#skill-scope) | Choose an Agent Skill installation scope |
+| [`--target-config`](#target-config) | Read the generation target's settings from a TOML file |
+| [`--target-output`](#target-output) | Override the generation target's output directory |
 | [`--version`](#version) | Show program version and exit |
 
 ---
@@ -83,6 +87,51 @@ or code generation. Requires the `debug` extra to be installed.
     ```bash
     pip install 'datamodel-code-generator[debug]'
     ```
+
+---
+
+## `--diagnostics-json` {#diagnostics-json}
+
+Write the selected target's diagnostics as JSON to a file, or to stdout with `-` (experimental).
+
+**Related:** [`--generate-server`](#generate-server),
+[Diagnostics](../fastapi-server.md#diagnostics)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml \
+      --diagnostics-json diagnostics.json
+    ```
+
+The document is written after every run, successful or not, and lists the diagnostics in the order stderr
+shows them:
+
+```json
+{
+  "schema_version": 1,
+  "target": "fastapi",
+  "diagnostics": [
+    {
+      "code": "E_CONFIG_UNKNOWN",
+      "severity": "error",
+      "stage": "config",
+      "message": "The target file has no setting 'packages'",
+      "source_uri": null,
+      "source_pointer": null,
+      "operation": null,
+      "option_path": "packages",
+      "artifact_path": null,
+      "target_id": null
+    }
+  ]
+}
+```
+
+A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
+and nothing is written to it.
 
 ---
 
@@ -157,6 +206,43 @@ Schema for that structured payload, such as when defining a tool contract.
         --generate-prompt "Review this command for stable generated output in CI." \
         | claude -p
     ```
+
+---
+
+## `--generate-server` {#generate-server}
+
+Generate a server package for the models from the settings `--target-config` names (experimental).
+The only choice is `fastapi`.
+
+!!! warning "Experimental"
+
+    FastAPI server generation is experimental; its options, target configuration file,
+    generated package, and diagnostics may change.
+
+**Related:** [`--target-config`](#target-config), [`--target-output`](#target-output),
+[`--diagnostics-json`](#diagnostics-json), [FastAPI Server](../fastapi-server.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml # (1)!
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml --check # (2)!
+    ```
+
+    1. :material-arrow-left: Generate the models at `--output` and the server package the target file describes
+    2. :material-arrow-left: Report the files that would change, without writing them
+
+One run generates the models with the usual model options and the server package from the same accepted
+document, then publishes both together. `--check` exits with 1 when a file would change and with 2 for an
+error. Diagnostics go to stderr; the generated code is never printed.
+
+`--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
+`--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints
+information, such as `--generate-prompt` or `--list-experimental`.
 
 ---
 
@@ -522,6 +608,56 @@ below your home directory.
 
     datamodel-codegen --install-skill codex --skill-scope project
     datamodel-codegen --install-skill claude-code --skill-scope user
+
+---
+
+## `--target-config` {#target-config}
+
+Read the selected target's settings from a flat TOML file (experimental). `--generate-server` requires it.
+
+**Related:** [`--generate-server`](#generate-server),
+[`--target-output`](#target-output), [Target configuration](../fastapi-server.md#target-configuration)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml
+    ```
+
+    ```toml
+    # fastapi.toml
+    schema_version = 1
+    package = "server"
+    model_package = "models"
+    output = "server"
+    ```
+
+The file holds `schema_version = 1` and the target's own settings only; model options stay on the command
+line or in `pyproject.toml`. Relative paths are resolved against the file's directory. An unknown setting is
+`E_CONFIG_UNKNOWN`, and a missing or invalid value is `E_CONFIG_VALUE`.
+
+---
+
+## `--target-output` {#target-output}
+
+Write the selected target to a directory instead of the `output` its target configuration file names
+(experimental). `--output` keeps naming the model output.
+
+**Related:** [`--generate-server`](#generate-server),
+[`--target-config`](#target-config)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output src/example/models.py \
+      --generate-server fastapi --target-config fastapi.toml \
+      --target-output src/example/server
+    ```
+
+A relative `--target-output` is resolved against the current directory.
 
 ---
 

@@ -27,6 +27,15 @@
     "tracking_issue": null
   },
   {
+    "id": "cli-option.generate-server",
+    "kind": "cli-option",
+    "message": "FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.",
+    "note": "--generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, and --diagnostics-json writes the target diagnostics as JSON.",
+    "since_version": "0.84.0",
+    "target": "--generate-server fastapi, --target-config, --target-output, and --diagnostics-json",
+    "tracking_issue": null
+  },
+  {
     "id": "cli-option.install-skill",
     "kind": "cli-option",
     "message": "Bundled Agent Skill installation is experimental; supported clients, scopes, and installed skill contents may change.",
@@ -132,6 +141,15 @@
     "note": "The parser focuses on model generation from XSD documents, not full XML instance validation.",
     "since_version": "0.59.0",
     "target": "--input-file-type xmlschema",
+    "tracking_issue": null
+  },
+  {
+    "id": "python-api.fastapi-server",
+    "kind": "python-api",
+    "message": "The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.",
+    "note": "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi.",
+    "since_version": "0.84.0",
+    "target": "datamodel_code_generator.fastapi and datamodel_code_generator.api_types",
     "tracking_issue": null
   }
 ]

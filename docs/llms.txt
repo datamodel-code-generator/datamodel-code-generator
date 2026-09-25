@@ -54,6 +54,10 @@
 - [LLM Integration](https://datamodel-code-generator.koxudaxi.dev/llm-integration/): The `--generate-prompt` option generates a formatted prompt that you can use to consult Large Language Models (LLMs) about datamodel-code-generator...
 - [Using datamodel-code-generator with coding agents](https://datamodel-code-generator.koxudaxi.dev/coding-agent-skill/): This repository includes an experimental Agent Skill for skills-compatible coding agents. The skill teaches an agent to run `datamodel-codegen` whe...
 
+### Generation Targets
+
+- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, target configuration file, generated package, template context, and served OpenAPI document...
+
 
 ## CLI Reference
 

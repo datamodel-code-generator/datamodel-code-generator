@@ -1,0 +1,49 @@
+# api
+api hints
+  generate_fastapi resolves ['config', 'input_', 'model_config']: True
+  render_fastapi resolves ['config', 'input_', 'model_config']: True
+spec api.yaml <- pets.yaml
+api render
+  write models.py
+  write server/__init__.py
+  write server/application.py
+  write server/routers/__init__.py
+  write server/routers/pets.py
+  write server/routers/store.py
+  write server/_generated/__init__.py
+  write server/_generated/contract.py
+  write server/_generated/model_bindings.py
+  write server/_generated/openapi.py
+  write server/model_codecs.py
+  write server/responses.py
+  write server/errors.py
+  write server/auth_types.py
+  write server/services.py
+  write server/README.md
+  write server/py.typed
+  write server/dcg-runtime-requirements.txt
+  write server/.dcg-target-manifest.json
+api generate
+  written models.py
+  written server/__init__.py
+  written server/application.py
+  written server/routers/__init__.py
+  written server/routers/pets.py
+  written server/routers/store.py
+  written server/_generated/__init__.py
+  written server/_generated/contract.py
+  written server/_generated/model_bindings.py
+  written server/_generated/openapi.py
+  written server/model_codecs.py
+  written server/responses.py
+  written server/errors.py
+  written server/auth_types.py
+  written server/services.py
+  written server/README.md
+  written server/py.typed
+  written server/dcg-runtime-requirements.txt
+  written server/.dcg-target-manifest.json
+api generate
+write server/README.md
+api render
+  E_OUTPUT_MODIFIED README.md: A file the target owns was modified

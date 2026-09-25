@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import assert_output
+from tests.data.python.fastapi_cli import fastapi_cli_report
 from tests.data.python.fastapi_generation import (
     fastapi_config_report,
     fastapi_render_report,
@@ -35,6 +36,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "native-generator",
         "unbound",
         "single",
+        "standalone",
         "route-errors",
         "name-errors",
         "group-errors",
@@ -106,3 +108,11 @@ def test_fastapi_regeneration(case: str, tmp_path: Path) -> None:
 def test_fastapi_config(case: str, tmp_path: Path) -> None:
     """Construct or load the server settings, freezing their mappings and reporting every invalid value."""
     assert_output(fastapi_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    "case", ["generate", "options", "stdin", "usage", "conflicts", "input-model", "config-errors", "failures", "api"]
+)
+def test_fastapi_cli(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Publish, check, and report the server target from the command line and the public entry points."""
+    assert_output(fastapi_cli_report(case, tmp_path, monkeypatch), EXPECTED / "cli" / f"{case}.txt")

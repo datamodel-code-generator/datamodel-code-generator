@@ -1,13 +1,13 @@
 """Shared records, diagnostics, and errors of the single-target API generators.
 
-The target entry points will expose these records through `datamodel_code_generator.api_types`.
+The target entry points expose these records through `datamodel_code_generator.api_types`.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
-from typing import Literal, TypeAlias
+from typing import Final, Literal, TypeAlias
 
 from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._publication import PublicationRollbackError
@@ -28,6 +28,8 @@ __all__ = [
     "OperationSelector",
     "PublicationRollbackError",
     "TargetKind",
+    "attach_diagnostic",
+    "attached_diagnostic",
 ]
 
 TargetKind: TypeAlias = Literal["fastapi", "client"]
@@ -40,6 +42,7 @@ ArtifactKind: TypeAlias = Literal[
 ]
 ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
 OperationSelector: TypeAlias = OperationRef | str
+_ATTACHED: Final = "__dcg_diagnostic__"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -56,6 +59,16 @@ class Diagnostic:
     option_path: str | None = None
     artifact_path: str | None = None
     target_id: str | None = None
+
+
+def attach_diagnostic(error: Exception, diagnostic: Diagnostic) -> None:
+    """Record the diagnostic of the stage an exception stopped; the exception keeps its type and cause."""
+    error.__dict__[_ATTACHED] = diagnostic
+
+
+def attached_diagnostic(error: Exception) -> Diagnostic | None:
+    """Return the diagnostic a stage recorded on the exception, if any."""
+    return diagnostic if isinstance(diagnostic := error.__dict__.get(_ATTACHED), Diagnostic) else None
 
 
 class APIGenerationError(Exception):

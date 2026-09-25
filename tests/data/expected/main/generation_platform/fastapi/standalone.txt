@@ -1,0 +1,143 @@
+# standalone
+render pydantic_v2.BaseModel
+  src/server/__init__.py
+  src/server/application.py
+  src/server/routers/__init__.py
+  src/server/routers/pets.py
+  src/server/routers/store.py
+  src/server/_generated/__init__.py
+  src/server/_generated/contract.py
+  src/server/_generated/model_bindings.py
+  src/server/_generated/openapi.py
+  src/server/model_codecs.py
+  src/server/responses.py
+  src/server/errors.py
+  src/server/auth_types.py
+  src/server/services.py
+  README.md
+  src/server/py.typed
+  pyproject.toml
+  .dcg-state/model-artifacts.json
+  .dcg-target-manifest.json
+  layout routers
+  list_pets: GET /pets -> /pets [tag:pets] status 200 primary 200 application/json body typed handler sync
+    parameter /paths/~1pets/get/parameters/0: fastapi_native native_supported
+    parameter /paths/~1pets/get/parameters/1: fastapi_native native_supported
+    parameter /paths/~1pets/get/parameters/2: fastapi_native native_supported
+    parameter /paths/~1pets/get/parameters/3: fastapi_native native_supported
+    parameter /paths/~1pets/get/parameters/4: fastapi_native native_supported
+    parameter /paths/~1pets/get/parameters/5: codec_adapter unsupported_wire_shape
+    primary_response /paths/~1pets/get/responses/200: fastapi_native native_supported
+  create_pet: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
+    body /paths/~1pets/post/requestBody: fastapi_native native_supported
+    primary_response /paths/~1pets/post/responses/201: fastapi_native native_supported
+  list_my_pets: GET /pets/mine -> /pets/mine [tag:pets] status 200 primary 200 application/json body typed handler sync
+    primary_response /paths/~1pets~1mine/get/responses/200: fastapi_native native_supported
+  get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
+    parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
+    primary_response /paths/~1pets~1{petId}/get/responses/200: fastapi_native native_supported
+  delete_pet: DELETE /pets/{petId} -> /pets/{petId} [tag:pets] status 204 primary 204 None body typed handler sync
+    parameter /paths/~1pets~1{petId}/delete/parameters/0: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/delete/responses/204
+  get_inventory: GET /store/inventory -> /store/inventory [tag:store] status 200 primary 200 application/json body typed handler sync
+    primary_response /paths/~1store~1inventory/get/responses/200: fastapi_native native_supported
+  group tag:pets -> pets (5)
+  group tag:store -> store (1)
+  show pyproject.toml
+    | [build-system]
+    | requires = ["hatchling>=1.27,<2"]
+    | build-backend = "hatchling.build"
+    |
+    | [project]
+    | name = "pets-server"
+    | version = "1.0.0"
+    | requires-python = ">=3.10"
+    | readme = "README.md"
+    | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5", "pets-models>=1.0"]
+    |
+    | [tool.hatch.build.targets.wheel]
+    | only-include = ["src/server"]
+    | sources = ["src"]
+    |
+    | [tool.hatch.build.targets.sdist]
+    | only-include = ["src/server", "README.md", "pyproject.toml"]
+  show README.md
+    | # Pets
+    |
+    | The `server` package serves the Pets API with FastAPI.
+    | datamodel-code-generator generated it from the OpenAPI document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+    | Every file of the package belongs to the generator: keep your code in your own modules and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+    |
+    | FastAPI server generation is experimental.
+    | The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
+    | Custom templates, base classes, Python types, codec adapters, and codec compatibility declarations stay within these two backends.
+    |
+    | ## Operations
+    |
+    | | Service | Method | HTTP method | Path | Operation key |
+    | | --- | --- | --- | --- | --- |
+    | | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
+    | | `PetsService` | `create_pet` | POST | `/pets` | `/paths/~1pets/post` |
+    | | `PetsService` | `list_my_pets` | GET | `/pets/mine` | `/paths/~1pets~1mine/get` |
+    | | `PetsService` | `get_pet` | GET | `/pets/{petId}` | `/paths/~1pets~1{petId}/get` |
+    | | `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
+    | | `StoreService` | `get_inventory` | GET | `/store/inventory` | `/paths/~1store~1inventory/get` |
+    |
+    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    |
+    | ## Implementing the services
+    |
+    | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
+    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
+    | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+    |
+    | ```python
+    | from server import create_app
+    | from server.services import PetsService, StoreService
+    |
+    |
+    | class Pets(PetsService):
+    |     """Implement `list_pets`, `create_pet`, `list_my_pets`, `get_pet`, and `delete_pet`."""
+    |
+    |
+    | class Store(StoreService):
+    |     """Implement `get_inventory`."""
+    |
+    |
+    | app = create_app(pets=Pets(), store=Store())
+    | ```
+    |
+    | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
+    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    |
+    | ```python
+    | from fastapi import FastAPI
+    |
+    | from server import build_router, install_openapi
+    |
+    | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+    | app.include_router(build_router(pets=Pets(), store=Store()))
+    | install_openapi(app)
+    | app.openapi()  # Check the document once every router is included.
+    | ```
+    |
+    | ## Served OpenAPI document
+    |
+    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
+    | Pass `operation_keys` when the application includes only some of the operations.
+    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
+    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    |
+    | ## Validation boundaries
+    |
+    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
+    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    |
+    | ## Regenerating
+    |
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
+    | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
+    | `pyproject.toml` declares the runtime dependencies of the package.

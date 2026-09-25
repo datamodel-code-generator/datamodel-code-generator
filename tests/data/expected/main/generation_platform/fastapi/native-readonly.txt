@@ -13,6 +13,7 @@ render pydantic_v2.BaseModel
   errors.py
   auth_types.py
   services.py
+  README.md
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json

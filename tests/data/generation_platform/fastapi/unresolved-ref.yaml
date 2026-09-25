@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: Unresolved
+  version: "1.0"
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Missing'

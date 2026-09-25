@@ -15,11 +15,10 @@ from datamodel_code_generator._api_generation import generate_target, render_tar
 from datamodel_code_generator._api_manifest import MANIFEST_NAME
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, GeneratedProject, OperationSelection
 from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice
-from datamodel_code_generator._fastapi.context import HookReference
 from datamodel_code_generator._fastapi.target import FastAPITarget
 from datamodel_code_generator._target_config import TargetConfig, load_target_config
 from datamodel_code_generator.enums import OpenAPIScope
+from datamodel_code_generator.fastapi import FastAPIConfig, HookReference, ResponseChoice
 from datamodel_code_generator.format import Formatter
 from tests.data.python import fastapi_hooks
 from tests.data.python.model_codec_adapters import declaration

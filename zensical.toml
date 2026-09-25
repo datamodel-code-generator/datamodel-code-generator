@@ -53,6 +53,9 @@ nav = [
       { "CI/CD Integration" = "ci-cd.md" },
       { "LLM Integration" = "llm-integration.md" },
       { "Coding Agent Skill" = "coding-agent-skill.md" }
+    ]},
+    { "Generation Targets" = [
+      { "FastAPI Server (Experimental)" = "fastapi-server.md" }
     ]}
   ]},
   { "CLI Reference" = [

@@ -372,6 +372,10 @@ MANUAL_OPTION_DESCRIPTIONS = {
     "--overwrite-skill": "Replace an existing Agent Skill installation",
     "--list-deprecations": "List registered deprecations and scheduled breaking changes",
     "--list-experimental": "List registered experimental features",
+    "--generate-server": "Generate a FastAPI server package with the models (experimental)",
+    "--target-config": "Read the generation target's settings from a TOML file",
+    "--target-output": "Override the generation target's output directory",
+    "--diagnostics-json": "Write the generation target's diagnostics as JSON",
 }
 
 # Regex pattern for detecting MkDocs Material admonitions in docstrings

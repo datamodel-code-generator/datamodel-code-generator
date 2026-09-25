@@ -1,12 +1,6 @@
 schema_version = 1
 
 [[files]]
-template = "README.md.jinja2"
-path = "README.md"
-scope = "project"
-header = false
-
-[[files]]
 template = "router.json.jinja2"
 path = "routers/{router}.json"
 scope = "router"

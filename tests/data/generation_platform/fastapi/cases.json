@@ -10,7 +10,8 @@
       "routers/pets.py",
       "routers/store.py",
       "_generated/contract.py",
-      "responses.py"
+      "responses.py",
+      "README.md"
     ]
   },
   "parameters": {
@@ -37,7 +38,8 @@
       "routers/raw.py",
       "routers/form.py",
       "_generated/contract.py",
-      "_generated/openapi.py"
+      "_generated/openapi.py",
+      "README.md"
     ]
   },
   "request": {
@@ -123,6 +125,19 @@
     "show": [
       "application.py",
       "routes.py"
+    ]
+  },
+  "standalone": {
+    "input": "pets.yaml",
+    "config": {
+      "package_mode": "standalone",
+      "package_version": "1.0.0",
+      "distribution_name": "pets-server",
+      "model_dependency": "pets-models>=1.0"
+    },
+    "show": [
+      "pyproject.toml",
+      "README.md"
     ]
   },
   "route-errors": {
@@ -418,7 +433,8 @@
       "routers/untagged.py",
       "routers/public.py",
       "services.py",
-      "_generated/openapi.py"
+      "_generated/openapi.py",
+      "README.md"
     ]
   },
   "security-errors": {
@@ -460,7 +476,8 @@
     "show": [
       "application.py",
       "routers/pets.py",
-      "services.py"
+      "services.py",
+      "README.md"
     ]
   },
   "empty": {

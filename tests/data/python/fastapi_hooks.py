@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._fastapi.context import FastAPIContextPatch, ImportSpec
+from datamodel_code_generator.fastapi.templates import FastAPIContextPatch, ImportSpec
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._fastapi.context import FastAPIContext
+    from datamodel_code_generator.fastapi.templates import FastAPIContext
 
 RECORDED: list[FastAPIContext] = []
 NOT_CALLABLE = 7

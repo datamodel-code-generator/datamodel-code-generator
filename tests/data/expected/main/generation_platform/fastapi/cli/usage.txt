@@ -1,0 +1,20 @@
+# usage
+spec api.yaml <- pets.yaml
+model --target-config fastapi.toml
+  exit 2
+  stderr | Error: --target-config can only be used with --generate-server
+model --target-output service --diagnostics-json -
+  exit 2
+  stderr | Error: --target-output, --diagnostics-json can only be used with --generate-server
+model --generate-server fastapi
+  exit 2
+  stderr | Error: --generate-server requires --target-config
+cli --list-experimental
+  exit 2
+  stderr | Error: --generate-server cannot be used with --list-experimental
+cli --generate-prompt --install-skill codex
+  exit 2
+  stderr | Error: --generate-server cannot be used with --install-skill, --generate-prompt
+cli --check --emit-model-metadata metadata.json
+  exit 2
+  stderr | Error: --check cannot be used with --emit-model-metadata

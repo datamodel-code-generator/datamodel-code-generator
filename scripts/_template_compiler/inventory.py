@@ -92,12 +92,15 @@ _SUPPORTED_GETATTR_ROOT_NAMES = frozenset({
     "fields",
     "loop",
     "ns",
+    "operation",
     "pattern_property",
     "protocol",
     "route",
     "rule",
+    "scheme",
     "schema_runtime_validation",
     "schema_validator_state",
+    "service",
     "v",
 })
 # ``prepared_validators`` is built as dictionaries in pydantic_v2/base_model.py.

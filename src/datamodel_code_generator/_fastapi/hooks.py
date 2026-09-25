@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Final, Protocol
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, attach_diagnostic
 from datamodel_code_generator._fastapi.context import FastAPIContextPatch, HookReference, ImportSpec
 from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._fastapi.plan import PlanError, Revision
@@ -60,7 +60,13 @@ class HookRunner:
         revision, extensions = Revision(), Extensions()
         context = source.context(revision, extensions)
         for index, hook in enumerate(self.hooks):
-            patch = _call(self.callable(index, hook), context)
+            try:
+                patch = _call(self.callable(index, hook), context)
+            except Exception as error:
+                attach_diagnostic(
+                    error, self.diagnostic("E_HOOK_FAILURE", index, f"raised {type(error).__name__}: {error}")
+                )
+                raise
             if not isinstance(patch, FastAPIContextPatch):
                 raise APIGenerationError((
                     self.diagnostic("E_HOOK_CONTRACT", index, f"returned {type(patch).__name__}, not a patch"),

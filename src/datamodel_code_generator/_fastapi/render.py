@@ -14,6 +14,7 @@ from datamodel_code_generator._api_manifest import sha256
 from datamodel_code_generator._api_types import APIGenerationError
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
+from datamodel_code_generator._fastapi._compiled_templates import readme as readme_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, Default, fact
@@ -47,7 +48,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._fastapi.templates import TemplateSet
     from datamodel_code_generator._generation_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
+    from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
     from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
@@ -155,6 +156,7 @@ class ServerRenderer:  # noqa: PLR0904
         *,
         config: FastAPIConfig,
         package: PurePosixPath,
+        backend: PydanticBackend,
         plan: ServerPlan,
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
@@ -170,6 +172,7 @@ class ServerRenderer:  # noqa: PLR0904
         """
         self.config = config
         self.package = package
+        self.backend = backend
         self.plan = plan
         self.templates = templates
         self.context = context
@@ -271,12 +274,73 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
             self.file(PurePosixPath("auth_types.py"), "auth_types", _AUTH_TYPES),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
+            RenderedFile(path=PurePosixPath("README.md"), kind="readme", text=self.readme()),
         )
         extras = tuple(self.extras())
         runtime = tuple(self.runtime((*files, *extras)))
         if extras:
             self.placed((*files, *runtime), extras)
         return (*files, *extras, *runtime)
+
+    def readme(self) -> str:
+        """Return the README of the target root: the operations, how to implement and connect them, and regeneration."""
+        plan, config = self.plan, self.config
+        info = dict(plan.info)
+        codecs = next(
+            (
+                (spec.pascal, response.status)
+                for spec in plan.operations
+                if not spec.head
+                for response in spec.responses
+                if response.status.isdigit()
+                and any(
+                    media.use is not None and media.use.id in self.accessors and media.kind != "binary"
+                    for media in response.media
+                )
+            ),
+            None,
+        )
+        services = [
+            {
+                "argument": group.stem,
+                "protocol": group.service,
+                "implementation": group.service.removesuffix("Service") or "Operations",
+                "secured": group.secured,
+                "methods": _listed([f"`{spec.python_name}`" for spec in group.operations]),
+            }
+            for group in plan.groups
+        ]
+        arguments = [f"{service['argument']}={service['implementation']}()" for service in services]
+        return self.role("readme.jinja2", readme_template.render)(
+            title=info.get("title", config.package),
+            package=config.package,
+            model_package=config.model_package,
+            backend=self.backend,
+            operations=[
+                {
+                    "service": group.service,
+                    "name": spec.python_name,
+                    "method": spec.contract.method.upper(),
+                    "path": spec.contract.path.replace("|", "\\|"),
+                    "key": spec.key.replace("|", "\\|"),
+                }
+                for group in plan.groups
+                for spec in group.operations
+            ],
+            services=services,
+            protocols=", ".join(service["protocol"] for service in services),
+            arguments=", ".join((*arguments, *(("authorizer=authorize",) if plan.schemes else ()))),
+            schemes=[{"name": scheme.name, "credential": _credential(scheme)} for scheme in plan.schemes],
+            basic=any(scheme.kind == "basic" for scheme in plan.schemes),
+            forms=any(spec.body is not None and spec.body.fields for spec in plan.operations),
+            raw_request=any(
+                spec.body is not None and spec.body.decision.transport == "raw_request" for spec in plan.operations
+            ),
+            dataclass=self.backend == "pydantic_v2.dataclass",
+            codecs=None if codecs is None else f"{codecs[0]}ResponseCodecs",
+            status=None if codecs is None else codecs[1],
+            standalone=config.package_mode == "standalone",
+        )
 
     def runtime(self, files: tuple[RenderedFile, ...]) -> Iterator[RenderedFile]:
         """Copy the runtime modules the package imports, with their own imports, in ascending path order."""
@@ -929,6 +993,25 @@ class ServerRenderer:  # noqa: PLR0904
                 codec = "EnvelopeOutboundCodec" if self.envelope(media.use.id) else "NativeOutboundCodec"
                 kind = f"{module.local('_runtime.model_codecs.outbound', codec)}[{module.static(media.use.type)}]"
                 yield response.status, media.media_type, kind, accessor
+
+
+def _listed(names: list[str]) -> str:
+    if len(names) == 1:
+        return names[0]
+    return f"{', '.join(names[:-1])}{',' if len(names) > 2 else ''} and {names[-1]}"
+
+
+def _credential(scheme: SchemeSpec) -> str:
+    match scheme.kind:
+        case "api_key":
+            place = "query parameter" if scheme.location == "query" else scheme.location
+            return f"an API key in the `{scheme.parameter}` {place}"
+        case "basic":
+            return "HTTP Basic credentials"
+        case "bearer":
+            return "a bearer token"
+        case _:
+            return "no builtin credential; a credential extractor reads it"
 
 
 def _field_plan(module: Module, field: FieldPlan) -> str:

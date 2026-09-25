@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datamodel_code_generator._fastapi.context import FastAPIContext, FastAPIContextPatch
+from datamodel_code_generator.fastapi.templates import FastAPIContext, FastAPIContextPatch
 
 
 def transform(context: FastAPIContext) -> FastAPIContextPatch:

@@ -11015,6 +11015,215 @@ Expected agent behavior:
 
 ---
 
+# FastAPI Server Generation
+
+Source: https://datamodel-code-generator.koxudaxi.dev/fastapi-server/
+
+!!! warning "Experimental"
+
+    FastAPI server generation is experimental. Its options, target configuration file, generated package,
+    template context, and served OpenAPI document may change. See [Experimental Features](experimental.md).
+
+`--generate-server fastapi` generates the models of one OpenAPI document with the usual model options and, in
+the same run, a FastAPI server package for its operations: routers, handler call signatures, codecs for the
+values FastAPI cannot validate exactly, authentication, and the served OpenAPI document. You write the business
+logic in handler modules that regeneration never overwrites, and the package checks at startup, and for type
+checkers, that every handler matches its operation.
+
+## Quick start
+
+Write a target configuration file:
+
+```toml
+# fastapi.toml
+schema_version = 1
+package = "server"
+model_package = "models"
+output = "server"
+```
+
+Generate the models and the server:
+
+```bash
+datamodel-codegen --input openapi.yaml --input-file-type openapi \
+  --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel \
+  --output models.py --generate-server fastapi --target-config fastapi.toml
+```
+
+Install the runtime dependencies the package lists, then run the scaffold application:
+
+```bash
+pip install -r server/dcg-runtime-requirements.txt
+uvicorn server.main:app
+```
+
+Every operation answers `501 Not Implemented` until you replace the stub in `server/handlers/<handler>.py`.
+The generated `server/README.md` lists the operations and shows how to connect typed handlers, an authorizer,
+and your own `FastAPI` application.
+
+## Requirements
+
+- The input is one OpenAPI 3.0, 3.1, or 3.2 document, from a file, a URL, or stdin; a directory or a list of
+  files is `E_INPUT_ROOT`.
+- `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
+  `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, types, and codec registrations do not add
+  backends.
+- `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
+  operations.
+- `--output` names the model file or package, and `model_package` is its import path.
+- The generated package needs FastAPI 0.141 and the other requirements it lists.
+
+## Python API
+
+`datamodel_code_generator.fastapi` has the same entry points:
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
+from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
+
+report = generate_fastapi(
+    Path("openapi.yaml"),
+    model_config=GenerateConfig(
+        output=Path("models.py"),
+        input_file_type=InputFileType.OpenAPI,
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+        output_model_type=DataModelType.PydanticV2BaseModel,
+    ),
+    config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
+)
+for record in report.written_files:
+    print(record.path)
+```
+
+`render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
+Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
+ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, operation
+selection, and codec registrations are also available from `datamodel_code_generator.api_types`, and the
+context records hooks read from `datamodel_code_generator.fastapi.templates`.
+
+## Target configuration
+
+The target configuration file holds `schema_version = 1` and the target's own settings. Model options stay on
+the command line or in `pyproject.toml`. Relative paths are resolved against the file's directory, and
+`--target-output` replaces `output`.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `output` | required | Directory of the generated package, or of the distribution in standalone mode |
+| `package` | required | Import path of the generated package |
+| `model_package` | required | Import path of the models `--output` generates |
+| `model_mode` | `"generate"` | `"verify"` compares the models with existing files instead of writing them |
+| `selection` | every operation | Table of `include_operations`, `include_tags`, `exclude_operations`, `exclude_tags`, and a required `reason` |
+| `layout` | `"routers"` | One router module per tag, or `"single"` for one `routes.py` |
+| `handler_mode` | `"sync"` | `"async"` makes handlers coroutine functions; `[[handler_modes]]` sets one operation |
+| `include_request` | `false` | Pass the Starlette `Request` to every handler |
+| `body_mode` | `"typed"` | `"request"` passes the raw `Request` instead of a validated body; `[[body_modes]]` sets one operation |
+| `primary_responses` | inferred | `[[primary_responses]]` choose the response a bare return value takes |
+| `operation_names` | inferred | `[[operation_names]]` rename handlers |
+| `router_names` | inferred | Table of group keys to router module names |
+| `parameter_names` | inferred | `[[parameter_names]]` rename handler arguments |
+| `scaffold` | `true` | Create handler stubs, `main.py`, and `auth.py` once |
+| `hooks` | none | `[[hooks]]` tables with `module` or `file`, and `callable` (default `transform`) |
+| `templates` | none | Directory of template overrides and extra files |
+| `update_groups` | none | Regenerate only these router groups |
+| `package_mode` | `"embedded"` | `"standalone"` writes a distribution with `pyproject.toml` under `output` |
+| `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
+| `formatters`, `formatter_settings`, `custom_formatters`, `custom_formatter_kwargs` | builtin | Formatting of the generated package |
+| `encoding`, `header`, `include_timestamp` | `"utf-8"` | Encoding and header of the generated files |
+| `builtin_codec_compatibility`, `export_bindings` | none | `[[builtin_codec_compatibility]]` and `[[export_bindings]]` codec registrations |
+
+Operations are selected by their key, the JSON pointer of the path item method, such as `/paths/~1pets/get`,
+or a table with `pointer` and `document`:
+
+```toml
+[[handler_modes]]
+operation = "/paths/~1pets/get"
+mode = "async"
+
+[[body_modes]]
+operation = "/paths/~1upload/post"
+mode = "request"
+
+[[hooks]]
+module = "project.hooks"
+callable = "rename"
+```
+
+## The generated package
+
+| Path | Owner | Contents |
+| --- | --- | --- |
+| `__init__.py`, `application.py` | generator | `create_app`, `build_router`, `install_openapi`, and the public types |
+| `routers/` or `routes.py` | generator | Route registrations |
+| `responses.py`, `errors.py`, `auth_types.py`, `model_codecs.py` | generator | Results, errors, authentication, and codec types |
+| `_generated/`, `_runtime/` | generator | Plans, signatures, bindings, and the runtime the package imports |
+| `README.md`, `py.typed`, `dcg-runtime-requirements.txt` | generator | Documentation, typing marker, and runtime requirements |
+| `handlers/`, `main.py`, `auth.py` | you | Handler modules, the application, and the authorizer, created once when scaffolding |
+| `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
+
+Files the generator owns are replaced on every generation, and generation refuses to overwrite one you edited
+(`E_OUTPUT_MODIFIED`). In standalone mode the package lives under `output/src/<package>` next to
+`pyproject.toml` and `README.md`.
+
+## Regenerating and checking
+
+Run the same command again after the OpenAPI document changes. The handlers you wrote stay, stubs are created
+for new operations, and the handlers of removed operations are kept for you to delete. `--check` renders
+everything without writing it and exits with 0 when nothing would change, 1 when a file would change, and 2 for
+an error; `render_fastapi` returns the same artifacts, each with its action.
+
+`update_groups` regenerates only the named router groups, and refuses when anything else changed.
+`model_mode = "verify"` lets several targets share models generated once: each target compares the models with
+the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ.
+
+## Templates and hooks
+
+A `templates` directory overrides builtin roles by file name: `application.jinja2`, `router.jinja2`,
+`handler.jinja2`, `handler_signatures.jinja2`, `auth.jinja2`, `main.jinja2`, and `readme.jinja2`. Each role
+receives the values its builtin template uses and the frozen `context`. A `fastapi-templates.toml` file in the
+directory declares extra files, rendered once for the project, each router, or each operation:
+
+```toml
+schema_version = 1
+
+[[files]]
+template = "operation.md.jinja2"
+path = "docs/{operation}.md"
+scope = "operation"
+ownership = "owned"
+```
+
+A hook is a function that receives the `FastAPIContext` and returns a `FastAPIContextPatch`, which can rename
+handlers and routers, reorder or remove operations, change handler modes, and add extras and imports that
+templates read:
+
+```python
+from datamodel_code_generator.fastapi.templates import FastAPIContext, FastAPIContextPatch
+
+
+def transform(context: FastAPIContext) -> FastAPIContextPatch:
+    return FastAPIContextPatch(
+        handler_modes={operation.key: "async" for operation in context.operations},
+    )
+```
+
+An invalid patch is `E_HOOK_CONTRACT`, a patch that makes the plan conflict is `E_HOOK_CONFLICT`, and an
+exception the hook raises is reported as `E_HOOK_FAILURE` by the command line and propagates from the Python
+API.
+
+## Diagnostics
+
+The command line prints each diagnostic to stderr as `CODE severity stage location: message`, and
+[`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes them as JSON. Errors
+stop the run before anything is written: configuration (`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
+(`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding and planning (`BND_*`, `F_*`), hooks (`E_HOOK_*`), and ownership
+(`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
+served document cannot carry, and informational records, such as `S_OPERATION_EXCLUDED`, do not.
+
+---
+
 # CLI Reference
 
 Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/
@@ -11035,7 +11244,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
-| 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
+| 📝 [Utility Options](utility-options.md) | 19 | Help, version, debug options |
 
 ## 🎯 Focused Topics
 
@@ -11134,6 +11343,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--debug`](utility-options.md#debug)
 - [`--default-values`](field-customization.md#default-values)
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
+- [`--diagnostics-json`](utility-options.md#diagnostics-json)
 - [`--diff-against`](general-options.md#diff-against)
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix)
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports)
@@ -11174,6 +11384,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--generate-prompt`](utility-options.md#generate-prompt)
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config)
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators)
+- [`--generate-server`](utility-options.md#generate-server)
 - [`--graphql-no-typename`](graphql-only-options.md#graphql-no-typename)
 
 ### H {#h}
@@ -11283,6 +11494,8 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### T {#t}
 
+- [`--target-config`](utility-options.md#target-config)
+- [`--target-output`](utility-options.md#target-output)
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version)
 - [`--target-python-version`](model-customization.md#target-python-version)
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module)
@@ -40187,7 +40400,9 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/utility-opti
 |--------|-------------|
 | [`--all-jobs`](#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](#debug) | Show debug messages during code generation |
+| [`--diagnostics-json`](#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
+| [`--generate-server`](#generate-server) | Generate a FastAPI server package with the models (experimental) |
 | [`--help`](#help) | Show help message and exit |
 | [`--install-skill`](#install-skill) | Install the bundled Agent Skill (experimental) |
 | [`--job`](#job) | Run a named generation job from pyproject.toml (experimental) |
@@ -40199,6 +40414,8 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/utility-opti
 | [`--overwrite-skill`](#overwrite-skill) | Replace an existing Agent Skill installation |
 | [`--profile`](#profile) | Use a named profile from pyproject.toml |
 | [`--skill-scope`](#skill-scope) | Choose an Agent Skill installation scope |
+| [`--target-config`](#target-config) | Read the generation target's settings from a TOML file |
+| [`--target-output`](#target-output) | Override the generation target's output directory |
 | [`--version`](#version) | Show program version and exit |
 
 ---
@@ -40264,6 +40481,51 @@ or code generation. Requires the `debug` extra to be installed.
     ```bash
     pip install 'datamodel-code-generator[debug]'
     ```
+
+---
+
+## `--diagnostics-json` {#diagnostics-json}
+
+Write the selected target's diagnostics as JSON to a file, or to stdout with `-` (experimental).
+
+**Related:** [`--generate-server`](#generate-server),
+[Diagnostics](../fastapi-server.md#diagnostics)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml \
+      --diagnostics-json diagnostics.json
+    ```
+
+The document is written after every run, successful or not, and lists the diagnostics in the order stderr
+shows them:
+
+```json
+{
+  "schema_version": 1,
+  "target": "fastapi",
+  "diagnostics": [
+    {
+      "code": "E_CONFIG_UNKNOWN",
+      "severity": "error",
+      "stage": "config",
+      "message": "The target file has no setting 'packages'",
+      "source_uri": null,
+      "source_pointer": null,
+      "operation": null,
+      "option_path": "packages",
+      "artifact_path": null,
+      "target_id": null
+    }
+  ]
+}
+```
+
+A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
+and nothing is written to it.
 
 ---
 
@@ -40338,6 +40600,43 @@ Schema for that structured payload, such as when defining a tool contract.
         --generate-prompt "Review this command for stable generated output in CI." \
         | claude -p
     ```
+
+---
+
+## `--generate-server` {#generate-server}
+
+Generate a server package for the models from the settings `--target-config` names (experimental).
+The only choice is `fastapi`.
+
+!!! warning "Experimental"
+
+    FastAPI server generation is experimental; its options, target configuration file,
+    generated package, and diagnostics may change.
+
+**Related:** [`--target-config`](#target-config), [`--target-output`](#target-output),
+[`--diagnostics-json`](#diagnostics-json), [FastAPI Server](../fastapi-server.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml # (1)!
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml --check # (2)!
+    ```
+
+    1. :material-arrow-left: Generate the models at `--output` and the server package the target file describes
+    2. :material-arrow-left: Report the files that would change, without writing them
+
+One run generates the models with the usual model options and the server package from the same accepted
+document, then publishes both together. `--check` exits with 1 when a file would change and with 2 for an
+error. Diagnostics go to stderr; the generated code is never printed.
+
+`--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
+`--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints
+information, such as `--generate-prompt` or `--list-experimental`.
 
 ---
 
@@ -40703,6 +41002,56 @@ below your home directory.
 
     datamodel-codegen --install-skill codex --skill-scope project
     datamodel-codegen --install-skill claude-code --skill-scope user
+
+---
+
+## `--target-config` {#target-config}
+
+Read the selected target's settings from a flat TOML file (experimental). `--generate-server` requires it.
+
+**Related:** [`--generate-server`](#generate-server),
+[`--target-output`](#target-output), [Target configuration](../fastapi-server.md#target-configuration)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml
+    ```
+
+    ```toml
+    # fastapi.toml
+    schema_version = 1
+    package = "server"
+    model_package = "models"
+    output = "server"
+    ```
+
+The file holds `schema_version = 1` and the target's own settings only; model options stay on the command
+line or in `pyproject.toml`. Relative paths are resolved against the file's directory. An unknown setting is
+`E_CONFIG_UNKNOWN`, and a missing or invalid value is `E_CONFIG_VALUE`.
+
+---
+
+## `--target-output` {#target-output}
+
+Write the selected target to a directory instead of the `output` its target configuration file names
+(experimental). `--output` keeps naming the model output.
+
+**Related:** [`--generate-server`](#generate-server),
+[`--target-config`](#target-config)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output src/example/models.py \
+      --generate-server fastapi --target-config fastapi.toml \
+      --target-output src/example/server
+    ```
+
+A relative `--target-output` is resolved against the current directory.
 
 ---
 
@@ -41242,7 +41591,9 @@ datamodel-codegen [OPTIONS]
 |--------|-------------|
 | [`--all-jobs`](utility-options.md#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](utility-options.md#debug) | Show debug messages during code generation |
+| [`--diagnostics-json`](utility-options.md#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](utility-options.md#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
+| [`--generate-server`](utility-options.md#generate-server) | Generate a FastAPI server package with the models (experimental) |
 | [`--help`](utility-options.md#help) | Show help message and exit |
 | [`--install-skill`](utility-options.md#install-skill) | Install the bundled Agent Skill (experimental) |
 | [`--job`](utility-options.md#job) | Run a named generation job from pyproject.toml (experimental) |
@@ -41254,6 +41605,8 @@ datamodel-codegen [OPTIONS]
 | [`--overwrite-skill`](utility-options.md#overwrite-skill) | Replace an existing Agent Skill installation |
 | [`--profile`](utility-options.md#profile) | Use a named profile from pyproject.toml |
 | [`--skill-scope`](utility-options.md#skill-scope) | Choose an Agent Skill installation scope |
+| [`--target-config`](utility-options.md#target-config) | Read the generation target's settings from a TOML file |
+| [`--target-output`](utility-options.md#target-output) | Override the generation target's output directory |
 | [`--version`](utility-options.md#version) | Show program version and exit |
 
 ---
@@ -41297,6 +41650,7 @@ All options sorted alphabetically:
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...
+- [`--diagnostics-json`](utility-options.md#diagnostics-json) - Write the generation target's diagnostics as JSON
 - [`--diff-against`](general-options.md#diff-against) - Compare generated code from a baseline input with the curren...
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix) - Disable appending 'Item' suffix to array item types.
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports) - Prevent automatic addition of __future__ imports in generate...
@@ -41328,6 +41682,7 @@ All options sorted alphabetically:
 - [`--generate-prompt`](utility-options.md#generate-prompt) - Generate a prompt for consulting LLMs about CLI options
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config) - Generate pyproject.toml configuration from CLI arguments.
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators) - Generate experimental Pydantic v2 model validators for JSON ...
+- [`--generate-server`](utility-options.md#generate-server) - Generate a FastAPI server package with the models (experimental)
 - [`--graphql-no-typename`](graphql-only-options.md#graphql-no-typename) - Exclude __typename field from generated GraphQL models.
 - [`--help`](utility-options.md#help) - Show help message and exit
 - [`--http-backend`](base-options.md#http-backend) - Select the HTTP client backend for remote schemas.
@@ -41401,6 +41756,8 @@ All options sorted alphabetically:
 - [`--strict-refs`](general-options.md#strict-refs) - Treat unresolved local `$ref` JSON pointers as errors.
 - [`--strict-types`](typing-customization.md#strict-types) - Enable strict type validation for specified Python types.
 - [`--strip-default-none`](model-customization.md#strip-default-none) - Remove fields with None as default value from generated mode...
+- [`--target-config`](utility-options.md#target-config) - Read the generation target's settings from a TOML file
+- [`--target-output`](utility-options.md#target-output) - Override the generation target's output directory
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version) - Target Pydantic version for generated code compatibility.
 - [`--target-python-version`](model-customization.md#target-python-version) - Target Python version for generated code syntax and imports.
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module) - Treat dots in schema names as module separators.
@@ -42348,6 +42705,7 @@ This page lists features that are available but still experimental.
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json` | 0.84.0 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
@@ -42360,6 +42718,7 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
+| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.84.0 | - |
 
 ## Details
 
@@ -42392,6 +42751,16 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.
 
 The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property conditions.
+
+### `cli-option.generate-server`
+
+- **Kind:** cli-option
+- **Target:** `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json`
+- **Since:** 0.84.0
+
+FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.
+
+--generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, and --diagnostics-json writes the target diagnostics as JSON.
 
 ### `cli-option.install-skill`
 
@@ -42512,6 +42881,16 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
+
+### `python-api.fastapi-server`
+
+- **Kind:** python-api
+- **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
+- **Since:** 0.84.0
+
+The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
+
+generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package builds routers from handwritten handlers, serves the source document's metadata through install_openapi, and keeps handlers across regenerations.
 
 ---
 

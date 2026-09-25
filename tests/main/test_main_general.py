@@ -47,6 +47,7 @@ from datamodel_code_generator.__main__ import (
     Config,
     Exit,
     _create_config,
+    _generation_config,
     run_generate_from_config,
 )
 from datamodel_code_generator.arguments import _dataclass_arguments, arg_parser
@@ -620,11 +621,11 @@ def _run_generate_from_config_generate_kwargs() -> list[tuple[str, str]]:
 
 
 def _run_generate_from_config_model_copy_updates() -> list[tuple[str, str]]:
-    source = inspect.getsource(run_generate_from_config)
+    source = inspect.getsource(_generation_config)
     module = ast.parse(source)
     function = module.body[0]
     if not isinstance(function, ast.FunctionDef):  # pragma: no cover
-        msg = "run_generate_from_config source did not parse to a function"
+        msg = "_generation_config source did not parse to a function"
         raise TypeError(msg)
 
     calls = [
