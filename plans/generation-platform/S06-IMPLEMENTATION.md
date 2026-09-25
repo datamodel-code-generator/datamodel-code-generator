@@ -1,0 +1,49 @@
+# S06 implementation record
+
+Status: in progress. S06 (basic FastAPI generation) stacks on the S05 stack (#4151, #4152, #4154), which is not merged yet. Nothing in this stack has been merged. S06-1 is ready for review; S06-2 and S06-3 follow.
+
+## Baseline and review boundaries
+
+The authoritative contracts are DECISIONS-FASTAPI §§1–6 and §10–11, FASTAPI-REQUIREMENTS F01–F07, DECISIONS-TYPING §5 and the server surface of DECISIONS-MODEL-CODECS, read from the plan checkout used since S03. PR-STACKS splits S06 into standard parameter, body and response integration with the adapters they need; apps, routers, security, dependencies and sync/async; and typed handler Protocols, initial stubs and regeneration protection. The public `datamodel_code_generator.fastapi` module, `--generate-server` and served OpenAPI integration belong to S07, so S06 builds the server target in the private `_fastapi` package behind the S05 coordinator.
+
+## Deviations from the plan
+
+- Template rendering follows the model side, as decided before S05. Builtin server templates are `.jinja2` files shipped in the package, and `scripts/compile_builtin_templates.py` compiles them into standalone renderers the target uses by default, so builtin rendering imports no Jinja. Custom templates (S07) will overlay the builtin roles through the same `_build_environment` as model templates. The sandboxed environment of DECISIONS-FASTAPI §9.1 and §9.3 (`SpecText`, `Identifier`, `EncodedFragment`, `TemplateSafetyError`, provenance-tracking AST checks of every rendered token) is not implemented. The generator passes templates values it has already converted into Python literals, identifiers and type expressions, and every Python artifact is parsed after rendering and after formatting (`E_TARGET_SOURCE`, S05-3). Adversarial fixtures with quotes, newlines, f-string and eval-like text check the builtin output at test time.
+- Generated-server runtime behavior needs FastAPI, which is not a generator dependency. Tests that import generated servers run in dedicated tox environments with FastAPI, Starlette, python-multipart and HTTPX installed, like the existing HTTP backend e2e environments, and their coverage is combined with the main suite's. The main suite covers the generator through generated-source expectations.
+
+## S06-1: parameters, bodies, responses, and the adapters they need
+
+Generator modules, all private in `_fastapi`:
+
+- `config.py`: `FastAPIConfig` with the S06-1 fields (`layout`, `include_request`, `body_mode`, `body_modes`, `primary_responses`, `operation_names`, `router_names`, `parameter_names`, `codec_adapters`) and their flat TOML entries (arrays of tables keyed by `operation`). `handler_mode`/`handler_modes` join in S06-2, `scaffold` in S06-3, `templates`, `hooks` and `update_groups` in S07.
+- `naming.py`, `routes.py`: §3 normalization, explicit-name rules, groups by first tag, router file stems, `F_NAME_CONFLICT` for names that repeat under casefolding or name reserved files, path placeholders kept when they are plain identifiers and otherwise renamed to `dcg_pN` slots, `F_ROUTE_INVALID` for unmatched braces, converter syntax, repeated 3.2 placeholders, undeclared placeholders and routes that differ only by placeholder names.
+- `native.py`, `plan.py`: the §2.1 decisions. Parameters are native only for simple path scalars, form query scalars or exploded query lists, and simple header scalars whose schema has builtin scalar kinds, projectable bounds, lengths and formats (int32/int64 ranges intersected with the source bounds, date, date-time as `AwareDatetime`, uuid), and a same-typed literal default; enum and const values become `Literal` surfaces. Cookies, querystring, content parameters, other styles, repeated 3.0/3.1 placeholders, patterns and codec-validated formats use the adapter. JSON bodies and application/json primary responses are native when a model-graph check proves that the final types accept exactly the schema: builtin model settings only, matching requiredness, nullability (D's optional fallback is a mismatch), aliases and assertions, an extras policy that matches `additionalProperties`, no directional flags, and, for Pydantic v2 dataclass responses, no optional fields. The first reason in the fixed precedence wins. Flat form and multipart bodies are native through `Form` and `File`; other URL-encoded bodies use the form adapter, and other multipart bodies are `F_MEDIA_UNSUPPORTED` unless `body_mode='request'`.
+- `render.py`, `target.py`, `templates/`: the package files. The compiled FastAPI renderers are imported directly; the path registry the model templates use for custom template overlays joins them in S07, when server templates become customizable. Router modules (`routers/<stem>.py` or `routes.py`) define one adder per operation, register literal paths before templated ones, and build per-group routers; `application.py` checks the handler mapping and registers every group's literal routes before any templated route, so literal precedence holds across groups. Each endpoint is an ordinary FastAPI function with keyword-only `Annotated` declarations; adapter parameters come from one dependency per operation that returns a typed record, adapter bodies from one body dependency, and every result goes through the runtime dispatch. `_generated/contract.py` holds one plan class per operation, `responses.py` the payload aliases and the response codec facades (Literal overloads by exact status and media, then an `int` fallback returning a private `_<Pascal>ResponseCodec` union alias), and `_runtime/` a copy of the codec and server runtime. Schema-free content parameters reach the handler as `str`, or `WireValue` for JSON content (DECISIONS-MODEL-CODECS: "the media surface is fixed as WireValue for JSON/+json, str for text").
+
+Runtime modules, copied into every server package under `_runtime/server/`:
+
+- `requests.py`: `ParameterAdapter` decodes an operation's adapter parameters once from the raw ASGI query string, header lines and raw path (matched by a pattern over the route template's suffix), applies schema defaults for omitted values through the codec, and returns the typed record; `BodyAdapter` reads `Request.body()` once, selects the declared media by essence (exact before wildcard), and decodes JSON, text, URL-encoded forms or bytes through the codec. Failures become `RequestValidationError` records with only `type`, `loc` and a fixed `msg` (locations stop before undeclared keys), `400 Invalid request` for malformed parameters and resource limits, and `415 Unsupported media type`. Only codec errors a request can cause are translated; a misconfigured codec or a broken adapter propagates unchanged as a server error (DECISIONS-FASTAPI §6.1: "Propagate standard ResponseValidationError/original exceptions").
+- `responses.py`: `HTTPResult`, the declared response plans, `dispatch` (bare values of a native primary go to FastAPI's `response_model`; wrappers are encoded) and `respond` (adapter and no-primary routes). Results are matched exact, status class, then default; bodyless statuses, HEAD and undeclared media are rejected; headers are checked for token names, CR/LF, runtime-owned names and declared requirements. Every failure is a `ResponseValidationError` that keeps the codec failure as its cause.
+- `application.py`: `checked_handlers` requires one synchronous callable per operation that accepts the endpoint's keywords, raising `HandlerConfigurationError`.
+
+Changes to earlier stacks that S06-1 needs:
+
+- The concrete codecs' `encode` accepts any object, because a handler result is a dynamic boundary: the Pydantic codec serializes it through the adapter's serializer and validates the shape and the wire value; the adapter codec first rejects objects that are not instances of a class native type. The `ModelCodec[T]` protocol keeps its typed signature.
+- `plan_wire` plans parameters of the selected operations only and can name bundled documents by manifest pointers, so `CodecSourceRef` documents equal the target manifest's `/inputs/...` pointers (the S05 note).
+- `TargetRequest.resolve` resolves the target's own operation selectors through the coordinator.
+- The S04 layout helpers moved to `_python_layout.py`, and `Namespace` imports names as well as modules.
+
+Fixes to merged code that S06-1 exposed, opened against main and cherry-picked here:
+
+- #4155: the builtin formatter deleted decorators that follow a class docstring (the `@overload` facades showed it).
+- #4156: model codec bindings listed the typed-extras pseudo-field `__pydantic_extra__` as a property, so models with typed `additionalProperties` failed at runtime.
+
+Tests:
+
+- `tests/api_generation/test_fastapi_generation.py` (main suite, no FastAPI needed) renders the fixtures under `tests/data/generation_platform/fastapi` for both backends and compares the files, the target manifest's decisions, and the diagnostics; it also constructs and loads `FastAPIConfig`. It covers the `_fastapi` package completely.
+- `tests/api_generation/test_fastapi_server.py` runs in the new `fastapi-e2e` tox environment (dependency group `fastapi`: FastAPI, python-multipart, HTTPX2 for Starlette's test client) and in the CI job of the same name, whose coverage the combined report includes. It generates servers, imports them with their private runtime resolved to the installed runtime so coverage lands on the source files, builds routers from handlers in `tests/data/python/fastapi_handlers`, and replays requests. It covers `_runtime/server` completely.
+- The `type` dependency group includes the `fastapi` group so `ty` resolves the server runtime's FastAPI and Starlette imports.
+
+## Next action
+
+Open S06-1 as a stacked PR on #4154, then start S06-2 (apps, routers, security, dependencies, and sync/async).

@@ -56,31 +56,45 @@ _STATIC_CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str | None, str]]
 class Namespace:
     """Give each imported module one local alias that shadows no reserved name, spelled builtin, or other alias."""
 
-    __slots__ = ("_modules", "_taken")
+    __slots__ = ("_modules", "_names", "_taken")
 
     def __init__(self, reserved: Iterable[str]) -> None:
         """Reserve the names the module defines itself, together with every builtin a spelling may use."""
         self._taken = {*reserved, *_BUILTINS}
         self._modules: dict[str, str] = {}
+        self._names: dict[tuple[str, str], str] = {}
+
+    def _alias(self, base: str) -> str:
+        alias = base
+        count = 0
+        while alias in self._taken:
+            count += 1
+            alias = f"{base}_{count}"
+        self._taken.add(alias)
+        return alias
 
     def module(self, path: str) -> str:
         """Return the local alias of an absolute module path, importing it on first use."""
         if (alias := self._modules.get(path)) is None:
-            base = alias = path.replace(".", "_")
-            count = 0
-            while alias in self._taken:
-                count += 1
-                alias = f"{base}_{count}"
-            self._taken.add(alias)
-            self._modules[path] = alias
+            alias = self._modules[path] = self._alias(path.replace(".", "_"))
+        return alias
+
+    def name(self, module: str, name: str) -> str:
+        """Return the local alias of a name imported from a module, which may be relative, on first use."""
+        if (alias := self._names.get((module, name))) is None:
+            alias = self._names[module, name] = self._alias(name)
         return alias
 
     def imports(self) -> list[str]:
-        """Return the import statements of every aliased module in path order."""
-        return [
+        """Return the import statements of every aliased module in path order, then every imported name."""
+        modules = [
             f"import {path}" if alias == path else f"import {path} as {alias}"
             for path, alias in sorted(self._modules.items())
         ]
+        grouped: dict[str, list[str]] = {}
+        for (module, name), alias in sorted(self._names.items()):
+            grouped.setdefault(module, []).append(name if alias == name else f"{name} as {alias}")
+        return [*modules, *(f"from {module} import {', '.join(names)}" for module, names in grouped.items())]
 
 
 class TypeSource:

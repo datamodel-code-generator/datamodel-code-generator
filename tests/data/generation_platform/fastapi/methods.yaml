@@ -1,0 +1,27 @@
+openapi: 3.2.0
+info: {title: Methods, version: "1.0"}
+paths:
+  /search:
+    query:
+      operationId: searchItems
+      deprecated: true
+      summary: Search the items.
+      description: Send the search in the request body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [text], properties: {text: {type: string}}}
+      responses:
+        "200":
+          description: The matching names.
+          headers:
+            X-Note: {content: {text/plain: {}}}
+          content:
+            application/json:
+              schema: {type: array, items: {type: string}}
+    additionalOperations:
+      LINK:
+        operationId: linkItems
+        responses:
+          "204": {description: Done.}

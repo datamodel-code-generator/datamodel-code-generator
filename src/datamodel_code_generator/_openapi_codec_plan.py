@@ -141,14 +141,15 @@ def _at(location: SourceLocation, *tokens: str | int) -> SourceLocation:
     return replace(location, pointer=location.pointer + "".join(f"/{token}" for token in tokens))
 
 
-def _module(artifact: ModelArtifactAddress) -> str:
+def artifact_module(artifact: ModelArtifactAddress) -> str:
+    """Return the dotted module path of a model artifact below its model package."""
     *parents, name = artifact.relative_path
     modules = () if artifact.result_key == "single" else (*parents, name.removesuffix(".py"))
     return ".".join((artifact.model_package, *modules)).removesuffix(".__init__")
 
 
 def _symbol_key(symbol: FinalModelSymbol) -> str:
-    return f"{_module(symbol.artifact) if symbol.artifact else ''}:{symbol.name}"
+    return f"{artifact_module(symbol.artifact) if symbol.artifact else ''}:{symbol.name}"
 
 
 def _defined(source: str) -> frozenset[str]:

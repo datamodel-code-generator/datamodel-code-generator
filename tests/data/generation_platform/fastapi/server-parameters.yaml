@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info: {title: Server parameters, version: "1.0"}
+paths:
+  /search:
+    get:
+      operationId: search
+      parameters:
+        - {name: session, in: cookie, required: true, schema: {type: string, minLength: 2}}
+        - {name: code, in: query, schema: {type: string, pattern: "^[A-Z]+$", default: AB}}
+        - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Filter"}}
+        - {name: ids, in: query, explode: false, schema: {type: array, items: {type: integer}}}
+        - {name: X-Ids, in: header, schema: {type: array, items: {type: integer}}}
+        - {name: blob, in: query, content: {application/json: {schema: {$ref: "#/components/schemas/Blob"}}}}
+        - {name: note, in: query, content: {text/plain: {}}}
+      responses:
+        "204": {description: Done.}
+  /repeat/{id}/again/{id}:
+    get:
+      operationId: repeat
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /files/{file.name}:
+    get:
+      operationId: getFile
+      parameters:
+        - {name: file.name, in: path, required: true, schema: {type: string, pattern: "^[a-z]+\\.txt$"}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Filter:
+      type: object
+      additionalProperties: false
+      required: [id, name]
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+    Blob:
+      type: object
+      additionalProperties: false
+      properties:
+        a: {type: integer}

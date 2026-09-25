@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: Types, version: "1.0"}
+paths:
+  /values:
+    get:
+      operationId: getValues
+      parameters:
+        - {name: code, in: query, schema: {$ref: "#/components/schemas/Code"}}
+        - {name: tags, in: query, schema: {$ref: "#/components/schemas/Tags"}}
+        - {name: kind, in: query, schema: {$ref: "#/components/schemas/Kind"}}
+        - {name: at, in: query, schema: {type: string, format: date-time}}
+        - {name: stamp, in: query, schema: {type: integer, format: date-time}}
+        - {name: count, in: query, schema: {type: string, format: integer}}
+        - {name: host, in: query, schema: {type: string, format: hostname}}
+        - {name: label, in: query, schema: {type: integer, x-python-type: str}}
+        - {name: point, in: query, schema: {type: string, x-python-type: Point}}
+        - {name: raw, in: query, content: {text/plain: {}}}
+        - {name: blob, in: header, content: {application/json: {}}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Code: {type: string, maxLength: 3}
+    Tags: {type: array, items: {type: string}}
+    Kind: {type: string, enum: [a, b]}
+    Point:
+      type: object
+      properties:
+        x: {type: integer}

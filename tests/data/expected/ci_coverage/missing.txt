@@ -1,6 +1,6 @@
 {
   "code": 1,
   "prepared": [],
-  "stderr": "Coverage artifacts differ: missing=['.coverage.httpx-e2e-ubuntu-24.04'], unexpected=[]\n",
+  "stderr": "Coverage artifacts differ: missing=['.coverage.fastapi-e2e-ubuntu-24.04'], unexpected=[]\n",
   "stdout": ""
 }

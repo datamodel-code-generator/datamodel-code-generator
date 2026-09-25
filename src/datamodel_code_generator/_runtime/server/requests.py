@@ -1,0 +1,212 @@
+"""Request adapters: dependencies that decode raw parameters and bodies through the common codecs once."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
+from urllib.parse import unquote_to_bytes
+
+from fastapi.exceptions import RequestValidationError
+from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
+
+from ..model_codecs.media import decode_form, decode_json, decode_text, normalize_media_type
+from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
+from ..model_codecs.unset import UNSET, Unset
+from ..model_codecs.values import ModelValue
+from .errors import (
+    REQUEST_ERRORS,
+    invalid,
+    malformed_request,
+    missing,
+    request_failure,
+    unsupported_media,
+    validation_records,
+)
+
+if TYPE_CHECKING:
+    import re
+    from collections.abc import Callable, Mapping
+
+    from ..model_codecs.context import CodecContext
+    from ..model_codecs.media import FieldPlan
+    from ..model_codecs.parameters import ParameterPlan, RawParameter
+    from ..model_codecs.wire import WireValue
+    from .errors import Record
+
+RequestKind: TypeAlias = Literal["json", "text", "binary", "form"]
+
+
+class WireDecoder(Protocol):
+    """Validate and project one received wire value in its bound direction."""
+
+    def decode(self, wire: WireValue, context: CodecContext) -> object:
+        """Return the decoded value or envelope."""
+        ...
+
+
+def absent() -> None:
+    """Stand in for an omitted optional native parameter; the endpoint passes UNSET to the handler instead."""
+
+
+def _projected(codec: tuple[Callable[[], WireDecoder], CodecContext], wire: WireValue, *, envelope: bool) -> object:
+    get, context = codec
+    decoded = get().decode(wire, context)
+    return decoded.value if not envelope and isinstance(decoded, ModelValue) else decoded
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ParameterArgument:
+    """One adapter parameter: the handler keyword, its HTTP plan, its codec unless schema-free, and its default."""
+
+    name: str
+    plan: ParameterPlan
+    codec: tuple[Callable[[], WireDecoder], CodecContext] | None = None
+    envelope: bool = False
+    default: WireValue | Unset = UNSET
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RawPath:
+    """Find an operation's path slots in the raw request path: a pattern over the route template's suffix."""
+
+    pattern: re.Pattern[bytes]
+    slots: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ParameterAdapter:
+    """Decode an operation's adapter parameters once per request from the raw ASGI path, query, and headers."""
+
+    arguments: tuple[ParameterArgument, ...]
+    record: Callable[..., object]
+    path: RawPath | None = None
+    names: frozenset[str] = frozenset()
+
+    async def __call__(self, request: Request) -> object:
+        """Return the operation's record of adapter parameter values, with UNSET for omitted ones."""
+        scope = request.scope
+        raw = RawParameters(
+            path=self._path(scope, self.path) if self.path is not None else {},
+            query=scope.get("query_string"),
+            headers=tuple(scope.get("headers", ())),
+        )
+        values: dict[str, object] = {}
+        records: list[Record] = []
+        views: dict[str, RawParameter] = {}
+        for argument in self.arguments:
+            plan = argument.plan
+            if (view := views.get(plan.location)) is None:
+                view = raw_parameter(plan, raw)
+                if plan.location != "path":
+                    views[plan.location] = view
+            location = (plan.location, plan.name)
+            try:
+                wire = decode_parameter(plan, view)
+                if isinstance(wire, Unset):
+                    if plan.required:
+                        records.append(missing(location))
+                        continue
+                    if isinstance(argument.default, Unset):
+                        values[argument.name] = UNSET
+                        continue
+                    wire = argument.default
+                codec = argument.codec
+                values[argument.name] = wire if codec is None else _projected(codec, wire, envelope=argument.envelope)
+            except REQUEST_ERRORS as error:
+                if (found := validation_records(error, location, self.names)) is None:
+                    raise malformed_request() from error
+                records.extend(found)
+        if records:
+            raise RequestValidationError(records)
+        return self.record(**values)
+
+    @staticmethod
+    def _path(scope: Mapping[str, object], path: RawPath) -> dict[str, bytes]:
+        raw = scope.get("raw_path")
+        if not isinstance(raw, bytes) or (found := path.pattern.search(raw.partition(b"?")[0])) is None:
+            raise malformed_request()
+        captured: dict[str, bytes] = {}
+        records: list[Record] = []
+        for group, name in path.slots:
+            value = found.group(group)
+            if (first := captured.setdefault(name, value)) is not value and unquote_to_bytes(first) != unquote_to_bytes(
+                value
+            ):
+                records.append(invalid(("path", name)))
+        if records:
+            raise RequestValidationError(records)
+        return captured
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BodyMedia:
+    """One declared request media type and how the adapter reads it."""
+
+    media_type: str
+    kind: RequestKind
+    codec: tuple[Callable[[], WireDecoder], CodecContext] | None = None
+    envelope: bool = False
+    fields: tuple[FieldPlan, ...] = ()
+    additional: FieldPlan | None = None
+
+
+def _read(media: BodyMedia, body: bytes) -> WireValue | bytes:
+    match media.kind:
+        case "json":
+            return decode_json(body)
+        case "text":
+            return decode_text(body)
+        case "form":
+            return decode_form(body, media.fields, media.additional)
+        case _:
+            return body
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BodyAdapter:
+    """Decode a request body from the buffered Request.body() through its declared media type and codec."""
+
+    media: tuple[BodyMedia, ...]
+    required: bool = True
+    names: frozenset[str] = frozenset()
+    _essences: tuple[tuple[str, BodyMedia], ...] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """Index the declared media by essence, exact types before wildcards."""
+        essences = [(item.media_type.partition(";")[0], item) for item in self.media]
+        object.__setattr__(self, "_essences", tuple(sorted(essences, key=lambda pair: "*" in pair[0])))
+
+    async def __call__(self, request: Request) -> object:
+        """Return the decoded body, the envelope of a directional body, or UNSET for an omitted optional body."""
+        return (await self.receive(request))[1]
+
+    async def receive(self, request: Request) -> tuple[str | None, object]:
+        """Return the received media type with the decoded body, or UNSET for an omitted optional body."""
+        header = request.headers.get("content-type")
+        body = await request.body()
+        if header is None and not body:
+            if self.required:
+                raise RequestValidationError([missing(("body",))])
+            return None, UNSET
+        if (selected := self._select(header)) is None:
+            raise unsupported_media()
+        media, media_type = selected
+        try:
+            if isinstance(value := _read(media, body), bytes) or media.codec is None:
+                return media_type, value
+            return media_type, _projected(media.codec, value, envelope=media.envelope)
+        except REQUEST_ERRORS as error:
+            raise request_failure(error, ("body",), self.names) from error
+
+    def _select(self, header: str | None) -> tuple[BodyMedia, str] | None:
+        if header is None:
+            return None
+        try:
+            received = normalize_media_type(header).partition(";")[0]
+        except ValueError:
+            return None
+        kind = received.partition("/")[0]
+        for essence, media in self._essences:
+            if essence in {received, f"{kind}/*", "*/*"}:
+                return media, media.media_type if "*" not in essence else received
+        return None

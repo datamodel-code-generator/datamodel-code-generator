@@ -1,0 +1,4 @@
+# backend-errors
+render msgspec.Struct
+  APIGenerationError
+  E_FASTAPI_BACKEND_UNSUPPORTED config model_config.output_model_type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'

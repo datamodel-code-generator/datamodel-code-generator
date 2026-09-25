@@ -1,6 +1,7 @@
 {
   "code": 0,
   "prepared": [
+    ".coverage.fastapi-e2e-ubuntu-24.04",
     ".coverage.httpx-e2e-ubuntu-24.04",
     ".coverage.httpx2-min-e2e-ubuntu-24.04",
     ".coverage.migration-boundary-ubuntu-24.04",
@@ -32,5 +33,5 @@
     ".coverage.pydantic25-ubuntu-24.04"
   ],
   "stderr": "",
-  "stdout": "Validated 29 coverage artifacts\n"
+  "stdout": "Validated 30 coverage artifacts\n"
 }

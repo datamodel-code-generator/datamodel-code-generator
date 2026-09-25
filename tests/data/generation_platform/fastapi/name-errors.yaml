@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info: {title: Name errors, version: "1.0"}
+paths:
+  /one:
+    get:
+      operationId: x1
+      responses:
+        "204": {description: Done.}
+  /two:
+    get:
+      operationId: x_1
+      responses:
+        "204": {description: Done.}
+  /three:
+    get:
+      operationId: con
+      responses:
+        "204": {description: Done.}

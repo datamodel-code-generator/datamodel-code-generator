@@ -1,0 +1,104 @@
+openapi: 3.1.0
+info: {title: Pets, version: "1.0"}
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      parameters:
+        - {name: limit, in: query, description: Page size., schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 20}}
+        - {name: tags, in: query, schema: {type: array, items: {type: string}}}
+        - {name: kind, in: query, schema: {type: string, enum: [cat, dog]}}
+        - {name: X-Request-Id, in: header, schema: {type: string, format: uuid}}
+        - {name: since, in: query, schema: {type: string, format: date-time}}
+        - {name: session, in: cookie, schema: {type: string}}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+        default:
+          description: An error.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+    post:
+      operationId: createPet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/NewPet"}
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /pets/mine:
+    get:
+      operationId: listMyPets
+      tags: [pets]
+      responses:
+        "200":
+          description: The caller's pets.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [pets]
+      parameters:
+        - {name: petId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+        "404":
+          description: Missing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+    delete:
+      operationId: deletePet
+      tags: [pets]
+      parameters:
+        - {name: petId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      responses:
+        "204": {description: Deleted.}
+  /store/inventory:
+    get:
+      operationId: getInventory
+      tags: [store]
+      responses:
+        "200":
+          description: Counts by status.
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: {type: integer}}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name, tag]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        tag: {type: [string, "null"]}
+    NewPet:
+      type: object
+      required: [name, tag]
+      properties:
+        name: {type: string, minLength: 1}
+        tag: {type: [string, "null"]}
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: integer, format: int32}
+        message: {type: string}

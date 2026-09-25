@@ -1,0 +1,4 @@
+# repeat-32
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_ROUTE_INVALID target /paths/~1repeat~1{id}~1again~1{id}/get: OpenAPI 3.2 does not allow a placeholder twice in one path

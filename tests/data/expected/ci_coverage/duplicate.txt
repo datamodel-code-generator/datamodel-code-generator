@@ -1,6 +1,6 @@
 {
   "code": 1,
   "prepared": [],
-  "stderr": "Invalid coverage artifact contents: .coverage.httpx-e2e-ubuntu-24.04\n",
+  "stderr": "Invalid coverage artifact contents: .coverage.fastapi-e2e-ubuntu-24.04\n",
   "stdout": ""
 }

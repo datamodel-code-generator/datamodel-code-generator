@@ -1,0 +1,9 @@
+layout='routers'
+include_request=False
+body_mode='typed'
+body_modes=mappingproxy({})
+primary_responses=mappingproxy({})
+operation_names=mappingproxy({})
+router_names=mappingproxy({})
+parameter_names=mappingproxy({})
+codec_adapters=()

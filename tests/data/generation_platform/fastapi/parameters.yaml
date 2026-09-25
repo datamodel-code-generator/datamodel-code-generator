@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info: {title: Parameters, version: "1.0"}
+paths:
+  /items/{item-id}/parts/{part}:
+    get:
+      operationId: getPart
+      tags: [items]
+      parameters:
+        - {name: item-id, in: path, required: true, schema: {type: integer, format: int64, minimum: -10, exclusiveMaximum: 100}}
+        - {name: part, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 8}}
+        - {name: limit, in: query, description: Page size., schema: {type: integer, format: int32, minimum: -3000000000, maximum: 50, default: 10}}
+        - {name: ratio, in: query, schema: {type: number, multipleOf: 0.5, title: Ratio}}
+        - {name: flag, in: query, schema: {type: boolean, default: false}}
+        - {name: tags, in: query, schema: {type: array, items: {type: string, maxLength: 4}, minItems: 1, default: [a]}}
+        - {name: day, in: query, deprecated: true, schema: {type: string, format: date, examples: ["2024-01-01"]}}
+        - {name: ref, in: query, schema: {type: string, format: uuid}}
+        - {name: mode, in: query, schema: {type: string, enum: [fast, slow], default: fast}}
+        - {name: level, in: query, schema: {const: 3}}
+        - {name: X-Trace, in: header, schema: {type: string}}
+        - {name: request, in: query, schema: {type: string}}
+        - {name: part, in: query, schema: {type: string}}
+        - {name: 2fa, in: query, schema: {type: string}}
+      responses:
+        "200":
+          description: The part.
+          content:
+            application/json:
+              schema: {type: string}
+  /adapters:
+    get:
+      operationId: listAdapters
+      tags: [adapters]
+      parameters:
+        - {name: session, in: cookie, schema: {type: string}}
+        - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Filter"}}
+        - {name: ids, in: query, explode: false, schema: {type: array, items: {type: integer}}}
+        - {name: X-Ids, in: header, schema: {type: array, items: {type: integer}}}
+        - {name: blob, in: query, content: {application/json: {schema: {type: object}}}}
+        - {name: code, in: query, schema: {type: string, pattern: "^[A-Z]+$"}}
+        - {name: mail, in: query, schema: {type: string, format: email}}
+        - {name: other, in: query, schema: {type: string, not: {const: x}}}
+        - {name: none, in: query, schema: {type: [string, "null"], enum: [null]}}
+        - {name: count, in: query, schema: {type: integer, default: "ten"}}
+        - {name: point, in: query, schema: {$ref: "#/components/schemas/Point"}}
+        - {name: stamp, in: query, schema: {type: string, format: date-time, x-note: kept}}
+        - {name: page, in: query, required: true, schema: {type: integer, default: 1}}
+      responses:
+        "204": {description: Nothing.}
+  /repeat/{id}/again/{id}:
+    get:
+      operationId: getRepeated
+      tags: [adapters]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Nothing.}
+components:
+  schemas:
+    Filter:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+    Point:
+      type: object
+      additionalProperties: false
+      required: [x]
+      properties:
+        x: {type: integer}

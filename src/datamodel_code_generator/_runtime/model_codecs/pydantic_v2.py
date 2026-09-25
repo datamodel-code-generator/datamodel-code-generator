@@ -353,8 +353,11 @@ class PydanticModelCodec(Generic[T]):
             value=value, binding_id=self._binding.binding_id, wire=wire, presence=snapshot_presence(wire), extras=_EMPTY
         )
 
-    def encode(self, value: T | ModelValue[T] | ModelInput[T], context: CodecContext) -> WireValue:
-        """Return the validated wire value to send for a native value or a snapshot of this binding."""
+    def encode(self, value: object, context: CodecContext) -> WireValue:
+        """Return the validated wire value to send for a native value or a snapshot of this binding.
+
+        The value may come from a dynamic boundary such as a server handler, so its shape is checked here.
+        """
         self._require(context, inbound=False)
         try:
             match value:
@@ -614,8 +617,10 @@ class PydanticModelCodec(Generic[T]):
             elif name not in fields and (unstored or name in reserved):
                 walk.extras[_at(pointer, name)] = entry
 
-    def _native_wire(self, value: T, presence: PresenceTree | None) -> WireValue:
-        dumped = self._adapter.dump_python(value, mode="python", by_alias=False, round_trip=True, warnings=False)
+    def _native_wire(self, value: object, presence: PresenceTree | None) -> WireValue:
+        dumped = self._adapter.serializer.to_python(
+            value, mode="python", by_alias=False, round_trip=True, warnings=False
+        )
         return freeze_wire(self._wire(dumped, value, self._binding.type, presence, ""))
 
     def _wire(

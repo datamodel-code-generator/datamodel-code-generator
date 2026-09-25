@@ -1,0 +1,6 @@
+APIGenerationError
+  E_CONFIG_VALUE config body_modes: body_modes must be an array
+  E_CONFIG_VALUE config router_names: router_names must be a table
+  E_CONFIG_VALUE config primary_responses[0].status_code: primary_responses[0].status_code must be an integer
+  E_CONFIG_VALUE config operation_names[0].name: operation_names[0].name must be a string
+  E_CONFIG_VALUE config parameter_names[0].where: parameter_names[0] has no key 'where'

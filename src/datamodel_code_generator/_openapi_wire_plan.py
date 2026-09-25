@@ -51,7 +51,7 @@ from datamodel_code_generator._runtime.model_codecs.schema import (
 from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue, escape_pointer_token, freeze_wire
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Collection, Iterable, Sequence
 
     from datamodel_code_generator._generation_contract import FrozenLiteral
     from datamodel_code_generator._openapi_generation import SourceLease
@@ -135,6 +135,7 @@ class WirePlan:
     views: tuple[DirectionalView, ...] = ()
     documents: tuple[tuple[SourceDocumentId, str], ...] = ()
     version: str = ""
+    headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
 
     def schema_id(self, location: SourceLocation) -> str:
         """Return the bundled schema identifier of a planned source location."""
@@ -198,15 +199,34 @@ def _supported_dialect(dialect: str) -> bool:
     return dialect == _JSON_SCHEMA_2020_12 or dialect.startswith(_OAS_DIALECT_PREFIXES)
 
 
-class _WirePlanner:
-    def __init__(self, batch: GeneratedTypeContractBatch, lease: SourceLease) -> None:
-        self.batch = batch
-        self.lease = lease
-        root, *others = batch.documents
-        self.logical = {root.id: f"{LOGICAL_ROOT}root"} | {
+def _logical(
+    batch: GeneratedTypeContractBatch, pointers: Mapping[SourceDocumentId, str] | None
+) -> dict[SourceDocumentId, str]:
+    root, *others = batch.documents
+    if pointers is None:
+        return {root.id: f"{LOGICAL_ROOT}root"} | {
             document.id: f"{LOGICAL_ROOT}documents/{index}"
             for index, document in enumerate(sorted(others, key=lambda document: document.uri))
         }
+    logical: dict[SourceDocumentId, str] = {}
+    seen: dict[str, int] = {}
+    for document in batch.documents:
+        base = f"{LOGICAL_ROOT}{pointers[document.id].removeprefix('/inputs/')}"
+        count = seen[base] = seen.get(base, -1) + 1
+        logical[document.id] = base if not count else f"{base}/{count}"
+    return logical
+
+
+class _WirePlanner:
+    def __init__(
+        self,
+        batch: GeneratedTypeContractBatch,
+        lease: SourceLease,
+        pointers: Mapping[SourceDocumentId, str] | None = None,
+    ) -> None:
+        self.batch = batch
+        self.lease = lease
+        self.logical = _logical(batch, pointers)
         self.retrieval = {document.uri: document.id for document in batch.documents}
         self.bases = {document.id: document.uri for document in batch.documents}
         self.diagnostics: list[CodecDiagnostic] = []
@@ -222,14 +242,15 @@ class _WirePlanner:
                     self.aliases[urljoin(document.uri, identifier)] = document.id
                 case _:
                     pass
-        specification = lease.borrow(SourceLocation(root.id, "", "schema"))
+        root = batch.documents[0].id
+        specification = lease.borrow(SourceLocation(root, "", "schema"))
         settings = specification if isinstance(specification, dict) else {}
         self.version = str(settings.get("openapi", ""))
         self.legacy = self.version.startswith("3.0")
         if isinstance(dialect := settings.get("jsonSchemaDialect"), str) and not _supported_dialect(dialect):
             self.report(
                 "MC_SCHEMA_DIALECT",
-                SourceLocation(root.id, "/jsonSchemaDialect", "schema"),
+                SourceLocation(root, "/jsonSchemaDialect", "schema"),
                 "The default schema dialect is not builtin",
             )
 
@@ -636,17 +657,35 @@ def _legacy_keywords(raw: Mapping[str, YamlValue], normalized: dict[str, JSONVal
 
 
 def plan_wire(
-    batch: GeneratedTypeContractBatch, lease: SourceLease, uses: Sequence[TypeUseId] | None = None
+    batch: GeneratedTypeContractBatch,
+    lease: SourceLease,
+    uses: Sequence[TypeUseId] | None = None,
+    *,
+    operations: Collection[OperationId] | None = None,
+    documents: Mapping[SourceDocumentId, str] | None = None,
 ) -> WirePlan:
-    """Build normalized offline schemas and parameter plans for the requested schema-bearing uses."""
-    planner = _WirePlanner(batch, lease)
+    """Build normalized offline schemas and parameter plans for the requested uses and operations.
+
+    Explicit document pointers, such as a target manifest's `/inputs/documents/<index>`, name the bundled
+    resources, so adapter source references match the manifest.
+    """
+    planner = _WirePlanner(batch, lease, documents)
     requested = None if uses is None else frozenset(uses)
     schema_ids = tuple(
         (binding.id, planner.root(binding.schema))
         for binding in batch.type_uses
         if binding.schema is not None and (requested is None or binding.id in requested)
     )
-    parameters = tuple((operation.id, _parameters(planner, operation)) for operation in batch.operations)
+    planned = [operation for operation in batch.operations if operations is None or operation.id in operations]
+    parameters = tuple((operation.id, _parameters(planner, operation)) for operation in planned)
+    headers = tuple(
+        (use, plan)
+        for operation in planned
+        for response in operation.responses
+        for header in response.children
+        if header.kind == "header"
+        for use, plan in _response_header(planner, operation.id, header)
+    )
     views: list[DirectionalView] = []
     for direction in _FLAGS:
         directional = _DirectionalPlanner(planner, direction)
@@ -670,6 +709,7 @@ def plan_wire(
         tuple(views),
         tuple(sorted(planner.logical.items())),
         planner.version,
+        headers,
     )
 
 
@@ -727,6 +767,17 @@ def _planned(
             )
         )
     return None
+
+
+def _response_header(
+    planner: _WirePlanner, operation: OperationId, declaration: WireDeclaration
+) -> tuple[tuple[TypeUseId, ParameterPlan], ...]:
+    uses = (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
+    if not uses:
+        return ()
+    facts = (*declaration.facts, ("in", LiteralScalar("str", "header")), ("style", LiteralScalar("str", "simple")))
+    plan = _planned(planner, operation, replace(declaration, facts=facts), [])
+    return () if plan is None else ((uses[0], plan),)
 
 
 def _requirement_names(value: FrozenLiteral | None) -> list[str]:

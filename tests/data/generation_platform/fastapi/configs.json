@@ -1,0 +1,122 @@
+{
+  "defaults": {
+    "python": {}
+  },
+  "values": {
+    "python": {
+      "layout": "single",
+      "include_request": true,
+      "body_mode": "request",
+      "body_modes": [
+        [
+          "/paths/~1pets/post",
+          "typed"
+        ]
+      ],
+      "primary_responses": [
+        [
+          {
+            "pointer": "/paths/~1pets/post"
+          },
+          {
+            "status_code": 201,
+            "media_type": "application/json"
+          }
+        ]
+      ],
+      "operation_names": [
+        [
+          "/paths/~1pets/get",
+          "list_all"
+        ]
+      ],
+      "router_names": {
+        "tag:pets": "animals"
+      },
+      "parameter_names": [
+        [
+          "/paths/~1pets/get",
+          {
+            "query:limit": "page_size"
+          }
+        ]
+      ]
+    }
+  },
+  "invalid-values": {
+    "python": {
+      "layout": "grid",
+      "include_request": "yes",
+      "body_mode": "raw",
+      "body_modes": [
+        [
+          "/paths/~1pets/post",
+          "raw"
+        ]
+      ],
+      "primary_responses": [
+        [
+          "/paths/~1pets/post",
+          {
+            "status_code": 99
+          }
+        ]
+      ],
+      "operation_names": [
+        [
+          "/paths/~1pets/get",
+          "__private"
+        ]
+      ],
+      "router_names": {
+        "tag:pets": "class"
+      },
+      "parameter_names": [
+        [
+          "/paths/~1pets/get",
+          {
+            "body:limit": "limit"
+          }
+        ]
+      ],
+      "codec_adapters": "none"
+    }
+  },
+  "invalid-shapes": {
+    "python": {
+      "body_modes": "request",
+      "primary_responses": [
+        [
+          "/paths/~1pets/post",
+          201
+        ]
+      ],
+      "operation_names": [
+        [
+          7,
+          "name"
+        ]
+      ],
+      "router_names": [
+        "pets"
+      ],
+      "parameter_names": [
+        [
+          "/paths/~1pets/get",
+          "limit"
+        ]
+      ]
+    }
+  },
+  "invalid-mappings": {
+    "python": {
+      "parameter_names": "limit"
+    }
+  },
+  "toml-values": {
+    "toml": "schema_version = 1\noutput = \"server\"\npackage = \"server\"\nmodel_package = \"models\"\nlayout = \"single\"\ninclude_request = true\nbody_mode = \"request\"\nrouter_names = { \"tag:pets\" = \"animals\" }\n\n[[body_modes]]\noperation = \"/paths/~1pets/post\"\nmode = \"typed\"\n\n[[primary_responses]]\noperation = { pointer = \"/paths/~1pets/post\" }\nstatus_code = 201\nmedia_type = \"application/json\"\n\n[[primary_responses]]\noperation = \"/paths/~1pets/get\"\nstatus_code = 200\n\n[[operation_names]]\noperation = \"/paths/~1pets/get\"\nname = \"list_all\"\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"query:limit\"\nname = \"page_size\"\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"header:X-Trace\"\nname = \"trace\"\n"
+  },
+  "toml-errors": {
+    "toml": "schema_version = 1\noutput = \"server\"\npackage = \"server\"\nmodel_package = \"models\"\nbody_modes = \"request\"\nrouter_names = \"animals\"\n\n[[primary_responses]]\noperation = \"/paths/~1pets/post\"\nstatus_code = \"201\"\n\n[[operation_names]]\noperation = \"/paths/~1pets/get\"\nname = 7\n\n[[parameter_names]]\noperation = \"/paths/~1pets/get\"\nparameter = \"query:limit\"\nname = \"page_size\"\nwhere = \"query\"\n"
+  }
+}

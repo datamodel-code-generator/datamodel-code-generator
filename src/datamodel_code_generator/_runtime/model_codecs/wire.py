@@ -72,6 +72,11 @@ def freeze_wire(value: JSONValue | WireValue) -> WireValue:
     return _freeze(value, set())
 
 
+def checked_wire(value: object) -> WireValue:
+    """Validate a value of unknown static type, such as a handler's return, and freeze it as a wire snapshot."""
+    return _freeze(value, set())
+
+
 def thaw_wire(value: WireValue) -> JSONValue:
     """Copy a wire snapshot into independent mutable lists and dictionaries."""
     return _thaw(value, set())
@@ -182,7 +187,7 @@ def enter(value: object, active: set[int]) -> int:
     return identity
 
 
-def _freeze(value: JSONValue | WireValue, active: set[int]) -> WireValue:
+def _freeze(value: object, active: set[int]) -> WireValue:
     if isinstance(value, (list, tuple)):
         identity = enter(value, active)
         frozen = tuple(_freeze(item, active) for item in value)

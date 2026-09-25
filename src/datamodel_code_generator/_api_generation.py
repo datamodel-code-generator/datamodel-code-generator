@@ -47,7 +47,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, TargetState
@@ -109,12 +109,17 @@ class TargetLayout:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RenderedFile:
-    """One text file a target rendered; the coordinator formats, heads, and encodes it."""
+    """One text file a target rendered; the coordinator formats, heads, and encodes it.
+
+    A verbatim file copies a source the package already validates, such as a runtime module, so the coordinator
+    checks only its formatted text.
+    """
 
     path: PurePosixPath
     kind: str
     text: str
     group: str | None = None
+    verbatim: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -132,6 +137,7 @@ class TargetRequest:
     excluded: tuple[Exclusion, ...]
     documents: DocumentTable
     state: TargetState
+    resolve: Callable[[OperationRef], OperationContract | None]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -777,6 +783,7 @@ class _Planner:
                 excluded=excluded,
                 documents=self.documents,
                 state=state,
+                resolve=self.operation,
             )
         )
         if any(item.severity == "error" for item in rendered.diagnostics):
@@ -925,7 +932,7 @@ class _Finisher:
 
         config = self.config
         files = (*rendered.files, *self.layout_files(rendered))
-        self.check_sources(((file.path, file.text) for file in files), "target")
+        self.check_sources(((file.path, file.text) for file in files if not file.verbatim), "target")
         settings = config.formatter_settings
         formatter = CodeFormatter(
             self.effective.target_python_version,

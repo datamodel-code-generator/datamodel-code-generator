@@ -1,0 +1,10 @@
+openapi: 3.2.0
+info: {title: Repeated placeholders, version: "1.0"}
+paths:
+  /repeat/{id}/again/{id}:
+    get:
+      operationId: getRepeated
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
