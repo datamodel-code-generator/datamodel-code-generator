@@ -1,0 +1,6 @@
+use /paths/~1tallies/post request_body: native model models:Tally models=[('models:Tally', 'model', 'allow', True)]
+use /paths/~1tallies/post response_body 201: native model models:Tally models=[('models:Tally', 'model', 'allow', True)]
+create-server-decode: model Tally(name='votes', yes=3, no=1) set=['name', 'no', 'yes'] wire={"name":"votes","yes":3,"no":1} presence=['', '/name', '/yes', '/no'] extras={}
+create-server-decode-invalid-extra: WireValidationError schema.type@/yes
+created-server-encode: wire={"name":"votes","yes":3,"no":1}
+created-server-snapshot: model Tally(name='votes', yes=3, no=1) set=['name', 'no', 'yes'] wire={"name":"votes","yes":3} presence=['', '/name', '/yes'] extras={}

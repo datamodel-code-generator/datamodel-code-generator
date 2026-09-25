@@ -83,6 +83,7 @@ _SYMBOL_BACKENDS: Final[dict[PydanticBackend, str]] = {
 _ARRAY_KINDS: Final[dict[str, ArrayKind]] = {"set": "set", "frozenset": "frozenset"}
 _OPTIONAL_FALLBACK: Final = ("none", "synthesized_optional_fallback", "optional_fallback")
 _EXTRA_POLICIES: Final[dict[object, ExtraPolicy]] = {"ignore": "ignore", "allow": "allow", "forbid": "forbid"}
+_TYPED_EXTRAS: Final = "__pydantic_extra__"
 _NO_DECLARATIONS: Final = CodecDeclarations()
 
 
@@ -387,6 +388,7 @@ class _CodecPlanner:
             for member in members
             if (facts := member.model_facts) is not None
             and (slot := member.slot) is not None
+            and slot.name != _TYPED_EXTRAS
             and (wire_name := member.wire_name) is not None
         ]
         fields = tuple(self.field(key, member, accepted) for member, accepted in planned)
