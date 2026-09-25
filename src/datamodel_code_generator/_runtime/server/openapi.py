@@ -1,0 +1,543 @@
+"""Compose the served OpenAPI document from FastAPI's own document and the fragments of generated packages."""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, replace
+from math import isfinite
+from typing import Final, Literal, TypeAlias
+
+from fastapi import FastAPI  # noqa: TC002 - get_type_hints resolves the installed callable at runtime.
+from typing_extensions import TypeIs
+
+from ..model_codecs.wire import JSONValue
+from .application import OpenAPIConfigurationError
+
+Version: TypeAlias = Literal["3.1.0", "3.2.1"]
+OpenAPIDocument: TypeAlias = dict[str, JSONValue]
+
+MARKER: Final = "x-dcg-operation"
+STATE: Final = "__dcg_openapi_state__"
+_VERSIONS: Final[dict[object, Version]] = {"3.1.0": "3.1.0", "3.2.1": "3.2.1"}
+_METHODS: Final = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace", "query"})
+_MARKER_KEYS: Final = frozenset({"version", "package", "operation"})
+_PREFIX_FORBIDDEN: Final = frozenset("{}?#")
+_PAIR: Final = 2
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationDocument:
+    """One generated operation: its registration method and route path, its renamed path slots, and its fragment."""
+
+    key: str
+    method: str
+    route_path: str
+    slots: tuple[tuple[str, str], ...] = ()
+    fragment: Mapping[str, JSONValue]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OpenAPIPackagePlan:
+    """What one generated package adds to the served document, and which of its operations the app includes.
+
+    The bundle is the JSON of the package's operation fragments and components, read when a document is composed.
+    """
+
+    package: str
+    version: Version
+    repeated: bool
+    operation_keys: tuple[str, ...]
+    bundle: str
+
+
+@dataclass(slots=True, kw_only=True)
+class OpenAPIState:
+    """The composition installed on one application: its original factory, package plans, and completed document."""
+
+    protocol: Literal[1]
+    original_factory: Callable[[], object]
+    package_plans: tuple[OpenAPIPackagePlan, ...]
+    cached_document: OpenAPIDocument | None = None
+
+
+class _InstalledOpenAPI:
+    """The app.openapi callable that composes the served document once and caches it."""
+
+    __slots__ = ("__dcg_openapi_state__", "app")
+
+    def __init__(self, app: FastAPI, state: OpenAPIState) -> None:
+        self.app = app
+        self.__dcg_openapi_state__ = state
+
+    def __call__(self) -> OpenAPIDocument:
+        state = self.__dcg_openapi_state__
+        if self.app.openapi_schema is (cached := state.cached_document) and cached is not None:
+            return cached
+        state.cached_document = self.app.openapi_schema = None
+        try:
+            document = compose(_document(state.original_factory()), state.package_plans)
+        finally:
+            self.app.openapi_schema = None
+        state.cached_document = self.app.openapi_schema = document
+        return document
+
+
+def install(app: FastAPI, plan: OpenAPIPackagePlan, operation_keys: object) -> None:
+    """Register or replace one package's plan on the application's composition, without evaluating the document.
+
+    The first install keeps the application's current openapi callable as the original factory; later installs
+    keep that factory and the other packages' plans.
+    """
+    registered = replace(plan, operation_keys=_expected(plan, operation_keys))
+    current = app.openapi
+    factory: Callable[[], object] = current
+    plans: tuple[OpenAPIPackagePlan, ...] = ()
+    if (installed := getattr(current, STATE, None)) is not None:
+        factory, plans = _state(installed)
+    state = OpenAPIState(
+        protocol=1,
+        original_factory=factory,
+        package_plans=(*(item for item in plans if item.package != plan.package), registered),
+    )
+    vars(app)["openapi"] = _InstalledOpenAPI(app, state)
+    app.openapi_schema = None
+
+
+def compose(document: OpenAPIDocument, plans: tuple[OpenAPIPackagePlan, ...]) -> OpenAPIDocument:
+    """Merge the plans' fragments into the operations their markers identify, then remove the markers."""
+    ordered = sorted(plans, key=lambda plan: plan.package)
+    version = _version(document.get("openapi"), ordered)
+    composer = _Composer(document, {plan.package: plan for plan in ordered})
+    for plan in ordered:
+        composer.package(plan)
+    composer.finish()
+    document["openapi"] = version
+    return document
+
+
+@dataclass(slots=True)
+class _Occurrence:
+    path: str
+    method: str
+    operation: dict[str, JSONValue]
+    prefix: str
+
+
+class _Composer:
+    def __init__(self, document: OpenAPIDocument, plans: dict[str, OpenAPIPackagePlan]) -> None:
+        self.document = document
+        self.plans = plans
+        self.paths = _object(document.setdefault("paths", {}), "paths")
+        self.found: dict[tuple[str, str], list[_Occurrence]] = {}
+        self.bundles = {package: _bundle(plan) for package, plan in plans.items() if plan.operation_keys}
+        self.operations = {
+            (package, operation.key): operation
+            for package, (operations, _) in self.bundles.items()
+            for operation in operations
+        }
+        for path, item in self.paths.items():
+            if not _is_object(item):
+                continue
+            for method, operation in item.items():
+                if _is_object(operation) and MARKER in operation:
+                    self.occurrence(path, method, operation)
+        for plan in plans.values():
+            missing = [key for key in plan.operation_keys if (plan.package, key) not in self.found]
+            if missing:
+                msg = f"The document has no operation of package {plan.package!r} for {', '.join(missing)}"
+                raise OpenAPIConfigurationError(msg)
+
+    def occurrence(self, path: str, method: str, operation: dict[str, JSONValue]) -> None:
+        label = f"{method.upper()} {path}"
+        marker = operation[MARKER]
+        if not (
+            _is_object(marker)
+            and frozenset(marker) == _MARKER_KEYS
+            and type(version := marker["version"]) is int
+            and version == 1
+            and isinstance(package := marker["package"], str)
+            and isinstance(key := marker["operation"], str)
+        ):
+            msg = f"{label} has a malformed {MARKER} marker"
+            raise OpenAPIConfigurationError(msg)
+        if (plan := self.plans.get(package)) is None:
+            msg = f"{label} belongs to package {package!r}, which installed no OpenAPI plan"
+            raise OpenAPIConfigurationError(msg)
+        if key not in plan.operation_keys:
+            msg = f"{label} is operation {key} of package {package!r}, which its install did not include"
+            raise OpenAPIConfigurationError(msg)
+        spec = self.operations[package, key]
+        prefix = path.removesuffix(spec.route_path)
+        if (
+            method != spec.method.lower()
+            or len(prefix) + len(spec.route_path) != len(path)
+            or not _literal_prefix(prefix)
+        ):
+            msg = f"{label} does not register operation {key} of package {package!r} under a literal prefix"
+            raise OpenAPIConfigurationError(msg)
+        self.found.setdefault((package, key), []).append(_Occurrence(path, method, operation, prefix))
+
+    def package(self, plan: OpenAPIPackagePlan) -> None:
+        if not plan.operation_keys:
+            return
+        operations, sections = self.bundles[plan.package]
+        for spec in operations:
+            for occurrence in self.found.get((plan.package, spec.key), ()):
+                self.merge(spec, occurrence)
+        components = _object(self.document.setdefault("components", {}), "components")
+        for section, entries in sections.items():
+            target = _object(components.setdefault(section, {}), f"components/{section}")
+            for name, value in _object(entries, f"components/{section}").items():
+                if (current := target.get(name)) is None:
+                    target[name] = _copy(value)
+                elif not _same(current, value):
+                    msg = f"Package {plan.package!r} and the application define the component {section}/{name} apart"
+                    raise OpenAPIConfigurationError(msg)
+
+    def merge(self, spec: OperationDocument, occurrence: _Occurrence) -> None:
+        operation = occurrence.operation
+        label = f"{occurrence.method.upper()} {occurrence.path}"
+        if spec.slots or spec.method not in _METHODS:
+            self.move(spec, occurrence, label)
+        for key, value in spec.fragment.items():
+            match key:
+                case "parameters":
+                    _parameters(operation, value, label)
+                case "responses":
+                    _responses(operation, value, label)
+                case "security":
+                    _security(operation, value, self.document.get("security"), label)
+                case _:
+                    _shared(operation, key, value, label)
+
+    def move(self, spec: OperationDocument, occurrence: _Occurrence, label: str) -> None:
+        """Serve an operation under its source path and, for a method OpenAPI does not fix, additionalOperations."""
+        names = dict(spec.slots)
+        path = occurrence.prefix + _renamed(spec.route_path, names)
+        source = _object(self.paths[occurrence.path], f"paths/{occurrence.path}")
+        del source[occurrence.method]
+        if not source and path != occurrence.path:
+            del self.paths[occurrence.path]
+        target = _object(self.paths.setdefault(path, {}), f"paths/{path}")
+        member = occurrence.method
+        if spec.method not in _METHODS:
+            target, member = _object(target.setdefault("additionalOperations", {}), label), spec.method
+        if member in target:
+            msg = f"{label} and another operation both serve {spec.method.upper()} {path}"
+            raise OpenAPIConfigurationError(msg)
+        target[member] = occurrence.operation
+        occurrence.path = path
+        for parameter in _array(occurrence.operation.get("parameters", []), f"{label} parameters"):
+            if _is_object(parameter) and parameter.get("in") == "path" and (name := parameter.get("name")) in names:
+                parameter["name"] = names[str(name)]
+
+    def finish(self) -> None:
+        for occurrences in self.found.values():
+            for occurrence in occurrences:
+                del occurrence.operation[MARKER]
+
+
+def _expected(plan: OpenAPIPackagePlan, operation_keys: object) -> tuple[str, ...]:
+    if operation_keys is None:
+        return plan.operation_keys
+    if not (_is_tuple(operation_keys) and all(isinstance(key, str) for key in operation_keys)):
+        msg = "operation_keys must be a tuple of operation keys"
+        raise OpenAPIConfigurationError(msg)
+    keys = tuple(str(key) for key in operation_keys)
+    if unknown := [key for key in keys if key not in plan.operation_keys]:
+        msg = f"operation_keys names operations this package does not have: {', '.join(unknown)}"
+        raise OpenAPIConfigurationError(msg)
+    if len(set(keys)) != len(keys):
+        msg = "operation_keys names an operation twice"
+        raise OpenAPIConfigurationError(msg)
+    return keys
+
+
+def _state(value: object) -> tuple[Callable[[], object], tuple[OpenAPIPackagePlan, ...]]:
+    protocol = getattr(value, "protocol", None)
+    factory = getattr(value, "original_factory", None)
+    plans = getattr(value, "package_plans", None)
+    if type(protocol) is not int or protocol != 1 or not _is_factory(factory) or not _is_tuple(plans):
+        msg = f"app.openapi has a {STATE} of an unknown protocol"
+        raise OpenAPIConfigurationError(msg)
+    return factory, tuple(_plan(plan) for plan in plans)
+
+
+def _plan(value: object) -> OpenAPIPackagePlan:
+    if isinstance(value, OpenAPIPackagePlan):
+        return value
+    package = getattr(value, "package", None)
+    version = _VERSIONS.get(getattr(value, "version", None))
+    repeated = getattr(value, "repeated", None)
+    keys = getattr(value, "operation_keys", None)
+    bundle = getattr(value, "bundle", None)
+    if not (
+        isinstance(package, str)
+        and version is not None
+        and isinstance(repeated, bool)
+        and _is_tuple(keys)
+        and all(isinstance(key, str) for key in keys)
+        and isinstance(bundle, str)
+    ):
+        msg = f"app.openapi has a {STATE} with a malformed package plan"
+        raise OpenAPIConfigurationError(msg)
+    return OpenAPIPackagePlan(
+        package=package, version=version, repeated=repeated, operation_keys=tuple(map(str, keys)), bundle=bundle
+    )
+
+
+def _bundle(plan: OpenAPIPackagePlan) -> tuple[list[OperationDocument], dict[str, JSONValue]]:
+    """Read a plan's bundle: its operation fragments and components, including every operation it expects."""
+    try:
+        bundle = json.loads(plan.bundle)
+    except ValueError:
+        bundle = None
+    operations = bundle.get("operations") if _is_object(bundle) else None
+    components = bundle.get("components") if _is_object(bundle) else None
+    if not (_is_list(operations) and all(_is_operation(operation) for operation in operations)):
+        operations = None
+    if operations is None or not _is_object(components):
+        msg = f"The OpenAPI plan of package {plan.package!r} has a malformed bundle"
+        raise OpenAPIConfigurationError(msg)
+    documents = [
+        OperationDocument(
+            key=str(operation["key"]),
+            method=str(operation["method"]),
+            route_path=str(operation["route_path"]),
+            slots=tuple((str(slot[0]), str(slot[1])) for slot in _array(operation["slots"], "slots") if _is_list(slot)),
+            fragment=_object(operation["fragment"], "fragment"),
+        )
+        for operation in operations
+        if _is_object(operation)
+    ]
+    if missing := sorted(set(plan.operation_keys) - {document.key for document in documents}):
+        msg = f"The OpenAPI plan of package {plan.package!r} has no fragment for {', '.join(missing)}"
+        raise OpenAPIConfigurationError(msg)
+    return documents, components
+
+
+def _is_operation(value: JSONValue) -> bool:
+    return (
+        _is_object(value)
+        and all(isinstance(value.get(name), str) for name in ("key", "method", "route_path"))
+        and _is_list(slots := value.get("slots"))
+        and all(_is_slot(slot) for slot in slots)
+        and _is_object(value.get("fragment"))
+    )
+
+
+def _version(value: JSONValue, plans: list[OpenAPIPackagePlan]) -> Version:
+    if (factory := _VERSIONS.get(value)) is None:
+        msg = f"The application serves OpenAPI {value!r}; only 3.1.0 and 3.2.1 documents can be composed"
+        raise OpenAPIConfigurationError(msg)
+    included = [plan for plan in plans if plan.operation_keys]
+    version: Version = "3.2.1" if "3.2.1" in {factory, *(plan.version for plan in included)} else "3.1.0"
+    if version == "3.2.1" and (repeated := [plan.package for plan in included if plan.repeated]):
+        msg = f"OpenAPI 3.2.1 forbids the repeated path placeholders of package {', '.join(map(repr, repeated))}"
+        raise OpenAPIConfigurationError(msg)
+    return version
+
+
+def _parameters(operation: dict[str, JSONValue], value: JSONValue, label: str) -> None:
+    existing = _array(operation.setdefault("parameters", []), f"{label} parameters")
+    for parameter in _array(value, f"{label} parameters"):
+        identity = _identity(parameter)
+        if (current := next((item for item in existing if _identity(item) == identity), None)) is None:
+            existing.append(_copy(parameter))
+        elif not _same(current, parameter):
+            msg = f"{label} declares the parameter {identity} apart from the generated one"
+            raise OpenAPIConfigurationError(msg)
+
+
+def _identity(parameter: JSONValue) -> tuple[str, str] | None:
+    if (
+        _is_object(parameter)
+        and isinstance(location := parameter.get("in"), str)
+        and isinstance(name := parameter.get("name"), str)
+    ):
+        return location, name.lower() if location == "header" else name
+    return None
+
+
+def _responses(operation: dict[str, JSONValue], value: JSONValue, label: str) -> None:
+    responses = _object(operation.setdefault("responses", {}), f"{label} responses")
+    for status, response in _object(value, f"{label} responses").items():
+        if (current := responses.get(status)) is None:
+            responses[status] = _copy(response)
+            continue
+        target = _object(current, f"{label} response {status}")
+        for key, item in _object(response, f"{label} response {status}").items():
+            match key:
+                case "content":
+                    _content(target, item, f"{label} response {status}")
+                case "headers":
+                    _headers(target, item, f"{label} response {status}")
+                case _ if key not in target:
+                    target[key] = _copy(item)
+                case _:
+                    pass
+
+
+def _content(response: dict[str, JSONValue], value: JSONValue, label: str) -> None:
+    content = _object(response.setdefault("content", {}), f"{label} content")
+    for media, entry in _object(value, f"{label} content").items():
+        if (current := content.get(media)) is None:
+            content[media] = _copy(entry)
+            continue
+        target = _object(current, f"{label} {media}")
+        for key, item in _object(entry, f"{label} {media}").items():
+            if key == "schema" and (schema := target.get(key)) is not None:
+                target[key] = _alternative(schema, item)
+            elif key not in target:
+                target[key] = _copy(item)
+
+
+def _alternative(schema: JSONValue, other: JSONValue) -> JSONValue:
+    branches: list[JSONValue] = []
+    for branch in (*_branches(schema), *_branches(other)):
+        if not any(_same(branch, known) for known in branches):
+            branches.append(_copy(branch))
+    return branches[0] if len(branches) == 1 else {"anyOf": branches}
+
+
+def _branches(schema: JSONValue) -> list[JSONValue]:
+    if _is_object(schema) and len(schema) == 1 and _is_list(branches := schema.get("anyOf")):
+        return branches
+    return [schema]
+
+
+def _headers(response: dict[str, JSONValue], value: JSONValue, label: str) -> None:
+    headers = _object(response.setdefault("headers", {}), f"{label} headers")
+    names = {name.lower(): name for name in headers}
+    for name, header in _object(value, f"{label} headers").items():
+        if (current := names.get(name.lower())) is None:
+            headers[name] = _copy(header)
+            names[name.lower()] = name
+        elif not _same(headers[current], header):
+            msg = f"{label} declares the header {name!r} apart from the generated one"
+            raise OpenAPIConfigurationError(msg)
+
+
+def _security(operation: dict[str, JSONValue], value: JSONValue, default: JSONValue, label: str) -> None:
+    upstream = operation.get("security", default)
+    composed: list[JSONValue] = []
+    for first in _alternatives(upstream, label):
+        for second in _alternatives(value, label):
+            merged: dict[str, list[str]] = {}
+            for requirement in (first, second):
+                for scheme, scopes in requirement.items():
+                    known = merged.setdefault(scheme, [])
+                    known.extend(scope for scope in scopes if scope not in known)
+            alternative: dict[str, JSONValue] = {scheme: list[JSONValue](scopes) for scheme, scopes in merged.items()}
+            if alternative not in composed:
+                composed.append(alternative)
+    operation["security"] = [] if composed == [{}] else composed
+
+
+def _alternatives(value: JSONValue, label: str) -> list[dict[str, list[str]]]:
+    if value is None:
+        return [{}]
+    alternatives: list[dict[str, list[str]]] = []
+    for requirement in _array(value, f"{label} security"):
+        scopes: dict[str, list[str]] = {}
+        for scheme, names in _object(requirement, f"{label} security").items():
+            if not (_is_list(names) and all(isinstance(name, str) for name in names)):
+                msg = f"{label} has a malformed security requirement"
+                raise OpenAPIConfigurationError(msg)
+            scopes[scheme] = [str(name) for name in names]
+        alternatives.append(scopes)
+    return alternatives or [{}]
+
+
+def _shared(operation: dict[str, JSONValue], key: str, value: JSONValue, label: str) -> None:
+    if (current := operation.get(key)) is None:
+        operation[key] = _copy(value)
+    elif not _same(current, value):
+        msg = f"{label} declares {key} apart from the generated operation"
+        raise OpenAPIConfigurationError(msg)
+
+
+def _renamed(path: str, names: Mapping[str, str]) -> str:
+    for internal, wire in names.items():
+        path = path.replace(f"{{{internal}}}", f"{{{wire}}}")
+    return path
+
+
+def _literal_prefix(prefix: str) -> bool:
+    return not prefix or (prefix.startswith("/") and not prefix.endswith("/") and not _PREFIX_FORBIDDEN & set(prefix))
+
+
+def _document(value: object) -> OpenAPIDocument:
+    return _object(_json(value, "the document"), "the document")
+
+
+def _json(value: object, label: str) -> JSONValue:
+    if value is None or isinstance(value, (bool, int, str)):
+        return value
+    if isinstance(value, float) and isfinite(value):
+        return value
+    if _is_sequence(value):
+        return [_json(item, label) for item in value]
+    if _is_mapping(value) and all(isinstance(key, str) for key in value):
+        return {str(key): _json(item, label) for key, item in value.items()}
+    msg = f"The OpenAPI value of {label} is not JSON"
+    raise OpenAPIConfigurationError(msg)
+
+
+def _copy(value: JSONValue) -> JSONValue:
+    if _is_list(value) or _is_tuple_value(value):
+        return [_copy(item) for item in value]
+    if _is_object(value):
+        return {key: _copy(item) for key, item in value.items()}
+    return value
+
+
+def _same(first: JSONValue, second: JSONValue) -> bool:
+    return json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
+
+
+def _object(value: JSONValue, label: str) -> dict[str, JSONValue]:
+    if not _is_object(value):
+        msg = f"The OpenAPI value of {label} is not an object"
+        raise OpenAPIConfigurationError(msg)
+    return value
+
+
+def _array(value: JSONValue, label: str) -> list[JSONValue]:
+    if not _is_list(value):
+        msg = f"The OpenAPI value of {label} is not an array"
+        raise OpenAPIConfigurationError(msg)
+    return value
+
+
+def _is_object(value: object) -> TypeIs[dict[str, JSONValue]]:
+    return isinstance(value, dict)
+
+
+def _is_list(value: object) -> TypeIs[list[JSONValue]]:
+    return isinstance(value, list)
+
+
+def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
+    return isinstance(value, tuple)
+
+
+def _is_tuple_value(value: object) -> TypeIs[tuple[JSONValue, ...]]:
+    return isinstance(value, tuple)
+
+
+def _is_sequence(value: object) -> TypeIs[list[object] | tuple[object, ...]]:
+    return isinstance(value, (list, tuple))
+
+
+def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
+    return isinstance(value, Mapping)
+
+
+def _is_factory(value: object) -> TypeIs[Callable[[], object]]:
+    return callable(value)
+
+
+def _is_slot(value: JSONValue) -> bool:
+    return _is_list(value) and len(value) == _PAIR and all(isinstance(name, str) for name in value)

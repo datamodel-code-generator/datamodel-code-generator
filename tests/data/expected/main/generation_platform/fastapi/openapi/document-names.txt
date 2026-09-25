@@ -1,0 +1,431 @@
+# document-names
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Names",
+    "version": "1.0"
+  },
+  "paths": {
+    "/users/me": {
+      "get": {
+        "tags": [
+          "Users",
+          "admin"
+        ],
+        "summary": "Get  Users Me",
+        "operationId": "get__users_me_users_me_get",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__6c42871655b1"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Get  Health",
+        "operationId": "get__health_health_get",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__6c42871655b1"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get User By Id",
+        "operationId": "GetUserByID",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "body",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Body"
+            }
+          },
+          {
+            "name": "dcg_p0",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Dcg P0"
+            }
+          },
+          {
+            "name": "parameters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Parameters"
+            }
+          },
+          {
+            "name": "get_user_by_id_handler",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Get User By Id Handler"
+            }
+          },
+          {
+            "name": "media_type",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Media Type"
+            }
+          },
+          {
+            "name": "session",
+            "in": "cookie",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/dcg_validation_error__6c42871655b1"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__6c42871655b1"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__6c42871655b1"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Class ",
+        "operationId": "class",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "principal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Principal"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_class"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__6c42871655b1"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/files/{file.name}/{dcg_p0}": {
+      "get": {
+        "tags": [
+          "2024 files"
+        ],
+        "summary": "Get File",
+        "operationId": "getFile",
+        "parameters": [
+          {
+            "name": "file.name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dcg P1"
+            }
+          },
+          {
+            "name": "dcg_p0",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dcg P0"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__6c42871655b1"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_class": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "title": "Body_class"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "dcg_server_error__6c42871655b1": {
+        "type": "string"
+      },
+      "dcg_http_error__6c42871655b1": {
+        "type": "object",
+        "properties": {
+          "detail": {}
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "dcg_validation_error__6c42871655b1": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "loc": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  }
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "loc",
+                "msg",
+                "type"
+              ]
+            }
+          }
+        },
+        "required": [
+          "detail"
+        ]
+      }
+    }
+  }
+}

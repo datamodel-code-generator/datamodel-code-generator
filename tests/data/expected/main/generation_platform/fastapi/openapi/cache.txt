@@ -1,0 +1,9 @@
+# cache
+install calls 0
+first calls 1 markers False
+cached True calls 1
+invalidated same True calls 2
+reinstalled schema None calls 2
+recomposed same True calls 3
+failing factory: LookupError: The factory saw 4 paths
+failing schema None

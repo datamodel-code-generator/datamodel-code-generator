@@ -32,3 +32,9 @@ paths:
         - {name: y, in: path, required: true, schema: {type: string}}
       responses:
         "204": {description: Done.}
+  /h:
+    get:
+      operationId: reserved
+      x-dcg-operation: {version: 1, package: other, operation: /paths/~1h/get}
+      responses:
+        "204": {description: Done.}

@@ -8,6 +8,7 @@ render pydantic_v2.BaseModel
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -102,6 +103,14 @@ render pydantic_v2.BaseModel
     |         response_model_exclude_unset=True,
     |         operation_id='listPets',
     |         tags=['pets'],
+    |         response_description='The pets.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
     |     )
     |
@@ -125,6 +134,14 @@ render pydantic_v2.BaseModel
     |         response_model_exclude_unset=True,
     |         operation_id='createPet',
     |         tags=['pets'],
+    |         response_description='Created.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
     |     )
     |
@@ -145,6 +162,14 @@ render pydantic_v2.BaseModel
     |         response_model_exclude_unset=True,
     |         operation_id='listMyPets',
     |         tags=['pets'],
+    |         response_description="The caller's pets.",
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets~1mine/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets~1mine/get'),
     |     )
     |
@@ -167,6 +192,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='getPet',
     |         tags=['pets'],
+    |         response_description='The pet.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets~1{petId}/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
     |     )
     |
@@ -189,6 +222,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='deletePet',
     |         tags=['pets'],
+    |         response_description='Deleted.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets~1{petId}/delete',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/delete'),
     |     )
     |

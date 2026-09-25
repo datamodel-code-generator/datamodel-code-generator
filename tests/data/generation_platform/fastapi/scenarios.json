@@ -99,6 +99,35 @@
       }
     }
   ],
+  "update-docs": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "spec": [
+        "api.yaml",
+        "groups-store-documented.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    },
+    {
+      "generate": {}
+    }
+  ],
   "update-layout": [
     {
       "spec": [

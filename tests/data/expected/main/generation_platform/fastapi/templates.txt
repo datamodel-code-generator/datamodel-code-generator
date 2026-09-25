@@ -9,6 +9,7 @@ render pydantic_v2.BaseModel
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -152,6 +153,14 @@ render pydantic_v2.BaseModel
     |         tags=['pets'],
     |         summary='Read one pet.',
     |         description='Reads a pet by identifier.',
+    |         response_description='The pet.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets~1{petId}/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
     |     )
     |
@@ -182,6 +191,14 @@ render pydantic_v2.BaseModel
     |         operation_id='addPet',
     |         tags=['pets'],
     |         deprecated=True,
+    |         response_description='Added.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
     |     )
     |

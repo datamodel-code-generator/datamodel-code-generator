@@ -4,4 +4,5 @@ render pydantic_v2.BaseModel
   F_ROUTE_INVALID target /paths/~1a~1{b/get: The path has an unmatched brace
   F_ROUTE_INVALID target /paths/~1c~1{d:int}/get: A path placeholder is empty or uses converter syntax
   F_ROUTE_INVALID target /paths/~1e~1{f}/get: The path placeholder 'f' has no path parameter
+  F_ROUTE_INVALID target /paths/~1h/get: GET /h declares x-dcg-operation, which the generated route registers
   F_ROUTE_INVALID target /paths/~1g~1{y}/get: GET /g/{y} differs from another route only by placeholder names

@@ -1,0 +1,242 @@
+openapi: 3.1.0
+info:
+  title: Callbacks
+  version: "1.0"
+servers:
+  - url: https://api.example.com
+paths:
+  /subscriptions:
+    post:
+      operationId: subscribe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+      responses:
+        "201":
+          description: Subscribed.
+          links:
+            events:
+              operationId: listEvents
+              description: The events the subscription receives.
+        default:
+          description: Unexpected.
+      callbacks:
+        onEvent:
+          '{$request.body#/callbackUrl}':
+            post:
+              summary: An event happened.
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/Event'
+                  multipart/form-data:
+                    schema:
+                      type: object
+                      properties:
+                        file:
+                          type: string
+                          format: binary
+                    encoding:
+                      file:
+                        contentType: image/png
+              responses:
+                "204":
+                  description: Received.
+              security:
+                - signature: []
+              callbacks:
+                onReceipt:
+                  '{$request.body#/receiptUrl}':
+                    post:
+                      responses:
+                        "204":
+                          description: Acknowledged.
+                      security:
+                        - {1: []}
+        onStatus:
+          $ref: '#/components/callbacks/Status'
+        onLoop:
+          $ref: '#/components/callbacks/Loop'
+  /events:
+    get:
+      operationId: listEvents
+      externalDocs:
+        url: https://docs.example.com/events
+      servers:
+        - url: https://events.example.com
+      responses:
+        "200":
+          description: The events.
+          headers:
+            X-Map:
+              schema:
+                type: object
+              example: {1: one}
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+              example:
+                - id: 1
+                  kind: created
+        "500":
+          description: Failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+      callbacks:
+        onStatus:
+          $ref: '#/components/callbacks/Status'
+  /secure:
+    get:
+      operationId: getSecure
+      security:
+        - signature: []
+      parameters:
+        - name: token
+          in: cookie
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The animal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Animal'
+        "400":
+          description: Bad.
+          content:
+            application/json: {}
+        "401":
+          description: Denied.
+          headers:
+            www-authenticate:
+              schema:
+                type: string
+        "403":
+          description: Forbidden.
+        "422":
+          description: Invalid.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: '#/components/schemas/Event'
+                  - $ref: '#/components/schemas/Status'
+  /ping:
+    get:
+      operationId: ping
+      responses: {}
+  /echo:
+    get:
+      operationId: echo
+      responses:
+        "200":
+          description: The echo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/paths/~1events/get/responses/200/content/application~1json/schema'
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/Näme'
+components:
+  schemas:
+    Subscription:
+      type: object
+      required: [callbackUrl]
+      additionalProperties: false
+      properties:
+        callbackUrl:
+          type: string
+          format: uri
+    Event:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+    Status:
+      type: object
+      required: [state]
+      properties:
+        state:
+          $ref: '#/components/schemas/Status/$defs/State'
+      $defs:
+        State:
+          type: string
+          enum: [up, down]
+    Cat:
+      type: object
+      required: [pet_type]
+      properties:
+        pet_type:
+          type: string
+    Dog:
+      type: object
+      required: [pet_type]
+      properties:
+        pet_type:
+          type: string
+    Bird:
+      type: object
+      required: [pet_type]
+      properties:
+        pet_type:
+          type: string
+    Animal:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: pet_type
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: Dog
+          bird: '#/components/schemas/Bird'
+    Näme:
+      type: string
+  callbacks:
+    Status:
+      '{$request.query.hook}':
+        put:
+          parameters:
+            - name: X-Trace
+              in: header
+              schema:
+                type: string
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Status'
+          responses:
+            "200":
+              description: Recorded.
+          security:
+            - unknown: []
+    Loop:
+      '{$request.query.loop}':
+        post:
+          responses:
+            "204":
+              description: Again.
+          callbacks:
+            again:
+              $ref: '#/components/callbacks/Loop'
+  securitySchemes:
+    signature:
+      type: apiKey
+      in: header
+      name: X-Signature

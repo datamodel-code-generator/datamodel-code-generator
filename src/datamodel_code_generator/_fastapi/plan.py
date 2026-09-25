@@ -31,6 +31,7 @@ from datamodel_code_generator._fastapi.native import (
     number,
 )
 from datamodel_code_generator._fastapi.routes import (
+    MARKER,
     RouteError,
     RoutePath,
     group_key,
@@ -548,6 +549,9 @@ class Planner:  # noqa: PLR0904
         except RouteError as error:
             self.problems.append(_problem("F_ROUTE_INVALID", str(error), operation.id.use_site))
             wire_names = None
+        if _is_mapping(raw := self.request.lease.borrow(operation.declaration.location)) and MARKER in raw:
+            message = f"{_label(operation)} declares {MARKER}, which the generated route registers"
+            self.problems.append(_problem("F_ROUTE_INVALID", message, operation.id.use_site))
         names = wire_names or ()
         repeated = {placeholder for placeholder, count in Counter(names).items() if count > 1}
         parameters = tuple(self.parameter(operation, declaration, repeated) for declaration in operation.parameters)

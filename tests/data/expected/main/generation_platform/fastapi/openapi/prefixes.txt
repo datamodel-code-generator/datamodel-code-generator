@@ -1,0 +1,17 @@
+# prefixes
+warning Duplicate Operation ID listAdapters for function list_adapters at <root>/docs_items/routers/adapters.py
+warning Duplicate Operation ID getPart for function get_part at <root>/docs_items/routers/items.py
+warning Duplicate Operation ID getRepeated for function get_repeated at <root>/docs_items/routers/adapters.py
+warning Duplicate Operation ID listAdapters for function list_adapters at <root>/docs_items/routers/adapters.py
+warning Duplicate Operation ID getPart for function get_part at <root>/docs_items/routers/items.py
+warning Duplicate Operation ID getRepeated for function get_repeated at <root>/docs_items/routers/adapters.py
+GET /v1/adapters listAdapters ['stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'code', 'mail', 'other', 'none', 'count', 'point']
+GET /v2/adapters listAdapters ['stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'code', 'mail', 'other', 'none', 'count', 'point']
+GET /api/outer/inner/adapters listAdapters ['stamp', 'page', 'session', 'filter', 'ids', 'X-Ids', 'blob', 'code', 'mail', 'other', 'none', 'count', 'point']
+GET /v1/items/{item-id}/parts/{part} getPart ['item-id', 'part', 'limit', 'ratio', 'flag', 'tags', 'day', 'ref', 'mode', 'level', 'request', 'part', '2fa', 'X-Trace']
+GET /v2/items/{item-id}/parts/{part} getPart ['item-id', 'part', 'limit', 'ratio', 'flag', 'tags', 'day', 'ref', 'mode', 'level', 'request', 'part', '2fa', 'X-Trace']
+GET /api/outer/inner/items/{item-id}/parts/{part} getPart ['item-id', 'part', 'limit', 'ratio', 'flag', 'tags', 'day', 'ref', 'mode', 'level', 'request', 'part', '2fa', 'X-Trace']
+GET /v1/repeat/{id}/again/{id} getRepeated ['id']
+GET /v2/repeat/{id}/again/{id} getRepeated ['id']
+GET /api/outer/inner/repeat/{id}/again/{id} getRepeated ['id']
+create_app ['/root/adapters', '/root/items/{item-id}/parts/{part}', '/root/repeat/{id}/again/{id}']

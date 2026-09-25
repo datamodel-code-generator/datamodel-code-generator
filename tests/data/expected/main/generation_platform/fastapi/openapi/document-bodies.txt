@@ -1,0 +1,1225 @@
+# document-bodies
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bodies",
+    "version": "1.0"
+  },
+  "paths": {
+    "/json": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Json",
+        "operationId": "postJson",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/json/optional": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Optional",
+        "operationId": "postOptional",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item__a63780004ec2"
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/json/nullable": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Nullable",
+        "operationId": "postNullable",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/json/envelope": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Envelope",
+        "operationId": "postEnvelope",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Account__32d825a8ec73"
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/json/many": {
+      "post": {
+        "tags": [
+          "json"
+        ],
+        "summary": "Post Many",
+        "operationId": "postMany",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item__a63780004ec2"
+              }
+            },
+            "application/vnd.item+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Item__a63780004ec2"
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/text": {
+      "post": {
+        "tags": [
+          "raw"
+        ],
+        "summary": "Post Text",
+        "operationId": "postText",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "maxLength": 10
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/binary": {
+      "put": {
+        "tags": [
+          "raw"
+        ],
+        "summary": "Put Binary",
+        "operationId": "putBinary",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/raw": {
+      "post": {
+        "tags": [
+          "raw"
+        ],
+        "summary": "Post Raw",
+        "operationId": "postRaw",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "The server passes this body to its handler as the request, without validating it.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/form": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Form",
+        "operationId": "postForm",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_postForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/form/optional": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Optional Form",
+        "operationId": "postOptionalForm",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "flags": {
+                    "type": "array",
+                    "items": {
+                      "type": "boolean"
+                    }
+                  },
+                  "ratio": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/form/either": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Either Form",
+        "operationId": "postEitherForm",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "either": {
+                    "type": [
+                      "string",
+                      "integer"
+                    ]
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/form/nested": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Nested Form",
+        "operationId": "postNestedForm",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "point": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/form/closed": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Closed Form",
+        "operationId": "postClosedForm",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/form/choice": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Post Choice Form",
+        "operationId": "postChoiceForm",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported media type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__b739da53c87a"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__b739da53c87a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "minProperties": 1
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/upload": {
+      "post": {
+        "tags": [
+          "form"
+        ],
+        "summary": "Upload",
+        "operationId": "upload",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__b739da53c87a"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_postForm": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 1
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "Body_postForm"
+      },
+      "Body_upload": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "extra": {
+            "items": {
+              "type": "string",
+              "contentMediaType": "application/octet-stream"
+            },
+            "type": "array",
+            "title": "Extra"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Item": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "Item"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "dcg_server_error__b739da53c87a": {
+        "type": "string"
+      },
+      "Item__a63780004ec2": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "dcg_http_error__b739da53c87a": {
+        "type": "object",
+        "properties": {
+          "detail": {}
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "dcg_validation_error__b739da53c87a": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "loc": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  }
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "loc",
+                "msg",
+                "type"
+              ]
+            }
+          }
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "Account__32d825a8ec73": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

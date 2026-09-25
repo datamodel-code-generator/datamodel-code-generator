@@ -1,0 +1,4 @@
+# scheme-names
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_NAME_CONFLICT target: The security schemes 'api-key' and 'api_key' take one component name

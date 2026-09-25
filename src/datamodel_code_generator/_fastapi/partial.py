@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._fastapi.plan import ServerPlan
 
 _SELECTED: Final = "/selection/selected_operations/"
-_FINGERPRINTS: Final = ("plan_sha256", "signature_sha256", "codec_sha256")
+_FINGERPRINTS: Final = ("plan_sha256", "signature_sha256", "codec_sha256", "docs_sha256")
 
 
 def check_partial(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest, data: JSONObject) -> None:

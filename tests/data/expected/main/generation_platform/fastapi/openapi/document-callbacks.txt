@@ -1,0 +1,626 @@
+# document-callbacks
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Callbacks",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/subscriptions": {
+      "post": {
+        "summary": "Subscribe",
+        "operationId": "subscribe",
+        "responses": {
+          "201": {
+            "description": "Subscribed.",
+            "links": {
+              "events": {
+                "operationId": "listEvents",
+                "description": "The events the subscription receives."
+              }
+            }
+          },
+          "default": {
+            "description": "Unexpected."
+          },
+          "400": {
+            "description": "Unexpected. The response may also have no content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unexpected. The response may also have no content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
+                },
+                "example": {
+                  "detail": "Unsupported media type"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unexpected. The response may also have no content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__588558bc295c"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected. The response may also have no content.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Subscription__1366aac8e362"
+              }
+            }
+          }
+        },
+        "security": [],
+        "callbacks": {
+          "onEvent": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "summary": "An event happened.",
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Event__25ed44423ff3"
+                      }
+                    },
+                    "multipart/form-data": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "file": {
+                            "type": "string",
+                            "format": "binary"
+                          }
+                        }
+                      },
+                      "encoding": {
+                        "file": {
+                          "contentType": "image/png"
+                        }
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "204": {
+                    "description": "Received."
+                  }
+                },
+                "security": [
+                  {
+                    "dcg_signature__588558bc295c": []
+                  }
+                ],
+                "callbacks": {
+                  "onReceipt": {
+                    "{$request.body#/receiptUrl}": {
+                      "post": {
+                        "responses": {
+                          "204": {
+                            "description": "Acknowledged."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "onStatus": {
+            "{$request.query.hook}": {
+              "put": {
+                "parameters": [
+                  {
+                    "name": "X-Trace",
+                    "in": "header",
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Status__f88ed52ed012"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Recorded."
+                  }
+                }
+              }
+            }
+          },
+          "onLoop": {
+            "{$request.query.loop}": {
+              "post": {
+                "responses": {
+                  "204": {
+                    "description": "Again."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "summary": "List Events",
+        "operationId": "listEvents",
+        "responses": {
+          "200": {
+            "description": "The events.",
+            "headers": {
+              "X-Map": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event__9a3665a64dc4"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "kind": "created"
+                  }
+                ]
+              }
+            }
+          },
+          "500": {
+            "description": "Failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event__9a3665a64dc4"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "callbacks": {
+          "onStatus": {
+            "{$request.query.hook}": {
+              "put": {
+                "parameters": [
+                  {
+                    "name": "X-Trace",
+                    "in": "header",
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Status__f88ed52ed012"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Recorded."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "externalDocs": {
+          "url": "https://docs.example.com/events"
+        },
+        "servers": [
+          {
+            "url": "https://events.example.com"
+          }
+        ]
+      }
+    },
+    "/secure": {
+      "get": {
+        "summary": "Get Secure",
+        "operationId": "getSecure",
+        "responses": {
+          "200": {
+            "description": "The animal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Animal__202c5c0673c1"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Denied.",
+            "headers": {
+              "www-authenticate": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__588558bc295c"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Event__9a3665a64dc4"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Status__bcdab5babdbf"
+                    },
+                    {
+                      "$ref": "#/components/schemas/dcg_validation_error__588558bc295c"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "in": "cookie",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "dcg_signature__588558bc295c": []
+          }
+        ]
+      }
+    },
+    "/ping": {
+      "get": {
+        "summary": "Ping",
+        "operationId": "ping",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/echo": {
+      "get": {
+        "summary": "Echo",
+        "operationId": "echo",
+        "responses": {
+          "200": {
+            "description": "The echo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldEventsGetResponse__6e8e8061dfe0"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/n_me__19939daf4506"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__588558bc295c"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Subscription__1366aac8e362": {
+        "type": "object",
+        "required": [
+          "callbackUrl"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "callbackUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "dcg_http_error__588558bc295c": {
+        "type": "object",
+        "properties": {
+          "detail": {}
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "dcg_validation_error__588558bc295c": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "loc": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  }
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "loc",
+                "msg",
+                "type"
+              ]
+            }
+          }
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "dcg_server_error__588558bc295c": {
+        "type": "string"
+      },
+      "Event__25ed44423ff3": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "Status__f88ed52ed012": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/State__d975804d4585"
+          }
+        }
+      },
+      "Event__9a3665a64dc4": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "Animal__202c5c0673c1": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Cat__7afb69d5f6bc"
+          },
+          {
+            "$ref": "#/components/schemas/Dog__8c4b9cfd6ede"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "pet_type",
+          "mapping": {
+            "cat": "#/components/schemas/Cat__7afb69d5f6bc",
+            "dog": "#/components/schemas/Dog__8c4b9cfd6ede",
+            "bird": "#/components/schemas/Bird"
+          }
+        }
+      },
+      "Status__bcdab5babdbf": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/State__9c4487708da0"
+          }
+        }
+      },
+      "FieldEventsGetResponse__6e8e8061dfe0": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Event__9a3665a64dc4"
+        }
+      },
+      "n_me__19939daf4506": {
+        "type": "string"
+      },
+      "State__d975804d4585": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down"
+        ]
+      },
+      "Cat__7afb69d5f6bc": {
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "properties": {
+          "pet_type": {
+            "type": "string"
+          }
+        }
+      },
+      "Dog__8c4b9cfd6ede": {
+        "type": "object",
+        "required": [
+          "pet_type"
+        ],
+        "properties": {
+          "pet_type": {
+            "type": "string"
+          }
+        }
+      },
+      "State__9c4487708da0": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "dcg_signature__588558bc295c": {
+        "type": "apiKey",
+        "name": "X-Signature",
+        "in": "header"
+      }
+    }
+  }
+}

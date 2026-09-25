@@ -1,0 +1,4 @@
+# packages
+orders agree True version 3.2.1
+empty install: ['3.1.0', '/pets', '/pets/mine', '/store/inventory', '/pets/{petId}']
+unknown owner: OpenAPIConfigurationError: QUERY /search belongs to package 'docs_methods', which installed no OpenAPI plan

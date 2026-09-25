@@ -1,0 +1,4 @@
+# subset
+store: ['/store/inventory']
+every operation: OpenAPIConfigurationError: The document has no operation of package 'docs_pets' for /paths/~1pets/get, /paths/~1pets/post, /paths/~1pets~1mine/get, /paths/~1pets~1{petId}/get, /paths/~1pets~1{petId}/delete
+no operation: OpenAPIConfigurationError: GET /store/inventory is operation /paths/~1store~1inventory/get of package 'docs_pets', which its install did not include
