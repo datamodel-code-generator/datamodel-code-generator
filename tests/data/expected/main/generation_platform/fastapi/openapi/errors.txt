@@ -13,7 +13,7 @@ other parameter: OpenAPIConfigurationError: GET /pets declares the parameter ('c
 same parameter: [[], 4]
 bad security: OpenAPIConfigurationError: GET /pets has a malformed security requirement
 global security: [[{'global': ['read']}], 4]
-other component: OpenAPIConfigurationError: Package 'docs_pets' and the application define the component schemas/Pet__9cff51ed98a6 apart
+other component: OpenAPIConfigurationError: Package 'docs_pets' and the application define the component schemas/Pet__65a336b43d44 apart
 same component: [[], 4]
 referenced parameter: [[], 4]
 same schema: [[], 4]

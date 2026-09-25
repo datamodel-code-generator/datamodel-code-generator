@@ -670,7 +670,7 @@ render pydantic_v2.BaseModel
     |       "style": "deepObject",
     |       "explode": true,
     |       "schema": {
-    |        "$ref": "#/components/schemas/Filter__fcea52ca1b9e"
+    |        "$ref": "#/components/schemas/Filter__54d881e92487"
     |       }
     |      },
     |      {
@@ -756,7 +756,7 @@ render pydantic_v2.BaseModel
     |       "name": "point",
     |       "in": "query",
     |       "schema": {
-    |        "$ref": "#/components/schemas/Point__23db8e2c8bee"
+    |        "$ref": "#/components/schemas/Point__3c0b4d3e67cf"
     |       }
     |      }
     |     ],
@@ -873,7 +873,7 @@ render pydantic_v2.BaseModel
     |    "dcg_server_error__b3eacd33433b": {
     |     "type": "string"
     |    },
-    |    "Filter__fcea52ca1b9e": {
+    |    "Filter__54d881e92487": {
     |     "type": "object",
     |     "required": [
     |      "name"
@@ -888,7 +888,7 @@ render pydantic_v2.BaseModel
     |      }
     |     }
     |    },
-    |    "Point__23db8e2c8bee": {
+    |    "Point__3c0b4d3e67cf": {
     |     "type": "object",
     |     "additionalProperties": false,
     |     "required": [

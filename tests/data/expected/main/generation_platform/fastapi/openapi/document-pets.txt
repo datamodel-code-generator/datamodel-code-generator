@@ -94,7 +94,7 @@
                     {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/Pet__9cff51ed98a6"
+                        "$ref": "#/components/schemas/Pet__65a336b43d44"
                       }
                     }
                   ]
@@ -112,7 +112,7 @@
                       "$ref": "#/components/schemas/HTTPValidationError"
                     },
                     {
-                      "$ref": "#/components/schemas/Error__414937c2cbaf"
+                      "$ref": "#/components/schemas/Error__863841e47b7d"
                     },
                     {
                       "$ref": "#/components/schemas/dcg_validation_error__18311bf1bba4"
@@ -127,7 +127,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error__414937c2cbaf"
+                  "$ref": "#/components/schemas/Error__863841e47b7d"
                 }
               }
             }
@@ -139,7 +139,7 @@
                 "schema": {
                   "anyOf": [
                     {
-                      "$ref": "#/components/schemas/Error__414937c2cbaf"
+                      "$ref": "#/components/schemas/Error__863841e47b7d"
                     },
                     {
                       "$ref": "#/components/schemas/dcg_http_error__18311bf1bba4"
@@ -154,7 +154,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error__414937c2cbaf"
+                  "$ref": "#/components/schemas/Error__863841e47b7d"
                 }
               },
               "text/plain": {
@@ -194,7 +194,7 @@
                       "$ref": "#/components/schemas/Pet"
                     },
                     {
-                      "$ref": "#/components/schemas/Pet__9cff51ed98a6"
+                      "$ref": "#/components/schemas/Pet__65a336b43d44"
                     }
                   ]
                 }
@@ -245,7 +245,7 @@
                     {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/Pet__9cff51ed98a6"
+                        "$ref": "#/components/schemas/Pet__65a336b43d44"
                       }
                     }
                   ]
@@ -340,7 +340,7 @@
                       "$ref": "#/components/schemas/Pet"
                     },
                     {
-                      "$ref": "#/components/schemas/Pet__9cff51ed98a6"
+                      "$ref": "#/components/schemas/Pet__65a336b43d44"
                     }
                   ]
                 }
@@ -362,7 +362,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error__414937c2cbaf"
+                  "$ref": "#/components/schemas/Error__863841e47b7d"
                 }
               }
             }
@@ -560,7 +560,7 @@
         ],
         "title": "ValidationError"
       },
-      "Pet__9cff51ed98a6": {
+      "Pet__65a336b43d44": {
         "type": "object",
         "required": [
           "id",
@@ -582,7 +582,7 @@
           }
         }
       },
-      "Error__414937c2cbaf": {
+      "Error__863841e47b7d": {
         "type": "object",
         "required": [
           "code",

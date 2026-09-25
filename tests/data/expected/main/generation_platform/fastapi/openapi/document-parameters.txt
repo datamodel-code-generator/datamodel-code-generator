@@ -46,7 +46,7 @@
             "style": "deepObject",
             "explode": true,
             "schema": {
-              "$ref": "#/components/schemas/Filter__fcea52ca1b9e"
+              "$ref": "#/components/schemas/Filter__d23a9d5e22c7"
             }
           },
           {
@@ -132,7 +132,7 @@
             "name": "point",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/Point__23db8e2c8bee"
+              "$ref": "#/components/schemas/Point__9651a980b0e2"
             }
           }
         ],
@@ -514,7 +514,7 @@
       "dcg_server_error__91340604ca9a": {
         "type": "string"
       },
-      "Filter__fcea52ca1b9e": {
+      "Filter__d23a9d5e22c7": {
         "type": "object",
         "required": [
           "name"
@@ -529,7 +529,7 @@
           }
         }
       },
-      "Point__23db8e2c8bee": {
+      "Point__9651a980b0e2": {
         "type": "object",
         "additionalProperties": false,
         "required": [

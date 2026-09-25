@@ -1142,7 +1142,7 @@ render pydantic_v2.BaseModel
     |      "content": {
     |       "application/json": {
     |        "schema": {
-    |         "$ref": "#/components/schemas/Item__a63780004ec2"
+    |         "$ref": "#/components/schemas/Item__bae5c02dde4e"
     |        }
     |       }
     |      }
@@ -1293,7 +1293,7 @@ render pydantic_v2.BaseModel
     |      "content": {
     |       "application/json": {
     |        "schema": {
-    |         "$ref": "#/components/schemas/Account__32d825a8ec73"
+    |         "$ref": "#/components/schemas/Account__e92a5c60f097"
     |        }
     |       }
     |      }
@@ -1363,12 +1363,12 @@ render pydantic_v2.BaseModel
     |      "content": {
     |       "application/json": {
     |        "schema": {
-    |         "$ref": "#/components/schemas/Item__a63780004ec2"
+    |         "$ref": "#/components/schemas/Item__bae5c02dde4e"
     |        }
     |       },
     |       "application/vnd.item+json": {
     |        "schema": {
-    |         "$ref": "#/components/schemas/Item__a63780004ec2"
+    |         "$ref": "#/components/schemas/Item__bae5c02dde4e"
     |        }
     |       }
     |      }
@@ -2054,7 +2054,7 @@ render pydantic_v2.BaseModel
     |    "dcg_server_error__b3eacd33433b": {
     |     "type": "string"
     |    },
-    |    "Item__a63780004ec2": {
+    |    "Item__bae5c02dde4e": {
     |     "type": "object",
     |     "required": [
     |      "name"
@@ -2114,7 +2114,7 @@ render pydantic_v2.BaseModel
     |      "detail"
     |     ]
     |    },
-    |    "Account__32d825a8ec73": {
+    |    "Account__e92a5c60f097": {
     |     "type": "object",
     |     "required": [
     |      "name"

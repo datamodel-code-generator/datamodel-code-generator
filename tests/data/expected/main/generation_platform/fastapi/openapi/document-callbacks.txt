@@ -80,7 +80,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Subscription__1366aac8e362"
+                "$ref": "#/components/schemas/Subscription__986fd3c7bfdb"
               }
             }
           }
@@ -96,7 +96,7 @@
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/schemas/Event__25ed44423ff3"
+                        "$ref": "#/components/schemas/Event__37a53271f6e9"
                       }
                     },
                     "multipart/form-data": {
@@ -159,7 +159,7 @@
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/schemas/Status__f88ed52ed012"
+                        "$ref": "#/components/schemas/Status__40fb2b2baf29"
                       }
                     }
                   }
@@ -205,7 +205,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Event__9a3665a64dc4"
+                    "$ref": "#/components/schemas/Event__fcc2f28cb876"
                   }
                 },
                 "example": [
@@ -222,7 +222,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Event__9a3665a64dc4"
+                  "$ref": "#/components/schemas/Event__fcc2f28cb876"
                 }
               },
               "text/plain": {
@@ -251,7 +251,7 @@
                   "content": {
                     "application/json": {
                       "schema": {
-                        "$ref": "#/components/schemas/Status__f88ed52ed012"
+                        "$ref": "#/components/schemas/Status__40fb2b2baf29"
                       }
                     }
                   }
@@ -285,7 +285,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Animal__202c5c0673c1"
+                  "$ref": "#/components/schemas/Animal__968918e172f8"
                 }
               }
             }
@@ -337,10 +337,10 @@
                 "schema": {
                   "anyOf": [
                     {
-                      "$ref": "#/components/schemas/Event__9a3665a64dc4"
+                      "$ref": "#/components/schemas/Event__fcc2f28cb876"
                     },
                     {
-                      "$ref": "#/components/schemas/Status__bcdab5babdbf"
+                      "$ref": "#/components/schemas/Status__fec591caee37"
                     },
                     {
                       "$ref": "#/components/schemas/dcg_validation_error__588558bc295c"
@@ -409,12 +409,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FieldEventsGetResponse__6e8e8061dfe0"
+                  "$ref": "#/components/schemas/FieldEventsGetResponse__807321d2eb29"
                 }
               },
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/n_me__19939daf4506"
+                  "$ref": "#/components/schemas/n_me__4f7a883de21c"
                 }
               }
             }
@@ -436,7 +436,7 @@
   },
   "components": {
     "schemas": {
-      "Subscription__1366aac8e362": {
+      "Subscription__986fd3c7bfdb": {
         "type": "object",
         "required": [
           "callbackUrl"
@@ -501,7 +501,7 @@
       "dcg_server_error__588558bc295c": {
         "type": "string"
       },
-      "Event__25ed44423ff3": {
+      "Event__37a53271f6e9": {
         "type": "object",
         "required": [
           "id"
@@ -515,18 +515,18 @@
           }
         }
       },
-      "Status__f88ed52ed012": {
+      "Status__40fb2b2baf29": {
         "type": "object",
         "required": [
           "state"
         ],
         "properties": {
           "state": {
-            "$ref": "#/components/schemas/State__d975804d4585"
+            "$ref": "#/components/schemas/State__4a9a6d0bab08"
           }
         }
       },
-      "Event__9a3665a64dc4": {
+      "Event__fcc2f28cb876": {
         "type": "object",
         "required": [
           "id"
@@ -540,52 +540,52 @@
           }
         }
       },
-      "Animal__202c5c0673c1": {
+      "Animal__968918e172f8": {
         "oneOf": [
           {
-            "$ref": "#/components/schemas/Cat__7afb69d5f6bc"
+            "$ref": "#/components/schemas/Cat__788cd2ac3ee9"
           },
           {
-            "$ref": "#/components/schemas/Dog__8c4b9cfd6ede"
+            "$ref": "#/components/schemas/Dog__f3a0911de655"
           }
         ],
         "discriminator": {
           "propertyName": "pet_type",
           "mapping": {
-            "cat": "#/components/schemas/Cat__7afb69d5f6bc",
-            "dog": "#/components/schemas/Dog__8c4b9cfd6ede",
+            "cat": "#/components/schemas/Cat__788cd2ac3ee9",
+            "dog": "#/components/schemas/Dog__f3a0911de655",
             "bird": "#/components/schemas/Bird"
           }
         }
       },
-      "Status__bcdab5babdbf": {
+      "Status__fec591caee37": {
         "type": "object",
         "required": [
           "state"
         ],
         "properties": {
           "state": {
-            "$ref": "#/components/schemas/State__9c4487708da0"
+            "$ref": "#/components/schemas/State__b233ea901f0d"
           }
         }
       },
-      "FieldEventsGetResponse__6e8e8061dfe0": {
+      "FieldEventsGetResponse__807321d2eb29": {
         "type": "array",
         "items": {
-          "$ref": "#/components/schemas/Event__9a3665a64dc4"
+          "$ref": "#/components/schemas/Event__fcc2f28cb876"
         }
       },
-      "n_me__19939daf4506": {
+      "n_me__4f7a883de21c": {
         "type": "string"
       },
-      "State__d975804d4585": {
+      "State__4a9a6d0bab08": {
         "type": "string",
         "enum": [
           "up",
           "down"
         ]
       },
-      "Cat__7afb69d5f6bc": {
+      "Cat__788cd2ac3ee9": {
         "type": "object",
         "required": [
           "pet_type"
@@ -596,7 +596,7 @@
           }
         }
       },
-      "Dog__8c4b9cfd6ede": {
+      "Dog__f3a0911de655": {
         "type": "object",
         "required": [
           "pet_type"
@@ -607,7 +607,7 @@
           }
         }
       },
-      "State__9c4487708da0": {
+      "State__b233ea901f0d": {
         "type": "string",
         "enum": [
           "up",

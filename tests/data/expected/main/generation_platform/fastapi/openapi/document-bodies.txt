@@ -113,7 +113,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Item__a63780004ec2"
+                "$ref": "#/components/schemas/Item__4d00166669b6"
               }
             }
           }
@@ -266,7 +266,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Account__32d825a8ec73"
+                "$ref": "#/components/schemas/Account__70058ec0a642"
               }
             }
           }
@@ -337,12 +337,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Item__a63780004ec2"
+                "$ref": "#/components/schemas/Item__4d00166669b6"
               }
             },
             "application/vnd.item+json": {
               "schema": {
-                "$ref": "#/components/schemas/Item__a63780004ec2"
+                "$ref": "#/components/schemas/Item__4d00166669b6"
               }
             }
           }
@@ -1145,7 +1145,7 @@
       "dcg_server_error__b739da53c87a": {
         "type": "string"
       },
-      "Item__a63780004ec2": {
+      "Item__4d00166669b6": {
         "type": "object",
         "required": [
           "name"
@@ -1205,7 +1205,7 @@
           "detail"
         ]
       },
-      "Account__32d825a8ec73": {
+      "Account__70058ec0a642": {
         "type": "object",
         "required": [
           "name"

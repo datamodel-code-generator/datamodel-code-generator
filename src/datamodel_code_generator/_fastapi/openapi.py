@@ -569,7 +569,7 @@ class DocsBuilder:  # noqa: PLR0904
         """Return the component name of a referenced schema in a direction, queueing the component once."""
         if (name := self.identities.get((schema_id, direction))) is not None:
             return name
-        digest = sha256(canonical_bytes([schema_id, direction]))[:12]
+        digest = sha256(canonical_bytes([self.package, schema_id, direction]))[:12]
         name = self.identities[schema_id, direction] = f"{self.base(schema_id)}__{digest}"
         self.components[name] = None
         self.pending.append((schema_id, direction, name))
@@ -635,18 +635,24 @@ def _scopes(value: JSONValue) -> list[JSONValue]:
 def _json(value: FrozenLiteral) -> JSONValue:
     if isinstance(value, LiteralSequence):
         return [_json(item) for item in value.items]
-    if isinstance(value, LiteralMapping):
-        entries: JSONObject = {}
-        for key, item in value.entries:
-            if not (isinstance(key, LiteralScalar) and isinstance(name := key.value, str)):
-                raise _NotJSONError
-            entries[name] = _json(item)
-        return entries
-    return _scalar(value.value)
+    if isinstance(value, LiteralMapping) and (names := _names(value)) is not None:
+        return {name: _json(item) for name, (_, item) in zip(names, value.entries, strict=True)}
+    if isinstance(value, LiteralScalar) and _is_json_scalar(scalar := value.value):
+        return scalar
+    raise _NotJSONError
+
+
+def _names(value: LiteralMapping) -> list[str] | None:
+    names = [key.value for key, _ in value.entries if isinstance(key, LiteralScalar) and isinstance(key.value, str)]
+    return names if len(names) == len(value.entries) else None
+
+
+def _is_json_scalar(value: object) -> TypeIs[str | int | float | bool | None]:
+    return value is None or isinstance(value, (bool, int, str)) or (isinstance(value, float) and isfinite(value))
 
 
 def _scalar(value: object) -> JSONValue:
-    assert value is None or isinstance(value, (bool, int, str)) or (isinstance(value, float) and isfinite(value))
+    assert _is_json_scalar(value)
     return value
 
 

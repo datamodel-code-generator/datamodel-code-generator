@@ -11,5 +11,5 @@ same header: {'description': 'Denied.', 'headers': {'www-authenticate': {'descri
 other body: OpenAPIConfigurationError: POST /raw declares requestBody apart from the generated operation
 same body: ['content', 'description', 'required']
 user query named like the cookie adapter: ["GET /pets listPets ['limit', 'tags', 'kind', 'since', 'session', 'X-Request-Id', 'session']"]
-factory example {'description': 'The events.', 'content': {'application/json': {'example': [], 'schema': {'type': 'array', 'items': {'$ref': '#/components/schemas/Event__9a3665a64dc4'}}}}, 'headers': {'X-Map': {'schema': {'type': 'object'}}}}
-plain text {"description": "The pets.", "content": {"text/plain": {"schema": {"type": "string"}}, "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Pet__9cff51ed98a6"}}}}}
+factory example {'description': 'The events.', 'content': {'application/json': {'example': [], 'schema': {'type': 'array', 'items': {'$ref': '#/components/schemas/Event__fcc2f28cb876'}}}}, 'headers': {'X-Map': {'schema': {'type': 'object'}}}}
+plain text {"description": "The pets.", "content": {"text/plain": {"schema": {"type": "string"}}, "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Pet__65a336b43d44"}}}}}
