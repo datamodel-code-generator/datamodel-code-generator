@@ -43,6 +43,7 @@ if TYPE_CHECKING:
         Requirement,
         ResponseSpec,
         Scalar,
+        SchemeKind,
         SchemeSpec,
         ServerPlan,
     )
@@ -85,6 +86,11 @@ _EXPORTS: Final = (
     ("auth_types", "CredentialExtractor"),
     ("auth_types", "CredentialExtractors"),
 )
+_CREDENTIALS: Final[dict[SchemeKind, str]] = {
+    "basic": "HTTP Basic credentials",
+    "bearer": "a bearer token",
+    "custom": "no builtin credential; a credential extractor reads it",
+}
 _PLAN_DEFAULTS: Final[dict[str, object]] = {
     "style": None,
     "explode": False,
@@ -1002,16 +1008,10 @@ def _listed(names: list[str]) -> str:
 
 
 def _credential(scheme: SchemeSpec) -> str:
-    match scheme.kind:
-        case "api_key":
-            place = "query parameter" if scheme.location == "query" else scheme.location
-            return f"an API key in the `{scheme.parameter}` {place}"
-        case "basic":
-            return "HTTP Basic credentials"
-        case "bearer":
-            return "a bearer token"
-        case _:
-            return "no builtin credential; a credential extractor reads it"
+    if scheme.kind != "api_key":
+        return _CREDENTIALS[scheme.kind]
+    place = "query parameter" if scheme.location == "query" else scheme.location
+    return f"an API key in the `{scheme.parameter}` {place}"
 
 
 def _field_plan(module: Module, field: FieldPlan) -> str:

@@ -6,7 +6,7 @@ import json
 import sys
 import traceback
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, NoReturn
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, attached_diagnostic
 
@@ -29,35 +29,34 @@ def run_target(args: Sequence[str], namespace: Namespace, config: Any, pyproject
     """Generate or check the selected target from the finalized CLI config, reporting every diagnostic."""
     report = _Report(vars(namespace).get("diagnostics_json"))
     try:
-        code = _run(args, namespace, config, pyproject_path, report)
+        code = _jobs(namespace, report) if config is None else _run(args, namespace, config, pyproject_path, report)
     except APIGenerationError as error:
         report.extend(error.diagnostics)
         code = _ERROR
     except Exception as error:  # noqa: BLE001
         report.failure(error)
         code = _ERROR
-    report.write()
-    return code
+    return code if report.write() else _ERROR
 
 
 def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path: Path | None, report: _Report) -> int:
     from datamodel_code_generator.__main__ import (  # noqa: PLC0415
+        _target_lockfile,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
         _target_settings,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]
     )
     from datamodel_code_generator._api_generation import generate_target, prepare_target, render_target  # noqa: PLC0415
     from datamodel_code_generator._fastapi.target import FastAPITarget  # noqa: PLC0415
 
-    if conflicts := _conflicts(namespace, config):
-        raise APIGenerationError(
-            tuple(_conflict(f"--generate-server cannot be used with {flag}") for flag in conflicts)
-        )
-    target = _target_config(namespace.target_config, vars(namespace).get("target_output"))
-    effective, lockfile = _target_settings(config, args, pyproject_path)
-    if (destination := report.destination) not in {None, "-"} and _collides(
-        Path(str(destination)), config, target, namespace.target_config, lockfile
-    ):
-        report.destination = None
-        raise APIGenerationError((_conflict("--diagnostics-json names a file the generation reads or writes"),))
+    target_config, output = namespace.target_config, vars(namespace).get("target_output")
+    lockfile = _target_lockfile(config, pyproject_path)
+    report.guard(
+        (target_config, config.input, config.output, config.emit_model_metadata, lockfile), (output, config.output)
+    )
+    if flags := _flags(namespace, config, _CONFLICTS):
+        raise _refused(flags)
+    target = _target_config(target_config, output)
+    report.guard((), (target.output,))
+    effective = _target_settings(config, args, lockfile)
     generator = FastAPITarget()
     if (source := config.url or config.input) is None:
         prepare_target("", effective, generator)
@@ -75,14 +74,18 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
     return _OK
 
 
-def _conflicts(namespace: Namespace, config: Any) -> list[str]:
-    selected = vars(namespace)
-    flags = [flag for name, flag in _JOBS if selected[name]]
-    if config is not None:
-        flags.extend(flag for name, flag in _CONFLICTS if getattr(config, name))
-    if namespace.output_format == "json":
-        flags.append("--output-format json")
-    return flags
+def _jobs(namespace: Namespace, report: _Report) -> NoReturn:
+    report.guard((namespace.target_config,), (vars(namespace).get("target_output"),))
+    raise _refused(_flags(namespace, namespace, _JOBS))
+
+
+def _flags(namespace: Namespace, source: object, options: tuple[tuple[str, str], ...]) -> list[str]:
+    flags = [flag for name, flag in options if getattr(source, name)]
+    return [*flags, "--output-format json"] if namespace.output_format == "json" else flags
+
+
+def _refused(flags: list[str]) -> APIGenerationError:
+    return APIGenerationError(tuple(_conflict(f"--generate-server cannot be used with {flag}") for flag in flags))
 
 
 def _target_config(path: Path, output: Path | None) -> FastAPIConfig:
@@ -98,17 +101,13 @@ def _target_config(path: Path, output: Path | None) -> FastAPIConfig:
         )) from None
 
 
-def _collides(destination: Path, config: Any, target: FastAPIConfig, target_config: Path, lockfile: Path) -> bool:
-    written = destination.resolve()
-    files = [config.input, config.output, config.emit_model_metadata, target_config, lockfile]
-    roots = [target.output, config.output]
-    return any(path is not None and written == Path(str(path)).resolve() for path in files) or any(
-        written.is_relative_to(root.resolve()) for root in roots if root is not None
-    )
-
-
 def _conflict(message: str) -> Diagnostic:
     return Diagnostic(code="E_CONFIG_CONFLICT", severity="error", stage="config", message=message)
+
+
+def _unwritable(reason: str) -> Diagnostic:
+    message = f"--diagnostics-json cannot be written: {reason}"
+    return Diagnostic(code="E_CONFIG_VALUE", severity="error", stage="config", message=message)
 
 
 class _Report:
@@ -117,6 +116,20 @@ class _Report:
     def __init__(self, destination: str | None) -> None:
         self.destination = destination
         self.diagnostics: list[Diagnostic] = []
+
+    def guard(self, files: Iterable[Path | None], roots: Iterable[Path | None]) -> None:
+        """Refuse a diagnostics file the generation reads or writes, before anything could overwrite it."""
+        if (destination := self.destination) is None or destination == "-":
+            return
+        written = Path(destination).resolve()
+        if any(path is not None and written == path.resolve() for path in files) or any(
+            root is not None and written.is_relative_to(root.resolve()) for root in roots
+        ):
+            self.destination = None
+            raise APIGenerationError((_conflict("--diagnostics-json names a file the generation reads or writes"),))
+        if written.is_dir() or not written.parent.is_dir():
+            self.destination = None
+            raise APIGenerationError((_unwritable("it is not a file in an existing directory"),))
 
     def extend(self, diagnostics: Iterable[Diagnostic]) -> None:
         for diagnostic in diagnostics:
@@ -135,9 +148,9 @@ class _Report:
             diagnostic = Diagnostic(code="E_GENERATION_FAILURE", severity="error", stage="target", message=message)
         self.extend((diagnostic,))
 
-    def write(self) -> None:
+    def write(self) -> bool:
         if (destination := self.destination) is None:
-            return
+            return True
         document: JSONValue = {
             "schema_version": 1,
             "target": _TARGET,
@@ -146,8 +159,13 @@ class _Report:
         text = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
         if destination == "-":
             sys.stdout.write(text)
-        else:
+            return True
+        try:
             Path(destination).write_text(text, encoding="utf-8")
+        except OSError as error:
+            self.extend((_unwritable(str(error.strerror)),))
+            return False
+        return True
 
 
 def _json(diagnostic: Diagnostic) -> JSONValue:

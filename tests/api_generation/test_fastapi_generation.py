@@ -37,6 +37,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "unbound",
         "single",
         "standalone",
+        "encoding",
         "route-errors",
         "name-errors",
         "group-errors",
@@ -111,7 +112,19 @@ def test_fastapi_config(case: str, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "case", ["generate", "options", "stdin", "usage", "conflicts", "input-model", "config-errors", "failures", "api"]
+    "case",
+    [
+        "generate",
+        "options",
+        "stdin",
+        "usage",
+        "conflicts",
+        "reports",
+        "input-model",
+        "config-errors",
+        "failures",
+        "api",
+    ],
 )
 def test_fastapi_cli(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Publish, check, and report the server target from the command line and the public entry points."""

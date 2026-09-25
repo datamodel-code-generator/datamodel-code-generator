@@ -42,6 +42,21 @@
     {"cli": ["--diagnostics-json", "server/diagnostics.json"]},
     {"tree": null}
   ],
+  "reports": [
+    {"spec": ["api.yaml", "pets.yaml"]},
+    {"toml": ["package = 1"]},
+    {"cli": ["--diagnostics-json", "fastapi.toml"]},
+    {"cli": ["--all-jobs", "--diagnostics-json", "fastapi.toml"]},
+    {"show": "fastapi.toml"},
+    {"toml": []},
+    {"cli": ["--diagnostics-json", "missing/diagnostics.json"]},
+    {"write": ["reports/.keep", ""]},
+    {"cli": ["--diagnostics-json", "reports"]},
+    {"cli": []},
+    {"break": "write"},
+    {"cli": ["--check", "--diagnostics-json", "diagnostics.json"]},
+    {"tree": null}
+  ],
   "input-model": [
     {"bare": ["--input-model", "models:Pet", "--generate-server", "fastapi", "--target-config", "fastapi.toml"]}
   ],

@@ -48,7 +48,7 @@ cli --diagnostics-json api.yaml
   stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names a file the generation reads or writes
 cli --diagnostics-json server/diagnostics.json
   exit 2
-  stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names a file the generation reads or writes
+  stderr | E_CONFIG_VALUE error config: --diagnostics-json cannot be written: it is not a file in an existing directory
 tree
   api.yaml
   fastapi.toml

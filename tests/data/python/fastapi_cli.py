@@ -104,6 +104,17 @@ def _failing(*_args: object) -> None:
     raise RuntimeError(msg)
 
 
+class _ReadOnlyPath(type(Path())):
+    def write_text(self, *_args: object, **_kwargs: object) -> int:
+        raise PermissionError(13, "Permission denied")
+
+
+_BREAKS = {
+    "render": ("datamodel_code_generator._fastapi.target.FastAPITarget.render", _failing),
+    "write": ("datamodel_code_generator._target_cli.Path", _ReadOnlyPath),
+}
+
+
 def fastapi_cli_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """Replay one command-line or entry-point case in its own directory, reporting each run and the files."""
     root = root.resolve()
@@ -136,7 +147,7 @@ def fastapi_cli_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPat
                 lines.append(f"api {entry}")
                 lines.extend(_api(entry, root))
             case "break", str() as name:
-                monkeypatch.setattr(f"datamodel_code_generator._fastapi.target.FastAPITarget.{name}", _failing)
+                monkeypatch.setattr(*_BREAKS[name])
                 lines.append(f"break {name}")
             case "show", str() as name:
                 lines.append(f"show {name}")

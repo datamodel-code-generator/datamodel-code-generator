@@ -1020,7 +1020,12 @@ class _Finisher:
         ]
         self.check_sources(((file.path, text) for file, text in texts if not file.verbatim), "format")
         return tuple(
-            PlannedFile(path=file.path, kind=file.kind, content=text.encode(config.encoding), group=file.group)
+            PlannedFile(
+                path=file.path,
+                kind=file.kind,
+                content=text.encode(config.encoding if _is_python(file.path) else "utf-8"),
+                group=file.group,
+            )
             for file, text in texts
         )
 

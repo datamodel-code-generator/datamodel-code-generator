@@ -140,6 +140,20 @@
       "README.md"
     ]
   },
+  "encoding": {
+    "input": "server-parameters.yaml",
+    "config": {
+      "encoding": "latin-1",
+      "package_mode": "standalone",
+      "package_version": "1.0.0",
+      "distribution_name": "menu-server",
+      "model_dependency": "menu-models>=1.0"
+    },
+    "show": [
+      "pyproject.toml",
+      "README.md"
+    ]
+  },
   "route-errors": {
     "input": "route-errors.yaml"
   },

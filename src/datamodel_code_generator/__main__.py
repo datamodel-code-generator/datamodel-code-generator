@@ -2190,11 +2190,15 @@ def _target_usage_error(namespace: Namespace) -> str | None:
     return None
 
 
-def _target_settings(config: Config, args: Sequence[str], pyproject_path: Path | None) -> tuple[GenerateConfig, Path]:
-    """Return the model settings a generation target runs with, and the lock file they name."""
+def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path:
+    """Return the remote lock file a generation target's models read or update."""
+    return config.lockfile or _remote_lock_plan(config, pyproject_path).literal_path
+
+
+def _target_settings(config: Config, args: Sequence[str], lockfile: Path) -> GenerateConfig:
+    """Return the model settings a generation target runs with."""
     from datamodel_code_generator.config import GenerateConfig  # noqa: PLC0415
 
-    lockfile = config.lockfile or _remote_lock_plan(config, pyproject_path).literal_path
     settings = _generation_config(
         config,
         output=config.output,
@@ -2208,8 +2212,9 @@ def _target_settings(config: Config, args: Sequence[str], pyproject_path: Path |
         default_value_overrides=config.default_values,
     )
     values = vars(settings) | {"lockfile": lockfile}
-    fields = GenerateConfig.model_fields
-    return GenerateConfig.model_construct(**{name: values[name] for name in fields if name in values}), lockfile
+    return GenerateConfig.model_construct(**{
+        name: values[name] for name in GenerateConfig.model_fields if name in values
+    })
 
 
 def _run_target(args: Sequence[str], namespace: Namespace, config: Config | None, pyproject_path: Path | None) -> Exit:

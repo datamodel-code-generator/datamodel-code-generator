@@ -14,8 +14,9 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
       --diagnostics-json diagnostics.json
     ```
 
-The document is written after every run, successful or not, and lists the diagnostics in the order stderr
-shows them:
+The document is written after every run that passes the command-line checks, successful or not, and lists
+the diagnostics in the order stderr shows them. A usage error, such as `--generate-server` without
+`--target-config`, prints `Error:` like any other command-line error and writes no document.
 
 ```json
 {
@@ -39,4 +40,5 @@ shows them:
 ```
 
 A path the generation reads or writes, or one inside the model or target output, is `E_CONFIG_CONFLICT`,
-and nothing is written to it.
+and nothing is written to it; the check runs before any setting is read. A directory, a path in a missing
+directory, or a file that cannot be written is `E_CONFIG_VALUE`, and the command exits with 2.
