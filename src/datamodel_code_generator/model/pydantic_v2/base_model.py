@@ -946,7 +946,7 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
 _NATIVE_HASH_SCALARS = frozenset({"str", "int", "float", "bool", "None"})
 
 
-def _has_native_bound_hash(bound_type: BoundPythonType) -> bool:  # noqa: PLR0912
+def _has_native_bound_hash(bound_type: BoundPythonType) -> bool:
     """Recognize containers whose validated values have builtin scalar hashes."""
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeBoundName,
@@ -970,12 +970,10 @@ def _has_native_bound_hash(bound_type: BoundPythonType) -> bool:  # noqa: PLR091
             arguments = expression.arguments
             expression = expression.base
         match expression:
-            case PythonTypeName(value=name):
-                module = "builtins"
             case PythonTypeBoundName(import_from=module, import_name=name):
                 pass
             case _:
-                return False
+                module, name = "builtins", expression.value if isinstance(expression, PythonTypeName) else ""
         if arguments is None:
             if module != "builtins" or name not in _NATIVE_HASH_SCALARS:
                 return False

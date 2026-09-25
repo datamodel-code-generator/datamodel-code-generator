@@ -352,15 +352,6 @@
     "safe": false
   },
   {
-    "name": "tuple_forward",
-    "options": {},
-    "payload": [
-      1,
-      2
-    ],
-    "safe": false
-  },
-  {
     "name": "tuple_literal",
     "options": {},
     "payload": [
