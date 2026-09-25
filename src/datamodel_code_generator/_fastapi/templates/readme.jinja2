@@ -81,8 +81,9 @@ The secured operations use these security schemes:
 Each secured operation receives the principal the authorizer returns.
 The authorizer reads the credentials of each security alternative from `AuthContext` and rejects a request by raising `HTTPException`, such as `403`.
 A request that presents no complete alternative answers `401`, and missing authentication settings never fall back to anonymous access.
-`SecretT` is `Never` while every scheme uses a builtin credential.
-`credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none; `SecretT` is then the union of the secret types the extractors return.
+`credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none.
+An extractor may return any payload, such as a `BasicSecret` it decodes as UTF-8 or a `CustomSecret` of its own type, so the authorizer checks each credential's `kind` instead of assuming its scheme's builtin credential.
+`SecretT` is `Never` while no extractor returns a `CustomSecret`, and otherwise the union of their value types.
 Bearer credentials, including OAuth2 and OpenID Connect tokens, reach the authorizer as they are: the package never contacts a token endpoint, and the authorizer checks tokens and scopes.
 {%- if basic %}
 HTTP Basic credentials are decoded as ASCII, as FastAPI's `HTTPBasic` decodes them, so other usernames and passwords answer `401`; register a credential extractor for the scheme to accept UTF-8.
