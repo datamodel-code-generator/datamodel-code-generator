@@ -773,6 +773,15 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 return len(chain) > 1 and chain[0] in self.dynamic_import_provider_aliases
         return False
 
+    def _resolved_package(self, node: ast.expr | None) -> str | None:
+        match node:
+            case ast.Name(id="__package__"):
+                return (
+                    self.current_module if self.path.name == "__init__.py" else self.current_module.rpartition(".")[0]
+                )
+            case _:
+                return self._resolved_string(node)
+
     def _resolved_dynamic_target(self, node: ast.Call, target: str | None) -> str | None:
         match node.func:
             case ast.Name(id="import_module") | ast.Attribute(attr="import_module") if (
@@ -783,7 +792,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                     if len(node.args) > 1
                     else next((keyword.value for keyword in node.keywords if keyword.arg == "package"), None)
                 )
-                if (anchor := self._resolved_string(package)) is None:
+                if (anchor := self._resolved_package(package)) is None:
                     return target
                 try:
                     return importlib.util.resolve_name(target, anchor)

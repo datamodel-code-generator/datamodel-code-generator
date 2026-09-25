@@ -9,7 +9,11 @@ import datamodel_code_generator.parser
 openapi = importlib.import_module("datamodel_code_generator.parser.openapi")
 relative = importlib.import_module(".parser", "datamodel_code_generator")
 unresolved = importlib.import_module("...parser", "datamodel_code_generator")
-unknown = importlib.import_module(".parser", __package__)
+sibling = importlib.import_module(".parser", __package__)
+
+
+def load(package_name: str) -> object:
+    return importlib.import_module(".parser", package_name)
 
 __all__ = [
     "OpenAPIParser",
@@ -18,6 +22,7 @@ __all__ = [
     "openapi",
     "parser_package",
     "relative",
-    "unknown",
+    "load",
+    "sibling",
     "unresolved",
 ]
