@@ -5,8 +5,11 @@ from __future__ import annotations
 import json
 import sys
 import traceback
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, NoReturn
+
+from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, attached_diagnostic
 
@@ -103,10 +106,14 @@ def _target_config(path: Path, output: Path | None) -> FastAPIConfig:
 
 def _is_report(path: Path) -> bool:
     try:
-        document = json.loads(path.read_bytes())
+        document: object = json.loads(path.read_bytes())
     except (OSError, ValueError):
         return False
-    return isinstance(document, dict) and document.get("schema_version") == 1 and "diagnostics" in document
+    return _is_mapping(document) and document.get("schema_version") == 1 and "diagnostics" in document
+
+
+def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
+    return isinstance(value, Mapping)
 
 
 def _conflict(message: str) -> Diagnostic:

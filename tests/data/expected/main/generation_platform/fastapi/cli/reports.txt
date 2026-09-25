@@ -26,6 +26,10 @@ write notes.md
 cli --diagnostics-json notes.md
   exit 2
   stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report
+write settings.json
+cli --diagnostics-json settings.json
+  exit 2
+  stderr | E_CONFIG_CONFLICT error config: --diagnostics-json names an existing file that is not a report
 write pyproject.toml
 cli --diagnostics-json pyproject.toml
   exit 2
@@ -70,3 +74,4 @@ tree
   server/routers/pets.py
   server/routers/store.py
   server/services.py
+  settings.json

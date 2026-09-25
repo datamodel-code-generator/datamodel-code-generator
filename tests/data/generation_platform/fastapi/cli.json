@@ -54,6 +54,8 @@
     {"cli": ["--diagnostics-json", "reports"]},
     {"write": ["notes.md", "# Notes\n"]},
     {"cli": ["--diagnostics-json", "notes.md"]},
+    {"write": ["settings.json", "{\"schema_version\": 1}\n"]},
+    {"cli": ["--diagnostics-json", "settings.json"]},
     {"write": ["pyproject.toml", "[tool.datamodel-codegen]\n"]},
     {"cli": ["--diagnostics-json", "pyproject.toml"]},
     {"cli": ["--diagnostics-json", "diagnostics.json"]},
