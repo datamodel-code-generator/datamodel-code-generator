@@ -72,6 +72,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.enums import DataModelType
+    from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 Strategy: TypeAlias = Literal["native", "envelope", "adapter"]
@@ -111,8 +112,8 @@ class TargetLayout:
 class RenderedFile:
     """One text file a target rendered; the coordinator formats, heads, and encodes it.
 
-    A verbatim file copies a source the package already validates, such as a runtime module, so the coordinator
-    checks only its formatted text.
+    A verbatim file copies one of this package's own sources, such as a runtime module, that is valid for every
+    supported target Python, so the coordinator heads and encodes it without formatting or checking it again.
     """
 
     path: PurePosixPath
@@ -951,14 +952,18 @@ class _Finisher:
         )
         header = self.header()
         texts = [
-            (file, _normalized(header + formatter.format_code(file.text) if _is_python(file.path) else file.text))
+            (file, _normalized(header + _formatted(file, formatter) if _is_python(file.path) else file.text))
             for file in files
         ]
-        self.check_sources(((file.path, text) for file, text in texts), "format")
+        self.check_sources(((file.path, text) for file, text in texts if not file.verbatim), "format")
         return tuple(
             PlannedFile(path=file.path, kind=file.kind, content=text.encode(config.encoding), group=file.group)
             for file, text in texts
         )
+
+
+def _formatted(file: RenderedFile, formatter: CodeFormatter) -> str:
+    return file.text if file.verbatim else formatter.format_code(file.text)
 
 
 def _syntax_error(filename: str, text: str, version: tuple[int, int]) -> str | None:
