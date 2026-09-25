@@ -242,8 +242,8 @@ def target_layout(config: TargetConfig) -> TargetLayout:
 
 
 def _bundled_models(root: Path, models: Path, model_package: str) -> PurePosixPath | None:
-    *parents, name = ("src", *model_package.split("."))
-    for candidate in (root.joinpath(*parents, name), root.joinpath(*parents, f"{name}.py")):
+    package = root.joinpath("src", *model_package.split("."))
+    for candidate in (package, package.with_name(f"{package.name}.py")):
         if models == candidate:
             return PurePosixPath(*candidate.relative_to(root).parts)
     return None
