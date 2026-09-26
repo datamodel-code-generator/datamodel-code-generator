@@ -4587,7 +4587,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         rename_type = (
             self.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
-            and self.data_model_type.FIELD_NAME_MODEL_TYPE is not ModelType.MSGSPEC
+            and self.data_model_type.SUPPORTS_FIELD_TYPE_RENAMING
         )
         all_class_names = (
             {cast("str", model.class_name) for model in models if model.class_name} if rename_type else set()
@@ -4613,10 +4613,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                 if colliding_reference is not None or (
                     not rename_type
-                    and (
-                        self.data_model_type.FIELD_NAME_MODEL_TYPE is ModelType.PYDANTIC
-                        or field_name in reference_type_names
-                    )
+                    and (self.data_model_type.NORMALIZES_FIELD_NAMES or field_name in reference_type_names)
                 ):
                     resolver = resolver or ModelResolver(
                         snake_case_field=self.snake_case_field,
