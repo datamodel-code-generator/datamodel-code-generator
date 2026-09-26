@@ -305,11 +305,10 @@ def _collect_helper_direct_asserts(tests_root: Path) -> list[DirectAssert]:
 
 
 def _imported_modules(node: ast.AST) -> list[str]:
-    match node:
-        case ast.Import(names=names):
-            return [alias.name for alias in names]
-        case ast.ImportFrom(module=str() as module, level=0, names=names):
-            return [module, *(f"{module}.{alias.name}" for alias in names)]
+    if isinstance(node, ast.Import):
+        return [alias.name for alias in node.names]
+    if isinstance(node, ast.ImportFrom) and node.module is not None and node.level == 0:
+        return [node.module, *(f"{node.module}.{alias.name}" for alias in node.names)]
     return []
 
 
