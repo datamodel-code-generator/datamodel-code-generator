@@ -1,12 +1,10 @@
 # pets
 serve pydantic_v2.BaseModel
-build not-a-mapping: HandlerConfigurationError: handlers must map each operation name to its handler
-build unknown: HandlerConfigurationError: handlers names no operation called get_pets
-build missing: HandlerConfigurationError: handlers needs a callable for get_inventory
-build not-callable: HandlerConfigurationError: handlers needs a callable for get_inventory
-build async: HandlerConfigurationError: The get_inventory handler is asynchronous, but its operation calls it synchronously
-build async-object: HandlerConfigurationError: The get_inventory handler is asynchronous, but its operation calls it synchronously
-build signature: HandlerConfigurationError: The get_pet handler does not accept exactly the keywords pet_id
+build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
+build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
+build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
 > GET /pets
   list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
@@ -50,13 +48,11 @@ codec GetPetResponseCodecs {'status_code': 404, 'media_type': 'application/json'
 codec GetPetResponseCodecs {'status_code': 500}: CodecSelectionError: The operation declares no codec-bearing body for status 500 and that media type
 codec GetPetResponseCodecs {'status_code': 200, 'name': 'part'}: CodecSelectionError: The 200 response declares no part 'part' for its default media
 serve pydantic_v2.dataclass
-build not-a-mapping: HandlerConfigurationError: handlers must map each operation name to its handler
-build unknown: HandlerConfigurationError: handlers names no operation called get_pets
-build missing: HandlerConfigurationError: handlers needs a callable for get_inventory
-build not-callable: HandlerConfigurationError: handlers needs a callable for get_inventory
-build async: HandlerConfigurationError: The get_inventory handler is asynchronous, but its operation calls it synchronously
-build async-object: HandlerConfigurationError: The get_inventory handler is asynchronous, but its operation calls it synchronously
-build signature: HandlerConfigurationError: The get_pet handler does not accept exactly the keywords pet_id
+build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
+build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
+build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
 > GET /pets
   list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
 < 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]

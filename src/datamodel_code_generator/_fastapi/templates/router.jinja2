@@ -14,13 +14,11 @@ def {{ route.adder }}(router: {{ router }}, handlers: {{ handlers }}) -> None:
 {%- endfor %}
 
 
+OPERATIONS: {{ final }} = {{ operations }}
 LITERAL_ROUTES: {{ final }} = {{ literal }}
 TEMPLATED_ROUTES: {{ final }} = {{ templated }}
 
 
-def build_router(*, handlers: {{ handlers }}) -> {{ router }}:
-    """Register {{ group }} on a new router, literal paths first."""
-    router = {{ router }}()
-    for add in (*LITERAL_ROUTES, *TEMPLATED_ROUTES):
-        add(router, handlers)
-    return router
+{{ signature }}
+    """Check the service, then register {{ group }} on a new router, literal paths first."""
+    {{ body }}

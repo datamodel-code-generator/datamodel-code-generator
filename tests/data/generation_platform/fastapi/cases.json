@@ -130,7 +130,8 @@
     "input": "name-errors.yaml"
   },
   "group-errors": {
-    "input": "group-errors.yaml"
+    "input": "group-errors.yaml",
+    "config": {"router_names": {"tag:four": "OPERATIONS"}}
   },
   "repeat-32": {
     "input": "repeat-32.yaml"

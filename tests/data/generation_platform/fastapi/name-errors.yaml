@@ -11,8 +11,3 @@ paths:
       operationId: x_1
       responses:
         "204": {description: Done.}
-  /three:
-    get:
-      operationId: con
-      responses:
-        "204": {description: Done.}

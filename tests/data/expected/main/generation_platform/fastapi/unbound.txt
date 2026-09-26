@@ -33,6 +33,7 @@ render pydantic_v2.BaseModel
     | from pydantic import AwareDatetime
     |
     | from .._generated import contract
+    | from .._runtime.server.application import build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import dispatch
     |
@@ -63,13 +64,15 @@ render pydantic_v2.BaseModel
     |     )
     |
     |
+    | OPERATIONS: Final = (('untagged', 'get_value', ('id', 'at', 'tags')),)
     | LITERAL_ROUTES: Final = ()
     | TEMPLATED_ROUTES: Final = (_add_get_value,)
     |
     |
-    | def build_router(*, handlers: Mapping[str, Callable[..., object]]) -> APIRouter:
-    |     """Register the untagged operations on a new router, literal paths first."""
-    |     router = APIRouter()
-    |     for add in (*LITERAL_ROUTES, *TEMPLATED_ROUTES):
-    |         add(router, handlers)
-    |     return router
+    | def build_router(*, untagged: object) -> APIRouter:
+    |     """Check the service, then register the untagged operations on a new router, literal paths first."""
+    |     return build(
+    |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+    |         OPERATIONS,
+    |         {'untagged': untagged},
+    |     )

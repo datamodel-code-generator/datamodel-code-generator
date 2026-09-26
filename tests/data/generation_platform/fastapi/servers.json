@@ -1,14 +1,12 @@
 {
   "pets": {
     "input": "pets.yaml",
-    "handlers": "pets",
+    "services": "pets",
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
     ],
     "builds": [
-      "not-a-mapping",
-      "unknown",
       "missing",
       "not-callable",
       "async",
@@ -107,7 +105,7 @@
   },
   "parameters": {
     "input": "server-parameters.yaml",
-    "handlers": "parameters",
+    "services": "parameters",
     "requests": [
       {
         "method": "GET",
@@ -237,7 +235,7 @@
   },
   "bodies": {
     "input": "server-bodies.yaml",
-    "handlers": "bodies",
+    "services": "bodies",
     "config": {
       "body_modes": [
         [
@@ -496,7 +494,7 @@
   },
   "results": {
     "input": "server-results.yaml",
-    "handlers": "results",
+    "services": "results",
     "requests": [
       {
         "method": "GET",

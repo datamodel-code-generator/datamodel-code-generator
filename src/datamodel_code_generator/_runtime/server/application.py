@@ -1,49 +1,50 @@
-"""Check the handlers a generated router connects before it registers any route."""
+"""Check the services a generated router connects, then register its operations on one APIRouter."""
 
 from __future__ import annotations
 
 import inspect
 from collections.abc import Callable, Mapping
 from types import MappingProxyType
+from typing import TypeAlias
 
-from typing_extensions import TypeIs
+from fastapi import APIRouter
+
+Handlers: TypeAlias = Mapping[str, Callable[..., object]]
+Operation: TypeAlias = tuple[str, str, tuple[str, ...]]
+Route: TypeAlias = Callable[[APIRouter, Handlers], None]
 
 
 class HandlerConfigurationError(TypeError):
-    """Reject a handler mapping that does not provide exactly one fitting callable per operation."""
+    """Reject a service that does not provide one fitting method per operation of its router group."""
 
 
-def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
-    return isinstance(value, Mapping)
+def build(routes: tuple[Route, ...], operations: tuple[Operation, ...], services: Mapping[str, object]) -> APIRouter:
+    """Check the services' methods, then register the routes on a new router in order."""
+    handlers = checked_services(services, operations)
+    router = APIRouter()
+    for add in routes:
+        add(router, handlers)
+    return router
 
 
-def checked_handlers(
-    handlers: object, operations: tuple[tuple[str, tuple[str, ...]], ...]
-) -> Mapping[str, Callable[..., object]]:
-    """Return the handlers once every operation has a synchronous callable accepting its keywords.
+def checked_services(services: Mapping[str, object], operations: tuple[Operation, ...]) -> Handlers:
+    """Return each operation's handler: its service's method, once it is synchronous and accepts the keywords.
 
-    Each operation is named with the keywords the endpoint passes. The check reads signatures only; it
-    never evaluates annotations, so it proves shapes, not argument or return types.
+    Each operation names its service, its method, and the keywords the endpoint passes. The check reads
+    signatures only; it never evaluates annotations, so it proves shapes, not argument or return types.
     """
-    if not _is_mapping(handlers):
-        msg = "handlers must map each operation name to its handler"
-        raise HandlerConfigurationError(msg)
-    names = {name for name, _ in operations}
-    if unknown := sorted(str(key) for key in handlers if key not in names):
-        msg = f"handlers names no operation called {', '.join(unknown)}"
-        raise HandlerConfigurationError(msg)
     checked: dict[str, Callable[..., object]] = {}
-    for name, keywords in operations:
-        if not callable(handler := handlers.get(name)):
-            msg = f"handlers needs a callable for {name}"
+    for service, name, keywords in operations:
+        if not callable(handler := getattr(services[service], name, None)):
+            msg = f"The {service} service needs a callable {name} method"
             raise HandlerConfigurationError(msg)
         if inspect.iscoroutinefunction(handler) or inspect.iscoroutinefunction(getattr(handler, "__call__", None)):  # noqa: B004
-            msg = f"The {name} handler is asynchronous, but its operation calls it synchronously"
+            msg = f"The {service}.{name} method is asynchronous, but its operation calls it synchronously"
             raise HandlerConfigurationError(msg)
         try:
             inspect.signature(handler).bind(**dict.fromkeys(keywords))
         except (TypeError, ValueError) as error:
-            msg = f"The {name} handler does not accept exactly the keywords {', '.join(keywords) or 'none'}"
+            msg = f"The {service}.{name} method does not accept exactly the keywords {', '.join(keywords) or 'none'}"
             raise HandlerConfigurationError(msg) from error
         checked[name] = handler
     return MappingProxyType(checked)

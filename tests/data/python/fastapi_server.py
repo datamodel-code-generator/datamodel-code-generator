@@ -121,7 +121,7 @@ def _codec(server: ModuleType, selector: dict[str, Any], lines: list[str]) -> No
 def fastapi_server_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """Generate one server per backend, then replay the case's requests, router builds, and codec selections."""
     case = json.loads((SOURCE / "servers.json").read_text(encoding="utf-8"))[case_name]
-    handlers = importlib.import_module(f"tests.data.python.fastapi_handlers.{case['handlers']}")
+    services = importlib.import_module(f"tests.data.python.fastapi_handlers.{case['services']}")
     lines = [f"# {case_name}"]
     monkeypatch.syspath_prepend(str(root))
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
@@ -131,16 +131,16 @@ def fastapi_server_report(case_name: str, root: Path, monkeypatch: pytest.Monkey
         try:
             server, models = _import(package)
             calls: list[str] = []
-            sets = handlers.handlers(server, models, calls)
+            sets = services.services(server, models, calls)
             for name in case.get("builds", ()):
                 try:
-                    server.build_router(handlers=sets[name])
+                    server.build_router(**sets[name])
                 except server.HandlerConfigurationError as error:
                     lines.append(f"build {name}: HandlerConfigurationError: {error}")
                 else:
                     lines.append(f"build {name}: ok")
             app = FastAPI()
-            app.include_router(server.build_router(handlers=sets["default"]))
+            app.include_router(server.build_router(**sets["default"]))
             with TestClient(_WithoutRawPath(app)) as client:
                 for request in case.get("requests", ()):
                     _exchange(client, request, calls, lines)

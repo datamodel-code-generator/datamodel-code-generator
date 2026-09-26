@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SLOT_PREFIX: Final = "dcg_p"
+_BUILDER_NAMES: Final = frozenset({"OPERATIONS", "ROUTES", "LITERAL_ROUTES", "TEMPLATED_ROUTES"})
 
 
 class RouteError(ValueError):
@@ -125,14 +126,22 @@ def group_key(operation: OperationContract, *, single: bool) -> str:
 
 
 def group_stem(key: str) -> str:
-    """Return a group's default router file stem from its first tag."""
-    if key in {"all", "untagged"}:
-        return key
+    """Return a group's default name, its router file stem and service argument: its first tag, untagged, or service."""
+    match key:
+        case "all":
+            return "service"
+        case "untagged":
+            return key
+        case _:
+            pass
     return normalize(key.removeprefix("tag:"), empty="router", digit="router_")
 
 
 def stem_conflicts(stems: Iterable[str]) -> set[str]:
-    """Return names that repeat under casefolding or name reserved files, since each becomes a file stem."""
+    """Return group names that repeat under casefolding, name reserved files, or take a name the builders define.
+
+    Each name is a router file stem and the keyword that passes the group's service to a builder.
+    """
     names = list(stems)
     folded = Counter(name.casefold() for name in names)
-    return {name for name in names if folded[name.casefold()] > 1 or file_stem_conflict(name)}
+    return {name for name in names if folded[name.casefold()] > 1 or file_stem_conflict(name) or name in _BUILDER_NAMES}

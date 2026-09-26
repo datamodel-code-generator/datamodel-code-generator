@@ -1,37 +1,48 @@
-"""Handlers of the request body server: they report the decoded bodies they receive."""
+"""Services of the request body server: they report the decoded bodies they receive."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from types import ModuleType
 
 
-def handlers(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, Callable[..., object]]]:
-    """Return handlers that record their keywords, reading uploads and raw requests to their bytes."""
+def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
+    """Return a service that records its keywords, reading uploads and raw requests to their bytes."""
 
-    def recorder(name: str) -> Callable[..., object]:
-        def handle(**arguments: object) -> None:
-            calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
+    def record(name: str, arguments: dict[str, object]) -> None:
+        calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
-        return handle
+    class Untagged:
+        def post_item(self, **arguments: object) -> None:
+            record("post_item", arguments)
 
-    def upload(*, file: object, note: object) -> None:
-        calls.append(f"upload(file={file.filename!r}:{file.file.read()!r}, note={note!r})")
+        def post_profile(self, **arguments: object) -> None:
+            record("post_profile", arguments)
 
-    def post_raw(*, request: object) -> None:
-        calls.append(f"post_raw(request={request.method} {request.url.path})")
+        def post_account(self, **arguments: object) -> None:
+            record("post_account", arguments)
 
-    names = (
-        "post_item",
-        "post_profile",
-        "post_account",
-        "put_document",
-        "put_blob",
-        "post_form",
-        "post_native_form",
-        "post_check",
-    )
-    return {"default": {**{name: recorder(name) for name in names}, "upload": upload, "post_raw": post_raw}}
+        def put_document(self, **arguments: object) -> None:
+            record("put_document", arguments)
+
+        def put_blob(self, **arguments: object) -> None:
+            record("put_blob", arguments)
+
+        def post_form(self, **arguments: object) -> None:
+            record("post_form", arguments)
+
+        def post_native_form(self, **arguments: object) -> None:
+            record("post_native_form", arguments)
+
+        def post_check(self, **arguments: object) -> None:
+            record("post_check", arguments)
+
+        def upload(self, *, file: object, note: object) -> None:
+            calls.append(f"upload(file={file.filename!r}:{file.file.read()!r}, note={note!r})")
+
+        def post_raw(self, *, request: object) -> None:
+            calls.append(f"post_raw(request={request.method} {request.url.path})")
+
+    return {"default": {"untagged": Untagged()}}

@@ -1,14 +1,11 @@
-"""Build the router of every selected operation from the handlers that implement them."""
+"""Build the router of every selected operation from the services that implement them."""
 
 {{ imports }}
 
 OPERATIONS: {{ final }} = {{ operations }}
+ROUTES: {{ final }} = {{ routes }}
 
 
-def build_router(*, handlers: {{ handlers }}) -> {{ router }}:
-    """Check the handlers, then register every operation, literal paths first."""
-    checked = {{ check }}(handlers, OPERATIONS)
-    router = {{ router }}()
-    for add in {{ routes }}:
-        add(router, checked)
-    return router
+{{ signature }}
+    """Check the services, then register every operation, literal paths first."""
+    {{ body }}

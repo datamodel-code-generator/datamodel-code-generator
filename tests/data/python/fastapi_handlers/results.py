@@ -1,4 +1,4 @@
-"""Handlers of the result server: each request's case names the value, result, or Response it returns."""
+"""Services of the result server: each request's case names the value, result, or Response it returns."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-def handlers(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, Callable[..., object]]]:
-    """Return handlers whose results cover every declared-response check."""
+def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
+    """Return a service whose results cover every declared-response check."""
     result = server.HTTPResult
     thing = models.Thing(id=1)
     results: dict[str, Callable[[], object]] = {
@@ -66,11 +66,27 @@ def handlers(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         "value": lambda: {"a": 1},
     }
 
-    def responder(name: str) -> Callable[..., object]:
-        def respond(*, case: str) -> object:
-            calls.append(f"{name}({case})")
-            return results[case]()
+    def respond(name: str, case: str) -> object:
+        calls.append(f"{name}({case})")
+        return results[case]()
 
-        return respond
+    class Untagged:
+        def get_result(self, *, case: str) -> object:
+            return respond("get_result", case)
 
-    return {"default": {name: responder(name) for name in ("get_result", "head_result", "get_plain", "get_latin", "get_nothing", "post_empty")}}
+        def head_result(self, *, case: str) -> object:
+            return respond("head_result", case)
+
+        def get_plain(self, *, case: str) -> object:
+            return respond("get_plain", case)
+
+        def get_latin(self, *, case: str) -> object:
+            return respond("get_latin", case)
+
+        def get_nothing(self, *, case: str) -> object:
+            return respond("get_nothing", case)
+
+        def post_empty(self, *, case: str) -> object:
+            return respond("post_empty", case)
+
+    return {"default": {"untagged": Untagged()}}

@@ -136,9 +136,7 @@ class ServerRenderer:  # noqa: PLR0904
         self, path: PurePosixPath, kind: str, text: str, group: str | None = None, *, verbatim: bool = False
     ) -> RenderedFile:
         """Return one owned file of the package."""
-        return RenderedFile(
-            path=self.package / path, kind=kind, ownership="owned", text=text, group=group, verbatim=verbatim
-        )
+        return RenderedFile(path=self.package / path, kind=kind, text=text, group=group, verbatim=verbatim)
 
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered server file in the fixed artifact order."""
@@ -170,34 +168,30 @@ class ServerRenderer:  # noqa: PLR0904
             yield self.file(PurePosixPath("_runtime", path), "runtime", (_RUNTIME / path).read_text(), verbatim=True)
 
     def application(self) -> str:
-        """Return the application module, rendered from its builtin template."""
-        module = Module({"OPERATIONS", "build_router", "handlers", "checked", "router", "add"}, {}, level=1)
-        if self.config.layout == "single":
-            modules = [module.local("", "routes")]
-        else:
-            modules = [module.local("routers", group.stem) for group in self.plan.groups]
+        """Return the application module, rendered from its builtin template.
+
+        The router modules come first, so the names they take keep every other import away from the builder's
+        service arguments, which share their names.
+        """
+        single = self.config.layout == "single"
+        services = [group.stem for group in self.plan.groups]
+        module = Module({"OPERATIONS", "ROUTES", "build_router", *(services if single else ())}, {}, level=1)
+        modules = [module.local("", "routes")] if single else [module.local("routers", stem) for stem in services]
         routes = (*(f"*{name}.LITERAL_ROUTES" for name in modules), *(f"*{name}.TEMPLATED_ROUTES" for name in modules))
-        operations = Group(
-            "(",
-            _items(
-                Group("(", (("", repr(spec.python_name)), ("", _keywords(spec.arguments))), ")")
-                for spec in self.plan.operations
-            ),
-            ")",
-            ",",
-        )
-        handlers = _handlers(module)
-        router = module.name("fastapi", "APIRouter")
         final = module.name("typing", "Final")
-        check = module.local("_runtime.server.application", "checked_handlers")
+        body = _build(module, "ROUTES", services)
         return application_template.render(
-            imports=module.imports(),
-            handlers=handlers,
-            router=router,
             final=final,
-            check=check,
-            operations=layout(operations, 0, len(f"OPERATIONS: {final} = "), WIDTH),
-            routes=layout(Group("(", _items(routes), ")", ","), 4, len("for add in "), WIDTH),
+            operations=layout(
+                Group("(", _items(f"*{name}.OPERATIONS" for name in modules), ")", ","),
+                0,
+                len(f"OPERATIONS: {final} = "),
+                WIDTH,
+            ),
+            routes=layout(Group("(", _items(routes), ")", ","), 0, len(f"ROUTES: {final} = "), WIDTH),
+            signature=_builder(module, services),
+            body=body,
+            imports=module.imports(),
         )
 
     def routers(self) -> Iterator[RenderedFile]:
@@ -215,7 +209,8 @@ class ServerRenderer:  # noqa: PLR0904
     def router(self, group: GroupSpec | None, *, level: int) -> str:
         """Return one router module, rendered from its builtin template."""
         operations = () if group is None else group.operations
-        reserved = {"LITERAL_ROUTES", "TEMPLATED_ROUTES", "build_router", "router", "handlers", "add"}
+        services = [] if group is None else [group.stem]
+        reserved = {"OPERATIONS", "LITERAL_ROUTES", "TEMPLATED_ROUTES", "build_router", "router", "handlers", *services}
         for spec in operations:
             reserved.update((
                 spec.python_name,
@@ -226,20 +221,31 @@ class ServerRenderer:  # noqa: PLR0904
         routes = [self.route(module, spec) for spec in operations]
         literal = [f"_add_{spec.python_name}" for spec in operations if not spec.route.templated]
         templated = [f"_add_{spec.python_name}" for spec in operations if spec.route.templated]
-        name = "the operations" if group is None else f"the {group.stem} operations"
-        handlers = _handlers(module)
-        router = module.name("fastapi", "APIRouter")
+        name = "every operation" if group is None or self.config.layout == "single" else f"the {group.stem} operations"
+        entries = Group(
+            "(",
+            _items(
+                Group("(", (("", repr(stem)), ("", repr(spec.python_name)), ("", _keywords(spec.arguments))), ")")
+                for stem in services
+                for spec in operations
+            ),
+            ")",
+            ",",
+        )
         final = module.name("typing", "Final")
         return router_template.render(
             docstring=f"Endpoints of {name}; regenerate them instead of editing.",
-            imports=module.imports(),
             routes=routes,
-            router=router,
-            handlers=handlers,
+            router=module.name("fastapi", "APIRouter"),
+            handlers=_handlers(module),
             final=final,
+            operations=layout(entries, 0, len(f"OPERATIONS: {final} = "), WIDTH),
             literal=layout(Group("(", _items(literal), ")", ","), 0, len(f"LITERAL_ROUTES: {final} = "), WIDTH),
             templated=layout(Group("(", _items(templated), ")", ","), 0, len(f"TEMPLATED_ROUTES: {final} = "), WIDTH),
+            signature=_builder(module, services),
+            body=_build(module, "(*LITERAL_ROUTES, *TEMPLATED_ROUTES)", services),
             group=name,
+            imports=module.imports(),
         )
 
     def route(self, module: Module, spec: OperationSpec) -> dict[str, str]:
@@ -759,6 +765,21 @@ def _runtime_imports() -> dict[str, tuple[str, ...]]:
             for dots, target in _RELATIVE_IMPORT.findall(source.read_text())
         )
     return graph
+
+
+def _builder(module: Module, services: list[str]) -> str:
+    parameters = _items(("*", *(f"{service}: object" for service in services))) if services else ()
+    return layout(Group("def build_router(", parameters, f") -> {module.name('fastapi', 'APIRouter')}:"), 0, 0, WIDTH)
+
+
+def _build(module: Module, routes: str, services: list[str]) -> str:
+    connected = Group("{", tuple((f"{service!r}: ", service) for service in services), "}")
+    call = Group(
+        f"return {module.local('_runtime.server.application', 'build')}(",
+        (("", routes), ("", "OPERATIONS"), ("", connected)),
+        ")",
+    )
+    return layout(call, 4, 0, WIDTH)
 
 
 def _handlers(module: Module) -> str:

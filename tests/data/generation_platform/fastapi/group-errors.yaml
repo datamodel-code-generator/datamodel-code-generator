@@ -19,3 +19,9 @@ paths:
       tags: [nul]
       responses:
         "204": {description: Done.}
+  /four:
+    get:
+      operationId: four
+      tags: [four]
+      responses:
+        "204": {description: Done.}

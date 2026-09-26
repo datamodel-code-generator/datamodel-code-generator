@@ -1,5 +1,4 @@
 # name-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  F_NAME_CONFLICT target: Several operations or reserved files take 'con'
   F_NAME_CONFLICT target: Several operation names become 'X1'

@@ -399,10 +399,6 @@ class Planner:  # noqa: PLR0904
         operations = self.request.operations
         names = {operation.id.use_site.pointer: self.operation_name(operation) for operation in operations}
         self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several operations or reserved files take {name!r}")
-            for name in sorted(stem_conflicts(names.values()))
-        )
-        self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
             for name, count in sorted(Counter(pascal(name) for name in names.values()).items())
             if count > 1
@@ -425,7 +421,7 @@ class Planner:  # noqa: PLR0904
             members.setdefault(spec.group, []).append(spec)
         stems = {key: self.config.router_names.get(key) or group_stem(key) for key in members}
         self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several router groups or reserved files take {stem!r}")
+            _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(stem_conflicts(stems.values()))
         )
         return tuple(
