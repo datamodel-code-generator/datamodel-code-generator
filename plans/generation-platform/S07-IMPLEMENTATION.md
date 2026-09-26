@@ -155,6 +155,12 @@ The maintainer asked on 2026-09-27 for an optional requirements format next to t
 
 Tests: the CLI dependency cases print requirements for an embedded package and a standalone distribution, a spaced standalone path prints a file URL, the usage case rejects the option without `--generate-server`, and a configuration error case rejects it with `--diagnostics-json -`.
 
+## External models in the dependency result
+
+`GeneratedProject.dependencies` and `GenerationReport.dependencies` end with `model_dependency` when a standalone distribution names one, as the `dependencies` of its `pyproject.toml` do, so an API caller that installs the reported requirements also gets the model distribution the package imports (CodeRabbit on #4166). The command line is unchanged: a standalone distribution is still added editable, and its `pyproject.toml` declares the model distribution.
+
+Tests: the external-models layout case reports the rendered project's dependencies.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

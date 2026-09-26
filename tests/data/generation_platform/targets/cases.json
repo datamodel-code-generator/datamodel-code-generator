@@ -506,6 +506,8 @@
       "model_dependency": "example-models>=1,<2"
     },
     "steps": [
+      {"render": {}},
+      {"dependencies": null},
       {"generate": {}},
       {"show": "server/pyproject.toml"}
     ]

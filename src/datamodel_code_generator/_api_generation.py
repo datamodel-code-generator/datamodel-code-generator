@@ -410,6 +410,11 @@ def _toml_array(values: Iterable[str]) -> str:
     return f"[{', '.join(json.dumps(value) for value in values)}]"
 
 
+def _dependencies(rendered: TargetRender, model_dependency: str | None) -> tuple[str, ...]:
+    """Return what a generated package needs at run time: the target's dependencies and any external models."""
+    return rendered.dependencies if model_dependency is None else (*rendered.dependencies, model_dependency)
+
+
 def _tags(operation: OperationContract) -> tuple[str, ...]:
     from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence  # noqa: PLC0415
 
@@ -908,7 +913,7 @@ class _Planner:
             diagnostics=(*exclusions, *rendered.diagnostics, *rendered.persistent_diagnostics),
             generator_version=self.version,
             runtime_revision=self.revision,
-            dependencies=rendered.dependencies,
+            dependencies=_dependencies(rendered, config.model_dependency),
         )
 
 
@@ -942,7 +947,6 @@ class _Finisher:
         assert output is not None
         bundled = _bundled_models(self.root, (self.cwd / output.expanduser()).resolve(), config.model_package)
         included = (self.layout.package.as_posix(), *(() if bundled is None else (bundled.as_posix(),)))
-        model = () if config.model_dependency is None else (config.model_dependency,)
         readme = ("README.md",) if any(file.path == _README for file in rendered.files) else ()
         return "\n".join((
             "[build-system]",
@@ -954,7 +958,7 @@ class _Finisher:
             f"version = {json.dumps(config.package_version)}",
             f'requires-python = ">={self.effective.target_python_version.value}"',
             *(f'readme = "{path}"' for path in readme),
-            f"dependencies = {_toml_array((*rendered.dependencies, *model))}",
+            f"dependencies = {_toml_array(_dependencies(rendered, config.model_dependency))}",
             "",
             "[tool.hatch.build.targets.wheel]",
             f"only-include = {_toml_array(included)}",
