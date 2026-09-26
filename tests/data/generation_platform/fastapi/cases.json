@@ -413,7 +413,9 @@
       "auth_types.py",
       "errors.py",
       "_generated/contract.py",
-      "routers/untagged.py"
+      "routers/untagged.py",
+      "routers/public.py",
+      "services.py"
     ]
   },
   "security-errors": {
@@ -426,6 +428,42 @@
     },
     "show": [
       "application.py"
+    ]
+  },
+  "services": {
+    "input": "services.yaml",
+    "config": {
+      "handler_modes": [
+        [
+          "/paths/~1health/get",
+          "async"
+        ]
+      ]
+    },
+    "show": [
+      "application.py",
+      "routers/pets.py",
+      "services.py"
+    ]
+  },
+  "empty": {
+    "input": "services.yaml",
+    "config": {
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1pets/get",
+          "/paths/~1pets~1{petId}/delete",
+          "/paths/~1pets~1{petId}~1moves/post",
+          "/paths/~1health/get"
+        ],
+        "reason": "No operations yet."
+      }
+    },
+    "show": [
+      "application.py",
+      "_generated/contract.py",
+      "_generated/model_bindings.py",
+      "services.py"
     ]
   }
 }

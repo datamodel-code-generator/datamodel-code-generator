@@ -45,6 +45,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "security",
         "security-errors",
         "info",
+        "services",
+        "empty",
     ],
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:

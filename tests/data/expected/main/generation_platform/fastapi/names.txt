@@ -13,6 +13,7 @@ render pydantic_v2.BaseModel
   responses.py
   errors.py
   auth_types.py
+  services.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
@@ -60,6 +61,7 @@ render pydantic_v2.BaseModel
     | from ._runtime.server.application import Dependency, FastAPIOptions, application_options, build
     | from .auth_types import AsyncAuthorizer, AsyncCredentialExtractor, Authorizer, CredentialExtractor, CredentialExtractors
     | from .routers import misc, router_2024_files, users
+    | from .services import MiscService, Router2024FilesService, UsersService
     |
     | ROUTES: Final = (
     |     *users.LITERAL_ROUTES,
@@ -74,9 +76,9 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     users: object,
-    |     router_2024_files: object,
-    |     misc: object,
+    |     users: UsersService,
+    |     router_2024_files: Router2024FilesService,
+    |     misc: MiscService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -94,9 +96,9 @@ render pydantic_v2.BaseModel
     |
     | def create_app(
     |     *,
-    |     users: object,
-    |     router_2024_files: object,
-    |     misc: object,
+    |     users: UsersService,
+    |     router_2024_files: Router2024FilesService,
+    |     misc: MiscService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -146,6 +148,7 @@ render pydantic_v2.BaseModel
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
+    | from ..services import UsersService
     |
     |
     | def _add_get__users_me(router: APIRouter, wiring: Wiring) -> None:
@@ -258,7 +261,7 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     users: object,
+    |     users: UsersService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -287,6 +290,7 @@ render pydantic_v2.BaseModel
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
+    | from ..services import Router2024FilesService
     |
     |
     | def _add_get_file(router: APIRouter, wiring: Wiring) -> None:
@@ -326,7 +330,7 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     router_2024_files: object,
+    |     router_2024_files: Router2024FilesService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",

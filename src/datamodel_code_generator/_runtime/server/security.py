@@ -28,6 +28,7 @@ from .errors import malformed_request
 SecretT = TypeVar("SecretT")
 SecretT_co = TypeVar("SecretT_co", covariant=True)
 SecretT_contra = TypeVar("SecretT_contra", contravariant=True)
+PrincipalT = TypeVar("PrincipalT")
 PrincipalT_co = TypeVar("PrincipalT_co", covariant=True)
 SchemeT = TypeVar("SchemeT", bound=str)
 SchemeT_co = TypeVar("SchemeT_co", bound=str, covariant=True)

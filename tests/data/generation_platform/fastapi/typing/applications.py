@@ -1,4 +1,4 @@
-"""Typed connections to the generated secured server: options, authorizers, extractors, and dependencies."""
+"""Typed connections to the generated secured server: services, options, authorizers, extractors, and dependencies."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import PlainTextResponse
 from fastapi.routing import APIRoute
+from secured_models import FieldPetsGetResponse
 from starlette.middleware import Middleware
 from starlette.middleware.gzip import GZipMiddleware
 
@@ -16,13 +17,18 @@ from secured import (
     CredentialExtractors,
     Dependency,
     FastAPIOptions,
+    HTTPResult,
     OperationDependencies,
     OperationKey,
     SchemeKey,
+    Unset,
     build_router,
     create_app,
 )
 from secured.auth_types import AuthContext, Credential, CredentialExtractor, CustomSecret
+from secured.responses import PutPetResponsePayload
+from secured.routers import pets, public
+from secured.services import PetsService, UntaggedService
 
 
 @dataclass(frozen=True)
@@ -30,19 +36,29 @@ class Certificate:
     subject: str
 
 
-def authorize(context: AuthContext[Certificate | str]) -> str:
+@dataclass(frozen=True)
+class User:
+    name: str
+
+
+@dataclass(frozen=True)
+class Admin(User):
+    pass
+
+
+def authorize(context: AuthContext[Certificate | str]) -> User:
     operation: OperationKey = context.operation_key
     for candidate in context.candidates:
         for name, credential in candidate.credentials.items():
             scheme: SchemeKey = name
             payload = credential.payload
             if isinstance(payload, CustomSecret) and isinstance(payload.value, Certificate):
-                return f"{operation} {scheme} {payload.value.subject}"
-    return operation
+                return User(f"{operation} {scheme} {payload.value.subject}")
+    return User(operation)
 
 
-async def authorize_async(context: AuthContext[Certificate | str]) -> str:
-    return context.operation_key
+async def authorize_async(context: AuthContext[Certificate | str]) -> Admin:
+    return Admin(context.operation_key)
 
 
 def digest(request: Request) -> Credential[str] | None:
@@ -65,9 +81,9 @@ def record(request: Request) -> None:
     request.state.recorded = True
 
 
-class Pets:
-    def list_pets(self, *, principal: object) -> list[str]:
-        return [str(principal)]
+class Pets(PetsService[User]):
+    def list_pets(self, *, principal: User) -> FieldPetsGetResponse:
+        return store[principal.name]
 
 
 class Public:
@@ -75,24 +91,27 @@ class Public:
         return None
 
 
-class Untagged:
-    async def get_maybe(self, *, principal: object) -> None:
-        return None
+class Untagged(UntaggedService[User]):
+    async def get_maybe(self, *, principal: User | None, query_principal: str | Unset) -> PlainTextResponse:
+        name = "anonymous" if principal is None else principal.name
+        return PlainTextResponse(name if isinstance(query_principal, Unset) else query_principal)
 
-    def put_pet(self, *, principal: object, pet_id: int) -> None:
-        return None
+    def put_pet(self, *, principal: object, pet_id: int) -> HTTPResult[PutPetResponsePayload]:
+        return HTTPResult(status_code=204, headers=(("x-pet", f"{principal} {pet_id}"),))
 
-    def get_session(self, *, principal: object) -> None:
-        return None
+    def get_session(self, *, principal: User) -> None:
+        del principal
 
-    async def get_custom(self, *, principal: object) -> None:
-        return None
+    async def get_custom(self, *, principal: User) -> None:
+        del principal
 
 
+store: dict[str, FieldPetsGetResponse] = {}
+admin_pets: PetsService[Admin] = Pets()
 extractors: CredentialExtractors[Certificate | str] = {"digest": digest, "mtls": certificate}
 digest_only: CredentialExtractor[str] = digest
-authorizer: Authorizer[Certificate | str, str] = authorize
-async_authorizer: AsyncAuthorizer[Certificate | str, str] = authorize_async
+authorizer: Authorizer[Certificate | str, User] = authorize
+async_authorizer: AsyncAuthorizer[Certificate | str, Admin] = authorize_async
 dependencies: list[Dependency] = [Depends(record)]
 operation_dependencies: OperationDependencies = {"/paths/~1pets/get": dependencies}
 options: FastAPIOptions = {
@@ -121,5 +140,11 @@ app: FastAPI = create_app(
     fastapi_options=options,
 )
 router: APIRouter = build_router(
-    pets=Pets(), public=Public(), untagged=Untagged(), authorizer=async_authorizer, credential_extractors=extractors
+    pets=Pets(),  # ty: ignore[invalid-argument-type]
+    public=Public(),
+    untagged=Untagged(),  # ty: ignore[invalid-argument-type]
+    authorizer=async_authorizer,
+    credential_extractors=extractors,
 )
+pets_router: APIRouter = pets.build_router(pets=Pets(), authorizer=authorizer, credential_extractors=extractors)
+public_router: APIRouter = public.build_router(public=Public())

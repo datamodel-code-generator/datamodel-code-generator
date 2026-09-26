@@ -44,16 +44,16 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     def record(name: str, arguments: dict[str, object]) -> None:
         calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
-    class Pets:
+    class Pets(server.services.PetsService):
         def list_pets(self, **arguments: object) -> object:
             record("list_pets", arguments)
             return ["rex"]
 
-    class Public:
+    class Public(server.services.PublicService):
         def get_public(self, **arguments: object) -> None:
             record("get_public", arguments)
 
-    class Untagged:
+    class Untagged(server.services.UntaggedService):
         async def get_maybe(self, **arguments: object) -> None:
             record("get_maybe", arguments)
 

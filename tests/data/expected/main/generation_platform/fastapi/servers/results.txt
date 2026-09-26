@@ -1,5 +1,7 @@
 # results
 serve pydantic_v2.BaseModel
+service UntaggedService: get_latin, get_nothing, get_plain, get_result, head_result, post_empty
+service UntaggedService without its methods: TypeError
 > GET /results?case=bare
   get_result(bare)
 < 200 application/json {"id":1}

@@ -1,5 +1,11 @@
 # security
 serve pydantic_v2.BaseModel
+service PetsService: list_pets
+service PetsService without its methods: TypeError
+service PublicService: get_public
+service PublicService without its methods: TypeError
+service UntaggedService: get_custom, get_maybe, get_session, put_pet
+service UntaggedService without its methods: TypeError
 build no-authorizer: AuthConfigurationError: An authorizer is required because the selected operations use security
 build no-extractors: AuthConfigurationError: The schemes digest, mtls have no builtin helper and need credential_extractors
 build unknown-extractor: AuthConfigurationError: credential_extractors names schemes no selected operation uses: nope

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import inspect
 import json
 import shutil
 import sys
@@ -23,7 +24,7 @@ from datamodel_code_generator.format import Formatter
 from tests.data.python.fastapi_generation import SOURCE, fastapi_config
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
     from types import ModuleType
 
     import pytest
@@ -125,6 +126,18 @@ def _codec(server: ModuleType, selector: dict[str, Any], lines: list[str]) -> No
     lines.append(f"codec {selector['facade']} {arguments}: {type(codec).__name__}")
 
 
+def _interfaces(server: ModuleType) -> Iterator[str]:
+    """Report each service Protocol's abstract methods, and that a subclass without them cannot be instantiated."""
+    module = server.services
+    for name, protocol in inspect.getmembers(module, inspect.isclass):
+        if protocol.__module__ == module.__name__:
+            yield f"service {name}: {', '.join(sorted(protocol.__abstractmethods__))}"
+            try:
+                type(f"Incomplete{name}", (protocol,), {})()
+            except TypeError:
+                yield f"service {name} without its methods: TypeError"
+
+
 def _build(label: str, build: Callable[[], object], errors: tuple[type[Exception], ...]) -> str:
     try:
         build()
@@ -157,6 +170,7 @@ def fastapi_server_report(case_name: str, root: Path, monkeypatch: pytest.Monkey
         try:
             server, models = _import(package)
             calls: list[str] = []
+            lines.extend(_interfaces(server))
             sets = services.services(server, models, calls)
             settings = services.settings(server, models, calls) if hasattr(services, "settings") else {}
             errors = (server.HandlerConfigurationError, server.AuthConfigurationError, server.OpenAPIConfigurationError)

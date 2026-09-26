@@ -13,6 +13,7 @@ render pydantic_v2.BaseModel
   responses.py
   errors.py
   auth_types.py
+  services.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
@@ -83,6 +84,7 @@ render pydantic_v2.BaseModel
     | from .._runtime.model_codecs.values import DecodedValue
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
+    | from ..services import JsonService
     |
     |
     | def _add_post_json(router: APIRouter, wiring: Wiring) -> None:
@@ -219,7 +221,7 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     json: object,
+    |     json: JsonService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -249,6 +251,7 @@ render pydantic_v2.BaseModel
     | from .._runtime.model_codecs.unset import Unset
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
+    | from ..services import RawService
     |
     |
     | def _add_post_text(router: APIRouter, wiring: Wiring) -> None:
@@ -324,7 +327,7 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     raw: object,
+    |     raw: RawService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -355,6 +358,7 @@ render pydantic_v2.BaseModel
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
+    | from ..services import FormService
     |
     |
     | def _add_post_form(router: APIRouter, wiring: Wiring) -> None:
@@ -550,7 +554,7 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     form: object,
+    |     form: FormService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
