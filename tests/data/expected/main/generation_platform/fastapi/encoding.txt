@@ -170,4 +170,4 @@ render pydantic_v2.BaseModel
     | [tool.hatch.build.targets.sdist]
     | only-include = ["src/server", "README.md", "pyproject.toml"]
   file server/.dcg-state/model-artifacts.json
-    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"37be7af70d11eb299e2d181bf4093b2b3070c56e952e5f7709d53d6987951b23","size":1315}],"fingerprint":"f4af3652388bdbee6697422197b1391b8d5ee95fffd97049135ccf72f28c8020","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}

@@ -1666,4 +1666,4 @@ render pydantic_v2.BaseModel
     | referencing>=0.37,<1
     | typing-extensions>=4.16,<5
   file server/.dcg-state/model-artifacts.json
-    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"d35c0346e227ec29d5d283c87a03a5b755a0df40c63a529b259b8085b2a04284","size":1382}],"fingerprint":"f449d348b14e53e2ee2f01b17f150a7773d9e4f089e2cf9dd25996dd01a65343","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}

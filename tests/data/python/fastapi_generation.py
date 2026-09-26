@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from collections.abc import Mapping
 from dataclasses import fields, is_dataclass, replace
@@ -34,6 +35,8 @@ SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
 MANIFEST = ".dcg-target-manifest.json"
 RUNTIME = Path(_runtime.__file__).parent
+_DIGEST = re.compile(r'"[0-9a-f]{64}"')
+_SIZE = re.compile(r'"size":\d+')
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
@@ -204,7 +207,8 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
                 modules[parts] = content.decode(encoding)
             case _ if path.name != MANIFEST:
                 files.append(f"  file {path.as_posix()}")
-                files.extend(f"    | {text}" if text else "    |" for text in content.decode().splitlines())
+                shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', content.decode()))
+                files.extend(f"    | {text}" if text else "    |" for text in shown.splitlines())
         lines.append(line)
     lines.extend(_decisions(project))
     lines.extend(_diagnostic(item) for item in project.diagnostics)

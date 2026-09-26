@@ -158,7 +158,7 @@ render pydantic_v2.BaseModel
     | referencing>=0.37,<1
     | typing-extensions>=4.16,<5
   file server/.dcg-state/model-artifacts.json
-    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"526882ddb8ce44e78ca45216da655b4c4e3d63d27319f1dfca0f0386bf5bc557","size":1362}],"fingerprint":"888039488b961753348af79adc6295093c3b2dc7043d8c25571c77f29466804d","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
 render pydantic_v2.dataclass
   write models.py
   write server/__init__.py
@@ -330,4 +330,4 @@ render pydantic_v2.dataclass
     | referencing>=0.37,<1
     | typing-extensions>=4.16,<5
   file server/.dcg-state/model-artifacts.json
-    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"59055d6ef8dbed4cbd29a6deec55c8ff4e11ca051d947ca8837c8653aa1f8da0","size":1537}],"fingerprint":"40ecf72f73b81eae6e4527952b11acb0291eeda0eb645228e2ffe32a5e8b54ca","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
