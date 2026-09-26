@@ -41,7 +41,7 @@ from .wire import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from jsonschema.exceptions import ValidationError
+    from jsonschema.exceptions import ValidationError  # type: ignore[import-untyped, unused-ignore]
     from referencing.jsonschema import Schema
 
     from .context import CodecContext
@@ -371,7 +371,7 @@ def _matches(source: str, subject: str) -> bool:
 
 
 def _error(*, path: tuple[str, ...] = ()) -> ValidationError:
-    from jsonschema.exceptions import ValidationError  # noqa: PLC0415
+    from jsonschema.exceptions import ValidationError  # type: ignore[import-untyped, unused-ignore]  # noqa: PLC0415
 
     return ValidationError("", path=path)
 
@@ -639,7 +639,7 @@ def _is_regex(instance: object) -> bool:
 
 @cache
 def _validator_factory() -> Callable[[object, object, object], _KeywordValidator]:
-    from jsonschema import Draft202012Validator, FormatChecker  # noqa: PLC0415
+    from jsonschema import Draft202012Validator, FormatChecker  # type: ignore[import-untyped, unused-ignore]  # noqa: PLC0415
 
     extend = import_module("jsonschema.validators").extend
 
