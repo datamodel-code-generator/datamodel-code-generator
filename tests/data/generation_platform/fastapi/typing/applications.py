@@ -140,7 +140,11 @@ app: FastAPI = create_app(
     fastapi_options=options,
 )
 router: APIRouter = build_router(
-    pets=Pets(), public=Public(), untagged=Untagged(), authorizer=async_authorizer, credential_extractors=extractors
+    pets=Pets(),  # ty: ignore[invalid-argument-type]
+    public=Public(),
+    untagged=Untagged(),  # ty: ignore[invalid-argument-type]
+    authorizer=async_authorizer,
+    credential_extractors=extractors,
 )
 pets_router: APIRouter = pets.build_router(pets=Pets(), authorizer=authorizer, credential_extractors=extractors)
 public_router: APIRouter = public.build_router(public=Public())
