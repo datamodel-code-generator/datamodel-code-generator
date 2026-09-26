@@ -1,7 +1,6 @@
 {
   "first-run": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {}},
@@ -13,28 +12,26 @@
   },
   "ownership": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {}},
       {"publish": null},
-      {"write": ["server/services/pets.py", "# Handwritten.\n"]},
+      {"write": ["server/app.py", "# Handwritten.\n"]},
       {"render": {}},
-      {"write": ["server/routes/pets.py", "# Edited.\n"]},
-      {"remove": "server/routes/store.py"},
+      {"write": ["server/routers/pets.py", "# Edited.\n"]},
+      {"remove": "server/routers/store.py"},
       {"render": {}}
     ]
   },
   "deletion": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {}},
       {"publish": null},
-      {"remove": "server/routes/store.py"},
+      {"remove": "server/routers/store.py"},
       {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
-      {"restore": "server/routes/store.py"},
+      {"restore": "server/routers/store.py"},
       {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
       {"publish": null},
       {"manifest": null},
@@ -43,16 +40,14 @@
   },
   "conflict": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"write": ["server/routes/pets.py", "# Someone else's module.\n"]},
+      {"write": ["server/routers/pets.py", "# Someone else's module.\n"]},
       {"render": {}}
     ]
   },
   "state": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {}},
@@ -98,12 +93,7 @@
   },
   "verify": {
     "input": {"path": "api.yaml"},
-    "target": "client",
-    "model": {
-      "openapi_scopes": ["api"],
-      "output_model_type": "typing.TypedDict",
-      "emit_model_metadata": "meta/deep/models.json"
-    },
+    "model": {"openapi_scopes": ["api"], "emit_model_metadata": "meta/deep/models.json"},
     "steps": [
       {"render": {}},
       {"publish": null},
@@ -117,57 +107,92 @@
   },
   "selection": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"config": {"selection": {
-        "include_tags": ["pets"],
-        "exclude_operations": ["/paths/~1pets/post"],
-        "reason": "Only reading pets"
-      }}}},
+      {
+        "render": {
+          "config": {
+            "selection": {
+              "include_tags": ["pets"],
+              "exclude_operations": ["/paths/~1pets/post"],
+              "reason": "Only reading pets"
+            }
+          }
+        }
+      },
       {"manifest": null},
       {"render": {"config": {"selection": {"exclude_tags": ["admin"], "reason": "Administration runs elsewhere"}}}},
-      {"render": {"config": {"selection": {
-        "include_operations": [
-          "/paths/~1nope/get",
-          "/webhooks/petAdded/post",
-          {"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"},
-          "/paths/~1pets/get",
-          {"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}
-        ],
-        "include_tags": ["missing"],
-        "exclude_tags": ["absent"],
-        "reason": "Broken selection"
-      }}}},
+      {
+        "render": {
+          "config": {
+            "selection": {
+              "include_operations": [
+                "/paths/~1nope/get",
+                "/webhooks/petAdded/post",
+                {"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"},
+                "/paths/~1pets/get",
+                {"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}
+              ],
+              "include_tags": ["missing"],
+              "exclude_tags": ["absent"],
+              "reason": "Broken selection"
+            }
+          }
+        }
+      },
       {"render": {"config": {"selection": {"include_operations": ["/paths/~1pets/get"], "reason": "One operation"}}}},
       {"remember": "shorthand"},
-      {"render": {"config": {"selection": {
-        "include_operations": [{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}],
-        "reason": "One operation"
-      }}}},
+      {
+        "render": {
+          "config": {
+            "selection": {
+              "include_operations": [{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}],
+              "reason": "One operation"
+            }
+          }
+        }
+      },
       {"compare": "shorthand"},
-      {"render": {"config": {"selection": {
-        "include_operations": [{"pointer": "/paths/~1pets/get", "document": "{root}/spec/api.yaml"}],
-        "reason": "One operation"
-      }}}},
+      {
+        "render": {
+          "config": {
+            "selection": {
+              "include_operations": [{"pointer": "/paths/~1pets/get", "document": "{root}/spec/api.yaml"}],
+              "reason": "One operation"
+            }
+          }
+        }
+      },
       {"compare": "shorthand"}
     ]
   },
   "inputs": {
     "input": {"text": "inline.yaml"},
-    "target": "client",
-    "model": {"openapi_scopes": ["api"], "output_model_type": "msgspec.Struct"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"config": {"selection": {
-        "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
-        "reason": "Items only"
-      }}}},
+      {
+        "render": {
+          "config": {
+            "selection": {
+              "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
+              "reason": "Items only"
+            }
+          }
+        }
+      },
       {"manifest": null},
       {"render": {"input": {"mapping": "inline.yaml"}, "model": {"input_file_type": "openapi"}}},
-      {"render": {"input": {"path": "inline.yaml"}, "config": {"selection": {
-        "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
-        "reason": "Items only"
-      }}}},
+      {
+        "render": {
+          "input": {"path": "inline.yaml"},
+          "config": {
+            "selection": {
+              "include_operations": [{"pointer": "/paths/~1items/get", "document": "urn:dcg:root"}],
+              "reason": "Items only"
+            }
+          }
+        }
+      },
       {"render": {"input": {"list": ["inline.yaml"]}}},
       {"render": {"input": {"directory": "."}}},
       {"render": {"model": {"input_file_type": "jsonschema"}}}
@@ -175,7 +200,6 @@
   },
   "validation": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"output": null}}},
@@ -185,7 +209,6 @@
   },
   "empty": {
     "input": {"path": "empty.yaml"},
-    "target": "client",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {}},
@@ -195,8 +218,7 @@
   },
   "modular": {
     "input": {"path": "modular.yaml"},
-    "target": "client",
-    "model": {"openapi_scopes": ["api"], "output": "models", "output_model_type": "dataclasses.dataclass"},
+    "model": {"openapi_scopes": ["api"], "output": "models"},
     "steps": [
       {"render": {}},
       {"publish": null},
@@ -206,7 +228,6 @@
   },
   "provenance": {
     "input": {"path": "api.yaml"},
-    "target": "client",
     "model": {
       "openapi_scopes": ["api"],
       "custom_file_header_path": "spec/header.txt",
@@ -214,16 +235,13 @@
       "http_timeout": 5.0,
       "custom_class_name_generator": true,
       "lockfile": "locks/remote.lock",
-      "update_lock": true
+      "update_lock": true,
+      "field_extra_keys": ["b", "a"]
     },
     "config": {
       "formatter_settings": "pyproject.toml",
       "custom_formatters": ["tests.data.python.custom_formatters.add_comment"],
       "custom_formatter_kwargs": {"width": 100},
-      "hook": true,
-      "token": true,
-      "labels": ["b", "a"],
-      "primary": {"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"},
       "export_bindings": [
         {"schema": {"pointer": "/components/schemas/Pet"}, "module": "example.models", "symbol": "FixturePet"}
       ],
@@ -233,7 +251,9 @@
           "backend": "pydantic_v2.BaseModel",
           "schemas": [{"pointer": "/Order", "document": "spec/common.yaml"}]
         }
-      ]
+      ],
+      "hooks": ["record"],
+      "primary_responses": [[{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}, {"status_code": 200}]]
     },
     "steps": [
       {"render": {}},
@@ -242,20 +262,36 @@
   },
   "references": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"config": {"primary": {"pointer": "/paths/~1nope/get"}}}},
-      {"render": {"config": {"primary": {"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}}}},
-      {"render": {"config": {"export_bindings": [
-        {"schema": {"pointer": "/Order", "document": "spec/missing.yaml"}, "module": "example.models", "symbol": "Order"}
-      ]}}},
-      {"render": {"config": {"failure": "E_FIXTURE_REFUSED"}}}
+      {"render": {"config": {"primary_responses": [[{"pointer": "/paths/~1nope/get"}, {"status_code": 200}]]}}},
+      {
+        "render": {
+          "config": {
+            "primary_responses": [
+              [{"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}, {"status_code": 200}]
+            ]
+          }
+        }
+      },
+      {
+        "render": {
+          "config": {
+            "builtin_codec_compatibility": [
+              {
+                "name": "orders",
+                "backend": "pydantic_v2.BaseModel",
+                "schemas": [{"pointer": "/Order", "document": "spec/missing.yaml"}]
+              }
+            ]
+          }
+        }
+      },
+      {"render": {"config": {"operation_names": [["/paths/~1pets/get", "create_pet"]]}}}
     ]
   },
   "locks": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"resolved_lock": "update"}}},
@@ -264,7 +300,6 @@
   },
   "lock-failure": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"], "lockfile": "remote.lock", "update_lock": true},
     "steps": [
       {"render": {}}
@@ -272,7 +307,6 @@
   },
   "relative-failure": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {}}
@@ -280,7 +314,6 @@
   },
   "http": {
     "input": {"url": "api.json"},
-    "target": "client",
     "model": {
       "openapi_scopes": ["api"],
       "input_file_type": "openapi",
@@ -294,25 +327,23 @@
   },
   "publish": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
       {"tree": null},
       {"generate": {}},
-      {"generate": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {
+        "generate": {
+          "config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}
+        }
+      },
       {"tree": null},
       {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}}
     ]
   },
   "publish-verify": {
     "input": {"path": "api.yaml"},
-    "target": "client",
-    "model": {
-      "openapi_scopes": ["api"],
-      "output_model_type": "typing.TypedDict",
-      "emit_model_metadata": "meta/models.json"
-    },
+    "model": {"openapi_scopes": ["api"], "emit_model_metadata": "meta/models.json"},
     "steps": [
       {"generate": {}},
       {"generate": {"config": {"model_mode": "verify"}}},
@@ -321,7 +352,6 @@
   },
   "publish-lock": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"], "lockfile": "locks/remote.lock", "update_lock": true},
     "steps": [
       {"generate": {}},
@@ -331,7 +361,6 @@
   },
   "busy": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
@@ -346,7 +375,6 @@
   },
   "busy-metadata": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"], "emit_model_metadata": "meta/models.json"},
     "steps": [
       {"generate": {}},
@@ -354,13 +382,18 @@
       {"generate": {}},
       {"generate": {"config": {"model_mode": "verify"}}},
       {"release": null},
-      {"generate": {"input": {"path": "modular.yaml"}, "model": {"output": "models", "emit_model_metadata": "models/meta.json"}}},
+      {
+        "generate": {
+          "input": {"path": "modular.yaml"},
+          "model": {"output": "models", "emit_model_metadata": "models/meta.json"},
+          "config": {"output": "modular"}
+        }
+      },
       {"tree": null}
     ]
   },
   "collision": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"emit_model_metadata": "server/__INIT__.py"}}},
@@ -370,38 +403,38 @@
   },
   "interference": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
-      {"render": {"target": "interfering"}}
+      {"render": {"config": {"hooks": ["interfere"]}}}
     ]
   },
   "directory": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"mkdir": "server/routes/pets.py"},
+      {"mkdir": "server/routers/pets.py"},
       {"generate": {}},
       {"tree": null}
     ]
   },
   "publish-failure": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"], "lockfile": "remote.lock", "update_lock": true},
     "steps": [
       {"generate": {}},
       {"tree": null},
       {"generate": {}},
-      {"generate": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {
+        "generate": {
+          "config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}
+        }
+      },
       {"tree": null}
     ]
   },
   "rollback-created": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}}
@@ -409,17 +442,19 @@
   },
   "rollback-backup": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
-      {"generate": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
+      {
+        "generate": {
+          "config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}
+        }
+      },
       {"tree": null}
     ]
   },
   "publication-check": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
@@ -428,7 +463,6 @@
   },
   "lock-unsupported": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}}
@@ -436,7 +470,6 @@
   },
   "state-changed": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}}
@@ -444,17 +477,15 @@
   },
   "layout-embedded": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
-      {"show": "server/routes/pets.py"},
+      {"show": "server/routers/pets.py"},
       {"show": "server/dcg-runtime-requirements.txt"}
     ]
   },
   "layout-standalone": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"], "output": "server/src/example/models.py"},
     "config": {"package_mode": "standalone", "package_version": "1.2.3", "distribution_name": "example-server"},
     "steps": [
@@ -466,7 +497,6 @@
   },
   "layout-external": {
     "input": {"path": "api.yaml"},
-    "target": "client",
     "model": {"openapi_scopes": ["api"]},
     "config": {
       "package_mode": "standalone",
@@ -481,18 +511,21 @@
   },
   "layout-errors": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "config": {"package_mode": "standalone", "package_version": "1.2.3", "distribution_name": "example-server"},
     "steps": [
       {"render": {}},
-      {"render": {"model": {"output": "server/src/example/models.py"}, "config": {"model_dependency": "example-models"}}},
+      {
+        "render": {
+          "model": {"output": "server/src/example/models.py"},
+          "config": {"model_dependency": "example-models"}
+        }
+      },
       {"render": {"model": {"output": "server/src/example/server/models.py"}}}
     ]
   },
   "format": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "config": {
       "header": "Example header\n\nSecond line",
@@ -502,43 +535,42 @@
     },
     "steps": [
       {"generate": {}},
-      {"show": "server/routes/pets.py"},
+      {"show": "server/routers/pets.py"},
       {"show": "server/__init__.py"}
     ]
   },
   "format-errors": {
     "input": {"path": "api.yaml"},
-    "target": "server",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
-      {"render": {"config": {"header": "Caf\u00e9 \u6f22", "encoding": "latin-1"}}},
-      {"render": {"target": "broken"}},
-      {"render": {"target": "misplaced"}},
+      {"render": {"config": {"header": "Café 漢", "encoding": "latin-1"}}},
+      {"render": {"config": {"templates": "templates/broken"}}},
+      {"render": {"config": {"templates": "templates/misplaced"}}},
       {"render": {"config": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
     ]
   },
   "target-grammar": {
     "input": {"path": "api.yaml"},
-    "target": "modern",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"target_python_version": "3.10"}}}
-    ]
+    ],
+    "config": {"templates": "templates/modern"}
   },
   "target-grammar-modern": {
     "input": {"path": "api.yaml"},
-    "target": "modern",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"target_python_version": "3.12"}}}
-    ]
+    ],
+    "config": {"templates": "templates/modern"}
   },
   "target-grammar-misplaced": {
     "input": {"path": "api.yaml"},
-    "target": "misplaced",
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"target_python_version": "3.12"}}}
-    ]
+    ],
+    "config": {"templates": "templates/misplaced"}
   }
 }

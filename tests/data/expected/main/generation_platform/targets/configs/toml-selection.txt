@@ -1,23 +1,102 @@
-output='server'
-package='example.server'
-model_package='example.models'
-model_mode='generate'
-selection=OperationSelection(include_operations=('/paths/~1pets/get', OperationRef(pointer='/paths/~1pets/post', document='<root>/spec/api.yaml')), include_tags=('pets',), exclude_operations=(OperationRef(pointer='/paths/~1health/get', document=None),), exclude_tags=('admin',), reason='Pets only')
-formatters=(<Formatter.BUILTIN: 'builtin'>,)
-formatter_settings='.'
-custom_formatters=()
-custom_formatter_kwargs=mappingproxy({})
-encoding='utf-8'
-header=None
-include_timestamp=False
-package_mode='embedded'
-package_version=None
-distribution_name=None
-model_dependency=None
-builtin_codec_compatibility=()
-export_bindings=()
-hook=None
-primary=None
-token=None
-labels=frozenset()
-failure=None
+S_OPERATION_EXCLUDED info selection /paths/~1pets/post: POST /pets is included by include_operations, include_tags 'pets' but excluded by exclude_tags 'admin': Pets only
+S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is matched by no include rule: Pets only
+S_OPERATION_EXCLUDED info selection /paths/~1health/get: GET /health is excluded by exclude_operations: Pets only
+{
+  "selection": {
+    "excluded_operations": [
+      {
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1pets/post"
+        },
+        "reason": "Pets only"
+      },
+      {
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1store~1orders/get"
+        },
+        "reason": "Pets only"
+      },
+      {
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1health/get"
+        },
+        "reason": "Pets only"
+      }
+    ],
+    "reason": "Pets only",
+    "rules": {
+      "exclude_operations": [
+        {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1health/get"
+        }
+      ],
+      "exclude_tags": [
+        "admin"
+      ],
+      "include_operations": [
+        {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1pets/get"
+        },
+        {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1pets/post"
+        }
+      ],
+      "include_tags": [
+        "pets"
+      ],
+      "reason": "Pets only"
+    },
+    "selected_operations": [
+      {
+        "document": "/inputs/root",
+        "pointer": "/paths/~1pets/get"
+      }
+    ]
+  },
+  "target_config": {
+    "opaque_options": [],
+    "protocol_metadata": {},
+    "public_options": {
+      "body_mode": "typed",
+      "body_modes": {},
+      "builtin_codec_compatibility": [],
+      "codec_adapters": [],
+      "custom_formatter_kwargs": {},
+      "custom_formatters": [],
+      "distribution_name": null,
+      "encoding": "utf-8",
+      "export_bindings": [],
+      "formatter_settings": "..",
+      "formatters": [
+        "builtin"
+      ],
+      "handler_mode": "sync",
+      "handler_modes": {},
+      "header": null,
+      "hooks": [],
+      "include_request": false,
+      "include_timestamp": false,
+      "layout": "routers",
+      "model_dependency": null,
+      "model_mode": "generate",
+      "model_package": "example.models",
+      "operation_names": {},
+      "output": ".",
+      "package": "example.server",
+      "package_mode": "embedded",
+      "package_version": null,
+      "parameter_names": {},
+      "primary_responses": {},
+      "router_names": {},
+      "templates": null,
+      "update_groups": null
+    },
+    "runtime_defaults": {}
+  }
+}

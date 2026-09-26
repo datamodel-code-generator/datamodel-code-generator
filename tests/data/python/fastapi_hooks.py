@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator.fastapi.templates import FastAPIContextPatch, ImportSpec
@@ -16,6 +17,13 @@ NOT_CALLABLE = 7
 def record(context: FastAPIContext) -> FastAPIContextPatch:
     """Keep the context the hook receives and change nothing."""
     RECORDED.append(context)
+    return FastAPIContextPatch()
+
+
+def interfere(_context: FastAPIContext) -> FastAPIContextPatch:
+    """Append to the published manifest while the target renders, as another writer would."""
+    with Path("server/.dcg-target-manifest.json").open("ab") as handle:
+        handle.write(b" ")
     return FastAPIContextPatch()
 
 

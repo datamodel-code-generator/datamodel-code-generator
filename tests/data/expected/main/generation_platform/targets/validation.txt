@@ -7,15 +7,25 @@ render
   E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not support 'dataclasses.dataclass'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 render
   target=fastapi schema_version=1
-  write model models.py 27 lines
-  write target server/__init__.py (target) 1 lines
-  write target server/routes/pets.py (target) 2 lines
-  write target server/routes/store.py (target) 2 lines
-  write target server/routes/default.py (target) 2 lines
-  write target server/py.typed (target) 0 lines
-  write target server/dcg-runtime-requirements.txt (target) 1 lines
-  write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
-  write target_manifest server/.dcg-target-manifest.json (target) 1 lines
-  I_FIXTURE_GROUP info target: The pets group has 2 operations
-  I_FIXTURE_GROUP info target: The store group has 1 operations
-  I_FIXTURE_GROUP info target: The default group has 1 operations
+  write model models.py
+  write target server/__init__.py (target)
+  write target server/application.py (target)
+  write target server/routers/__init__.py (target)
+  write target server/routers/pets.py (target)
+  write target server/routers/store.py (target)
+  write target server/routers/untagged.py (target)
+  write target server/_generated/__init__.py (target)
+  write target server/_generated/contract.py (target)
+  write target server/_generated/model_bindings.py (target)
+  write target server/_generated/openapi.py (target)
+  write target server/model_codecs.py (target)
+  write target server/responses.py (target)
+  write target server/errors.py (target)
+  write target server/auth_types.py (target)
+  write target server/services.py (target)
+  write target server/README.md (target)
+  write target server/py.typed (target)
+  write target server/dcg-runtime-requirements.txt (target)
+  write model_inventory server/.dcg-state/model-artifacts.json (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['write']

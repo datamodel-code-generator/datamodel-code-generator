@@ -1,13 +1,13 @@
 # references
 render
   APIGenerationError
-  E_OPERATION_REF error config primary: The reference names no operation or document of the accepted input
+  E_OPERATION_REF error config primary_responses: The primary_responses entry '/paths/~1nope/get' selects no root path operation
 render
   APIGenerationError
-  E_OPERATION_REF error config primary: The reference names no operation or document of the accepted input
+  E_OPERATION_REF error config primary_responses: The primary_responses entry '/paths/~1pets/get' selects no root path operation
 render
   APIGenerationError
-  E_CONFIG_VALUE error config export_bindings: The reference names no operation or document of the accepted input
+  E_CONFIG_VALUE error config builtin_codec_compatibility: The reference names no operation or document of the accepted input
 render
   APIGenerationError
-  E_FIXTURE_REFUSED error target: The fixture target refuses to render
+  F_NAME_CONFLICT error target: Several operation names become 'CreatePet'

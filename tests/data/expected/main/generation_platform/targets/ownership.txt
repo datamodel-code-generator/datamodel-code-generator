@@ -1,37 +1,57 @@
 # ownership
 render
   target=fastapi schema_version=1
-  write model models.py 22 lines
-  write target server/__init__.py (target) 1 lines
-  write target server/routes/pets.py (target) 2 lines
-  write target server/routes/store.py (target) 2 lines
-  write target server/routes/default.py (target) 2 lines
-  write target server/py.typed (target) 0 lines
-  write target server/dcg-runtime-requirements.txt (target) 1 lines
-  write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
-  write target_manifest server/.dcg-target-manifest.json (target) 1 lines
-  I_FIXTURE_GROUP info target: The pets group has 2 operations
-  I_FIXTURE_GROUP info target: The store group has 1 operations
-  I_FIXTURE_GROUP info target: The default group has 1 operations
+  write model models.py
+  write target server/__init__.py (target)
+  write target server/application.py (target)
+  write target server/routers/__init__.py (target)
+  write target server/routers/pets.py (target)
+  write target server/routers/store.py (target)
+  write target server/routers/untagged.py (target)
+  write target server/_generated/__init__.py (target)
+  write target server/_generated/contract.py (target)
+  write target server/_generated/model_bindings.py (target)
+  write target server/_generated/openapi.py (target)
+  write target server/model_codecs.py (target)
+  write target server/responses.py (target)
+  write target server/errors.py (target)
+  write target server/auth_types.py (target)
+  write target server/services.py (target)
+  write target server/README.md (target)
+  write target server/py.typed (target)
+  write target server/dcg-runtime-requirements.txt (target)
+  write model_inventory server/.dcg-state/model-artifacts.json (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['write']
 publish
-write server/services/pets.py
+write server/app.py
 render
   target=fastapi schema_version=1
-  unchanged model models.py 22 lines
-  unchanged target server/__init__.py (target) 1 lines
-  unchanged target server/routes/pets.py (target) 2 lines
-  unchanged target server/routes/store.py (target) 2 lines
-  unchanged target server/routes/default.py (target) 2 lines
-  unchanged target server/py.typed (target) 0 lines
-  unchanged target server/dcg-runtime-requirements.txt (target) 1 lines
-  unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
-  unchanged target_manifest server/.dcg-target-manifest.json (target) 1 lines
-  I_FIXTURE_GROUP info target: The pets group has 2 operations
-  I_FIXTURE_GROUP info target: The store group has 1 operations
-  I_FIXTURE_GROUP info target: The default group has 1 operations
-write server/routes/pets.py
-remove server/routes/store.py
+  unchanged model models.py
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/pets.py (target)
+  unchanged target server/routers/store.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/_generated/model_bindings.py (target)
+  unchanged target server/_generated/openapi.py (target)
+  unchanged target server/model_codecs.py (target)
+  unchanged target server/responses.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/auth_types.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/README.md (target)
+  unchanged target server/py.typed (target)
+  unchanged target server/dcg-runtime-requirements.txt (target)
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
+  unchanged target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['unchanged']
+write server/routers/pets.py
+remove server/routers/store.py
 render
   APIGenerationError
-  E_OUTPUT_MODIFIED error ownership routes/pets.py: A file the target owns was modified
-  E_OUTPUT_MODIFIED error ownership routes/store.py: A file the target owns is missing
+  E_OUTPUT_MODIFIED error ownership routers/pets.py: A file the target owns was modified
+  E_OUTPUT_MODIFIED error ownership routers/store.py: A file the target owns is missing

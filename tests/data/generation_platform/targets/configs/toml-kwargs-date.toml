@@ -1,0 +1,5 @@
+schema_version = 1
+output = "server"
+package = "example.server"
+model_package = "example.models"
+custom_formatter_kwargs = {since = 1979-05-27}

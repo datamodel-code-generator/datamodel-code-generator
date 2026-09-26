@@ -1,0 +1,3 @@
+schema_version = 1
+package = "example.server"
+model_package = "example.models"

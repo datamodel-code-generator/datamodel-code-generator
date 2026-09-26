@@ -2,22 +2,131 @@
 generate
   target=fastapi schema_version=1
   written model models.py
-  written target server/__init__.py (target) 110 bytes
-  written target server/routes/pets.py (target) 147 bytes
-  written target server/routes/store.py (target) 141 bytes
-  written target server/routes/default.py (target) 135 bytes
-  written target server/py.typed (target) 0 bytes
-  written target server/dcg-runtime-requirements.txt (target) 22 bytes
+  written target server/__init__.py (target)
+  written target server/application.py (target)
+  written target server/routers/__init__.py (target)
+  written target server/routers/pets.py (target)
+  written target server/routers/store.py (target)
+  written target server/routers/untagged.py (target)
+  written target server/_generated/__init__.py (target)
+  written target server/_generated/contract.py (target)
+  written target server/_generated/model_bindings.py (target)
+  written target server/_generated/openapi.py (target)
+  written target server/model_codecs.py (target)
+  written target server/responses.py (target)
+  written target server/errors.py (target)
+  written target server/auth_types.py (target)
+  written target server/services.py (target)
+  written target server/README.md (target)
+  written target server/py.typed (target)
+  written target server/dcg-runtime-requirements.txt (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-show server/routes/pets.py
+  25 runtime modules ['written']
+show server/routers/pets.py
   | # -*- coding: latin-1 -*-
   | # Example header
   | #
   | # Second line
   | # timestamp: 2026-09-25T12:00:00+00:00
   | # a comment
-  | ROUTES = ['GET /pets', 'POST /pets']
+  | """Endpoints of the pets operations; regenerate them instead of editing."""
+  | 
+  | from collections.abc import Sequence
+  | from typing import Annotated, Final
+  | 
+  | import example.models as example_models
+  | from fastapi import APIRouter, Depends
+  | from fastapi.responses import Response
+  | 
+  | from .._generated import contract
+  | from .._generated.contract import OperationDependencies
+  | from .._runtime.model_codecs.unset import Unset
+  | from .._runtime.server.application import Dependency, Wiring, build
+  | from .._runtime.server.responses import respond
+  | from ..services import PetsService
+  | 
+  | 
+  | def _add_list_pets(router: APIRouter, wiring: Wiring) -> None:
+  |     list_pets_handler = wiring.handlers['list_pets']
+  | 
+  |     def list_pets() -> Response:
+  |         return respond(list_pets_handler(), contract.ListPets.RESPONSES)
+  | 
+  |     router.add_api_route(
+  |         '/pets',
+  |         list_pets,
+  |         methods=['GET'],
+  |         status_code=200,
+  |         response_model=None,
+  |         response_class=Response,
+  |         operation_id='listPets',
+  |         tags=['pets'],
+  |         response_description='Pets',
+  |         openapi_extra={
+  |             'x-dcg-operation': {
+  |                 'version': 1,
+  |                 'package': 'example.server',
+  |                 'operation': '/paths/~1pets/get',
+  |             },
+  |         },
+  |         dependencies=wiring.dependencies.get('/paths/~1pets/get'),
+  |     )
+  | 
+  | 
+  | def _add_create_pet(router: APIRouter, wiring: Wiring) -> None:
+  |     create_pet_handler = wiring.handlers['create_pet']
+  | 
+  |     def create_pet(
+  |         *,
+  |         body: Annotated[example_models.Pet | Unset, Depends(contract.CreatePet.BODY)],
+  |     ) -> Response:
+  |         return respond(create_pet_handler(body=body), contract.CreatePet.RESPONSES)
+  | 
+  |     router.add_api_route(
+  |         '/pets',
+  |         create_pet,
+  |         methods=['POST'],
+  |         status_code=201,
+  |         response_model=None,
+  |         response_class=Response,
+  |         operation_id='createPet',
+  |         tags=['pets', 'admin'],
+  |         response_description='Created',
+  |         openapi_extra={
+  |             'x-dcg-operation': {
+  |                 'version': 1,
+  |                 'package': 'example.server',
+  |                 'operation': '/paths/~1pets/post',
+  |             },
+  |         },
+  |         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
+  |     )
+  | 
+  | 
+  | LITERAL_ROUTES: Final = (
+  |     (contract.ListPets.OPERATION, _add_list_pets),
+  |     (contract.CreatePet.OPERATION, _add_create_pet),
+  | )
+  | TEMPLATED_ROUTES: Final = ()
+  | 
+  | 
+  | def build_router(
+  |     *,
+  |     pets: PetsService,
+  |     dependencies: Sequence[Dependency] = (),
+  |     operation_dependencies: OperationDependencies | None = None,
+  |     prefix: str = "",
+  | ) -> APIRouter:
+  |     """Check the service and settings, then register the pets operations on a new router, literal paths first."""
+  |     return build(
+  |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+  |         contract.SCHEMES,
+  |         services={'pets': pets},
+  |         dependencies=dependencies,
+  |         operation_dependencies=operation_dependencies,
+  |         prefix=prefix,
+  |     )
 show server/__init__.py
   | # -*- coding: latin-1 -*-
   | # Example header
@@ -25,3 +134,48 @@ show server/__init__.py
   | # Second line
   | # timestamp: 2026-09-25T12:00:00+00:00
   | # a comment
+  | """FastAPI server generated by datamodel-code-generator."""
+  | 
+  | from .application import (
+  |     AsyncAuthorizer,
+  |     AsyncCredentialExtractor,
+  |     Authorizer,
+  |     CredentialExtractor,
+  |     CredentialExtractors,
+  |     Dependency,
+  |     FastAPIOptions,
+  |     OperationDependencies,
+  |     OperationKey,
+  |     SchemeKey,
+  |     build_router,
+  |     create_app,
+  |     install_openapi,
+  | )
+  | from .errors import (
+  |     AuthConfigurationError,
+  |     HandlerConfigurationError,
+  |     OpenAPIConfigurationError,
+  | )
+  | from .responses import UNSET, HTTPResult, Unset
+  | 
+  | __all__ = [
+  |     "UNSET",
+  |     "AsyncAuthorizer",
+  |     "AsyncCredentialExtractor",
+  |     "AuthConfigurationError",
+  |     "Authorizer",
+  |     "CredentialExtractor",
+  |     "CredentialExtractors",
+  |     "Dependency",
+  |     "FastAPIOptions",
+  |     "HTTPResult",
+  |     "HandlerConfigurationError",
+  |     "OpenAPIConfigurationError",
+  |     "OperationDependencies",
+  |     "OperationKey",
+  |     "SchemeKey",
+  |     "Unset",
+  |     "build_router",
+  |     "create_app",
+  |     "install_openapi",
+  | ]

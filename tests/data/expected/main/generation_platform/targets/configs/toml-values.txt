@@ -1,8 +1,7 @@
-APIGenerationError
-  E_CONFIG_VALUE error config output: output must be a string
-  E_CONFIG_VALUE error config include_timestamp: include_timestamp must be a boolean
-  E_CONFIG_VALUE error config formatters: formatters names an unknown formatter
-  E_CONFIG_VALUE error config custom_formatters[1]: custom_formatters[1] must be a string
-  E_CONFIG_VALUE error config custom_formatter_kwargs: custom_formatter_kwargs must be a table of JSON values
-  E_CONFIG_VALUE error config selection: selection must be a table
-  E_CONFIG_VALUE error config export_bindings: export_bindings must be an array
+E_CONFIG_VALUE error config output: output must be a string
+E_CONFIG_VALUE error config include_timestamp: include_timestamp must be a boolean
+E_CONFIG_VALUE error config formatters: formatters names an unknown formatter
+E_CONFIG_VALUE error config custom_formatters[1]: custom_formatters[1] must be a string
+E_CONFIG_VALUE error config custom_formatter_kwargs: custom_formatter_kwargs must be a table of JSON values
+E_CONFIG_VALUE error config selection: selection must be a table
+E_CONFIG_VALUE error config export_bindings: export_bindings must be an array

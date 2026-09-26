@@ -1,15 +1,28 @@
 # layout-external
 generate
-  target=client schema_version=1
+  target=fastapi schema_version=1
   written model models.py
-  written target server/src/example/server/__init__.py (target) 73 bytes
-  written target server/src/example/server/routes/pets.py (target) 110 bytes
-  written target server/src/example/server/routes/store.py (target) 104 bytes
-  written target server/src/example/server/routes/default.py (target) 98 bytes
-  written target server/src/example/server/py.typed (target) 0 bytes
-  written target server/pyproject.toml (target) 407 bytes
+  written target server/src/example/server/__init__.py (target)
+  written target server/src/example/server/application.py (target)
+  written target server/src/example/server/routers/__init__.py (target)
+  written target server/src/example/server/routers/pets.py (target)
+  written target server/src/example/server/routers/store.py (target)
+  written target server/src/example/server/routers/untagged.py (target)
+  written target server/src/example/server/_generated/__init__.py (target)
+  written target server/src/example/server/_generated/contract.py (target)
+  written target server/src/example/server/_generated/model_bindings.py (target)
+  written target server/src/example/server/_generated/openapi.py (target)
+  written target server/src/example/server/model_codecs.py (target)
+  written target server/src/example/server/responses.py (target)
+  written target server/src/example/server/errors.py (target)
+  written target server/src/example/server/auth_types.py (target)
+  written target server/src/example/server/services.py (target)
+  written target server/README.md (target)
+  written target server/src/example/server/py.typed (target)
+  written target server/pyproject.toml (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['written']
 show server/pyproject.toml
   | [build-system]
   | requires = ["hatchling>=1.27,<2"]
@@ -19,11 +32,12 @@ show server/pyproject.toml
   | name = "example-client"
   | version = "0.1.0"
   | requires-python = ">=3.10"
-  | dependencies = ["client-runtime>=1,<2", "example-models>=1,<2"]
+  | readme = "README.md"
+  | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5", "example-models>=1,<2"]
   | 
   | [tool.hatch.build.targets.wheel]
   | only-include = ["src/example/server"]
   | sources = ["src"]
   | 
   | [tool.hatch.build.targets.sdist]
-  | only-include = ["src/example/server", "pyproject.toml"]
+  | only-include = ["src/example/server", "README.md", "pyproject.toml"]

@@ -1,19 +1,29 @@
 # provenance
 render
-  target=client schema_version=1
-  write model models.py 22 lines
-  write target server/__init__.py (target) 2 lines
-  write target server/routes/pets.py (target) 3 lines
-  write target server/routes/store.py (target) 3 lines
-  write target server/routes/default.py (target) 3 lines
-  write target server/py.typed (target) 0 lines
-  write target server/dcg-runtime-requirements.txt (target) 1 lines
-  write remote_lock locks/remote.lock 4 lines
-  write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
-  write target_manifest server/.dcg-target-manifest.json (target) 1 lines
-  I_FIXTURE_GROUP info target: The pets group has 2 operations
-  I_FIXTURE_GROUP info target: The store group has 1 operations
-  I_FIXTURE_GROUP info target: The default group has 1 operations
+  target=fastapi schema_version=1
+  write model models.py
+  write target server/__init__.py (target)
+  write target server/application.py (target)
+  write target server/routers/__init__.py (target)
+  write target server/routers/pets.py (target)
+  write target server/routers/store.py (target)
+  write target server/routers/untagged.py (target)
+  write target server/_generated/__init__.py (target)
+  write target server/_generated/contract.py (target)
+  write target server/_generated/model_bindings.py (target)
+  write target server/_generated/openapi.py (target)
+  write target server/model_codecs.py (target)
+  write target server/responses.py (target)
+  write target server/errors.py (target)
+  write target server/auth_types.py (target)
+  write target server/services.py (target)
+  write target server/README.md (target)
+  write target server/py.typed (target)
+  write target server/dcg-runtime-requirements.txt (target)
+  write remote_lock locks/remote.lock
+  write model_inventory server/.dcg-state/model-artifacts.json (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['write']
 {
   "bindings": [
     {
@@ -84,40 +94,6 @@ render
       "converter_strategy": "pydantic_type_adapter",
       "strategy": "native",
       "use_id": {
-        "declaration": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1store~1orders/get/parameters/0"
-        },
-        "direction": "request",
-        "location": "query",
-        "media": null,
-        "name": "limit",
-        "owner": {
-          "kind": "operation",
-          "source": {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1store~1orders/get"
-          }
-        },
-        "projection": "value",
-        "role": "parameter",
-        "schema": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1store~1orders/get/parameters/0/schema"
-        },
-        "status": null,
-        "use_site": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1store~1orders/get/parameters/0"
-        }
-      }
-    },
-    {
-      "adapter_identity": null,
-      "backend": "pydantic_v2.BaseModel",
-      "converter_strategy": "pydantic_type_adapter",
-      "strategy": "native",
-      "use_id": {
         "declaration": null,
         "direction": "response",
         "location": null,
@@ -144,44 +120,7 @@ render
       }
     }
   ],
-  "diagnostics": [
-    {
-      "artifact_path": null,
-      "code": "I_FIXTURE_GROUP",
-      "message": "The pets group has 2 operations",
-      "operation": null,
-      "option_path": null,
-      "severity": "info",
-      "source_pointer": null,
-      "source_uri": null,
-      "stage": "target",
-      "target_id": "<sha256>"
-    },
-    {
-      "artifact_path": null,
-      "code": "I_FIXTURE_GROUP",
-      "message": "The store group has 1 operations",
-      "operation": null,
-      "option_path": null,
-      "severity": "info",
-      "source_pointer": null,
-      "source_uri": null,
-      "stage": "target",
-      "target_id": "<sha256>"
-    },
-    {
-      "artifact_path": null,
-      "code": "I_FIXTURE_GROUP",
-      "message": "The default group has 1 operations",
-      "operation": null,
-      "option_path": null,
-      "severity": "info",
-      "source_pointer": null,
-      "source_uri": null,
-      "stage": "target",
-      "target_id": "<sha256>"
-    }
-  ],
+  "diagnostics": [],
   "extensions": {
     "formatters": [
       {
@@ -209,23 +148,107 @@ render
       "size": "<masked>"
     },
     {
-      "group": "pets",
-      "kind": "routes",
-      "path": "routes/pets.py",
+      "group": null,
+      "kind": "application",
+      "path": "application.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
     {
-      "group": "store",
-      "kind": "routes",
-      "path": "routes/store.py",
+      "group": null,
+      "kind": "package",
+      "path": "routers/__init__.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
     {
-      "group": "default",
-      "kind": "routes",
-      "path": "routes/default.py",
+      "group": "tag:pets",
+      "kind": "router",
+      "path": "routers/pets.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "tag:store",
+      "kind": "router",
+      "path": "routers/store.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "untagged",
+      "kind": "router",
+      "path": "routers/untagged.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "package",
+      "path": "_generated/__init__.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "contract",
+      "path": "_generated/contract.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "model_bindings",
+      "path": "_generated/model_bindings.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "openapi",
+      "path": "_generated/openapi.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "model_codecs",
+      "path": "model_codecs.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "responses",
+      "path": "responses.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "errors",
+      "path": "errors.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "auth_types",
+      "path": "auth_types.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "services",
+      "path": "services.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "readme",
+      "path": "README.md",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
@@ -262,6 +285,12 @@ render
         "identity": null,
         "opaque": false,
         "option_path": "model_config.disable_timestamp"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.field_extra_keys"
       },
       {
         "digest": null,
@@ -320,18 +349,14 @@ render
     "target_config": {
       "opaque_options": [
         {
-          "identity": "tests.data.python.target_generation.fixture_hook",
-          "option_path": "hook"
-        },
-        {
-          "identity": "tests.data.python.target_generation.FixtureToken",
-          "option_path": "token"
+          "identity": "builtins.tuple",
+          "option_path": "hooks"
         }
       ],
-      "protocol_metadata": {
-        "models": 1
-      },
+      "protocol_metadata": {},
       "public_options": {
+        "body_mode": "typed",
+        "body_modes": {},
         "builtin_codec_compatibility": [
           {
             "backend": "pydantic_v2.BaseModel",
@@ -347,6 +372,7 @@ render
             ]
           }
         ],
+        "codec_adapters": [],
         "custom_formatter_kwargs": {
           "width": 100
         },
@@ -366,28 +392,34 @@ render
             "symbol": "FixturePet"
           }
         ],
-        "failure": null,
         "formatter_settings": "../pyproject.toml",
         "formatters": [
           "builtin"
         ],
+        "handler_mode": "sync",
+        "handler_modes": {},
         "header": null,
+        "include_request": false,
         "include_timestamp": false,
-        "labels": [
-          "a",
-          "b"
-        ],
+        "layout": "routers",
         "model_dependency": null,
         "model_mode": "generate",
         "model_package": "example.models",
+        "operation_names": {},
         "output": ".",
         "package": "example.server",
         "package_mode": "embedded",
         "package_version": null,
-        "primary": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1pets/get"
-        }
+        "parameter_names": {},
+        "primary_responses": {
+          "{\"document\":\"/inputs/root\",\"pointer\":\"/paths/~1pets/get\"}": {
+            "media_type": null,
+            "status_code": 200
+          }
+        },
+        "router_names": {},
+        "templates": null,
+        "update_groups": null
       },
       "runtime_defaults": {}
     }
@@ -438,37 +470,9 @@ render
   },
   "target": {
     "id": "<sha256>",
-    "kind": "client",
+    "kind": "fastapi",
     "package": "example.server",
     "root_uri": "."
   },
-  "target_data": {
-    "client": {
-      "excluded": 0,
-      "groups": {
-        "default": [
-          {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1health/get"
-          }
-        ],
-        "pets": [
-          {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1pets/get"
-          },
-          {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1pets/post"
-          }
-        ],
-        "store": [
-          {
-            "document": "/inputs/root",
-            "pointer": "/paths/~1store~1orders/get"
-          }
-        ]
-      }
-    }
-  }
+  "target_data": "<fastapi>"
 }
