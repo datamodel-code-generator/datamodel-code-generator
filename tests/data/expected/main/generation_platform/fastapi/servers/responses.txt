@@ -1,6 +1,6 @@
 # responses
 serve pydantic_v2.BaseModel
-service UntaggedService: get_greeting, get_pet
+service UntaggedService: get_document, get_greeting, get_pet
 service UntaggedService without its methods: TypeError
 app standard
 > GET /greetings
@@ -22,6 +22,12 @@ app standard
 > GET /pets/2
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
+> GET /documents/1
+  get_document(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /documents/2
+  get_document(id=2)
+< 200 text/plain; charset=utf-8 raw
 > openapi /greetings get 200
 < {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
 > openapi /pets/{id} get 404
@@ -75,7 +81,7 @@ app included
 > openapi /pets/{id} get 404
 < {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
 serve pydantic_v2.dataclass
-service UntaggedService: get_greeting, get_pet
+service UntaggedService: get_document, get_greeting, get_pet
 service UntaggedService without its methods: TypeError
 app standard
 > GET /greetings
@@ -97,6 +103,12 @@ app standard
 > GET /pets/2
   get_pet(id=2)
 < 404 application/json {"message":"Missing"}
+> GET /documents/1
+  get_document(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /documents/2
+  get_document(id=2)
+< 200 text/plain; charset=utf-8 raw
 > openapi /greetings get 200
 < {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
 > openapi /pets/{id} get 404

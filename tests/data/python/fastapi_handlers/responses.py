@@ -29,6 +29,14 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
                 case _:
                     return make("hello")
 
+        def get_document(self, *, id: int) -> object:  # noqa: A002
+            calls.append(f"get_document(id={id!r})")
+            if id == 1:
+                return server.HTTPResult(
+                    status_code=200, body=models.Pet(id=1, name="Mimi"), media_type="application/json"
+                )
+            return server.HTTPResult(status_code=200, body=b"raw", media_type="text/plain")
+
         def get_pet(self, *, id: int) -> object:  # noqa: A002
             calls.append(f"get_pet(id={id!r})")
             if id == 1:

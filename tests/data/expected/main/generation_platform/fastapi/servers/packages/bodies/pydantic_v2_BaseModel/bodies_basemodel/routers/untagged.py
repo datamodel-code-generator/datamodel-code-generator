@@ -140,6 +140,38 @@ def _add_put_document(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_put_archive(router: APIRouter, wiring: Wiring) -> None:
+    put_archive_handler = wiring.handlers['put_archive']
+
+    def put_archive(
+        *,
+        body: Annotated[tuple[str | None, bytes | bodies_basemodel_models.FieldArchivesPutRequest], Depends(contract.PutArchive.BODY.receive)],
+    ) -> Response:
+        return respond(
+            put_archive_handler(body=body[1], media_type=body[0]),
+            contract.PutArchive.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/archives',
+        put_archive,
+        methods=['PUT'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='putArchive',
+        response_description='Done.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'bodies_basemodel',
+                'operation': '/paths/~1archives/put',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1archives/put'),
+    )
+
+
 def _add_put_blob(router: APIRouter, wiring: Wiring) -> None:
     put_blob_handler = wiring.handlers['put_blob']
 
@@ -327,6 +359,7 @@ LITERAL_ROUTES: Final = (
     (contract.PostAccount.OPERATION, _add_post_account),
     (contract.PostProfile.OPERATION, _add_post_profile),
     (contract.PutDocument.OPERATION, _add_put_document),
+    (contract.PutArchive.OPERATION, _add_put_archive),
     (contract.PutBlob.OPERATION, _add_put_blob),
     (contract.PostForm.OPERATION, _add_post_form),
     (contract.PostNativeForm.OPERATION, _add_post_native_form),

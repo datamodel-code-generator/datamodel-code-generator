@@ -52,6 +52,47 @@ GetGreetingResponseCodecs: Final = _GetGreetingResponseCodecs(
 )
 
 
+GetDocumentResponsePayload: TypeAlias = (
+    bytes
+    | responses_dataclass_models.Pet
+    | ModelValue[responses_dataclass_models.Pet]
+)
+
+
+class _GetDocumentResponseCodecs(
+    ResponseCodecs[NativeOutboundCodec[responses_dataclass_models.Pet]],
+):
+    """Outbound codecs of the get_document response bodies."""
+
+    @overload
+    def body(
+        self,
+        *,
+        status_code: Literal[200],
+        media_type: Literal['application/json'] | None = None,
+    ) -> NativeOutboundCodec[responses_dataclass_models.Pet]: ...
+    @overload
+    def body(
+        self,
+        *,
+        status_code: int,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[responses_dataclass_models.Pet]: ...
+    def body(
+        self,
+        *,
+        status_code: int,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[responses_dataclass_models.Pet]:
+        """Return the outbound codec of one declared response body."""
+        return self.select(status_code, media_type)
+
+
+GetDocumentResponseCodecs: Final = _GetDocumentResponseCodecs(
+    (('200', (('application/json', model_bindings.outbound_1),)),),
+)
+
+
 GetPetResponsePayload: TypeAlias = (
     responses_dataclass_models.Pet
     | ModelValue[responses_dataclass_models.Pet]
@@ -102,13 +143,15 @@ class _GetPetResponseCodecs(ResponseCodecs[_GetPetResponseCodec]):
 
 GetPetResponseCodecs: Final = _GetPetResponseCodecs(
     (
-        ('200', (('application/json', model_bindings.outbound_1),)),
-        ('404', (('application/json', model_bindings.outbound_2),)),
+        ('200', (('application/json', model_bindings.outbound_2),)),
+        ('404', (('application/json', model_bindings.outbound_3),)),
     ),
 )
 
 
 __all__ = [
+    'GetDocumentResponseCodecs',
+    'GetDocumentResponsePayload',
     'GetGreetingResponseCodecs',
     'GetGreetingResponsePayload',
     'GetPetResponseCodecs',
