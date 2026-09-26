@@ -383,7 +383,8 @@ class _CodecPlanner:
             case BoundType(binding=binding):
                 return render_python_type_expr(binding.expression)
             case _:
-                return None
+                pass
+        return None
 
     def symbol_node(self, symbol: FinalModelSymbol, source: SourceLocation) -> TypeNode:
         match symbol.kind:

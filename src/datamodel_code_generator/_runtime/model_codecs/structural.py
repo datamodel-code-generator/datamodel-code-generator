@@ -117,7 +117,8 @@ def _json_key(value: object) -> _JSONKey:
         case int() | float() | Decimal():
             return ("number", value)
         case _:
-            return (type(value).__name__, value)
+            pass
+    return (type(value).__name__, value)
 
 
 def _located(route: _Route) -> tuple[str, tuple[str | int, ...]]:
@@ -262,7 +263,8 @@ def _accepts_integer(wire: WireValue) -> bool:
         case Decimal():
             return wire == wire.to_integral_value()
         case _:
-            return False
+            pass
+    return False
 
 
 def _accepts_number(wire: WireValue) -> bool:
@@ -370,7 +372,8 @@ def _leaf(annotation: object, representation: Representation) -> _Leaf | None:  
         case type() if (failure := _string_failure(annotation)) is not None:
             return _Leaf(_accepts_string, _parsed(annotation, failure), _STRING_TYPE, annotation)
         case _:
-            return None
+            pass
+    return None
 
 
 def _required(item: dataclasses.Field[object]) -> bool:
@@ -485,7 +488,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             case LeafNode(representation=representation) if (leaf := _leaf(annotation, representation)) is not None:
                 return leaf
             case _:
-                raise self._mismatch(where)
+                pass
+        raise self._mismatch(where)
 
     def _key(self, annotation: object, where: str) -> Callable[[str], object]:
         match annotation:
@@ -494,7 +498,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             case type() if issubclass(annotation, Enum):
                 return _member(_members(tuple(annotation)), _ENUM)
             case _:
-                raise self._mismatch(where)
+                pass
+        raise self._mismatch(where)
 
     def _model(self, symbol: str) -> _Model:
         if (existing := self._plans.get(symbol)) is not None:
@@ -578,7 +583,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                     return self._refuse(state, value, route)
                 return value
             case _:
-                return self._refuse(state, plan.failure, route)
+                pass
+        return self._refuse(state, plan.failure, route)
 
     @staticmethod
     def _refuse(state: Walk, failure: _Failure, route: _Route) -> None:
@@ -691,7 +697,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             case _Leaf(representation=representation):
                 return _json(native, representation, presence, route)
             case _:
-                raise shape_error(_located(route)[0])
+                pass
+        raise shape_error(_located(route)[0])
 
     def _encode_model(self, native: object, plan: _Model, presence: PresenceTree | None, route: _Route) -> WireValue:
         _object_presence(presence, plan.wire.keys(), route)
@@ -797,5 +804,6 @@ def _json(value: object, representation: Representation, presence: PresenceTree 
                 for index, entry in enumerate(value)
             )
         case _:
-            msg = f"The value at {_located(route)[0] or '/'} has no JSON representation"
-            raise ModelProjectionError(msg)
+            pass
+    msg = f"The value at {_located(route)[0] or '/'} has no JSON representation"
+    raise ModelProjectionError(msg)

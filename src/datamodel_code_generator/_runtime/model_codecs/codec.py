@@ -117,7 +117,8 @@ def has_models(node: TypeNode | None) -> bool:
         case UnionNode():
             return any(has_models(item) for item in node.members)
         case _:
-            return False
+            pass
+    return False
 
 
 def model_unions(node: TypeNode | None) -> bool:
@@ -135,7 +136,8 @@ def model_unions(node: TypeNode | None) -> bool:
         case MapNode():
             return model_unions(node.value)
         case _:
-            return False
+            pass
+    return False
 
 
 def item_node(node: ArrayNode | TupleNode, index: int) -> TypeNode | None:
