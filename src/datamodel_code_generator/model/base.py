@@ -1890,6 +1890,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = False
     SUPPORTS_INHERITED_DISCRIMINATOR_ENUM: ClassVar[bool] = False
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = False
+    SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = False
+    NORMALIZES_FIELD_NAMES: ClassVar[bool] = False
     SUPPORTS_KW_ONLY: ClassVar[bool] = False
     REQUIRES_MODEL_LEVEL_KW_ONLY: ClassVar[bool] = False
     SUPPORTS_BOOLEAN_LITERAL: ClassVar[bool] = True

@@ -1062,6 +1062,8 @@ class BaseModel(BaseModelBase):
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     SUPPORTS_INHERITED_DISCRIMINATOR_ENUM: ClassVar[bool] = True
     SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
+    SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = True
+    NORMALIZES_FIELD_NAMES: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     SUPPORTS_SCHEMA_RUNTIME_VALIDATION: ClassVar[bool] = True
     PLAIN_PATTERN_ROOT_TYPES = staticmethod(_get_plain_pattern_root_types)

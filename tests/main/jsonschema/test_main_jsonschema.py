@@ -2481,6 +2481,80 @@ def test_main_jsonschema_same_name_reference_fields(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("backend", "strategy", "expected_file", "field_name"),
+    [
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            None,
+            "field_type_collision_runtime/pydantic_dataclass.py",
+            "Bar_1",
+            id="pydantic-dataclass",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2Dataclass,
+            "rename-type",
+            "field_type_collision_runtime/pydantic_dataclass_rename_type.py",
+            "Bar",
+            id="pydantic-dataclass-rename-type",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            None,
+            "field_type_collision_runtime/msgspec.py",
+            "Bar_1",
+            id="msgspec",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct,
+            "rename-type",
+            "field_type_collision_runtime/msgspec.py",
+            "Bar_1",
+            id="msgspec-rename-type-ignored",
+        ),
+    ],
+)
+def test_main_jsonschema_field_type_collision_runtime(
+    output_file: Path,
+    backend: DataModelType,
+    strategy: str | None,
+    expected_file: str,
+    field_name: str,
+) -> None:
+    """Keep generated dataclass and msgspec references usable when a field shares the type name."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / "speed.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            backend.value,
+            "--target-python-version",
+            "3.11",
+            "--class-name",
+            "Payload",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *(["--field-type-collision-strategy", strategy] if strategy else []),
+        ],
+    )
+    payload_path = DATA_PATH / "payloads" / "field_type_collision_runtime"
+    with _generated_model(output_file, "field_type_collision_runtime", "Payload") as model:
+        validator = partial(msgspec.json.decode, type=model)
+        error_type = msgspec.ValidationError
+        match backend:
+            case DataModelType.PydanticV2Dataclass:
+                validator = _model_json_validator(model)
+                error_type = ValidationError
+        parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
+        with pytest.raises(error_type):
+            validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
+        assert_output(f"{getattr(parsed.values.left, field_name).x}\n", payload_path / "runtime.txt")
+
+
 def test_main_reuse_model_discriminator_literal(output_file: Path) -> None:
     """Reuse inherited discriminator literals instead of injecting the reuse path segment."""
     run_main_and_assert(
