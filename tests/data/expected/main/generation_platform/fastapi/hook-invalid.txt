@@ -1,0 +1,11 @@
+# hook-invalid
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned an operation_order that is not a tuple of distinct operation keys of the context
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned operation_names that do not map keys of the context to valid values
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned router_names that do not map keys of the context to valid values
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned handler_modes that do not map keys of the context to valid values
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned operation_extras that do not map keys of the context to valid values
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned router_extras that do not map keys of the context to valid values
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned extras that are not a mapping of names to JSON values
+  E_HOOK_CONTRACT hook hooks[0]: Hook 0 returned imports that are not ImportSpec records of dotted modules and identifiers

@@ -1,0 +1,54 @@
+schema_version = 2
+extra = 1
+
+[[files]]
+path = "a.txt"
+
+[[files]]
+template = "a.jinja2"
+path = "a.txt"
+scope = "project"
+format = "text"
+header = false
+when = "always"
+
+[[files]]
+template = "a.jinja2"
+path = "a.txt"
+scope = "everywhere"
+
+[[files]]
+template = "missing.jinja2"
+path = "a.txt"
+scope = "project"
+
+[[files]]
+template = "a.jinja2"
+path = "/etc/a.txt"
+scope = "project"
+
+[[files]]
+template = "a.jinja2"
+path = "../a.txt"
+scope = "project"
+
+[[files]]
+template = "a.jinja2"
+path = "{operation}.txt"
+scope = "router"
+
+[[files]]
+template = "a.jinja2"
+path = "a.data"
+scope = "project"
+
+[[files]]
+template = "a.jinja2"
+path = "a.json"
+scope = "project"
+
+[[files]]
+template = "a.jinja2"
+path = "a.py"
+scope = "project"
+header = "yes"

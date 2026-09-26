@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._codec_declarations import CodecAdapterRegistration, OperationRef
+from datamodel_code_generator._fastapi.context import HookReference
 from datamodel_code_generator._fastapi.naming import explicit
 from datamodel_code_generator._target_config import (
     Converter,
@@ -19,14 +21,16 @@ from datamodel_code_generator._target_config import (
     _ConfigValueError,  # pyright: ignore[reportPrivateUsage]
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     _operation,  # pyright: ignore[reportPrivateUsage]
+    _path,  # pyright: ignore[reportPrivateUsage]
+    _records,  # pyright: ignore[reportPrivateUsage]
     _string,  # pyright: ignore[reportPrivateUsage]
+    _strings,  # pyright: ignore[reportPrivateUsage]
     _table,  # pyright: ignore[reportPrivateUsage]
 )
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
+    from datamodel_code_generator._fastapi.context import FastAPIHook
 
 Layout: TypeAlias = Literal["routers", "single"]
 HandlerMode: TypeAlias = Literal["sync", "async"]
@@ -63,6 +67,9 @@ class FastAPIConfig(TargetConfig):
     router_names: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
     parameter_names: Mapping[OperationSelector, Mapping[str, str]] = field(default_factory=lambda: MappingProxyType({}))
     codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
+    hooks: tuple[HookReference | FastAPIHook, ...] = ()
+    templates: Path | None = None
+    update_groups: tuple[str, ...] | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]]
 
@@ -96,6 +103,17 @@ class FastAPIConfig(TargetConfig):
             yield _diagnostic("E_CONFIG_VALUE", "router_names", "router_names must map group keys to identifiers")
         if not _registrations(self.codec_adapters):
             yield _diagnostic("E_CONFIG_VALUE", "codec_adapters", "codec_adapters must be a tuple of registrations")
+        if self.update_groups is not None and not _texts(self.update_groups):
+            yield _diagnostic("E_CONFIG_VALUE", "update_groups", "update_groups must be a tuple of group keys")
+        if self.templates is not None and not _is_path(self.templates):
+            yield _diagnostic("E_CONFIG_VALUE", "templates", "templates must be the path of a template directory")
+        if not _is_tuple(self.hooks):
+            yield _diagnostic("E_CONFIG_VALUE", "hooks", "hooks must be a tuple of hook references and callables")
+            return
+        for index, hook in enumerate(self.hooks):
+            if not (callable(hook) or _reference(hook)):
+                message = f"hooks[{index}] must be a callable, or a reference to one module or file and an identifier"
+                yield _diagnostic("E_CONFIG_VALUE", f"hooks[{index}]", message)
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
@@ -104,6 +122,10 @@ def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
 
 def _is_bool(value: object) -> TypeIs[bool]:
     return isinstance(value, bool)
+
+
+def _is_path(value: object) -> TypeIs[Path]:
+    return isinstance(value, Path)
 
 
 def _frozen(value: object) -> object:
@@ -124,6 +146,21 @@ def _registrations(value: object) -> bool:
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
     return isinstance(value, tuple)
+
+
+def _texts(value: object) -> bool:
+    return _is_tuple(value) and all(isinstance(item, str) for item in value)
+
+
+def _reference(value: object) -> bool:
+    match value:
+        case HookReference(module=str() as module, file=None, callable=str() as name):
+            return all(part.isidentifier() for part in module.split(".")) and name.isidentifier()
+        case HookReference(module=None, file=Path(), callable=str() as name):
+            return name.isidentifier()
+        case _:
+            pass
+    return False
 
 
 def _response_choice(value: object) -> bool:
@@ -214,6 +251,16 @@ def _parameter_name_entries(
     return names
 
 
+def _hook(value: object, base: Path, option_path: str) -> HookReference:
+    table = _table(value, option_path, frozenset({"module", "file", "callable"}))
+    module, file, name = table.get("module"), table.get("file"), table.get("callable")
+    return HookReference(
+        module=None if module is None else _string(module, base, f"{option_path}.module"),
+        file=None if file is None else _path(file, base, f"{option_path}.file"),
+        callable="transform" if name is None else _string(name, base, f"{option_path}.callable"),
+    )
+
+
 FastAPIConfig.toml_converters = MappingProxyType({
     "layout": _string,
     "handler_mode": _string,
@@ -225,4 +272,7 @@ FastAPIConfig.toml_converters = MappingProxyType({
     "operation_names": _operation_names,
     "router_names": _router_names,
     "parameter_names": _parameter_name_entries,
+    "hooks": _records(_hook),
+    "templates": _path,
+    "update_groups": _strings,
 })

@@ -1,0 +1,3 @@
+# hook-failing
+render pydantic_v2.BaseModel
+  LookupError: The hook could not read its settings for 5 operations

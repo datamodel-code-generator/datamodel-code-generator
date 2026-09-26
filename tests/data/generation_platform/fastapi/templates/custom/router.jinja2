@@ -1,0 +1,36 @@
+"""{{ docstring }}
+
+Router {{ router.key }} of {{ context.info.title }}{% if tag %}, tagged {{ tag }}{% endif %}, with {{ router.operations | length }} operations.
+"""
+
+{{ imports }}
+{%- for route in routes %}
+
+
+def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
+    {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
+{%- if route.principal %}
+    {{ route.principal }} = wiring.authenticators[{{ route.key }}]
+{%- endif %}
+
+    {{ route.signature }}
+        {{ route.body }}
+
+    {{ route.registration }}
+{%- endfor %}
+
+
+LITERAL_ROUTES: {{ final }} = {{ literal }}
+TEMPLATED_ROUTES: {{ final }} = {{ templated }}
+
+
+{{ signature }}
+    """Check the service and settings, then register {{ group }} on a new router, literal paths first."""
+    return {{ build }}(
+        (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
+        {{ schemes }},
+        services={{ services }},
+{%- for name in settings %}
+        {{ name }}={{ name }},
+{%- endfor %}
+    )

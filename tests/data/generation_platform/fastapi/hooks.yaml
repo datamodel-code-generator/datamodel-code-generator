@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info: {title: Hooked pets, version: "1.0"}
+security:
+  - api_key: []
+paths:
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      summary: Read one pet.
+      description: Reads a pet by identifier.
+      tags: [pets]
+      parameters:
+        - {name: petId, in: path, required: true, schema: {type: integer, minimum: 1}}
+        - {name: limit, in: query, schema: {type: integer, default: 10}}
+        - {name: X-Trace, in: header, schema: {type: string}}
+        - {name: after, in: query, schema: {type: [string, "null"]}}
+        - {name: session, in: cookie, schema: {type: string, pattern: "^[a-z]+$"}}
+      responses:
+        "200":
+          description: The pet.
+          headers:
+            X-Rate: {required: true, schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+        "404": {description: Missing.}
+  /pets:
+    post:
+      operationId: addPet
+      tags: [pets]
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "201":
+          description: Added.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /uploads:
+    $ref: "hooks-paths.yaml#/uploads"
+  /notes:
+    put:
+      security: [{}, {bearer: []}]
+      requestBody:
+        content:
+          text/plain:
+            schema: {type: string}
+          application/json:
+            schema: {type: object, properties: {text: {type: string}}}
+      responses:
+        "204": {description: Saved.}
+  /raw:
+    post:
+      security: []
+      requestBody:
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        "204": {description: Accepted.}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+  securitySchemes:
+    api_key: {type: apiKey, in: header, name: X-API-Key}
+    bearer: {type: http, scheme: bearer}

@@ -1,0 +1,27 @@
+# update-invalid
+spec api.yaml <- groups.yaml
+generate {}
+  written models.py
+  written server/__init__.py
+  written server/application.py
+  written server/routers/__init__.py
+  written server/routers/pets.py
+  written server/routers/store.py
+  written server/_generated/__init__.py
+  written server/_generated/contract.py
+  written server/_generated/model_bindings.py
+  written server/model_codecs.py
+  written server/responses.py
+  written server/errors.py
+  written server/auth_types.py
+  written server/services.py
+  written server/py.typed
+  written server/dcg-runtime-requirements.txt
+  written server/.dcg-state/model-artifacts.json
+  written server/.dcg-target-manifest.json
+generate {"config": {"update_groups": ["tag:nope"]}}
+  APIGenerationError
+  F_SELECTION_INVALID selection update_groups: update_groups names groups this server does not have: tag:nope
+generate {"config": {"update_groups": []}}
+  APIGenerationError
+  F_SELECTION_INVALID selection update_groups: update_groups names no group

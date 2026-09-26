@@ -5,3 +5,4 @@ APIGenerationError
   E_CONFIG_VALUE config operation_names: operation_names has an invalid entry
   E_CONFIG_VALUE config parameter_names: parameter_names has an invalid entry
   E_CONFIG_VALUE config router_names: router_names must map group keys to identifiers
+  E_CONFIG_VALUE config hooks: hooks must be a tuple of hook references and callables

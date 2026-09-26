@@ -1,0 +1,85 @@
+# hook-file
+render pydantic_v2.BaseModel
+  __init__.py
+  application.py
+  routers/__init__.py
+  routers/pets.py
+  routers/files.py
+  routers/untagged.py
+  _generated/__init__.py
+  _generated/contract.py
+  _generated/model_bindings.py
+  model_codecs.py
+  responses.py
+  errors.py
+  auth_types.py
+  services.py
+  py.typed
+  dcg-runtime-requirements.txt
+  .dcg-state/model-artifacts.json
+  .dcg-target-manifest.json
+  layout routers
+  pets_get: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
+    parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/1: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/2: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/3: codec_adapter opaque_native_semantics at /paths/~1pets~1{petId}/get/parameters/3/schema
+    parameter /paths/~1pets~1{petId}/get/parameters/4: codec_adapter unsupported_wire_shape
+    primary_response /paths/~1pets~1{petId}/get/responses/200: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/get/responses/200
+  pets_post: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
+    body /paths/~1pets/post/requestBody: fastapi_native native_supported
+    primary_response /paths/~1pets/post/responses/201: fastapi_native native_supported
+  files_post: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler sync
+    body /paths/~1uploads/post/requestBody: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1uploads/post/responses/204
+  handle_put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler sync
+    body /paths/~1notes/put/requestBody: codec_adapter unsupported_wire_shape
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1notes/put/responses/204
+  handle_post__raw: POST /raw -> /raw [untagged] status 204 primary 204 None body request handler sync
+    body /paths/~1raw/post/requestBody: raw_request explicit_raw
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1raw/post/responses/204
+  group tag:pets -> pets (2)
+  group tag:files -> files (1)
+  group untagged -> untagged (2)
+render pydantic_v2.dataclass
+  __init__.py
+  application.py
+  routers/__init__.py
+  routers/pets.py
+  routers/files.py
+  routers/untagged.py
+  _generated/__init__.py
+  _generated/contract.py
+  _generated/model_bindings.py
+  model_codecs.py
+  responses.py
+  errors.py
+  auth_types.py
+  services.py
+  py.typed
+  dcg-runtime-requirements.txt
+  .dcg-state/model-artifacts.json
+  .dcg-target-manifest.json
+  layout routers
+  pets_get: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
+    parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/1: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/2: fastapi_native native_supported
+    parameter /paths/~1pets~1{petId}/get/parameters/3: codec_adapter opaque_native_semantics at /paths/~1pets~1{petId}/get/parameters/3/schema
+    parameter /paths/~1pets~1{petId}/get/parameters/4: codec_adapter unsupported_wire_shape
+    primary_response /paths/~1pets~1{petId}/get/responses/200: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/get/responses/200
+  pets_post: POST /pets -> /pets [tag:pets] status 201 primary 201 application/json body typed handler sync
+    body /paths/~1pets/post/requestBody: fastapi_native native_supported
+    primary_response /paths/~1pets/post/responses/201: fastapi_native native_supported
+  files_post: POST /uploads -> /uploads [tag:files] status 204 primary 204 None body typed handler sync
+    body /paths/~1uploads/post/requestBody: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1uploads/post/responses/204
+  handle_put__notes: PUT /notes -> /notes [untagged] status 204 primary 204 None body typed handler sync
+    body /paths/~1notes/put/requestBody: codec_adapter unsupported_wire_shape
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1notes/put/responses/204
+  handle_post__raw: POST /raw -> /raw [untagged] status 204 primary 204 None body request handler sync
+    body /paths/~1raw/post/requestBody: raw_request explicit_raw
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1raw/post/responses/204
+  group tag:pets -> pets (2)
+  group tag:files -> files (1)
+  group untagged -> untagged (2)

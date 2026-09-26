@@ -4,7 +4,7 @@
 {%- for route in routes %}
 
 
-def {{ route.adder }}(router: {{ router }}, wiring: {{ wiring }}) -> None:
+def {{ route.adder }}(router: {{ api_router }}, wiring: {{ wiring }}) -> None:
     {{ route.handler }} = wiring.{{ route.handlers }}[{{ route.name }}]
 {%- if route.principal %}
     {{ route.principal }} = wiring.authenticators[{{ route.key }}]

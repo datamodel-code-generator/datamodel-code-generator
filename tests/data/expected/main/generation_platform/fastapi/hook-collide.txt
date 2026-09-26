@@ -1,0 +1,4 @@
+# hook-collide
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_HOOK_CONFLICT hook hooks[0]: Hook 0 made a conflicting change: Several operation names become 'Same'

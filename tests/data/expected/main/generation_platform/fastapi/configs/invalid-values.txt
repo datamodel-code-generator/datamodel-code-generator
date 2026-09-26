@@ -10,3 +10,9 @@ APIGenerationError
   E_CONFIG_VALUE config parameter_names: parameter_names has an invalid entry
   E_CONFIG_VALUE config router_names: router_names must map group keys to identifiers
   E_CONFIG_VALUE config codec_adapters: codec_adapters must be a tuple of registrations
+  E_CONFIG_VALUE config update_groups: update_groups must be a tuple of group keys
+  E_CONFIG_VALUE config templates: templates must be the path of a template directory
+  E_CONFIG_VALUE config hooks[0]: hooks[0] must be a callable, or a reference to one module or file and an identifier
+  E_CONFIG_VALUE config hooks[1]: hooks[1] must be a callable, or a reference to one module or file and an identifier
+  E_CONFIG_VALUE config hooks[2]: hooks[2] must be a callable, or a reference to one module or file and an identifier
+  E_CONFIG_VALUE config hooks[3]: hooks[3] must be a callable, or a reference to one module or file and an identifier

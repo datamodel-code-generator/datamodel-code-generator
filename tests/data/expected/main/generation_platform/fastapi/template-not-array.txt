@@ -1,0 +1,4 @@
+# template-not-array
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_TEMPLATE_INVALID target templates: fastapi-templates.toml files must be an array of tables

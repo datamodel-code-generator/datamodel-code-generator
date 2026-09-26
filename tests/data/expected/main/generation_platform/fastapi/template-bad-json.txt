@@ -1,0 +1,4 @@
+# template-bad-json
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_TEMPLATE_INVALID target templates: info.json is not valid json: Expecting value: line 1 column 11 (char 10)

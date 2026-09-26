@@ -1,0 +1,4 @@
+# template-conflict-extras
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_NAME_CONFLICT target templates: Several generated files take notes.txt

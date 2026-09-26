@@ -85,6 +85,13 @@ class Namespace:
             alias = self._names[module, name] = self._alias(name)
         return alias
 
+    def entries(self) -> tuple[tuple[str, str | None, str], ...]:
+        """Return every import as its module, the name imported from it (None for the module itself), and alias."""
+        return (
+            *((path, None, alias) for path, alias in sorted(self._modules.items())),
+            *((module, name, alias) for (module, name), alias in sorted(self._names.items())),
+        )
+
     def imports(self) -> list[str]:
         """Return the import statements of every aliased module in path order, then every imported name."""
         modules = [

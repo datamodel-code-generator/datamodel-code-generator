@@ -4,17 +4,20 @@ from __future__ import annotations
 
 import keyword
 import re
-from functools import cache
+from functools import cache, cached_property
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile
+from datamodel_code_generator._api_manifest import sha256
+from datamodel_code_generator._api_types import APIGenerationError
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi._compiled_templates import services as services_template
 from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, Default
 from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
+from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, invalid
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -22,9 +25,10 @@ from datamodel_code_generator._runtime.model_codecs.unset import Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping
 
     from datamodel_code_generator._fastapi.config import FastAPIConfig
+    from datamodel_code_generator._fastapi.context import FastAPIContext
     from datamodel_code_generator._fastapi.plan import (
         Argument,
         BodySpec,
@@ -39,9 +43,10 @@ if TYPE_CHECKING:
         SchemeSpec,
         ServerPlan,
     )
+    from datamodel_code_generator._fastapi.templates import TemplateSet
     from datamodel_code_generator._generation_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
-    from datamodel_code_generator._openapi_codec_render import UseAccessors
+    from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
@@ -152,16 +157,92 @@ class ServerRenderer:  # noqa: PLR0904
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
+        templates: TemplateSet | None = None,
+        context: FastAPIContext | None = None,
     ) -> None:
-        """Keep the plans and index the codec accessors of every bound use."""
+        """Keep the plans; the model bindings module and its accessors are rendered when first used.
+
+        A template set overrides builtin roles and adds extra files, which render from the context.
+        """
         self.config = config
         self.package = package
         self.plan = plan
+        self.templates = templates
+        self.context = context
+        self.batch = batch
+        self.wire = wire
+        self.codecs = codecs
         self.symbols = dict(codecs.imports)
-        self.bindings = render_model_bindings(codecs, wire, batch, surface="server")
-        self.accessors: dict[TypeUseId, UseAccessors] = {item.use: item for item in self.bindings.uses}
         self.use_bindings: dict[TypeUseId, UseBinding] = dict(codecs.bindings)
         self.services = {group.key: group.stem for group in plan.groups}
+
+    def role(self, name: str, compiled: Callable[..., str], **frame: object) -> Callable[..., str]:
+        """Return the renderer of one builtin role: the template directory's override, or the compiled builtin."""
+        if (templates := self.templates) is None or name not in templates.roles:
+            return compiled
+        values = {"context": self.context, **frame}
+
+        def render(**context: object) -> str:
+            return templates.render(name, {**context, **values})
+
+        return render
+
+    def router_frame(self, group: GroupSpec | None) -> dict[str, object]:
+        """Return the router view and tag a router template receives."""
+        if self.context is None or group is None:
+            return {}
+        view = next(router for router in self.context.routers if router.key == group.key)
+        return {"router": view, "tag": view.primary_tag}
+
+    def extras(self) -> Iterator[RenderedFile]:
+        """Render the extra files of the template manifest, once for a project or each router or operation."""
+        if (templates := self.templates) is None or (context := self.context) is None:
+            return
+        for extra in templates.extras:
+            frames: list[tuple[str, str | None, dict[str, object]]]
+            if extra.scope == "project":
+                frames = [(extra.path, None, {})]
+            elif extra.scope == "router":
+                frames = [
+                    (
+                        extra.path.replace(ROUTER, view.file_stem),
+                        view.key,
+                        {"router": view, "tag": view.primary_tag},
+                    )
+                    for view in context.routers
+                ]
+            else:
+                frames = [
+                    (extra.path.replace(OPERATION, view.python_name), view.group_key, {"operation": view})
+                    for view in context.operations
+                ]
+            for path, group, frame in frames:
+                text = templates.render(extra.template, {"context": context, **frame})
+                if (problem := invalid(extra.format, text)) is not None:
+                    raise APIGenerationError((templates.problem(f"{path} is not valid {extra.format}: {problem}"),))
+                yield RenderedFile(
+                    path=self.package / path, kind="template", text=text, group=group, header=extra.header
+                )
+
+    def placed(self, files: tuple[RenderedFile, ...], extras: tuple[RenderedFile, ...]) -> None:
+        """Reject extra files that take the path of a builtin file, a runtime module, or another extra file."""
+        taken = {file.path for file in files}
+        assert self.templates is not None
+        for extra in extras:
+            if extra.path in taken:
+                message = f"Several generated files take {extra.path.as_posix()}"
+                raise APIGenerationError((self.templates.conflict(message),))
+            taken.add(extra.path)
+
+    @cached_property
+    def bindings(self) -> RenderedBindings:
+        """Return the model bindings module of every bound use, rendered once."""
+        return render_model_bindings(self.codecs, self.wire, self.batch, surface="server")
+
+    @cached_property
+    def accessors(self) -> dict[TypeUseId, UseAccessors]:
+        """Return the codec accessors of every bound use."""
+        return {item.use: item for item in self.bindings.uses}
 
     def file(
         self, path: PurePosixPath, kind: str, text: str, group: str | None = None, *, verbatim: bool = False
@@ -185,7 +266,11 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(PurePosixPath("auth_types.py"), "auth_types", _AUTH_TYPES),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
         )
-        return (*files, *self.runtime(files))
+        extras = tuple(self.extras())
+        runtime = tuple(self.runtime((*files, *extras)))
+        if extras:
+            self.placed((*files, *runtime), extras)
+        return (*files, *extras, *runtime)
 
     def runtime(self, files: tuple[RenderedFile, ...]) -> Iterator[RenderedFile]:
         """Copy the runtime modules the package imports, with their own imports, in ascending path order."""
@@ -221,7 +306,7 @@ class ServerRenderer:  # noqa: PLR0904
         router = module.name("fastapi", "APIRouter")
         fastapi = module.name("fastapi", "FastAPI")
         exports = sorted({*(repr(module.local(*item)) for item in _EXPORTS), "'build_router'", "'create_app'"})
-        return application_template.render(
+        return self.role("application.jinja2", application_template.render)(
             final=final,
             options=options,
             routes=layout(Group("(", _items(routes), ")", ","), 0, len(f"ROUTES: {final} = "), WIDTH),
@@ -285,10 +370,10 @@ class ServerRenderer:  # noqa: PLR0904
         name = "every operation" if group is None or self.config.layout == "single" else f"the {group.stem} operations"
         router = module.name("fastapi", "APIRouter")
         final = module.name("typing", "Final")
-        return router_template.render(
+        return self.role("router.jinja2", router_template.render, **self.router_frame(group))(
             docstring=f"Endpoints of {name}; regenerate them instead of editing.",
             routes=routes,
-            router=router,
+            api_router=router,
             wiring=module.local("_runtime.server.application", "Wiring"),
             final=final,
             literal=layout(Group("(", _items(pairs[False]), ")", ","), 0, len(f"LITERAL_ROUTES: {final} = "), WIDTH),
@@ -417,7 +502,7 @@ class ServerRenderer:  # noqa: PLR0904
             }
             for group in groups
         ]
-        return services_template.render(
+        return self.role("services.jinja2", services_template.render)(
             typevar=module.name("typing_extensions", "TypeVar") if any(group.secured for group in groups) else "",
             abstract=module.name("abc", "abstractmethod"),
             protocols=protocols,
@@ -434,6 +519,11 @@ class ServerRenderer:  # noqa: PLR0904
             f") -> {returns}: ...",
         )
         return layout(signature, 4, 0, WIDTH)
+
+    def signature_digest(self, spec: OperationSpec) -> str:
+        """Return the fingerprint of an operation's service method, spelled in a module of its own."""
+        module = Module({"PrincipalT_contra"}, self.symbols, level=1, public=True)
+        return sha256(f"{self.method(module, spec)}\n{module.imports()}".encode())
 
     def parameters(self, module: Module, spec: OperationSpec, principal: str) -> list[Doc]:
         """Return the keyword-only parameters of one operation's method, typed as the endpoint passes them."""
@@ -465,9 +555,13 @@ class ServerRenderer:  # noqa: PLR0904
 
     def returns(self, module: Module, spec: OperationSpec) -> Chain:
         """Return a method's result type: the bare primary payload, an HTTPResult of any payload, or a Response."""
+        return Chain("|", tuple(self.results(module, spec)))
+
+    def results(self, module: Module, spec: OperationSpec) -> list[str]:
+        """Return the members of a method's result type, in the order the result type spells them."""
         payload = module.local("responses", f"{spec.pascal}ResponsePayload")
         result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{payload}]"
-        return Chain("|", (*self.bare(module, spec), result, module.name("fastapi.responses", "Response")))
+        return [*self.bare(module, spec), result, module.name("fastapi.responses", "Response")]
 
     def bare(self, module: Module, spec: OperationSpec) -> list[str]:
         """Return the members of the type a method returns bare: the primary payload, None, or nothing.
@@ -476,12 +570,7 @@ class ServerRenderer:  # noqa: PLR0904
         """
         if (primary := spec.primary) is None or any(header.required for header in primary.response.headers):
             return []
-        if (
-            (media := primary.media) is None
-            or spec.head
-            or primary.status < _MIN_CONTENT_STATUS
-            or primary.status in BODYLESS_STATUSES
-        ):
+        if (media := primary.media) is None or spec.head or not _content_status(primary.status):
             return ["None"]
         return self.media_type(module, media, sent=True).split(" | ")
 
@@ -1003,6 +1092,10 @@ def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
         ("authorizer", Chain("|", tuple(f"{item}[{secret}, {principal}]" for item in authorizers)), ""),
         ("credential_extractors", f"{module.local('auth_types', 'CredentialExtractors')}[{secret}] | None", " = None"),
     )
+
+
+def _content_status(status: int) -> bool:
+    return status >= _MIN_CONTENT_STATUS and status not in BODYLESS_STATUSES
 
 
 def _surface(module: Module, field: NativeField) -> str:

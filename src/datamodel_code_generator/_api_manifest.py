@@ -184,7 +184,7 @@ def _digest(lease: SourceLease, document: SourceDocumentId) -> str:
 class DocumentTable:
     """Map the accepted attempt's documents to the manifest: the root, then the others by URI and digest."""
 
-    __slots__ = ("_lookup", "documents", "pointers", "root", "root_uri")
+    __slots__ = ("_lookup", "documents", "pointers", "root", "root_uri", "uris")
 
     def __init__(self, batch: GeneratedTypeContractBatch, lease: SourceLease, source: RootInput, root: Path) -> None:
         """Digest each borrowed document once and order the non-root ones by URI, then digest."""
@@ -204,6 +204,7 @@ class DocumentTable:
         )
         self.documents: list[JSONValue] = []
         self.pointers: dict[SourceDocumentId, str] = {first.id: ROOT_POINTER}
+        self.uris: dict[SourceDocumentId, str] = {first.id: self.root_uri}
         self._lookup: dict[str, str] = {source.identity: ROOT_POINTER, first.uri: ROOT_POINTER}
         seen: dict[tuple[str, str], str] = {}
         for uri, digest, document, identity, name in entries:
@@ -211,6 +212,7 @@ class DocumentTable:
                 pointer = seen[uri, digest] = f"/inputs/documents/{len(self.documents)}"
                 self.documents.append({"uri": uri, "digest": digest})
             self.pointers[document] = self._lookup[identity] = self._lookup[name] = pointer
+            self.uris[document] = uri
 
     def pointer(self, document: str | None, base: Path) -> str | None:
         """Return the manifest pointer of an explicitly named document, the root when unnamed."""

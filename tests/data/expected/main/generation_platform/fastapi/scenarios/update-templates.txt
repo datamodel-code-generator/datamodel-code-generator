@@ -1,0 +1,44 @@
+# update-templates
+spec api.yaml <- groups.yaml
+generate {"config": {"templates": "templates/custom"}}
+  written models.py
+  written server/__init__.py
+  written server/application.py
+  written server/routers/__init__.py
+  written server/routers/pets.py
+  written server/routers/store.py
+  written server/_generated/__init__.py
+  written server/_generated/contract.py
+  written server/_generated/model_bindings.py
+  written server/model_codecs.py
+  written server/responses.py
+  written server/errors.py
+  written server/auth_types.py
+  written server/services.py
+  written server/README.md
+  written server/routers/pets.json
+  written server/routers/store.json
+  written server/docs/list_pets.yml
+  written server/docs/get_order.yml
+  written server/settings.toml
+  written server/checks/list_pets.py
+  written server/checks/get_order.py
+  written server/NOTES
+  written server/py.typed
+  written server/dcg-runtime-requirements.txt
+  written server/.dcg-state/model-artifacts.json
+  written server/.dcg-target-manifest.json
+generate {"config": {"templates": "templates/roles", "update_groups": ["tag:pets"]}}
+  APIGenerationError
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: routers/store.py of a group outside update_groups would change; update every group
+generate {"config": {"update_groups": ["tag:pets", "tag:store"]}}
+  APIGenerationError
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete README.md; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete routers/pets.json; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete routers/store.json; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete docs/list_pets.yml; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete docs/get_order.yml; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete settings.toml; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete checks/list_pets.py; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete checks/get_order.py; update every group
+  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete NOTES; update every group

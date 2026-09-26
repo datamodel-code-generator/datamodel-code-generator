@@ -1,0 +1,7 @@
+schema_version = 1
+
+[[files]]
+template = "broken.json.jinja2"
+path = "info.json"
+scope = "project"
+header = false

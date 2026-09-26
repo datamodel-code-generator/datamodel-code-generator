@@ -1,0 +1,13 @@
+schema_version = 1
+
+[[files]]
+template = "notes.jinja2"
+path = "notes.txt"
+scope = "project"
+header = false
+
+[[files]]
+template = "notes.jinja2"
+path = "notes.txt"
+scope = "project"
+header = false

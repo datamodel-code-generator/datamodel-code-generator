@@ -1,0 +1,4 @@
+# template-not-toml
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_TEMPLATE_INVALID target templates: fastapi-templates.toml is not TOML: Invalid value (at line 1, column 18)

@@ -121,6 +121,7 @@ class RenderedFile:
     text: str
     group: str | None = None
     verbatim: bool = False
+    header: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -153,6 +154,7 @@ class TargetRender:
     persistent_diagnostics: tuple[Diagnostic, ...] = ()
     runtime_defaults: JSONObject = field(default_factory=json_object)
     protocol_metadata: JSONObject = field(default_factory=json_object)
+    update_groups: frozenset[str] | None = None
 
 
 class TargetGenerator(Protocol):
@@ -764,6 +766,37 @@ class _Planner:
             "target_data": {generator.kind: rendered.target_data},
         }
 
+    def check_groups(self, state: TargetState, finished: tuple[PlannedFile, ...], groups: frozenset[str]) -> None:
+        """Reject a partial update whose files of the other groups differ from the previous generation."""
+        recorded = state.files
+        if changed := [
+            file.path
+            for file in finished
+            if file.group is not None
+            and file.group not in groups
+            and ((previous := recorded.get(file.path)) is None or previous.sha256 != sha256(file.content))
+        ]:
+            raise self.inconsistent(
+                f"{path.as_posix()} of a group outside update_groups would change; update every group"
+                for path in changed
+            )
+
+    def inconsistent(self, messages: Iterable[str]) -> APIGenerationError:
+        """Return the failure of a partial update that is inconsistent with the previous generation."""
+        return APIGenerationError(
+            tuple(
+                Diagnostic(
+                    code="F_PARTIAL_UPDATE_INCONSISTENT",
+                    severity="error",
+                    stage="ownership",
+                    message=message,
+                    option_path="update_groups",
+                    target_id=self.target_id,
+                )
+                for message in messages
+            )
+        )
+
     def project(self) -> GeneratedProject:
         models, config, generator = self.models, self.config, self.generator
         selected, excluded = select_operations(models.product.batch, config.selection, models.source, self.cwd)
@@ -791,7 +824,14 @@ class _Planner:
             raise APIGenerationError(rendered.diagnostics)
         if verifying := config.model_mode == "verify":
             self.verify()
-        plans = plan_files(self.root, state, _Finisher(self).finish(rendered), self.target_id)
+        finished = _Finisher(self).finish(rendered)
+        if rendered.update_groups is not None:
+            self.check_groups(state, finished, rendered.update_groups)
+        plans = plan_files(self.root, state, finished, self.target_id)
+        if rendered.update_groups is not None and (deleted := [plan.path for plan in plans if plan.action == "delete"]):
+            raise self.inconsistent(
+                f"A partial update would delete {path.as_posix()}; update every group" for path in deleted
+            )
         output = self.effective.output
         assert output is not None
         model = model_record(
@@ -952,7 +992,14 @@ class _Finisher:
         )
         header = self.header()
         texts = [
-            (file, _normalized(header + _formatted(file, formatter) if _is_python(file.path) else file.text))
+            (
+                file,
+                _normalized(
+                    (header if file.header else "") + _formatted(file, formatter)
+                    if _is_python(file.path)
+                    else file.text
+                ),
+            )
             for file in files
         ]
         self.check_sources(((file.path, text) for file, text in texts if not file.verbatim), "format")
