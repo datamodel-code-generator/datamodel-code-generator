@@ -175,6 +175,10 @@ The printed dependencies (and the standalone `pyproject.toml`) named only what t
 
 The gated `fastapi-install-nocov-e2e` environment, run by CI on Ubuntu, generates an embedded and a standalone server with `--dependency-format requirements`, creates a new environment with `uv venv`, installs only the printed lines with `uv pip install` (the standalone case installs the distribution editable), and sends JSON and form requests through the ASGI interface: a valid contact, an invalid e-mail, a nickname outside its pattern, and form bodies inside and outside the pattern. Its first run found the ULID response failure fixed by the previous PR. It also showed that ordinary model generation with `use_pendulum` emits `pendulum.Date`, which Pydantic v2 cannot build a schema for, so those models do not import with any dependencies; that belongs to model generation, not this target, and the installation case leaves `use_pendulum` out.
 
+### Non-string enum parameters
+
+A parameter or form field whose schema is an `enum` or `const` with integer, number, or boolean values was declared natively as that `Literal`, and FastAPI does not convert the lexical string `"1"` to the literal `1`, so `/items/1?mode=1` was 422 for both parameters. Such values now use the codec adapter (`source_assertion_not_projected`), which reads the lexical form by the schema type and checks the enum; string enums and consts stay native. The `parameters` server scenario sends the review's request and others: integer path and query enums, a number enum, a boolean `const` header, and values outside each enum. The render and served-document expectations show the `const: 3` query parameter moving to the adapter.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

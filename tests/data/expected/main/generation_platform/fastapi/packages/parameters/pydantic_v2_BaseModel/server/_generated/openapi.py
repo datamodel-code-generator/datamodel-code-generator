@@ -18,6 +18,15 @@ _BUNDLE = r"""{
     ]
    ],
    "fragment": {
+    "parameters": [
+     {
+      "name": "level",
+      "in": "query",
+      "schema": {
+       "const": 3
+      }
+     }
+    ],
     "responses": {
      "200": {
       "description": "The part.",
@@ -25,6 +34,29 @@ _BUNDLE = r"""{
        "application/json": {
         "schema": {
          "type": "string"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
         }
        }
       }
@@ -263,36 +295,6 @@ _BUNDLE = r"""{
  ],
  "components": {
   "schemas": {
-   "dcg_server_error__b3eacd33433b": {
-    "type": "string"
-   },
-   "Filter__54d881e92487": {
-    "type": "object",
-    "required": [
-     "name"
-    ],
-    "properties": {
-     "id": {
-      "type": "integer",
-      "readOnly": true
-     },
-     "name": {
-      "type": "string"
-     }
-    }
-   },
-   "Point__3c0b4d3e67cf": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-     "x"
-    ],
-    "properties": {
-     "x": {
-      "type": "integer"
-     }
-    }
-   },
    "dcg_http_error__b3eacd33433b": {
     "type": "object",
     "properties": {
@@ -341,6 +343,36 @@ _BUNDLE = r"""{
     "required": [
      "detail"
     ]
+   },
+   "dcg_server_error__b3eacd33433b": {
+    "type": "string"
+   },
+   "Filter__54d881e92487": {
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "properties": {
+     "id": {
+      "type": "integer",
+      "readOnly": true
+     },
+     "name": {
+      "type": "string"
+     }
+    }
+   },
+   "Point__3c0b4d3e67cf": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "x"
+    ],
+    "properties": {
+     "x": {
+      "type": "integer"
+     }
+    }
    }
   }
  }

@@ -7,7 +7,7 @@ from typing import Annotated, Final, Literal
 from uuid import UUID
 
 import models
-from fastapi import APIRouter, Header, Path, Query
+from fastapi import APIRouter, Depends, Header, Path, Query
 from pydantic import Field
 
 from .._generated import contract
@@ -53,7 +53,6 @@ def _add_get_part(router: APIRouter, wiring: Wiring) -> None:
         )],
         ref: Annotated[UUID, Query(alias='ref', default_factory=absent)],
         mode: Annotated[Literal['fast', 'slow'], Query(alias='mode')] = 'fast',
-        level: Annotated[Literal[3], Query(alias='level', default_factory=absent)],
         x_trace: Annotated[str, Header(
             alias='X-Trace',
             convert_underscores=False,
@@ -62,6 +61,7 @@ def _add_get_part(router: APIRouter, wiring: Wiring) -> None:
         query_request: Annotated[str, Query(alias='request', default_factory=absent)],
         query_part: Annotated[str, Query(alias='part', default_factory=absent)],
         p_2fa: Annotated[str, Query(alias='2fa', default_factory=absent)],
+        parameters: Annotated[contract.GetPart.Parameters, Depends(contract.GetPart.PARAMETERS)],
     ) -> object:
         return dispatch(
             get_part_handler(
@@ -74,7 +74,7 @@ def _add_get_part(router: APIRouter, wiring: Wiring) -> None:
                 day=present(day),
                 ref=present(ref),
                 mode=mode,
-                level=present(level),
+                level=parameters.level,
                 x_trace=present(x_trace),
                 query_request=present(query_request),
                 query_part=present(query_part),

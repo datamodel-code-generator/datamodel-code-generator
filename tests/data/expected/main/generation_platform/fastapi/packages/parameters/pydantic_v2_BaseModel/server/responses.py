@@ -49,7 +49,7 @@ class _GetPartResponseCodecs(
 
 
 GetPartResponseCodecs: Final = _GetPartResponseCodecs(
-    (('200', (('application/json', model_bindings.outbound_0),)),),
+    (('200', (('application/json', model_bindings.outbound_1),)),),
 )
 
 

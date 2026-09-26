@@ -2,7 +2,7 @@
 """Endpoints of the untagged operations; regenerate them instead of editing."""
 
 from collections.abc import Sequence
-from typing import Annotated, Final
+from typing import Annotated, Final, Literal
 
 from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import Response
@@ -11,6 +11,7 @@ from pydantic import Field
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
+from .._runtime.server.requests import absent, present
 from .._runtime.server.responses import respond
 from ..services import UntaggedService
 
@@ -205,6 +206,45 @@ def _add_get_menu(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_get_item(router: APIRouter, wiring: Wiring) -> None:
+    get_item_handler = wiring.handlers['get_item']
+
+    def get_item(
+        *,
+        kind: Annotated[Literal['a', 'b'], Query(alias='kind', default_factory=absent)],
+        parameters: Annotated[contract.GetItem.Parameters, Depends(contract.GetItem.PARAMETERS)],
+    ) -> Response:
+        return respond(
+            get_item_handler(
+                level=parameters.level,
+                mode=parameters.mode,
+                ratio=parameters.ratio,
+                x_flag=parameters.x_flag,
+                kind=present(kind),
+            ),
+            contract.GetItem.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/items/{level}',
+        get_item,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='getItem',
+        response_description='Done.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'parameters_basemodel',
+                'operation': '/paths/~1items~1{level}/get',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1items~1{level}/get'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     (contract.Search.OPERATION, _add_search),
     (contract.GetRatios.OPERATION, _add_get_ratios),
@@ -214,6 +254,7 @@ TEMPLATED_ROUTES: Final = (
     (contract.GetNote.OPERATION, _add_get_note),
     (contract.GetFile.OPERATION, _add_get_file),
     (contract.GetMenu.OPERATION, _add_get_menu),
+    (contract.GetItem.OPERATION, _add_get_item),
 )
 
 

@@ -28,6 +28,7 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1notes~1{note.id}/get',
     '/paths/~1files~1{file.name}/get',
     '/paths/~1menü~1{item}/get',
+    '/paths/~1items~1{level}/get',
 ]
 SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
@@ -39,6 +40,7 @@ OperationDependencies = TypedDict(
         '/paths/~1notes~1{note.id}/get': Sequence[Dependency],
         '/paths/~1files~1{file.name}/get': Sequence[Dependency],
         '/paths/~1menü~1{item}/get': Sequence[Dependency],
+        '/paths/~1items~1{level}/get': Sequence[Dependency],
     },
     total=False,
 )
@@ -290,6 +292,81 @@ class GetMenu:
         ),
         record=Parameters,
         path=RawPath(template='/menü/{item}', names=frozenset({'item'})),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses=(ResponsePlan(status='204'),),
+        primary=(204, None),
+    )
+
+
+class GetItem:
+    """Plans of the get_item operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='get_item',
+        key='/paths/~1items~1{level}/get',
+        service='untagged',
+        keywords=('level', 'mode', 'ratio', 'x_flag', 'kind'),
+    )
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of get_item."""
+
+        level: models.FieldItemsLevelGetPathLevelParameter
+        mode: models.FieldItemsLevelGetQueryModeParameter | Unset
+        ratio: models.FieldItemsLevelGetQueryRatioParameter | Unset
+        x_flag: models.FieldItemsLevelGetHeaderXFlagParameter | Unset
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(
+            ParameterArgument(
+                name='level',
+                plan=ParameterPlan(
+                    location='path',
+                    name='level',
+                    style='simple',
+                    required=True,
+                    kind='integer',
+                ),
+                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
+            ),
+            ParameterArgument(
+                name='mode',
+                plan=ParameterPlan(
+                    location='query',
+                    name='mode',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('kind', 'ratio'),
+                ),
+                codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
+            ),
+            ParameterArgument(
+                name='ratio',
+                plan=ParameterPlan(
+                    location='query',
+                    name='ratio',
+                    style='form',
+                    explode=True,
+                    kind='number',
+                    reserved_names=('kind', 'mode'),
+                ),
+                codec=(model_bindings.codec_11, model_bindings.CONTEXT_11),
+            ),
+            ParameterArgument(
+                name='x_flag',
+                plan=ParameterPlan(
+                    location='header',
+                    name='X-Flag',
+                    style='simple',
+                    kind='boolean',
+                ),
+                codec=(model_bindings.codec_12, model_bindings.CONTEXT_12),
+            ),
+        ),
+        record=Parameters,
+        path=RawPath(template='/items/{level}', names=frozenset({'level'})),
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),

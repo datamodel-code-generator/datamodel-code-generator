@@ -405,6 +405,17 @@ class Revision:
     handler_modes: Mapping[str, HandlerMode] = field(default_factory=lambda: MappingProxyType({}))
 
 
+def _literal(values: tuple[WireValue, ...]) -> tuple[Scalar | None, Reason]:
+    """Return the native Literal of an enum or const, which FastAPI reads from lexical strings only for strings."""
+    present = [value for value in values if value is not None]
+    literals = tuple(value for value in present if isinstance(value, (str, int, float, bool)))
+    if not literals or len(literals) != len(present):
+        return None, "native_shape_mismatch"
+    if not all(isinstance(value, str) for value in literals):
+        return None, "source_assertion_not_projected"
+    return Scalar(kind="literal", values=literals), "native_supported"
+
+
 class Planner:  # noqa: PLR0904
     """Plan every selected operation of one server target from the accepted batch and its wire plan."""
 
@@ -766,11 +777,7 @@ class Planner:  # noqa: PLR0904
         present = (kinds(schema) or frozenset()) - {"null"}
         values = schema.get("enum", (schema["const"],) if "const" in schema else None)
         if isinstance(values, tuple):
-            present_values = [value for value in values if value is not None]
-            literals = tuple(value for value in present_values if isinstance(value, (str, int, float, bool)))
-            if not literals or len(literals) != len(present_values):
-                return None, "native_shape_mismatch"
-            return Scalar(kind="literal", values=literals), "native_supported"
+            return _literal(values)
         if len(present) != 1 or (kind := _SCALARS.get(next(iter(present)))) is None:
             return None, "native_shape_mismatch"
         format_ = schema.get("format")

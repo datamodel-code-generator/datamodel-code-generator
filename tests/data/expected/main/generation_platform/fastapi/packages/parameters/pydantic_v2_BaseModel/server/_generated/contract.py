@@ -62,6 +62,29 @@ class GetPart:
             'p_2fa',
         ),
     )
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of get_part."""
+
+        level: models.FieldItemsItemIdPartsPartGetQueryLevelParameter | Unset
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(
+            ParameterArgument(
+                name='level',
+                plan=ParameterPlan(
+                    location='query',
+                    name='level',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('2fa', 'day', 'flag', 'limit', 'mode', 'part', 'ratio', 'ref', 'request', 'tags'),
+                ),
+                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            ),
+        ),
+        record=Parameters,
+    )
     RESPONSES: Final = OperationResponses(
         responses=(
             ResponsePlan(
@@ -70,7 +93,7 @@ class GetPart:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
                     ),
                 ),
             ),
@@ -128,7 +151,7 @@ class ListAdapters:
                     style='form',
                     explode=True,
                 ),
-                codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
             ),
             ParameterArgument(
                 name='filter',
@@ -142,7 +165,7 @@ class ListAdapters:
                     additional=FieldPlan('', 'string'),
                     reserved_names=('blob', 'code', 'count', 'ids', 'mail', 'none', 'other', 'page', 'point', 'stamp', 'x'),
                 ),
-                codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
                 envelope=True,
             ),
             ParameterArgument(
@@ -155,7 +178,7 @@ class ListAdapters:
                     kind='integer',
                     reserved_names=('blob', 'code', 'count', 'filter', 'mail', 'none', 'other', 'page', 'point', 'stamp', 'x'),
                 ),
-                codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
             ),
             ParameterArgument(
                 name='x_ids',
@@ -166,7 +189,7 @@ class ListAdapters:
                     shape='array',
                     kind='integer',
                 ),
-                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
             ),
             ParameterArgument(
                 name='blob',
@@ -176,7 +199,7 @@ class ListAdapters:
                     content_media_type='application/json',
                     reserved_names=('x',),
                 ),
-                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
             ),
             ParameterArgument(
                 name='code',
@@ -187,7 +210,7 @@ class ListAdapters:
                     explode=True,
                     reserved_names=('blob', 'count', 'filter', 'ids', 'mail', 'none', 'other', 'page', 'point', 'stamp', 'x'),
                 ),
-                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
             ),
             ParameterArgument(
                 name='mail',
@@ -198,7 +221,7 @@ class ListAdapters:
                     explode=True,
                     reserved_names=('blob', 'code', 'count', 'filter', 'ids', 'none', 'other', 'page', 'point', 'stamp', 'x'),
                 ),
-                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
             ),
             ParameterArgument(
                 name='other',
@@ -209,7 +232,7 @@ class ListAdapters:
                     explode=True,
                     reserved_names=('blob', 'code', 'count', 'filter', 'ids', 'mail', 'none', 'page', 'point', 'stamp', 'x'),
                 ),
-                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
             ),
             ParameterArgument(
                 name='none',
@@ -220,7 +243,7 @@ class ListAdapters:
                     explode=True,
                     reserved_names=('blob', 'code', 'count', 'filter', 'ids', 'mail', 'other', 'page', 'point', 'stamp', 'x'),
                 ),
-                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
             ),
             ParameterArgument(
                 name='count',
@@ -232,7 +255,7 @@ class ListAdapters:
                     kind='integer',
                     reserved_names=('blob', 'code', 'filter', 'ids', 'mail', 'none', 'other', 'page', 'point', 'stamp', 'x'),
                 ),
-                codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
+                codec=(model_bindings.codec_11, model_bindings.CONTEXT_11),
                 default=freeze_wire('ten'),
             ),
             ParameterArgument(
@@ -246,7 +269,7 @@ class ListAdapters:
                     fields=(FieldPlan('x', 'integer'),),
                     reserved_names=('blob', 'code', 'count', 'filter', 'ids', 'mail', 'none', 'other', 'page', 'stamp'),
                 ),
-                codec=(model_bindings.codec_11, model_bindings.CONTEXT_11),
+                codec=(model_bindings.codec_12, model_bindings.CONTEXT_12),
             ),
         ),
         record=Parameters,
@@ -284,7 +307,7 @@ class GetRepeated:
                     required=True,
                     kind='integer',
                 ),
-                codec=(model_bindings.codec_12, model_bindings.CONTEXT_12),
+                codec=(model_bindings.codec_13, model_bindings.CONTEXT_13),
             ),
         ),
         record=Parameters,
