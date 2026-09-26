@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+import shlex
 import sys
 import traceback
 from collections.abc import Mapping
@@ -26,6 +28,8 @@ _ERROR: Final = 2
 _JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _TARGET: Final = "fastapi"
+_PLAIN: Final = re.compile(r"[\w./+-]+", re.ASCII)
+_EXPANDED: Final = re.compile(r"[$`\"\\!]")
 _REPORT: Final = frozenset({"schema_version", "target", "diagnostics"})
 _FIELDS: Final = frozenset({
     "code",
@@ -81,13 +85,40 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
         project = render_target(source, model_config=effective, config=target, generator=generator)
         report.extend(project.diagnostics)
         changes = [artifact for artifact in project.artifacts if artifact.action != "unchanged"]
-        cwd = Path.cwd()
         for artifact in changes:
-            shown = artifact.path.relative_to(cwd) if artifact.path.is_relative_to(cwd) else artifact.path
-            print(f"{artifact.action} {shown.as_posix()}", file=sys.stderr)  # noqa: T201
+            print(f"{artifact.action} {_shown(artifact.path)}", file=sys.stderr)  # noqa: T201
         return _DIFF if changes else _OK
-    report.extend(generate_target(source, model_config=effective, config=target, generator=generator).diagnostics)
+    generated = generate_target(source, model_config=effective, config=target, generator=generator)
+    report.extend(generated.diagnostics)
+    if report.destination != "-":
+        print(_next_step(target, generated.dependencies))  # noqa: T201
     return _OK
+
+
+def _shown(path: Path) -> str:
+    """Return a path relative to the working directory when it lies inside it."""
+    cwd = Path.cwd()
+    return (path.relative_to(cwd) if path.is_relative_to(cwd) else path).as_posix()
+
+
+def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...]) -> str:
+    """Return the uv command that adds a generated package to its project: its dependencies or its distribution."""
+    if target.package_mode != "standalone":
+        return _uv_add(f"the runtime dependencies of {target.package}", dependencies)
+    path = _shown(target.output)
+    location = path if Path(path).is_absolute() else f"./{path}"
+    return _uv_add(f"the {target.distribution_name} distribution", ("--editable", location))
+
+
+def _uv_add(subject: str, arguments: Sequence[str]) -> str:
+    return f"Add {subject} to your project:\n  uv add {' '.join(map(_argument, arguments))}"
+
+
+def _argument(value: str) -> str:
+    """Leave an argument bare, double-quote it for every common shell, or POSIX-quote one that double quotes expand."""
+    if _PLAIN.fullmatch(value):
+        return value
+    return shlex.quote(value) if _EXPANDED.search(value) else f'"{value}"'
 
 
 def _jobs(namespace: Namespace, report: _Report) -> NoReturn:

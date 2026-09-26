@@ -127,6 +127,12 @@ The maintainer decided on 2026-09-26 that a target run is reproducible without e
 
 Tests: the CLI suite drops `--disable-timestamp`, checks the generated package from inside it with absolute paths, and publishes a lock at its default and explicit path; the acceptance checkouts oracle generates through the Python API without `disable_timestamp`.
 
+## Printed runtime dependencies
+
+The maintainer decided on 2026-09-26 that a generation prints the runtime dependencies instead of writing them to a file, since version ranges belong in the user's own dependency manager. Embedded mode no longer writes `dcg-runtime-requirements.txt`; `GenerationReport` and `GeneratedProject` carry the requirement specifiers in `dependencies`, and a successful command-line generation ends by printing the `uv add` command for them, or `uv add --editable` for the distribution in standalone mode, whose `pyproject.toml` still declares them. Nothing is printed for `--check` or when `--diagnostics-json -` takes stdout. The package README points to the printed command. Arguments that need quoting are double-quoted, which POSIX shells, fish, PowerShell, and cmd.exe read alike, and a path that double quotes would expand (`$`, a backquote, `"`, `\`, or `!`) falls back to POSIX single quotes.
+
+Tests: the CLI generation expects the printed `uv add` command, new standalone cases expect the `uv add --editable` command for a plain, a spaced, and an expanded path, and the target scenarios lose the requirements file.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

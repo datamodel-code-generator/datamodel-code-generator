@@ -116,7 +116,10 @@ class GeneratedArtifact:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GenerationReport:
-    """Summarize one publishing generation of a single target."""
+    """Summarize one publishing generation of a single target.
+
+    dependencies are the requirement specifiers the generated package needs at run time.
+    """
 
     target: TargetKind
     written_files: tuple[ArtifactRecord, ...]
@@ -125,16 +128,21 @@ class GenerationReport:
     diagnostics: tuple[Diagnostic, ...]
     generator_version: str
     runtime_revision: str
+    dependencies: tuple[str, ...] = ()
     schema_version: Literal[1] = 1
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GeneratedProject:
-    """Return every publication candidate of one target without writing it."""
+    """Return every publication candidate of one target without writing it.
+
+    dependencies are the requirement specifiers the generated package needs at run time.
+    """
 
     target: TargetKind
     artifacts: tuple[GeneratedArtifact, ...]
     diagnostics: tuple[Diagnostic, ...]
     generator_version: str
     runtime_revision: str
+    dependencies: tuple[str, ...] = ()
     schema_version: Literal[1] = 1

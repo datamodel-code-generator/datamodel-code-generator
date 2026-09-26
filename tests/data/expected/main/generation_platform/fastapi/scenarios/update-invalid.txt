@@ -18,7 +18,6 @@ generate {}
   written server/services.py
   written server/README.md
   written server/py.typed
-  written server/dcg-runtime-requirements.txt
   written server/.dcg-state/model-artifacts.json
   written server/.dcg-target-manifest.json
 generate {"config": {"update_groups": ["tag:nope"]}}

@@ -65,11 +65,13 @@ class Pets(PetsService):
 app = create_app(pets=Pets())
 ```
 
-Install the runtime dependencies the package lists, then run the application:
+Generation ends by printing the `uv add` command that adds the runtime dependencies of the package to your
+project, with the versions this release of datamodel-code-generator supports. Run it, then start the application
+with an ASGI server:
 
 ```bash
-pip install -r server/dcg-runtime-requirements.txt
-uvicorn app:app
+uv add uvicorn
+uv run uvicorn app:app
 ```
 
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
@@ -119,6 +121,8 @@ for record in report.written_files:
 <!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
+Both results list the package's runtime requirement specifiers in `dependencies`, which the command line prints
+as a `uv add` command.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
 ordered `Diagnostic` records; model generation errors keep their own types. The records, errors, operation
 selection, and codec registrations are also available from `datamodel_code_generator.api_types`, and the
@@ -180,13 +184,14 @@ callable = "rename"
 | `routers/` or `routes.py` | generator | Route registrations |
 | `responses.py`, `errors.py`, `auth_types.py`, `model_codecs.py` | generator | Results, errors, authentication, and codec types |
 | `_generated/`, `_runtime/` | generator | Plans, bindings, and the runtime the package imports |
-| `README.md`, `py.typed`, `dcg-runtime-requirements.txt` | generator | Documentation, typing marker, and runtime requirements |
+| `README.md`, `py.typed` | generator | Documentation and typing marker |
 | `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
 
 The generator owns every file of the package: it replaces them on every generation and refuses to overwrite one
 you edited (`E_OUTPUT_MODIFIED`). Keep the service implementations, the authorizer, and the application in your
 own modules. In standalone mode the package lives under `output/src/<package>` next to `pyproject.toml` and
-`README.md`.
+`README.md`, the `pyproject.toml` declares the runtime dependencies, and generation prints the
+`uv add --editable` command that adds the distribution to your project instead.
 
 ## Regenerating and checking
 

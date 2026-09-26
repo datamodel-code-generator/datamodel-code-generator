@@ -25,7 +25,6 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write target server/dcg-runtime-requirements.txt (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   25 runtime modules ['write']

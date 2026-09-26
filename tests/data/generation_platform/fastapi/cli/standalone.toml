@@ -1,0 +1,8 @@
+schema_version = 1
+package = "server"
+model_package = "models"
+output = "service"
+package_mode = "standalone"
+package_version = "1.0.0"
+distribution_name = "pets-server"
+model_dependency = "pets-models>=1"

@@ -908,6 +908,7 @@ class _Planner:
             diagnostics=(*exclusions, *rendered.diagnostics, *rendered.persistent_diagnostics),
             generator_version=self.version,
             runtime_revision=self.revision,
+            dependencies=rendered.dependencies,
         )
 
 
@@ -964,15 +965,11 @@ class _Finisher:
         ))
 
     def layout_files(self, rendered: TargetRender) -> tuple[RenderedFile, ...]:
-        package = self.layout.package
-        typed = RenderedFile(path=package / "py.typed", kind="typing", text="")
-        if self.layout.distribution:
-            return typed, RenderedFile(
-                path=PurePosixPath("pyproject.toml"), kind="pyproject", text=self.pyproject(rendered)
-            )
-        requirements = "".join(f"{dependency}\n" for dependency in rendered.dependencies)
+        typed = RenderedFile(path=self.layout.package / "py.typed", kind="typing", text="")
+        if not self.layout.distribution:
+            return (typed,)
         return typed, RenderedFile(
-            path=package / "dcg-runtime-requirements.txt", kind="requirements", text=requirements
+            path=PurePosixPath("pyproject.toml"), kind="pyproject", text=self.pyproject(rendered)
         )
 
     def check_sources(self, files: Iterable[tuple[PurePosixPath, str]], stage: DiagnosticStage) -> None:

@@ -131,5 +131,6 @@ When an operation is added, removed, or changed, its method in `services.py` cha
 {%- if standalone %}
 `pyproject.toml` declares the runtime dependencies of the package.
 {%- else %}
-Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+run it again when a new version of datamodel-code-generator changes them.
 {%- endif %}

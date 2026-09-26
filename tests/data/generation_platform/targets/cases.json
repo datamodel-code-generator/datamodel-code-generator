@@ -480,8 +480,7 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}},
-      {"show": "server/routers/pets.py"},
-      {"show": "server/dcg-runtime-requirements.txt"}
+      {"show": "server/routers/pets.py"}
     ]
   },
   "layout-standalone": {

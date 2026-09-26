@@ -42,7 +42,6 @@ render pydantic_v2.BaseModel
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
-  write server/dcg-runtime-requirements.txt
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
   layout routers
@@ -148,15 +147,9 @@ render pydantic_v2.BaseModel
     | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
     | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
-    | Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+    | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+    | run it again when a new version of datamodel-code-generator changes them.
   file server/py.typed
-  file server/dcg-runtime-requirements.txt
-    | fastapi>=0.141.1,<0.142
-    | starlette>=1.0.0,<2
-    | pydantic>=2.13.5,<3
-    | jsonschema[format-nongpl]>=4.26,<5
-    | referencing>=0.37,<1
-    | typing-extensions>=4.16,<5
   file server/.dcg-state/model-artifacts.json
     | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
 render pydantic_v2.dataclass
@@ -202,7 +195,6 @@ render pydantic_v2.dataclass
   write server/_runtime/server/responses.py (copied runtime)
   write server/_runtime/server/security.py (copied runtime)
   write server/py.typed
-  write server/dcg-runtime-requirements.txt
   write server/.dcg-state/model-artifacts.json
   write server/.dcg-target-manifest.json
   layout routers
@@ -320,14 +312,8 @@ render pydantic_v2.dataclass
     | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
     | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
-    | Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+    | Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+    | run it again when a new version of datamodel-code-generator changes them.
   file server/py.typed
-  file server/dcg-runtime-requirements.txt
-    | fastapi>=0.141.1,<0.142
-    | starlette>=1.0.0,<2
-    | pydantic>=2.13.5,<3
-    | jsonschema[format-nongpl]>=4.26,<5
-    | referencing>=0.37,<1
-    | typing-extensions>=4.16,<5
   file server/.dcg-state/model-artifacts.json
     | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}

@@ -19,7 +19,6 @@ generate
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
-  written target server/dcg-runtime-requirements.txt (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   25 runtime modules ['written']
@@ -37,7 +36,6 @@ tree
   server/_generated/openapi.py
   server/application.py
   server/auth_types.py
-  server/dcg-runtime-requirements.txt
   server/errors.py
   server/model_codecs.py
   server/py.typed
@@ -68,7 +66,6 @@ generate
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  unchanged target server/dcg-runtime-requirements.txt (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   25 runtime modules ['unchanged']
@@ -92,7 +89,6 @@ generate
   unchanged target server/errors.py (target)
   unchanged target server/auth_types.py (target)
   unchanged target server/py.typed (target)
-  unchanged target server/dcg-runtime-requirements.txt (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   25 runtime modules ['unchanged']
   deleted target server/routers/store.py (target)
@@ -110,7 +106,6 @@ tree
   server/_generated/openapi.py
   server/application.py
   server/auth_types.py
-  server/dcg-runtime-requirements.txt
   server/errors.py
   server/model_codecs.py
   server/py.typed
@@ -139,7 +134,6 @@ render
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  unchanged target server/dcg-runtime-requirements.txt (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   25 runtime modules ['unchanged']
