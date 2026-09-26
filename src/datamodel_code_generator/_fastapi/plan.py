@@ -10,6 +10,8 @@ from enum import Enum
 from functools import cached_property
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
+from typing_extensions import TypeIs
+
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._fastapi.naming import normalize
@@ -40,23 +42,27 @@ from datamodel_code_generator._fastapi.routes import (
 from datamodel_code_generator._generation_contract import (
     GeneratedSymbolType,
     GenericType,
+    LiteralMapping,
     LiteralScalar,
+    LiteralSequence,
+    SourceLocation,
 )
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
+from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
-    from datamodel_code_generator._fastapi.config import FastAPIConfig, ResponseChoice
+    from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._fastapi.native import Reason, Schema
     from datamodel_code_generator._generation_contract import (
         FieldUseBinding,
         FinalPythonType,
+        FrozenLiteral,
         OperationContract,
-        SourceLocation,
         SymbolId,
         TypeUseBinding,
         TypeUseId,
@@ -71,7 +77,9 @@ if TYPE_CHECKING:
 Site: TypeAlias = Literal["parameter", "body", "primary_response"]
 Transport: TypeAlias = Literal["fastapi_native", "codec_adapter", "raw_request"]
 ScalarKind: TypeAlias = Literal["str", "int", "float", "bool", "date", "aware_datetime", "uuid", "literal"]
-ArgumentKind: TypeAlias = Literal["request", "native", "adapter", "body", "media_type"]
+ArgumentKind: TypeAlias = Literal["request", "principal", "native", "adapter", "body", "media_type"]
+SchemeKind: TypeAlias = Literal["api_key", "basic", "bearer", "custom"]
+Requirement: TypeAlias = tuple[tuple[str, tuple[str, ...]], ...]
 NativeApi: TypeAlias = Literal["Path", "Query", "Header", "Form", "File"]
 SettingT = TypeVar("SettingT")
 
@@ -99,6 +107,19 @@ _DEFAULT_TYPES: Final[dict[str, tuple[type, ...]]] = {
 _SCALAR_KEYWORDS: Final = frozenset({"type", "enum", "const", *BOUNDS, *STRING_LENGTHS})
 _ARRAY_KEYWORDS: Final = frozenset({"type", "items", *ARRAY_LENGTHS})
 _FORM_KEYWORDS: Final = frozenset({"type", "properties", "required"})
+_HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer"}
+_API_KEY_LOCATIONS: Final = frozenset({"header", "query", "cookie"})
+_INFO: Final = (
+    ("info", "title", "title", "text"),
+    ("info", "summary", "summary", "text"),
+    ("info", "description", "description", "text"),
+    ("info", "version", "version", "text"),
+    ("root", "tags", "openapi_tags", "objects"),
+    ("root", "servers", "servers", "objects"),
+    ("info", "termsOfService", "terms_of_service", "text"),
+    ("info", "contact", "contact", "object"),
+    ("info", "license", "license_info", "object"),
+)
 _MIN_CONTENT_STATUS: Final = 200
 _MAX_SUCCESS_STATUS: Final = 299
 _DEFAULT_STATUS: Final = 200
@@ -219,6 +240,23 @@ class PrimarySpec:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class SchemeSpec:
+    """One declared security scheme the selected operations use, and how its credential is read."""
+
+    name: str
+    kind: SchemeKind
+    location: str | None = None
+    parameter: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SecuritySpec:
+    """An operation's security alternatives in source order: scheme names with their scopes, or none."""
+
+    requirements: tuple[Requirement, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Argument:
     """One keyword the handler receives, in the fixed argument order."""
 
@@ -246,6 +284,8 @@ class OperationSpec:
     primary: PrimarySpec | None
     registration_status: int
     arguments: tuple[Argument, ...]
+    mode: HandlerMode
+    security: SecuritySpec | None
 
     @property
     def key(self) -> str:
@@ -283,10 +323,12 @@ class GroupSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerPlan:
-    """The planned operations and groups of one server target."""
+    """The planned operations and groups of one server target, the schemes they use, and the source info."""
 
     operations: tuple[OperationSpec, ...]
     groups: tuple[GroupSpec, ...]
+    schemes: tuple[SchemeSpec, ...]
+    info: tuple[tuple[str, WireValue], ...]
 
 
 class PlanError(Exception):
@@ -356,12 +398,18 @@ class Planner:  # noqa: PLR0904
             operation: {(plan.location, plan.name): plan for plan in plans} for operation, plans in wire.parameters
         }
         self.header_plans = dict(wire.headers)
+        self.scheme_declarations = {
+            (declaration.use_site.document, declaration.name): declaration
+            for declaration in request.batch.security_schemes
+        }
+        self.schemes: dict[str, SchemeSpec] = {}
         self.backend = request.model_config.output_model_type.value
         self.problems: list[Diagnostic] = []
         self.names = self.selected("operation_names", config.operation_names)
         self.body_modes = self.selected("body_modes", config.body_modes)
         self.primaries = self.selected("primary_responses", config.primary_responses)
         self.parameter_names = self.selected("parameter_names", config.parameter_names)
+        self.modes = self.selected("handler_modes", config.handler_modes)
         self.raise_problems()
 
     @cached_property
@@ -408,7 +456,7 @@ class Planner:  # noqa: PLR0904
         self.check_routes(specs)
         groups = self.groups(specs)
         self.raise_problems()
-        return ServerPlan(operations=specs, groups=groups)
+        return ServerPlan(operations=specs, groups=groups, schemes=tuple(self.schemes.values()), info=self.info())
 
     def operation_name(self, operation: OperationContract) -> str:
         """Return an operation's explicit name, or its normalized operationId or method and path."""
@@ -464,7 +512,8 @@ class Planner:  # noqa: PLR0904
         body = None if operation.request_body is None else self.body(operation, operation.request_body)
         responses = tuple(self.response(operation, response) for response in operation.responses)
         primary = self.primary(operation, responses)
-        arguments = self.arguments(operation, parameters, body, names)
+        security = self.security(operation)
+        arguments = self.arguments(operation, parameters, body, names, secured=security is not None)
         route = self.route(operation, arguments, wire_names)
         slots = {slot.wire_name: slot.slot for slot in route.slots}
         return OperationSpec(
@@ -479,7 +528,50 @@ class Planner:  # noqa: PLR0904
             primary=primary,
             registration_status=_registration(responses, primary),
             arguments=tuple(_slotted(argument, slots) for argument in arguments),
+            mode=self.modes.get(operation.id.use_site.pointer, self.config.handler_mode),
+            security=security,
         )
+
+    def security(self, operation: OperationContract) -> SecuritySpec | None:
+        """Return the operation's effective security alternatives, or None when none of them names a scheme."""
+        value = next((value for key, value in operation.facts if key == "security"), None)
+        if (requirements := _requirements(value)) is None:
+            message = f"The security of {_label(operation)} is not a list of security requirement objects"
+            self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
+            return None
+        if not any(requirements):
+            return None
+        for name in dict.fromkeys(name for requirement in requirements for name, _ in requirement):
+            self.scheme(operation, name)
+        return SecuritySpec(requirements=requirements)
+
+    def scheme(self, operation: OperationContract, name: str) -> None:
+        """Record a scheme the first time an operation requires it, or report one the document does not declare."""
+        if name in self.schemes:
+            return
+        if (declaration := self.scheme_declarations.get((operation.id.use_site.document, name))) is None:
+            message = f"{_label(operation)} requires the undeclared security scheme {name!r}"
+            self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
+        elif (scheme := _scheme(name, declaration)) is None:
+            message = f"The apiKey security scheme {name!r} needs a name and a location of header, query, or cookie"
+            self.problems.append(_problem("F_SECURITY_INVALID", message, declaration.use_site))
+        else:
+            self.schemes[name] = scheme
+
+    def info(self) -> tuple[tuple[str, WireValue], ...]:
+        """Return the FastAPI settings the root document's info, tags, and servers supply, in constructor order."""
+        root = self.request.lease.borrow(SourceLocation(self.request.batch.documents[0].id, "", "declaration"))
+        sources = {"root": root, "info": root.get("info") if isinstance(root, dict) else None}
+        found: list[tuple[str, WireValue]] = []
+        for container, key, option, kind in _INFO:
+            match kind, _member(sources[container], key):
+                case ("text", str() as value) | ("object", Mapping() as value):
+                    found.append((option, value))
+                case "objects", tuple() as value if all(isinstance(item, Mapping) for item in value):
+                    found.append((option, value))
+                case _:
+                    pass
+        return tuple(found)
 
     def route(
         self, operation: OperationContract, arguments: tuple[Argument, ...], wire_names: tuple[str, ...] | None
@@ -878,6 +970,8 @@ class Planner:  # noqa: PLR0904
         parameters: tuple[ParameterSpec, ...],
         body: BodySpec | None,
         wire_names: tuple[str, ...],
+        *,
+        secured: bool,
     ) -> tuple[Argument, ...]:
         """Name the handler's keywords in the fixed order, prefixing colliding names with their location."""
         names = self.parameter_names.get(operation.id.use_site.pointer, {})
@@ -930,7 +1024,12 @@ class Planner:  # noqa: PLR0904
             if key not in known
         )
         request = (Argument(name="request", kind="request", location="request"),)
-        arguments = (*(request if raw or self.config.include_request else ()), *_prefixed(candidates))
+        principal = (Argument(name="principal", kind="principal", location="principal"),)
+        arguments = (
+            *(request if raw or self.config.include_request else ()),
+            *(principal if secured else ()),
+            *_prefixed(candidates),
+        )
         self.problems.extend(
             _problem(
                 "F_NAME_CONFLICT", f"The arguments of {_label(operation)} take {name!r} twice", operation.id.use_site
@@ -939,6 +1038,65 @@ class Planner:  # noqa: PLR0904
             if count > 1
         )
         return arguments
+
+
+def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
+    return isinstance(value, Mapping)
+
+
+def _requirements(value: FrozenLiteral | None) -> tuple[Requirement, ...] | None:
+    if value is None:
+        return ()
+    if not isinstance(value, LiteralSequence):
+        return None
+    found = [requirement for item in value.items if (requirement := _requirement(item)) is not None]
+    return tuple(found) if len(found) == len(value.items) else None
+
+
+def _requirement(value: FrozenLiteral) -> Requirement | None:
+    if not isinstance(value, LiteralMapping):
+        return None
+    found = [
+        (name, scopes)
+        for key, item in value.entries
+        if isinstance(key, LiteralScalar)
+        and isinstance(name := key.value, str)
+        and (scopes := _scopes(item)) is not None
+    ]
+    return tuple(found) if len(found) == len(value.entries) else None
+
+
+def _scopes(value: FrozenLiteral) -> tuple[str, ...] | None:
+    if not isinstance(value, LiteralSequence):
+        return None
+    found = tuple(
+        scope for item in value.items if isinstance(item, LiteralScalar) and isinstance(scope := item.value, str)
+    )
+    return found if len(found) == len(value.items) else None
+
+
+def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
+    match fact(declaration, "type"), fact(declaration, "in"), fact(declaration, "name"), fact(declaration, "scheme"):
+        case "apiKey", str() as location, str() as parameter, _ if parameter and location in _API_KEY_LOCATIONS:
+            return SchemeSpec(name=name, kind="api_key", location=location, parameter=parameter)
+        case "apiKey", _, _, _:
+            return None
+        case "http", _, _, str() as scheme if (kind := _HTTP_SCHEMES.get(scheme.lower())) is not None:
+            return SchemeSpec(name=name, kind=kind)
+        case "oauth2" | "openIdConnect", _, _, _:
+            return SchemeSpec(name=name, kind="bearer")
+        case _:
+            pass
+    return SchemeSpec(name=name, kind="custom")
+
+
+def _member(source: object, key: str) -> WireValue | None:
+    if not _is_mapping(source) or key not in source:
+        return None
+    try:
+        return checked_wire(source[key])
+    except (TypeError, ValueError):
+        return None
 
 
 def _natively_serialized(plan: ParameterPlan, location: ParameterLocation, *, repeated: bool) -> bool:

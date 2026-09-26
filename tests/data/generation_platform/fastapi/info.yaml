@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: 7
+  version: "3"
+  description: Only well-typed source info becomes FastAPI settings.
+  contact: {name: Team, weight: .nan}
+  license: [MIT]
+tags: [plain]
+servers:
+  - {url: "https://api.example.com", description: Production}
+paths:
+  /ping:
+    get:
+      operationId: ping
+      responses:
+        "204": {description: Done.}

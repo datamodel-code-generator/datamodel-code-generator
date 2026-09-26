@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Secured pets
+  version: "2.0"
+  summary: Pets behind every builtin credential helper.
+  description: Each operation names its own alternatives.
+  termsOfService: https://example.com/terms
+  contact: {name: Pets team, email: pets@example.com}
+  license: {name: MIT, identifier: MIT}
+tags:
+  - {name: pets, description: Pet operations.}
+  - {name: public}
+servers:
+  - {url: https://pets.example.com/v2}
+security:
+  - api_key: []
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      responses:
+        "200":
+          description: Names.
+          content:
+            application/json:
+              schema: {type: array, items: {type: string}}
+  /public:
+    get:
+      operationId: getPublic
+      tags: [public]
+      security: []
+      responses:
+        "204": {description: Done.}
+  /maybe:
+    get:
+      operationId: getMaybe
+      security: [{}, {bearer: []}]
+      parameters:
+        - {name: principal, in: query, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /pets/{petId}:
+    put:
+      operationId: putPet
+      security:
+        - oauth: [write:pets, read:pets]
+        - query_key: []
+          basic: []
+      parameters:
+        - {name: petId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /session:
+    get:
+      operationId: getSession
+      security: [{cookie_key: []}, {oidc: [openid]}, {api_key: []}]
+      responses:
+        "204": {description: Done.}
+  /custom:
+    get:
+      operationId: getCustom
+      security: [{digest: []}, {mtls: []}, {query_key: []}]
+      responses:
+        "204": {description: Done.}
+components:
+  securitySchemes:
+    api_key: {type: apiKey, in: header, name: X-API-Key}
+    query_key: {type: apiKey, in: query, name: key}
+    cookie_key: {type: apiKey, in: cookie, name: session}
+    basic: {type: http, scheme: Basic}
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://example.com/token
+          scopes: {"write:pets": Write pets., "read:pets": Read pets.}
+    oidc: {type: openIdConnect, openIdConnectUrl: https://example.com/.well-known/openid-configuration}
+    digest: {type: http, scheme: digest}
+    mtls: {type: mutualTLS}

@@ -203,6 +203,7 @@ def _operation_data(spec: OperationSpec, selected: dict[OperationId, int], reque
         "path": spec.contract.path,
         "route_path": spec.route.route_path,
         "group_key": spec.group,
+        "handler_mode": spec.mode,
         "body_mode": "request" if spec.body is not None and spec.body.decision.transport == "raw_request" else "typed",
         "primary_response": None
         if primary is None

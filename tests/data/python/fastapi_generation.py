@@ -46,7 +46,7 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                     _selector(selector): ResponseChoice(**choice) if isinstance(choice, dict) else choice
                     for selector, choice in value
                 }
-            case "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
+            case "handler_modes" | "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
                 converted[key] = {_selector(selector): item for selector, item in value}
             case "codec_adapters" | "builtin_codec_compatibility" if isinstance(value, list):
                 kind = "adapters" if key == "codec_adapters" else "compatibility"
@@ -72,7 +72,7 @@ def _decisions(project: GeneratedProject) -> list[str]:
         lines.append(
             f"  {operation['python_name']}: {operation['method'].upper()} {operation['path']}"
             f" -> {operation['route_path']} [{operation['group_key']}] status {operation['registration_status']}"
-            f" primary {primary} body {operation['body_mode']}"
+            f" primary {primary} body {operation['body_mode']} handler {operation['handler_mode']}"
         )
         lines.extend(
             f"    slot {slot['slot']} = {slot['wire_name']} #{slot['occurrence']}" for slot in operation["path_slots"]

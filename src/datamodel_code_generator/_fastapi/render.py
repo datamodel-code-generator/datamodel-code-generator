@@ -13,7 +13,7 @@ from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._fastapi._compiled_templates import application as application_template
 from datamodel_code_generator._fastapi._compiled_templates import router as router_template
 from datamodel_code_generator._fastapi.plan import BODYLESS_STATUSES, Default
-from datamodel_code_generator._fastapi.routes import tags
+from datamodel_code_generator._fastapi.routes import BUILDER_NAMES, tags
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -32,8 +32,10 @@ if TYPE_CHECKING:
         MediaSpec,
         NativeField,
         OperationSpec,
+        Requirement,
         ResponseSpec,
         Scalar,
+        SchemeSpec,
         ServerPlan,
     )
     from datamodel_code_generator._generation_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
@@ -54,6 +56,19 @@ _IMPORTED: Final = {
 }
 _RUNTIME_IMPORT: Final = re.compile(r"^from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
 _RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)(\w+(?:\.\w+)*) import", re.MULTILINE)
+_SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
+_EXPORTS: Final = (
+    ("_generated.contract", "OperationDependencies"),
+    ("_generated.contract", "OperationKey"),
+    ("_generated.contract", "SchemeKey"),
+    ("_runtime.server.application", "Dependency"),
+    ("_runtime.server.application", "FastAPIOptions"),
+    ("auth_types", "AsyncAuthorizer"),
+    ("auth_types", "AsyncCredentialExtractor"),
+    ("auth_types", "Authorizer"),
+    ("auth_types", "CredentialExtractor"),
+    ("auth_types", "CredentialExtractors"),
+)
 _PLAN_DEFAULTS: Final[dict[str, object]] = {
     "style": None,
     "explode": False,
@@ -131,6 +146,7 @@ class ServerRenderer:  # noqa: PLR0904
         self.bindings = render_model_bindings(codecs, wire, batch, surface="server")
         self.accessors: dict[TypeUseId, UseAccessors] = {item.use: item for item in self.bindings.uses}
         self.use_bindings: dict[TypeUseId, UseBinding] = dict(codecs.bindings)
+        self.services = {group.key: group.stem for group in plan.groups}
 
     def file(
         self, path: PurePosixPath, kind: str, text: str, group: str | None = None, *, verbatim: bool = False
@@ -151,6 +167,7 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("server")),
             self.file(PurePosixPath("responses.py"), "responses", self.responses()),
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
+            self.file(PurePosixPath("auth_types.py"), "auth_types", _AUTH_TYPES),
         )
         return (*files, *self.runtime(files))
 
@@ -172,27 +189,43 @@ class ServerRenderer:  # noqa: PLR0904
     def application(self) -> str:
         """Return the application module, rendered from its builtin template.
 
-        The router modules come first, so the names they take keep every other import away from the builder's
+        The router modules come first, so the names they take keep every other import away from the builders'
         service arguments, which share their names.
         """
         single = self.config.layout == "single"
         services = [group.stem for group in self.plan.groups]
-        module = Module({"OPERATIONS", "ROUTES", "build_router", *(services if single else ())}, {}, level=1)
+        module = Module({*BUILDER_NAMES, *(services if single else ())}, {}, level=1)
         modules = [module.local("", "routes")] if single else [module.local("routers", stem) for stem in services]
         routes = (*(f"*{name}.LITERAL_ROUTES" for name in modules), *(f"*{name}.TEMPLATED_ROUTES" for name in modules))
+        secured = bool(self.plan.schemes)
         final = module.name("typing", "Final")
-        body = _build(module, "ROUTES", services)
+        options = module.local("_runtime.server.application", "FastAPIOptions")
+        info = Group("{", tuple((f"{key!r}: ", _python(value)) for key, value in self.plan.info), "}")
+        router = module.name("fastapi", "APIRouter")
+        fastapi = module.name("fastapi", "FastAPI")
+        exports = sorted({*(repr(module.local(*item)) for item in _EXPORTS), "'build_router'", "'create_app'"})
         return application_template.render(
             final=final,
-            operations=layout(
-                Group("(", _items(f"*{name}.OPERATIONS" for name in modules), ")", ","),
-                0,
-                len(f"OPERATIONS: {final} = "),
-                WIDTH,
-            ),
+            options=options,
             routes=layout(Group("(", _items(routes), ")", ","), 0, len(f"ROUTES: {final} = "), WIDTH),
-            signature=_builder(module, services),
-            body=body,
+            info=layout(info, 0, len(f"INFO: {final}[{options}] = "), WIDTH),
+            build_signature=_builder(module, "build_router", router, services, secured=secured),
+            build=module.local("_runtime.server.application", "build"),
+            schemes=f"{module.local('_generated', 'contract')}.SCHEMES",
+            services=_services(services),
+            settings=_settings(secured=secured),
+            app_signature=_builder(
+                module,
+                "create_app",
+                fastapi,
+                services,
+                ("fastapi_options", f"{options} | None", " = None"),
+                secured=secured,
+            ),
+            arguments=(*services, *_settings(secured=secured)),
+            fastapi=fastapi,
+            application_options=module.local("_runtime.server.application", "application_options"),
+            exports=exports,
             imports=module.imports(),
         )
 
@@ -212,7 +245,8 @@ class ServerRenderer:  # noqa: PLR0904
         """Return one router module, rendered from its builtin template."""
         operations = () if group is None else group.operations
         services = [] if group is None else [group.stem]
-        reserved = {"OPERATIONS", "LITERAL_ROUTES", "TEMPLATED_ROUTES", "build_router", "router", "handlers", *services}
+        secured = any(spec.security is not None for spec in operations)
+        reserved = {"router", "wiring", *BUILDER_NAMES, *services}
         for spec in operations:
             reserved.update((
                 spec.python_name,
@@ -221,32 +255,32 @@ class ServerRenderer:  # noqa: PLR0904
             ))
         module = Module(reserved, self.symbols, level=level)
         routes = [self.route(module, spec) for spec in operations]
-        literal = [f"_add_{spec.python_name}" for spec in operations if not spec.route.templated]
-        templated = [f"_add_{spec.python_name}" for spec in operations if spec.route.templated]
-        name = "every operation" if group is None or self.config.layout == "single" else f"the {group.stem} operations"
-        entries = Group(
-            "(",
-            _items(
-                Group("(", (("", repr(stem)), ("", repr(spec.python_name)), ("", _keywords(spec.arguments))), ")")
-                for stem in services
+        contract = module.local("_generated", "contract")
+        pairs = {
+            templated: [
+                Group("(", (("", f"{contract}.{spec.pascal}.OPERATION"), ("", f"_add_{spec.python_name}")), ")")
                 for spec in operations
-            ),
-            ")",
-            ",",
-        )
+                if spec.route.templated is templated
+            ]
+            for templated in (False, True)
+        }
+        name = "every operation" if group is None or self.config.layout == "single" else f"the {group.stem} operations"
+        router = module.name("fastapi", "APIRouter")
         final = module.name("typing", "Final")
         return router_template.render(
             docstring=f"Endpoints of {name}; regenerate them instead of editing.",
             routes=routes,
-            router=module.name("fastapi", "APIRouter"),
-            handlers=_handlers(module),
+            router=router,
+            wiring=module.local("_runtime.server.application", "Wiring"),
             final=final,
-            operations=layout(entries, 0, len(f"OPERATIONS: {final} = "), WIDTH),
-            literal=layout(Group("(", _items(literal), ")", ","), 0, len(f"LITERAL_ROUTES: {final} = "), WIDTH),
-            templated=layout(Group("(", _items(templated), ")", ","), 0, len(f"TEMPLATED_ROUTES: {final} = "), WIDTH),
-            signature=_builder(module, services),
-            body=_build(module, "(*LITERAL_ROUTES, *TEMPLATED_ROUTES)", services),
+            literal=layout(Group("(", _items(pairs[False]), ")", ","), 0, len(f"LITERAL_ROUTES: {final} = "), WIDTH),
+            templated=layout(Group("(", _items(pairs[True]), ")", ","), 0, len(f"TEMPLATED_ROUTES: {final} = "), WIDTH),
+            signature=_builder(module, "build_router", router, services, secured=secured),
             group=name,
+            build=module.local("_runtime.server.application", "build"),
+            schemes=f"{contract}.SCHEMES",
+            services=_services(services),
+            settings=_settings(secured=secured),
             imports=module.imports(),
         )
 
@@ -255,9 +289,10 @@ class ServerRenderer:  # noqa: PLR0904
         plan = f"{module.local('_generated', 'contract')}.{spec.pascal}"
         names = {argument.name for argument in spec.arguments}
         handler = _unique(f"{spec.python_name}_handler", names)
+        principal = "" if spec.security is None else _unique(f"{spec.python_name}_principal", {*names, handler})
         record = _unique("parameters", names)
         parameters: list[Doc] = [
-            self.parameter(module, spec, argument, plan)
+            self.parameter(module, spec, argument, plan, principal)
             for argument in spec.arguments
             if argument.kind not in {"media_type", "adapter"}
         ]
@@ -266,11 +301,14 @@ class ServerRenderer:  # noqa: PLR0904
             parameters.append(f"{record}: {annotated}[{plan}.Parameters, {depends}({plan}.PARAMETERS)]")
         native = spec.native_primary
         returns = "object" if native else module.name("fastapi.responses", "Response")
+        asynchronous = spec.mode == "async"
         signature = Group(
-            f"def {spec.python_name}(", _items(("*", *parameters)) if parameters else (), f") -> {returns}:"
+            f"{'async def' if asynchronous else 'def'} {spec.python_name}(",
+            _items(("*", *parameters)) if parameters else (),
+            f") -> {returns}:",
         )
         call = Group(
-            f"{handler}(",
+            f"{'await ' if asynchronous else ''}{handler}(",
             tuple((f"{argument.name}=", _value(module, spec, argument, record)) for argument in spec.arguments),
             ")",
         )
@@ -279,16 +317,22 @@ class ServerRenderer:  # noqa: PLR0904
         return {
             "adder": f"_add_{spec.python_name}",
             "handler": handler,
-            "key": repr(spec.python_name),
+            "handlers": "async_handlers" if asynchronous else "handlers",
+            "name": repr(spec.python_name),
+            "principal": principal,
+            "key": repr(spec.key),
             "registration": layout(_registration(module, spec), 4, 0, WIDTH),
             "signature": layout(signature, 4, 0, WIDTH),
             "body": layout(body, 8, 0, WIDTH),
         }
 
-    def parameter(self, module: Module, spec: OperationSpec, argument: Argument, plan: str) -> Doc:
-        """Return the endpoint parameter of one handler argument that FastAPI or the body adapter supplies."""
+    def parameter(self, module: Module, spec: OperationSpec, argument: Argument, plan: str, principal: str) -> Doc:
+        """Return the endpoint parameter of one handler argument that FastAPI or an adapter supplies."""
         if argument.kind == "request":
             return f"request: {module.name('fastapi', 'Request')}"
+        if argument.kind == "principal":
+            annotated, depends = module.name("typing", "Annotated"), module.name("fastapi", "Depends")
+            return f"principal: {annotated}[object, {depends}({principal})]"
         if argument.native is not None:
             return _native(module, argument.name, argument.native)
         body = spec.body
@@ -337,15 +381,36 @@ class ServerRenderer:  # noqa: PLR0904
         return " | ".join(values)
 
     def contract(self) -> str:
-        """Return the contract module: each operation's response plans and request adapters."""
-        module = Module({spec.pascal for spec in self.plan.operations}, self.symbols, level=2)
+        """Return the contract module: key types, schemes, and each operation's plans and request adapters."""
+        reserved = {"OperationKey", "SchemeKey", "OperationDependencies", "SCHEMES"}
+        module = Module({*reserved, *(spec.pascal for spec in self.plan.operations)}, self.symbols, level=2)
         bindings = module.name(".", "model_bindings")
         sections = [self.operation_plan(module, spec, bindings) for spec in self.plan.operations]
+        alias = module.name("typing", "TypeAlias")
+        sequence = _dependency_sequence(module)
+        dependencies = Group("{", tuple((f"{spec.key!r}: ", sequence) for spec in self.plan.operations), "}")
+        typed = Group(
+            f"{module.name('typing', 'TypedDict')}(",
+            (("", "'OperationDependencies'"), ("", dependencies), ("total=", "False")),
+            ")",
+        )
+        schemes = Group("(", _items(_scheme_plan(module, scheme) for scheme in self.plan.schemes), ")", ",")
+        final = module.name("typing", "Final")
         head = (
             '"""Operation plans of this package; regenerate them instead of editing."""\n\n'
             "from __future__ import annotations\n\n"
         )
-        return head + module.imports() + "\n\n\n" + "\n\n".join(sections)
+        keys = (
+            ("OperationKey", [spec.key for spec in self.plan.operations]),
+            ("SchemeKey", [scheme.name for scheme in self.plan.schemes]),
+        )
+        definitions = "".join(
+            f"{name}: {alias} = {_literal(module, values, len(f'{name}: {alias} = '))}\n" for name, values in keys
+        ) + (
+            f"OperationDependencies = {layout(typed, 0, len('OperationDependencies = '), WIDTH)}\n"
+            f"SCHEMES: {final} = {layout(schemes, 0, len(f'SCHEMES: {final} = '), WIDTH)}\n"
+        )
+        return head + module.imports() + "\n\n" + definitions + "\n\n" + "\n\n".join(sections)
 
     def codec(self, use: TypeUseId, bindings: str) -> str:
         """Return the (codec accessor, context) pair of one bound use."""
@@ -361,6 +426,8 @@ class ServerRenderer:  # noqa: PLR0904
         """Return one operation's plan class: adapter parameter record, request adapters, and responses."""
         final = module.name("typing", "Final")
         lines = [f"class {spec.pascal}:", f'    """Plans of the {spec.python_name} operation."""', ""]
+        operation = self.operation(module, spec)
+        lines.append(f"    OPERATION: {final} = {layout(operation, 4, len('OPERATION: Final = '), WIDTH)}")
         adapters = [argument for argument in spec.arguments if argument.kind == "adapter"]
         if adapters:
             lines.extend((
@@ -379,6 +446,25 @@ class ServerRenderer:  # noqa: PLR0904
         responses = self.responses_plan(module, spec, bindings)
         lines.append(f"    RESPONSES: {final} = {layout(responses, 4, len('RESPONSES: Final = '), WIDTH)}")
         return "\n".join(lines) + "\n"
+
+    def operation(self, module: Module, spec: OperationSpec) -> Group:
+        """Return the OperationPlan constructor of one operation: method, key, service, keywords, mode, and security."""
+        items: list[tuple[str, Doc]] = [
+            ("name=", repr(spec.python_name)),
+            ("key=", repr(spec.key)),
+            ("service=", repr(self.services[spec.group])),
+        ]
+        if spec.arguments:
+            items.append(("keywords=", _keywords(spec.arguments)))
+        if spec.mode == "async":
+            items.append(("asynchronous=", "True"))
+        if spec.security is not None:
+            requirements = Group("(", _items(_requirement(item) for item in spec.security.requirements), ")", ",")
+            plan = Group(
+                f"{module.local('_runtime.server.security', 'SecurityPlan')}(", (("requirements=", requirements),), ")"
+            )
+            items.append(("security=", plan))
+        return Group(f"{module.local('_runtime.server.application', 'OperationPlan')}(", tuple(items), ")")
 
     def parameter_type(self, module: Module, argument: Argument) -> str:
         """Return the handler type of one adapter parameter: its codec's type, or the media surface without a schema."""
@@ -681,6 +767,7 @@ def _registration(module: Module, spec: OperationSpec) -> Group:
     )
     if facts.get("deprecated") is True:
         items.append(("deprecated=", "True"))
+    items.append(("dependencies=", f"wiring.dependencies.get({spec.key!r})"))
     return Group("router.add_api_route(", tuple(items), ")")
 
 
@@ -769,24 +856,65 @@ def _runtime_imports() -> dict[str, tuple[str, ...]]:
     return graph
 
 
-def _builder(module: Module, services: list[str]) -> str:
-    parameters = _items(("*", *(f"{service}: object" for service in services))) if services else ()
-    return layout(Group("def build_router(", parameters, f") -> {module.name('fastapi', 'APIRouter')}:"), 0, 0, WIDTH)
+def _settings(*, secured: bool) -> tuple[str, ...]:
+    return ("authorizer", "credential_extractors", *_SETTINGS) if secured else _SETTINGS
 
 
-def _build(module: Module, routes: str, services: list[str]) -> str:
-    connected = Group("{", tuple((f"{service!r}: ", service) for service in services), "}")
-    call = Group(
-        f"return {module.local('_runtime.server.application', 'build')}(",
-        (("", routes), ("", "OPERATIONS"), ("", connected)),
-        ")",
+def _services(services: list[str]) -> str:
+    return layout(
+        Group("{", tuple((f"{service!r}: ", service) for service in services), "}"), 8, len("services="), WIDTH
     )
-    return layout(call, 4, 0, WIDTH)
 
 
-def _handlers(module: Module) -> str:
+def _builder(
+    module: Module, name: str, returns: str, services: list[str], *extra: tuple[str, Doc, str], secured: bool
+) -> str:
+    parameters: tuple[tuple[str, Doc, str], ...] = (
+        *((service, "object", "") for service in services),
+        *(_security(module) if secured else ()),
+        ("dependencies", _dependency_sequence(module), " = ()"),
+        ("operation_dependencies", f"{module.local('_generated.contract', 'OperationDependencies')} | None", " = None"),
+        ("prefix", "str", ' = ""'),
+        *extra,
+    )
+    lines = "".join(
+        f"    {key}: {layout(annotation, 4, len(key) + len(default) + 3, WIDTH)}{default},\n"
+        for key, annotation, default in parameters
+    )
+    return f"def {name}(\n    *,\n{lines}) -> {returns}:"
+
+
+def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
+    secret = module.local("_runtime.server.security", "SecretT")
+    authorizers = (module.local("auth_types", "Authorizer"), module.local("auth_types", "AsyncAuthorizer"))
     return (
-        f"{module.name('collections.abc', 'Mapping')}[str, {module.name('collections.abc', 'Callable')}[..., object]]"
+        ("authorizer", Chain("|", tuple(f"{item}[{secret}, object]" for item in authorizers)), ""),
+        ("credential_extractors", f"{module.local('auth_types', 'CredentialExtractors')}[{secret}] | None", " = None"),
+    )
+
+
+def _dependency_sequence(module: Module) -> str:
+    return f"{module.name('collections.abc', 'Sequence')}[{module.local('_runtime.server.application', 'Dependency')}]"
+
+
+def _literal(module: Module, values: list[str], used: int) -> str:
+    if not values:
+        return module.name("typing_extensions", "Never")
+    return layout(
+        Group(f"{module.name('typing', 'Literal')}[", _items(repr(value) for value in values), "]"), 0, used, WIDTH
+    )
+
+
+def _scheme_plan(module: Module, scheme: SchemeSpec) -> Group:
+    items: list[tuple[str, Doc]] = [("name=", repr(scheme.name)), ("kind=", repr(scheme.kind))]
+    if scheme.location is not None:
+        items.extend((("location=", repr(scheme.location)), ("parameter=", repr(scheme.parameter))))
+    return Group(f"{module.local('_runtime.server.security', 'SchemePlan')}(", tuple(items), ")")
+
+
+def _requirement(requirement: Requirement) -> Group:
+    return Group(
+        "(", _items(Group("(", (("", repr(name)), ("", repr(scopes))), ")") for name, scopes in requirement), ")", ","
     )
 
 
@@ -808,15 +936,99 @@ def _response_kind(media: MediaSpec) -> str:
 
 _PACKAGE: Final = '''"""FastAPI server generated by datamodel-code-generator."""
 
-from .application import build_router
-from .errors import HandlerConfigurationError
+from .application import (
+    AsyncAuthorizer,
+    AsyncCredentialExtractor,
+    Authorizer,
+    CredentialExtractor,
+    CredentialExtractors,
+    Dependency,
+    FastAPIOptions,
+    OperationDependencies,
+    OperationKey,
+    SchemeKey,
+    build_router,
+    create_app,
+)
+from .errors import AuthConfigurationError, HandlerConfigurationError, OpenAPIConfigurationError
 from .responses import UNSET, HTTPResult, Unset
 
-__all__ = ["UNSET", "HTTPResult", "HandlerConfigurationError", "Unset", "build_router"]
+__all__ = [
+    "UNSET",
+    "AsyncAuthorizer",
+    "AsyncCredentialExtractor",
+    "AuthConfigurationError",
+    "Authorizer",
+    "CredentialExtractor",
+    "CredentialExtractors",
+    "Dependency",
+    "FastAPIOptions",
+    "HTTPResult",
+    "HandlerConfigurationError",
+    "OpenAPIConfigurationError",
+    "OperationDependencies",
+    "OperationKey",
+    "SchemeKey",
+    "Unset",
+    "build_router",
+    "create_app",
+]
 '''
-_ERRORS: Final = '''"""Errors a generated server raises while it builds routers."""
+_ERRORS: Final = '''"""Errors a generated server raises while it builds routers and applications."""
 
-from ._runtime.server.application import HandlerConfigurationError
+from ._runtime.server.application import HandlerConfigurationError, OpenAPIConfigurationError
+from ._runtime.server.security import AuthConfigurationError
 
-__all__ = ["HandlerConfigurationError"]
+__all__ = ["AuthConfigurationError", "HandlerConfigurationError", "OpenAPIConfigurationError"]
+'''
+_AUTH_TYPES: Final = '''"""Authentication records and protocols keyed by this package's operation and scheme names."""
+
+from collections.abc import Mapping
+from typing import TypeAlias
+
+from typing_extensions import TypeVar
+
+from ._generated.contract import OperationKey, SchemeKey
+from ._runtime.server.security import ApiKeySecret, BasicSecret, BearerSecret, CustomSecret
+from ._runtime.server.security import AsyncAuthorizer as _AsyncAuthorizer
+from ._runtime.server.security import AsyncCredentialExtractor as _AsyncCredentialExtractor
+from ._runtime.server.security import AuthContext as _AuthContext
+from ._runtime.server.security import Authorizer as _Authorizer
+from ._runtime.server.security import Credential as _Credential
+from ._runtime.server.security import CredentialExtractor as _CredentialExtractor
+from ._runtime.server.security import RequirementCandidate as _RequirementCandidate
+from ._runtime.server.security import SchemeRequirement as _SchemeRequirement
+
+_SecretT = TypeVar("_SecretT")
+_SecretT_co = TypeVar("_SecretT_co", covariant=True)
+_SecretT_contra = TypeVar("_SecretT_contra", contravariant=True)
+_PrincipalT_co = TypeVar("_PrincipalT_co", covariant=True)
+
+Credential: TypeAlias = _Credential[_SecretT_co, SchemeKey]
+SchemeRequirement: TypeAlias = _SchemeRequirement[SchemeKey]
+RequirementCandidate: TypeAlias = _RequirementCandidate[_SecretT_co, SchemeKey]
+AuthContext: TypeAlias = _AuthContext[_SecretT_co, SchemeKey, OperationKey]
+Authorizer: TypeAlias = _Authorizer[_SecretT_contra, _PrincipalT_co, SchemeKey, OperationKey]
+AsyncAuthorizer: TypeAlias = _AsyncAuthorizer[_SecretT_contra, _PrincipalT_co, SchemeKey, OperationKey]
+CredentialExtractor: TypeAlias = _CredentialExtractor[_SecretT_co, SchemeKey]
+AsyncCredentialExtractor: TypeAlias = _AsyncCredentialExtractor[_SecretT_co, SchemeKey]
+CredentialExtractors: TypeAlias = Mapping[SchemeKey, CredentialExtractor[_SecretT] | AsyncCredentialExtractor[_SecretT]]
+
+__all__ = [
+    "ApiKeySecret",
+    "AsyncAuthorizer",
+    "AsyncCredentialExtractor",
+    "AuthContext",
+    "Authorizer",
+    "BasicSecret",
+    "BearerSecret",
+    "Credential",
+    "CredentialExtractor",
+    "CredentialExtractors",
+    "CustomSecret",
+    "OperationKey",
+    "RequirementCandidate",
+    "SchemeKey",
+    "SchemeRequirement",
+]
 '''

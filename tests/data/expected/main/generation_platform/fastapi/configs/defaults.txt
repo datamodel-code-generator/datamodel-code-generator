@@ -1,4 +1,6 @@
 layout='routers'
+handler_mode='sync'
+handler_modes=mappingproxy({})
 include_request=False
 body_mode='typed'
 body_modes=mappingproxy({})

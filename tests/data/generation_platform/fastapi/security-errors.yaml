@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: Broken security
+  version: "1"
+  contact: {name: Team, since: 2026-09-25}
+paths:
+  /undeclared:
+    get:
+      operationId: getUndeclared
+      security: [{missing: []}]
+      responses:
+        "204": {description: Done.}
+  /located:
+    get:
+      operationId: getLocated
+      security: [{body_key: []}, {nameless: []}]
+      responses:
+        "204": {description: Done.}
+  /shaped:
+    get:
+      operationId: getShaped
+      security: {api_key: []}
+      responses:
+        "204": {description: Done.}
+  /scoped:
+    get:
+      operationId: getScoped
+      security: [{api_key: read}]
+      responses:
+        "204": {description: Done.}
+  /listed:
+    get:
+      operationId: getListed
+      security: [[api_key]]
+      responses:
+        "204": {description: Done.}
+  /typed:
+    get:
+      operationId: getTyped
+      security: [{api_key: [1]}]
+      responses:
+        "204": {description: Done.}
+components:
+  securitySchemes:
+    api_key: {type: apiKey, in: header, name: X-API-Key}
+    body_key: {type: apiKey, in: body, name: key}
+    nameless: {type: apiKey, in: header}

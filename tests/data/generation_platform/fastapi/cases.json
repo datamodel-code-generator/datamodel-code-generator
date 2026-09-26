@@ -392,5 +392,40 @@
         ]
       ]
     }
+  },
+  "security": {
+    "input": "server-security.yaml",
+    "config": {
+      "handler_modes": [
+        [
+          "/paths/~1maybe/get",
+          "async"
+        ],
+        [
+          "/paths/~1custom/get",
+          "async"
+        ]
+      ]
+    },
+    "show": [
+      "__init__.py",
+      "application.py",
+      "auth_types.py",
+      "errors.py",
+      "_generated/contract.py",
+      "routers/untagged.py"
+    ]
+  },
+  "security-errors": {
+    "input": "security-errors.yaml"
+  },
+  "info": {
+    "input": "info.yaml",
+    "config": {
+      "layout": "single"
+    },
+    "show": [
+      "application.py"
+    ]
   }
 }
