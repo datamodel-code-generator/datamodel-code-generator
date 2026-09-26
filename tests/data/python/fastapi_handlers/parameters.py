@@ -33,4 +33,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_menu(self, **arguments: object) -> None:
             record("get_menu", arguments)
 
+        def get_item(self, **arguments: object) -> None:
+            record("get_item", arguments)
+
     return {"default": {"untagged": Untagged()}}

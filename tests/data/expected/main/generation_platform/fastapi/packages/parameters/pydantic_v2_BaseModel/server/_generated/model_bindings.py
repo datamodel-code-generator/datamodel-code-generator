@@ -186,7 +186,7 @@ def response_bundle() -> SchemaBundle:
 @cache
 def _model_0() -> ModelBinding:
     return ModelBinding(
-        symbol='models:FieldItemsItemIdPartsPartGetResponse',
+        symbol='models:FieldItemsItemIdPartsPartGetQueryLevelParameter',
         native_kind='root',
         schema_id=None,
         root=LeafNode(),
@@ -196,7 +196,7 @@ def _model_0() -> ModelBinding:
 @cache
 def _model_1() -> ModelBinding:
     return ModelBinding(
-        symbol='models:FieldAdaptersGetCookieSessionParameter',
+        symbol='models:FieldItemsItemIdPartsPartGetResponse',
         native_kind='root',
         schema_id=None,
         root=LeafNode(),
@@ -205,6 +205,16 @@ def _model_1() -> ModelBinding:
 
 @cache
 def _model_2() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldAdaptersGetCookieSessionParameter',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Filter',
         native_kind='model',
@@ -239,7 +249,7 @@ def _model_2() -> ModelBinding:
 
 
 @cache
-def _model_3() -> ModelBinding:
+def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryIdsParameter',
         native_kind='root',
@@ -249,7 +259,7 @@ def _model_3() -> ModelBinding:
 
 
 @cache
-def _model_4() -> ModelBinding:
+def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetHeaderXIdsParameter',
         native_kind='root',
@@ -259,12 +269,12 @@ def _model_4() -> ModelBinding:
 
 
 @cache
-def _model_5() -> ModelBinding:
+def _model_6() -> ModelBinding:
     return ModelBinding(symbol='models:FieldAdaptersGetQueryBlobParameter', native_kind='model', schema_id=None)
 
 
 @cache
-def _model_6() -> ModelBinding:
+def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryCodeParameter',
         native_kind='root',
@@ -274,7 +284,7 @@ def _model_6() -> ModelBinding:
 
 
 @cache
-def _model_7() -> ModelBinding:
+def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryMailParameter',
         native_kind='root',
@@ -284,7 +294,7 @@ def _model_7() -> ModelBinding:
 
 
 @cache
-def _model_8() -> ModelBinding:
+def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryOtherParameter',
         native_kind='root',
@@ -294,7 +304,7 @@ def _model_8() -> ModelBinding:
 
 
 @cache
-def _model_9() -> ModelBinding:
+def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryCountParameter',
         native_kind='root',
@@ -304,7 +314,7 @@ def _model_9() -> ModelBinding:
 
 
 @cache
-def _model_10() -> ModelBinding:
+def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:Point',
         native_kind='model',
@@ -328,7 +338,7 @@ def _model_10() -> ModelBinding:
 
 
 @cache
-def _model_11() -> ModelBinding:
+def _model_12() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldRepeatIdAgainIdGetPathIdParameter',
         native_kind='root',
@@ -339,6 +349,40 @@ def _model_11() -> ModelBinding:
 
 CONTEXT_0: Final = CodecContext(
     surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Bitem-id%7D~1parts~1%7Bpart%7D/get/parameters/9/schema',
+    operation_id='/paths/~1items~1{item-id}~1parts~1{part}/get',
+)
+
+
+@cache
+def codec_0() -> PydanticModelCodec[models.FieldItemsItemIdPartsPartGetQueryLevelParameter]:
+    """Codec of /paths/~1items~1{item-id}~1parts~1{part}/get parameter (request query level)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1items~1%7Bitem-id%7D~1parts~1%7Bpart%7D/get/parameters/9/schema|ModelNode(symbol='models:FieldItemsItemIdPartsPartGetQueryLevelParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Bitem-id%7D~1parts~1%7Bpart%7D/get/parameters/9/schema',
+            operation_id='/paths/~1items~1{item-id}~1parts~1{part}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldItemsItemIdPartsPartGetQueryLevelParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldItemsItemIdPartsPartGetQueryLevelParameter'),
+            models=(_model_0(),),
+        ),
+        models.FieldItemsItemIdPartsPartGetQueryLevelParameter,
+        {
+            'models:FieldItemsItemIdPartsPartGetQueryLevelParameter': models.FieldItemsItemIdPartsPartGetQueryLevelParameter,
+        },
+        request_bundle(),
+    )
+
+
+CONTEXT_1: Final = CodecContext(
+    surface='server',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Bitem-id%7D~1parts~1%7Bpart%7D/get/responses/200/content/application~1json/schema',
     operation_id='/paths/~1items~1{item-id}~1parts~1{part}/get',
@@ -347,7 +391,7 @@ CONTEXT_0: Final = CodecContext(
 
 
 @cache
-def codec_0() -> PydanticModelCodec[models.FieldItemsItemIdPartsPartGetResponse]:
+def codec_1() -> PydanticModelCodec[models.FieldItemsItemIdPartsPartGetResponse]:
     """Codec of /paths/~1items~1{item-id}~1parts~1{part}/get response_body (response 200 application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -362,7 +406,7 @@ def codec_0() -> PydanticModelCodec[models.FieldItemsItemIdPartsPartGetResponse]
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldItemsItemIdPartsPartGetResponse'),
-            models=(_model_0(),),
+            models=(_model_1(),),
         ),
         models.FieldItemsItemIdPartsPartGetResponse,
         {'models:FieldItemsItemIdPartsPartGetResponse': models.FieldItemsItemIdPartsPartGetResponse},
@@ -371,11 +415,11 @@ def codec_0() -> PydanticModelCodec[models.FieldItemsItemIdPartsPartGetResponse]
 
 
 @cache
-def outbound_0() -> NativeOutboundCodec[models.FieldItemsItemIdPartsPartGetResponse]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
+def outbound_1() -> NativeOutboundCodec[models.FieldItemsItemIdPartsPartGetResponse]:
+    return NativeOutboundCodec(codec_1(), CONTEXT_1)
 
 
-CONTEXT_1: Final = CodecContext(
+CONTEXT_2: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/0/schema',
@@ -384,7 +428,7 @@ CONTEXT_1: Final = CodecContext(
 
 
 @cache
-def codec_1() -> PydanticModelCodec[models.FieldAdaptersGetCookieSessionParameter]:
+def codec_2() -> PydanticModelCodec[models.FieldAdaptersGetCookieSessionParameter]:
     """Codec of /paths/~1adapters/get parameter (request cookie session)."""
     return PydanticModelCodec(
         UseBinding(
@@ -399,7 +443,7 @@ def codec_1() -> PydanticModelCodec[models.FieldAdaptersGetCookieSessionParamete
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetCookieSessionParameter'),
-            models=(_model_1(),),
+            models=(_model_2(),),
         ),
         models.FieldAdaptersGetCookieSessionParameter,
         {'models:FieldAdaptersGetCookieSessionParameter': models.FieldAdaptersGetCookieSessionParameter},
@@ -407,7 +451,7 @@ def codec_1() -> PydanticModelCodec[models.FieldAdaptersGetCookieSessionParamete
     )
 
 
-CONTEXT_2: Final = CodecContext(
+CONTEXT_3: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/1/schema',
@@ -416,7 +460,7 @@ CONTEXT_2: Final = CodecContext(
 
 
 @cache
-def codec_2() -> PydanticModelCodec[models.Filter]:
+def codec_3() -> PydanticModelCodec[models.Filter]:
     """Codec of /paths/~1adapters/get parameter (request query filter)."""
     return PydanticModelCodec(
         UseBinding(
@@ -431,7 +475,7 @@ def codec_2() -> PydanticModelCodec[models.Filter]:
             projection_mode='envelope',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Filter'),
-            models=(_model_2(),),
+            models=(_model_3(),),
         ),
         models.Filter,
         {'models:Filter': models.Filter},
@@ -439,7 +483,7 @@ def codec_2() -> PydanticModelCodec[models.Filter]:
     )
 
 
-CONTEXT_3: Final = CodecContext(
+CONTEXT_4: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/2/schema',
@@ -448,7 +492,7 @@ CONTEXT_3: Final = CodecContext(
 
 
 @cache
-def codec_3() -> PydanticModelCodec[models.FieldAdaptersGetQueryIdsParameter]:
+def codec_4() -> PydanticModelCodec[models.FieldAdaptersGetQueryIdsParameter]:
     """Codec of /paths/~1adapters/get parameter (request query ids)."""
     return PydanticModelCodec(
         UseBinding(
@@ -463,7 +507,7 @@ def codec_3() -> PydanticModelCodec[models.FieldAdaptersGetQueryIdsParameter]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetQueryIdsParameter'),
-            models=(_model_3(),),
+            models=(_model_4(),),
         ),
         models.FieldAdaptersGetQueryIdsParameter,
         {'models:FieldAdaptersGetQueryIdsParameter': models.FieldAdaptersGetQueryIdsParameter},
@@ -471,7 +515,7 @@ def codec_3() -> PydanticModelCodec[models.FieldAdaptersGetQueryIdsParameter]:
     )
 
 
-CONTEXT_4: Final = CodecContext(
+CONTEXT_5: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/3/schema',
@@ -480,7 +524,7 @@ CONTEXT_4: Final = CodecContext(
 
 
 @cache
-def codec_4() -> PydanticModelCodec[models.FieldAdaptersGetHeaderXIdsParameter]:
+def codec_5() -> PydanticModelCodec[models.FieldAdaptersGetHeaderXIdsParameter]:
     """Codec of /paths/~1adapters/get parameter (request header X-Ids)."""
     return PydanticModelCodec(
         UseBinding(
@@ -495,7 +539,7 @@ def codec_4() -> PydanticModelCodec[models.FieldAdaptersGetHeaderXIdsParameter]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetHeaderXIdsParameter'),
-            models=(_model_4(),),
+            models=(_model_5(),),
         ),
         models.FieldAdaptersGetHeaderXIdsParameter,
         {'models:FieldAdaptersGetHeaderXIdsParameter': models.FieldAdaptersGetHeaderXIdsParameter},
@@ -503,7 +547,7 @@ def codec_4() -> PydanticModelCodec[models.FieldAdaptersGetHeaderXIdsParameter]:
     )
 
 
-CONTEXT_5: Final = CodecContext(
+CONTEXT_6: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/4/content/application~1json/schema',
@@ -513,7 +557,7 @@ CONTEXT_5: Final = CodecContext(
 
 
 @cache
-def codec_5() -> PydanticModelCodec[models.FieldAdaptersGetQueryBlobParameter]:
+def codec_6() -> PydanticModelCodec[models.FieldAdaptersGetQueryBlobParameter]:
     """Codec of /paths/~1adapters/get parameter (request query blob application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -528,7 +572,7 @@ def codec_5() -> PydanticModelCodec[models.FieldAdaptersGetQueryBlobParameter]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetQueryBlobParameter'),
-            models=(_model_5(),),
+            models=(_model_6(),),
         ),
         models.FieldAdaptersGetQueryBlobParameter,
         {'models:FieldAdaptersGetQueryBlobParameter': models.FieldAdaptersGetQueryBlobParameter},
@@ -536,7 +580,7 @@ def codec_5() -> PydanticModelCodec[models.FieldAdaptersGetQueryBlobParameter]:
     )
 
 
-CONTEXT_6: Final = CodecContext(
+CONTEXT_7: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/5/schema',
@@ -545,7 +589,7 @@ CONTEXT_6: Final = CodecContext(
 
 
 @cache
-def codec_6() -> PydanticModelCodec[models.FieldAdaptersGetQueryCodeParameter]:
+def codec_7() -> PydanticModelCodec[models.FieldAdaptersGetQueryCodeParameter]:
     """Codec of /paths/~1adapters/get parameter (request query code)."""
     return PydanticModelCodec(
         UseBinding(
@@ -560,7 +604,7 @@ def codec_6() -> PydanticModelCodec[models.FieldAdaptersGetQueryCodeParameter]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetQueryCodeParameter'),
-            models=(_model_6(),),
+            models=(_model_7(),),
         ),
         models.FieldAdaptersGetQueryCodeParameter,
         {'models:FieldAdaptersGetQueryCodeParameter': models.FieldAdaptersGetQueryCodeParameter},
@@ -568,7 +612,7 @@ def codec_6() -> PydanticModelCodec[models.FieldAdaptersGetQueryCodeParameter]:
     )
 
 
-CONTEXT_7: Final = CodecContext(
+CONTEXT_8: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/6/schema',
@@ -577,7 +621,7 @@ CONTEXT_7: Final = CodecContext(
 
 
 @cache
-def codec_7() -> PydanticModelCodec[models.FieldAdaptersGetQueryMailParameter]:
+def codec_8() -> PydanticModelCodec[models.FieldAdaptersGetQueryMailParameter]:
     """Codec of /paths/~1adapters/get parameter (request query mail)."""
     return PydanticModelCodec(
         UseBinding(
@@ -592,7 +636,7 @@ def codec_7() -> PydanticModelCodec[models.FieldAdaptersGetQueryMailParameter]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetQueryMailParameter'),
-            models=(_model_7(),),
+            models=(_model_8(),),
         ),
         models.FieldAdaptersGetQueryMailParameter,
         {'models:FieldAdaptersGetQueryMailParameter': models.FieldAdaptersGetQueryMailParameter},
@@ -600,7 +644,7 @@ def codec_7() -> PydanticModelCodec[models.FieldAdaptersGetQueryMailParameter]:
     )
 
 
-CONTEXT_8: Final = CodecContext(
+CONTEXT_9: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/7/schema',
@@ -609,7 +653,7 @@ CONTEXT_8: Final = CodecContext(
 
 
 @cache
-def codec_8() -> PydanticModelCodec[models.FieldAdaptersGetQueryOtherParameter]:
+def codec_9() -> PydanticModelCodec[models.FieldAdaptersGetQueryOtherParameter]:
     """Codec of /paths/~1adapters/get parameter (request query other)."""
     return PydanticModelCodec(
         UseBinding(
@@ -624,7 +668,7 @@ def codec_8() -> PydanticModelCodec[models.FieldAdaptersGetQueryOtherParameter]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetQueryOtherParameter'),
-            models=(_model_8(),),
+            models=(_model_9(),),
         ),
         models.FieldAdaptersGetQueryOtherParameter,
         {'models:FieldAdaptersGetQueryOtherParameter': models.FieldAdaptersGetQueryOtherParameter},
@@ -632,7 +676,7 @@ def codec_8() -> PydanticModelCodec[models.FieldAdaptersGetQueryOtherParameter]:
     )
 
 
-CONTEXT_9: Final = CodecContext(
+CONTEXT_10: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/8/schema',
@@ -641,7 +685,7 @@ CONTEXT_9: Final = CodecContext(
 
 
 @cache
-def codec_9() -> PydanticModelCodec[models.FieldAdaptersGetQueryNoneParameter]:
+def codec_10() -> PydanticModelCodec[models.FieldAdaptersGetQueryNoneParameter]:
     """Codec of /paths/~1adapters/get parameter (request query none)."""
     return PydanticModelCodec(
         UseBinding(
@@ -664,7 +708,7 @@ def codec_9() -> PydanticModelCodec[models.FieldAdaptersGetQueryNoneParameter]:
     )
 
 
-CONTEXT_10: Final = CodecContext(
+CONTEXT_11: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/9/schema',
@@ -673,7 +717,7 @@ CONTEXT_10: Final = CodecContext(
 
 
 @cache
-def codec_10() -> PydanticModelCodec[models.FieldAdaptersGetQueryCountParameter]:
+def codec_11() -> PydanticModelCodec[models.FieldAdaptersGetQueryCountParameter]:
     """Codec of /paths/~1adapters/get parameter (request query count)."""
     return PydanticModelCodec(
         UseBinding(
@@ -688,7 +732,7 @@ def codec_10() -> PydanticModelCodec[models.FieldAdaptersGetQueryCountParameter]
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldAdaptersGetQueryCountParameter'),
-            models=(_model_9(),),
+            models=(_model_10(),),
         ),
         models.FieldAdaptersGetQueryCountParameter,
         {'models:FieldAdaptersGetQueryCountParameter': models.FieldAdaptersGetQueryCountParameter},
@@ -696,7 +740,7 @@ def codec_10() -> PydanticModelCodec[models.FieldAdaptersGetQueryCountParameter]
     )
 
 
-CONTEXT_11: Final = CodecContext(
+CONTEXT_12: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/10/schema',
@@ -705,7 +749,7 @@ CONTEXT_11: Final = CodecContext(
 
 
 @cache
-def codec_11() -> PydanticModelCodec[models.Point]:
+def codec_12() -> PydanticModelCodec[models.Point]:
     """Codec of /paths/~1adapters/get parameter (request query point)."""
     return PydanticModelCodec(
         UseBinding(
@@ -720,7 +764,7 @@ def codec_11() -> PydanticModelCodec[models.Point]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Point'),
-            models=(_model_10(),),
+            models=(_model_11(),),
         ),
         models.Point,
         {'models:Point': models.Point},
@@ -728,7 +772,7 @@ def codec_11() -> PydanticModelCodec[models.Point]:
     )
 
 
-CONTEXT_12: Final = CodecContext(
+CONTEXT_13: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1repeat~1%7Bid%7D~1again~1%7Bid%7D/get/parameters/0/schema',
@@ -737,7 +781,7 @@ CONTEXT_12: Final = CodecContext(
 
 
 @cache
-def codec_12() -> PydanticModelCodec[models.FieldRepeatIdAgainIdGetPathIdParameter]:
+def codec_13() -> PydanticModelCodec[models.FieldRepeatIdAgainIdGetPathIdParameter]:
     """Codec of /paths/~1repeat~1{id}~1again~1{id}/get parameter (request path id)."""
     return PydanticModelCodec(
         UseBinding(
@@ -752,7 +796,7 @@ def codec_12() -> PydanticModelCodec[models.FieldRepeatIdAgainIdGetPathIdParamet
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldRepeatIdAgainIdGetPathIdParameter'),
-            models=(_model_11(),),
+            models=(_model_12(),),
         ),
         models.FieldRepeatIdAgainIdGetPathIdParameter,
         {'models:FieldRepeatIdAgainIdGetPathIdParameter': models.FieldRepeatIdAgainIdGetPathIdParameter},

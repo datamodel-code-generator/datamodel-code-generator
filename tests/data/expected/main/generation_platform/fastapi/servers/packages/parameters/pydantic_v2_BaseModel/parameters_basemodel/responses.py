@@ -69,9 +69,21 @@ class _GetMenuResponseCodecs(ResponseCodecs[Never]):
 GetMenuResponseCodecs: Final = _GetMenuResponseCodecs(())
 
 
+GetItemResponsePayload: TypeAlias = Never
+
+
+class _GetItemResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the get_item response bodies."""
+
+
+GetItemResponseCodecs: Final = _GetItemResponseCodecs(())
+
+
 __all__ = [
     'GetFileResponseCodecs',
     'GetFileResponsePayload',
+    'GetItemResponseCodecs',
+    'GetItemResponsePayload',
     'GetMenuResponseCodecs',
     'GetMenuResponsePayload',
     'GetNoteResponseCodecs',

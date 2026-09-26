@@ -3,6 +3,9 @@
 
 from __future__ import annotations
 
+from enum import Enum, IntEnum
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, RootModel, constr
 
 
@@ -57,3 +60,27 @@ class FieldFilesFileNameGetPathFileNameParameter(
 
 class FieldMenüItemGetPathItemParameter(RootModel[constr(pattern=r'^[a-z]+$')]):
     root: constr(pattern=r'^[a-z]+$')
+
+
+class FieldItemsLevelGetPathLevelParameter(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+
+
+class FieldItemsLevelGetQueryModeParameter(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+
+
+class FieldItemsLevelGetQueryRatioParameter(Enum):
+    number_0_5 = 0.5
+    number_1_5 = 1.5
+
+
+class FieldItemsLevelGetHeaderXFlagParameter(RootModel[Literal[True]]):
+    root: Literal[True]
+
+
+class FieldItemsLevelGetQueryKindParameter(Enum):
+    a = 'a'
+    b = 'b'
