@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Protocol
+from typing import Literal, Protocol
 
 import parameters_basemodel_models
 from fastapi.responses import Response
@@ -12,6 +12,7 @@ from fastapi.responses import Response
 from .model_codecs import DecodedValue, Unset
 from .responses import (
     GetFileResponsePayload,
+    GetItemResponsePayload,
     GetMenuResponsePayload,
     GetNoteResponsePayload,
     GetRatiosResponsePayload,
@@ -71,3 +72,14 @@ class UntaggedService(Protocol):
         *,
         item: parameters_basemodel_models.FieldMenüItemGetPathItemParameter,
     ) -> None | HTTPResult[GetMenuResponsePayload] | Response: ...
+
+    @abstractmethod
+    def get_item(
+        self,
+        *,
+        level: parameters_basemodel_models.FieldItemsLevelGetPathLevelParameter,
+        mode: parameters_basemodel_models.FieldItemsLevelGetQueryModeParameter | Unset,
+        ratio: parameters_basemodel_models.FieldItemsLevelGetQueryRatioParameter | Unset,
+        x_flag: parameters_basemodel_models.FieldItemsLevelGetHeaderXFlagParameter | Unset,
+        kind: Literal['a', 'b'] | Unset,
+    ) -> None | HTTPResult[GetItemResponsePayload] | Response: ...

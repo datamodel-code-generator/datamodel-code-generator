@@ -1,6 +1,6 @@
 # parameters
 serve pydantic_v2.BaseModel
-service UntaggedService: get_file, get_menu, get_note, get_ratios, repeat, search
+service UntaggedService: get_file, get_item, get_menu, get_note, get_ratios, repeat, search
 service UntaggedService without its methods: TypeError
 > GET /search
 < 422 application/json [{"type": "missing", "loc": ["cookie", "session"]}]
@@ -59,3 +59,19 @@ service UntaggedService without its methods: TypeError
 < 204 - b''
 > GET /men%C3%BC/Tea
 < 422 application/json [{"type": "value_error", "loc": ["path", "item"]}]
+> GET /items/1?mode=1
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_1: 1>, mode=<FieldItemsLevelGetQueryModeParameter.integer_1: 1>, ratio=UNSET, x_flag=UNSET, kind=UNSET)
+< 204 - b''
+> GET /items/2?mode=2&ratio=1.5&kind=b
+  get_item(level=<FieldItemsLevelGetPathLevelParameter.integer_2: 2>, mode=<FieldItemsLevelGetQueryModeParameter.integer_2: 2>, ratio=<FieldItemsLevelGetQueryRatioParameter.number_1_5: 1.5>, x_flag=FieldItemsLevelGetHeaderXFlagParameter(root=True), kind='b')
+< 204 - b''
+> GET /items/3
+< 422 application/json [{"type": "value_error", "loc": ["path", "level"]}]
+> GET /items/1?mode=3
+< 422 application/json [{"type": "value_error", "loc": ["query", "mode"]}]
+> GET /items/1?ratio=2
+< 422 application/json [{"type": "value_error", "loc": ["query", "ratio"]}]
+> GET /items/1
+< 422 application/json [{"type": "value_error", "loc": ["header", "X-Flag"]}]
+> GET /items/1?kind=c
+< 422 application/json [{"type": "literal_error", "loc": ["query", "kind"]}]

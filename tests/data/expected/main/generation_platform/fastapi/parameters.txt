@@ -56,7 +56,7 @@ render pydantic_v2.BaseModel
     parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/6: fastapi_native native_supported
     parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/7: fastapi_native native_supported
     parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/8: fastapi_native native_supported
-    parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/9: fastapi_native native_supported
+    parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/9: codec_adapter source_assertion_not_projected at /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/9/schema
     parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/10: fastapi_native native_supported
     parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/11: fastapi_native native_supported
     parameter /paths/~1items~1{item-id}~1parts~1{part}/get/parameters/12: fastapi_native native_supported

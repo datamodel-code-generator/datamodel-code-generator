@@ -37,7 +37,7 @@ class ItemsService(Protocol):
         day: date | Unset,
         ref: UUID | Unset,
         mode: Literal['fast', 'slow'],
-        level: Literal[3] | Unset,
+        level: models.FieldItemsItemIdPartsPartGetQueryLevelParameter | Unset,
         x_trace: str | Unset,
         query_request: str | Unset,
         query_part: str | Unset,

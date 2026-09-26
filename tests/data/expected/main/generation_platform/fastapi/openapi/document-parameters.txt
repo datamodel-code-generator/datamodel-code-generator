@@ -305,16 +305,6 @@
             }
           },
           {
-            "name": "level",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "const": 3,
-              "type": "integer",
-              "title": "Level"
-            }
-          },
-          {
             "name": "request",
             "in": "query",
             "required": false,
@@ -349,6 +339,13 @@
               "type": "string",
               "title": "X-Trace"
             }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "schema": {
+              "const": 3
+            }
           }
         ],
         "responses": {
@@ -374,7 +371,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/dcg_validation_error__91340604ca9a"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__91340604ca9a"
+                },
+                "example": {
+                  "detail": "Invalid request"
                 }
               }
             }
@@ -511,36 +528,6 @@
         ],
         "title": "ValidationError"
       },
-      "dcg_server_error__91340604ca9a": {
-        "type": "string"
-      },
-      "Filter__d23a9d5e22c7": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "id": {
-            "type": "integer",
-            "readOnly": true
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "Point__9651a980b0e2": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "x"
-        ],
-        "properties": {
-          "x": {
-            "type": "integer"
-          }
-        }
-      },
       "dcg_http_error__91340604ca9a": {
         "type": "object",
         "properties": {
@@ -589,6 +576,36 @@
         "required": [
           "detail"
         ]
+      },
+      "dcg_server_error__91340604ca9a": {
+        "type": "string"
+      },
+      "Filter__d23a9d5e22c7": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Point__9651a980b0e2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "x"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer"
+          }
+        }
       }
     }
   }

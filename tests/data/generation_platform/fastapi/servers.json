@@ -310,6 +310,40 @@
       {
         "method": "GET",
         "url": "/men%C3%BC/Tea"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?mode=1"
+      },
+      {
+        "method": "GET",
+        "url": "/items/2?mode=2&ratio=1.5&kind=b",
+        "headers": {
+          "X-Flag": "true"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/3"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?mode=3"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?ratio=2"
+      },
+      {
+        "method": "GET",
+        "url": "/items/1",
+        "headers": {
+          "X-Flag": "false"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/1?kind=c"
       }
     ]
   },
