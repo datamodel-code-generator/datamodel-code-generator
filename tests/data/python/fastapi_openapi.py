@@ -193,6 +193,14 @@ def prefixes(packages: dict[str, Any]) -> list[str]:
     return lines
 
 
+@_scenario("pets")
+def later_routes(packages: dict[str, Any]) -> list[str]:
+    """Serve a route added after create_app, whose document check keeps no document."""
+    app = _connected(packages["pets"].create_app)
+    app.add_api_route("/health", lambda: None, methods=["GET"])
+    return [f"paths {list(app.openapi()['paths'])}"]
+
+
 @_scenario("pets", "secured")
 def subset(packages: dict[str, Any]) -> list[str]:
     """Install the operations a group router includes, then every operation, then none.
