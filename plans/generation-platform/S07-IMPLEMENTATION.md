@@ -179,6 +179,10 @@ The gated `fastapi-install-nocov-e2e` environment, run by CI on Ubuntu, generate
 
 A parameter or form field whose schema is an `enum` or `const` with integer, number, or boolean values was declared natively as that `Literal`, and FastAPI does not convert the lexical string `"1"` to the literal `1`, so `/items/1?mode=1` was 422 for both parameters. Such values now use the codec adapter (`source_assertion_not_projected`), which reads the lexical form by the schema type and checks the enum; string enums and consts stay native. The `parameters` server scenario sends the review's request and others: integer path and query enums, a number enum, a boolean `const` header, and values outside each enum. The render and served-document expectations show the `const: 3` query parameter moving to the adapter.
 
+### Form encodings
+
+Native form admission checked the Encoding of multipart bodies only, so a URL-encoded array with `style: form, explode: false` was read by FastAPI's `Form` as repeated members: the correct `ids=1,2` was 422 and `ids=1&ids=2` succeeded. The builtin form adapter reads only the default form style with explode as well, so any URL-encoded or multipart Encoding that declares another style, `explode: false`, `allowReserved`, or a `contentType` now stops generation with `F_MEDIA_UNSUPPORTED` at that Encoding, asking for `body_mode='request'`, as MODEL-CODECS §10 and the FastAPI admission rules require for readers the package does not have. The `media-errors` fixture covers `explode: false`, `pipeDelimited`, `allowReserved`, a JSON `contentType`, and a multipart `explode: false`; the `forms` server scenario declares the default encoding explicitly and still reads `tags=x&tags=y` natively.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

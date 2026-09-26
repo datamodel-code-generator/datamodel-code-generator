@@ -405,6 +405,25 @@ class Revision:
     handler_modes: Mapping[str, HandlerMode] = field(default_factory=lambda: MappingProxyType({}))
 
 
+def _encoded(media: MediaSpec) -> WireDeclaration | None:
+    """Return the first form encoding that neither FastAPI's Form nor the form adapter reads."""
+    return next(
+        (
+            child
+            for child in media.declaration.children
+            if child.kind == "encoding"
+            and (
+                bool(child.children)
+                or fact(child, "contentType") is not None
+                or fact(child, "style") not in {None, "form"}
+                or fact(child, "explode") is False
+                or fact(child, "allowReserved") is True
+            )
+        ),
+        None,
+    )
+
+
 def _literal(values: tuple[WireValue, ...]) -> tuple[Scalar | None, Reason]:
     """Return the native Literal of an enum or const, which FastAPI reads from lexical strings only for strings."""
     present = [value for value in values if value is not None]
@@ -859,6 +878,15 @@ class Planner:  # noqa: PLR0904
                     media.declaration.use_site,
                 )
             )
+        elif (encoded := _encoded(media)) is not None:
+            self.problems.append(
+                _problem(
+                    "F_MEDIA_UNSUPPORTED",
+                    f"{_label(operation)} needs body_mode='request' for the {encoded.name} encoding of "
+                    f"{media.media_type}",
+                    encoded.use_site,
+                )
+            )
         if fields is not None:
             reason, source = "native_required_mismatch", media.declaration.use_site
         form_fields, additional = self.form_plans(media)
@@ -874,11 +902,8 @@ class Planner:  # noqa: PLR0904
             return None, "native_shape_mismatch", location
         if (extra := _extra(schema, _FORM_KEYWORDS)) is not None:
             return None, extra[0], at(location, extra[1])
-        if media.kind == "multipart" and any(
-            child.kind == "encoding" and (child.children or fact(child, "contentType") is not None)
-            for child in media.declaration.children
-        ):
-            return None, "unsupported_wire_shape", media.declaration.use_site
+        if (encoded := _encoded(media)) is not None:
+            return None, "unsupported_wire_shape", encoded.use_site
         properties = schema.get("properties")
         required = schema.get("required")
         names: frozenset[str] = (
