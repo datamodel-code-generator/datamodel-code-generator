@@ -153,32 +153,53 @@ def test_fastapi_cli_lockfile(
 
 
 @pytest.mark.parametrize(
-    ("options", "stdout"),
+    ("config", "options", "stdout"),
     [
-        ([], "standalone.txt"),
-        (["--target-output", "pets service"], "standalone-spaced.txt"),
-        (["--target-output", "$pets"], "standalone-expanded.txt"),
+        ("standalone.toml", [], "standalone.txt"),
+        ("standalone.toml", ["--target-output", "pets service"], "standalone-spaced.txt"),
+        ("standalone.toml", ["--target-output", "$pets"], "standalone-expanded.txt"),
+        ("standalone.toml", ["--dependency-format", "requirements"], "standalone-requirements.txt"),
+        ("fastapi.toml", ["--target-output", "service", "--dependency-format", "requirements"], "requirements.txt"),
     ],
-    ids=["plain", "spaced", "expanded"],
+    ids=["standalone", "spaced", "expanded", "standalone-requirements", "requirements"],
 )
-def test_fastapi_cli_standalone(
+def test_fastapi_cli_dependencies(
+    config: str,
     options: list[str],
     stdout: str,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Write a standalone distribution, printing the uv command that adds it with its path quoted for any shell."""
+    """Print what adds the generated package to a project: a uv command quoted for any shell, or requirements."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server(*options),
-        copy_files=_inputs(tmp_path, "standalone.toml"),
+        copy_files=_inputs(tmp_path, config),
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / stdout,
         file_should_not_exist=tmp_path / "server",
+    )
+
+
+def test_fastapi_cli_requirements_url(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Print a distribution path that needs quoting as a file URL, which pip and uv read alike in requirements."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--target-output", "pets service", "--dependency-format", "requirements"),
+        copy_files=_inputs(tmp_path, "standalone.toml"),
+    )
+    assert_output(
+        capsys.readouterr().out.replace(tmp_path.resolve().as_uri(), "file:///tmp"),
+        EXPECTED / "cli" / "standalone-requirements-url.txt",
     )
 
 
@@ -248,8 +269,8 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
     [
         ([*OPTIONS, "--target-config", "fastapi.toml"], "--target-config can only be used with --generate-server"),
         (
-            [*OPTIONS, "--target-output", "service", "--diagnostics-json", "-"],
-            "--target-output, --diagnostics-json can only be used with --generate-server",
+            [*OPTIONS, "--target-output", "service", "--diagnostics-json", "-", "--dependency-format", "uv"],
+            "--target-output, --diagnostics-json, --dependency-format can only be used with --generate-server",
         ),
         ([*OPTIONS, "--generate-server", "fastapi"], "--generate-server requires --target-config"),
         (_server("--list-experimental"), "--generate-server cannot be used with --list-experimental"),
@@ -456,8 +477,14 @@ def test_fastapi_cli_missing_target_config(
             ),
             "failing-hook-report.txt",
         ),
+        (
+            "fastapi.toml",
+            ["--dependency-format", "requirements", "--diagnostics-json", "-"],
+            "E_CONFIG_CONFLICT error config: --dependency-format cannot be used with --diagnostics-json -\n",
+            "format-report.txt",
+        ),
     ],
-    ids=["unknown", "backend", "metadata", "hook"],
+    ids=["unknown", "backend", "metadata", "hook", "format"],
 )
 def test_fastapi_cli_config_errors(
     config: str,

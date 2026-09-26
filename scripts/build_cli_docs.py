@@ -376,6 +376,7 @@ MANUAL_OPTION_DESCRIPTIONS = {
     "--target-config": "Read the generation target's settings from a TOML file",
     "--target-output": "Override the generation target's output directory",
     "--diagnostics-json": "Write the generation target's diagnostics as JSON",
+    "--dependency-format": "Print the generation target's dependencies for uv or a requirements file",
 }
 
 # Regex pattern for detecting MkDocs Material admonitions in docstrings

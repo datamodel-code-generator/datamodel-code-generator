@@ -159,6 +159,7 @@ MANUAL_DOCS: frozenset[str] = frozenset({
     "--target-config",
     "--target-output",
     "--diagnostics-json",
+    "--dependency-format",
 })
 
 # Backward compatibility alias

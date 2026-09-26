@@ -1576,6 +1576,12 @@ target_options.add_argument(
     metavar="PATH",
     help="Write the selected target's diagnostics as JSON to PATH, or to stdout with -.",
 )
+target_options.add_argument(
+    "--dependency-format",
+    choices=["uv", "requirements"],
+    default=SUPPRESS,
+    help="Print what adds the generated package to a project as a uv add command (default) or requirements lines.",
+)
 
 __all__ = [
     "DEFAULT_ENCODING",

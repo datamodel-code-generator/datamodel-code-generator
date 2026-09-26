@@ -9,7 +9,8 @@ The only choice is `fastapi`.
     generated package, and diagnostics may change.
 
 **Related:** [`--target-config`](target-config.md#target-config), [`--target-output`](target-output.md#target-output),
-[`--diagnostics-json`](diagnostics-json.md#diagnostics-json), [FastAPI Server](../../fastapi-server.md)
+[`--diagnostics-json`](diagnostics-json.md#diagnostics-json),
+[`--dependency-format`](dependency-format.md#dependency-format), [FastAPI Server](../../fastapi-server.md)
 
 !!! tip "Usage"
 
@@ -27,7 +28,9 @@ The only choice is `fastapi`.
 
 One run generates the models with the usual model options and the server package from the same accepted
 document, then publishes both together. `--check` exits with 1 when a file would change and with 2 for an
-error. Diagnostics go to stderr; the generated code is never printed.
+error. Diagnostics go to stderr, and the generated code is never printed; a generation ends by printing the
+command that adds the package to your project, as [`--dependency-format`](dependency-format.md#dependency-format)
+chooses.
 
 `--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
 `--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints

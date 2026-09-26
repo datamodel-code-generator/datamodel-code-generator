@@ -9,7 +9,7 @@ This page lists features that are available but still experimental.
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
-| `cli-option.generate-server` | cli-option | `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json` | 0.83.1 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format` | 0.83.1 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
@@ -59,12 +59,12 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 ### `cli-option.generate-server`
 
 - **Kind:** cli-option
-- **Target:** `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json`
+- **Target:** `--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format`
 - **Since:** 0.83.1
 
 FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.
 
---generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, and --diagnostics-json writes the target diagnostics as JSON.
+--generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines.
 
 ### `cli-option.install-skill`
 

@@ -11093,6 +11093,9 @@ uv add uvicorn
 uv run uvicorn app:app
 ```
 
+With [`--dependency-format requirements`](cli-reference/manual/dependency-format.md#dependency-format), generation
+prints the lines of a requirements file instead, for pip or `uv pip`.
+
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, and checks every method when the application starts; any
@@ -11299,7 +11302,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
-| 📝 [Utility Options](utility-options.md) | 19 | Help, version, debug options |
+| 📝 [Utility Options](utility-options.md) | 20 | Help, version, debug options |
 
 ## 🎯 Focused Topics
 
@@ -11397,6 +11400,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments)
 - [`--debug`](utility-options.md#debug)
 - [`--default-values`](field-customization.md#default-values)
+- [`--dependency-format`](utility-options.md#dependency-format)
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
 - [`--diagnostics-json`](utility-options.md#diagnostics-json)
 - [`--diff-against`](general-options.md#diff-against)
@@ -40455,6 +40459,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/utility-opti
 |--------|-------------|
 | [`--all-jobs`](#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](#debug) | Show debug messages during code generation |
+| [`--dependency-format`](#dependency-format) | Print the generation target's dependencies for uv or a requirements file |
 | [`--diagnostics-json`](#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
 | [`--generate-server`](#generate-server) | Generate a FastAPI server package with the models (experimental) |
@@ -40536,6 +40541,41 @@ or code generation. Requires the `debug` extra to be installed.
     ```bash
     pip install 'datamodel-code-generator[debug]'
     ```
+
+---
+
+## `--dependency-format` {#dependency-format}
+
+Choose what a generation prints to add the generated package to your project (experimental): `uv`, the
+default, prints a `uv add` command, and `requirements` prints the lines of a requirements file.
+
+**Related:** [`--generate-server`](#generate-server),
+[FastAPI Server](../fastapi-server.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml \
+      --dependency-format requirements > requirements.txt
+    ```
+
+In embedded mode, `requirements` prints one runtime dependency per line, each with the minimum version the
+package needs:
+
+```text
+fastapi>=0.141.1
+starlette>=1.0.0
+pydantic>=2.13.5
+jsonschema[format-nongpl]>=4.26
+referencing>=0.37
+typing-extensions>=4.16
+```
+
+In standalone mode it prints `-e` with the distribution's path, such as `-e ./service`; a path that needs
+quoting is written as a `file:` URL, which pip and uv both read. Nothing is printed for `--check`, and the option
+cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_CONFIG_CONFLICT`).
 
 ---
 
@@ -40672,7 +40712,8 @@ The only choice is `fastapi`.
     generated package, and diagnostics may change.
 
 **Related:** [`--target-config`](#target-config), [`--target-output`](#target-output),
-[`--diagnostics-json`](#diagnostics-json), [FastAPI Server](../fastapi-server.md)
+[`--diagnostics-json`](#diagnostics-json),
+[`--dependency-format`](#dependency-format), [FastAPI Server](../fastapi-server.md)
 
 !!! tip "Usage"
 
@@ -40690,7 +40731,9 @@ The only choice is `fastapi`.
 
 One run generates the models with the usual model options and the server package from the same accepted
 document, then publishes both together. `--check` exits with 1 when a file would change and with 2 for an
-error. Diagnostics go to stderr; the generated code is never printed.
+error. Diagnostics go to stderr, and the generated code is never printed; a generation ends by printing the
+command that adds the package to your project, as [`--dependency-format`](#dependency-format)
+chooses.
 
 `--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
 `--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints
@@ -41649,6 +41692,7 @@ datamodel-codegen [OPTIONS]
 |--------|-------------|
 | [`--all-jobs`](utility-options.md#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](utility-options.md#debug) | Show debug messages during code generation |
+| [`--dependency-format`](utility-options.md#dependency-format) | Print the generation target's dependencies for uv or a requirements file |
 | [`--diagnostics-json`](utility-options.md#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](utility-options.md#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
 | [`--generate-server`](utility-options.md#generate-server) | Generate a FastAPI server package with the models (experimental) |
@@ -41707,6 +41751,7 @@ All options sorted alphabetically:
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments) - Customize dataclass decorator arguments via JSON dictionary.
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
+- [`--dependency-format`](utility-options.md#dependency-format) - Print the generation target's dependencies for uv or a requirements file
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...
 - [`--diagnostics-json`](utility-options.md#diagnostics-json) - Write the generation target's diagnostics as JSON
 - [`--diff-against`](general-options.md#diff-against) - Compare generated code from a baseline input with the curren...
@@ -42763,7 +42808,7 @@ This page lists features that are available but still experimental.
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
-| `cli-option.generate-server` | cli-option | `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json` | 0.83.1 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format` | 0.83.1 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
@@ -42813,12 +42858,12 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 ### `cli-option.generate-server`
 
 - **Kind:** cli-option
-- **Target:** `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json`
+- **Target:** `--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format`
 - **Since:** 0.83.1
 
 FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.
 
---generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, and --diagnostics-json writes the target diagnostics as JSON.
+--generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines.
 
 ### `cli-option.install-skill`
 
