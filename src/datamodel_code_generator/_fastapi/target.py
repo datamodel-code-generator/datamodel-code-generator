@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import replace
 from typing import TYPE_CHECKING, Final
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
     from datamodel_code_generator._fastapi.templates import ExtraFile
     from datamodel_code_generator._generation_contract import TypeUseId
+    from datamodel_code_generator._openapi_artifacts import ModelArtifact
     from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
@@ -53,11 +55,21 @@ DEPENDENCIES: Final = (
 )
 FORMS: Final = "python-multipart>=0.0.32"
 PATTERNS: Final = "google-re2>=1.1.20251105"
+MODEL_DEPENDENCIES: Final = (
+    ("pydantic.EmailStr", "email-validator>=2.3"),
+    ("pydantic.NameEmail", "email-validator>=2.3"),
+    ("ulid", "python-ulid>=3.2.1"),
+    ("pendulum", "pendulum>=3.2"),
+)
 _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
 }
 _PATTERN_KEYWORDS: Final = frozenset({"pattern", "patternProperties"})
+_IMPORT: Final = re.compile(
+    r"^(?:from[ \t]+([\w.]+)[ \t]+import[ \t]+(\([^)]*\)|[^\n]*)|import[ \t]+([^\n]*))", re.MULTILINE
+)
+_COMMENT: Final = re.compile(r"#[^\n]*")
 
 
 class FastAPITarget:
@@ -116,7 +128,7 @@ class FastAPITarget:
         return TargetRender(
             files=files,
             target_data=target_data,
-            dependencies=_dependencies(plan, stage.wire),
+            dependencies=_dependencies(plan, stage.wire, request.models),
             bindings=_bindings(codecs, _BACKENDS[request.model_config.output_model_type]),
             diagnostics=docs.diagnostics,
             persistent_diagnostics=excluded,
@@ -266,10 +278,32 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
     )
 
 
-def _dependencies(plan: ServerPlan, wire: WirePlan) -> tuple[str, ...]:
+def _dependencies(plan: ServerPlan, wire: WirePlan, models: tuple[ModelArtifact, ...]) -> tuple[str, ...]:
     forms = any(spec.body is not None and spec.body.fields for spec in plan.operations)
     patterns = any(_patterned(resource.contents) for resource in wire.resources)
-    return (*DEPENDENCIES, *((FORMS,) if forms else ()), *((PATTERNS,) if patterns else ()))
+    imported = _imported(models)
+    return (
+        *DEPENDENCIES,
+        *((FORMS,) if forms else ()),
+        *((PATTERNS,) if patterns else ()),
+        *dict.fromkeys(
+            requirement
+            for name, requirement in MODEL_DEPENDENCIES
+            if any(item == name or item.startswith(f"{name}.") for item in imported)
+        ),
+    )
+
+
+def _imported(models: tuple[ModelArtifact, ...]) -> frozenset[str]:
+    """Return every module and imported name that the top-level import statements of the models name."""
+    names: set[str] = set()
+    for artifact in models:
+        for module, members, plain in _IMPORT.findall(artifact.content.decode(artifact.encoding)):
+            items = [
+                item.split()[0] for item in _COMMENT.sub("", members or plain).strip("() \n").split(",") if item.split()
+            ]
+            names.update((module, *(f"{module}.{item}" for item in items)) if module else items)
+    return frozenset(names)
 
 
 def _json_info(info: tuple[tuple[str, WireValue], ...]) -> JSONValue:
