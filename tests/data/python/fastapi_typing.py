@@ -20,6 +20,7 @@ SAMPLES = SOURCE / "typing"
 PYTHON_VERSION = "3.10"
 MYPY: Final = ("uvx", "--quiet", "mypy@2.3.1")
 PYRIGHT: Final = ("uvx", "--quiet", "pyright@1.1.414")
+TIMEOUT: Final = 600
 BIN = Path(sys.executable).parent
 _MYPY = re.compile(r"^(\S+?):(\d+): error: .*\[([\w-]+)\]$", re.MULTILINE)
 _TY = re.compile(r"^(\S+?):(\d+):\d+: error\[([\w-]+)\]", re.MULTILINE)
@@ -44,15 +45,28 @@ def _generate(root: Path, source: Path, package: str, backend: DataModelType, **
     )
 
 
+def _run(command: list[str | Path], root: Path) -> subprocess.CompletedProcess[str]:
+    """Run one checker, refusing a stall, a crash, or an exit status that no diagnostics explain."""
+    completed = subprocess.run(command, cwd=root, capture_output=True, text=True, check=False, timeout=TIMEOUT)
+    if completed.returncode not in {0, 1}:
+        msg = f"{command[0]} exited with {completed.returncode}:\n{completed.stdout}{completed.stderr}"
+        raise RuntimeError(msg)
+    return completed
+
+
+def _diagnostics(completed: subprocess.CompletedProcess[str], found: Found) -> Found:
+    if completed.returncode != (1 if found else 0):
+        msg = f"The checker exited with {completed.returncode} for {len(found)} errors:\n{completed.stdout}{completed.stderr}"
+        raise RuntimeError(msg)
+    return found
+
+
 def _mypy(root: Path, targets: list[str]) -> Found:
-    completed = subprocess.run(
+    completed = _run(
         [*MYPY, "--strict", "--no-incremental", "--python-executable", sys.executable, "--python-version", PYTHON_VERSION, *targets],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
+        root,
     )
-    return [(match[1], int(match[2]), match[3]) for match in _MYPY.finditer(completed.stdout)]
+    return _diagnostics(completed, [(match[1], int(match[2]), match[3]) for match in _MYPY.finditer(completed.stdout)])
 
 
 def _pyright(root: Path, targets: list[str]) -> Found:
@@ -65,22 +79,19 @@ def _pyright(root: Path, targets: list[str]) -> Found:
         }),
         encoding="utf-8",
     )
-    completed = subprocess.run(
-        [*PYRIGHT, "--outputjson", "--pythonpath", sys.executable, "--project", "pyrightconfig.json"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
+    completed = _run([*PYRIGHT, "--outputjson", "--pythonpath", sys.executable, "--project", "pyrightconfig.json"], root)
+    return _diagnostics(
+        completed,
+        [
+            (Path(item["file"]).relative_to(root.resolve()).as_posix(), item["range"]["start"]["line"] + 1, item["rule"])
+            for item in json.loads(completed.stdout)["generalDiagnostics"]
+            if item["severity"] == "error"
+        ],
     )
-    return [
-        (Path(item["file"]).relative_to(root.resolve()).as_posix(), item["range"]["start"]["line"] + 1, item["rule"])
-        for item in json.loads(completed.stdout)["generalDiagnostics"]
-        if item["severity"] == "error"
-    ]
 
 
 def _ty(root: Path, targets: list[str]) -> Found:
-    completed = subprocess.run(
+    completed = _run(
         [
             BIN / "ty",
             "check",
@@ -94,12 +105,9 @@ def _ty(root: Path, targets: list[str]) -> Found:
             ".",
             *targets,
         ],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
+        root,
     )
-    return [(match[1], int(match[2]), match[3]) for match in _TY.finditer(completed.stdout)]
+    return _diagnostics(completed, [(match[1], int(match[2]), match[3]) for match in _TY.finditer(completed.stdout)])
 
 
 CHECKERS = (("mypy", _mypy), ("pyright", _pyright), ("ty", _ty))
