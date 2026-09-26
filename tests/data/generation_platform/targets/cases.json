@@ -20,6 +20,8 @@
       {"render": {}},
       {"write": ["server/routers/pets.py", "# Edited.\n"]},
       {"remove": "server/routers/store.py"},
+      {"render": {}},
+      {"publish": null},
       {"render": {}}
     ]
   },

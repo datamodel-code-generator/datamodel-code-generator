@@ -512,68 +512,56 @@ class FilePlan:
 
 
 def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], target_id: str) -> tuple[FilePlan, ...]:
-    """Compare planned files with the previous manifest and the actual files, refusing unowned changes."""
-    problems: list[Diagnostic] = []
+    """Compare planned files with the previous manifest and the actual files, refusing only unmanaged files.
+
+    Like model generation, a run rewrites the files the target owns, including ones edited by hand, recreates
+    missing ones, and deletes owned files the plan no longer has.
+    """
+    conflicts: list[Diagnostic] = []
     plans: list[FilePlan] = []
 
-    def refuse(code: str, path: PurePosixPath, message: str) -> None:
-        problems.append(
-            Diagnostic(
-                code=code,
-                severity="error",
-                stage="ownership",
-                message=message,
-                artifact_path=path.as_posix(),
-                target_id=target_id,
-            )
-        )
-
-    def owned(path: PurePosixPath, previous: RecordedFile | None) -> tuple[bool, bytes | None]:
+    def current(path: PurePosixPath) -> bytes | None:
         location = root.joinpath(*path.parts)
-        current = location.read_bytes() if location.is_file() else None
-        if previous is None:
-            return True, current
-        if current is None:
-            refuse("E_OUTPUT_MODIFIED", path, "A file the target owns is missing")
-        elif sha256(current) != previous.sha256:
-            refuse("E_OUTPUT_MODIFIED", path, "A file the target owns was modified")
-        else:
-            return True, current
-        return False, None
+        return location.read_bytes() if location.is_file() else None
 
     for item in planned:
-        valid, current = owned(item.path, previous := state.files.get(item.path))
-        if not valid:
+        if (content := current(item.path)) is not None and item.path not in state.files:
+            conflicts.append(
+                Diagnostic(
+                    code="E_OUTPUT_CONFLICT",
+                    severity="error",
+                    stage="ownership",
+                    message="An unmanaged file occupies a path the target owns",
+                    artifact_path=item.path.as_posix(),
+                    target_id=target_id,
+                )
+            )
             continue
-        if current is not None and previous is None:
-            refuse("E_OUTPUT_CONFLICT", item.path, "An unmanaged file occupies a path the target owns")
-            continue
-        action: ArtifactAction = "unchanged" if current == item.content else "write"
         plans.append(
             FilePlan(
                 path=item.path,
                 kind=item.kind,
-                action=action,
+                action="unchanged" if content == item.content else "write",
                 content=item.content,
                 group=item.group,
-                observed=observe(current),
+                observed=observe(content),
             )
         )
     kept = {item.path for item in planned}
-    for path, previous in state.files.items():
-        if path not in kept and (checked := owned(path, previous))[0]:
-            plans.append(
-                FilePlan(
-                    path=path,
-                    kind=previous.kind,
-                    action="delete",
-                    content=None,
-                    group=previous.group,
-                    observed=observe(checked[1]),
-                )
-            )
-    if problems:
-        raise APIGenerationError(tuple(problems))
+    plans.extend(
+        FilePlan(
+            path=path,
+            kind=previous.kind,
+            action="delete",
+            content=None,
+            group=previous.group,
+            observed=observe(content),
+        )
+        for path, previous in state.files.items()
+        if path not in kept and (content := current(path)) is not None
+    )
+    if conflicts:
+        raise APIGenerationError(tuple(conflicts))
     return tuple(plans)
 
 

@@ -133,6 +133,12 @@ The maintainer decided on 2026-09-26 that a generation prints the runtime depend
 
 Tests: the CLI generation expects the printed `uv add` command, new standalone cases expect the `uv add --editable` command for a plain, a spaced, and an expanded path, and the target scenarios lose the requirements file.
 
+## Rewriting edited owned files
+
+The maintainer decided on 2026-09-26 that target-owned files behave like model files: a run rewrites an owned file that was edited or deleted instead of stopping with `E_OUTPUT_MODIFIED`, which no longer exists, and deletes an obsolete owned file whether or not it was edited. `--check` and `render_fastapi` report such files as `write` differences. `E_OUTPUT_CONFLICT` still stops a run on a file the previous manifest does not own, so the generator never overwrites or adopts a file it did not write. Partial updates restore the files of unselected groups too; their planned bytes equal the previous generation, so no generated content changes.
+
+Tests: the ownership scenario publishes over an edited and a missing router and then renders unchanged, the deletion scenario plans nothing for a missing obsolete router, the Python API test generates over an edited README, and the CLI test checks an edited model and a missing README and then rewrites both.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.
