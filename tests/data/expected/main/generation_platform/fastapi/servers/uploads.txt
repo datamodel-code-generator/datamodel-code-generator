@@ -1,0 +1,8 @@
+complete: sent ['204']; calls ["upload('a.txt', str)"]; files closed [True]
+parse error: sent ['400']; calls []; files closed []
+disconnect in the file headers: sent ['400']; calls []; files closed []
+disconnect in the file body: sent ['400']; calls []; files closed [True]
+anyio cancellation in the file headers: cancelled True, sent []; calls []; files closed []
+anyio cancellation in the file body: cancelled True, sent []; calls []; files closed [True]
+task cancellation in the file headers: CancelledError, sent []; calls []; files closed []
+task cancellation in the file body: CancelledError, sent []; calls []; files closed [True]

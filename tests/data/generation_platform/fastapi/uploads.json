@@ -1,0 +1,53 @@
+{
+  "content_length": 169,
+  "scenarios": {
+    "complete": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\nfile body\r\n--x\r\nContent-Disposition: form-data; name=\"note\"\r\n\r\nn\r\n--x--\r\n"
+      ],
+      "ending": "end"
+    },
+    "parse error": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data\r\n\r\nno name\r\n--x--\r\n"
+      ],
+      "ending": "end"
+    },
+    "disconnect in the file headers": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data; name=\"file\"; filename=\""
+      ],
+      "ending": "disconnect"
+    },
+    "disconnect in the file body": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\nfile"
+      ],
+      "ending": "disconnect"
+    },
+    "anyio cancellation in the file headers": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data; name=\"file\"; filename=\""
+      ],
+      "ending": "cancel scope"
+    },
+    "anyio cancellation in the file body": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\nfile"
+      ],
+      "ending": "cancel scope"
+    },
+    "task cancellation in the file headers": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data; name=\"file\"; filename=\""
+      ],
+      "ending": "cancel task"
+    },
+    "task cancellation in the file body": {
+      "chunks": [
+        "--x\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\nfile"
+      ],
+      "ending": "cancel task"
+    }
+  }
+}

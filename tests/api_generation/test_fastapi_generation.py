@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import assert_generated_modules_output, assert_output
+from tests.data.python.fastapi_acceptance import fastapi_checkout_report, fastapi_scope_report
 from tests.data.python.fastapi_generation import (
     fastapi_api_report,
     fastapi_config_report,
@@ -117,3 +118,13 @@ def test_fastapi_config(case: str, tmp_path: Path) -> None:
 def test_fastapi_api(tmp_path: Path) -> None:
     """Resolve the public annotations, render and generate twice, then refuse to render over an edited file."""
     assert_output(fastapi_api_report(tmp_path), EXPECTED / "api.txt")
+
+
+def test_fastapi_scope(tmp_path: Path) -> None:
+    """Stop unsupported settings before generating models, locking, publishing, or importing hooks and adapters."""
+    assert_output(fastapi_scope_report(tmp_path), EXPECTED / "acceptance" / "scope.txt")
+
+
+def test_fastapi_checkouts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the same bytes from every checkout and directory, and nothing new after moving a checkout."""
+    assert_output(fastapi_checkout_report(tmp_path, monkeypatch), EXPECTED / "acceptance" / "checkouts.txt")

@@ -97,7 +97,7 @@ class UntaggedService(Protocol):
     ) -> None | HTTPResult[PostCheckResponsePayload] | Response: ...
 
     @abstractmethod
-    def post_raw(
+    async def post_raw(
         self,
         *,
         request: Request,

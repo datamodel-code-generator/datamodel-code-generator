@@ -278,6 +278,7 @@ class PostRaw:
         key='/paths/~1raw/post',
         service='untagged',
         keywords=('request',),
+        asynchronous=True,
     )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),

@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info: {title: Server forms, version: "1.0"}
+paths:
+  /forms:
+    post:
+      operationId: postForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                count: {type: integer, default: 1}
+                tags: {type: array, items: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                note: {type: string}
+      responses:
+        "204": {description: Done.}
+  /batches:
+    post:
+      operationId: uploadMany
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files: {type: array, items: {type: string, format: binary}}
+                label: {type: string}
+      responses:
+        "204": {description: Done.}

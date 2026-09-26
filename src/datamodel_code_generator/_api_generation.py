@@ -1092,9 +1092,9 @@ def generate_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GenerationReport:
     """Render one target and its models once, then publish every change together under the resource locks."""
+    planner, project = _plan(input_, model_config, config, generator)
     from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
 
-    planner, project = _plan(input_, model_config, config, generator)
     models = planner.models
     output = planner.effective.output
     assert output is not None

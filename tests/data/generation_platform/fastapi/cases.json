@@ -185,8 +185,101 @@
   "backend-errors": {
     "input": "pets.yaml",
     "backends": [
+      "dataclasses.dataclass",
+      "typing.TypedDict",
       "msgspec.Struct"
-    ]
+    ],
+    "config": {
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "limit",
+          "import_ref": "app.codecs:limit",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "integer"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "limit"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "new-pets",
+          "import_ref": "app.codecs:new_pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/post",
+              "role": "request_body",
+              "media_type": "application/json"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "pets",
+          "import_ref": "app.codecs:pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets~1{petId}/get",
+              "role": "response_body",
+              "status": "200",
+              "media_type": "application/json"
+            }
+          ]
+        }
+      ],
+      "builtin_codec_compatibility": [
+        {
+          "name": "msgspec-models",
+          "backend": "msgspec.Struct"
+        }
+      ],
+      "export_bindings": [
+        {
+          "schema": {
+            "pointer": "/components/schemas/Pet"
+          },
+          "module": "models",
+          "symbol": "Pet",
+          "direction": "neutral"
+        }
+      ]
+    }
   },
   "types": {
     "input": "types.yaml",

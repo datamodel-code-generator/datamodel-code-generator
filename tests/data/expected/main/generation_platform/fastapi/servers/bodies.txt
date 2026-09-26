@@ -9,9 +9,9 @@ service UntaggedService without its methods: TypeError
   post_item(body=Item(name='a'))
 < 204 - b''
 > POST /items
-< 422 application/json {"detail":[{"type":"extra_forbidden","loc":["body"],"msg":"Unexpected field"}]}
+< 422 application/json [{"type": "extra_forbidden", "loc": ["body"]}]
 > POST /items
-< 422 application/json {"detail":[{"type":"json_invalid","loc":["body"],"msg":"Invalid JSON body"}]}
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
 > POST /items
 < 415 application/json {"detail":"Unsupported media type"}
 > POST /items
@@ -22,9 +22,9 @@ service UntaggedService without its methods: TypeError
   post_account(body=ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Account|ModelNode(symbol='bodies_basemodel_models:Account')", wire=mappingproxy({'name': 'a'}), presence=PresenceTree(pointer='', container='object', members=(('name', PresenceTree(pointer='/name', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/id', schema_location='', field_id='bodies_basemodel_models:Account.id', message='The native type requires a property that this direction excludes'),), kind='input'))
 < 204 - b''
 > POST /accounts
-< 422 application/json {"detail":[{"type":"value_error","loc":["body","id"],"msg":"Invalid value"}]}
+< 422 application/json [{"type": "value_error", "loc": ["body", "id"]}]
 > POST /accounts
-< 422 application/json {"detail":[{"type":"missing","loc":["body"],"msg":"Field required"}]}
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
 > POST /profiles
   post_profile(body=FieldProfilesPostRequest1(b='x'), media_type='application/json; profile=b')
 < 204 - b''
@@ -32,7 +32,7 @@ service UntaggedService without its methods: TypeError
   post_profile(body=FieldProfilesPostRequest(a=1), media_type='application/json; profile=a')
 < 204 - b''
 > POST /profiles
-< 422 application/json {"detail":[{"type":"extra_forbidden","loc":["body","b"],"msg":"Unexpected field"}]}
+< 422 application/json [{"type": "extra_forbidden", "loc": ["body", "b"]}]
 > POST /profiles
   post_profile(body=FieldProfilesPostRequest(a=2), media_type='application/json; profile=a')
 < 204 - b''
@@ -49,7 +49,7 @@ service UntaggedService without its methods: TypeError
   put_document(body=FieldDocumentsPutRequest(root='hello'), media_type='text/markdown')
 < 204 - b''
 > PUT /documents
-< 422 application/json {"detail":[{"type":"value_error","loc":["body"],"msg":"Invalid value"}]}
+< 422 application/json [{"type": "value_error", "loc": ["body"]}]
 > PUT /documents
   put_document(body=FieldDocumentsPutRequest(root='ÿ'), media_type='text/plain')
 < 204 - b''
@@ -60,9 +60,9 @@ service UntaggedService without its methods: TypeError
   post_form(body=FieldFormsPostRequest(name='a', tags=['x', 'y'], count=2, other=3))
 < 204 - b''
 > POST /forms
-< 422 application/json {"detail":[{"type":"type_error","loc":["body"],"msg":"Invalid value type"}]}
+< 422 application/json [{"type": "type_error", "loc": ["body"]}]
 > POST /forms
-< 422 application/json {"detail":[{"type":"media_invalid","loc":["body"],"msg":"Invalid request body"}]}
+< 422 application/json [{"type": "media_invalid", "loc": ["body"]}]
 > POST /native-forms
   post_native_form(name='a', count=1)
 < 204 - b''
@@ -73,11 +73,11 @@ service UntaggedService without its methods: TypeError
   post_check(body=Check(code=12, scores=[1, 2]))
 < 204 - b''
 > POST /checks
-< 422 application/json {"detail":[{"type":"value_error","loc":["body","code"],"msg":"Invalid value"}]}
+< 422 application/json [{"type": "value_error", "loc": ["body", "code"]}]
 > POST /checks
-< 422 application/json {"detail":[{"type":"value_error","loc":["body","scores",1],"msg":"Invalid value"}]}
+< 422 application/json [{"type": "value_error", "loc": ["body", "scores", 1]}]
 > POST /checks
 < 400 application/json {"detail":"Invalid request"}
 > POST /raw
-  post_raw(request=POST /raw)
+  post_raw(request=POST /raw, body=b'{"any":"thing"}')
 < 204 - b''

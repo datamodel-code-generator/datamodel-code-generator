@@ -1,0 +1,4 @@
+BND_MODEL_SCOPE_REQUIRED error binding /paths/~1pets/get/parameters/5: The use has no generated native type
+BND_MODEL_SCOPE_REQUIRED error binding /paths/~1pets/get/responses/200: The use has no generated native type
+BND_MODEL_SCOPE_REQUIRED error binding /paths/~1pets~1mine/get/responses/200: The use has no generated native type
+BND_MODEL_SCOPE_REQUIRED error binding /paths/~1store~1inventory/get/responses/200: The use has no generated native type

@@ -1,4 +1,10 @@
 # backend-errors
+render dataclasses.dataclass
+  APIGenerationError
+  E_FASTAPI_BACKEND_UNSUPPORTED config model_config.output_model_type: The fastapi target does not support 'dataclasses.dataclass'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+render typing.TypedDict
+  APIGenerationError
+  E_FASTAPI_BACKEND_UNSUPPORTED config model_config.output_model_type: The fastapi target does not support 'typing.TypedDict'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
 render msgspec.Struct
   APIGenerationError
   E_FASTAPI_BACKEND_UNSUPPORTED config model_config.output_model_type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'

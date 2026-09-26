@@ -1,6 +1,6 @@
 # S07 implementation record
 
-Status: in progress. S07 (FastAPI completion and publication) stacks on S06 (#4157, #4158, #4159), which stacks on the S05 stack (#4151, #4152, #4154). Nothing in these stacks has been merged. S07-1 (#4160), S07-2 (#4161) and S07-3 are ready for review.
+Status: in progress. S07 (FastAPI completion and publication) stacks on S06 (#4157, #4158, #4159), which stacks on the S05 stack (#4151, #4152, #4154). Nothing in these stacks has been merged. S07-1 (#4160), S07-2 (#4161), S07-3 (#4162) and S07-4 are ready for review.
 
 ## Baseline and review boundaries
 
@@ -64,7 +64,7 @@ Tests:
 - The typing samples connect `install_openapi` with a subset and with every key, and pass an unknown key, which every checker rejects once (mypy `arg-type`, Pyright `reportArgumentType`, ty `invalid-argument-type`); the generated package and samples have zero diagnostics on strict mypy 2.3.1 and strict Pyright 1.1.414 and 1.1.411 for both backends.
 - `_fastapi` and the server runtime stay fully covered.
 
-F01–F13: besides the S05–S07-1 tests, S07-2 covers the served-document parts of F02 (prefixes, repeated and nested includes, markers, versions), F07 (declared responses next to FastAPI's, `default_response_class`), F08 (the reserved marker), F10 (security composition, install order, caching and document errors), F11 (callback documentation) and F13 (the docs fingerprint in partial updates). Not run yet: the comparisons with handwritten control applications (F01, F06-a, F07) and with a client generated from the same source (F04, F05), F06-c (disconnects and cancellation), F12's excluded backends and multi-module model output, and F13's runs from other working directories and separate checkouts.
+F01–F13 (S07-4 runs the rest, apart from the client comparisons): besides the S05–S07-1 tests, S07-2 covers the served-document parts of F02 (prefixes, repeated and nested includes, markers, versions), F07 (declared responses next to FastAPI's, `default_response_class`), F08 (the reserved marker), F10 (security composition, install order, caching and document errors), F11 (callback documentation) and F13 (the docs fingerprint in partial updates). Not run yet: the HTTP runs of F01, F06-a and F07, the comparisons with a client generated from the same source (F04, F05), F06-c (disconnects and cancellation), F12's excluded backends and multi-module model output, and F13's runs from other working directories and separate checkouts.
 
 Benchmarks (one session, as in S07-1): 10, 50 and 200 operations render in 50.8, 198.8 and 780.0 ms on S07-1 and 51.9, 202.1 and 802.6 ms on S07-2. For 200 operations the docs take 5.2 ms, the plan module 0.9 ms, the added manifest records 4.5 ms, and the 287 KB plan module the rest of its per-file work. Composing a served document adds 0.4 and 5.1 ms to FastAPI's own 3.7 and 62.8 ms for 10 and 200 operations.
 
@@ -106,6 +106,21 @@ Tests:
 
 Benchmarks (one session, as in S07-2): 10, 50 and 200 operations render in 52.4, 206.0 and 824.7 ms on S07-2 and 53.3, 208.0 and 827.8 ms on S07-3; the difference is the README. Command-line cold starts are unchanged: `--version` 25 ms, `--help` 33 ms and a model run 137 ms on both, and a model run imports no target module. Generating the pets server takes 283 ms and checking it 263 ms.
 
+## S07-4: server acceptance tests
+
+PR-STACKS plans S07 in three PRs. The acceptance oracles that S07-2 left unrun (F01, F06-a/c/d, F07, F12 and F13, apart from the comparisons with a client that S14 adds) form a fourth, so that S07-3 stays a review of the public surfaces.
+
+- The acceptance runs compare input and output files like the model tests, with no handwritten control applications (the maintainer's request): each case generates its server through `generate_fastapi`, compares the generated package with its expected directory, and records every answer and service method call, which `assert_output` compares with the expected transcript. A validation error is recorded by its type and location, because pydantic-core words the messages differently across versions.
+- F01 and F04's native part: the pets server case, on both backends, also sends defaults, repeated and percent-encoded query values, range, type, literal, UUID and time-zone errors, JSON bodies with missing, extra and mistyped members, invalid JSON, another content type, and path values. Adapter boundaries keep their independent wire vectors in the existing server cases.
+- F06-a: the forms server case sends urlencoded scalars, lists, repetitions, percent and `+` encodings, empty fields, type errors and missing fields, and multipart single, repeated and nameless files, text sent as a file and a file sent as text, a malformed body and lists of files, recording what the service methods receive on both backends.
+- F06-c: `tests/data/python/fastapi_upstream.py` drives the uploads of `uploads.json` through ASGI directly, to a service object that matches the forms Protocol without subclassing it. A completed request closes the file the upload method received after the response, a multipart parse error and a client disconnect answer 400 without calling the method, and an AnyIO cancel scope and `Task.cancel` stop the request without a response. Each abort runs once inside the file part's headers and once inside its body, after the parser allocated the file; the aborts, which never reach a method, record every file the parser allocates, the only place the tests patch Starlette, and Starlette closes it.
+- F06-d: the raw operation of the bodies server is asynchronous and reads the whole body itself, so the generated route reads none of it.
+- F07: the responses server case serves a bare string primary under the standard application, `create_app(fastapi_options={"default_response_class": PlainTextResponse})` and a user application including the router with that default: the bare value follows the response class, `HTTPResult` and codec values stay `application/json`, and a model returned under `PlainTextResponse` fails in FastAPI. The report shows the served document's source media next to FastAPI's.
+- F12: the three excluded backends stop with one `E_FASTAPI_BACKEND_UNSUPPORTED` each even with codec adapters, compatibility declarations and export bindings. `tests/data/python/fastapi_scope.py` runs `generate_fastapi`, `render_fastapi`, verify mode and `--check` in a fresh interpreter for a primitive-only document, an empty `Api` and a selection that keeps no operation. None of them imports a remote lock, publication, model generation, hook or adapter module, and none writes a file; an earlier model setting error keeps its type, and the command line reports it as `E_MODEL_CONFIG`. Two negative controls from ENTRY §3: an ordinary command line without a target selector imports no target module, and `--generate-server` adds no `api` scope, so a run with only the `schemas` scope stops with `BND_MODEL_SCOPE_REQUIRED` and writes nothing. `generate_target` imported the publisher before planning (S05-2), so a rejected configuration imported it; it now imports it after planning succeeds. Four server cases serve a document with read-only and write-only properties and an external reference on both backends with the plain settings, request and response models, one module per model, and reused and collapsed models.
+- F13: generating the pets document in two checkouts with the same layout, and from another directory with absolute paths, writes identical bytes in all 46 files; generating again writes nothing, and a moved checkout renders every file unchanged.
+
+Benchmarks: S07-4 changes one import in `generate_target`, which a successful run still makes once.
+
 ## Next action
 
-Open S07-3 as a stacked PR on #4161. S07 is then complete; S08 (the remaining three backend codecs) follows.
+Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.
