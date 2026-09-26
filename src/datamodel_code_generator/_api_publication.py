@@ -208,13 +208,12 @@ def publish_project(
             )
         with ExitStack() as stack:
             batch = _Batch(stack)
-            entries = [
-                batch.entry(artifact, cwd / artifact.path, lock if artifact.kind == "remote_lock" else None)
-                for artifact in project.artifacts
-                if artifact.action != "unchanged"
-            ]
             try:
-                publish_batch(entries)
+                publish_batch([
+                    batch.entry(artifact, cwd / artifact.path, lock if artifact.kind == "remote_lock" else None)
+                    for artifact in project.artifacts
+                    if artifact.action != "unchanged"
+                ])
             except BaseException:
                 if lock is not None:
                     with suppress(OSError):

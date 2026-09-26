@@ -141,6 +141,29 @@ def test_target_generate_rollback_failure(
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
 
 
+def test_target_generate_lock_discard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Discard the staged remote lock update when a file after it fails to stage."""
+    discarded: list[bool] = []
+    discard, stage = RemoteReferenceLock.discard_stage, _publication.stage_content
+
+    def recorded(lock: RemoteReferenceLock) -> None:
+        discarded.append(lock._staged_source is not None)
+        discard(lock)
+
+    def fail(
+        staging: _publication.StagingDirectory, content: bytes, file: _publication.StagedFile
+    ) -> _publication.StagedFile:
+        if file.target.name == ".dcg-target-manifest.json":
+            msg = "No space left on device"
+            raise OSError(msg)
+        return stage(staging, content, file)
+
+    monkeypatch.setattr(RemoteReferenceLock, "discard_stage", recorded)
+    monkeypatch.setattr(_publication, "stage_content", fail)
+    report = target_render_report("publish-lock", tmp_path, monkeypatch)
+    assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "lock-discard.txt")
+
+
 @pytest.mark.skipif(os.name == "nt", reason="Windows checks destinations through the lexical fallback")
 @pytest.mark.parametrize("failure", ["anchor", "staging"])
 def test_target_generate_publication_checks(failure: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
