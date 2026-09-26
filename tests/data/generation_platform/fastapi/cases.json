@@ -784,6 +784,22 @@
       "templates": "templates/conflict-extras"
     }
   },
+  "template-conflict-runtime": {
+    "input": "hooks.yaml",
+    "files": [
+      "hooks-paths.yaml"
+    ],
+    "config": {
+      "include_request": true,
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ],
+      "templates": "templates/conflict-runtime"
+    }
+  },
   "template-bad-json": {
     "input": "hooks.yaml",
     "files": [

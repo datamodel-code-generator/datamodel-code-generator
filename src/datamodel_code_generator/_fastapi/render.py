@@ -225,7 +225,7 @@ class ServerRenderer:  # noqa: PLR0904
                 )
 
     def placed(self, files: tuple[RenderedFile, ...], extras: tuple[RenderedFile, ...]) -> None:
-        """Reject extra files that take a builtin file's or another extra file's path."""
+        """Reject extra files that take the path of a builtin file, a runtime module, or another extra file."""
         taken = {file.path for file in files}
         assert self.templates is not None
         for extra in extras:
@@ -266,10 +266,11 @@ class ServerRenderer:  # noqa: PLR0904
             self.file(PurePosixPath("auth_types.py"), "auth_types", _AUTH_TYPES),
             self.file(PurePosixPath("services.py"), "services", self.services_module()),
         )
-        if extras := tuple(self.extras()):
-            self.placed(files, extras)
-            files = (*files, *extras)
-        return (*files, *self.runtime(files))
+        extras = tuple(self.extras())
+        runtime = tuple(self.runtime((*files, *extras)))
+        if extras:
+            self.placed((*files, *runtime), extras)
+        return (*files, *extras, *runtime)
 
     def runtime(self, files: tuple[RenderedFile, ...]) -> Iterator[RenderedFile]:
         """Copy the runtime modules the package imports, with their own imports, in ascending path order."""

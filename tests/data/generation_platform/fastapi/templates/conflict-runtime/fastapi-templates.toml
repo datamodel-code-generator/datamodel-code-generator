@@ -1,0 +1,6 @@
+schema_version = 1
+
+[[files]]
+template = "runtime.jinja2"
+path = "_runtime/__init__.py"
+scope = "project"

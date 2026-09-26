@@ -68,6 +68,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "template-not-tables",
         "template-conflict-builtin",
         "template-conflict-extras",
+        "template-conflict-runtime",
         "template-bad-json",
         "template-missing",
     ],
