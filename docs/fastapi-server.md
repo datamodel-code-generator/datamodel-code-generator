@@ -197,7 +197,8 @@ everything without writing it and exits with 0 when nothing would change, 1 when
 an error; `render_fastapi` returns the same artifacts, each with its action.
 
 Server generation always writes the models without the generation timestamp, as `--disable-timestamp` does, so a
-run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0 from any directory.
+run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
+directory when the paths name the same input and target configuration files.
 Only `include_timestamp = true` puts a time into the server files, and then every run changes them. The remote
 lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
 uses it, or the default `datamodel-codegen.lock` exists.
