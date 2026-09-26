@@ -11045,11 +11045,21 @@ output = "server"
 
 Generate the models and the server:
 
+<!-- BEGIN AUTO-GENERATED FASTAPI QUICK START -->
 ```bash
-datamodel-codegen --input openapi.yaml --input-file-type openapi \
-  --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel \
-  --output models.py --generate-server fastapi --target-config fastapi.toml
+datamodel-codegen \
+  --input openapi.yaml \
+  --input-file-type openapi \
+  --openapi-scopes schemas api \
+  --output-model-type pydantic_v2.BaseModel \
+  --preset standard-py312-20260909 \
+  --output models.py \
+  --generate-server fastapi \
+  --target-config fastapi.toml
 ```
+
+The preset supplies the model options, as in the model [quick start](getting-started.md).
+<!-- END AUTO-GENERATED FASTAPI QUICK START -->
 
 `server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
 `pets`, with an abstract method for each operation that takes the operation's arguments as keywords. For a
@@ -11104,6 +11114,7 @@ object with the right methods works, and type checkers check it where you pass i
 
 `datamodel_code_generator.fastapi` has the same entry points:
 
+<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->
 ```python
 from pathlib import Path
 
@@ -11117,12 +11128,14 @@ report = generate_fastapi(
         input_file_type=InputFileType.OpenAPI,
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType.PydanticV2BaseModel,
+        preset="standard-py312-20260909",
     ),
     config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
 )
 for record in report.written_files:
     print(record.path)
 ```
+<!-- END AUTO-GENERATED FASTAPI PYTHON API -->
 
 `render_fastapi` takes the same arguments and returns every file as a `GeneratedArtifact` without writing it.
 Invalid settings, bindings, and ownership conflicts raise `APIGenerationError`, whose `diagnostics` are
@@ -11202,9 +11215,17 @@ that lacks a new method; your own modules are never touched. `--check` renders
 everything without writing it and exits with 0 when nothing would change, 1 when a file would change, and 2 for
 an error; `render_fastapi` returns the same artifacts, each with its action.
 
+Server generation always writes the models without the generation timestamp, as `--disable-timestamp` does, so a
+run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another
+directory when the paths name the same input and target configuration files.
+Only `include_timestamp = true` puts a time into the server files, and then every run changes them. The remote
+lock file takes part as it does for model generation, when `--lockfile` names it, `--update-lock` or `--locked`
+uses it, or the default `datamodel-codegen.lock` exists.
+
 `update_groups` regenerates only the named router groups, and refuses when anything else changed.
 `model_mode = "verify"` lets several targets share models generated once: each target compares the models with
-the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ.
+the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when they differ. Generate those
+models with `--disable-timestamp` too.
 
 ## Templates and hooks
 

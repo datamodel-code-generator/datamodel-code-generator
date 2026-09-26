@@ -121,6 +121,12 @@ PR-STACKS plans S07 in three PRs. The acceptance oracles that S07-2 left unrun (
 
 Benchmarks: S07-4 changes one import in `generate_target`, which a successful run still makes once.
 
+## Reproducible reruns
+
+The maintainer decided on 2026-09-26 that a target run is reproducible without extra options. `prepare_target` renders the models with `disable_timestamp=True`, D's own timestamp suppression, whatever the model settings ask, so a rerun on unchanged inputs writes nothing and `--check` exits 0; before, the quick start rewrote `models.py`, the model inventory and the manifest on every run. The command line resolves its default remote lock file only while a lock policy uses it (`--update-lock`, `--locked`, or an existing file to verify), so the manifest no longer records a lock path that depends on the working directory, and `--check` from another directory reports no difference. The server docs take their quick start and Python API example from `scripts/build_preset_docs.py`, with the latest standard preset, as the model quick start does.
+
+Tests: the CLI suite drops `--disable-timestamp`, checks the generated package from inside it with absolute paths, and publishes a lock at its default and explicit path; the acceptance checkouts oracle generates through the Python API without `disable_timestamp`.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

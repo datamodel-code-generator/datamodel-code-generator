@@ -25,7 +25,6 @@ OPTIONS = [
     "pydantic_v2.BaseModel",
     "--formatters",
     "builtin",
-    "--disable-timestamp",
 ]
 EXCLUDED = (
     "S_OPERATION_EXCLUDED info selection /paths/~1store~1inventory/get: "
@@ -81,6 +80,16 @@ def test_fastapi_cli_generate(
         capsys=capsys,
         assert_no_stderr=True,
     )
+    monkeypatch.chdir(tmp_path / "server")
+    run_main_and_assert(
+        input_path=tmp_path / "pets.yaml",
+        output_path=tmp_path / "models.py",
+        input_file_type="openapi",
+        extra_args=_server("--check", config=str(tmp_path / "fastapi.toml")),
+        capsys=capsys,
+        assert_no_stderr=True,
+    )
+    monkeypatch.chdir(tmp_path)
     (tmp_path / "models.py").write_text("# edited\n", encoding="utf-8")
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -100,6 +109,33 @@ def test_fastapi_cli_generate(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr="E_OUTPUT_MODIFIED error ownership README.md: A file the target owns is missing\n",
+    )
+
+
+@pytest.mark.parametrize(
+    ("options", "lockfile"),
+    [(["--update-lock"], "datamodel-codegen.lock"), (["--update-lock", "--lockfile", "api.lock"], "api.lock")],
+    ids=["default", "explicit"],
+)
+def test_fastapi_cli_lockfile(
+    options: list[str],
+    lockfile: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Publish the remote lock an update asks for at its default path next to the run or at the explicit one."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(*options),
+        copy_files=_inputs(tmp_path),
+        assert_func=assert_file_content,
+        expected_file=PACKAGE / "models.py",
+    )
+    assert_output(
+        (tmp_path / lockfile).read_text(encoding="utf-8"), DATA / "expected" / "http" / "remote_lock_empty.txt"
     )
 
 
