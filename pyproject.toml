@@ -110,6 +110,7 @@ test = [
   "pytest-mock>=3.14",
   "pytest-timeout>=2.4",
   "pytest-xdist>=3.3.1",
+  "python-ulid>=3.2.1",
   "time-machine>=3.1",
   "trustme>=1.2.1",
   "watchfiles>=1.1",
