@@ -15,7 +15,7 @@ from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.fingerprints import Fingerprints
 from datamodel_code_generator._fastapi.hooks import Extensions, HookRunner, extended
-from datamodel_code_generator._fastapi.openapi import DocsBuilder
+from datamodel_code_generator._fastapi.openapi import DocsBuilder, references
 from datamodel_code_generator._fastapi.partial import check_partial
 from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
 from datamodel_code_generator._fastapi.render import ServerRenderer
@@ -318,6 +318,9 @@ class _TargetData:
         self.wire = wire
         self.docs = docs
         self.fragments = {operation.key: operation for operation in docs.operations}
+        self.components = {component.name: component.schema for component in docs.components}
+        self.component_references = {name: references(schema)[0] for name, schema in self.components.items()}
+        self.schemes = {scheme.name: scheme.scheme for scheme in docs.schemes}
         self.files = {file.path: index for index, file in enumerate(files)}
         self.rendered = files
         self.bindings = {use: index for index, (use, _) in enumerate(codecs.bindings)}
@@ -442,13 +445,29 @@ class _TargetData:
             "plan_sha256": self.fingerprints.plan(spec, documents, projections),
             "signature_sha256": self.renderer.signature_digest(spec),
             "codec_sha256": self.fingerprints.codec(uses, self.use_bindings, self.type_uses, self.wire),
-            "docs_sha256": sha256(canonical_bytes(self.fragments[spec.key].fragment)),
+            "docs_sha256": self.docs_digest(spec.key),
             "projections": projections,
             "path_slots": [
                 {"wire_name": slot.wire_name, "slot": slot.slot, "occurrence": slot.occurrence}
                 for slot in spec.route.slots
             ],
         }
+
+    def docs_digest(self, key: str) -> str:
+        """Hash an operation's fragment with every schema component and security scheme its documentation uses."""
+        fragment = self.fragments[key].fragment
+        pending, schemes = references(fragment)
+        found: set[str] = set()
+        while pending:
+            found.add(name := pending.pop())
+            pending |= self.component_references.get(name, set()) - found
+        return sha256(
+            canonical_bytes({
+                "fragment": fragment,
+                "schemas": {name: self.components[name] for name in sorted(found & self.components.keys())},
+                "securitySchemes": {name: self.schemes[name] for name in sorted(schemes & self.schemes.keys())},
+            })
+        )
 
     def model_artifacts(self, uses: tuple[TypeUseId, ...]) -> list[int]:
         """Return the model artifacts of an operation's bound types and codec model graphs, in artifact order."""

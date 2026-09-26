@@ -87,6 +87,7 @@ def test_fastapi_render(case: str, tmp_path: Path) -> None:
         "update-invalid",
         "update-groups",
         "update-docs",
+        "update-shared",
         "update-layout",
         "update-templates",
         "update-selection",

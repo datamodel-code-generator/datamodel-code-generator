@@ -664,6 +664,31 @@ def documentation(value: FrozenLiteral) -> JSONValue | _Missing:
         return _MISSING
 
 
+def references(value: JSONValue) -> tuple[set[str], set[str]]:
+    """Return the schema components and the security schemes a served-document value names."""
+    schemas: set[str] = set()
+    schemes: set[str] = set()
+    pending = [value]
+    while pending:
+        match pending.pop():
+            case dict() as mapping:
+                for key, item in mapping.items():
+                    match key, item:
+                        case "$ref", str() as ref if ref.startswith(_SCHEMAS):
+                            schemas.add(ref.removeprefix(_SCHEMAS))
+                        case "security", list() as requirements:
+                            schemes.update(
+                                name for requirement in requirements if _is_object(requirement) for name in requirement
+                            )
+                        case _:
+                            pending.append(item)
+            case list() as items:
+                pending.extend(items)
+            case _:
+                pass
+    return schemas, schemes
+
+
 def _plain(value: WireValue) -> JSONValue:
     if _is_wire_mapping(value):
         return {key: _plain(item) for key, item in value.items()}

@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: Shared, version: "1.0"}
+components:
+  securitySchemes:
+    key:
+      type: apiKey
+      in: header
+      name: X-Key
+      description: The changed shared key.
+    own:
+      type: apiKey
+      in: header
+      name: X-Own
+      description: The second own key.
+paths:
+  /a:
+    get:
+      tags: [a]
+      operationId: get_a
+      security: [{key: [], own: []}]
+      responses:
+        '204': {description: Done.}
+  /b:
+    get:
+      tags: [b]
+      operationId: get_b
+      security: [{key: []}]
+      responses:
+        '204': {description: Done.}
