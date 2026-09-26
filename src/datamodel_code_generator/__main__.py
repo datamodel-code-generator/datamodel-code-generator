@@ -2190,12 +2190,19 @@ def _target_usage_error(namespace: Namespace) -> str | None:
     return None
 
 
-def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path:
-    """Return the remote lock file a generation target's models read or update."""
-    return config.lockfile or _remote_lock_plan(config, pyproject_path).literal_path
+def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
+    """Return the remote lock file a generation target's models read or update, or None while no lock applies.
+
+    The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target, and the
+    target manifest, only while a policy uses it: an update, a locked run, or an existing file to verify.
+    """
+    if config.lockfile is not None:
+        return config.lockfile
+    plan = _remote_lock_plan(config, pyproject_path)
+    return None if plan.policy == "inactive" else plan.literal_path
 
 
-def _target_settings(config: Config, args: Sequence[str], lockfile: Path) -> GenerateConfig:
+def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None) -> GenerateConfig:
     """Return the model settings a generation target runs with."""
     from datamodel_code_generator.config import GenerateConfig  # noqa: PLC0415
 

@@ -201,7 +201,11 @@ class _Models:
 def prepare_target(
     input_: _GenerationInput, model_config: GenerateConfig, generator: TargetGenerator
 ) -> GenerateConfig:
-    """Validate target settings in the contract order and return the effective model settings."""
+    """Validate target settings in the contract order and return the effective model settings.
+
+    A target always renders its models without the generation timestamp, so a rerun on unchanged inputs reproduces
+    every byte and `--check` reports no difference.
+    """
     from datamodel_code_generator import (  # noqa: PLC0415
         Error,
         _prepare_generate_facade_config,  # pyright: ignore[reportPrivateUsage]
@@ -221,6 +225,8 @@ def prepare_target(
             error, Diagnostic(code="E_MODEL_CONFIG", severity="error", stage="config", message=str(error))
         )
         raise
+    if not effective.disable_timestamp:
+        effective = effective.model_copy(update={"disable_timestamp": True})
     if (backend := effective.output_model_type) not in generator.backends:
         allowed = " or ".join(repr(item.value) for item in DataModelType if item in generator.backends)
         raise config_error(

@@ -59,7 +59,6 @@ def _settings(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> tup
         input_file_type="openapi",
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType.PydanticV2BaseModel,
-        disable_timestamp=True,
         formatters=[Formatter.BUILTIN],
     )
     return base / "api.yaml", model, FastAPIConfig(output=base / "server", package="server", model_package="models")

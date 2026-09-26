@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Literal, cast
 ROOT = Path(__file__).resolve().parents[1]
 DOCS_PATH = ROOT / "docs" / "presets.md"
 DOCS_GETTING_STARTED_PATH = ROOT / "docs" / "getting-started.md"
+DOCS_FASTAPI_SERVER_PATH = ROOT / "docs" / "fastapi-server.md"
 README_PATH = ROOT / "README.md"
 SRC_PATH = ROOT / "src"
 PRESET_NAMES_PATH = SRC_PATH / "datamodel_code_generator" / "preset_names.py"
@@ -28,6 +29,10 @@ QUICK_START_TARGET_PYTHON_VERSION = "3.12"
 PRESET_VERSION_DATE_LENGTH = 8
 QUICK_START_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED PRESET QUICK START -->"
 QUICK_START_END_MARKER = "<!-- END AUTO-GENERATED PRESET QUICK START -->"
+FASTAPI_QUICK_START_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED FASTAPI QUICK START -->"
+FASTAPI_QUICK_START_END_MARKER = "<!-- END AUTO-GENERATED FASTAPI QUICK START -->"
+FASTAPI_PYTHON_API_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->"
+FASTAPI_PYTHON_API_END_MARKER = "<!-- END AUTO-GENERATED FASTAPI PYTHON API -->"
 README_SUPPORTED_INPUT_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED README SUPPORTED INPUT -->"
 README_SUPPORTED_INPUT_END_MARKER = "<!-- END AUTO-GENERATED README SUPPORTED INPUT -->"
 README_SUPPORTED_OUTPUT_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED README SUPPORTED OUTPUT -->"
@@ -197,6 +202,20 @@ def _generate_docs(preset_names_doc: GeneratedDoc) -> tuple[GeneratedDoc, ...]:
                 ),
             ),
         ),
+        GeneratedDoc(
+            DOCS_FASTAPI_SERVER_PATH,
+            _replace_marked_section(
+                _replace_marked_section(
+                    DOCS_FASTAPI_SERVER_PATH.read_text(encoding="utf-8"),
+                    FASTAPI_QUICK_START_BEGIN_MARKER,
+                    FASTAPI_QUICK_START_END_MARKER,
+                    _render_fastapi_quick_start(standard_preset_name),
+                ),
+                FASTAPI_PYTHON_API_BEGIN_MARKER,
+                FASTAPI_PYTHON_API_END_MARKER,
+                _render_fastapi_python_api(standard_preset_name),
+            ),
+        ),
     )
 
 
@@ -315,6 +334,47 @@ def _render_shell_command(command: tuple[str, ...]) -> str:
         continuation = " \\" if index < len(command) else ""
         lines.append(f"{indent}{argument}{continuation}")
     return "\n".join(lines)
+
+
+def _render_fastapi_quick_start(preset_name: str) -> str:
+    return f"""```bash
+datamodel-codegen \\
+  --input openapi.yaml \\
+  --input-file-type openapi \\
+  --openapi-scopes schemas api \\
+  --output-model-type pydantic_v2.BaseModel \\
+  --preset {preset_name} \\
+  --output models.py \\
+  --generate-server fastapi \\
+  --target-config fastapi.toml
+```
+
+The preset supplies the model options, as in the model [quick start](getting-started.md).
+"""
+
+
+def _render_fastapi_python_api(preset_name: str) -> str:
+    return f"""```python
+from pathlib import Path
+
+from datamodel_code_generator import DataModelType, GenerateConfig, InputFileType, OpenAPIScope
+from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
+
+report = generate_fastapi(
+    Path("openapi.yaml"),
+    model_config=GenerateConfig(
+        output=Path("models.py"),
+        input_file_type=InputFileType.OpenAPI,
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        preset="{preset_name}",
+    ),
+    config=FastAPIConfig(output=Path("server"), package="server", model_package="models"),
+)
+for record in report.written_files:
+    print(record.path)
+```
+"""
 
 
 def _generate_quick_start_model(preset_name: PresetName) -> str:
@@ -483,7 +543,8 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Check whether preset docs, preset-powered quick-start examples, and README support lists are up to date "
-            "(docs/presets.md, docs/getting-started.md, and generated sections in README.md)"
+            "(docs/presets.md, docs/getting-started.md, and generated sections in README.md and the FastAPI "
+            "server page)"
         ),
     )
     parser.add_argument(
