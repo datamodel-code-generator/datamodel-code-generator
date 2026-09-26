@@ -241,4 +241,5 @@ def publish_project(
         diagnostics=project.diagnostics,
         generator_version=project.generator_version,
         runtime_revision=project.runtime_revision,
+        dependencies=project.dependencies,
     )

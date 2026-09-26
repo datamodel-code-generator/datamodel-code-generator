@@ -68,6 +68,8 @@ def test_fastapi_cli_generate(
         input_file_type="openapi",
         extra_args=_server(),
         copy_files=_inputs(tmp_path),
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "dependencies.txt",
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -139,31 +141,48 @@ def test_fastapi_cli_lockfile(
     )
 
 
-def test_fastapi_cli_target_output(
+def test_fastapi_cli_standalone(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the package where --target-output points, reporting the excluded operation to a file or stdout."""
+    """Write a standalone distribution, printing the uv command that adds it to a project."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "service", "--diagnostics-json", "diagnostics.json"),
-        copy_files=_inputs(tmp_path, "selection.toml"),
+        extra_args=_server(),
+        copy_files=_inputs(tmp_path, "standalone.toml"),
         capsys=capsys,
-        expected_stderr=EXCLUDED,
+        expected_stdout_path=EXPECTED / "cli" / "standalone.txt",
+        file_should_not_exist=tmp_path / "server",
     )
-    assert_file_content(tmp_path / "diagnostics.json", "cli/excluded.txt")
+
+
+def test_fastapi_cli_target_output(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the package where --target-output points, reporting the excluded operation to stdout or a file."""
+    monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server("--target-output", "service", "--check", "--diagnostics-json", "-"),
+        extra_args=_server("--target-output", "service", "--diagnostics-json", "-"),
+        copy_files=_inputs(tmp_path, "selection.toml"),
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / "excluded.txt",
         expected_stderr=EXCLUDED,
         file_should_not_exist=tmp_path / "server",
     )
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--target-output", "service", "--check", "--diagnostics-json", "diagnostics.json"),
+        capsys=capsys,
+        expected_stderr=EXCLUDED,
+    )
+    assert_file_content(tmp_path / "diagnostics.json", "cli/excluded.txt")
 
 
 def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:

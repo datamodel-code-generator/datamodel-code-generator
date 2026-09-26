@@ -26,7 +26,6 @@ generate {"config": {"templates": "templates/custom"}}
   written server/checks/get_order.py
   written server/NOTES
   written server/py.typed
-  written server/dcg-runtime-requirements.txt
   written server/.dcg-state/model-artifacts.json
   written server/.dcg-target-manifest.json
 generate {"config": {"templates": "templates/roles", "update_groups": ["tag:pets"]}}

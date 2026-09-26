@@ -19,7 +19,6 @@ generate
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
-  written target server/dcg-runtime-requirements.txt (target)
   written model_metadata meta/models.json
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
@@ -50,7 +49,6 @@ generate
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  unchanged target server/dcg-runtime-requirements.txt (target)
   25 runtime modules ['unchanged']
 release
 generate
@@ -73,7 +71,6 @@ generate
   written target modular/services.py (target)
   written target modular/README.md (target)
   written target modular/py.typed (target)
-  written target modular/dcg-runtime-requirements.txt (target)
   written model_metadata models/meta.json
   written model_inventory modular/.dcg-state/model-artifacts.json (target)
   written target_manifest modular/.dcg-target-manifest.json (target)
@@ -100,7 +97,6 @@ tree
   modular/_generated/openapi.py
   modular/application.py
   modular/auth_types.py
-  modular/dcg-runtime-requirements.txt
   modular/errors.py
   modular/model_codecs.py
   modular/py.typed
@@ -118,7 +114,6 @@ tree
   server/_generated/openapi.py
   server/application.py
   server/auth_types.py
-  server/dcg-runtime-requirements.txt
   server/errors.py
   server/model_codecs.py
   server/py.typed

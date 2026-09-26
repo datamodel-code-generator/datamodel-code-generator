@@ -1,6 +1,6 @@
 generate_fastapi resolves ['config', 'input_', 'model_config']: True
 render_fastapi resolves ['config', 'input_', 'model_config']: True
 render ['write']
-generate wrote 45 and kept 0
-generate wrote 0 and kept 45
+generate wrote 44 and kept 0
+generate wrote 0 and kept 44
   E_OUTPUT_MODIFIED ownership README.md: A file the target owns was modified

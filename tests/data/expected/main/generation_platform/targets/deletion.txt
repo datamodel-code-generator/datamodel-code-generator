@@ -19,7 +19,6 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   write target server/py.typed (target)
-  write target server/dcg-runtime-requirements.txt (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
   25 runtime modules ['write']
@@ -48,7 +47,6 @@ render
   write target server/services.py (target)
   write target server/README.md (target)
   unchanged target server/py.typed (target)
-  unchanged target server/dcg-runtime-requirements.txt (target)
   delete target server/routers/store.py (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
@@ -254,13 +252,6 @@ publish
       "path": "py.typed",
       "sha256": "<sha256>",
       "size": "<masked>"
-    },
-    {
-      "group": null,
-      "kind": "requirements",
-      "path": "dcg-runtime-requirements.txt",
-      "sha256": "<sha256>",
-      "size": "<masked>"
     }
   ],
   "generator": {
@@ -418,7 +409,6 @@ render
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  unchanged target server/dcg-runtime-requirements.txt (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   25 runtime modules ['unchanged']
