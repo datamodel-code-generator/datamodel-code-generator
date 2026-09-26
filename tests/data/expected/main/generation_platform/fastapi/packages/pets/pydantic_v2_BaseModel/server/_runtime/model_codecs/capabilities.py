@@ -202,7 +202,7 @@ class AdapterManifest(Generic[CapabilitiesT_co]):
 
     name: str
     import_ref: str
-    capabilities: CapabilitiesT_co
+    capabilities: CapabilitiesT_co  # type: ignore[misc, unused-ignore]
 
 
 def canonical_capabilities(record: AnyCapabilities) -> tuple[object, ...]:
