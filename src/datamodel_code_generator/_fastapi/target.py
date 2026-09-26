@@ -58,6 +58,8 @@ PATTERNS: Final = "google-re2>=1.1.20251105"
 MODEL_DEPENDENCIES: Final = (
     ("pydantic.EmailStr", "email-validator>=2.3"),
     ("pydantic.NameEmail", "email-validator>=2.3"),
+    ("pydantic.networks.EmailStr", "email-validator>=2.3"),
+    ("pydantic.networks.NameEmail", "email-validator>=2.3"),
     ("ulid", "python-ulid>=3.2.1"),
     ("pendulum", "pendulum>=3.2"),
 )
