@@ -266,7 +266,7 @@ def portable(  # noqa: PLR0911
         case OperationRef() | SchemaRef():
             return refer(value)
         case Mapping():
-            return {str(key): portable(item, locate, refer) for key, item in value.items()}
+            return {_portable_key(key, locate, refer): portable(item, locate, refer) for key, item in value.items()}
         case set() | frozenset():
             return sorted((portable(item, locate, refer) for item in value), key=canonical_bytes)
         case list() | tuple():
@@ -274,6 +274,12 @@ def portable(  # noqa: PLR0911
         case _ if is_dataclass(value) and not isinstance(value, type):
             return {item.name: portable(getattr(value, item.name), locate, refer) for item in fields(value)}
     raise TypeError(type(value).__qualname__)
+
+
+def _portable_key(
+    key: object, locate: Callable[[Path], str], refer: Callable[[OperationRef | SchemaRef], JSONValue]
+) -> str:
+    return key if isinstance(key, str) else canonical_bytes(portable(key, locate, refer)).decode()
 
 
 def model_record(*, output_uri: str, package: str, mode: str, artifacts: Sequence[ModelArtifact]) -> JSONObject:
