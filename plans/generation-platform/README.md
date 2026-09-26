@@ -10,7 +10,7 @@ The order is shared generation infrastructure, FastAPI server generation, then O
 
 Existing dcg output bytes, ordering, CLI/Python API and extension behavior, dependencies, and performance remain compatibility requirements. Existing Python type reuse, including `--type-overrides` and `x-python-import`, must carry through to final type binding and applicable codecs. New targets must not silently change model settings or regenerate external classes.
 
-The existing fastapi-code-generator keeps its implementation during the transition. Deprecation guidance follows an available replacement. The new dcg implementation has no dependency on fastapi-code-generator. New server output need not match the legacy generator; user-owned handlers are preserved across regeneration.
+The existing fastapi-code-generator keeps its implementation during the transition. Deprecation guidance follows an available replacement. The new dcg implementation has no dependency on fastapi-code-generator. New server output need not match the legacy generator; business logic stays in user modules that implement generated service Protocols, and regeneration never touches it.
 
 ## Reading map
 
@@ -33,7 +33,7 @@ The eight detailed contracts are authoritative within their responsibilities:
 | [ENTRY](DECISIONS-ENTRY.md) | Distribution, optional API/CLI, configuration, ownership and publication |
 | [BINDING](DECISIONS-BINDING.md) | Actual model generation order, scope, type/field binding and accepted attempts |
 | [MODEL-CODECS](DECISIONS-MODEL-CODECS.md) | Backend integration, wire conversion, presence and custom adapters |
-| [FASTAPI](DECISIONS-FASTAPI.md) | Routes, dependency injection, handlers, regeneration and extensions |
+| [FASTAPI](DECISIONS-FASTAPI.md) | Routes, dependency injection, service Protocols, regeneration and extensions |
 | [CLIENT](DECISIONS-CLIENT.md) | Generated client structure, methods, configuration and extensions |
 | [RUNTIME](DECISIONS-RUNTIME.md) | HTTP execution, retry, authentication, deadlines and resource ownership |
 | [PROTOCOLS](DECISIONS-PROTOCOLS.md) | Explicit API-specific pagination, streaming and other protocol helpers |
