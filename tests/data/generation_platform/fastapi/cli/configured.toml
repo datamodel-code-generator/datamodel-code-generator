@@ -1,0 +1,49 @@
+schema_version = 1
+output = "server"
+package = "server"
+model_package = "models"
+layout = "routers"
+handler_mode = "async"
+include_request = true
+body_mode = "request"
+router_names = { "tag:pets" = "animals" }
+templates = "templates"
+
+[[body_modes]]
+operation = "/paths/~1pets/post"
+mode = "typed"
+
+[[primary_responses]]
+operation = { pointer = "/paths/~1pets/post", document = "pets.yaml" }
+status_code = 201
+media_type = "application/json"
+
+[[primary_responses]]
+operation = "/paths/~1pets/get"
+status_code = 200
+
+[[operation_names]]
+operation = "/paths/~1pets/get"
+name = "list_all"
+
+[[parameter_names]]
+operation = "/paths/~1pets/get"
+parameter = "query:limit"
+name = "page_size"
+
+[[parameter_names]]
+operation = "/paths/~1pets/get"
+parameter = "header:X-Request-Id"
+name = "trace"
+
+[[handler_modes]]
+operation = "/paths/~1pets/get"
+mode = "sync"
+
+[[hooks]]
+module = "tests.data.python.fastapi_hooks"
+callable = "record"
+
+[[hooks]]
+file = "hooks/tagged.py"
+callable = "annotate"

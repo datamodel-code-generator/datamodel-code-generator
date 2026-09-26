@@ -1,0 +1,75 @@
+{
+  "opaque_options": [],
+  "protocol_metadata": {},
+  "public_options": {
+    "body_mode": "request",
+    "body_modes": {
+      "/paths/~1pets/post": "typed"
+    },
+    "builtin_codec_compatibility": [],
+    "codec_adapters": [],
+    "custom_formatter_kwargs": {},
+    "custom_formatters": [],
+    "distribution_name": null,
+    "encoding": "utf-8",
+    "export_bindings": [],
+    "formatter_settings": "..",
+    "formatters": [
+      "builtin"
+    ],
+    "handler_mode": "async",
+    "handler_modes": {
+      "/paths/~1pets/get": "sync"
+    },
+    "header": null,
+    "hooks": [
+      {
+        "callable": "record",
+        "file": null,
+        "module": "tests.data.python.fastapi_hooks"
+      },
+      {
+        "callable": "annotate",
+        "file": "../hooks/tagged.py",
+        "module": null
+      }
+    ],
+    "include_request": true,
+    "include_timestamp": false,
+    "layout": "routers",
+    "model_dependency": null,
+    "model_mode": "generate",
+    "model_package": "models",
+    "operation_names": {
+      "/paths/~1pets/get": "list_all"
+    },
+    "output": ".",
+    "package": "server",
+    "package_mode": "embedded",
+    "package_version": null,
+    "parameter_names": {
+      "/paths/~1pets/get": {
+        "header:X-Request-Id": "trace",
+        "query:limit": "page_size"
+      }
+    },
+    "primary_responses": {
+      "/paths/~1pets/get": {
+        "media_type": null,
+        "status_code": 200
+      },
+      "{\"document\":\"/inputs/root\",\"pointer\":\"/paths/~1pets/post\"}": {
+        "media_type": "application/json",
+        "status_code": 201
+      }
+    },
+    "router_names": {
+      "tag:pets": "animals"
+    },
+    "templates": "../templates",
+    "update_groups": [
+      "tag:pets"
+    ]
+  },
+  "runtime_defaults": {}
+}

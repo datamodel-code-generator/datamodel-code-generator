@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "target": "fastapi",
+  "diagnostics": [
+    {
+      "code": "S_OPERATION_EXCLUDED",
+      "severity": "info",
+      "stage": "selection",
+      "message": "GET /store/inventory is excluded by exclude_tags 'store': The store is internal",
+      "source_uri": "../pets.yaml",
+      "source_pointer": "/paths/~1store~1inventory/get",
+      "operation": {
+        "pointer": "/paths/~1store~1inventory/get",
+        "document": null
+      },
+      "option_path": null,
+      "artifact_path": null,
+      "target_id": "3deca778a5f2d7af77744b6d85b16a8880b9708b45cff200725233911affaeba"
+    }
+  ]
+}

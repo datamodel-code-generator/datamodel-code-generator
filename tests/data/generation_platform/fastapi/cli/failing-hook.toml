@@ -1,0 +1,8 @@
+schema_version = 1
+package = "server"
+model_package = "models"
+output = "server"
+
+[[hooks]]
+module = "tests.data.python.fastapi_hooks"
+callable = "failing"

@@ -1,4 +1,0 @@
-# input-model
-bare --input-model models:Pet --generate-server fastapi --target-config fastapi.toml
-  exit 2
-  stderr | E_CONFIG_CONFLICT error config: --generate-server cannot be used with --input-model

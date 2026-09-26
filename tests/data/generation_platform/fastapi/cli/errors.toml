@@ -1,0 +1,25 @@
+schema_version = 1
+output = "server"
+package = "server"
+model_package = "models"
+body_modes = "request"
+handler_modes = "sync"
+router_names = "animals"
+
+[[primary_responses]]
+operation = "/paths/~1pets/post"
+status_code = "201"
+
+[[operation_names]]
+operation = "/paths/~1pets/get"
+name = 7
+
+[[parameter_names]]
+operation = "/paths/~1pets/get"
+parameter = "query:limit"
+name = "page_size"
+where = "query"
+
+[[hooks]]
+module = "project.hooks"
+when = "always"

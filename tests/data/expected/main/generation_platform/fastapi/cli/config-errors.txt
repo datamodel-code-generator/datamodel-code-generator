@@ -1,40 +1,7 @@
-# config-errors
-spec api.yaml <- pets.yaml
-cli --target-config missing.toml
-  exit 2
-  stderr | E_CONFIG_VALUE error config: The target file cannot be read: No such file or directory
-toml
-  | packages = ["server"]
-cli --diagnostics-json -
-  exit 2
-  stderr | E_CONFIG_UNKNOWN error config packages: The target file has no setting 'packages'
-  stdout | {
-  stdout |   "schema_version": 1,
-  stdout |   "target": "fastapi",
-  stdout |   "diagnostics": [
-  stdout |     {
-  stdout |       "code": "E_CONFIG_UNKNOWN",
-  stdout |       "severity": "error",
-  stdout |       "stage": "config",
-  stdout |       "message": "The target file has no setting 'packages'",
-  stdout |       "source_uri": null,
-  stdout |       "source_pointer": null,
-  stdout |       "operation": null,
-  stdout |       "option_path": "packages",
-  stdout |       "artifact_path": null,
-  stdout |       "target_id": null
-  stdout |     }
-  stdout |   ]
-  stdout | }
-toml
-cli --output-model-type msgspec.Struct
-  exit 2
-  stderr | E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not support 'msgspec.Struct'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
-write metadata/.keep
-cli --emit-model-metadata metadata
-  exit 2
-  stderr | E_MODEL_CONFIG error config: Model metadata output requires a file path, not a directory
-tree
-  api.yaml
-  fastapi.toml
-  metadata/.keep
+E_CONFIG_VALUE error config body_modes: body_modes must be an array
+E_CONFIG_VALUE error config handler_modes: handler_modes must be an array
+E_CONFIG_VALUE error config router_names: router_names must be a table
+E_CONFIG_VALUE error config primary_responses[0].status_code: primary_responses[0].status_code must be an integer
+E_CONFIG_VALUE error config operation_names[0].name: operation_names[0].name must be a string
+E_CONFIG_VALUE error config parameter_names[0].where: parameter_names[0] has no key 'where'
+E_CONFIG_VALUE error config hooks[0].when: hooks[0] has no key 'when'
