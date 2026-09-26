@@ -1,0 +1,151 @@
+# responses
+serve pydantic_v2.BaseModel
+service UntaggedService: get_greeting, get_pet
+service UntaggedService without its methods: TypeError
+app standard
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 application/json "hello"
+> GET /greetings?mode=result
+  get_greeting(mode='result')
+< 200 application/json "ok"
+> GET /greetings?mode=value
+  get_greeting(mode='value')
+< 200 application/json "wire"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+app plain
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 text/plain; charset=utf-8 hello
+> GET /greetings?mode=result
+  get_greeting(mode='result')
+< 200 application/json "ok"
+> GET /greetings?mode=value
+  get_greeting(mode='value')
+< 200 application/json "wire"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+app included
+> GET /greetings
+  get_greeting(mode=absent)
+< 200 text/plain; charset=utf-8 hello
+> GET /greetings?mode=result
+  get_greeting(mode='result')
+< 200 application/json "ok"
+> GET /greetings?mode=value
+  get_greeting(mode='value')
+< 200 application/json "wire"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__7294ae050d69"}}}
+serve pydantic_v2.dataclass
+service UntaggedService: get_greeting, get_pet
+service UntaggedService without its methods: TypeError
+app standard
+> GET /greetings
+  get_greeting(mode=absent)
+< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+> GET /greetings?mode=result
+  get_greeting(mode='result')
+< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+> GET /greetings?mode=value
+  get_greeting(mode='value')
+< 200 application/json "wire"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< 200 application/json {"id":1,"name":"Mimi"}
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+app plain
+> GET /greetings
+  get_greeting(mode=absent)
+< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+> GET /greetings?mode=result
+  get_greeting(mode='result')
+< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+> GET /greetings?mode=value
+  get_greeting(mode='value')
+< 200 application/json "wire"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}
+app included
+> GET /greetings
+  get_greeting(mode=absent)
+< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+> GET /greetings?mode=result
+  get_greeting(mode='result')
+< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+> GET /greetings?mode=value
+  get_greeting(mode='value')
+< 200 application/json "wire"
+> GET /greetings?mode=other
+< 422 application/json [{"type": "literal_error", "loc": ["query", "mode"]}]
+> HEAD /greetings
+< 405 application/json
+> GET /pets/1
+  get_pet(id=1)
+< raised AttributeError: 'dict' object has no attribute 'encode'
+> GET /pets/2
+  get_pet(id=2)
+< 404 application/json {"message":"Missing"}
+> openapi /greetings get 200
+< {"application/json": {"schema": {"type": "string"}}, "text/plain": {"schema": {"type": "string"}}}
+> openapi /pets/{id} get 404
+< {"application/json": {"schema": {"$ref": "#/components/schemas/Error__95258823efb6"}}}

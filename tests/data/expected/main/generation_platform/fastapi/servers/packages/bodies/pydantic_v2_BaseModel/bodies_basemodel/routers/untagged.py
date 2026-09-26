@@ -294,10 +294,13 @@ def _add_post_check(router: APIRouter, wiring: Wiring) -> None:
 
 
 def _add_post_raw(router: APIRouter, wiring: Wiring) -> None:
-    post_raw_handler = wiring.handlers['post_raw']
+    post_raw_handler = wiring.async_handlers['post_raw']
 
-    def post_raw(*, request: Request) -> Response:
-        return respond(post_raw_handler(request=request), contract.PostRaw.RESPONSES)
+    async def post_raw(*, request: Request) -> Response:
+        return respond(
+            await post_raw_handler(request=request),
+            contract.PostRaw.RESPONSES,
+        )
 
     router.add_api_route(
         '/raw',

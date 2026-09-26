@@ -1,4 +1,4 @@
-"""Serve generated FastAPI packages over HTTP: parameters, bodies, results, and handler checks."""
+"""Serve generated FastAPI packages over HTTP: parameters, bodies, forms, results, responses, and handler checks."""
 
 from __future__ import annotations
 
@@ -11,11 +11,28 @@ pytest.importorskip("fastapi")
 from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.fastapi_openapi import SCENARIOS, fastapi_openapi_report
 from tests.data.python.fastapi_server import fastapi_server_report
+from tests.data.python.fastapi_upstream import fastapi_upstream_report
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi/servers"
 
 
-@pytest.mark.parametrize("case", ["pets", "parameters", "bodies", "results", "security", "customized"])
+@pytest.mark.parametrize(
+    "case",
+    [
+        "pets",
+        "parameters",
+        "bodies",
+        "results",
+        "security",
+        "customized",
+        "variants",
+        "variants-request-response",
+        "variants-modular",
+        "variants-reuse",
+        "forms",
+        "responses",
+    ],
+)
 def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Generate each server, then build its router from handwritten services and exchange requests with it."""
     report, packages = fastapi_server_report(case, tmp_path, monkeypatch)
@@ -28,3 +45,8 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
 def test_fastapi_openapi(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Compose the served OpenAPI document of generated packages in applications of every shape."""
     assert_output(fastapi_openapi_report(case, tmp_path, monkeypatch), EXPECTED.parent / "openapi" / f"{case}.txt")
+
+
+def test_fastapi_upstream(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Close uploaded files and end parse errors, disconnects, and cancellations as FastAPI and Starlette do."""
+    assert_output(fastapi_upstream_report(tmp_path, monkeypatch), EXPECTED / "uploads.txt")

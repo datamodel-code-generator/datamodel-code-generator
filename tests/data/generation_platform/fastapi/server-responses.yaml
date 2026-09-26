@@ -1,0 +1,43 @@
+openapi: 3.1.0
+info: {title: Server responses, version: "1.0"}
+paths:
+  /greetings:
+    get:
+      operationId: getGreeting
+      parameters:
+        - {name: mode, in: query, schema: {type: string, enum: [bare, result, value]}}
+      responses:
+        "200":
+          description: The greeting.
+          content:
+            application/json:
+              schema: {type: string}
+  /pets/{id}:
+    get:
+      operationId: getPet
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+        "404":
+          description: Missing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}

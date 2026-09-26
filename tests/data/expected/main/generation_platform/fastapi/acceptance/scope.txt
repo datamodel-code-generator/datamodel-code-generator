@@ -1,0 +1,16 @@
+ordinary run without a target: exit 0, target modules []
+primitive generate: E_FASTAPI_BACKEND_UNSUPPORTED
+primitive render: E_FASTAPI_BACKEND_UNSUPPORTED
+primitive verify: E_FASTAPI_BACKEND_UNSUPPORTED
+empty generate: E_FASTAPI_BACKEND_UNSUPPORTED
+empty render: E_FASTAPI_BACKEND_UNSUPPORTED
+empty verify: E_FASTAPI_BACKEND_UNSUPPORTED
+unselected generate: E_FASTAPI_BACKEND_UNSUPPORTED
+unselected render: E_FASTAPI_BACKEND_UNSUPPORTED
+unselected verify: E_FASTAPI_BACKEND_UNSUPPORTED
+primitive check: exit 2 E_FASTAPI_BACKEND_UNSUPPORTED
+empty check: exit 2 E_FASTAPI_BACKEND_UNSUPPORTED
+unselected check: exit 2 E_FASTAPI_BACKEND_UNSUPPORTED
+empty sentinel: Error
+imported []
+written []

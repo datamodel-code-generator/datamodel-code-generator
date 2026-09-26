@@ -64,8 +64,8 @@ def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
                 }
             case "handler_modes" | "body_modes" | "operation_names" | "parameter_names" if isinstance(value, list):
                 converted[key] = {_selector(selector): item for selector, item in value}
-            case "codec_adapters" | "builtin_codec_compatibility" if isinstance(value, list):
-                kind = "adapters" if key == "codec_adapters" else "compatibility"
+            case "codec_adapters" | "builtin_codec_compatibility" | "export_bindings" if isinstance(value, list):
+                kind = {"codec_adapters": "adapters", "builtin_codec_compatibility": "compatibility"}.get(key, "exports")
                 converted[key] = tuple(declaration(kind, item) for item in value)
             case "formatters":
                 converted[key] = tuple(value)

@@ -80,6 +80,86 @@
       {
         "method": "GET",
         "url": "/store/inventory"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z",
+        "headers": {
+          "X-Request-Id": "00000000-0000-0000-0000-000000000001"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=101"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=two"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=1&limit=2"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?since=2024-01-01T00:00:00"
+      },
+      {
+        "method": "GET",
+        "url": "/pets",
+        "headers": {
+          "X-Request-Id": "not-a-uuid"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets?tags=a+b&tags=c%20d"
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Tom",
+          "extra": 1
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "tag": "dog"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": 7
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "content": "{",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "content": "{\"name\": \"Tom\"}",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/one"
       }
     ],
     "codecs": [
@@ -241,6 +321,12 @@
         [
           "/paths/~1raw/post",
           "request"
+        ]
+      ],
+      "handler_modes": [
+        [
+          "/paths/~1raw/post",
+          "async"
         ]
       ]
     },
@@ -1032,6 +1118,620 @@
       {
         "method": "GET",
         "url": "/health"
+      }
+    ]
+  },
+  "variants": {
+    "input": "server-variants.yaml",
+    "files": [
+      "server-variants-shared.yaml"
+    ],
+    "services": "variants",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Rex",
+          "secret": "s",
+          "owner": {
+            "name": "Ann",
+            "email": "a@example.com"
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "id": 5,
+          "name": "Rex"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": ""
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/owners"
+      }
+    ]
+  },
+  "variants-request-response": {
+    "input": "server-variants.yaml",
+    "files": [
+      "server-variants-shared.yaml"
+    ],
+    "services": "variants",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Rex",
+          "secret": "s",
+          "owner": {
+            "name": "Ann",
+            "email": "a@example.com"
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "id": 5,
+          "name": "Rex"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": ""
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/owners"
+      }
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "variants-modular": {
+    "input": "server-variants.yaml",
+    "files": [
+      "server-variants-shared.yaml"
+    ],
+    "services": "variants",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Rex",
+          "secret": "s",
+          "owner": {
+            "name": "Ann",
+            "email": "a@example.com"
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "id": 5,
+          "name": "Rex"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": ""
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/owners"
+      }
+    ],
+    "modular": true,
+    "model": {
+      "module_split_mode": "single"
+    }
+  },
+  "variants-reuse": {
+    "input": "server-variants.yaml",
+    "files": [
+      "server-variants-shared.yaml"
+    ],
+    "services": "variants",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Rex",
+          "secret": "s",
+          "owner": {
+            "name": "Ann",
+            "email": "a@example.com"
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "id": 5,
+          "name": "Rex"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": ""
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "GET",
+        "url": "/owners"
+      }
+    ],
+    "model": {
+      "reuse_model": true,
+      "collapse_root_models": true
+    }
+  },
+  "forms": {
+    "input": "server-forms.yaml",
+    "services": "forms",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "name": "a",
+          "count": "2",
+          "tags": [
+            "x",
+            "y"
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "content": "name=a+b%20c&count=3",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "content": "name=a&name=b&tags=x&tags=x",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "content": "name=&count=",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "content": "name=a&count=",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "name": "a",
+          "count": "two"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "count": "2"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "content": "name=%ZZ",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "file",
+            "a.txt",
+            "file body",
+            "text/plain"
+          ]
+        ],
+        "data": {
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "file",
+            "a.bin",
+            "data",
+            "application/octet-stream"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "file",
+            "a.txt",
+            "first",
+            "text/plain"
+          ],
+          [
+            "file",
+            "b.txt",
+            "second",
+            "text/plain"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "file",
+            null,
+            "no name",
+            "text/plain"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": [
+          [
+            "file",
+            "a.txt",
+            "body",
+            "text/plain"
+          ],
+          [
+            "note",
+            "note.txt",
+            "note body",
+            "text/plain"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "data": {
+          "note": "n"
+        },
+        "files": [
+          [
+            "other",
+            "a.txt",
+            "body",
+            "text/plain"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "data": {
+          "file": "not a file"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "content": "--x\r\nbroken",
+        "headers": {
+          "Content-Type": "multipart/form-data; boundary=x"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/batches",
+        "files": [
+          [
+            "files",
+            "a.txt",
+            "one",
+            "text/plain"
+          ],
+          [
+            "files",
+            "b.txt",
+            "two",
+            "text/plain"
+          ]
+        ],
+        "data": {
+          "label": "l"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/batches",
+        "files": [
+          [
+            "files",
+            "a.txt",
+            "one",
+            "text/plain"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/batches",
+        "data": {
+          "label": "l"
+        },
+        "files": [
+          [
+            "other",
+            "a.txt",
+            "body",
+            "text/plain"
+          ]
+        ]
+      }
+    ]
+  },
+  "responses": {
+    "input": "server-responses.yaml",
+    "services": "responses",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "apps": [
+      {
+        "set": "standard",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/greetings"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=result"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=value"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=other"
+          },
+          {
+            "method": "HEAD",
+            "url": "/greetings"
+          },
+          {
+            "method": "GET",
+            "url": "/pets/1"
+          },
+          {
+            "method": "GET",
+            "url": "/pets/2"
+          },
+          {
+            "openapi": [
+              "/greetings",
+              "get",
+              "200"
+            ]
+          },
+          {
+            "openapi": [
+              "/pets/{id}",
+              "get",
+              "404"
+            ]
+          }
+        ]
+      },
+      {
+        "set": "plain",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/greetings"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=result"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=value"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=other"
+          },
+          {
+            "method": "HEAD",
+            "url": "/greetings"
+          },
+          {
+            "method": "GET",
+            "url": "/pets/1"
+          },
+          {
+            "method": "GET",
+            "url": "/pets/2"
+          },
+          {
+            "openapi": [
+              "/greetings",
+              "get",
+              "200"
+            ]
+          },
+          {
+            "openapi": [
+              "/pets/{id}",
+              "get",
+              "404"
+            ]
+          }
+        ]
+      },
+      {
+        "set": "included",
+        "requests": [
+          {
+            "method": "GET",
+            "url": "/greetings"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=result"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=value"
+          },
+          {
+            "method": "GET",
+            "url": "/greetings?mode=other"
+          },
+          {
+            "method": "HEAD",
+            "url": "/greetings"
+          },
+          {
+            "method": "GET",
+            "url": "/pets/1"
+          },
+          {
+            "method": "GET",
+            "url": "/pets/2"
+          },
+          {
+            "openapi": [
+              "/greetings",
+              "get",
+              "200"
+            ]
+          },
+          {
+            "openapi": [
+              "/pets/{id}",
+              "get",
+              "404"
+            ]
+          }
+        ]
       }
     ]
   }

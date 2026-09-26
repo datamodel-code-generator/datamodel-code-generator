@@ -42,7 +42,8 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def upload(self, *, file: object, note: object) -> None:
             calls.append(f"upload(file={file.filename!r}:{file.file.read()!r}, note={note!r})")
 
-        def post_raw(self, *, request: object) -> None:
-            calls.append(f"post_raw(request={request.method} {request.url.path})")
+        async def post_raw(self, *, request: object) -> None:
+            body = await request.body()
+            calls.append(f"post_raw(request={request.method} {request.url.path}, body={body!r})")
 
     return {"default": {"untagged": Untagged()}}
