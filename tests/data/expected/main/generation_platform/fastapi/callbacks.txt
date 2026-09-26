@@ -1,0 +1,2178 @@
+# callbacks
+render pydantic_v2.BaseModel
+  __init__.py
+  application.py
+  routers/__init__.py
+  routers/untagged.py
+  _generated/__init__.py
+  _generated/contract.py
+  _generated/model_bindings.py
+  _generated/openapi.py
+  model_codecs.py
+  responses.py
+  errors.py
+  auth_types.py
+  services.py
+  py.typed
+  dcg-runtime-requirements.txt
+  .dcg-state/model-artifacts.json
+  .dcg-target-manifest.json
+  layout routers
+  subscribe: POST /subscriptions -> /subscriptions [untagged] status 201 primary 201 None body typed handler sync
+    body /paths/~1subscriptions/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Subscription/properties/callbackUrl
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1subscriptions/post/responses/201
+  list_events: GET /events -> /events [untagged] status 200 primary 200 application/json body typed handler sync
+    primary_response /paths/~1events/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Event/properties/kind
+  get_secure: GET /secure -> /secure [untagged] status 200 primary 200 application/json body typed handler sync
+    parameter /paths/~1secure/get/parameters/0: codec_adapter unsupported_wire_shape
+    primary_response /paths/~1secure/get/responses/200: codec_adapter native_shape_mismatch at /components/schemas/Animal
+  ping: GET /ping -> /ping [untagged] status 200 primary - body typed handler sync
+  echo: GET /echo -> /echo [untagged] status 200 primary 200 application/json body typed handler sync
+    primary_response /paths/~1echo/get/responses/200: codec_adapter native_nullable_mismatch at /components/schemas/Event/properties/kind
+  group untagged -> untagged (5)
+  W_DOCUMENTATION_ANNOTATION target /paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/callbacks/onReceipt/{$request.body#~1receiptUrl}/post: The served document leaves out callback security that names no declared scheme
+  W_DOCUMENTATION_ANNOTATION target /paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put: The served document leaves out callback security that names no declared scheme
+  W_DOCUMENTATION_ANNOTATION target /paths/~1events/get/responses/200/headers/X-Map: The served document leaves out example, which has no JSON form
+  context
+    | {
+    |   "info": {
+    |     "title": "Callbacks",
+    |     "version": "1.0",
+    |     "servers": [
+    |       {
+    |         "url": "https://api.example.com"
+    |       }
+    |     ]
+    |   },
+    |   "operations": [
+    |     {
+    |       "key": "/paths/~1subscriptions/post",
+    |       "source": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1subscriptions/post"
+    |       },
+    |       "declaration": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1subscriptions/post"
+    |       },
+    |       "method": "post",
+    |       "path": "/subscriptions",
+    |       "route_path": "/subscriptions",
+    |       "operation_id": "subscribe",
+    |       "python_name": "subscribe",
+    |       "handler_mode": "sync",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": false,
+    |       "tags": [],
+    |       "group_key": "untagged",
+    |       "arguments": [
+    |         {
+    |           "python_name": "body",
+    |           "wire_name": null,
+    |           "location": "body",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
+    |             "kind": "model",
+    |             "value": "models.Subscription",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1subscriptions/post/requestBody",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
+    |             "kind": "model",
+    |             "value": "models.Subscription",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1subscriptions/post"
+    |                   }
+    |                 },
+    |                 "role": "request_body",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1subscriptions/post/requestBody"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1subscriptions/post/requestBody/content/application~1json/schema"
+    |                 },
+    |                 "declaration": null,
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": null,
+    |                 "name": null,
+    |                 "status": null,
+    |                 "media": "application/json"
+    |               }
+    |             ],
+    |             "site": "body",
+    |             "transport": "codec_adapter",
+    |             "reason": "opaque_native_semantics",
+    |             "source": {
+    |               "uri": "../callbacks.yaml",
+    |               "pointer": "/components/schemas/Subscription/properties/callbackUrl"
+    |             }
+    |           },
+    |           "native_declaration": null
+    |         }
+    |       ],
+    |       "request": {
+    |         "required": true,
+    |         "media": [
+    |           {
+    |             "media_type": "application/json",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
+    |             "type": {
+    |               "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Subscription|ModelNode(symbol='models:Subscription')",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/requestBody/content/application~1json/schema",
+    |               "kind": "model",
+    |               "value": "models.Subscription",
+    |               "imports": [
+    |                 {
+    |                   "module": "models",
+    |                   "name": null,
+    |                   "alias": null,
+    |                   "type_checking": false
+    |                 }
+    |               ]
+    |             },
+    |             "source_pointer": "/paths/~1subscriptions/post/requestBody/content/application~1json"
+    |           }
+    |         ],
+    |         "body_mode": "typed",
+    |         "body_projection": {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1subscriptions/post"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1subscriptions/post/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1subscriptions/post/requestBody/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "codec_adapter",
+    |           "reason": "opaque_native_semantics",
+    |           "source": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/schemas/Subscription/properties/callbackUrl"
+    |           }
+    |         },
+    |         "source_pointer": "/paths/~1subscriptions/post/requestBody"
+    |       },
+    |       "responses": [
+    |         {
+    |           "status_key": "201",
+    |           "description": "Subscribed.",
+    |           "media": [],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1subscriptions/post/responses/201"
+    |         },
+    |         {
+    |           "status_key": "default",
+    |           "description": "Unexpected.",
+    |           "media": [],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1subscriptions/post/responses/default"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 201,
+    |         "media_type": null
+    |       },
+    |       "registration_status": 201,
+    |       "primary_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "None",
+    |         "imports": []
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "SubscribeResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "SubscribeResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "SubscribeResponsePayload",
+    |       "response_codecs_name": "SubscribeResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "None | HTTPResult[SubscribeResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "SubscribeResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": null,
+    |       "servers": [
+    |         {
+    |           "url": "https://api.example.com"
+    |         }
+    |       ],
+    |       "callbacks": [
+    |         "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}",
+    |         "/paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}",
+    |         "/paths/~1subscriptions/post/callbacks/onLoop/{$request.query.loop}"
+    |       ],
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1subscriptions/post"
+    |                 }
+    |               },
+    |               "role": "request_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1subscriptions/post/requestBody"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1subscriptions/post/requestBody/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": null,
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "body",
+    |           "transport": "codec_adapter",
+    |           "reason": "opaque_native_semantics",
+    |           "source": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/schemas/Subscription/properties/callbackUrl"
+    |           }
+    |         },
+    |         {
+    |           "use_ids": [],
+    |           "site": "primary_response",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/paths/~1subscriptions/post/responses/201"
+    |           }
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {}
+    |     },
+    |     {
+    |       "key": "/paths/~1events/get",
+    |       "source": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1events/get"
+    |       },
+    |       "declaration": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1events/get"
+    |       },
+    |       "method": "get",
+    |       "path": "/events",
+    |       "route_path": "/events",
+    |       "operation_id": "listEvents",
+    |       "python_name": "list_events",
+    |       "handler_mode": "sync",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": false,
+    |       "tags": [],
+    |       "group_key": "untagged",
+    |       "arguments": [],
+    |       "request": null,
+    |       "responses": [
+    |         {
+    |           "status_key": "200",
+    |           "description": "The events.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema",
+    |                 "kind": "root",
+    |                 "value": "models.FieldEventsGetResponse",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1events/get/responses/200/content/application~1json"
+    |             }
+    |           ],
+    |           "headers": [
+    |             {
+    |               "name": "X-Map",
+    |               "required": false,
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/headers/X-Map/schema|ModelNode(symbol='models:FieldEventsGetResponse200XMapHeader')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/headers/X-Map/schema",
+    |                 "kind": "model",
+    |                 "value": "models.FieldEventsGetResponse200XMapHeader",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               }
+    |             }
+    |           ],
+    |           "source_pointer": "/paths/~1events/get/responses/200"
+    |         },
+    |         {
+    |           "status_key": "500",
+    |           "description": "Failed.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/500/content/application~1json/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Event|ModelNode(symbol='models:Event')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/500/content/application~1json/schema",
+    |                 "kind": "model",
+    |                 "value": "models.Event",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1events/get/responses/500/content/application~1json"
+    |             }
+    |           ],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1events/get/responses/500"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 200,
+    |         "media_type": "application/json"
+    |       },
+    |       "registration_status": 200,
+    |       "primary_return_type": {
+    |         "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
+    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema",
+    |         "kind": "root",
+    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse]",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "ListEventsResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "ListEventsResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "ListEventsResponsePayload",
+    |       "response_codecs_name": "ListEventsResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse] | HTTPResult[ListEventsResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "ListEventsResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": null,
+    |       "servers": [
+    |         {
+    |           "url": "https://events.example.com"
+    |         }
+    |       ],
+    |       "callbacks": [
+    |         "/paths/~1events/get/callbacks/onStatus/{$request.query.hook}"
+    |       ],
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1events/get"
+    |                 }
+    |               },
+    |               "role": "response_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1events/get/responses/200"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1events/get/responses/200/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "response",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": "200",
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "primary_response",
+    |           "transport": "codec_adapter",
+    |           "reason": "native_nullable_mismatch",
+    |           "source": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/schemas/Event/properties/kind"
+    |           }
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {}
+    |     },
+    |     {
+    |       "key": "/paths/~1secure/get",
+    |       "source": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1secure/get"
+    |       },
+    |       "declaration": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1secure/get"
+    |       },
+    |       "method": "get",
+    |       "path": "/secure",
+    |       "route_path": "/secure",
+    |       "operation_id": "getSecure",
+    |       "python_name": "get_secure",
+    |       "handler_mode": "sync",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": false,
+    |       "tags": [],
+    |       "group_key": "untagged",
+    |       "arguments": [
+    |         {
+    |           "python_name": "principal",
+    |           "wire_name": null,
+    |           "location": "principal",
+    |           "required": true,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": null,
+    |             "schema_id": null,
+    |             "kind": "principal",
+    |             "value": "PrincipalT",
+    |             "imports": [
+    |               {
+    |                 "module": "server._runtime.server.security",
+    |                 "name": "PrincipalT",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": null,
+    |           "is_request": false,
+    |           "is_principal": true,
+    |           "is_file": false,
+    |           "parameter_codec_id": null,
+    |           "bound_type": null,
+    |           "projection": null,
+    |           "native_declaration": null
+    |         },
+    |         {
+    |           "python_name": "token",
+    |           "wire_name": "token",
+    |           "location": "cookie",
+    |           "required": false,
+    |           "default_present": false,
+    |           "default_value": null,
+    |           "nullable": false,
+    |           "type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema",
+    |             "kind": "root",
+    |             "value": "models.FieldSecureGetCookieTokenParameter | Unset",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               },
+    |               {
+    |                 "module": "server._runtime.model_codecs.unset",
+    |                 "name": "Unset",
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "source_pointer": "/paths/~1secure/get/parameters/0",
+    |           "is_request": false,
+    |           "is_principal": false,
+    |           "is_file": false,
+    |           "parameter_codec_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
+    |           "bound_type": {
+    |             "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema|ModelNode(symbol='models:FieldSecureGetCookieTokenParameter')",
+    |             "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema",
+    |             "kind": "root",
+    |             "value": "models.FieldSecureGetCookieTokenParameter",
+    |             "imports": [
+    |               {
+    |                 "module": "models",
+    |                 "name": null,
+    |                 "alias": null,
+    |                 "type_checking": false
+    |               }
+    |             ]
+    |           },
+    |           "projection": {
+    |             "use_ids": [
+    |               {
+    |                 "owner": {
+    |                   "kind": "operation",
+    |                   "source": {
+    |                     "document": "/inputs/root",
+    |                     "pointer": "/paths/~1secure/get"
+    |                   }
+    |                 },
+    |                 "role": "parameter",
+    |                 "use_site": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1secure/get/parameters/0"
+    |                 },
+    |                 "schema": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1secure/get/parameters/0/schema"
+    |                 },
+    |                 "declaration": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1secure/get/parameters/0"
+    |                 },
+    |                 "direction": "request",
+    |                 "projection": "value",
+    |                 "location": "cookie",
+    |                 "name": "token",
+    |                 "status": null,
+    |                 "media": null
+    |               }
+    |             ],
+    |             "site": "parameter",
+    |             "transport": "codec_adapter",
+    |             "reason": "unsupported_wire_shape",
+    |             "source": null
+    |           },
+    |           "native_declaration": null
+    |         }
+    |       ],
+    |       "request": null,
+    |       "responses": [
+    |         {
+    |           "status_key": "200",
+    |           "description": "The animal.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/200/content/application~1json/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Animal|ModelNode(symbol='models:Animal')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/200/content/application~1json/schema",
+    |                 "kind": "root",
+    |                 "value": "models.Animal",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1secure/get/responses/200/content/application~1json"
+    |             }
+    |           ],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1secure/get/responses/200"
+    |         },
+    |         {
+    |           "status_key": "400",
+    |           "description": "Bad.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": null,
+    |               "type": null,
+    |               "source_pointer": "/paths/~1secure/get/responses/400/content/application~1json"
+    |             }
+    |           ],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1secure/get/responses/400"
+    |         },
+    |         {
+    |           "status_key": "401",
+    |           "description": "Denied.",
+    |           "media": [],
+    |           "headers": [
+    |             {
+    |               "name": "www-authenticate",
+    |               "required": false,
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/401/headers/www-authenticate/schema|ModelNode(symbol='models:FieldSecureGetResponse401wwwAuthenticateHeader')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/401/headers/www-authenticate/schema",
+    |                 "kind": "root",
+    |                 "value": "models.FieldSecureGetResponse401wwwAuthenticateHeader",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               }
+    |             }
+    |           ],
+    |           "source_pointer": "/paths/~1secure/get/responses/401"
+    |         },
+    |         {
+    |           "status_key": "403",
+    |           "description": "Forbidden.",
+    |           "media": [],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1secure/get/responses/403"
+    |         },
+    |         {
+    |           "status_key": "422",
+    |           "description": "Invalid.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/422/content/application~1json/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/422/content/application~1json/schema|ModelNode(symbol='models:FieldSecureGetResponse')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/422/content/application~1json/schema",
+    |                 "kind": "root",
+    |                 "value": "models.FieldSecureGetResponse",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1secure/get/responses/422/content/application~1json"
+    |             }
+    |           ],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1secure/get/responses/422"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 200,
+    |         "media_type": "application/json"
+    |       },
+    |       "registration_status": 200,
+    |       "primary_return_type": {
+    |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Animal|ModelNode(symbol='models:Animal')",
+    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/200/content/application~1json/schema",
+    |         "kind": "root",
+    |         "value": "models.Animal | ModelValue[models.Animal]",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "GetSecureResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "GetSecureResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "GetSecureResponsePayload",
+    |       "response_codecs_name": "GetSecureResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "models.Animal | ModelValue[models.Animal] | HTTPResult[GetSecureResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "GetSecureResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": [
+    |         [
+    |           [
+    |             "signature",
+    |             []
+    |           ]
+    |         ]
+    |       ],
+    |       "servers": [
+    |         {
+    |           "url": "https://api.example.com"
+    |         }
+    |       ],
+    |       "callbacks": [],
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1secure/get"
+    |                 }
+    |               },
+    |               "role": "parameter",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1secure/get/parameters/0"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1secure/get/parameters/0/schema"
+    |               },
+    |               "declaration": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1secure/get/parameters/0"
+    |               },
+    |               "direction": "request",
+    |               "projection": "value",
+    |               "location": "cookie",
+    |               "name": "token",
+    |               "status": null,
+    |               "media": null
+    |             }
+    |           ],
+    |           "site": "parameter",
+    |           "transport": "codec_adapter",
+    |           "reason": "unsupported_wire_shape",
+    |           "source": null
+    |         },
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1secure/get"
+    |                 }
+    |               },
+    |               "role": "response_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1secure/get/responses/200"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1secure/get/responses/200/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "response",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": "200",
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "primary_response",
+    |           "transport": "codec_adapter",
+    |           "reason": "native_shape_mismatch",
+    |           "source": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/schemas/Animal"
+    |           }
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {}
+    |     },
+    |     {
+    |       "key": "/paths/~1ping/get",
+    |       "source": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1ping/get"
+    |       },
+    |       "declaration": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1ping/get"
+    |       },
+    |       "method": "get",
+    |       "path": "/ping",
+    |       "route_path": "/ping",
+    |       "operation_id": "ping",
+    |       "python_name": "ping",
+    |       "handler_mode": "sync",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": false,
+    |       "tags": [],
+    |       "group_key": "untagged",
+    |       "arguments": [],
+    |       "request": null,
+    |       "responses": [],
+    |       "primary_response": null,
+    |       "registration_status": 200,
+    |       "primary_return_type": null,
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "PingResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "PingResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "PingResponsePayload",
+    |       "response_codecs_name": "PingResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "HTTPResult[PingResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "PingResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": null,
+    |       "servers": [
+    |         {
+    |           "url": "https://api.example.com"
+    |         }
+    |       ],
+    |       "callbacks": [],
+    |       "projections": [],
+    |       "path_slots": [],
+    |       "extras": {}
+    |     },
+    |     {
+    |       "key": "/paths/~1echo/get",
+    |       "source": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1echo/get"
+    |       },
+    |       "declaration": {
+    |         "uri": "../callbacks.yaml",
+    |         "pointer": "/paths/~1echo/get"
+    |       },
+    |       "method": "get",
+    |       "path": "/echo",
+    |       "route_path": "/echo",
+    |       "operation_id": "echo",
+    |       "python_name": "echo",
+    |       "handler_mode": "sync",
+    |       "summary": null,
+    |       "description": null,
+    |       "deprecated": false,
+    |       "tags": [],
+    |       "group_key": "untagged",
+    |       "arguments": [],
+    |       "request": null,
+    |       "responses": [
+    |         {
+    |           "status_key": "200",
+    |           "description": "The echo.",
+    |           "media": [
+    |             {
+    |               "media_type": "application/json",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/application~1json/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/application~1json/schema",
+    |                 "kind": "root",
+    |                 "value": "models.FieldEventsGetResponse",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1echo/get/responses/200/content/application~1json"
+    |             },
+    |             {
+    |               "media_type": "text/plain",
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/text~1plain/schema",
+    |               "type": {
+    |                 "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/N%C3%A4me|ModelNode(symbol='models:N\u00e4me')",
+    |                 "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/text~1plain/schema",
+    |                 "kind": "root",
+    |                 "value": "models.N\u00e4me",
+    |                 "imports": [
+    |                   {
+    |                     "module": "models",
+    |                     "name": null,
+    |                     "alias": null,
+    |                     "type_checking": false
+    |                   }
+    |                 ]
+    |               },
+    |               "source_pointer": "/paths/~1echo/get/responses/200/content/text~1plain"
+    |             }
+    |           ],
+    |           "headers": [],
+    |           "source_pointer": "/paths/~1echo/get/responses/200"
+    |         }
+    |       ],
+    |       "primary_response": {
+    |         "status_code": 200,
+    |         "media_type": "application/json"
+    |       },
+    |       "registration_status": 200,
+    |       "primary_return_type": {
+    |         "binding_id": "https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema|ModelNode(symbol='models:FieldEventsGetResponse')",
+    |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1echo/get/responses/200/content/application~1json/schema",
+    |         "kind": "root",
+    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse]",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "EchoResponsePayload",
+    |         "imports": [
+    |           {
+    |             "module": "server.responses",
+    |             "name": "EchoResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "response_payload_alias": "EchoResponsePayload",
+    |       "response_codecs_name": "EchoResponseCodecs",
+    |       "handler_return_type": {
+    |         "binding_id": null,
+    |         "schema_id": null,
+    |         "kind": "result",
+    |         "value": "models.FieldEventsGetResponse | ModelValue[models.FieldEventsGetResponse] | HTTPResult[EchoResponsePayload] | Response",
+    |         "imports": [
+    |           {
+    |             "module": "models",
+    |             "name": null,
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.model_codecs.values",
+    |             "name": "ModelValue",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server._runtime.server.responses",
+    |             "name": "HTTPResult",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "server.responses",
+    |             "name": "EchoResponsePayload",
+    |             "alias": null,
+    |             "type_checking": false
+    |           },
+    |           {
+    |             "module": "fastapi.responses",
+    |             "name": "Response",
+    |             "alias": null,
+    |             "type_checking": false
+    |           }
+    |         ]
+    |       },
+    |       "security": null,
+    |       "servers": [
+    |         {
+    |           "url": "https://api.example.com"
+    |         }
+    |       ],
+    |       "callbacks": [],
+    |       "projections": [
+    |         {
+    |           "use_ids": [
+    |             {
+    |               "owner": {
+    |                 "kind": "operation",
+    |                 "source": {
+    |                   "document": "/inputs/root",
+    |                   "pointer": "/paths/~1echo/get"
+    |                 }
+    |               },
+    |               "role": "response_body",
+    |               "use_site": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1echo/get/responses/200"
+    |               },
+    |               "schema": {
+    |                 "document": "/inputs/root",
+    |                 "pointer": "/paths/~1echo/get/responses/200/content/application~1json/schema"
+    |               },
+    |               "declaration": null,
+    |               "direction": "response",
+    |               "projection": "value",
+    |               "location": null,
+    |               "name": null,
+    |               "status": "200",
+    |               "media": "application/json"
+    |             }
+    |           ],
+    |           "site": "primary_response",
+    |           "transport": "codec_adapter",
+    |           "reason": "native_nullable_mismatch",
+    |           "source": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/schemas/Event/properties/kind"
+    |           }
+    |         }
+    |       ],
+    |       "path_slots": [],
+    |       "extras": {}
+    |     }
+    |   ],
+    |   "callbacks": [
+    |     {
+    |       "key": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}",
+    |       "parent_operation_key": "/paths/~1subscriptions/post",
+    |       "name": "onEvent",
+    |       "expression": "{$request.body#/callbackUrl}",
+    |       "operations": [
+    |         {
+    |           "key": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post",
+    |           "method": "post",
+    |           "declaration": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post"
+    |           },
+    |           "operation_id": null,
+    |           "summary": "An event happened.",
+    |           "description": null,
+    |           "deprecated": false,
+    |           "uses": [
+    |             {
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/callbacks/onEvent/%7B$request.body%23~1callbackUrl%7D/post/requestBody/content/application~1json/schema",
+    |               "source_pointer": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/requestBody/content/application~1json/schema",
+    |               "type": null
+    |             },
+    |             {
+    |               "schema_id": "https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/callbacks/onEvent/%7B$request.body%23~1callbackUrl%7D/post/requestBody/content/multipart~1form-data/schema",
+    |               "source_pointer": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/requestBody/content/multipart~1form-data/schema",
+    |               "type": null
+    |             }
+    |           ]
+    |         }
+    |       ]
+    |     },
+    |     {
+    |       "key": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/callbacks/onReceipt/{$request.body#~1receiptUrl}",
+    |       "parent_operation_key": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post",
+    |       "name": "onReceipt",
+    |       "expression": "{$request.body#/receiptUrl}",
+    |       "operations": [
+    |         {
+    |           "key": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/callbacks/onReceipt/{$request.body#~1receiptUrl}/post",
+    |           "method": "post",
+    |           "declaration": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/paths/~1subscriptions/post/callbacks/onEvent/{$request.body#~1callbackUrl}/post/callbacks/onReceipt/{$request.body#~1receiptUrl}/post"
+    |           },
+    |           "operation_id": null,
+    |           "summary": null,
+    |           "description": null,
+    |           "deprecated": false,
+    |           "uses": []
+    |         }
+    |       ]
+    |     },
+    |     {
+    |       "key": "/paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}",
+    |       "parent_operation_key": "/paths/~1subscriptions/post",
+    |       "name": "onStatus",
+    |       "expression": "{$request.query.hook}",
+    |       "operations": [
+    |         {
+    |           "key": "/paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put",
+    |           "method": "put",
+    |           "declaration": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/callbacks/Status/{$request.query.hook}/put"
+    |           },
+    |           "operation_id": null,
+    |           "summary": null,
+    |           "description": null,
+    |           "deprecated": false,
+    |           "uses": [
+    |             {
+    |               "schema_id": "https://dcg.invalid/inputs/root#/components/callbacks/Status/%7B$request.query.hook%7D/put/parameters/0/schema",
+    |               "source_pointer": "/paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put/parameters/0/schema",
+    |               "type": null
+    |             },
+    |             {
+    |               "schema_id": "https://dcg.invalid/inputs/root#/components/callbacks/Status/%7B$request.query.hook%7D/put/requestBody/content/application~1json/schema",
+    |               "source_pointer": "/paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put/requestBody/content/application~1json/schema",
+    |               "type": null
+    |             }
+    |           ]
+    |         }
+    |       ]
+    |     },
+    |     {
+    |       "key": "/paths/~1subscriptions/post/callbacks/onLoop/{$request.query.loop}",
+    |       "parent_operation_key": "/paths/~1subscriptions/post",
+    |       "name": "onLoop",
+    |       "expression": "{$request.query.loop}",
+    |       "operations": [
+    |         {
+    |           "key": "/paths/~1subscriptions/post/callbacks/onLoop/{$request.query.loop}/post",
+    |           "method": "post",
+    |           "declaration": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/callbacks/Loop/{$request.query.loop}/post"
+    |           },
+    |           "operation_id": null,
+    |           "summary": null,
+    |           "description": null,
+    |           "deprecated": false,
+    |           "uses": []
+    |         }
+    |       ]
+    |     },
+    |     {
+    |       "key": "/paths/~1events/get/callbacks/onStatus/{$request.query.hook}",
+    |       "parent_operation_key": "/paths/~1events/get",
+    |       "name": "onStatus",
+    |       "expression": "{$request.query.hook}",
+    |       "operations": [
+    |         {
+    |           "key": "/paths/~1events/get/callbacks/onStatus/{$request.query.hook}/put",
+    |           "method": "put",
+    |           "declaration": {
+    |             "uri": "../callbacks.yaml",
+    |             "pointer": "/components/callbacks/Status/{$request.query.hook}/put"
+    |           },
+    |           "operation_id": null,
+    |           "summary": null,
+    |           "description": null,
+    |           "deprecated": false,
+    |           "uses": [
+    |             {
+    |               "schema_id": "https://dcg.invalid/inputs/root#/components/callbacks/Status/%7B$request.query.hook%7D/put/parameters/0/schema",
+    |               "source_pointer": "/paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put/parameters/0/schema",
+    |               "type": null
+    |             },
+    |             {
+    |               "schema_id": "https://dcg.invalid/inputs/root#/components/callbacks/Status/%7B$request.query.hook%7D/put/requestBody/content/application~1json/schema",
+    |               "source_pointer": "/paths/~1subscriptions/post/callbacks/onStatus/{$request.query.hook}/put/requestBody/content/application~1json/schema",
+    |               "type": null
+    |             }
+    |           ]
+    |         }
+    |       ]
+    |     }
+    |   ],
+    |   "routers": [
+    |     {
+    |       "key": "untagged",
+    |       "file_stem": "untagged",
+    |       "primary_tag": null,
+    |       "operations": [
+    |         "/paths/~1subscriptions/post",
+    |         "/paths/~1events/get",
+    |         "/paths/~1secure/get",
+    |         "/paths/~1ping/get",
+    |         "/paths/~1echo/get"
+    |       ],
+    |       "extras": {}
+    |     }
+    |   ],
+    |   "models": [
+    |     {
+    |       "binding_id": "models:Subscription",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Subscription",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:Event",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Event",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:Cat",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Cat",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:Dog",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Dog",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:Bird",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Bird",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:Animal",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "Animal",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:N\u00e4me",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "N\u00e4me",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldSubscriptionsPostOnEventCallback1PostRequest",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "FieldSubscriptionsPostOnEventCallback1PostRequest",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldEventsGetResponse",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldEventsGetResponse",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldEventsGetResponse200XMapHeader",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "FieldEventsGetResponse200XMapHeader",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldSecureGetCookieTokenParameter",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldSecureGetCookieTokenParameter",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldSecureGetResponse401wwwAuthenticateHeader",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldSecureGetResponse401wwwAuthenticateHeader",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:State",
+    |       "kind": "enum",
+    |       "module": "models",
+    |       "name": "State",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:Status",
+    |       "kind": "model",
+    |       "module": "models",
+    |       "name": "Status",
+    |       "path": "models.py"
+    |     },
+    |     {
+    |       "binding_id": "models:FieldSecureGetResponse",
+    |       "kind": "root",
+    |       "module": "models",
+    |       "name": "FieldSecureGetResponse",
+    |       "path": "models.py"
+    |     }
+    |   ],
+    |   "imports": [],
+    |   "extras": {},
+    |   "context_version": 1
+    | }
+  show _generated/openapi.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """The OpenAPI fragments this package adds to its served document; regenerate them instead of editing."""
+    |
+    | from typing import Final
+    |
+    | from .._runtime.server.openapi import OpenAPIPackagePlan
+    |
+    | _BUNDLE = r"""{
+    |  "operations": [
+    |   {
+    |    "key": "/paths/~1subscriptions/post",
+    |    "method": "post",
+    |    "route_path": "/subscriptions",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/json": {
+    |        "schema": {
+    |         "$ref": "#/components/schemas/Subscription__2c8a848384a4"
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "201": {
+    |       "description": "Subscribed.",
+    |       "links": {
+    |        "events": {
+    |         "operationId": "listEvents",
+    |         "description": "The events the subscription receives."
+    |        }
+    |       }
+    |      },
+    |      "default": {
+    |       "description": "Unexpected."
+    |      },
+    |      "400": {
+    |       "description": "Unexpected. The response may also have no content.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unexpected. The response may also have no content.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Unexpected. The response may also have no content.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Unexpected. The response may also have no content.",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": [],
+    |     "callbacks": {
+    |      "onEvent": {
+    |       "{$request.body#/callbackUrl}": {
+    |        "post": {
+    |         "summary": "An event happened.",
+    |         "requestBody": {
+    |          "required": true,
+    |          "content": {
+    |           "application/json": {
+    |            "schema": {
+    |             "$ref": "#/components/schemas/Event__a163000694fe"
+    |            }
+    |           },
+    |           "multipart/form-data": {
+    |            "schema": {
+    |             "type": "object",
+    |             "properties": {
+    |              "file": {
+    |               "type": "string",
+    |               "format": "binary"
+    |              }
+    |             }
+    |            },
+    |            "encoding": {
+    |             "file": {
+    |              "contentType": "image/png"
+    |             }
+    |            }
+    |           }
+    |          }
+    |         },
+    |         "responses": {
+    |          "204": {
+    |           "description": "Received."
+    |          }
+    |         },
+    |         "security": [
+    |          {
+    |           "dcg_signature__b3eacd33433b": []
+    |          }
+    |         ],
+    |         "callbacks": {
+    |          "onReceipt": {
+    |           "{$request.body#/receiptUrl}": {
+    |            "post": {
+    |             "responses": {
+    |              "204": {
+    |               "description": "Acknowledged."
+    |              }
+    |             }
+    |            }
+    |           }
+    |          }
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "onStatus": {
+    |       "{$request.query.hook}": {
+    |        "put": {
+    |         "parameters": [
+    |          {
+    |           "name": "X-Trace",
+    |           "in": "header",
+    |           "schema": {
+    |            "type": "string"
+    |           }
+    |          }
+    |         ],
+    |         "requestBody": {
+    |          "content": {
+    |           "application/json": {
+    |            "schema": {
+    |             "$ref": "#/components/schemas/Status__5dd89ede8d30"
+    |            }
+    |           }
+    |          }
+    |         },
+    |         "responses": {
+    |          "200": {
+    |           "description": "Recorded."
+    |          }
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "onLoop": {
+    |       "{$request.query.loop}": {
+    |        "post": {
+    |         "responses": {
+    |          "204": {
+    |           "description": "Again."
+    |          }
+    |         }
+    |        }
+    |       }
+    |      }
+    |     }
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1events/get",
+    |    "method": "get",
+    |    "route_path": "/events",
+    |    "slots": [],
+    |    "fragment": {
+    |     "responses": {
+    |      "200": {
+    |       "description": "The events.",
+    |       "headers": {
+    |        "X-Map": {
+    |         "schema": {
+    |          "type": "object"
+    |         }
+    |        }
+    |       },
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "type": "array",
+    |          "items": {
+    |           "$ref": "#/components/schemas/Event__8a940f40c40f"
+    |          }
+    |         },
+    |         "example": [
+    |          {
+    |           "id": 1,
+    |           "kind": "created"
+    |          }
+    |         ]
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Failed.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/Event__8a940f40c40f"
+    |         }
+    |        },
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": [],
+    |     "callbacks": {
+    |      "onStatus": {
+    |       "{$request.query.hook}": {
+    |        "put": {
+    |         "parameters": [
+    |          {
+    |           "name": "X-Trace",
+    |           "in": "header",
+    |           "schema": {
+    |            "type": "string"
+    |           }
+    |          }
+    |         ],
+    |         "requestBody": {
+    |          "content": {
+    |           "application/json": {
+    |            "schema": {
+    |             "$ref": "#/components/schemas/Status__5dd89ede8d30"
+    |            }
+    |           }
+    |          }
+    |         },
+    |         "responses": {
+    |          "200": {
+    |           "description": "Recorded."
+    |          }
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "externalDocs": {
+    |      "url": "https://docs.example.com/events"
+    |     },
+    |     "servers": [
+    |      {
+    |       "url": "https://events.example.com"
+    |      }
+    |     ]
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1secure/get",
+    |    "method": "get",
+    |    "route_path": "/secure",
+    |    "slots": [],
+    |    "fragment": {
+    |     "parameters": [
+    |      {
+    |       "name": "token",
+    |       "in": "cookie",
+    |       "schema": {
+    |        "type": "string"
+    |       }
+    |      }
+    |     ],
+    |     "responses": {
+    |      "200": {
+    |       "description": "The animal.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/Animal__9433b13580fe"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "400": {
+    |       "description": "Bad.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "401": {
+    |       "description": "Denied.",
+    |       "headers": {
+    |        "www-authenticate": {
+    |         "schema": {
+    |          "type": "string"
+    |         }
+    |        }
+    |       },
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unauthorized"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "403": {
+    |       "description": "Forbidden.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Invalid.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "anyOf": [
+    |           {
+    |            "$ref": "#/components/schemas/Event__8a940f40c40f"
+    |           },
+    |           {
+    |            "$ref": "#/components/schemas/Status__9afe9d4414b0"
+    |           },
+    |           {
+    |            "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |           }
+    |          ]
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": [
+    |      {
+    |       "dcg_signature__b3eacd33433b": []
+    |      }
+    |     ]
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1ping/get",
+    |    "method": "get",
+    |    "route_path": "/ping",
+    |    "slots": [],
+    |    "fragment": {
+    |     "responses": {
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1echo/get",
+    |    "method": "get",
+    |    "route_path": "/echo",
+    |    "slots": [],
+    |    "fragment": {
+    |     "responses": {
+    |      "200": {
+    |       "description": "The echo.",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/FieldEventsGetResponse__8494cfc51e1a"
+    |         }
+    |        },
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/n_me__3118146334e6"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   }
+    |  ],
+    |  "components": {
+    |   "schemas": {
+    |    "Subscription__2c8a848384a4": {
+    |     "type": "object",
+    |     "required": [
+    |      "callbackUrl"
+    |     ],
+    |     "additionalProperties": false,
+    |     "properties": {
+    |      "callbackUrl": {
+    |       "type": "string",
+    |       "format": "uri"
+    |      }
+    |     }
+    |    },
+    |    "dcg_http_error__b3eacd33433b": {
+    |     "type": "object",
+    |     "properties": {
+    |      "detail": {}
+    |     },
+    |     "required": [
+    |      "detail"
+    |     ]
+    |    },
+    |    "dcg_validation_error__b3eacd33433b": {
+    |     "type": "object",
+    |     "properties": {
+    |      "detail": {
+    |       "type": "array",
+    |       "items": {
+    |        "type": "object",
+    |        "properties": {
+    |         "loc": {
+    |          "type": "array",
+    |          "items": {
+    |           "anyOf": [
+    |            {
+    |             "type": "string"
+    |            },
+    |            {
+    |             "type": "integer"
+    |            }
+    |           ]
+    |          }
+    |         },
+    |         "msg": {
+    |          "type": "string"
+    |         },
+    |         "type": {
+    |          "type": "string"
+    |         }
+    |        },
+    |        "required": [
+    |         "loc",
+    |         "msg",
+    |         "type"
+    |        ]
+    |       }
+    |      }
+    |     },
+    |     "required": [
+    |      "detail"
+    |     ]
+    |    },
+    |    "dcg_server_error__b3eacd33433b": {
+    |     "type": "string"
+    |    },
+    |    "Event__a163000694fe": {
+    |     "type": "object",
+    |     "required": [
+    |      "id"
+    |     ],
+    |     "properties": {
+    |      "id": {
+    |       "type": "integer"
+    |      },
+    |      "kind": {
+    |       "type": "string"
+    |      }
+    |     }
+    |    },
+    |    "Status__5dd89ede8d30": {
+    |     "type": "object",
+    |     "required": [
+    |      "state"
+    |     ],
+    |     "properties": {
+    |      "state": {
+    |       "$ref": "#/components/schemas/State__58473d2ca4ca"
+    |      }
+    |     }
+    |    },
+    |    "Event__8a940f40c40f": {
+    |     "type": "object",
+    |     "required": [
+    |      "id"
+    |     ],
+    |     "properties": {
+    |      "id": {
+    |       "type": "integer"
+    |      },
+    |      "kind": {
+    |       "type": "string"
+    |      }
+    |     }
+    |    },
+    |    "Animal__9433b13580fe": {
+    |     "oneOf": [
+    |      {
+    |       "$ref": "#/components/schemas/Cat__c8d9dc1fefc4"
+    |      },
+    |      {
+    |       "$ref": "#/components/schemas/Dog__27e172104a09"
+    |      }
+    |     ],
+    |     "discriminator": {
+    |      "propertyName": "pet_type",
+    |      "mapping": {
+    |       "cat": "#/components/schemas/Cat__c8d9dc1fefc4",
+    |       "dog": "#/components/schemas/Dog__27e172104a09",
+    |       "bird": "#/components/schemas/Bird"
+    |      }
+    |     }
+    |    },
+    |    "Status__9afe9d4414b0": {
+    |     "type": "object",
+    |     "required": [
+    |      "state"
+    |     ],
+    |     "properties": {
+    |      "state": {
+    |       "$ref": "#/components/schemas/State__339ba09e85ce"
+    |      }
+    |     }
+    |    },
+    |    "FieldEventsGetResponse__8494cfc51e1a": {
+    |     "type": "array",
+    |     "items": {
+    |      "$ref": "#/components/schemas/Event__8a940f40c40f"
+    |     }
+    |    },
+    |    "n_me__3118146334e6": {
+    |     "type": "string"
+    |    },
+    |    "State__58473d2ca4ca": {
+    |     "type": "string",
+    |     "enum": [
+    |      "up",
+    |      "down"
+    |     ]
+    |    },
+    |    "Cat__c8d9dc1fefc4": {
+    |     "type": "object",
+    |     "required": [
+    |      "pet_type"
+    |     ],
+    |     "properties": {
+    |      "pet_type": {
+    |       "type": "string"
+    |      }
+    |     }
+    |    },
+    |    "Dog__27e172104a09": {
+    |     "type": "object",
+    |     "required": [
+    |      "pet_type"
+    |     ],
+    |     "properties": {
+    |      "pet_type": {
+    |       "type": "string"
+    |      }
+    |     }
+    |    },
+    |    "State__339ba09e85ce": {
+    |     "type": "string",
+    |     "enum": [
+    |      "up",
+    |      "down"
+    |     ]
+    |    }
+    |   },
+    |   "securitySchemes": {
+    |    "dcg_signature__b3eacd33433b": {
+    |     "type": "apiKey",
+    |     "name": "X-Signature",
+    |     "in": "header"
+    |    }
+    |   }
+    |  }
+    | }"""
+    | PLAN: Final = OpenAPIPackagePlan(
+    |     package='server',
+    |     version='3.1.0',
+    |     repeated=False,
+    |     operation_keys=(
+    |         '/paths/~1subscriptions/post',
+    |         '/paths/~1events/get',
+    |         '/paths/~1secure/get',
+    |         '/paths/~1ping/get',
+    |         '/paths/~1echo/get',
+    |     ),
+    |     bundle=_BUNDLE,
+    | )

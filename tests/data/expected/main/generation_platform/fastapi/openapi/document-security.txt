@@ -1,0 +1,554 @@
+# document-security
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Secured pets",
+    "summary": "Pets behind every builtin credential helper.",
+    "description": "Each operation names its own alternatives.",
+    "termsOfService": "https://example.com/terms",
+    "contact": {
+      "name": "Pets team",
+      "email": "pets@example.com"
+    },
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "2.0"
+  },
+  "servers": [
+    {
+      "url": "https://pets.example.com/v2"
+    }
+  ],
+  "paths": {
+    "/pets": {
+      "get": {
+        "tags": [
+          "pets"
+        ],
+        "summary": "List Pets",
+        "operationId": "listPets",
+        "responses": {
+          "200": {
+            "description": "Names.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldPetsGetResponse"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The authentication schemes the operation accepts.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__ddb58502e850"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "dcg_api_key__ddb58502e850": []
+          }
+        ]
+      }
+    },
+    "/public": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Get Public",
+        "operationId": "getPublic",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__ddb58502e850"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/maybe": {
+      "get": {
+        "summary": "Get Maybe",
+        "operationId": "getMaybe",
+        "parameters": [
+          {
+            "name": "principal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Principal"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The authentication schemes the operation accepts.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__ddb58502e850"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {},
+          {
+            "dcg_bearer__ddb58502e850": []
+          }
+        ]
+      }
+    },
+    "/session": {
+      "get": {
+        "summary": "Get Session",
+        "operationId": "getSession",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The authentication schemes the operation accepts.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__ddb58502e850"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "dcg_cookie_key__ddb58502e850": []
+          },
+          {
+            "dcg_oidc__ddb58502e850": [
+              "openid"
+            ]
+          },
+          {
+            "dcg_api_key__ddb58502e850": []
+          }
+        ]
+      }
+    },
+    "/custom": {
+      "get": {
+        "summary": "Get Custom",
+        "operationId": "getCustom",
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The authentication schemes the operation accepts.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__ddb58502e850"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "dcg_digest__ddb58502e850": []
+          },
+          {
+            "dcg_mtls__ddb58502e850": []
+          },
+          {
+            "dcg_query_key__ddb58502e850": []
+          }
+        ]
+      }
+    },
+    "/pets/{petId}": {
+      "put": {
+        "summary": "Put Pet",
+        "operationId": "putPet",
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Petid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                },
+                "example": {
+                  "detail": "Unauthorized"
+                }
+              }
+            },
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "The authentication schemes the operation accepts.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__ddb58502e850"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__ddb58502e850"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "dcg_oauth__ddb58502e850": [
+              "write:pets",
+              "read:pets"
+            ]
+          },
+          {
+            "dcg_query_key__ddb58502e850": [],
+            "dcg_basic__ddb58502e850": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FieldPetsGetResponse": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "FieldPetsGetResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "dcg_http_error__ddb58502e850": {
+        "type": "object",
+        "properties": {
+          "detail": {}
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "dcg_server_error__ddb58502e850": {
+        "type": "string"
+      }
+    },
+    "securitySchemes": {
+      "dcg_api_key__ddb58502e850": {
+        "type": "apiKey",
+        "name": "X-API-Key",
+        "in": "header"
+      },
+      "dcg_bearer__ddb58502e850": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "dcg_oauth__ddb58502e850": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://example.com/token",
+            "scopes": {
+              "write:pets": "Write pets.",
+              "read:pets": "Read pets."
+            }
+          }
+        }
+      },
+      "dcg_query_key__ddb58502e850": {
+        "type": "apiKey",
+        "name": "key",
+        "in": "query"
+      },
+      "dcg_basic__ddb58502e850": {
+        "type": "http",
+        "scheme": "Basic"
+      },
+      "dcg_cookie_key__ddb58502e850": {
+        "type": "apiKey",
+        "name": "session",
+        "in": "cookie"
+      },
+      "dcg_oidc__ddb58502e850": {
+        "type": "openIdConnect",
+        "openIdConnectUrl": "https://example.com/.well-known/openid-configuration"
+      },
+      "dcg_digest__ddb58502e850": {
+        "type": "http",
+        "scheme": "digest"
+      },
+      "dcg_mtls__ddb58502e850": {
+        "type": "mutualTLS"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "pets",
+      "description": "Pet operations."
+    },
+    {
+      "name": "public"
+    }
+  ]
+}

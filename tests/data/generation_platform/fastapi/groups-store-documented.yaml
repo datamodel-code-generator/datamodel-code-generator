@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info: {title: Groups, version: "1.0"}
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      description: Lists pets.
+      responses:
+        "200":
+          description: Pets.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/Pet"}}
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      tags: [store]
+      parameters:
+        - {name: orderId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: The order.
+          links:
+            pets:
+              operationId: listPets
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Order"}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+    Order:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer}

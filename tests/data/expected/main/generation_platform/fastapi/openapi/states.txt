@@ -1,0 +1,7 @@
+# states
+unknown protocol: OpenAPIConfigurationError: app.openapi has a __dcg_openapi_state__ of an unknown protocol
+malformed plan: OpenAPIConfigurationError: app.openapi has a __dcg_openapi_state__ with a malformed package plan
+bundle not JSON: OpenAPIConfigurationError: The OpenAPI plan of package 'other' has a malformed bundle
+malformed operation: OpenAPIConfigurationError: The OpenAPI plan of package 'other' has a malformed bundle
+missing fragment: OpenAPIConfigurationError: The OpenAPI plan of package 'other' has no fragment for /x
+foreign plan: ['/pets', '/pets/mine', '/pets/{petId}', '/store/inventory']

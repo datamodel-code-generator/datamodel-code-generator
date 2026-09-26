@@ -8,6 +8,7 @@ render pydantic_v2.BaseModel
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -79,6 +80,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postJson',
     |         tags=['json'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1json/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1json/post'),
     |     )
     |
@@ -135,6 +144,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postText',
     |         tags=['raw'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1text/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1text/post'),
     |     )
     |

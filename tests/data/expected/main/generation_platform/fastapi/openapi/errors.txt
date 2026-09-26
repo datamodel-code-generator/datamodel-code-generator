@@ -1,0 +1,25 @@
+# errors
+install ['/paths/~1pets/get']: OpenAPIConfigurationError: operation_keys must be a tuple of operation keys
+install ('/nope',): OpenAPIConfigurationError: operation_keys names operations this package does not have: /nope
+install ('/paths/~1pets/get', '/paths/~1pets/get'): OpenAPIConfigurationError: operation_keys names an operation twice
+missing operations: OpenAPIConfigurationError: The document has no operation of package 'docs_pets' for /paths/~1pets/get, /paths/~1pets/post, /paths/~1pets~1mine/get, /paths/~1pets~1{petId}/get, /paths/~1pets~1{petId}/delete
+wrong marker version: OpenAPIConfigurationError: GET /pets has a malformed x-dcg-operation marker
+marker is text: OpenAPIConfigurationError: GET /pets has a malformed x-dcg-operation marker
+moved method: OpenAPIConfigurationError: PUT /pets does not register operation /paths/~1pets/get of package 'docs_pets' under a literal prefix
+not JSON: OpenAPIConfigurationError: The OpenAPI value of the document is not JSON
+paths not an object: OpenAPIConfigurationError: The OpenAPI value of paths is not an object
+odd path item: [[], 5]
+other parameter: OpenAPIConfigurationError: GET /pets declares the parameter ('cookie', 'session') apart from the generated one
+same parameter: [[], 4]
+bad security: OpenAPIConfigurationError: GET /pets has a malformed security requirement
+global security: [[{'global': ['read']}], 4]
+other component: OpenAPIConfigurationError: Package 'docs_pets' and the application define the component schemas/Pet__65a336b43d44 apart
+same component: [[], 4]
+referenced parameter: [[], 4]
+same schema: [[], 4]
+repeated security: [[{'key': []}], 4]
+parameters not an array: OpenAPIConfigurationError: The OpenAPI value of GET /pets parameters is not an array
+templated prefix: OpenAPIConfigurationError: GET /{tenant}/pets does not register operation /paths/~1pets/get of package 'docs_pets' under a literal prefix
+OpenAPI 3.0: OpenAPIConfigurationError: The application serves OpenAPI '3.0.2'; only 3.1.0 and 3.2.1 documents can be composed
+repeated placeholders in 3.2: OpenAPIConfigurationError: OpenAPI 3.2.1 forbids the repeated path placeholders of package 'docs_items'
+path collision: OpenAPIConfigurationError: GET /items/{dcg_p0}/parts/{part} and another operation both serve GET /items/{item-id}/parts/{part}

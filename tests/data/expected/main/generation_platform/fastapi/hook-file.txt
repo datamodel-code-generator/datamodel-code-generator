@@ -9,6 +9,7 @@ render pydantic_v2.BaseModel
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -51,6 +52,7 @@ render pydantic_v2.dataclass
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py

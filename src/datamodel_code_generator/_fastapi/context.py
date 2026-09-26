@@ -190,9 +190,45 @@ class OperationView:
     response_codecs_name: str
     handler_return_type: RenderType
     security: tuple[tuple[tuple[str, tuple[str, ...]], ...], ...] | None
+    servers: tuple[FrozenJSONMap, ...]
+    callbacks: tuple[str, ...]
     projections: tuple[FastAPIProjectionView, ...]
     path_slots: tuple[PathSlotView, ...]
     extras: FrozenJSONMap = field(default_factory=_empty)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CallbackUseView:
+    """One schema use of a callback operation; the server binds no codec to callbacks, so it has no type."""
+
+    schema_id: str | None
+    source_pointer: str
+    type: RenderType | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CallbackOperationView:
+    """One operation of a callback expression: its key, method, declaration, facts, and schema uses."""
+
+    key: str
+    method: str
+    declaration: SourceView
+    operation_id: str | None
+    summary: str | None
+    description: str | None
+    deprecated: bool
+    uses: tuple[CallbackUseView, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CallbackView:
+    """One callback expression of an operation or callback, with its operations in declaration order."""
+
+    key: str
+    parent_operation_key: str
+    name: str
+    expression: str
+    operations: tuple[CallbackOperationView, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -223,6 +259,7 @@ class FastAPIContext:
 
     info: FrozenJSONMap
     operations: tuple[OperationView, ...]
+    callbacks: tuple[CallbackView, ...]
     routers: tuple[RouterView, ...]
     models: tuple[ModelSymbolView, ...]
     imports: tuple[ImportSpec, ...]

@@ -7,6 +7,7 @@ render pydantic_v2.BaseModel
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -65,6 +66,14 @@ render pydantic_v2.BaseModel
     |         response_model_by_alias=True,
     |         response_model_exclude_unset=True,
     |         operation_id='getValue',
+    |         response_description='The value.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1values~1{id}/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1values~1{id}/get'),
     |     )
     |

@@ -99,6 +99,79 @@
       }
     }
   ],
+  "update-docs": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "spec": [
+        "api.yaml",
+        "groups-store-documented.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:pets"
+          ]
+        }
+      }
+    },
+    {
+      "generate": {}
+    }
+  ],
+  "update-shared": [
+    {
+      "spec": [
+        "api.yaml",
+        "groups-secured.yaml"
+      ]
+    },
+    {
+      "generate": {}
+    },
+    {
+      "spec": [
+        "api.yaml",
+        "groups-secured-own.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:a"
+          ]
+        }
+      }
+    },
+    {
+      "spec": [
+        "api.yaml",
+        "groups-secured-shared.yaml"
+      ]
+    },
+    {
+      "generate": {
+        "config": {
+          "update_groups": [
+            "tag:a"
+          ]
+        }
+      }
+    },
+    {
+      "generate": {}
+    }
+  ],
   "update-layout": [
     {
       "spec": [

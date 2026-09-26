@@ -9,6 +9,7 @@ render pydantic_v2.BaseModel
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -105,6 +106,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postJson',
     |         tags=['json'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1json/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1json/post'),
     |     )
     |
@@ -130,6 +139,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postOptional',
     |         tags=['json'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1json~1optional/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1json~1optional/post'),
     |     )
     |
@@ -155,6 +172,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postNullable',
     |         tags=['json'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1json~1nullable/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1json~1nullable/post'),
     |     )
     |
@@ -180,6 +205,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postEnvelope',
     |         tags=['json'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1json~1envelope/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1json~1envelope/post'),
     |     )
     |
@@ -205,6 +238,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postMany',
     |         tags=['json'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1json~1many/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1json~1many/post'),
     |     )
     |
@@ -272,6 +313,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postText',
     |         tags=['raw'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1text/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1text/post'),
     |     )
     |
@@ -294,6 +343,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='putBinary',
     |         tags=['raw'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1binary/put',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1binary/put'),
     |     )
     |
@@ -313,6 +370,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postRaw',
     |         tags=['raw'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1raw/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1raw/post'),
     |     )
     |
@@ -384,6 +449,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postForm',
     |         tags=['form'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1form/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1form/post'),
     |     )
     |
@@ -409,6 +482,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postOptionalForm',
     |         tags=['form'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1form~1optional/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1form~1optional/post'),
     |     )
     |
@@ -434,6 +515,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postEitherForm',
     |         tags=['form'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1form~1either/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1form~1either/post'),
     |     )
     |
@@ -459,6 +548,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postNestedForm',
     |         tags=['form'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1form~1nested/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1form~1nested/post'),
     |     )
     |
@@ -484,6 +581,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postClosedForm',
     |         tags=['form'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1form~1closed/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1form~1closed/post'),
     |     )
     |
@@ -509,6 +614,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='postChoiceForm',
     |         tags=['form'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1form~1choice/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1form~1choice/post'),
     |     )
     |
@@ -536,6 +649,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='upload',
     |         tags=['form'],
+    |         response_description='Done.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1upload/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1upload/post'),
     |     )
     |
@@ -977,3 +1098,1060 @@ render pydantic_v2.BaseModel
     |         responses=(ResponsePlan(status='204'),),
     |         primary=(204, None),
     |     )
+  show _generated/openapi.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """The OpenAPI fragments this package adds to its served document; regenerate them instead of editing."""
+    |
+    | from typing import Final
+    |
+    | from .._runtime.server.openapi import OpenAPIPackagePlan
+    |
+    | _BUNDLE = r"""{
+    |  "operations": [
+    |   {
+    |    "key": "/paths/~1json/post",
+    |    "method": "post",
+    |    "route_path": "/json",
+    |    "slots": [],
+    |    "fragment": {
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1json~1optional/post",
+    |    "method": "post",
+    |    "route_path": "/json/optional",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "content": {
+    |       "application/json": {
+    |        "schema": {
+    |         "$ref": "#/components/schemas/Item__bae5c02dde4e"
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1json~1nullable/post",
+    |    "method": "post",
+    |    "route_path": "/json/nullable",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/json": {
+    |        "schema": {
+    |         "type": [
+    |          "object",
+    |          "null"
+    |         ],
+    |         "required": [
+    |          "name"
+    |         ],
+    |         "properties": {
+    |          "name": {
+    |           "type": "string"
+    |          }
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1json~1envelope/post",
+    |    "method": "post",
+    |    "route_path": "/json/envelope",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/json": {
+    |        "schema": {
+    |         "$ref": "#/components/schemas/Account__e92a5c60f097"
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1json~1many/post",
+    |    "method": "post",
+    |    "route_path": "/json/many",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/json": {
+    |        "schema": {
+    |         "$ref": "#/components/schemas/Item__bae5c02dde4e"
+    |        }
+    |       },
+    |       "application/vnd.item+json": {
+    |        "schema": {
+    |         "$ref": "#/components/schemas/Item__bae5c02dde4e"
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1text/post",
+    |    "method": "post",
+    |    "route_path": "/text",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "text/plain": {
+    |        "schema": {
+    |         "type": "string",
+    |         "maxLength": 10
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1binary/put",
+    |    "method": "put",
+    |    "route_path": "/binary",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "content": {
+    |       "application/octet-stream": {}
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1raw/post",
+    |    "method": "post",
+    |    "route_path": "/raw",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "description": "The server passes this body to its handler as the request, without validating it.",
+    |      "content": {
+    |       "application/json": {
+    |        "schema": {
+    |         "type": "object"
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1form/post",
+    |    "method": "post",
+    |    "route_path": "/form",
+    |    "slots": [],
+    |    "fragment": {
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1form~1optional/post",
+    |    "method": "post",
+    |    "route_path": "/form/optional",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "content": {
+    |       "application/x-www-form-urlencoded": {
+    |        "schema": {
+    |         "type": "object",
+    |         "properties": {
+    |          "name": {
+    |           "type": "string"
+    |          },
+    |          "flags": {
+    |           "type": "array",
+    |           "items": {
+    |            "type": "boolean"
+    |           }
+    |          },
+    |          "ratio": {
+    |           "type": "number"
+    |          }
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1form~1either/post",
+    |    "method": "post",
+    |    "route_path": "/form/either",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/x-www-form-urlencoded": {
+    |        "schema": {
+    |         "type": "object",
+    |         "properties": {
+    |          "either": {
+    |           "type": [
+    |            "string",
+    |            "integer"
+    |           ]
+    |          },
+    |          "items": {
+    |           "type": "array",
+    |           "items": {
+    |            "type": "integer"
+    |           }
+    |          }
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1form~1nested/post",
+    |    "method": "post",
+    |    "route_path": "/form/nested",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/x-www-form-urlencoded": {
+    |        "schema": {
+    |         "type": "object",
+    |         "properties": {
+    |          "point": {
+    |           "type": "object",
+    |           "properties": {
+    |            "x": {
+    |             "type": "number"
+    |            }
+    |           }
+    |          }
+    |         },
+    |         "additionalProperties": {
+    |          "type": "integer"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1form~1closed/post",
+    |    "method": "post",
+    |    "route_path": "/form/closed",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/x-www-form-urlencoded": {
+    |        "schema": {
+    |         "type": "object",
+    |         "additionalProperties": false,
+    |         "properties": {
+    |          "name": {
+    |           "type": "string"
+    |          }
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1form~1choice/post",
+    |    "method": "post",
+    |    "route_path": "/form/choice",
+    |    "slots": [],
+    |    "fragment": {
+    |     "requestBody": {
+    |      "required": true,
+    |      "content": {
+    |       "application/x-www-form-urlencoded": {
+    |        "schema": {
+    |         "type": "object",
+    |         "properties": {
+    |          "name": {
+    |           "type": "string"
+    |          }
+    |         },
+    |         "minProperties": 1
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "400": {
+    |       "description": "Invalid request",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Invalid request"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "415": {
+    |       "description": "Unsupported media type",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+    |         },
+    |         "example": {
+    |          "detail": "Unsupported media type"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "422": {
+    |       "description": "Validation Error",
+    |       "content": {
+    |        "application/json": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   },
+    |   {
+    |    "key": "/paths/~1upload/post",
+    |    "method": "post",
+    |    "route_path": "/upload",
+    |    "slots": [],
+    |    "fragment": {
+    |     "responses": {
+    |      "204": {
+    |       "description": "Done."
+    |      },
+    |      "500": {
+    |       "description": "Internal Server Error",
+    |       "content": {
+    |        "text/plain": {
+    |         "schema": {
+    |          "$ref": "#/components/schemas/dcg_server_error__b3eacd33433b"
+    |         }
+    |        }
+    |       }
+    |      }
+    |     },
+    |     "security": []
+    |    }
+    |   }
+    |  ],
+    |  "components": {
+    |   "schemas": {
+    |    "dcg_server_error__b3eacd33433b": {
+    |     "type": "string"
+    |    },
+    |    "Item__bae5c02dde4e": {
+    |     "type": "object",
+    |     "required": [
+    |      "name"
+    |     ],
+    |     "properties": {
+    |      "name": {
+    |       "type": "string"
+    |      }
+    |     }
+    |    },
+    |    "dcg_http_error__b3eacd33433b": {
+    |     "type": "object",
+    |     "properties": {
+    |      "detail": {}
+    |     },
+    |     "required": [
+    |      "detail"
+    |     ]
+    |    },
+    |    "dcg_validation_error__b3eacd33433b": {
+    |     "type": "object",
+    |     "properties": {
+    |      "detail": {
+    |       "type": "array",
+    |       "items": {
+    |        "type": "object",
+    |        "properties": {
+    |         "loc": {
+    |          "type": "array",
+    |          "items": {
+    |           "anyOf": [
+    |            {
+    |             "type": "string"
+    |            },
+    |            {
+    |             "type": "integer"
+    |            }
+    |           ]
+    |          }
+    |         },
+    |         "msg": {
+    |          "type": "string"
+    |         },
+    |         "type": {
+    |          "type": "string"
+    |         }
+    |        },
+    |        "required": [
+    |         "loc",
+    |         "msg",
+    |         "type"
+    |        ]
+    |       }
+    |      }
+    |     },
+    |     "required": [
+    |      "detail"
+    |     ]
+    |    },
+    |    "Account__e92a5c60f097": {
+    |     "type": "object",
+    |     "required": [
+    |      "name"
+    |     ],
+    |     "properties": {
+    |      "id": {
+    |       "type": "integer",
+    |       "readOnly": true
+    |      },
+    |      "name": {
+    |       "type": "string"
+    |      }
+    |     }
+    |    }
+    |   }
+    |  }
+    | }"""
+    | PLAN: Final = OpenAPIPackagePlan(
+    |     package='server',
+    |     version='3.1.0',
+    |     repeated=False,
+    |     operation_keys=(
+    |         '/paths/~1json/post',
+    |         '/paths/~1json~1optional/post',
+    |         '/paths/~1json~1nullable/post',
+    |         '/paths/~1json~1envelope/post',
+    |         '/paths/~1json~1many/post',
+    |         '/paths/~1text/post',
+    |         '/paths/~1binary/put',
+    |         '/paths/~1raw/post',
+    |         '/paths/~1form/post',
+    |         '/paths/~1form~1optional/post',
+    |         '/paths/~1form~1either/post',
+    |         '/paths/~1form~1nested/post',
+    |         '/paths/~1form~1closed/post',
+    |         '/paths/~1form~1choice/post',
+    |         '/paths/~1upload/post',
+    |     ),
+    |     bundle=_BUNDLE,
+    | )

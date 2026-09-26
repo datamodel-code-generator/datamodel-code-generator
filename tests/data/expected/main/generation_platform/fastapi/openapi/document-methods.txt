@@ -1,0 +1,170 @@
+# document-methods
+{
+  "openapi": "3.2.1",
+  "info": {
+    "title": "Methods",
+    "version": "1.0"
+  },
+  "paths": {
+    "/search": {
+      "query": {
+        "summary": "Search the items.",
+        "description": "Send the search in the request body.",
+        "operationId": "searchItems",
+        "deprecated": true,
+        "responses": {
+          "200": {
+            "description": "The matching names.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldSearchQueryResponse"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "X-Note": {
+                "content": {
+                  "text/plain": {}
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__8e88f7efb5d7"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "additionalOperations": {
+        "LINK": {
+          "summary": "Link Items",
+          "operationId": "linkItems",
+          "responses": {
+            "204": {
+              "description": "Done."
+            },
+            "500": {
+              "description": "Internal Server Error",
+              "content": {
+                "text/plain": {
+                  "schema": {
+                    "$ref": "#/components/schemas/dcg_server_error__8e88f7efb5d7"
+                  }
+                }
+              }
+            }
+          },
+          "security": []
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FieldSearchQueryRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "FieldSearchQueryRequest"
+      },
+      "FieldSearchQueryResponse": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "FieldSearchQueryResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "dcg_server_error__8e88f7efb5d7": {
+        "type": "string"
+      }
+    }
+  }
+}

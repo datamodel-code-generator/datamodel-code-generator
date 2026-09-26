@@ -1,0 +1,595 @@
+# document-parameters
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Parameters",
+    "version": "1.0"
+  },
+  "paths": {
+    "/adapters": {
+      "get": {
+        "tags": [
+          "adapters"
+        ],
+        "summary": "List Adapters",
+        "operationId": "listAdapters",
+        "parameters": [
+          {
+            "name": "stamp",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "Stamp"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Page"
+            }
+          },
+          {
+            "name": "session",
+            "in": "cookie",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/Filter__d23a9d5e22c7"
+            }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "name": "X-Ids",
+            "in": "header",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "name": "blob",
+            "in": "query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]+$"
+            }
+          },
+          {
+            "name": "mail",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "email"
+            }
+          },
+          {
+            "name": "other",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "not": {
+                "const": "x"
+              }
+            }
+          },
+          {
+            "name": "none",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                null
+              ]
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": "ten"
+            }
+          },
+          {
+            "name": "point",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Point__9651a980b0e2"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Nothing."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/HTTPValidationError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/dcg_validation_error__91340604ca9a"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__91340604ca9a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__91340604ca9a"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/items/{item-id}/parts/{part}": {
+      "get": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Get Part",
+        "operationId": "getPart",
+        "parameters": [
+          {
+            "name": "item-id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": -10,
+              "exclusiveMaximum": 100,
+              "title": "Dcg P0"
+            }
+          },
+          {
+            "name": "part",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8,
+              "title": "Part"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": -2147483648,
+              "description": "Page size.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Page size."
+          },
+          {
+            "name": "ratio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "multipleOf": 0.5,
+              "title": "Ratio"
+            }
+          },
+          {
+            "name": "flag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Flag"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 4
+              },
+              "minItems": 1,
+              "default": [
+                "a"
+              ],
+              "title": "Tags"
+            }
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "deprecated": true,
+              "examples": [
+                "2024-01-01"
+              ],
+              "title": "Day"
+            },
+            "deprecated": true
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Ref"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "fast",
+                "slow"
+              ],
+              "type": "string",
+              "default": "fast",
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": 3,
+              "type": "integer",
+              "title": "Level"
+            }
+          },
+          {
+            "name": "request",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Request"
+            }
+          },
+          {
+            "name": "part",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Part"
+            }
+          },
+          {
+            "name": "2fa",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "2Fa"
+            }
+          },
+          {
+            "name": "X-Trace",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "X-Trace"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The part.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/FieldItemsItemIdPartsPartGetResponse"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__91340604ca9a"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/repeat/{id}/again/{id}": {
+      "get": {
+        "tags": [
+          "adapters"
+        ],
+        "summary": "Get Repeated",
+        "operationId": "getRepeated",
+        "responses": {
+          "204": {
+            "description": "Nothing."
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_http_error__91340604ca9a"
+                },
+                "example": {
+                  "detail": "Invalid request"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_validation_error__91340604ca9a"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/dcg_server_error__91340604ca9a"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FieldItemsItemIdPartsPartGetResponse": {
+        "type": "string",
+        "title": "FieldItemsItemIdPartsPartGetResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "dcg_server_error__91340604ca9a": {
+        "type": "string"
+      },
+      "Filter__d23a9d5e22c7": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "readOnly": true
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Point__9651a980b0e2": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "x"
+        ],
+        "properties": {
+          "x": {
+            "type": "integer"
+          }
+        }
+      },
+      "dcg_http_error__91340604ca9a": {
+        "type": "object",
+        "properties": {
+          "detail": {}
+        },
+        "required": [
+          "detail"
+        ]
+      },
+      "dcg_validation_error__91340604ca9a": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "loc": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  }
+                },
+                "msg": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "loc",
+                "msg",
+                "type"
+              ]
+            }
+          }
+        },
+        "required": [
+          "detail"
+        ]
+      }
+    }
+  }
+}

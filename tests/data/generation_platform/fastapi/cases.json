@@ -18,7 +18,8 @@
     "show": [
       "routers/items.py",
       "routers/adapters.py",
-      "_generated/contract.py"
+      "_generated/contract.py",
+      "_generated/openapi.py"
     ]
   },
   "bodies": {
@@ -35,7 +36,8 @@
       "routers/json.py",
       "routers/raw.py",
       "routers/form.py",
-      "_generated/contract.py"
+      "_generated/contract.py",
+      "_generated/openapi.py"
     ]
   },
   "request": {
@@ -415,7 +417,8 @@
       "_generated/contract.py",
       "routers/untagged.py",
       "routers/public.py",
-      "services.py"
+      "services.py",
+      "_generated/openapi.py"
     ]
   },
   "security-errors": {
@@ -429,6 +432,20 @@
     "show": [
       "application.py"
     ]
+  },
+  "callbacks": {
+    "input": "callbacks.yaml",
+    "config": {
+      "hooks": [
+        "record"
+      ]
+    },
+    "show": [
+      "_generated/openapi.py"
+    ]
+  },
+  "scheme-names": {
+    "input": "scheme-names.yaml"
   },
   "services": {
     "input": "services.yaml",

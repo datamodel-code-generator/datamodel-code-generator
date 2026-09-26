@@ -24,6 +24,7 @@ from secured import (
     Unset,
     build_router,
     create_app,
+    install_openapi,
 )
 from secured.auth_types import AuthContext, Credential, CredentialExtractor, CustomSecret
 from secured.responses import PutPetResponsePayload
@@ -148,3 +149,7 @@ router: APIRouter = build_router(
 )
 pets_router: APIRouter = pets.build_router(pets=Pets(), authorizer=authorizer, credential_extractors=extractors)
 public_router: APIRouter = public.build_router(public=Public())
+documented = FastAPI()
+documented.include_router(router)
+install_openapi(documented, operation_keys=("/paths/~1pets/get", "/paths/~1public/get"))
+install_openapi(documented)

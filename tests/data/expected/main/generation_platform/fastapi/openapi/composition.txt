@@ -1,0 +1,15 @@
+# composition
+GET /pets security [{'APIKeyHeader': [], 'dcg_api_key__ddb58502e850': []}]
+GET /public security [{'APIKeyHeader': []}]
+GET /maybe security [{'APIKeyHeader': []}, {'APIKeyHeader': [], 'dcg_bearer__ddb58502e850': []}]
+GET /session security [{'APIKeyHeader': [], 'dcg_cookie_key__ddb58502e850': []}, {'APIKeyHeader': [], 'dcg_oidc__ddb58502e850': ['openid']}, {'APIKeyHeader': [], 'dcg_api_key__ddb58502e850': []}]
+GET /custom security [{'APIKeyHeader': [], 'dcg_digest__ddb58502e850': []}, {'APIKeyHeader': [], 'dcg_mtls__ddb58502e850': []}, {'APIKeyHeader': [], 'dcg_query_key__ddb58502e850': []}]
+PUT /pets/{petId} security [{'APIKeyHeader': [], 'dcg_oauth__ddb58502e850': ['write:pets', 'read:pets']}, {'APIKeyHeader': [], 'dcg_query_key__ddb58502e850': [], 'dcg_basic__ddb58502e850': []}]
+schemes ['APIKeyHeader', 'dcg_api_key__ddb58502e850', 'dcg_basic__ddb58502e850', 'dcg_bearer__ddb58502e850', 'dcg_cookie_key__ddb58502e850', 'dcg_digest__ddb58502e850', 'dcg_mtls__ddb58502e850', 'dcg_oauth__ddb58502e850', 'dcg_oidc__ddb58502e850', 'dcg_query_key__ddb58502e850']
+other header: OpenAPIConfigurationError: GET /pets response 401 declares the header 'WWW-Authenticate' apart from the generated one
+same header: {'description': 'Denied.', 'headers': {'www-authenticate': {'description': 'The authentication schemes the operation accepts.', 'schema': {'type': 'string'}}}, 'content': {'application/json': {'schema': {'$ref': '#/components/schemas/dcg_http_error__ddb58502e850'}, 'example': {'detail': 'Unauthorized'}}}}
+other body: OpenAPIConfigurationError: POST /raw declares requestBody apart from the generated operation
+same body: ['content', 'description', 'required']
+user query named like the cookie adapter: ["GET /pets listPets ['limit', 'tags', 'kind', 'since', 'session', 'X-Request-Id', 'session']"]
+factory example {'description': 'The events.', 'content': {'application/json': {'example': [], 'schema': {'type': 'array', 'items': {'$ref': '#/components/schemas/Event__fcc2f28cb876'}}}}, 'headers': {'X-Map': {'schema': {'type': 'object'}}}}
+plain text {"description": "The pets.", "content": {"text/plain": {"schema": {"type": "string"}}, "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Pet__65a336b43d44"}}}}}

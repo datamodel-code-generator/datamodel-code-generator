@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from itertools import starmap
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
+from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened, operation_uses
 from datamodel_code_generator._fastapi.context import (
     ArgumentView,
+    CallbackOperationView,
+    CallbackUseView,
+    CallbackView,
     FastAPIContext,
     FastAPIProjectionView,
     HeaderView,
@@ -24,19 +29,21 @@ from datamodel_code_generator._fastapi.context import (
     RouterView,
     SourceView,
 )
+from datamodel_code_generator._fastapi.openapi import documentation
 from datamodel_code_generator._fastapi.plan import Default
 from datamodel_code_generator._fastapi.render import Module
 from datamodel_code_generator._fastapi.routes import tags
 from datamodel_code_generator._generation_contract import GeneratedSymbolType, LiteralScalar
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
-from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, freeze_wire
+from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, escape_pointer_token, freeze_wire
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._fastapi.context import RenderKind
+    from datamodel_code_generator._fastapi.callbacks import CallbackNode
+    from datamodel_code_generator._fastapi.context import FrozenJSONMap, RenderKind
     from datamodel_code_generator._fastapi.plan import (
         Argument,
         BodySpec,
@@ -49,7 +56,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._fastapi.render import ServerRenderer
     from datamodel_code_generator._generation_contract import FrozenLiteral, SourceLocation, TypeUseBinding, TypeUseId
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
 
 _PRINCIPAL: Final = ("_runtime.server.security", "PrincipalT")
 
@@ -63,13 +70,21 @@ class ContextBuilder:
         self.request = request
         self.package = request.config.package
         self.symbols = {symbol.id: symbol for symbol in request.batch.symbols}
+        self.type_uses = {use.id: use for use in request.batch.type_uses}
 
     def context(self) -> FastAPIContext:
         """Return the context of the plan, with no extras or imports yet."""
         plan = self.renderer.plan
+        index = CallbackIndex(self.request.batch)
+        nodes = {spec.key: index.nodes(spec.contract, spec.key) for spec in plan.operations}
+        callbacks = self.callbacks(node for spec in plan.operations for node in flattened(nodes[spec.key]))
         return FastAPIContext(
             info=MappingProxyType(dict(plan.info)),
-            operations=tuple(self.operation(spec) for spec in plan.operations),
+            operations=tuple(
+                self.operation(spec, tuple(view.key for view in callbacks if view.parent_operation_key == spec.key))
+                for spec in plan.operations
+            ),
+            callbacks=callbacks,
             routers=tuple(
                 RouterView(
                     key=group.key,
@@ -93,7 +108,45 @@ class ContextBuilder:
             imports=(),
         )
 
-    def operation(self, spec: OperationSpec) -> OperationView:
+    def callbacks(self, nodes: Iterable[CallbackNode]) -> tuple[CallbackView, ...]:
+        """Return the callback expressions of the operations and callbacks, each with its operations."""
+        grouped: dict[tuple[str, str, str], list[CallbackNode]] = {}
+        for node in nodes:
+            grouped.setdefault((node.parent_key, node.name, node.expression), []).append(node)
+        return tuple(
+            CallbackView(
+                key="/".join((parent, "callbacks", escape_pointer_token(name), escape_pointer_token(expression))),
+                parent_operation_key=parent,
+                name=name,
+                expression=expression,
+                operations=tuple(self.callback_operation(node) for node in members),
+            )
+            for (parent, name, expression), members in grouped.items()
+        )
+
+    def callback_operation(self, node: CallbackNode) -> CallbackOperationView:
+        """Return the view of one callback operation: its declaration, facts, and schema uses."""
+        contract = node.operation
+        facts = dict(contract.facts)
+        wire = self.renderer.wire
+        return CallbackOperationView(
+            key=node.key,
+            method=node.tokens[-1],
+            declaration=self.source(contract.declaration.location),
+            operation_id=_text(facts.get("operationId")) if contract.explicit_operation_id else None,
+            summary=_text(facts.get("summary")),
+            description=_text(facts.get("description")),
+            deprecated=_flag(facts.get("deprecated")),
+            uses=tuple(
+                CallbackUseView(
+                    schema_id=None if (location := self.type_uses[use].schema) is None else wire.schema_id(location),
+                    source_pointer=use.schema_site.pointer,
+                )
+                for use in operation_uses(contract)
+            ),
+        )
+
+    def operation(self, spec: OperationSpec, callbacks: tuple[str, ...]) -> OperationView:
         """Return the view of one planned operation."""
         contract = spec.contract
         facts = dict(contract.facts)
@@ -137,6 +190,8 @@ class ContextBuilder:
                 lambda module: " | ".join(self.renderer.results(module, spec)), "result"
             ),
             security=None if spec.security is None else spec.security.requirements,
+            servers=_servers(facts.get("servers")),
+            callbacks=callbacks,
             projections=tuple(self.projection(decision) for decision in spec.decisions()),
             path_slots=tuple(
                 PathSlotView(wire_name=slot.wire_name, slot=slot.slot, occurrence=slot.occurrence)
@@ -285,6 +340,17 @@ class ContextBuilder:
             and isinstance(bound := use.type, GeneratedSymbolType)
             and self.symbols[bound.symbol].nullable
         )
+
+
+def _servers(value: FrozenLiteral | None) -> tuple[FrozenJSONMap, ...]:
+    servers = None if value is None else documentation(value)
+    return tuple(_frozen(server) for server in servers if isinstance(server, dict)) if isinstance(servers, list) else ()
+
+
+def _frozen(value: JSONValue) -> FrozenJSONMap:
+    frozen = freeze_wire(value)
+    assert isinstance(frozen, Mapping)
+    return frozen
 
 
 def _body_pointer(spec: OperationSpec) -> str:

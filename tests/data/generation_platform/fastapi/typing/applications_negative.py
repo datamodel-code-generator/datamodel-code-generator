@@ -6,7 +6,7 @@ from applications import Admin, Pets, Public, Untagged, User, authorize, store
 from fastapi import FastAPI, Request
 from secured_models import FieldPetsGetResponse
 
-from secured import FastAPIOptions, OperationDependencies, Unset, create_app
+from secured import FastAPIOptions, OperationDependencies, Unset, create_app, install_openapi
 from secured.auth_types import AuthContext, Authorizer, Credential, CredentialExtractor, CustomSecret
 from secured.services import PetsService, UntaggedService
 
@@ -81,3 +81,4 @@ admins: FastAPI = create_app(pets=Admins(), public=Public(), untagged=Untagged()
 create_app(public=Public(), untagged=Untagged(), authorizer=authorize)  # error
 create_app(pets=Pets(), public=Public(), untagged=Untagged())  # error
 secret: FastAPI = create_app(pets=Pets(), public=Public(), untagged=Untagged(), authorizer=authorize, credential_extractors={"digest": raw_digest})  # error
+install_openapi(FastAPI(), operation_keys=("/paths/~1nope/get",))  # error

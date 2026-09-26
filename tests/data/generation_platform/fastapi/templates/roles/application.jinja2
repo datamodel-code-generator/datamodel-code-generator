@@ -18,8 +18,17 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
     )
 
 
+{{ install_signature }}
+    """Add this package's OpenAPI fragments to an application that includes its routes.
+
+    operation_keys names the operations it includes, all of them by default. The
+    application composes its document when it first serves or checks it.
+    """
+    {{ install }}(app, {{ openapi }}.PLAN, operation_keys)
+
+
 {{ app_signature }}
-    """Create the application from the source info and fastapi_options, then include every operation's route."""
+    """Create the application with every operation, then check its OpenAPI document."""
     app = {{ fastapi }}(**{{ application_options }}(fastapi_options, INFO))
     app.include_router(
         build_router(
@@ -28,6 +37,8 @@ INFO: {{ final }}[{{ options }}] = {{ info }}
 {%- endfor %}
         )
     )
+    install_openapi(app)
+    app.openapi()
     return app
 
 

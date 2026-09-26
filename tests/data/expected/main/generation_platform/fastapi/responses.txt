@@ -8,6 +8,7 @@ render pydantic_v2.BaseModel
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -67,6 +68,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='create',
     |         tags=['results'],
+    |         response_description='Created.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1created/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1created/post'),
     |     )
     |
@@ -86,6 +95,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='onlyDefault',
     |         tags=['results'],
+    |         response_description='Anything.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1defaults/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1defaults/get'),
     |     )
     |
@@ -105,6 +122,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='onlyRanges',
     |         tags=['results'],
+    |         response_description='Success.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1ranges/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1ranges/get'),
     |     )
     |
@@ -125,6 +150,14 @@ render pydantic_v2.BaseModel
     |         response_model_exclude_unset=True,
     |         operation_id='onlyErrors',
     |         tags=['results'],
+    |         response_description='Missing.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1errors/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1errors/get'),
     |     )
     |
@@ -144,6 +177,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='getOptional',
     |         tags=['results'],
+    |         response_description='A loose thing.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1optional/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1optional/get'),
     |     )
     |
@@ -163,6 +204,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='getSecret',
     |         tags=['results'],
+    |         response_description='A thing with a write-only field.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1secret/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1secret/get'),
     |     )
     |
@@ -182,6 +231,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='headSecret',
     |         tags=['results'],
+    |         response_description='Exists.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1secret/head',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1secret/head'),
     |     )
     |
@@ -246,6 +303,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='download',
     |         tags=['files'],
+    |         response_description='The file.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1download/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1download/get'),
     |     )
     |
@@ -893,6 +958,7 @@ render pydantic_v2.dataclass
   _generated/__init__.py
   _generated/contract.py
   _generated/model_bindings.py
+  _generated/openapi.py
   model_codecs.py
   responses.py
   errors.py
@@ -952,6 +1018,14 @@ render pydantic_v2.dataclass
     |         response_class=Response,
     |         operation_id='create',
     |         tags=['results'],
+    |         response_description='Created.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1created/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1created/post'),
     |     )
     |
@@ -971,6 +1045,14 @@ render pydantic_v2.dataclass
     |         response_class=Response,
     |         operation_id='onlyDefault',
     |         tags=['results'],
+    |         response_description='Anything.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1defaults/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1defaults/get'),
     |     )
     |
@@ -990,6 +1072,14 @@ render pydantic_v2.dataclass
     |         response_class=Response,
     |         operation_id='onlyRanges',
     |         tags=['results'],
+    |         response_description='Success.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1ranges/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1ranges/get'),
     |     )
     |
@@ -1010,6 +1100,14 @@ render pydantic_v2.dataclass
     |         response_model_exclude_unset=True,
     |         operation_id='onlyErrors',
     |         tags=['results'],
+    |         response_description='Missing.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1errors/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1errors/get'),
     |     )
     |
@@ -1029,6 +1127,14 @@ render pydantic_v2.dataclass
     |         response_class=Response,
     |         operation_id='getOptional',
     |         tags=['results'],
+    |         response_description='A loose thing.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1optional/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1optional/get'),
     |     )
     |
@@ -1048,6 +1154,14 @@ render pydantic_v2.dataclass
     |         response_class=Response,
     |         operation_id='getSecret',
     |         tags=['results'],
+    |         response_description='A thing with a write-only field.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1secret/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1secret/get'),
     |     )
     |
@@ -1067,6 +1181,14 @@ render pydantic_v2.dataclass
     |         response_class=Response,
     |         operation_id='headSecret',
     |         tags=['results'],
+    |         response_description='Exists.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1secret/head',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1secret/head'),
     |     )
     |
@@ -1131,6 +1253,14 @@ render pydantic_v2.dataclass
     |         response_class=Response,
     |         operation_id='download',
     |         tags=['files'],
+    |         response_description='The file.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1download/get',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1download/get'),
     |     )
     |
