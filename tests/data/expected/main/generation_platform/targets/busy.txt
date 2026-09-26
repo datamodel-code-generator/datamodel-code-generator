@@ -21,7 +21,7 @@ generate
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['written']
+  26 runtime modules ['written']
 hold thread lock on server
 generate
   APIGenerationError
@@ -54,4 +54,4 @@ generate
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['unchanged']
+  26 runtime modules ['unchanged']

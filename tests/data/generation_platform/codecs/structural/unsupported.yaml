@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info:
+  title: Types without structural conversion
+  version: "1"
+paths:
+  /files:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/File"
+      responses:
+        "204":
+          description: Stored.
+  /trees:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Tree"
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Id:
+      type: string
+      format: uuid
+    Tree:
+      anyOf:
+        - type: string
+        - type: array
+          items:
+            $ref: "#/components/schemas/Tree"
+    File:
+      type: object
+      properties:
+        data:
+          type: string
+          format: binary
+        queue:
+          type: array
+          items:
+            type: integer
+          x-python-type: "deque[int]"
+        by_id:
+          type: object
+          propertyNames:
+            $ref: "#/components/schemas/Id"
+          additionalProperties:
+            type: integer
+        size:
+          type: integer

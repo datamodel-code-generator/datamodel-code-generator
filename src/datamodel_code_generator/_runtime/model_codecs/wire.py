@@ -15,6 +15,7 @@ from typing_extensions import TypeAliasType, TypeIs
 from .errors import CodecBindingError
 
 if TYPE_CHECKING:
+    from collections.abc import Set as AbstractSet
     from typing import TypeAlias
 
     JSONScalar: TypeAlias = bool | str | int | float | Decimal | None
@@ -132,7 +133,7 @@ def check_array_presence(presence: PresenceTree | None, length: int, pointer: st
         raise CodecBindingError(msg)
 
 
-def check_object_presence(presence: PresenceTree | None, available: set[str], pointer: str) -> None:
+def check_object_presence(presence: PresenceTree | None, available: AbstractSet[str], pointer: str) -> None:
     """Require a presence tree for an object to name only existing members."""
     if presence is not None and (
         presence.container != "object" or any(key not in available for key, _ in presence.members)

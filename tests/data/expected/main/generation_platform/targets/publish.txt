@@ -21,7 +21,7 @@ generate
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['written']
+  26 runtime modules ['written']
 tree
   .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
   .dcg-api-state/locks/dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100b.lock
@@ -45,7 +45,7 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  25 runtime modules ['present']
+  26 runtime modules ['present']
 generate
   target=fastapi schema_version=1
   unchanged model models.py
@@ -68,7 +68,7 @@ generate
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['unchanged']
+  26 runtime modules ['unchanged']
 generate
   target=fastapi schema_version=1
   written target server/application.py (target)
@@ -90,7 +90,7 @@ generate
   unchanged target server/auth_types.py (target)
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
-  25 runtime modules ['unchanged']
+  26 runtime modules ['unchanged']
   deleted target server/routers/store.py (target)
 tree
   .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
@@ -114,7 +114,7 @@ tree
   server/routers/pets.py
   server/routers/untagged.py
   server/services.py
-  25 runtime modules ['present']
+  26 runtime modules ['present']
 render
   target=fastapi schema_version=1
   unchanged model models.py
@@ -136,5 +136,5 @@ render
   unchanged target server/py.typed (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['unchanged']
+  26 runtime modules ['unchanged']
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service

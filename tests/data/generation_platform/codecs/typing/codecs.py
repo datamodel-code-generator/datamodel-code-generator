@@ -1,5 +1,7 @@
 """Positive model codec typing cases, checked with both pinned checkers."""
 
+from dataclasses import dataclass
+
 from pydantic import BaseModel
 from typing_extensions import assert_type
 
@@ -11,11 +13,17 @@ from datamodel_code_generator._runtime.model_codecs.outbound import (
     OutboundCodec,
 )
 from datamodel_code_generator._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
+from datamodel_code_generator._runtime.model_codecs.structural import StructuralModelCodec
 from datamodel_code_generator._runtime.model_codecs.values import DecodedValue, ModelInput, ModelValue, ProjectionIssue
 from datamodel_code_generator._runtime.model_codecs.wire import PresenceTree, WireValue, presence_of
 
 
 class Pet(BaseModel):
+    name: str
+
+
+@dataclass
+class Tag:
     name: str
 
 
@@ -50,3 +58,14 @@ def exercise(
     assert_type(codec.encode(pet, context), WireValue)
     assert_type(codec.encode(sent, context), WireValue)
     assert_type(codec.encode(envelope.from_wire(wire), context), WireValue)
+
+
+def exercise_structural(codec: StructuralModelCodec[Tag], context: CodecContext, wire: WireValue, tag: Tag) -> None:
+    protocol: ModelCodec[Tag] = codec
+    decoded = protocol.decode(wire, context)
+    assert_type(decoded, DecodedValue[Tag])
+    assert_type(codec.from_wire({"name": "a"}, context).require_model(), Tag)
+    assert_type(codec.snapshot(tag, context), ModelValue[Tag])
+    assert_type(NativeOutboundCodec(codec, context).from_wire(wire), ModelValue[Tag])
+    assert_type(codec.encode(tag, context), WireValue)
+    assert_type(codec.encode(decoded, context), WireValue)

@@ -21,7 +21,7 @@ generate
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['written']
+  26 runtime modules ['written']
 show server/routers/pets.py
   | # -*- coding: latin-1 -*-
   | # Example header

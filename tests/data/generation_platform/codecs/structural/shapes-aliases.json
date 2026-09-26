@@ -1,0 +1,13 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_shapes_stdlib_aliases",
+  "options": {"use_type_alias": true, "use_type_alias_type": true},
+  "cases": [
+    {"name": "animal-server-dog", "use": "/paths/~1animals/post request_body", "op": "decode", "value": {"bark": 1}},
+    {"name": "animal-client-decode-cat", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"id": 1, "meow": true}},
+    {"name": "mixed-server-decode", "use": "/paths/~1mixed/post request_body", "op": "decode", "value": {"size": "large"}},
+    {"name": "kin-server-encode-cat", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+     "value": {"call": "Cat", "args": {"id": 1, "meow": true}}}
+  ]
+}

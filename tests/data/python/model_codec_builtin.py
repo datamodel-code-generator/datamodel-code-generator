@@ -1,4 +1,4 @@
-"""Run bound Pydantic v2 model codecs over really generated models, rendering each case's result as text."""
+"""Run the builtin model codecs over really generated models, rendering each case's result as text."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import dataclasses
 import importlib
 import sys
 from dataclasses import replace
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -22,8 +23,10 @@ from datamodel_code_generator._runtime.model_codecs.errors import (
     WireValidationError,
 )
 from datamodel_code_generator._runtime.model_codecs.outbound import EnvelopeOutboundCodec, NativeOutboundCodec
+from datamodel_code_generator._runtime.model_codecs.codec import BuiltinModelCodec
 from datamodel_code_generator._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from datamodel_code_generator._runtime.model_codecs.schema import SchemaBundle, SchemaPatch
+from datamodel_code_generator._runtime.model_codecs.structural import StructuralModelCodec
 from datamodel_code_generator._runtime.model_codecs.values import ModelInput, ModelValue
 from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire, presence_of, thaw_wire
 from tests.data.python.generation_session_inputs import generate_product
@@ -32,6 +35,21 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest
+
+
+CODECS: dict[str, type[BuiltinModelCodec[object]]] = {
+    "pydantic_v2.BaseModel": PydanticModelCodec,
+    "pydantic_v2.dataclass": PydanticModelCodec,
+    "dataclasses.dataclass": StructuralModelCodec,
+}
+
+
+class _Unset:
+    def __repr__(self) -> str:
+        return "<unset>"
+
+
+_UNSET = _Unset()
 
 
 def _use_key(use: object) -> str:
@@ -49,10 +67,14 @@ def _native(value: object) -> str:
             names = [*type(value).model_fields, *(value.model_extra or {})]
             return f"{type(value).__name__}({', '.join(f'{name}={_native(getattr(value, name))}' for name in names)})"
         case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
-            fields = ", ".join(f"{field.name}={_native(getattr(value, field.name))}" for field in dataclasses.fields(value))
+            fields = ", ".join(
+                f"{field.name}={_native(getattr(value, field.name, _UNSET))}" for field in dataclasses.fields(value)
+            )
             return f"{type(value).__name__}({fields})"
         case set() | frozenset():
             return "{" + ", ".join(sorted(_native(item) for item in value)) + "}"
+        case PurePath():
+            return f"Path({str(value)!r})"
         case list():
             return "[" + ", ".join(_native(item) for item in value) + "]"
         case dict():
@@ -90,7 +112,7 @@ def _failure(error: CodecError) -> str:
 
 
 class _Runner:
-    def __init__(self, package: str, codecs: dict[str, PydanticModelCodec[object]]) -> None:
+    def __init__(self, package: str, codecs: dict[str, BuiltinModelCodec[object]]) -> None:
         self.package = package
         self.codecs = codecs
         self.results: dict[str, object] = {}
@@ -107,6 +129,8 @@ class _Runner:
                 return self.results[name]
             case {"py": "object"}:
                 return object()
+            case {"py": "float", "text": str() as text}:
+                return float(text)
             case {"py": "set", "items": list() as items}:
                 return {self.native(item) for item in items}
             case {"py": "tuple", "items": list() as items}:
@@ -126,7 +150,7 @@ class _Runner:
                 return spec
 
     def wire(self, spec: object) -> object:
-        if isinstance(spec, dict) and spec.keys() & {"call", "result", "nested"}:
+        if isinstance(spec, dict) and spec.keys() & {"call", "result", "nested", "py"}:
             return self.native(spec)
         return freeze_wire(spec)
 
@@ -218,13 +242,13 @@ def _forget(package: str, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delitem(sys.modules, name)
 
 
-def pydantic_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+def builtin_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """Generate models, plan their codecs, import the generated package, and run every case in order."""
     fixture = thaw_wire(decode_json(cases.read_bytes()))
     plan, wire, package = _prepare(source, fixture, root, monkeypatch)
     lines = [f"diagnostic {item.code} {item.source.pointer}: {item.message}" for item in plan.diagnostics]
     bundles = {view.direction: SchemaBundle(wire.resources, view) for view in wire.views}
-    codecs: dict[str, PydanticModelCodec[object]] = {}
+    codecs: dict[str, BuiltinModelCodec[object]] = {}
     try:
         for use, binding in plan.bindings:
             lines.append(
@@ -232,12 +256,15 @@ def pydantic_codec_report(source: Path, cases: Path, root: Path, monkeypatch: py
                 f"models={[(model.symbol, model.native_kind, model.extra, model.open) for model in binding.models]}"
             )
             if binding.native_export is not None:
-                codecs[_use_key(use)] = PydanticModelCodec(
-                    binding,
-                    _export(package, binding.native_export),
-                    {model.symbol: _export(package, model.symbol) for model in binding.models},
-                    bundles[binding.direction],
-                )
+                try:
+                    codecs[_use_key(use)] = CODECS[binding.backend](
+                        binding,
+                        _export(package, binding.native_export),
+                        {model.symbol: _export(package, model.symbol) for model in binding.models},
+                        bundles[binding.direction],
+                    )
+                except CodecError as error:
+                    lines.append(f"codec {_use_key(use)}: {_failure(error)}")
         runner = _Runner(package, codecs)
         lines.extend(f"{case['name']}: {runner.run(case)}" for case in fixture["cases"])
     finally:
@@ -245,7 +272,7 @@ def pydantic_codec_report(source: Path, cases: Path, root: Path, monkeypatch: py
     return "\n".join(lines) + "\n"
 
 
-def pydantic_codec_startup_report(source: Path, cases: Path, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+def builtin_codec_startup_report(source: Path, cases: Path, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """Build codecs from deliberately mismatched bindings, bundles, and native types, naming each failure."""
     fixture = thaw_wire(decode_json(cases.read_bytes()))
     plan, wire, package = _prepare(source, fixture, root, monkeypatch)
@@ -267,16 +294,16 @@ def pydantic_codec_startup_report(source: Path, cases: Path, root: Path, monkeyp
                         wire.resources,
                         replace(view, patches=(*view.patches, SchemaPatch(**{**patch, "value": freeze_wire(patch["value"])}))),
                     )
-                codec = PydanticModelCodec(
+                codec = CODECS[str(fixture["backend"])](
                     binding,
-                    _export(package, binding.native_export or ""),
+                    models.get(binding.native_export) or _export(package, binding.native_export or ""),
                     {key: value for key, value in models.items() if value is not None},
                     bundle,
                 )
                 result = "built"
                 if "decode" in case:
                     context = CodecContext(
-                        surface="server",
+                        surface=case.get("surface", "server"),
                         direction=binding.direction,
                         schema_id=binding.schema_id,
                         operation_id=binding.operation_id,

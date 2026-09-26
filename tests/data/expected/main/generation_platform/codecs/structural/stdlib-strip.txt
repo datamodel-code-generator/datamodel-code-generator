@@ -1,0 +1,12 @@
+use /paths/~1leaves/post request_body: envelope dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
+use /paths/~1leaves/post response_body 200: envelope dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
+use /paths/~1records/put request_body: envelope dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1records/put response_body 200: envelope dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1keyed/post request_body: envelope dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1keyed/post response_body 200: envelope dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1tickets/post request_body: envelope dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
+use /paths/~1tickets/post response_body 200: envelope dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
+record-client-decode-gap: input issues=MODEL_PROJECTION_GAP@/hint:models:Record.hint wire={"name":"a","stamp":"s"} extras={}
+record-client-decode: model Record(name='a', stamp='s', items=[], note=None, hint='h') wire={"name":"a","stamp":"s","hint":"h"} presence=['', '/name', '/stamp', '/hint'] extras={}
+record-server-encode-envelope: wire={"name":"a","stamp":"s"}
+record-client-require-gap: ModelProjectionError The value has no native projection: MODEL_PROJECTION_GAP at /hint

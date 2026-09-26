@@ -22,7 +22,7 @@ generate
   written model_metadata meta/models.json
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['written']
+  26 runtime modules ['written']
 hold thread lock on meta/models.json
 generate
   APIGenerationError
@@ -49,7 +49,7 @@ generate
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
-  25 runtime modules ['unchanged']
+  26 runtime modules ['unchanged']
 release
 generate
   target=fastapi schema_version=1
@@ -74,7 +74,7 @@ generate
   written model_metadata models/meta.json
   written model_inventory modular/.dcg-state/model-artifacts.json (target)
   written target_manifest modular/.dcg-target-manifest.json (target)
-  24 runtime modules ['written']
+  25 runtime modules ['written']
 tree
   .dcg-api-state/locks/0511abcb24917aec1ef5f0469c3017a6010036ef8237372d3ec75c83f27b91bb.lock
   .dcg-api-state/locks/8edcc26c0f6c7256a71a8ede6b954ad9ec8dabf88f127c5e9d34f13cadefe11a.lock
@@ -123,4 +123,4 @@ tree
   server/routers/store.py
   server/routers/untagged.py
   server/services.py
-  49 runtime modules ['present']
+  51 runtime modules ['present']

@@ -29,7 +29,7 @@ generate
   written remote_lock remote.lock
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['written']
+  26 runtime modules ['written']
 tree
   .dcg-api-state/locks/1e579b583a374987401e4850f339cb7efa7d6668053239e4eebc5c04fcfa2869.lock
   .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
@@ -54,4 +54,4 @@ tree
   server/routers/pets.py
   server/routers/untagged.py
   server/services.py
-  25 runtime modules ['present']
+  26 runtime modules ['present']

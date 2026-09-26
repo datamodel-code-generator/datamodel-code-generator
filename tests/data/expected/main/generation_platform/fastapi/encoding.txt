@@ -20,6 +20,7 @@ render pydantic_v2.BaseModel
   write server/src/server/_runtime/model_codecs/adapters.py (copied runtime)
   write server/src/server/_runtime/model_codecs/bindings.py (copied runtime)
   write server/src/server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/codec.py (copied runtime)
   write server/src/server/_runtime/model_codecs/context.py (copied runtime)
   write server/src/server/_runtime/model_codecs/errors.py (copied runtime)
   write server/src/server/_runtime/model_codecs/media.py (copied runtime)

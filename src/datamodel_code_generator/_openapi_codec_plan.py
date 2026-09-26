@@ -1,4 +1,4 @@
-"""Plan Pydantic v2 model codec bindings for the directional type uses of an accepted batch."""
+"""Plan model codec bindings for the directional type uses of an accepted batch."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from datamodel_code_generator._codec_type_source import type_reason
 from datamodel_code_generator._generation_contract import (
     AnnotatedType,
     BindingCaptureError,
+    BoundType,
     BuiltinType,
     ConstructorType,
     FieldSlot,
@@ -45,8 +46,10 @@ from datamodel_code_generator._openapi_codec_adapters import (
     type_nodes,
 )
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, CodecReason, WirePlan
+from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._runtime.model_codecs.bindings import (
     ArrayNode,
+    ConverterStrategy,
     ExtraPolicy,
     FieldBinding,
     LeafNode,
@@ -74,11 +77,35 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.context import Surface
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
+CodecBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass"]
 ArrayKind: TypeAlias = Literal["list", "set", "frozenset"]
 
-_SYMBOL_BACKENDS: Final[dict[PydanticBackend, str]] = {
+_SYMBOL_BACKENDS: Final[dict[CodecBackend, str]] = {
     "pydantic_v2.BaseModel": "pydantic",
     "pydantic_v2.dataclass": "pydantic_dataclass",
+    "dataclasses.dataclass": "dataclass",
+}
+_STRATEGIES: Final[dict[CodecBackend, ConverterStrategy]] = {
+    "pydantic_v2.BaseModel": "pydantic_type_adapter",
+    "pydantic_v2.dataclass": "pydantic_type_adapter",
+    "dataclasses.dataclass": "dataclass_structural",
+}
+_STRUCTURAL_KEYS: Final = frozenset({"str", "object", "typing.Any"})
+_STRUCTURAL_LEAVES: Final = _STRUCTURAL_KEYS | {
+    "bool",
+    "int",
+    "float",
+    "decimal.Decimal",
+    "datetime.date",
+    "datetime.datetime",
+    "datetime.time",
+    "datetime.timedelta",
+    "uuid.UUID",
+    "ipaddress.IPv4Address",
+    "ipaddress.IPv6Address",
+    "ipaddress.IPv4Network",
+    "ipaddress.IPv6Network",
+    "pathlib.Path",
 }
 _ARRAY_KINDS: Final[dict[str, ArrayKind]] = {"set": "set", "frozenset": "frozenset"}
 _OPTIONAL_FALLBACK: Final = ("none", "synthesized_optional_fallback", "optional_fallback")
@@ -141,6 +168,10 @@ def _at(location: SourceLocation, *tokens: str | int) -> SourceLocation:
     return replace(location, pointer=location.pointer + "".join(f"/{token}" for token in tokens))
 
 
+def _known_false(value: object) -> bool:
+    return isinstance(value, KnownBackendValue) and value.value == LiteralScalar(kind="bool", value=False)
+
+
 def artifact_module(artifact: ModelArtifactAddress) -> str:
     """Return the dotted module path of a model artifact below its model package."""
     *parents, name = artifact.relative_path
@@ -181,13 +212,15 @@ class _CodecPlanner:
         self,
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
-        backend: PydanticBackend,
+        backend: CodecBackend,
         declarations: CodecDeclarations,
         adapted: frozenset[TypeUseId],
     ) -> None:
         self.batch = batch
         self.wire = wire
-        self.backend: PydanticBackend = backend
+        self.backend: CodecBackend = backend
+        self.structural = _STRATEGIES[backend] != "pydantic_type_adapter"
+        self.gaps: set[str] = set()
         self.adapted = adapted
         self.quiet = False
         self.exports: dict[int, str] = {}
@@ -312,10 +345,45 @@ class _CodecPlanner:
                 )
             case GenericType(base=base, arguments=(item,)):
                 return ArrayNode(self.node(item, self.child(schema, "items"), source), _array_kind(base))
-            case GenericType(arguments=(_, item)):
+            case GenericType(arguments=(key, item)):
+                if self.structural and not self.quiet and (name := self.unstructured(key, _STRUCTURAL_KEYS)):
+                    self.report(
+                        "MC_ADAPTER_REQUIRED",
+                        source,
+                        f"The {name} key type has no structural conversion; register a model adapter",
+                    )
                 return MapNode(self.node(item, self.child(schema, "additionalProperties"), source))
             case _:
+                if self.structural and not self.quiet and (name := self.unstructured(value, _STRUCTURAL_LEAVES)):
+                    self.report(
+                        "MC_ADAPTER_REQUIRED",
+                        source,
+                        f"The {name} type has no structural conversion; register a model adapter",
+                    )
                 return LeafNode(self.representation(value, schema))
+
+    def unstructured(self, value: FinalPythonType, supported: frozenset[str]) -> str | None:
+        """Return the name of a type that the structural converters do not read, or None when they do."""
+        match value:
+            case GeneratedSymbolType(symbol=symbol) if (declared := self.symbols[symbol]).kind == "alias":
+                return next(
+                    (
+                        self.unstructured(facts.type, supported)
+                        for member in self.members.get(symbol, [])
+                        if (facts := member.model_facts) is not None
+                    ),
+                    declared.name,
+                )
+            case GeneratedSymbolType(symbol=symbol):
+                return None if self.symbols[symbol].kind == "enum" else self.symbols[symbol].name
+            case BuiltinType(name=name):
+                return None if name in supported else name
+            case ImportedType(import_=imported):
+                return None if (name := f"{imported.from_}.{imported.import_}") in supported else name
+            case BoundType(binding=binding):
+                return render_python_type_expr(binding.expression)
+            case _:
+                return None
 
     def symbol_node(self, symbol: FinalModelSymbol, source: SourceLocation) -> TypeNode:
         match symbol.kind:
@@ -345,6 +413,13 @@ class _CodecPlanner:
                 )
                 self.aliases.discard(symbol.id)
                 return node
+            case "alias" if self.structural and not self.quiet:
+                self.report(
+                    "MC_ADAPTER_REQUIRED",
+                    source,
+                    f"The recursive {symbol.name} alias has no structural conversion; register a model adapter",
+                )
+                return LeafNode()
             case "enum" | "alias":
                 return LeafNode()
             case _:
@@ -384,7 +459,7 @@ class _CodecPlanner:
         planned = [
             (
                 _Member(facts, slot, wire_name, member.schema or source),
-                _accepted(facts, slot, wire_name, generated=generated),
+                frozenset({slot.name}) if self.structural else _accepted(facts, slot, wire_name, generated=generated),
             )
             for member in members
             if (facts := member.model_facts) is not None
@@ -406,7 +481,7 @@ class _CodecPlanner:
                 )
         self.models[key] = ModelBinding(
             symbol=key,
-            native_kind="dataclass" if symbol.backend == "pydantic_dataclass" else "model",
+            native_kind="model" if symbol.backend == "pydantic" else "dataclass",
             schema_id=schema_id,
             fields=fields,
             extra=_EXTRA_POLICIES.get(_setting(symbol, "extra"), "ignore"),
@@ -422,18 +497,27 @@ class _CodecPlanner:
     def field(self, key: str, member: _Member, accepted: frozenset[str]) -> FieldBinding:
         facts, name, wire_name = member.facts, member.slot.name, member.wire_name
         provenance = facts.none_default_provenance
+        constructible = not _known_false(facts.backend.constructor_init)
+        required = (
+            constructible and provenance.emitted_default == "absent"
+            if self.structural
+            else facts.required and not facts.has_default and not facts.explicit_default_factory
+        )
+        if required and not facts.required:
+            self.gaps.add(f"{key}.{name}")
         return FieldBinding(
             field_id=f"{key}.{name}",
             native_name=name,
             wire_name=wire_name,
             validation_key=wire_name if wire_name in accepted else min(accepted),
             validation_keys=tuple(sorted(accepted)),
-            required=facts.required and not facts.has_default and not facts.explicit_default_factory,
+            required=required,
             read_only=facts.read_only,
             write_only=facts.write_only,
             omit_none=(provenance.emitted_default, provenance.origin, provenance.annotation_null_origin)
             == _OPTIONAL_FALLBACK,
             type=self.node(facts.type, member.schema, member.schema),
+            constructible=constructible,
         )
 
     def reachable(self, node: TypeNode) -> tuple[ModelBinding, ...]:
@@ -465,7 +549,12 @@ class _CodecPlanner:
         models = self.reachable(node)
         self.quiet = False
         excluded = "read_only" if direction == "request" else "write_only"
-        envelope = any(field.required and getattr(field, excluded) for model in models for field in model.fields)
+        envelope = any(
+            (field.required and (getattr(field, excluded) or field.field_id in self.gaps))
+            or (not field.constructible and not getattr(field, excluded))
+            for model in models
+            for field in model.fields
+        )
         return UseBinding(
             binding_id=f"{self.wire.schema_id(self.wire.schema(use.schema)[0])}|{node!r}",
             direction=direction,
@@ -478,7 +567,7 @@ class _CodecPlanner:
             if isinstance(use.type, GeneratedSymbolType)
             else None,
             projection_mode="envelope" if envelope else "native",
-            converter_strategy="registered_adapter" if use.id in self.adapted else "pydantic_type_adapter",
+            converter_strategy="registered_adapter" if use.id in self.adapted else _STRATEGIES[self.backend],
             type=node,
             models=models,
         )
@@ -502,7 +591,7 @@ class _CodecPlanner:
 def plan_model_codecs(  # noqa: PLR0913
     batch: GeneratedTypeContractBatch,
     wire: WirePlan,
-    backend: PydanticBackend,
+    backend: CodecBackend,
     *,
     declarations: CodecDeclarations = _NO_DECLARATIONS,
     surface: Surface = "server",

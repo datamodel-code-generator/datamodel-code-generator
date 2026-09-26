@@ -34,6 +34,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("blanket", "blanket"),
         ("blanket", "decorated"),
         ("media", "media"),
+        ("enums", "structural"),
     ],
 )
 def test_codec_adapters(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
