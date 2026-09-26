@@ -75,7 +75,10 @@ def create_app(
     prefix: str = "",
     fastapi_options: FastAPIOptions | None = None,
 ) -> FastAPI:
-    """Create the application with every operation, then check its OpenAPI document."""
+    """Create the application with every operation, then check its OpenAPI document.
+
+    The check keeps no document, so the one the application serves also covers routes added afterwards.
+    """
     app = FastAPI(**application_options(fastapi_options, INFO))
     app.include_router(
         build_router(
@@ -88,6 +91,7 @@ def create_app(
     )
     install_openapi(app)
     app.openapi()
+    app.openapi_schema = None
     return app
 
 
