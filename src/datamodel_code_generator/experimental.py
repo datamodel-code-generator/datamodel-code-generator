@@ -112,7 +112,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "FastAPI server generation from the CLI is experimental; its options, target configuration file, "
             "generated package, and diagnostics may change."
         ),
-        since_version="0.84.0",
+        since_version="0.83.1",
         note=(
             "--generate-server fastapi generates the models at --output and a server package from the flat TOML "
             "file --target-config names; --target-output overrides the file's output, --check compares without "
@@ -245,7 +245,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "The FastAPI server target is experimental; its entry points, settings, context, generated package, "
             "and served OpenAPI document may change."
         ),
-        since_version="0.84.0",
+        since_version="0.83.1",
         note=(
             "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI "
             "document with the api scope. The package declares a service Protocol for each router group, builds "
