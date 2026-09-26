@@ -49,6 +49,16 @@ class _PutDocumentResponseCodecs(ResponseCodecs[Never]):
 PutDocumentResponseCodecs: Final = _PutDocumentResponseCodecs(())
 
 
+PutArchiveResponsePayload: TypeAlias = Never
+
+
+class _PutArchiveResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the put_archive response bodies."""
+
+
+PutArchiveResponseCodecs: Final = _PutArchiveResponseCodecs(())
+
+
 PutBlobResponsePayload: TypeAlias = Never
 
 
@@ -125,6 +135,8 @@ __all__ = [
     'PostProfileResponsePayload',
     'PostRawResponseCodecs',
     'PostRawResponsePayload',
+    'PutArchiveResponseCodecs',
+    'PutArchiveResponsePayload',
     'PutBlobResponseCodecs',
     'PutBlobResponsePayload',
     'PutDocumentResponseCodecs',

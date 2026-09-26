@@ -519,6 +519,30 @@
         }
       },
       {
+        "method": "PUT",
+        "url": "/archives",
+        "content": "hello",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/archives",
+        "content": "too long",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/archives",
+        "content": "PK",
+        "headers": {
+          "Content-Type": "application/zip"
+        }
+      },
+      {
         "method": "POST",
         "url": "/forms",
         "data": {
@@ -1656,6 +1680,14 @@
           {
             "method": "GET",
             "url": "/pets/2"
+          },
+          {
+            "method": "GET",
+            "url": "/documents/1"
+          },
+          {
+            "method": "GET",
+            "url": "/documents/2"
           },
           {
             "openapi": [

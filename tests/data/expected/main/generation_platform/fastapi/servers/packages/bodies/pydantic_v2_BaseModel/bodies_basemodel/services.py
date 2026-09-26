@@ -20,6 +20,7 @@ from .responses import (
     PostNativeFormResponsePayload,
     PostProfileResponsePayload,
     PostRawResponsePayload,
+    PutArchiveResponsePayload,
     PutBlobResponsePayload,
     PutDocumentResponsePayload,
     UploadResponsePayload,
@@ -58,6 +59,14 @@ class UntaggedService(Protocol):
         body: bodies_basemodel_models.Item | bodies_basemodel_models.FieldDocumentsPutRequest,
         media_type: str | None,
     ) -> None | HTTPResult[PutDocumentResponsePayload] | Response: ...
+
+    @abstractmethod
+    def put_archive(
+        self,
+        *,
+        body: bytes | bodies_basemodel_models.FieldArchivesPutRequest,
+        media_type: str | None,
+    ) -> None | HTTPResult[PutArchiveResponsePayload] | Response: ...
 
     @abstractmethod
     def put_blob(

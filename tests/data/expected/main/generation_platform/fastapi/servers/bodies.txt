@@ -1,6 +1,6 @@
 # bodies
 serve pydantic_v2.BaseModel
-service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_profile, post_raw, put_blob, put_document, upload
+service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_profile, post_raw, put_archive, put_blob, put_document, upload
 service UntaggedService without its methods: TypeError
 > POST /items
   post_item(body=UNSET)
@@ -55,6 +55,14 @@ service UntaggedService without its methods: TypeError
 < 204 - b''
 > PUT /blobs
   put_blob(body=b'raw bytes')
+< 204 - b''
+> PUT /archives
+  put_archive(body=FieldArchivesPutRequest(root='hello'), media_type='text/plain')
+< 204 - b''
+> PUT /archives
+< 422 application/json [{"type": "value_error", "loc": ["body"]}]
+> PUT /archives
+  put_archive(body=b'PK', media_type='application/zip')
 < 204 - b''
 > POST /forms
   post_form(body=FieldFormsPostRequest(name='a', tags=['x', 'y'], count=2, other=3))
