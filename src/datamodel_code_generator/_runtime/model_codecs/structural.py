@@ -344,6 +344,7 @@ class _Model:
     fields: tuple[_Field, ...] = ()
     wire: Mapping[str, _Field] = dataclasses.field(default_factory=dict[str, _Field])
     required: tuple[_Field, ...] = ()
+    keys: frozenset[str] = frozenset()
     extras: _Plan | None = None
 
 
@@ -424,24 +425,36 @@ def _extra_items(native: type) -> object:
     return extra_items
 
 
-def _fits_record(binding: ModelBinding, native: type) -> bool:
-    """Return whether a TypedDict declares the bound keys, their requiredness, closure, and extra items.
+def _record_required(native: type) -> set[str]:
+    """Return the required keys of a TypedDict, each read under the totality of the TypedDict that declares it.
 
-    Requiredness is read from the annotations, since ``__required_keys__`` misses the qualifiers of postponed ones.
+    The annotations are read rather than ``__required_keys__``, which misses the qualifiers of postponed ones.
     """
+    required: set[str] = set()
+    inherited: set[str] = set()
+    for base in getattr(native, "__orig_bases__", ()):
+        if typing_extensions.is_typeddict(base):
+            required |= _record_required(base)
+            inherited |= typing_extensions.get_type_hints(base).keys()
+    total = typing.cast("_TypedDictClass", native).__total__
+    return required | {
+        key
+        for key, hint in typing_extensions.get_type_hints(native, include_extras=True).items()
+        if key not in inherited
+        and (
+            typing_extensions.Required in (found := _qualifiers(hint))
+            or (total and typing_extensions.NotRequired not in found)
+        )
+    }
+
+
+def _fits_record(binding: ModelBinding, native: type) -> bool:
+    """Return whether a TypedDict declares the bound keys, their requiredness, closure, and extra items."""
     if not typing_extensions.is_typeddict(native):
         return False
-    total = typing.cast("_TypedDictClass", native).__total__
-    hints = typing_extensions.get_type_hints(native, include_extras=True)
-    required = {
-        key
-        for key, hint in hints.items()
-        if typing_extensions.Required in (found := _qualifiers(hint))
-        or (total and typing_extensions.NotRequired not in found)
-    }
     return (
-        {member.native_name for member in binding.fields} <= hints.keys()
-        and required == {member.native_name for member in binding.fields if member.required}
+        {member.native_name for member in binding.fields} <= typing_extensions.get_type_hints(native).keys()
+        and _record_required(native) == {member.native_name for member in binding.fields if member.required}
         and (binding.extra == "forbid") == (getattr(native, "__closed__", None) is True)
         and (binding.extra_items is None)
         == (getattr(native, "__extra_items__", typing_extensions.NoExtraItems) is typing_extensions.NoExtraItems)
@@ -576,6 +589,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         plan.fields = fields
         plan.wire = {member.binding.wire_name: member for member in fields}
         plan.required = tuple(member for member in fields if member.binding.required)
+        plan.keys = frozenset(member.binding.native_name for member in fields)
         if binding.extra_items is not None:
             plan.extras = self._build(binding.extra_items, extra_items, f"{symbol} extra items")
         return plan
@@ -766,7 +780,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
     def _encode_model(self, native: object, plan: _Model, presence: PresenceTree | None, route: _Route) -> WireValue:
         items = typing.cast("Mapping[object, object]", native) if plan.record else None
         extras = (
-            {_key_text(name, route): value for name, value in items.items() if name not in plan.wire}
+            {_key_text(name, route): value for name, value in items.items() if name not in plan.keys}
             if items is not None and plan.extras is not None
             else {}
         )
@@ -839,7 +853,7 @@ def _fits(plan: _Model, native: object) -> bool:
     return (
         is_mapping(native)
         and all(member.binding.native_name in native for member in plan.required)
-        and (plan.extras is not None or all(name in plan.wire for name in native))
+        and (plan.extras is not None or all(name in plan.keys for name in native))
     )
 
 

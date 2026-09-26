@@ -481,8 +481,17 @@ class _CodecPlanner:
             and slot.name != _TYPED_EXTRAS
             and (wire_name := member.wire_name) is not None
         ]
-        total = _setting(symbol, "total", parameter=True) is not False if record else None
-        fields = tuple(self.field(key, member, accepted, total=total) for member, accepted in planned)
+        fields = tuple(
+            self.field(
+                key,
+                member,
+                accepted,
+                total=_setting(self.symbols[member.slot.symbol], "total", parameter=True) is not False
+                if record
+                else None,
+            )
+            for member, accepted in planned
+        )
         readers: dict[str, list[str]] = {}
         for field, (_, accepted) in zip(fields, planned, strict=True):
             for accepted_key in accepted:
@@ -520,7 +529,7 @@ class _CodecPlanner:
         return schema.get("additionalProperties") is not False and schema.get("unevaluatedProperties") is not False
 
     def field(self, key: str, member: _Member, accepted: frozenset[str], *, total: bool | None) -> FieldBinding:
-        """Bind one field; ``total`` is the totality of a TypedDict and None for other models."""
+        """Bind one field; ``total`` is the totality of the TypedDict that declares it, and None for other models."""
         facts, name, wire_name = member.facts, member.slot.name, member.wire_name
         provenance = facts.none_default_provenance
         constructible = not _known_false(facts.backend.constructor_init)

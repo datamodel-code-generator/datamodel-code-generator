@@ -18,6 +18,8 @@
      "models": {"models:Shelf": "tests.data.python.model_codec_stdlib:NumberShelf"}},
     {"name": "extra-items-unresolved", "use": "/paths/~1shelves/post request_body",
      "models": {"models:Shelf": "tests.data.python.model_codec_stdlib:MissingShelf"}},
+    {"name": "mixed-totality", "use": "/paths/~1kittens/post request_body",
+     "models": {"models:Kitten": "tests.data.python.model_codec_stdlib:HandKitten"}},
     {"name": "relaxed-closed", "use": "/paths/~1sealed/post request_body", "decode": {"a": "x", "c": 1},
      "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Sealed", "keyword": "additionalProperties", "value": true}}
   ]

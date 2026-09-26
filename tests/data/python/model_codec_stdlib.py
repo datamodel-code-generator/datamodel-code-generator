@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import NotRequired, Required, TypedDict
 
 
 @dataclass
@@ -124,3 +124,17 @@ class MissingShelf(TypedDict, extra_items="Missing"):
     """Name extra items that do not exist."""
 
     label: NotRequired[str]
+
+
+class HandAnimal(TypedDict):
+    """Require the identifier, as the generated base does."""
+
+    id: int
+    name: NotRequired[str]
+
+
+class HandKitten(HandAnimal, total=False):
+    """Inherit the required identifier into a TypedDict that is not total."""
+
+    meow: Required[bool]
+    tail: str

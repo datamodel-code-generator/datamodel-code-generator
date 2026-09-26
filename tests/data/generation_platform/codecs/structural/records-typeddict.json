@@ -18,6 +18,8 @@
      "value": {"label": "l", "top": {"name": "n"}, "low": {"name": "m", "zz": 1}}},
     {"name": "shelf-server-encode", "use": "/paths/~1shelves/post response_body 200", "op": "encode",
      "value": {"result": "shelf-client-decode", "attr": "value"}},
+    {"name": "kitten-server-decode", "use": "/paths/~1kittens/post request_body", "op": "decode", "value": {"id": 1, "meow": true}},
+    {"name": "kitten-server-decode-missing", "use": "/paths/~1kittens/post request_body", "op": "decode", "value": {"meow": true}},
     {"name": "pets-server-decode-dog", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"bark": 1, "name": "Rex"}},
     {"name": "pets-server-decode-both", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"bark": 1, "meow": true}},
     {"name": "pets-server-encode-dog", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"bark": 2}},

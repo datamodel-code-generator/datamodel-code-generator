@@ -63,8 +63,36 @@ paths:
                 anyOf:
                   - $ref: "#/components/schemas/Cat"
                   - $ref: "#/components/schemas/Dog"
+  /kittens:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Kitten"
+      responses:
+        "204":
+          description: Stored.
 components:
   schemas:
+    Animal:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    Kitten:
+      allOf:
+        - $ref: "#/components/schemas/Animal"
+        - type: object
+          required: [meow]
+          properties:
+            meow:
+              type: boolean
+            tail:
+              type: string
     Sealed:
       type: object
       required: [a]

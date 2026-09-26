@@ -6,4 +6,5 @@ key-missing: CodecConfigurationError The native type of models:Sealed does not m
 extra-items-missing: CodecConfigurationError The native type of models:Counts does not match its binding
 extra-items-disagree: CodecConfigurationError The native type of models:Shelf extra items does not match its binding
 extra-items-unresolved: CodecConfigurationError The native type of models:Shelf does not match its binding
+mixed-totality: built
 relaxed-closed: NativeValidationError native.extra_forbidden@/c['c']
