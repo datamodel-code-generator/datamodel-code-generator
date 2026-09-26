@@ -290,7 +290,8 @@ def _thawed(wire: WireValue) -> JSONValue:
         case str() | int() | float() | Decimal() | None:
             return wire
         case _:
-            return {key: _thawed(item) for key, item in wire.items()}
+            pass
+    return {key: _thawed(item) for key, item in wire.items()}
 
 
 def _same(wire: WireValue) -> WireValue:
@@ -938,7 +939,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
     ) -> None:
         """Take a member no field binds: a Struct's tag, a TypedDict's extra item, a forbidden member, or an extra."""
         if plan.tag is not None and name == plan.tag[0]:
-            if entry != plan.tag[1]:
+            if type(entry) is not type(plan.tag[1]) or entry != plan.tag[1]:
                 self._refuse(state, _TAG, route)
         elif plan.extras is not None:
             arguments[name] = self._decode(entry, plan.extras, route, state)

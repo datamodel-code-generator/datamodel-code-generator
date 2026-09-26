@@ -10,6 +10,8 @@ use /paths/~1stamps/post request_body: native struct models:Stamped msgspec_conv
 use /paths/~1rated/post request_body: native struct models:Rated msgspec_structural models=[('models:Rated', 'struct', 'ignore', True)]
 use /paths/~1moments/post request_body: native struct models:Moment msgspec_structural models=[('models:Moment', 'struct', 'ignore', True)]
 use /paths/~1worded/post request_body: native struct models:Worded msgspec_convert models=[('models:Worded', 'struct', 'ignore', True)]
+use /paths/~1wallets/post request_body: native struct models:Wallet msgspec_structural models=[('models:Dime', 'struct', 'ignore', True), ('models:Penny', 'struct', 'ignore', True), ('models:Wallet', 'struct', 'ignore', True)]
+use /paths/~1wallets/post response_body 200: native struct models:Wallet msgspec_structural models=[('models:Dime', 'struct', 'ignore', True), ('models:Penny', 'struct', 'ignore', True), ('models:Wallet', 'struct', 'ignore', True)]
 holder-server-decode: model Holder(pet=Small(contact='c'), address=IPv4Address('10.0.0.1'), count=0) wire={"pet":{"size":"small","contact":"c"},"address":"10.0.0.1","zz":1} presence=['', '/pet', '/pet/size', '/pet/contact', '/address', '/zz'] extras={"/zz":1}
 holder-server-response: wire={"pet":{"size":"small","contact":"c"},"address":"10.0.0.1","count":0}
 holder-server-decode-large: model Holder(pet=Large(), address=UNSET, count=0) wire={"pet":{"size":"large"}} presence=['', '/pet', '/pet/size'] extras={}
@@ -29,3 +31,6 @@ moment-server-decode-now: model Moment(at='now') wire={"at":"now"} presence=['',
 moment-server-decode-time: model Moment(at=datetime.datetime(2020, 1, 2, 3, 4, 5, tzinfo=datetime.timezone.utc)) wire={"at":"2020-01-02T03:04:05Z"} presence=['', '/at'] extras={}
 worded-server-decode: model Worded(word='any', level=0) wire={"word":"any","level":0} presence=['', '/word', '/level'] extras={}
 worded-server-decode-other: model Worded(word='x', level=5) wire={"word":"x","level":5} presence=['', '/word', '/level'] extras={}
+wallet-server-decode: model Wallet(coin=Dime(), address=IPv4Address('10.0.0.1')) wire={"coin":{"value":10},"address":"10.0.0.1"} presence=['', '/coin', '/coin/value', '/address'] extras={}
+wallet-server-response: wire={"coin":{"value":10},"address":"10.0.0.1"}
+wallet-server-decode-float-tag: NativeValidationError native.tag@/coin/value['coin', 'value']

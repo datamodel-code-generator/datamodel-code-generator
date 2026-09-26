@@ -10,6 +10,8 @@ use /paths/~1stamps/post request_body: native struct models:Stamped msgspec_conv
 use /paths/~1rated/post request_body: native struct models:Rated msgspec_structural models=[('models:Rated', 'struct', 'ignore', True)]
 use /paths/~1moments/post request_body: native struct models:Moment msgspec_convert models=[('models:Moment', 'struct', 'ignore', True)]
 use /paths/~1worded/post request_body: native struct models:Worded msgspec_convert models=[('models:Worded', 'struct', 'ignore', True)]
+use /paths/~1wallets/post request_body: native struct models:Wallet msgspec_structural models=[('models:Dime', 'struct', 'ignore', True), ('models:Penny', 'struct', 'ignore', True), ('models:Wallet', 'struct', 'ignore', True)]
+use /paths/~1wallets/post response_body 200: native struct models:Wallet msgspec_structural models=[('models:Dime', 'struct', 'ignore', True), ('models:Penny', 'struct', 'ignore', True), ('models:Wallet', 'struct', 'ignore', True)]
 limits-server-decode-unknown: input issues=DIRECTIONAL_REQUIRED@/id:models:Limits.id wire={"low":2,"zz":1} extras={}
 limits-client-decode-unknown: NativeValidationError native.validation_error@[]
 holder-server-decode-unknown: NativeValidationError native.extra_forbidden@/zz['zz']

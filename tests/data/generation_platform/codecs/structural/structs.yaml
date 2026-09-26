@@ -105,6 +105,20 @@ paths:
       responses:
         "204":
           description: Stored.
+  /wallets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Wallet"
+      responses:
+        "200":
+          description: The stored wallet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
 components:
   schemas:
     Small:
@@ -252,3 +266,29 @@ components:
           anyOf:
             - const: 0
             - type: integer
+    Penny:
+      type: object
+      required: [value]
+      properties:
+        value:
+          const: 1
+    Dime:
+      type: object
+      required: [value]
+      properties:
+        value:
+          const: 10
+    Coin:
+      oneOf:
+        - $ref: "#/components/schemas/Penny"
+        - $ref: "#/components/schemas/Dime"
+      discriminator:
+        propertyName: value
+    Wallet:
+      type: object
+      properties:
+        coin:
+          $ref: "#/components/schemas/Coin"
+        address:
+          type: string
+          format: ipv4

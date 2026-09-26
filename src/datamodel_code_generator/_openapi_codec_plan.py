@@ -203,12 +203,13 @@ def _at(location: SourceLocation, *tokens: str | int) -> SourceLocation:
 
 def _name(value: FinalPythonType) -> str | None:
     match value:
-        case BuiltinType(name=name):
-            return name
-        case ImportedType(import_=imported):
-            return f"{imported.from_}.{imported.import_}"
+        case BuiltinType():
+            return value.name
+        case ImportedType():
+            return f"{value.import_.from_}.{value.import_.import_}"
         case _:
-            return None
+            pass
+    return None
 
 
 def _literal_kind(value: LiteralType) -> str | None:
@@ -550,20 +551,7 @@ class _CodecPlanner:
             if symbol.facts is not None and (items := symbol.facts.extra_items) is not None
             else None
         )
-        tag = next(
-            (
-                (member.wire_name, literal.value)
-                for member in members
-                if member.exclusion == "tag"
-                and member.wire_name is not None
-                and member.model_facts is not None
-                and isinstance(value := member.model_facts.type, LiteralType)
-                and len(value.values) == 1
-                and isinstance(literal := value.values[0], LiteralScalar)
-                and isinstance(literal.value, (str, int))
-            ),
-            None,
-        )
+        tag_field, tag = _setting(symbol, "tag_field", parameter=True), _setting(symbol, "tag", parameter=True)
         self.models[key] = ModelBinding(
             symbol=key,
             native_kind=_NATIVE_KINDS[symbol.backend],
@@ -577,7 +565,9 @@ class _CodecPlanner:
             else _EXTRA_POLICIES.get(_setting(symbol, "extra"), "ignore"),
             open=self.open(schema_id),
             extra_items=extra_items,
-            tag=tag,
+            tag=(tag_field, tag)
+            if isinstance(tag_field, str) and isinstance(tag, (str, int)) and not isinstance(tag, bool)
+            else None,
         )
 
     def open(self, schema_id: str | None) -> bool:
@@ -727,7 +717,8 @@ class _MsgspecTypes:
             case LiteralType():
                 return _literal_kind(value) is not None
             case _:
-                return _name(value) not in _MSGSPEC_UNSUPPORTED
+                pass
+        return _name(value) not in _MSGSPEC_UNSUPPORTED
 
     def flattened(self, items: tuple[FinalPythonType, ...], seen: set[int]) -> Iterator[FinalPythonType]:
         """Yield union members with the members of aliased types in place of their aliases, as msgspec reads them."""
@@ -781,7 +772,8 @@ class _MsgspecTypes:
             case BuiltinType(name="int"):
                 return "int"
             case _:
-                return "str" if _name(value) in _MSGSPEC_STRINGS else None
+                pass
+        return "str" if _name(value) in _MSGSPEC_STRINGS else None
 
     def enum_kinds(self, symbol: int) -> set[str]:
         """Return the JSON kinds of an enum's values, read from the schema every generated enum is observed at."""

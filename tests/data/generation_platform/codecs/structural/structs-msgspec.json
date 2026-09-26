@@ -31,6 +31,11 @@
     {"name": "moment-server-decode-now", "use": "/paths/~1moments/post request_body", "op": "decode", "value": {"at": "now"}},
     {"name": "moment-server-decode-time", "use": "/paths/~1moments/post request_body", "op": "decode", "value": {"at": "2020-01-02T03:04:05Z"}},
     {"name": "worded-server-decode", "use": "/paths/~1worded/post request_body", "op": "decode", "value": {"word": "any", "level": 0}},
-    {"name": "worded-server-decode-other", "use": "/paths/~1worded/post request_body", "op": "decode", "value": {"word": "x", "level": 5}}
+    {"name": "worded-server-decode-other", "use": "/paths/~1worded/post request_body", "op": "decode", "value": {"word": "x", "level": 5}},
+    {"name": "wallet-server-decode", "use": "/paths/~1wallets/post request_body", "op": "decode",
+     "value": {"coin": {"value": 10}, "address": "10.0.0.1"}},
+    {"name": "wallet-server-response", "use": "/paths/~1wallets/post response_body 200", "op": "encode",
+     "value": {"result": "wallet-server-decode", "attr": "value"}},
+    {"name": "wallet-server-decode-float-tag", "use": "/paths/~1wallets/post request_body", "op": "decode", "value": {"coin": {"value": 10.0}}}
   ]
 }
