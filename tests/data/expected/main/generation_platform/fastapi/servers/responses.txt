@@ -80,10 +80,10 @@ service UntaggedService without its methods: TypeError
 app standard
 > GET /greetings
   get_greeting(mode=absent)
-< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+< 200 application/json "hello"
 > GET /greetings?mode=result
   get_greeting(mode='result')
-< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+< 200 application/json "ok"
 > GET /greetings?mode=value
   get_greeting(mode='value')
 < 200 application/json "wire"
@@ -104,10 +104,10 @@ app standard
 app plain
 > GET /greetings
   get_greeting(mode=absent)
-< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+< 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
   get_greeting(mode='result')
-< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+< 200 application/json "ok"
 > GET /greetings?mode=value
   get_greeting(mode='value')
 < 200 application/json "wire"
@@ -128,10 +128,10 @@ app plain
 app included
 > GET /greetings
   get_greeting(mode=absent)
-< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+< 200 text/plain; charset=utf-8 hello
 > GET /greetings?mode=result
   get_greeting(mode='result')
-< raised TypeError: TypeAliasType.__call__() takes 1 positional argument but 2 were given
+< 200 application/json "ok"
 > GET /greetings?mode=value
   get_greeting(mode='value')
 < 200 application/json "wire"

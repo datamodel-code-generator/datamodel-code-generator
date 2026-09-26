@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
     """Return a service that answers with a bare value, an HTTP result, or a codec value, as the mode asks."""
     codecs = server.responses.GetGreetingResponseCodecs.body(status_code=200)
+    greeting = models.FieldGreetingsGetResponse
+    make = greeting if isinstance(greeting, type) else str
 
     class Untagged(server.services.UntaggedService):
         def get_greeting(self, *, mode: object) -> object:
@@ -21,11 +23,11 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append(f"get_greeting(mode={'absent' if absent else repr(mode)})")
             match mode:
                 case "result":
-                    return server.HTTPResult(status_code=200, body=models.FieldGreetingsGetResponse("ok"))
+                    return server.HTTPResult(status_code=200, body=make("ok"))
                 case "value":
                     return codecs.from_wire("wire")
                 case _:
-                    return models.FieldGreetingsGetResponse("hello")
+                    return make("hello")
 
         def get_pet(self, *, id: int) -> object:  # noqa: A002
             calls.append(f"get_pet(id={id!r})")
