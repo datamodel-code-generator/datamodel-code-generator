@@ -61,6 +61,10 @@
     {"name": "values-server-snapshot-nested", "use": "/paths/~1values/post response_body 200", "op": "snapshot", "value": {"call": "Values", "args": {"any": {"k": {"nested": 3000}}}}},
     {"name": "values-server-encode-nested", "use": "/paths/~1values/post response_body 200", "op": "encode", "value": {"call": "Values", "args": {"any": {"k": {"nested": 3000}}}}},
     {"name": "mixed-server-decode", "use": "/paths/~1mixed/post request_body", "op": "decode", "value": {"size": "small", "zz": 1}},
-    {"name": "mixed-server-decode-native", "use": "/paths/~1mixed/post request_body", "op": "decode", "value": {"size": "small", "contact": "bad@x"}}
+    {"name": "mixed-server-decode-native", "use": "/paths/~1mixed/post request_body", "op": "decode", "value": {"size": "small", "contact": "bad@x"}},
+    {"name": "kin-server-encode-cat", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+     "value": {"call": "FieldKinGetResponse", "args": {"root": {"call": "Cat", "args": {"id": 1, "meow": true}}}}},
+    {"name": "kin-server-encode-dog", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+     "value": {"call": "FieldKinGetResponse", "args": {"root": {"call": "Dog", "args": {"id": 2, "bark": 3}}}}}
   ]
 }

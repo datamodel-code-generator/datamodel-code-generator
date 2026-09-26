@@ -23,6 +23,10 @@
     {"name": "values-server-decode", "use": "/paths/~1values/post request_body", "op": "decode",
      "value": {"amount": 2, "secret": "pw", "level": 1}},
     {"name": "values-client-encode", "use": "/paths/~1values/post request_body", "surface": "client", "op": "encode",
-     "value": {"result": "values-server-decode", "attr": "value"}}
+     "value": {"result": "values-server-decode", "attr": "value"}},
+    {"name": "kin-server-encode-cat", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+     "value": {"call": "Cat", "args": {"id": 1, "meow": true}}},
+    {"name": "kin-server-encode-dog", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+     "value": {"call": "Dog", "args": {"id": 2, "bark": 3}}}
   ]
 }

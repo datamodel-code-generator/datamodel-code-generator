@@ -1,5 +1,6 @@
 use /paths/~1animals/post request_body: envelope root models:FieldAnimalsPostRequest models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostRequest', 'root', 'ignore', True)]
 use /paths/~1animals/post response_body 200: native root models:FieldAnimalsPostResponse models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostResponse', 'root', 'ignore', True)]
+use /paths/~1kin/get response_body 200: native root models:FieldKinGetResponse models=[('models:Animal', 'model', 'ignore', True), ('models:Cat', 'model', 'forbid', False), ('models:FieldKinGetResponse', 'root', 'ignore', True)]
 use /paths/~1tree/put request_body: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native model models:Node models=[('models:Node', 'model', 'ignore', True)]
 use /paths/~1mixed/post request_body: native root models:Mixed models=[('models:Large', 'model', 'ignore', True), ('models:Mixed', 'root', 'ignore', True), ('models:Small', 'model', 'ignore', True)]

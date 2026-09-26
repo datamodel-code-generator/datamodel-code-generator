@@ -1,5 +1,6 @@
 use /paths/~1animals/post request_body: envelope alias models:FieldAnimalsPostRequest models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
 use /paths/~1animals/post response_body 200: native alias models:FieldAnimalsPostResponse models=[('models:Cat', 'dataclass', 'forbid', False), ('models:Dog', 'dataclass', 'ignore', True)]
+use /paths/~1kin/get response_body 200: native alias models:FieldKinGetResponse models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'forbid', False)]
 use /paths/~1tree/put request_body: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native dataclass models:Node models=[('models:Node', 'dataclass', 'ignore', True)]
 use /paths/~1mixed/post request_body: native alias models:Mixed models=[('models:Large', 'dataclass', 'ignore', True), ('models:Small', 'dataclass', 'ignore', True)]
@@ -16,3 +17,5 @@ tree-client-decode: model Node(value=1, children=[Node(value=2, children=None, p
 tree-server-encode: wire={"value":1,"children":[{"value":2}],"index":{"a":{"value":3}}}
 values-server-decode: model Values(amount=Decimal('2'), day=None, clock=None, span=None, uid=None, secret=SecretStr('**********'), blob=None, level=<Level.integer_1: 1>, link=None, any=None, list=None, codes=None, un=None, mark=None) wire={"amount":2,"secret":"pw","level":1} presence=['', '/amount', '/secret', '/level'] extras={}
 values-client-encode: wire={"amount":2,"secret":"pw","level":1}
+kin-server-encode-cat: wire={"id":1,"meow":true}
+kin-server-encode-dog: wire={"id":2}

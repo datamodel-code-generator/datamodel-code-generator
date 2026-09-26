@@ -563,6 +563,13 @@ class PydanticModelCodec(Generic[T]):
         return None
 
     def _native_member(self, native: object, members: tuple[TypeNode, ...]) -> TypeNode | None:
+        kind = type(native)
+        if (
+            exact := next(
+                (item for item in members if isinstance(item, ModelNode) and self._types[item.symbol] is kind), None
+            )
+        ) is not None:
+            return exact
         for member in members:
             match member:
                 case ModelNode(symbol=symbol) if isinstance(native, self._types[symbol]):
