@@ -1,6 +1,6 @@
 # S08 implementation record
 
-Status: in progress. S08-1 (standard dataclass codecs, #4181) and S08-2 (TypedDict codecs) are implemented and verified, stacked on a fix of the shared union encoding (#4180). S08-3 (msgspec.Struct and the five-backend comparisons) follows. Nothing in this stack has been merged.
+Status: in progress. S08-1 (standard dataclass codecs, #4181) and S08-2 (TypedDict codecs, #4182) are implemented and verified, stacked on a fix of the shared union encoding (#4180), and followed by a fix of unions that hold aliased unions. S08-3 (msgspec.Struct and the five-backend comparisons) follows. Nothing in this stack has been merged.
 
 ## Baseline and review boundaries
 
@@ -54,6 +54,10 @@ The `typing.TypedDict` backend plans `typeddict_structural` uses of `typeddict` 
 
 Tests: the pets source, the structural source, and a TypedDict source with closed records, typed extra items of a scalar and of a model, an inherited TypedDict, and a union of two TypedDicts run through the codec, with `total=False` and without PEP 728 as variants; the startup report refuses a dataclass, an open, a loosened and a shortened TypedDict, missing, disagreeing and unresolved extra items, accepts a hand-written hierarchy whose child is not total, and reaches `native.extra_forbidden` through a relaxed schema. Rendered bindings of the backend construct the structural codec. `codecs.py` gains TypedDict positive cases and `codecs_negative.py` two lines (49–50), each one error on strict mypy, strict Pyright and ty. Timings match the dataclass codec: 100 pets decode in 3909 µs and encode in 3283 µs, with the dataclass codec at 3967 and 3266 in the same run.
 
+## Unions of aliased unions
+
+A union that holds an aliased union, such as `Word | list[int]` with `Word: TypeAlias = str | int`, failed at startup with `CodecConfigurationError` on both structural backends: Python flattens the alias into the annotation's members, while the binding keeps the alias's union as one nested member, so the member counts disagreed. The structural codec now matches the flattened members of both sides, expanding nested union nodes and the members of `TypeAliasType` values, which Python does not flatten, so both alias spellings bind. A source with an enum, an aliased union and an aliased nullable union in unions runs through dataclasses with each alias spelling and through TypedDicts.
+
 ## Next action
 
-Publish S08-2 on #4181, then implement S08-3 (msgspec.Struct and the five-backend comparisons).
+Publish the union alias fix on #4182, then implement S08-3 (msgspec.Struct and the five-backend comparisons).

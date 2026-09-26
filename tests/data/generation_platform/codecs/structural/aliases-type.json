@@ -1,0 +1,21 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_aliases_type",
+  "scopes": ["schemas", "paths"],
+  "options": {"use_type_alias": true, "use_type_alias_type": true},
+  "cases": [
+    {"name": "choice-server-decode", "use": "/paths/~1choices/post request_body", "op": "decode",
+     "value": {"color_or_count": "red", "word_or_list": "w", "maybe_or_flag": null}},
+    {"name": "choice-server-decode-numbers", "use": "/paths/~1choices/post request_body", "op": "decode",
+     "value": {"color_or_count": 3, "word_or_list": [1, 2], "maybe_or_flag": true}},
+    {"name": "choice-server-decode-dated", "use": "/paths/~1choices/post request_body", "op": "decode",
+     "value": {"word_or_list": 5, "maybe_or_flag": "2020-01-02"}},
+    {"name": "choice-server-decode-bad", "use": "/paths/~1choices/post request_body", "op": "decode", "value": {"word_or_list": 1.5}},
+    {"name": "choice-server-response", "use": "/paths/~1choices/post response_body 200", "op": "encode",
+     "value": {"result": "choice-server-decode-numbers", "attr": "value"}},
+    {"name": "choice-server-response-dated", "use": "/paths/~1choices/post response_body 200", "op": "encode",
+     "value": {"result": "choice-server-decode-dated", "attr": "value"}},
+    {"name": "choice-server-response-null", "use": "/paths/~1choices/post response_body 200", "op": "encode",
+     "value": {"result": "choice-server-decode", "attr": "value"}}
+  ]
+}

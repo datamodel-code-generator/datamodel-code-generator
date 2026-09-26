@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: Union aliases
+  version: "1"
+paths:
+  /choices:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Choice"
+      responses:
+        "200":
+          description: The stored choice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Choice"
+components:
+  schemas:
+    Color:
+      type: string
+      enum: [red, green]
+    Word:
+      anyOf:
+        - type: string
+        - type: integer
+    Maybe:
+      anyOf:
+        - type: string
+          format: date
+        - type: "null"
+    Choice:
+      type: object
+      properties:
+        color_or_count:
+          anyOf:
+            - $ref: "#/components/schemas/Color"
+            - type: integer
+        word_or_list:
+          anyOf:
+            - $ref: "#/components/schemas/Word"
+            - type: array
+              items:
+                type: integer
+        maybe_or_flag:
+          anyOf:
+            - $ref: "#/components/schemas/Maybe"
+            - type: boolean

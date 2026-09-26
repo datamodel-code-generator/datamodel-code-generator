@@ -1,0 +1,9 @@
+use /paths/~1choices/post request_body: native dataclass models:Choice models=[('models:Choice', 'dataclass', 'ignore', True)]
+use /paths/~1choices/post response_body 200: native dataclass models:Choice models=[('models:Choice', 'dataclass', 'ignore', True)]
+choice-server-decode: model Choice(color_or_count=<Color.red: 'red'>, word_or_list='w', maybe_or_flag=None) wire={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null} presence=['', '/color_or_count', '/word_or_list', '/maybe_or_flag'] extras={}
+choice-server-decode-numbers: model Choice(color_or_count=3, word_or_list=[1, 2], maybe_or_flag=True) wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true} presence=['', '/color_or_count', '/word_or_list', '/word_or_list/0', '/word_or_list/1', '/maybe_or_flag'] extras={}
+choice-server-decode-dated: model Choice(color_or_count=None, word_or_list=5, maybe_or_flag='2020-01-02') wire={"word_or_list":5,"maybe_or_flag":"2020-01-02"} presence=['', '/word_or_list', '/maybe_or_flag'] extras={}
+choice-server-decode-bad: WireValidationError schema.anyOf@/word_or_list
+choice-server-response: wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
+choice-server-response-dated: wire={"word_or_list":5,"maybe_or_flag":"2020-01-02"}
+choice-server-response-null: wire={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null}
