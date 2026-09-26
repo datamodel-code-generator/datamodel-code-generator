@@ -39,7 +39,6 @@ OperationDependencies = TypedDict(
     total=False,
 )
 SCHEMES: Final = ()
-SCAFFOLD: Final = __name__.rsplit(".", 2)[0]
 
 
 class ListPets:
@@ -48,6 +47,7 @@ class ListPets:
     OPERATION: Final = OperationPlan(
         name='list_pets',
         key='/paths/~1pets/get',
+        service='pets',
         keywords=('limit', 'tags', 'kind', 'x_request_id', 'since', 'session'),
     )
     @dataclass(frozen=True, slots=True, kw_only=True)
@@ -104,6 +104,7 @@ class CreatePet:
     OPERATION: Final = OperationPlan(
         name='create_pet',
         key='/paths/~1pets/post',
+        service='pets',
         keywords=('body',),
     )
     RESPONSES: Final = OperationResponses(
@@ -129,6 +130,7 @@ class ListMyPets:
     OPERATION: Final = OperationPlan(
         name='list_my_pets',
         key='/paths/~1pets~1mine/get',
+        service='pets',
     )
     RESPONSES: Final = OperationResponses(
         responses=(
@@ -153,6 +155,7 @@ class GetPet:
     OPERATION: Final = OperationPlan(
         name='get_pet',
         key='/paths/~1pets~1{petId}/get',
+        service='pets',
         keywords=('pet_id',),
     )
     RESPONSES: Final = OperationResponses(
@@ -188,6 +191,7 @@ class DeletePet:
     OPERATION: Final = OperationPlan(
         name='delete_pet',
         key='/paths/~1pets~1{petId}/delete',
+        service='pets',
         keywords=('pet_id',),
     )
     RESPONSES: Final = OperationResponses(
@@ -202,6 +206,7 @@ class GetInventory:
     OPERATION: Final = OperationPlan(
         name='get_inventory',
         key='/paths/~1store~1inventory/get',
+        service='store',
     )
     RESPONSES: Final = OperationResponses(
         responses=(

@@ -306,17 +306,8 @@ class ServerRenderer:  # noqa: PLR0904
             ),
             None,
         )
-        services = [
-            {
-                "argument": group.stem,
-                "protocol": group.service,
-                "implementation": group.service.removesuffix("Service") or "Operations",
-                "secured": group.secured,
-                "methods": _listed([f"`{spec.python_name}`" for spec in group.operations]),
-            }
-            for group in plan.groups
-        ]
-        arguments = [f"{service['argument']}={service['implementation']}()" for service in services]
+        groups = plan.groups
+        arguments = [f"{group.stem}={_implementation(group)}()" for group in groups]
         return self.role("readme.jinja2", readme_template.render)(
             title=info.get("title", config.package),
             package=config.package,
@@ -333,8 +324,16 @@ class ServerRenderer:  # noqa: PLR0904
                 for group in plan.groups
                 for spec in group.operations
             ],
-            services=services,
-            protocols=", ".join(service["protocol"] for service in services),
+            services=[
+                {
+                    "protocol": group.service,
+                    "implementation": _implementation(group),
+                    "secured": group.secured,
+                    "methods": _listed([f"`{spec.python_name}`" for spec in group.operations]),
+                }
+                for group in groups
+            ],
+            protocols=", ".join(group.service for group in groups),
             arguments=", ".join((*arguments, *(("authorizer=authorize",) if plan.schemes else ()))),
             schemes=[{"name": scheme.name, "credential": _credential(scheme)} for scheme in plan.schemes],
             basic=any(scheme.kind == "basic" for scheme in plan.schemes),
@@ -1001,10 +1000,15 @@ class ServerRenderer:  # noqa: PLR0904
                 yield response.status, media.media_type, kind, accessor
 
 
+def _implementation(group: GroupSpec) -> str:
+    return group.service.removesuffix("Service") or "Operations"
+
+
 def _listed(names: list[str]) -> str:
-    if len(names) == 1:
-        return names[0]
-    return f"{', '.join(names[:-1])}{',' if len(names) > 2 else ''} and {names[-1]}"
+    *rest, last = names
+    if not rest:
+        return last
+    return f"{', '.join(rest)}{',' if len(rest) > 1 else ''} and {last}"
 
 
 def _credential(scheme: SchemeSpec) -> str:

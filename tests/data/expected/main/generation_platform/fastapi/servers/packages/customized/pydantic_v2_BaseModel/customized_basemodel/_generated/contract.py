@@ -12,18 +12,22 @@ from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
 from . import model_bindings
 
-OperationKey: TypeAlias = Literal['/paths/~1pets/get', '/paths/~1health/get']
+OperationKey: TypeAlias = Literal[
+    '/paths/~1pets/get',
+    '/paths/~1pets~1{petId}/delete',
+    '/paths/~1health/get',
+]
 SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
         '/paths/~1pets/get': Sequence[Dependency],
+        '/paths/~1pets~1{petId}/delete': Sequence[Dependency],
         '/paths/~1health/get': Sequence[Dependency],
     },
     total=False,
 )
 SCHEMES: Final = ()
-SCAFFOLD: Final = __name__.rsplit(".", 2)[0]
 
 
 class HandleListPets:
@@ -32,6 +36,7 @@ class HandleListPets:
     OPERATION: Final = OperationPlan(
         name='handle_list_pets',
         key='/paths/~1pets/get',
+        service='pets',
         asynchronous=True,
     )
     RESPONSES: Final = OperationResponses(
@@ -51,12 +56,29 @@ class HandleListPets:
     )
 
 
+class HandleDeletePet:
+    """Plans of the handle_delete_pet operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='handle_delete_pet',
+        key='/paths/~1pets~1{petId}/delete',
+        service='pets',
+        keywords=('pet_id',),
+        asynchronous=True,
+    )
+    RESPONSES: Final = OperationResponses(
+        responses=(ResponsePlan(status='204'),),
+        primary=(204, None),
+    )
+
+
 class HandleGetHealth:
     """Plans of the handle_get_health operation."""
 
     OPERATION: Final = OperationPlan(
         name='handle_get_health',
         key='/paths/~1health/get',
+        service='untagged',
         asynchronous=True,
     )
     RESPONSES: Final = OperationResponses(

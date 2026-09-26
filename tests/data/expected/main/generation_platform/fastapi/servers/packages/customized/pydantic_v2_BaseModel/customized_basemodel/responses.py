@@ -53,6 +53,16 @@ HandleListPetsResponseCodecs: Final = _HandleListPetsResponseCodecs(
 )
 
 
+HandleDeletePetResponsePayload: TypeAlias = Never
+
+
+class _HandleDeletePetResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the handle_delete_pet response bodies."""
+
+
+HandleDeletePetResponseCodecs: Final = _HandleDeletePetResponseCodecs(())
+
+
 HandleGetHealthResponsePayload: TypeAlias = Never
 
 
@@ -65,6 +75,8 @@ HandleGetHealthResponseCodecs: Final = _HandleGetHealthResponseCodecs(())
 
 __all__ = [
     'HTTPResult',
+    'HandleDeletePetResponseCodecs',
+    'HandleDeletePetResponsePayload',
     'HandleGetHealthResponseCodecs',
     'HandleGetHealthResponsePayload',
     'HandleListPetsResponseCodecs',

@@ -44,7 +44,6 @@ OperationDependencies = TypedDict(
     total=False,
 )
 SCHEMES: Final = ()
-SCAFFOLD: Final = __name__.rsplit(".", 2)[0]
 
 
 class PostItem:
@@ -53,6 +52,7 @@ class PostItem:
     OPERATION: Final = OperationPlan(
         name='post_item',
         key='/paths/~1items/post',
+        service='untagged',
         keywords=('body',),
     )
     BODY: Final = BodyAdapter(
@@ -78,6 +78,7 @@ class PostAccount:
     OPERATION: Final = OperationPlan(
         name='post_account',
         key='/paths/~1accounts/post',
+        service='untagged',
         keywords=('body',),
     )
     BODY: Final = BodyAdapter(
@@ -103,6 +104,7 @@ class PostProfile:
     OPERATION: Final = OperationPlan(
         name='post_profile',
         key='/paths/~1profiles/post',
+        service='untagged',
         keywords=('body', 'media_type'),
     )
     BODY: Final = BodyAdapter(
@@ -133,6 +135,7 @@ class PutDocument:
     OPERATION: Final = OperationPlan(
         name='put_document',
         key='/paths/~1documents/put',
+        service='untagged',
         keywords=('body', 'media_type'),
     )
     BODY: Final = BodyAdapter(
@@ -167,6 +170,7 @@ class PutBlob:
     OPERATION: Final = OperationPlan(
         name='put_blob',
         key='/paths/~1blobs/put',
+        service='untagged',
         keywords=('body',),
     )
     BODY: Final = BodyAdapter(
@@ -184,6 +188,7 @@ class PostForm:
     OPERATION: Final = OperationPlan(
         name='post_form',
         key='/paths/~1forms/post',
+        service='untagged',
         keywords=('body',),
     )
     BODY: Final = BodyAdapter(
@@ -215,6 +220,7 @@ class PostNativeForm:
     OPERATION: Final = OperationPlan(
         name='post_native_form',
         key='/paths/~1native-forms/post',
+        service='untagged',
         keywords=('name', 'count'),
     )
     RESPONSES: Final = OperationResponses(
@@ -229,6 +235,7 @@ class Upload:
     OPERATION: Final = OperationPlan(
         name='upload',
         key='/paths/~1uploads/post',
+        service='untagged',
         keywords=('file', 'note'),
     )
     RESPONSES: Final = OperationResponses(
@@ -243,6 +250,7 @@ class PostCheck:
     OPERATION: Final = OperationPlan(
         name='post_check',
         key='/paths/~1checks/post',
+        service='untagged',
         keywords=('body',),
     )
     BODY: Final = BodyAdapter(
@@ -268,6 +276,7 @@ class PostRaw:
     OPERATION: Final = OperationPlan(
         name='post_raw',
         key='/paths/~1raw/post',
+        service='untagged',
         keywords=('request',),
     )
     RESPONSES: Final = OperationResponses(

@@ -63,7 +63,6 @@ SCHEMES: Final = (
     SchemePlan(name='digest', kind='custom'),
     SchemePlan(name='mtls', kind='custom'),
 )
-SCAFFOLD: Final = __name__.rsplit(".", 2)[0]
 
 
 class ListPets:
@@ -72,6 +71,7 @@ class ListPets:
     OPERATION: Final = OperationPlan(
         name='list_pets',
         key='/paths/~1pets/get',
+        service='pets',
         keywords=('principal',),
         security=SecurityPlan(requirements=((('api_key', ()),),)),
     )
@@ -95,7 +95,11 @@ class ListPets:
 class GetPublic:
     """Plans of the get_public operation."""
 
-    OPERATION: Final = OperationPlan(name='get_public', key='/paths/~1public/get')
+    OPERATION: Final = OperationPlan(
+        name='get_public',
+        key='/paths/~1public/get',
+        service='public',
+    )
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
         primary=(204, None),
@@ -108,6 +112,7 @@ class GetMaybe:
     OPERATION: Final = OperationPlan(
         name='get_maybe',
         key='/paths/~1maybe/get',
+        service='untagged',
         keywords=('principal', 'query_principal'),
         asynchronous=True,
         security=SecurityPlan(requirements=((), (('bearer', ()),))),
@@ -124,6 +129,7 @@ class PutPet:
     OPERATION: Final = OperationPlan(
         name='put_pet',
         key='/paths/~1pets~1{petId}/put',
+        service='untagged',
         keywords=('principal', 'pet_id'),
         security=SecurityPlan(
             requirements=(
@@ -144,6 +150,7 @@ class GetSession:
     OPERATION: Final = OperationPlan(
         name='get_session',
         key='/paths/~1session/get',
+        service='untagged',
         keywords=('principal',),
         security=SecurityPlan(
             requirements=(
@@ -165,6 +172,7 @@ class GetCustom:
     OPERATION: Final = OperationPlan(
         name='get_custom',
         key='/paths/~1custom/get',
+        service='untagged',
         keywords=('principal',),
         asynchronous=True,
         security=SecurityPlan(

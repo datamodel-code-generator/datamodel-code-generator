@@ -40,9 +40,13 @@ def _resources() -> tuple[SchemaResource, ...]:
                             },
                         },
                     },
+                    '/pets/{petId}': {'delete': {'parameters': [{'schema': {'type': 'integer'}}]}},
                 },
             }),
-            roots=('/paths/~1pets/get/responses/200/content/application~1json/schema',),
+            roots=(
+                '/paths/~1pets/get/responses/200/content/application~1json/schema',
+                '/paths/~1pets~1{petId}/delete/parameters/0/schema',
+            ),
         ),
     )
 

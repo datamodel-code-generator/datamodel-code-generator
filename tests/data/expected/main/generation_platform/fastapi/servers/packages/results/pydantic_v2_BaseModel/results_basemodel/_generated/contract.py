@@ -40,7 +40,6 @@ OperationDependencies = TypedDict(
     total=False,
 )
 SCHEMES: Final = ()
-SCAFFOLD: Final = __name__.rsplit(".", 2)[0]
 
 
 class GetResult:
@@ -49,6 +48,7 @@ class GetResult:
     OPERATION: Final = OperationPlan(
         name='get_result',
         key='/paths/~1results/get',
+        service='untagged',
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
@@ -136,6 +136,7 @@ class HeadResult:
     OPERATION: Final = OperationPlan(
         name='head_result',
         key='/paths/~1results/head',
+        service='untagged',
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
@@ -151,6 +152,7 @@ class GetPlain:
     OPERATION: Final = OperationPlan(
         name='get_plain',
         key='/paths/~1plain/get',
+        service='untagged',
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
@@ -176,6 +178,7 @@ class GetLatin:
     OPERATION: Final = OperationPlan(
         name='get_latin',
         key='/paths/~1latin/get',
+        service='untagged',
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
@@ -201,6 +204,7 @@ class GetNothing:
     OPERATION: Final = OperationPlan(
         name='get_nothing',
         key='/paths/~1nothing/get',
+        service='untagged',
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(
@@ -225,6 +229,7 @@ class PostEmpty:
     OPERATION: Final = OperationPlan(
         name='post_empty',
         key='/paths/~1empty/post',
+        service='untagged',
         keywords=('case',),
     )
     RESPONSES: Final = OperationResponses(

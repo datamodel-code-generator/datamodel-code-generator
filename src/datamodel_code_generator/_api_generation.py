@@ -151,7 +151,10 @@ class TargetRequest:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRender:
-    """A target's planned files and manifest data; run diagnostics are reported but never persisted."""
+    """A target's planned files and manifest data; run warnings and information are reported but never persisted.
+
+    A target raises `APIGenerationError` for its failures instead of returning error diagnostics.
+    """
 
     files: tuple[RenderedFile, ...]
     target_data: JSONObject
@@ -834,8 +837,6 @@ class _Planner:
                 resolve=self.operation,
             )
         )
-        if any(item.severity == "error" for item in rendered.diagnostics):
-            raise APIGenerationError(rendered.diagnostics)
         if verifying := config.model_mode == "verify":
             self.verify()
         finished = _Finisher(self).finish(rendered)

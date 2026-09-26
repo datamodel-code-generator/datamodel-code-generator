@@ -36,16 +36,27 @@ _BUNDLE = r"""{
         }
        }
       }
+     }
+    },
+    "security": []
+   }
+  },
+  {
+   "key": "/paths/~1pets~1{petId}/delete",
+   "method": "delete",
+   "route_path": "/pets/{petId}",
+   "slots": [],
+   "fragment": {
+    "responses": {
+     "204": {
+      "description": "Deleted."
      },
-     "501": {
-      "description": "Operation not implemented",
+     "500": {
+      "description": "Internal Server Error",
       "content": {
-       "application/json": {
+       "text/plain": {
         "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__6efaf455f603"
-        },
-        "example": {
-         "detail": "Operation not implemented"
+         "$ref": "#/components/schemas/dcg_server_error__6efaf455f603"
         }
        }
       }
@@ -73,19 +84,6 @@ _BUNDLE = r"""{
         }
        }
       }
-     },
-     "501": {
-      "description": "Operation not implemented",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__6efaf455f603"
-        },
-        "example": {
-         "detail": "Operation not implemented"
-        }
-       }
-      }
      }
     },
     "security": []
@@ -96,15 +94,6 @@ _BUNDLE = r"""{
   "schemas": {
    "dcg_server_error__6efaf455f603": {
     "type": "string"
-   },
-   "dcg_http_error__6efaf455f603": {
-    "type": "object",
-    "properties": {
-     "detail": {}
-    },
-    "required": [
-     "detail"
-    ]
    }
   }
  }
@@ -113,6 +102,10 @@ PLAN: Final = OpenAPIPackagePlan(
     package='customized_basemodel',
     version='3.1.0',
     repeated=False,
-    operation_keys=('/paths/~1pets/get', '/paths/~1health/get'),
+    operation_keys=(
+        '/paths/~1pets/get',
+        '/paths/~1pets~1{petId}/delete',
+        '/paths/~1health/get',
+    ),
     bundle=_BUNDLE,
 )

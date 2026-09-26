@@ -194,4 +194,4 @@ The parser focuses on model generation from XSD documents, not full XML instance
 
 The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
 
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package builds routers from handwritten handlers, serves the source document's metadata through install_openapi, and keeps handlers across regenerations.
+generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi.

@@ -17,7 +17,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
 
 @pytest.mark.parametrize("case", ["pets", "parameters", "bodies", "results", "security", "customized"])
 def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Generate each server, then build its router from handwritten handlers and exchange requests with it."""
+    """Generate each server, then build its router from handwritten services and exchange requests with it."""
     report, packages = fastapi_server_report(case, tmp_path, monkeypatch)
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in packages.items():

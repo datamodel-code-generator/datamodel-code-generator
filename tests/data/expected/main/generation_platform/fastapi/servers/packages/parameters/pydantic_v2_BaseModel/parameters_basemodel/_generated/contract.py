@@ -42,7 +42,6 @@ OperationDependencies = TypedDict(
     total=False,
 )
 SCHEMES: Final = ()
-SCAFFOLD: Final = __name__.rsplit(".", 2)[0]
 
 
 class Search:
@@ -51,6 +50,7 @@ class Search:
     OPERATION: Final = OperationPlan(
         name='search',
         key='/paths/~1search/get',
+        service='untagged',
         keywords=('session', 'code', 'filter', 'ids', 'x_ids', 'blob', 'note'),
     )
     @dataclass(frozen=True, slots=True, kw_only=True)
@@ -160,6 +160,7 @@ class GetRatios:
     OPERATION: Final = OperationPlan(
         name='get_ratios',
         key='/paths/~1ratios/get',
+        service='untagged',
         keywords=('ratios',),
     )
     RESPONSES: Final = OperationResponses(
@@ -174,6 +175,7 @@ class Repeat:
     OPERATION: Final = OperationPlan(
         name='repeat',
         key='/paths/~1repeat~1{id}~1again~1{id}/get',
+        service='untagged',
         keywords=('id',),
     )
     @dataclass(frozen=True, slots=True, kw_only=True)
@@ -211,6 +213,7 @@ class GetNote:
     OPERATION: Final = OperationPlan(
         name='get_note',
         key='/paths/~1notes~1{note.id}/get',
+        service='untagged',
         keywords=('note_id',),
     )
     RESPONSES: Final = OperationResponses(
@@ -225,6 +228,7 @@ class GetFile:
     OPERATION: Final = OperationPlan(
         name='get_file',
         key='/paths/~1files~1{file.name}/get',
+        service='untagged',
         keywords=('file_name',),
     )
     @dataclass(frozen=True, slots=True, kw_only=True)
@@ -261,6 +265,7 @@ class GetMenu:
     OPERATION: Final = OperationPlan(
         name='get_menu',
         key='/paths/~1menü~1{item}/get',
+        service='untagged',
         keywords=('item',),
     )
     @dataclass(frozen=True, slots=True, kw_only=True)

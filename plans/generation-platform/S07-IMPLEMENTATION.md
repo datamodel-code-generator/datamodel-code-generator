@@ -91,6 +91,7 @@ Package and docs:
 Deviations:
 
 - The abbreviation `--generate-s`, which argparse used to expand to `--generate-schema-validators`, is now ambiguous. An alias would have preserved it, but it showed in the help, the CLI reference and the skill reference, and earlier options sharing a prefix added none.
+- The coordinator no longer stops on error diagnostics a target returns: the FastAPI target raises `APIGenerationError` for its failures, and the handler claims of the create-only stubs, the only error diagnostics it returned, went with the stubs (S06-3). Once the fixture target is gone, `TargetRender.diagnostics` carries warnings and information only.
 - `--check` lists changed paths instead of printing diffs: stdout is reserved for the diagnostics JSON, and ENTRY §4 prints no generated code.
 - The manifest projected mapping keys with `str()`, so an operation reference key recorded the reference's Python repr, with the absolute URI of a named document. Keys other than strings are now projected like values and recorded as canonical JSON, such as `{"document":"/inputs/root","pointer":"/paths/~1pets/post"}`.
 

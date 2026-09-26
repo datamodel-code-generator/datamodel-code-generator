@@ -94,23 +94,6 @@ _BUNDLE = r"""{
         }
        }
       }
-     },
-     "501": {
-      "description": "An error.",
-      "content": {
-       "application/json": {
-        "schema": {
-         "anyOf": [
-          {
-           "$ref": "#/components/schemas/Error__2cbe65631f1a"
-          },
-          {
-           "$ref": "#/components/schemas/dcg_http_error__50e7d3b352e5"
-          }
-         ]
-        }
-       }
-      }
      }
     },
     "security": []
@@ -139,19 +122,6 @@ _BUNDLE = r"""{
        "text/plain": {
         "schema": {
          "$ref": "#/components/schemas/dcg_server_error__50e7d3b352e5"
-        }
-       }
-      }
-     },
-     "501": {
-      "description": "Operation not implemented",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__50e7d3b352e5"
-        },
-        "example": {
-         "detail": "Operation not implemented"
         }
        }
       }
@@ -186,19 +156,6 @@ _BUNDLE = r"""{
        "text/plain": {
         "schema": {
          "$ref": "#/components/schemas/dcg_server_error__50e7d3b352e5"
-        }
-       }
-      }
-     },
-     "501": {
-      "description": "Operation not implemented",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__50e7d3b352e5"
-        },
-        "example": {
-         "detail": "Operation not implemented"
         }
        }
       }
@@ -243,19 +200,6 @@ _BUNDLE = r"""{
         }
        }
       }
-     },
-     "501": {
-      "description": "Operation not implemented",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__50e7d3b352e5"
-        },
-        "example": {
-         "detail": "Operation not implemented"
-        }
-       }
-      }
      }
     },
     "security": []
@@ -277,19 +221,6 @@ _BUNDLE = r"""{
        "text/plain": {
         "schema": {
          "$ref": "#/components/schemas/dcg_server_error__50e7d3b352e5"
-        }
-       }
-      }
-     },
-     "501": {
-      "description": "Operation not implemented",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__50e7d3b352e5"
-        },
-        "example": {
-         "detail": "Operation not implemented"
         }
        }
       }
@@ -324,19 +255,6 @@ _BUNDLE = r"""{
        "text/plain": {
         "schema": {
          "$ref": "#/components/schemas/dcg_server_error__50e7d3b352e5"
-        }
-       }
-      }
-     },
-     "501": {
-      "description": "Operation not implemented",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/dcg_http_error__50e7d3b352e5"
-        },
-        "example": {
-         "detail": "Operation not implemented"
         }
        }
       }

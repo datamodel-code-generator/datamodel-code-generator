@@ -11025,10 +11025,11 @@ Source: https://datamodel-code-generator.koxudaxi.dev/fastapi-server/
     template context, and served OpenAPI document may change. See [Experimental Features](experimental.md).
 
 `--generate-server fastapi` generates the models of one OpenAPI document with the usual model options and, in
-the same run, a FastAPI server package for its operations: routers, handler call signatures, codecs for the
-values FastAPI cannot validate exactly, authentication, and the served OpenAPI document. You write the business
-logic in handler modules that regeneration never overwrites, and the package checks at startup, and for type
-checkers, that every handler matches its operation.
+the same run, a FastAPI server package for its operations: routers, a service Protocol for each router group,
+codecs for the values FastAPI cannot validate exactly, authentication, and the served OpenAPI document. Every
+generated file is regenerated on each run. You write the business logic in your own modules, implementing the
+service Protocols, and type checkers, Python, and the package at startup check that every operation has a
+matching method.
 
 ## Quick start
 
@@ -11050,16 +11051,42 @@ datamodel-codegen --input openapi.yaml --input-file-type openapi \
   --output models.py --generate-server fastapi --target-config fastapi.toml
 ```
 
-Install the runtime dependencies the package lists, then run the scaffold application:
+`server/services.py` declares a Protocol for each router group, such as `PetsService` for the operations tagged
+`pets`, with an abstract method for each operation that takes the operation's arguments as keywords. For a
+document whose `pets` operations are `GET /pets/{petId}` (`getPet`) and `DELETE /pets/{petId}` (`deletePet`),
+implement it in a module of your own, outside the generated package:
+
+```python
+# app.py
+from models import Pet
+from server import create_app
+from server.services import PetsService
+
+
+class Pets(PetsService):
+    def get_pet(self, *, pet_id: int) -> Pet:
+        return Pet(id=pet_id, name="Mimi")
+
+    def delete_pet(self, *, pet_id: int) -> None:
+        return None
+
+
+app = create_app(pets=Pets())
+```
+
+Install the runtime dependencies the package lists, then run the application:
 
 ```bash
 pip install -r server/dcg-runtime-requirements.txt
-uvicorn server.main:app
+uvicorn app:app
 ```
 
-Every operation answers `501 Not Implemented` until you replace the stub in `server/handlers/<handler>.py`.
-The generated `server/README.md` lists the operations and shows how to connect typed handlers, an authorizer,
-and your own `FastAPI` application.
+Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
+do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
+one service for each group, under the group's name, and checks every method when the application starts; any
+object with the right methods works, and type checkers check it where you pass it. The generated
+`server/README.md` lists the operations of each service and shows how to connect an authorizer and your own
+`FastAPI` application.
 
 ## Requirements
 
@@ -11117,14 +11144,13 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `model_mode` | `"generate"` | `"verify"` compares the models with existing files instead of writing them |
 | `selection` | every operation | Table of `include_operations`, `include_tags`, `exclude_operations`, `exclude_tags`, and a required `reason` |
 | `layout` | `"routers"` | One router module per tag, or `"single"` for one `routes.py` |
-| `handler_mode` | `"sync"` | `"async"` makes handlers coroutine functions; `[[handler_modes]]` sets one operation |
-| `include_request` | `false` | Pass the Starlette `Request` to every handler |
+| `handler_mode` | `"sync"` | `"async"` makes service methods coroutine functions; `[[handler_modes]]` sets one operation |
+| `include_request` | `false` | Pass the Starlette `Request` to every service method |
 | `body_mode` | `"typed"` | `"request"` passes the raw `Request` instead of a validated body; `[[body_modes]]` sets one operation |
 | `primary_responses` | inferred | `[[primary_responses]]` choose the response a bare return value takes |
-| `operation_names` | inferred | `[[operation_names]]` rename handlers |
-| `router_names` | inferred | Table of group keys to router module names |
-| `parameter_names` | inferred | `[[parameter_names]]` rename handler arguments |
-| `scaffold` | `true` | Create handler stubs, `main.py`, and `auth.py` once |
+| `operation_names` | inferred | `[[operation_names]]` rename service methods |
+| `router_names` | inferred | Table of group keys to group names: router modules, service arguments, and `<Name>Service` Protocols |
+| `parameter_names` | inferred | `[[parameter_names]]` rename method arguments |
 | `hooks` | none | `[[hooks]]` tables with `module` or `file`, and `callable` (default `transform`) |
 | `templates` | none | Directory of template overrides and extra files |
 | `update_groups` | none | Regenerate only these router groups |
@@ -11156,21 +11182,23 @@ callable = "rename"
 | Path | Owner | Contents |
 | --- | --- | --- |
 | `__init__.py`, `application.py` | generator | `create_app`, `build_router`, `install_openapi`, and the public types |
+| `services.py` | generator | One service Protocol per router group, with an abstract method per operation |
 | `routers/` or `routes.py` | generator | Route registrations |
 | `responses.py`, `errors.py`, `auth_types.py`, `model_codecs.py` | generator | Results, errors, authentication, and codec types |
-| `_generated/`, `_runtime/` | generator | Plans, signatures, bindings, and the runtime the package imports |
+| `_generated/`, `_runtime/` | generator | Plans, bindings, and the runtime the package imports |
 | `README.md`, `py.typed`, `dcg-runtime-requirements.txt` | generator | Documentation, typing marker, and runtime requirements |
-| `handlers/`, `main.py`, `auth.py` | you | Handler modules, the application, and the authorizer, created once when scaffolding |
 | `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
 
-Files the generator owns are replaced on every generation, and generation refuses to overwrite one you edited
-(`E_OUTPUT_MODIFIED`). In standalone mode the package lives under `output/src/<package>` next to
-`pyproject.toml` and `README.md`.
+The generator owns every file of the package: it replaces them on every generation and refuses to overwrite one
+you edited (`E_OUTPUT_MODIFIED`). Keep the service implementations, the authorizer, and the application in your
+own modules. In standalone mode the package lives under `output/src/<package>` next to `pyproject.toml` and
+`README.md`.
 
 ## Regenerating and checking
 
-Run the same command again after the OpenAPI document changes. The handlers you wrote stay, stubs are created
-for new operations, and the handlers of removed operations are kept for you to delete. `--check` renders
+Run the same command again after the OpenAPI document changes. The service Protocols change with the operations,
+so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass
+that lacks a new method; your own modules are never touched. `--check` renders
 everything without writing it and exits with 0 when nothing would change, 1 when a file would change, and 2 for
 an error; `render_fastapi` returns the same artifacts, each with its action.
 
@@ -11181,9 +11209,10 @@ the existing files instead of writing them, and reports `E_MODEL_MISMATCH` when 
 ## Templates and hooks
 
 A `templates` directory overrides builtin roles by file name: `application.jinja2`, `router.jinja2`,
-`handler.jinja2`, `handler_signatures.jinja2`, `auth.jinja2`, `main.jinja2`, and `readme.jinja2`. Each role
+`services.jinja2`, and `readme.jinja2`. Each role
 receives the values its builtin template uses and the frozen `context`. A `fastapi-templates.toml` file in the
-directory declares extra files, rendered once for the project, each router, or each operation:
+directory declares extra files, rendered on every generation once for the project, each router, or each
+operation:
 
 ```toml
 schema_version = 1
@@ -11192,11 +11221,10 @@ schema_version = 1
 template = "operation.md.jinja2"
 path = "docs/{operation}.md"
 scope = "operation"
-ownership = "owned"
 ```
 
 A hook is a function that receives the `FastAPIContext` and returns a `FastAPIContextPatch`, which can rename
-handlers and routers, reorder or remove operations, change handler modes, and add extras and imports that
+methods and router groups, reorder or remove operations, change method modes, and add extras and imports that
 templates read:
 
 ```python
@@ -42893,7 +42921,7 @@ The parser focuses on model generation from XSD documents, not full XML instance
 
 The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
 
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package builds routers from handwritten handlers, serves the source document's metadata through install_openapi, and keeps handlers across regenerations.
+generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi.
 
 ---
 

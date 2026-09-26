@@ -5,12 +5,6 @@ from ._runtime.server.application import (
     HandlerConfigurationError,
     OpenAPIConfigurationError,
 )
-from ._runtime.server.errors import UnimplementedOperationError
 from ._runtime.server.security import AuthConfigurationError
 
-__all__ = [
-    "AuthConfigurationError",
-    "HandlerConfigurationError",
-    "OpenAPIConfigurationError",
-    "UnimplementedOperationError",
-]
+__all__ = ["AuthConfigurationError", "HandlerConfigurationError", "OpenAPIConfigurationError"]
