@@ -165,7 +165,9 @@ class ServerRenderer:  # noqa: PLR0904
                 pending.extend(graph[module])
         packages = {f"{PurePosixPath(module).parent}/__init__.py" for module in needed}
         for path in sorted({"__init__.py", *packages, *needed}):
-            yield self.file(PurePosixPath("_runtime", path), "runtime", (_RUNTIME / path).read_text(), verbatim=True)
+            yield self.file(
+                PurePosixPath("_runtime", path), "runtime", (_RUNTIME / path).read_text(encoding="utf-8"), verbatim=True
+            )
 
     def application(self) -> str:
         """Return the application module, rendered from its builtin template.
@@ -762,7 +764,7 @@ def _runtime_imports() -> dict[str, tuple[str, ...]]:
         module = PurePosixPath(source.relative_to(_RUNTIME).as_posix())
         graph[module.as_posix()] = tuple(
             f"{module.parents[len(dots) - 1].joinpath(*target.split('.')).as_posix()}.py"
-            for dots, target in _RELATIVE_IMPORT.findall(source.read_text())
+            for dots, target in _RELATIVE_IMPORT.findall(source.read_text(encoding="utf-8"))
         )
     return graph
 
