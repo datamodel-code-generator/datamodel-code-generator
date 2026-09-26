@@ -41,11 +41,19 @@ def _resources() -> tuple[SchemaResource, ...]:
                         },
                     },
                     '/pets/{petId}': {'delete': {'parameters': [{'schema': {'type': 'integer'}}]}},
+                    '/pets/{petId}/moves': {
+                        'post': {
+                            'parameters': [{'schema': {'type': 'integer'}}],
+                            'responses': {'201': {'headers': {'Location': {'schema': {'type': 'string'}}}}},
+                        },
+                    },
                 },
             }),
             roots=(
                 '/paths/~1pets/get/responses/200/content/application~1json/schema',
                 '/paths/~1pets~1{petId}/delete/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1moves/post/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1moves/post/responses/201/headers/Location/schema',
             ),
         ),
     )
@@ -68,6 +76,16 @@ def _model_0() -> ModelBinding:
         native_kind='root',
         schema_id=None,
         root=ArrayNode(item=LeafNode()),
+    )
+
+
+@cache
+def _model_1() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldPetsPetIdMovesPostResponse201LocationHeader',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
     )
 
 
@@ -107,3 +125,42 @@ def codec_0() -> PydanticModelCodec[models.FieldPetsGetResponse]:
 @cache
 def outbound_0() -> NativeOutboundCodec[models.FieldPetsGetResponse]:
     return NativeOutboundCodec(codec_0(), CONTEXT_0)
+
+
+CONTEXT_1: Final = CodecContext(
+    surface='server',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1moves/post/responses/201/headers/Location/schema',
+    operation_id='/paths/~1pets~1{petId}~1moves/post',
+)
+
+
+@cache
+def codec_1() -> PydanticModelCodec[models.FieldPetsPetIdMovesPostResponse201LocationHeader]:
+    """Codec of /paths/~1pets~1{petId}~1moves/post response_header (response Location 201)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1moves/post/responses/201/headers/Location/schema|ModelNode(symbol='models:FieldPetsPetIdMovesPostResponse201LocationHeader')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1moves/post/responses/201/headers/Location/schema',
+            operation_id='/paths/~1pets~1{petId}~1moves/post',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldPetsPetIdMovesPostResponse201LocationHeader',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldPetsPetIdMovesPostResponse201LocationHeader'),
+            models=(_model_1(),),
+        ),
+        models.FieldPetsPetIdMovesPostResponse201LocationHeader,
+        {
+            'models:FieldPetsPetIdMovesPostResponse201LocationHeader': models.FieldPetsPetIdMovesPostResponse201LocationHeader,
+        },
+        response_bundle(),
+    )
+
+
+@cache
+def outbound_1() -> NativeOutboundCodec[models.FieldPetsPetIdMovesPostResponse201LocationHeader]:
+    return NativeOutboundCodec(codec_1(), CONTEXT_1)

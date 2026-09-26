@@ -78,9 +78,4 @@ class PetsRoutesService(Protocol[PrincipalT_contra]):
         x_trace: str | Unset,
         after: models.FieldPetsPetIdGetQueryAfterParameter | Unset,
         session: models.FieldPetsPetIdGetCookieSessionParameter | Unset,
-    ) -> (
-        models.Pet
-        | ModelValue[models.Pet]
-        | HTTPResult[HandleGetPetResponsePayload]
-        | Response
-    ): ...
+    ) -> HTTPResult[HandleGetPetResponsePayload] | Response: ...

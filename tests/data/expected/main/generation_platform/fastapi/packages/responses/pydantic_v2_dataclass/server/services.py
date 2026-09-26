@@ -27,14 +27,7 @@ class ResultsService(Protocol):
     """Implement the results operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
-    def create(
-        self,
-    ) -> (
-        models.Thing
-        | ModelValue[models.Thing]
-        | HTTPResult[CreateResponsePayload]
-        | Response
-    ): ...
+    def create(self) -> HTTPResult[CreateResponsePayload] | Response: ...
 
     @abstractmethod
     def only_default(self) -> HTTPResult[OnlyDefaultResponsePayload] | Response: ...

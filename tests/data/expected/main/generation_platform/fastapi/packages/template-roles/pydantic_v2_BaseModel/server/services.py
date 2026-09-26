@@ -38,12 +38,7 @@ class PetsService(Protocol[PrincipalT_contra]):
         x_trace: str | Unset,
         after: models.FieldPetsPetIdGetQueryAfterParameter | Unset,
         session: models.FieldPetsPetIdGetCookieSessionParameter | Unset,
-    ) -> (
-        models.Pet
-        | ModelValue[models.Pet]
-        | HTTPResult[GetPetResponsePayload]
-        | Response
-    ): ...
+    ) -> HTTPResult[GetPetResponsePayload] | Response: ...
 
     @abstractmethod
     def add_pet(

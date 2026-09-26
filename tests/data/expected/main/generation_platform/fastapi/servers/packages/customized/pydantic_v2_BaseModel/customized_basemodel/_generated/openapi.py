@@ -66,6 +66,38 @@ _BUNDLE = r"""{
    }
   },
   {
+   "key": "/paths/~1pets~1{petId}~1moves/post",
+   "method": "post",
+   "route_path": "/pets/{petId}/moves",
+   "slots": [],
+   "fragment": {
+    "responses": {
+     "201": {
+      "description": "Moved.",
+      "headers": {
+       "Location": {
+        "required": true,
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__6efaf455f603"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
+  },
+  {
    "key": "/paths/~1health/get",
    "method": "get",
    "route_path": "/health",
@@ -105,6 +137,7 @@ PLAN: Final = OpenAPIPackagePlan(
     operation_keys=(
         '/paths/~1pets/get',
         '/paths/~1pets~1{petId}/delete',
+        '/paths/~1pets~1{petId}~1moves/post',
         '/paths/~1health/get',
     ),
     bundle=_BUNDLE,

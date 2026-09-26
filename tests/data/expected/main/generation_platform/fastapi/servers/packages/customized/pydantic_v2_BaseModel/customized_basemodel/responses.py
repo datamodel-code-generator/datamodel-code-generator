@@ -63,6 +63,16 @@ class _HandleDeletePetResponseCodecs(ResponseCodecs[Never]):
 HandleDeletePetResponseCodecs: Final = _HandleDeletePetResponseCodecs(())
 
 
+HandleMovePetResponsePayload: TypeAlias = Never
+
+
+class _HandleMovePetResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the handle_move_pet response bodies."""
+
+
+HandleMovePetResponseCodecs: Final = _HandleMovePetResponseCodecs(())
+
+
 HandleGetHealthResponsePayload: TypeAlias = Never
 
 
@@ -81,6 +91,8 @@ __all__ = [
     'HandleGetHealthResponsePayload',
     'HandleListPetsResponseCodecs',
     'HandleListPetsResponsePayload',
+    'HandleMovePetResponseCodecs',
+    'HandleMovePetResponsePayload',
     'UNSET',
     'Unset',
 ]

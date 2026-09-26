@@ -50,9 +50,12 @@ render pydantic_v2.BaseModel
   delete_pet: DELETE /pets/{petId} -> /pets/{petId} [tag:pets] status 204 primary 204 None body typed handler sync
     parameter /paths/~1pets~1{petId}/delete/parameters/0: fastapi_native native_supported
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}/delete/responses/204
+  move_pet: POST /pets/{petId}/moves -> /pets/{petId}/moves [tag:pets] status 201 primary 201 None body typed handler sync
+    parameter /paths/~1pets~1{petId}~1moves/post/parameters/0: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1pets~1{petId}~1moves/post/responses/201
   get_health: GET /health -> /health [untagged] status 204 primary 204 None body typed handler async
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1health/get/responses/204
-  group tag:pets -> pets (2)
+  group tag:pets -> pets (3)
   group untagged -> untagged (1)
   file server/README.md
     | # Services
@@ -71,6 +74,7 @@ render pydantic_v2.BaseModel
     | | --- | --- | --- | --- | --- |
     | | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
     | | `PetsService` | `delete_pet` | DELETE | `/pets/{petId}` | `/paths/~1pets~1{petId}/delete` |
+    | | `PetsService` | `move_pet` | POST | `/pets/{petId}/moves` | `/paths/~1pets~1{petId}~1moves/post` |
     | | `UntaggedService` | `get_health` | GET | `/health` | `/paths/~1health/get` |
     |
     | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
@@ -88,7 +92,7 @@ render pydantic_v2.BaseModel
     |
     |
     | class Pets(PetsService):
-    |     """Implement `list_pets` and `delete_pet`."""
+    |     """Implement `list_pets`, `delete_pet`, and `move_pet`."""
     |
     |
     | class Untagged(UntaggedService):

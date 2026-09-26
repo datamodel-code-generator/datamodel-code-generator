@@ -70,8 +70,38 @@ def _add_delete_pet(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_move_pet(router: APIRouter, wiring: Wiring) -> None:
+    move_pet_handler = wiring.handlers['move_pet']
+
+    def move_pet(*, pet_id: Annotated[int, Path(alias='petId')]) -> Response:
+        return respond(move_pet_handler(pet_id=pet_id), contract.MovePet.RESPONSES)
+
+    router.add_api_route(
+        '/pets/{petId}/moves',
+        move_pet,
+        methods=['POST'],
+        status_code=201,
+        response_model=None,
+        response_class=Response,
+        operation_id='movePet',
+        tags=['pets'],
+        response_description='Moved.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'server',
+                'operation': '/paths/~1pets~1{petId}~1moves/post',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}~1moves/post'),
+    )
+
+
 LITERAL_ROUTES: Final = ((contract.ListPets.OPERATION, _add_list_pets),)
-TEMPLATED_ROUTES: Final = ((contract.DeletePet.OPERATION, _add_delete_pet),)
+TEMPLATED_ROUTES: Final = (
+    (contract.DeletePet.OPERATION, _add_delete_pet),
+    (contract.MovePet.OPERATION, _add_move_pet),
+)
 
 
 def build_router(

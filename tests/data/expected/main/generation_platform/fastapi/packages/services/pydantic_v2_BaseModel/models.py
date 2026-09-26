@@ -12,3 +12,11 @@ class FieldPetsGetResponse(RootModel[list[str]]):
 
 class FieldPetsPetIdDeletePathPetIdParameter(RootModel[int]):
     root: int
+
+
+class FieldPetsPetIdMovesPostPathPetIdParameter(RootModel[int]):
+    root: int
+
+
+class FieldPetsPetIdMovesPostResponse201LocationHeader(RootModel[str]):
+    root: str

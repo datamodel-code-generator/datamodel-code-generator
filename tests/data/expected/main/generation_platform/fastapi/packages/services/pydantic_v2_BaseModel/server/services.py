@@ -15,6 +15,7 @@ from .responses import (
     GetHealthResponsePayload,
     HTTPResult,
     ListPetsResponsePayload,
+    MovePetResponsePayload,
 )
 
 
@@ -37,6 +38,13 @@ class PetsService(Protocol):
         *,
         pet_id: int,
     ) -> None | HTTPResult[DeletePetResponsePayload] | Response: ...
+
+    @abstractmethod
+    def move_pet(
+        self,
+        *,
+        pet_id: int,
+    ) -> HTTPResult[MovePetResponsePayload] | Response: ...
 
 
 class UntaggedService(Protocol):

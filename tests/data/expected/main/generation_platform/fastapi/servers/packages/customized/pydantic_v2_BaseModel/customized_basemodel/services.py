@@ -14,6 +14,7 @@ from .responses import (
     HandleDeletePetResponsePayload,
     HandleGetHealthResponsePayload,
     HandleListPetsResponsePayload,
+    HandleMovePetResponsePayload,
     HTTPResult,
 )
 
@@ -37,6 +38,13 @@ class PetsService(Protocol):
         *,
         pet_id: int,
     ) -> None | HTTPResult[HandleDeletePetResponsePayload] | Response: ...
+
+    @abstractmethod
+    async def handle_move_pet(
+        self,
+        *,
+        pet_id: int,
+    ) -> HTTPResult[HandleMovePetResponsePayload] | Response: ...
 
 
 class UntaggedService(Protocol):

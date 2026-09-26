@@ -8,13 +8,20 @@ from typing import Final, Literal, TypeAlias, TypedDict
 
 from typing_extensions import Never
 
+from .._runtime.model_codecs.parameters import ParameterPlan
 from .._runtime.server.application import Dependency, OperationPlan
-from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
+from .._runtime.server.responses import (
+    HeaderPlan,
+    MediaPlan,
+    OperationResponses,
+    ResponsePlan,
+)
 from . import model_bindings
 
 OperationKey: TypeAlias = Literal[
     '/paths/~1pets/get',
     '/paths/~1pets~1{petId}/delete',
+    '/paths/~1pets~1{petId}~1moves/post',
     '/paths/~1health/get',
 ]
 SchemeKey: TypeAlias = Never
@@ -23,6 +30,7 @@ OperationDependencies = TypedDict(
     {
         '/paths/~1pets/get': Sequence[Dependency],
         '/paths/~1pets~1{petId}/delete': Sequence[Dependency],
+        '/paths/~1pets~1{petId}~1moves/post': Sequence[Dependency],
         '/paths/~1health/get': Sequence[Dependency],
     },
     total=False,
@@ -69,6 +77,39 @@ class HandleDeletePet:
     RESPONSES: Final = OperationResponses(
         responses=(ResponsePlan(status='204'),),
         primary=(204, None),
+    )
+
+
+class HandleMovePet:
+    """Plans of the handle_move_pet operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='handle_move_pet',
+        key='/paths/~1pets~1{petId}~1moves/post',
+        service='pets',
+        keywords=('pet_id',),
+        asynchronous=True,
+    )
+    RESPONSES: Final = OperationResponses(
+        responses=(
+            ResponsePlan(
+                status='201',
+                headers=(
+                    HeaderPlan(
+                        name='Location',
+                        required=True,
+                        plan=ParameterPlan(
+                            location='header',
+                            name='Location',
+                            style='simple',
+                            required=True,
+                        ),
+                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                    ),
+                ),
+            ),
+        ),
+        primary=(201, None),
     )
 
 
