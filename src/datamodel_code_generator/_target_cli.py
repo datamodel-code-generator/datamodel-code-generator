@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shlex
 import sys
 import traceback
@@ -27,6 +28,8 @@ _ERROR: Final = 2
 _JOBS: Final = (("job", "--job"), ("all_jobs", "--all-jobs"))
 _CONFLICTS: Final = (("watch", "--watch"), ("diff_against", "--diff-against"), ("input_model", "--input-model"))
 _TARGET: Final = "fastapi"
+_PLAIN: Final = re.compile(r"[\w./+-]+", re.ASCII)
+_EXPANDED: Final = re.compile(r"[$`\"\\!]")
 _REPORT: Final = frozenset({"schema_version", "target", "diagnostics"})
 _FIELDS: Final = frozenset({
     "code",
@@ -108,7 +111,14 @@ def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...]) -> str:
 
 
 def _uv_add(subject: str, arguments: Sequence[str]) -> str:
-    return f"Add {subject} to your project:\n  uv add {shlex.join(arguments)}"
+    return f"Add {subject} to your project:\n  uv add {' '.join(map(_argument, arguments))}"
+
+
+def _argument(value: str) -> str:
+    """Leave an argument bare, double-quote it for every common shell, or POSIX-quote one that double quotes expand."""
+    if _PLAIN.fullmatch(value):
+        return value
+    return shlex.quote(value) if _EXPANDED.search(value) else f'"{value}"'
 
 
 def _jobs(namespace: Namespace, report: _Report) -> NoReturn:

@@ -1,0 +1,2 @@
+Add the pets-server distribution to your project:
+  uv add --editable './$pets'

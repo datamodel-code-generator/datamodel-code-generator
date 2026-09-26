@@ -141,19 +141,32 @@ def test_fastapi_cli_lockfile(
     )
 
 
+@pytest.mark.parametrize(
+    ("options", "stdout"),
+    [
+        ([], "standalone.txt"),
+        (["--target-output", "pets service"], "standalone-spaced.txt"),
+        (["--target-output", "$pets"], "standalone-expanded.txt"),
+    ],
+    ids=["plain", "spaced", "expanded"],
+)
 def test_fastapi_cli_standalone(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    options: list[str],
+    stdout: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Write a standalone distribution, printing the uv command that adds it to a project."""
+    """Write a standalone distribution, printing the uv command that adds it with its path quoted for any shell."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
         output_path=Path("models.py"),
         input_file_type="openapi",
-        extra_args=_server(),
+        extra_args=_server(*options),
         copy_files=_inputs(tmp_path, "standalone.toml"),
         capsys=capsys,
-        expected_stdout_path=EXPECTED / "cli" / "standalone.txt",
+        expected_stdout_path=EXPECTED / "cli" / stdout,
         file_should_not_exist=tmp_path / "server",
     )
 

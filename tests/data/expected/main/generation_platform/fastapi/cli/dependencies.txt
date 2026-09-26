@@ -1,2 +1,2 @@
 Add the runtime dependencies of server to your project:
-  uv add 'fastapi>=0.141.1,<0.142' 'starlette>=1.0.0,<2' 'pydantic>=2.13.5,<3' 'jsonschema[format-nongpl]>=4.26,<5' 'referencing>=0.37,<1' 'typing-extensions>=4.16,<5'
+  uv add "fastapi>=0.141.1,<0.142" "starlette>=1.0.0,<2" "pydantic>=2.13.5,<3" "jsonschema[format-nongpl]>=4.26,<5" "referencing>=0.37,<1" "typing-extensions>=4.16,<5"
