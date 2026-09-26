@@ -1,0 +1,10 @@
+# layout-errors
+render
+  APIGenerationError
+  E_CONFIG_VALUE error config model_dependency: A distribution needs its models under src/ or an explicit model_dependency
+render
+  APIGenerationError
+  E_CONFIG_CONFLICT error config model_dependency: A distribution that bundles its models declares no model_dependency
+render
+  APIGenerationError
+  E_PATH_COLLISION error config output: The target package and the model output must not contain each other

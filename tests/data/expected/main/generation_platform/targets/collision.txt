@@ -4,7 +4,7 @@ render
   E_PATH_COLLISION error ownership server/__INIT__.py: Two generated files resolve to the same path
 render
   APIGenerationError
-  E_PATH_COLLISION error config output: The target root and the model output must not contain each other
+  E_PATH_COLLISION error config output: The target package and the model output must not contain each other
 render
   APIGenerationError
-  E_PATH_COLLISION error config output: The target root and the model output must not contain each other
+  E_PATH_COLLISION error config output: The target package and the model output must not contain each other

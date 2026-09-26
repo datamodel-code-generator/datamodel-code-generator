@@ -4,8 +4,10 @@ render
   write model models/__init__.py 10 lines
   write model models/pets.py 11 lines
   write model models/store.py 12 lines
-  write target server/__init__.py (target) 0 lines
-  write target server/routes/store.py (target) 1 lines
+  write target server/__init__.py (target) 1 lines
+  write target server/routes/store.py (target) 2 lines
+  write target server/py.typed (target) 0 lines
+  write target server/dcg-runtime-requirements.txt (target) 1 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The store group has 1 operations
@@ -15,8 +17,10 @@ render
   unchanged model models/__init__.py 10 lines
   unchanged model models/pets.py 11 lines
   unchanged model models/store.py 12 lines
-  unchanged target server/__init__.py (target) 0 lines
-  unchanged target server/routes/store.py (target) 1 lines
+  unchanged target server/__init__.py (target) 1 lines
+  unchanged target server/routes/store.py (target) 2 lines
+  unchanged target server/py.typed (target) 0 lines
+  unchanged target server/dcg-runtime-requirements.txt (target) 1 lines
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   unchanged target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The store group has 1 operations
@@ -85,6 +89,20 @@ render
       "group": "store",
       "kind": "routes",
       "path": "routes/store.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "typing",
+      "path": "py.typed",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "requirements",
+      "path": "dcg-runtime-requirements.txt",
       "sha256": "<sha256>",
       "size": "<masked>"
     }

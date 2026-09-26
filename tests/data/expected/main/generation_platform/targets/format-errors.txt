@@ -1,0 +1,15 @@
+# format-errors
+render
+  UnicodeEncodeError: 'latin-1' codec can't encode character '/u6f22' in position 33: ordinal not in range(256)
+render
+  APIGenerationError
+  E_TARGET_SOURCE error target __init__.py: The generated Python source is invalid: invalid syntax
+render
+  APIGenerationError
+  E_TARGET_SOURCE error target __init__.py: The generated Python source is invalid: 'return' outside function
+render
+  APIGenerationError
+  E_TARGET_SOURCE error format __init__.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format routes/pets.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format routes/store.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format routes/default.py: The generated Python source is invalid: invalid syntax

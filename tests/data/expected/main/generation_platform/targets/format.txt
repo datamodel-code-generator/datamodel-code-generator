@@ -1,0 +1,27 @@
+# format
+generate
+  target=fastapi schema_version=1
+  written model models.py
+  written target server/__init__.py (target) 110 bytes
+  written target server/routes/pets.py (target) 147 bytes
+  written target server/routes/store.py (target) 141 bytes
+  written target server/routes/default.py (target) 135 bytes
+  written target server/py.typed (target) 0 bytes
+  written target server/dcg-runtime-requirements.txt (target) 22 bytes
+  written model_inventory server/.dcg-state/model-artifacts.json (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+show server/routes/pets.py
+  | # -*- coding: latin-1 -*-
+  | # Example header
+  | #
+  | # Second line
+  | # timestamp: 2026-09-25T12:00:00+00:00
+  | # a comment
+  | ROUTES = ['GET /pets', 'POST /pets']
+show server/__init__.py
+  | # -*- coding: latin-1 -*-
+  | # Example header
+  | #
+  | # Second line
+  | # timestamp: 2026-09-25T12:00:00+00:00
+  | # a comment

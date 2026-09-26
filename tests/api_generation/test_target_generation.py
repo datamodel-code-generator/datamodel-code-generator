@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import errno
 import os
+import sys
 from contextlib import contextmanager
 from itertools import count
 from pathlib import Path
@@ -14,7 +15,7 @@ import pytest
 
 from datamodel_code_generator import _api_manifest, _api_publication, _publication
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
-from tests.conftest import assert_output
+from tests.conftest import assert_output, freeze_time
 from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
 from tests.test_http import _SchemaHandler, local_http_server  # noqa: F401 - Register the existing fixture.
 
@@ -49,11 +50,30 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "collision",
         "interference",
         "directory",
+        "layout-embedded",
+        "layout-standalone",
+        "layout-external",
+        "layout-errors",
+        "format-errors",
+        "target-grammar-modern",
+        "target-grammar-misplaced",
     ],
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Generate models once, select operations, plan target files, and publish them under the resource locks."""
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
+
+
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="type statements require Python 3.12")
+def test_target_render_target_grammar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reject syntax the running Python accepts but the configured target Python does not."""
+    assert_output(target_render_report("target-grammar", tmp_path, monkeypatch), EXPECTED / "target-grammar.txt")
+
+
+def test_target_render_timestamp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Head every Python file with the configured lines and one batch timestamp, then encode it."""
+    with freeze_time("2026-09-25 12:00:00"):
+        assert_output(target_render_report("format", tmp_path, monkeypatch), EXPECTED / "format.txt")
 
 
 def test_target_render_http(
@@ -121,7 +141,7 @@ def test_target_generate_rollback(failure: BaseException, tmp_path: Path, monkey
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows restores backups through the lexical fallback")
-@pytest.mark.parametrize(("case", "failed_call"), [("rollback-created", 1), ("rollback-backup", 7)])
+@pytest.mark.parametrize(("case", "failed_call"), [("rollback-created", 1), ("rollback-backup", 9)])
 def test_target_generate_rollback_failure(
     case: str, failed_call: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

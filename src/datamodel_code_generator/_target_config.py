@@ -373,6 +373,8 @@ def load_target_config(path: Path, config_type: type[ConfigT], *, output: Path |
                 values[key] = converted
     if output is not None:
         values["output"] = output
+    if "formatter_settings" not in data:
+        values["formatter_settings"] = path.parent
     reported = {item.option_path for item in diagnostics}
     diagnostics.extend(
         _diagnostic("E_CONFIG_VALUE", name, f"The target file needs {name}")

@@ -1,14 +1,8 @@
-# validation
-render
-  APIGenerationError
-  E_CONFIG_VALUE error config model_config.output: The fastapi target needs model_config.output
-render
-  APIGenerationError
-  E_FASTAPI_BACKEND_UNSUPPORTED error config model_config.output_model_type: The fastapi target does not support 'dataclasses.dataclass'; use 'pydantic_v2.BaseModel' or 'pydantic_v2.dataclass'
+# target-grammar-modern
 render
   target=fastapi schema_version=1
-  write model models.py 27 lines
-  write target server/__init__.py (target) 1 lines
+  write model models.py 22 lines
+  write target server/__init__.py (target) 2 lines
   write target server/routes/pets.py (target) 2 lines
   write target server/routes/store.py (target) 2 lines
   write target server/routes/default.py (target) 2 lines

@@ -2,10 +2,12 @@
 render
   target=fastapi schema_version=1
   write model models.py 22 lines
-  write target server/__init__.py (target) 0 lines
+  write target server/__init__.py (target) 1 lines
   write target server/routes/pets.py (target) 2 lines
-  write target server/routes/store.py (target) 1 lines
-  write target server/routes/default.py (target) 1 lines
+  write target server/routes/store.py (target) 2 lines
+  write target server/routes/default.py (target) 2 lines
+  write target server/py.typed (target) 0 lines
+  write target server/dcg-runtime-requirements.txt (target) 1 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The pets group has 2 operations
@@ -16,13 +18,15 @@ remove server/routes/store.py
 render
   APIGenerationError
   E_OUTPUT_MODIFIED error ownership routes/store.py: A file the target owns is missing
-write server/routes/store.py
+restore server/routes/store.py
 render
   target=fastapi schema_version=1
   unchanged model models.py 22 lines
-  unchanged target server/__init__.py (target) 0 lines
+  unchanged target server/__init__.py (target) 1 lines
   unchanged target server/routes/pets.py (target) 2 lines
-  unchanged target server/routes/default.py (target) 1 lines
+  unchanged target server/routes/default.py (target) 2 lines
+  unchanged target server/py.typed (target) 0 lines
+  unchanged target server/dcg-runtime-requirements.txt (target) 1 lines
   delete target server/routes/store.py (target)
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
@@ -160,6 +164,20 @@ publish
       "group": "default",
       "kind": "routes",
       "path": "routes/default.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "typing",
+      "path": "py.typed",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "requirements",
+      "path": "dcg-runtime-requirements.txt",
       "sha256": "<sha256>",
       "size": "<masked>"
     }
@@ -316,9 +334,11 @@ publish
 render
   target=fastapi schema_version=1
   unchanged model models.py 22 lines
-  unchanged target server/__init__.py (target) 0 lines
+  unchanged target server/__init__.py (target) 1 lines
   unchanged target server/routes/pets.py (target) 2 lines
-  unchanged target server/routes/default.py (target) 1 lines
+  unchanged target server/routes/default.py (target) 2 lines
+  unchanged target server/py.typed (target) 0 lines
+  unchanged target server/dcg-runtime-requirements.txt (target) 1 lines
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   unchanged target_manifest server/.dcg-target-manifest.json (target) 1 lines
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service

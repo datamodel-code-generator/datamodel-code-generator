@@ -1,0 +1,52 @@
+# layout-standalone
+generate
+  target=fastapi schema_version=1
+  written model server/src/example/models.py
+  written target server/src/example/server/__init__.py (target) 74 bytes
+  written target server/src/example/server/routes/pets.py (target) 111 bytes
+  written target server/src/example/server/routes/store.py (target) 105 bytes
+  written target server/src/example/server/routes/default.py (target) 99 bytes
+  written target server/src/example/server/py.typed (target) 0 bytes
+  written target server/pyproject.toml (target) 434 bytes
+  written model_inventory server/.dcg-state/model-artifacts.json (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+tree
+  .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
+  server/.dcg-state/model-artifacts.json
+  server/.dcg-target-manifest.json
+  server/pyproject.toml
+  server/src/example/.dcg-api-state/locks/dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100b.lock
+  server/src/example/models.py
+  server/src/example/server/__init__.py
+  server/src/example/server/py.typed
+  server/src/example/server/routes/default.py
+  server/src/example/server/routes/pets.py
+  server/src/example/server/routes/store.py
+show server/pyproject.toml
+  | [build-system]
+  | requires = ["hatchling>=1.27,<2"]
+  | build-backend = "hatchling.build"
+  | 
+  | [project]
+  | name = "example-server"
+  | version = "1.2.3"
+  | requires-python = ">=3.10"
+  | dependencies = ["fastapi-runtime>=1,<2"]
+  | 
+  | [tool.hatch.build.targets.wheel]
+  | only-include = ["src/example/server", "src/example/models.py"]
+  | sources = ["src"]
+  | 
+  | [tool.hatch.build.targets.sdist]
+  | only-include = ["src/example/server", "src/example/models.py", "pyproject.toml"]
+generate
+  target=fastapi schema_version=1
+  unchanged model server/src/example/models.py
+  unchanged target server/src/example/server/__init__.py (target) 74 bytes
+  unchanged target server/src/example/server/routes/pets.py (target) 111 bytes
+  unchanged target server/src/example/server/routes/store.py (target) 105 bytes
+  unchanged target server/src/example/server/routes/default.py (target) 99 bytes
+  unchanged target server/src/example/server/py.typed (target) 0 bytes
+  unchanged target server/pyproject.toml (target) 434 bytes
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
+  unchanged target_manifest server/.dcg-target-manifest.json (target)

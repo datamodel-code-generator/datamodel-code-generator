@@ -4,7 +4,7 @@ model_package='example.models'
 model_mode='generate'
 selection=OperationSelection(include_operations=('/paths/~1pets/get', OperationRef(pointer='/paths/~1pets/post', document='<root>/spec/api.yaml')), include_tags=('pets',), exclude_operations=(OperationRef(pointer='/paths/~1health/get', document=None),), exclude_tags=('admin',), reason='Pets only')
 formatters=(<Formatter.BUILTIN: 'builtin'>,)
-formatter_settings=None
+formatter_settings='.'
 custom_formatters=()
 custom_formatter_kwargs=mappingproxy({})
 encoding='utf-8'

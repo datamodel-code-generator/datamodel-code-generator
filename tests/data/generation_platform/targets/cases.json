@@ -34,7 +34,7 @@
       {"publish": null},
       {"remove": "server/routes/store.py"},
       {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
-      {"write": ["server/routes/store.py", "# GET /store/orders\n"]},
+      {"restore": "server/routes/store.py"},
       {"render": {"config": {"selection": {"exclude_tags": ["store"], "reason": "Orders move to their own service"}}}},
       {"publish": null},
       {"manifest": null},
@@ -218,7 +218,7 @@
     },
     "config": {
       "formatter_settings": "pyproject.toml",
-      "custom_formatters": ["formatters.fixture"],
+      "custom_formatters": ["tests.data.python.custom_formatters.add_comment"],
       "custom_formatter_kwargs": {"width": 100},
       "hook": true,
       "token": true,
@@ -440,6 +440,105 @@
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"generate": {}}
+    ]
+  },
+  "layout-embedded": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"generate": {}},
+      {"show": "server/routes/pets.py"},
+      {"show": "server/dcg-runtime-requirements.txt"}
+    ]
+  },
+  "layout-standalone": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"], "output": "server/src/example/models.py"},
+    "config": {"package_mode": "standalone", "package_version": "1.2.3", "distribution_name": "example-server"},
+    "steps": [
+      {"generate": {}},
+      {"tree": null},
+      {"show": "server/pyproject.toml"},
+      {"generate": {}}
+    ]
+  },
+  "layout-external": {
+    "input": {"path": "api.yaml"},
+    "target": "client",
+    "model": {"openapi_scopes": ["api"]},
+    "config": {
+      "package_mode": "standalone",
+      "package_version": "0.1.0",
+      "distribution_name": "example-client",
+      "model_dependency": "example-models>=1,<2"
+    },
+    "steps": [
+      {"generate": {}},
+      {"show": "server/pyproject.toml"}
+    ]
+  },
+  "layout-errors": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "config": {"package_mode": "standalone", "package_version": "1.2.3", "distribution_name": "example-server"},
+    "steps": [
+      {"render": {}},
+      {"render": {"model": {"output": "server/src/example/models.py"}, "config": {"model_dependency": "example-models"}}},
+      {"render": {"model": {"output": "server/src/example/server/models.py"}}}
+    ]
+  },
+  "format": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "config": {
+      "header": "Example header\n\nSecond line",
+      "include_timestamp": true,
+      "custom_formatters": ["tests.data.python.custom_formatters.add_comment"],
+      "encoding": "latin-1"
+    },
+    "steps": [
+      {"generate": {}},
+      {"show": "server/routes/pets.py"},
+      {"show": "server/__init__.py"}
+    ]
+  },
+  "format-errors": {
+    "input": {"path": "api.yaml"},
+    "target": "server",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"config": {"header": "Caf\u00e9 \u6f22", "encoding": "latin-1"}}},
+      {"render": {"target": "broken"}},
+      {"render": {"target": "misplaced"}},
+      {"render": {"config": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
+    ]
+  },
+  "target-grammar": {
+    "input": {"path": "api.yaml"},
+    "target": "modern",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"target_python_version": "3.10"}}}
+    ]
+  },
+  "target-grammar-modern": {
+    "input": {"path": "api.yaml"},
+    "target": "modern",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"target_python_version": "3.12"}}}
+    ]
+  },
+  "target-grammar-misplaced": {
+    "input": {"path": "api.yaml"},
+    "target": "misplaced",
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"target_python_version": "3.12"}}}
     ]
   }
 }

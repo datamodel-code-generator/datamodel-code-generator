@@ -2,10 +2,12 @@
 generate
   target=fastapi schema_version=1
   written model models.py
-  written target server/__init__.py (target) 0 bytes
-  written target server/routes/pets.py (target) 25 bytes
-  written target server/routes/store.py (target) 20 bytes
-  written target server/routes/default.py (target) 14 bytes
+  written target server/__init__.py (target) 74 bytes
+  written target server/routes/pets.py (target) 111 bytes
+  written target server/routes/store.py (target) 105 bytes
+  written target server/routes/default.py (target) 99 bytes
+  written target server/py.typed (target) 0 bytes
+  written target server/dcg-runtime-requirements.txt (target) 22 bytes
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
 tree
@@ -15,27 +17,33 @@ tree
   server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/__init__.py
+  server/dcg-runtime-requirements.txt
+  server/py.typed
   server/routes/default.py
   server/routes/pets.py
   server/routes/store.py
 generate
   target=fastapi schema_version=1
   unchanged model models.py
-  unchanged target server/__init__.py (target) 0 bytes
-  unchanged target server/routes/pets.py (target) 25 bytes
-  unchanged target server/routes/store.py (target) 20 bytes
-  unchanged target server/routes/default.py (target) 14 bytes
+  unchanged target server/__init__.py (target) 74 bytes
+  unchanged target server/routes/pets.py (target) 111 bytes
+  unchanged target server/routes/store.py (target) 105 bytes
+  unchanged target server/routes/default.py (target) 99 bytes
+  unchanged target server/py.typed (target) 0 bytes
+  unchanged target server/dcg-runtime-requirements.txt (target) 22 bytes
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
 generate
   target=fastapi schema_version=1
   written target_manifest server/.dcg-target-manifest.json (target)
   unchanged model models.py
-  unchanged target server/__init__.py (target) 0 bytes
-  unchanged target server/routes/pets.py (target) 25 bytes
-  unchanged target server/routes/default.py (target) 14 bytes
+  unchanged target server/__init__.py (target) 74 bytes
+  unchanged target server/routes/pets.py (target) 111 bytes
+  unchanged target server/routes/default.py (target) 99 bytes
+  unchanged target server/py.typed (target) 0 bytes
+  unchanged target server/dcg-runtime-requirements.txt (target) 22 bytes
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
-  deleted target server/routes/store.py (target) 20 bytes
+  deleted target server/routes/store.py (target) 105 bytes
 tree
   .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
   .dcg-api-state/locks/dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100b.lock
@@ -43,14 +51,18 @@ tree
   server/.dcg-state/model-artifacts.json
   server/.dcg-target-manifest.json
   server/__init__.py
+  server/dcg-runtime-requirements.txt
+  server/py.typed
   server/routes/default.py
   server/routes/pets.py
 render
   target=fastapi schema_version=1
   unchanged model models.py 22 lines
-  unchanged target server/__init__.py (target) 0 lines
+  unchanged target server/__init__.py (target) 1 lines
   unchanged target server/routes/pets.py (target) 2 lines
-  unchanged target server/routes/default.py (target) 1 lines
+  unchanged target server/routes/default.py (target) 2 lines
+  unchanged target server/py.typed (target) 0 lines
+  unchanged target server/dcg-runtime-requirements.txt (target) 1 lines
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   unchanged target_manifest server/.dcg-target-manifest.json (target) 1 lines
   S_OPERATION_EXCLUDED info selection /paths/~1store~1orders/get: GET /store/orders is excluded by exclude_tags 'store': Orders move to their own service
