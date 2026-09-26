@@ -13,7 +13,7 @@ use /paths/~1worded/post request_body: native struct models:Worded msgspec_conve
 use /paths/~1wallets/post request_body: native struct models:Wallet msgspec_structural models=[('models:Dime', 'struct', 'ignore', True), ('models:Penny', 'struct', 'ignore', True), ('models:Wallet', 'struct', 'ignore', True)]
 use /paths/~1wallets/post response_body 200: native struct models:Wallet msgspec_structural models=[('models:Dime', 'struct', 'ignore', True), ('models:Penny', 'struct', 'ignore', True), ('models:Wallet', 'struct', 'ignore', True)]
 limits-server-decode-unknown: input issues=DIRECTIONAL_REQUIRED@/id:models:Limits.id wire={"low":2,"zz":1} extras={}
-limits-client-decode-unknown: NativeValidationError native.validation_error@[]
+limits-client-decode-unknown: NativeValidationError native.extra_forbidden@/zz['zz']
 holder-server-decode-unknown: NativeValidationError native.extra_forbidden@/zz['zz']
 holder-server-response-defaults: wire={"count":0}
 batch-server-decode: model Batch(entries=[Entry(amount=Decimal('1.5'))], index=UNSET, a_b=Decimal('3')) wire={"entries":[{"amount":"1.5"}],"a.b":"3"} presence=['', '/entries', '/entries/0', '/entries/0/amount', '/a.b'] extras={}

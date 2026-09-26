@@ -826,6 +826,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 msg = f"The native use has an unplanned projection gap at {scan.issues[0].pointer or '/'}"
                 raise ModelProjectionError(msg)
             if self._convert is not None:
+                if scan.native:
+                    raise NativeValidationError(tuple(scan.native))
                 try:
                     value = typing.cast("T", self._convert(_thawed(wire)))
                 except self._invalid as error:
