@@ -195,7 +195,8 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
         line = f"  {artifact.action} {path.as_posix()}"
         match path.suffix, path.parts:
             case _, parts if "_runtime" in parts:
-                copied = content.endswith(RUNTIME.joinpath(*parts[parts.index("_runtime") + 1 :]).read_bytes())
+                source = RUNTIME.joinpath(*parts[parts.index("_runtime") + 1 :]).read_bytes()
+                copied = content.replace(b"\r\n", b"\n").endswith(source.replace(b"\r\n", b"\n"))
                 line += f" ({'copied' if copied else 'changed'} runtime)"
                 if backend in case.get("runtime", ()):
                     modules[parts] = content.decode(encoding)
