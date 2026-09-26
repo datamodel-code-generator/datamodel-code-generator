@@ -48,8 +48,6 @@ render pydantic_v2.BaseModel
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import dispatch, respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_create(router: APIRouter, wiring: Wiring) -> None:
@@ -228,8 +226,6 @@ render pydantic_v2.BaseModel
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_download(router: APIRouter, wiring: Wiring) -> None:
@@ -934,8 +930,6 @@ render pydantic_v2.dataclass
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import dispatch, respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_create(router: APIRouter, wiring: Wiring) -> None:
@@ -1114,8 +1108,6 @@ render pydantic_v2.dataclass
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_download(router: APIRouter, wiring: Wiring) -> None:

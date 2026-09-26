@@ -31,7 +31,6 @@ render pydantic_v2.BaseModel
     | from ._generated import contract
     | from ._generated.contract import OperationDependencies, OperationKey, SchemeKey
     | from ._runtime.server.application import Dependency, FastAPIOptions, application_options, build
-    | from ._runtime.server.security import SecretT
     | from .auth_types import AsyncAuthorizer, AsyncCredentialExtractor, Authorizer, CredentialExtractor, CredentialExtractors
     |
     | ROUTES: Final = (*routes.LITERAL_ROUTES, *routes.TEMPLATED_ROUTES)

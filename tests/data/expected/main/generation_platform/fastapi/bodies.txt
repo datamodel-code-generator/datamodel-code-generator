@@ -83,8 +83,6 @@ render pydantic_v2.BaseModel
     | from .._runtime.model_codecs.values import DecodedValue
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_post_json(router: APIRouter, wiring: Wiring) -> None:
@@ -251,8 +249,6 @@ render pydantic_v2.BaseModel
     | from .._runtime.model_codecs.unset import Unset
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_post_text(router: APIRouter, wiring: Wiring) -> None:
@@ -359,8 +355,6 @@ render pydantic_v2.BaseModel
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_post_form(router: APIRouter, wiring: Wiring) -> None:

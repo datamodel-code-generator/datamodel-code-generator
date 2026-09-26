@@ -215,7 +215,12 @@ class ServerRenderer:  # noqa: PLR0904
             services=_services(services),
             settings=_settings(secured=secured),
             app_signature=_builder(
-                module, "create_app", fastapi, services, ("fastapi_options", f"{options} | None", " = None"), secured=secured
+                module,
+                "create_app",
+                fastapi,
+                services,
+                ("fastapi_options", f"{options} | None", " = None"),
+                secured=secured,
             ),
             arguments=(*services, *_settings(secured=secured)),
             fastapi=fastapi,
@@ -856,21 +861,17 @@ def _settings(*, secured: bool) -> tuple[str, ...]:
 
 
 def _services(services: list[str]) -> str:
-    return layout(Group("{", tuple((f"{service!r}: ", service) for service in services), "}"), 8, len("services="), WIDTH)
+    return layout(
+        Group("{", tuple((f"{service!r}: ", service) for service in services), "}"), 8, len("services="), WIDTH
+    )
 
 
-def _builder(  # noqa: PLR0913
+def _builder(
     module: Module, name: str, returns: str, services: list[str], *extra: tuple[str, Doc, str], secured: bool
 ) -> str:
-    secret = module.local("_runtime.server.security", "SecretT")
-    authorizers = (module.local("auth_types", "Authorizer"), module.local("auth_types", "AsyncAuthorizer"))
-    security: tuple[tuple[str, Doc, str], ...] = (
-        ("authorizer", Chain("|", tuple(f"{item}[{secret}, object]" for item in authorizers)), ""),
-        ("credential_extractors", f"{module.local('auth_types', 'CredentialExtractors')}[{secret}] | None", " = None"),
-    )
     parameters: tuple[tuple[str, Doc, str], ...] = (
         *((service, "object", "") for service in services),
-        *(security if secured else ()),
+        *(_security(module) if secured else ()),
         ("dependencies", _dependency_sequence(module), " = ()"),
         ("operation_dependencies", f"{module.local('_generated.contract', 'OperationDependencies')} | None", " = None"),
         ("prefix", "str", ' = ""'),
@@ -881,6 +882,15 @@ def _builder(  # noqa: PLR0913
         for key, annotation, default in parameters
     )
     return f"def {name}(\n    *,\n{lines}) -> {returns}:"
+
+
+def _security(module: Module) -> tuple[tuple[str, Doc, str], ...]:
+    secret = module.local("_runtime.server.security", "SecretT")
+    authorizers = (module.local("auth_types", "Authorizer"), module.local("auth_types", "AsyncAuthorizer"))
+    return (
+        ("authorizer", Chain("|", tuple(f"{item}[{secret}, object]" for item in authorizers)), ""),
+        ("credential_extractors", f"{module.local('auth_types', 'CredentialExtractors')}[{secret}] | None", " = None"),
+    )
 
 
 def _dependency_sequence(module: Module) -> str:

@@ -58,7 +58,6 @@ render pydantic_v2.BaseModel
     | from ._generated import contract
     | from ._generated.contract import OperationDependencies, OperationKey, SchemeKey
     | from ._runtime.server.application import Dependency, FastAPIOptions, application_options, build
-    | from ._runtime.server.security import SecretT
     | from .auth_types import AsyncAuthorizer, AsyncCredentialExtractor, Authorizer, CredentialExtractor, CredentialExtractors
     | from .routers import misc, router_2024_files, users
     |
@@ -147,8 +146,6 @@ render pydantic_v2.BaseModel
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_get__users_me(router: APIRouter, wiring: Wiring) -> None:
@@ -290,8 +287,6 @@ render pydantic_v2.BaseModel
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.requests import absent, present
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_get_file(router: APIRouter, wiring: Wiring) -> None:

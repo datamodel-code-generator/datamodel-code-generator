@@ -40,8 +40,6 @@ render pydantic_v2.BaseModel
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_post_json(router: APIRouter, wiring: Wiring) -> None:
@@ -104,8 +102,6 @@ render pydantic_v2.BaseModel
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
-    | from .._runtime.server.security import SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
     |
     |
     | def _add_post_text(router: APIRouter, wiring: Wiring) -> None:
