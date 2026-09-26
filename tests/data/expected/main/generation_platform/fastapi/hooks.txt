@@ -1853,21 +1853,8 @@ render pydantic_v2.BaseModel
     |         "binding_id": "https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='models:Pet')",
     |         "schema_id": "https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/application~1json/schema",
     |         "kind": "model",
-    |         "value": "models.Pet | ModelValue[models.Pet]",
-    |         "imports": [
-    |           {
-    |             "module": "models",
-    |             "name": null,
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
-    |             "alias": null,
-    |             "type_checking": false
-    |           }
-    |         ]
+    |         "value": "",
+    |         "imports": []
     |       },
     |       "response_payload_type": {
     |         "binding_id": null,
@@ -1889,20 +1876,8 @@ render pydantic_v2.BaseModel
     |         "binding_id": null,
     |         "schema_id": null,
     |         "kind": "result",
-    |         "value": "models.Pet | ModelValue[models.Pet] | HTTPResult[HandleGetPetResponsePayload] | Response",
+    |         "value": "HTTPResult[HandleGetPetResponsePayload] | Response",
     |         "imports": [
-    |           {
-    |             "module": "models",
-    |             "name": null,
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
-    |           {
-    |             "module": "server._runtime.model_codecs.values",
-    |             "name": "ModelValue",
-    |             "alias": null,
-    |             "type_checking": false
-    |           },
     |           {
     |             "module": "server._runtime.server.responses",
     |             "name": "HTTPResult",
@@ -2508,9 +2483,4 @@ render pydantic_v2.BaseModel
     |         x_trace: str | Unset,
     |         after: models.FieldPetsPetIdGetQueryAfterParameter | Unset,
     |         session: models.FieldPetsPetIdGetCookieSessionParameter | Unset,
-    |     ) -> (
-    |         models.Pet
-    |         | ModelValue[models.Pet]
-    |         | HTTPResult[HandleGetPetResponsePayload]
-    |         | Response
-    |     ): ...
+    |     ) -> HTTPResult[HandleGetPetResponsePayload] | Response: ...
