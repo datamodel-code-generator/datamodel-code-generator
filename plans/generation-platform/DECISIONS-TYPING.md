@@ -10,7 +10,7 @@ Reflect type connection points with identical shapes in [CLIENT](DECISIONS-CLIEN
 
 The common syntax baseline for new targets is Python 3.10. Use the same ordinary syntax on 3.10–3.14, with `TypeVar` / `Generic` / `Protocol` forms. Do not emit `class X[T]`, `def f[T]`, `type Alias = ...`, or new syntax for type-parameter defaults. Independently honor existing backend/capability minimum versions; for example, do not claim Python 3.10 support for a package selecting PROTOCOLS WebSocket. A newer D target-python setting must not cause the private runtime alone to branch into another syntax.
 
-New generated distributions explicitly declare the established `typing-extensions>=4.16,<5`. This lower bound already exists in [D at the implementation baseline](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/4f96e22ea403a66faae96f3949d41dd61fc1186f/pyproject.toml#L42) and [CODECS](DECISIONS-MODEL-CODECS.md); it is not a D dependency change. Do not add new-module imports/type reflection to ordinary D paths where no new target is selected. Type checkers are not generated-package runtime dependencies.
+New generated distributions explicitly declare the established `typing-extensions>=4.16`. This lower bound already exists in [D at the implementation baseline](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/4f96e22ea403a66faae96f3949d41dd61fc1186f/pyproject.toml#L42) and [CODECS](DECISIONS-MODEL-CODECS.md); it is not a D dependency change. Do not add new-module imports/type reflection to ordinary D paths where no new target is selected. Type checkers are not generated-package runtime dependencies.
 
 |Feature|Adopted uses and limits|
 |---|---|
