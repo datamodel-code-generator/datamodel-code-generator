@@ -44,15 +44,15 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
 
 DEPENDENCIES: Final = (
-    "fastapi>=0.141.1,<0.142",
-    "starlette>=1.0.0,<2",
-    "pydantic>=2.13.5,<3",
-    "jsonschema[format-nongpl]>=4.26,<5",
-    "referencing>=0.37,<1",
-    "typing-extensions>=4.16,<5",
+    "fastapi>=0.141.1",
+    "starlette>=1.0.0",
+    "pydantic>=2.13.5",
+    "jsonschema[format-nongpl]>=4.26",
+    "referencing>=0.37",
+    "typing-extensions>=4.16",
 )
-FORMS: Final = "python-multipart>=0.0.32,<0.1"
-PATTERNS: Final = "google-re2>=1.1.20251105,<2"
+FORMS: Final = "python-multipart>=0.0.32"
+PATTERNS: Final = "google-re2>=1.1.20251105"
 _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",

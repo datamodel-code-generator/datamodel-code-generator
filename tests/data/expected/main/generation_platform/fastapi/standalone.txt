@@ -152,7 +152,7 @@ render pydantic_v2.BaseModel
   file server/src/server/py.typed
   file server/pyproject.toml
     | [build-system]
-    | requires = ["hatchling>=1.27,<2"]
+    | requires = ["hatchling>=1.27"]
     | build-backend = "hatchling.build"
     |
     | [project]
@@ -160,7 +160,7 @@ render pydantic_v2.BaseModel
     | version = "1.0.0"
     | requires-python = ">=3.10"
     | readme = "README.md"
-    | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5", "pets-models>=1.0"]
+    | dependencies = ["fastapi>=0.141.1", "starlette>=1.0.0", "pydantic>=2.13.5", "jsonschema[format-nongpl]>=4.26", "referencing>=0.37", "typing-extensions>=4.16", "pets-models>=1.0"]
     |
     | [tool.hatch.build.targets.wheel]
     | only-include = ["src/server"]

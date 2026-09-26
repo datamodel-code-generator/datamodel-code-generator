@@ -143,6 +143,12 @@ Tests: the ownership scenario publishes over an edited and a missing router and 
 
 From Python 3.13 on, mypy synthesizes the dataclass `__replace__` method and reports a covariant type variable used as its parameter, so `mypy --strict` failed on four fields of the copied runtime: `CustomSecret.value`, `Credential.scheme_name`, and `SchemeRequirement.scheme_name` in `security.py`, and `AdapterManifest.capabilities` in `capabilities.py`. The frozen dataclasses are safely covariant, so each field carries `# type: ignore[misc, unused-ignore]`; the `unused-ignore` code keeps older target versions clean under `--warn-unused-ignores`. A generated server package now passes `mypy --strict` with `--python-version` 3.10 through 3.14 and strict pyright, and `ty check src --error unused-ignore-comment` accepts the comments.
 
+## Minimum versions only
+
+The maintainer decided on 2026-09-27 that generated dependency specifiers name only a minimum version: an upper bound is a guess the generator cannot keep current, and the user's lock file pins the versions that actually run. The FastAPI runtime dependencies (`fastapi>=0.141.1`, `starlette>=1.0.0`, `pydantic>=2.13.5`, `jsonschema[format-nongpl]>=4.26`, `referencing>=0.37`, `typing-extensions>=4.16`, plus `python-multipart>=0.0.32` for forms and `google-re2>=1.1.20251105` for patterns) and the standalone build requirement `hatchling>=1.27` lose their upper bounds, in the printed `uv add` command and the standalone `pyproject.toml` alike. The dependency groups of this repository keep their ranges; they choose what CI runs, not what users get.
+
+Tests: the printed command and the standalone `pyproject.toml` expectations lose the upper bounds.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.
