@@ -155,7 +155,7 @@ def _config(values: dict[str, Any]) -> FixtureConfig:
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
-            case "output" | "formatter_settings":
+            case "output" | "formatter_settings" if isinstance(value, str):
                 converted[key] = Path(value)
             case "selection" if value is not None:
                 converted[key] = OperationSelection(**{

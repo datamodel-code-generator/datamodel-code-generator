@@ -118,6 +118,8 @@ class TargetConfig:
             raise APIGenerationError(diagnostics)
 
     def _problems(self) -> Iterator[Diagnostic]:
+        if not isinstance(self.output, Path):
+            yield _diagnostic("E_CONFIG_VALUE", "output", "output must be a Path")
         for name in ("package", "model_package"):
             if not _dotted(getattr(self, name)):
                 yield _diagnostic("E_CONFIG_VALUE", name, f"{name} must be a dotted Python import path")
@@ -126,6 +128,8 @@ class TargetConfig:
         yield from _selection_problems(self.selection)
         if not isinstance(self.formatters, tuple) or not all(isinstance(item, Formatter) for item in self.formatters):
             yield _diagnostic("E_CONFIG_VALUE", "formatters", "formatters must be a tuple of Formatter values")
+        if self.formatter_settings is not None and not isinstance(self.formatter_settings, Path):
+            yield _diagnostic("E_CONFIG_VALUE", "formatter_settings", "formatter_settings must be a Path or None")
         if not isinstance(self.custom_formatters, tuple) or not all(_dotted(item) for item in self.custom_formatters):
             yield _diagnostic("E_CONFIG_VALUE", "custom_formatters", "custom_formatters must be module paths")
         if not isinstance(self.custom_formatter_kwargs, Mapping) or not _json(self.custom_formatter_kwargs):
@@ -135,6 +139,8 @@ class TargetConfig:
         yield from self._encoding_problems()
         if self.header is not None and not isinstance(self.header, str):
             yield _diagnostic("E_CONFIG_VALUE", "header", "header must be a string or None")
+        if not isinstance(self.include_timestamp, bool):
+            yield _diagnostic("E_CONFIG_VALUE", "include_timestamp", "include_timestamp must be a boolean")
         yield from self._package_problems()
 
     def _encoding_problems(self) -> Iterator[Diagnostic]:
