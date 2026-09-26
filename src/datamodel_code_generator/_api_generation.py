@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import unicodedata
 from contextlib import ExitStack
 from dataclasses import dataclass, field, fields
 from functools import partial
@@ -26,6 +27,8 @@ from datamodel_code_generator._api_manifest import (
     json_object,
     manifest_files,
     model_record,
+    observe,
+    observe_file,
     plan_files,
     portable,
     read_target_state,
@@ -41,10 +44,11 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._api_manifest import FilePlan, JSONObject, PlannedFile, TargetState
+    from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, PlannedFile, TargetState
     from datamodel_code_generator._api_types import (
         ArtifactAction,
         ArtifactKind,
+        GenerationReport,
         OperationSelection,
         OperationSelector,
         TargetKind,
@@ -142,7 +146,8 @@ class _Models:
     artifacts: tuple[ModelArtifact, ...]
     single: bool
     metadata: tuple[Path, bytes] | None
-    lock: tuple[Path, bytes] | None
+    lock: RemoteReferenceLock | None
+    lock_state: Observed
     source: RootInput
     cwd: Path
 
@@ -203,6 +208,16 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     return RootInput("mapping", ROOT_URN, cwd)
 
 
+def _check_roots(config: TargetConfig, output: Path, cwd: Path) -> None:
+    root, models = (cwd / config.output.expanduser()).resolve(), (cwd / output.expanduser()).resolve()
+    if root == models or root in models.parents or models in root.parents:
+        raise config_error(
+            code="E_PATH_COLLISION",
+            option_path="output",
+            message="The target root and the model output must not contain each other",
+        )
+
+
 def _remote_lock(
     input_: _GenerationInput, config: GenerateConfig, cwd: Path
 ) -> tuple[GenerateConfig, RemoteReferenceLock | None]:
@@ -247,11 +262,15 @@ def _generate_models(
     from datamodel_code_generator.enums import OpenAPIScope  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
+    output = config.output
+    assert output is not None
+    _check_roots(target, output, cwd)
     prepared, lock = _remote_lock(input_, config, cwd)
+    lock_state = None if lock is None else observe_file(lock.path)
     output = prepared.output
     assert output is not None
     with ExitStack() as stack:
-        staged_output = (staging := _staging(stack, output, cwd)) / (output.name or "output")
+        staged_output = _staging(stack, output, cwd) / (output.name or "output")
         if (cwd / output).is_dir():
             staged_output.mkdir()
         updates = {"output": staged_output}
@@ -268,29 +287,22 @@ def _generate_models(
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)
             artifacts = _staged_models(staged_output, output, prepared.encoding)
+            metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(
                 artifacts, allow_empty_api=OpenAPIScope.Api in (prepared.openapi_scopes or ())
             )
         finally:
             session.close()
-        try:
-            return _Models(
-                product=product,
-                artifacts=artifacts,
-                single=staged_output.is_file(),
-                metadata=None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes()),
-                lock=None
-                if lock is None or not isinstance(staged_lock := lock.stage(staging), Path)
-                else (lock.path, staged_lock.read_bytes()),
-                source=source,
-                cwd=cwd,
-            )
-        except BaseException:
-            product.close()
-            raise
-        finally:
-            if lock is not None:
-                lock.discard_stage()
+        return _Models(
+            product=product,
+            artifacts=artifacts,
+            single=staged_output.is_file(),
+            metadata=metadata_file,
+            lock=lock,
+            lock_state=lock_state,
+            source=source,
+            cwd=cwd,
+        )
 
 
 def _tags(operation: OperationContract) -> tuple[str, ...]:
@@ -422,6 +434,7 @@ class _Planner:
         self.target_id = target_identity(generator.kind, config.package)
         self.documents = DocumentTable(models.product.batch, models.product.source_lease, models.source, self.root)
         self.operations: dict[str, OperationContract] = {}
+        self.observed: dict[Path, Observed] = {}
         self.version, self.revision = get_version(), runtime_revision()
 
     def locate(self, path: Path, *, option_path: str) -> str:
@@ -565,11 +578,13 @@ class _Planner:
         kind: ArtifactKind,
         content: bytes | None,
         target_id: str | None,
-        action: ArtifactAction | None = None,
+        planned: tuple[ArtifactAction, Observed] | None = None,
     ) -> GeneratedArtifact:
-        if action is None:
-            location = self.cwd / path
-            action = "unchanged" if location.is_file() and location.read_bytes() == content else "write"
+        location = self.cwd / path
+        if planned is None:
+            current = location.read_bytes() if location.is_file() else None
+            planned = ("unchanged" if current == content else "write", observe(current))
+        action, self.observed[location] = planned
         return GeneratedArtifact(
             path=path,
             kind=kind,
@@ -578,6 +593,58 @@ class _Planner:
             sha256=None if content is None else sha256(content),
             target_id=target_id,
         )
+
+    def lock_artifacts(self) -> tuple[GeneratedArtifact, ...]:
+        if (lock := self.models.lock) is None:
+            return ()
+        with tempfile.TemporaryDirectory(prefix=".datamodel-codegen-") as directory:
+            try:
+                content = staged.read_bytes() if isinstance(staged := lock.stage(Path(directory)), Path) else b""
+            finally:
+                lock.discard_stage()
+        current = lock.path.read_bytes() if lock.path.is_file() else None
+        action: ArtifactAction = "unchanged" if current == content else "write"
+        return (self.artifact(lock.path, "remote_lock", content, None, (action, self.models.lock_state)),)
+
+    def check_state(self, state: TargetState, inventory: GeneratedArtifact, manifest: GeneratedArtifact) -> None:
+        paths = (manifest.path, inventory.path)
+        if changed := [
+            path for path, before in zip(paths, state.snapshot, strict=True) if self.observed[self.cwd / path] != before
+        ]:
+            raise APIGenerationError(
+                tuple(
+                    Diagnostic(
+                        code="E_STATE_CHANGED",
+                        severity="error",
+                        stage="ownership",
+                        message="The management file changed while the target was planned",
+                        artifact_path=path.as_posix(),
+                        target_id=self.target_id,
+                    )
+                    for path in changed
+                )
+            )
+
+    def check_collisions(self, artifacts: tuple[GeneratedArtifact, ...]) -> None:
+        seen: set[str] = set()
+        problems: list[Diagnostic] = []
+        for artifact in artifacts:
+            location = self.cwd / artifact.path
+            key = unicodedata.normalize("NFC", str(location.parent.resolve() / location.name)).casefold()
+            if key in seen:
+                problems.append(
+                    Diagnostic(
+                        code="E_PATH_COLLISION",
+                        severity="error",
+                        stage="ownership",
+                        message="Two generated files resolve to the same path",
+                        artifact_path=artifact.path.as_posix(),
+                        target_id=artifact.target_id,
+                    )
+                )
+            seen.add(key)
+        if problems:
+            raise APIGenerationError(tuple(problems))
 
     def manifest(
         self,
@@ -652,58 +719,100 @@ class _Planner:
         )
         exclusions = self.exclusions(excluded)
         manifest = self.manifest(rendered, plans, model, (selected, excluded), exclusions)
-        model_action: ArtifactAction | None = "unchanged" if verifying else None
+        artifacts = (
+            *(
+                self.artifact(
+                    self.model_path(artifact),
+                    "model",
+                    artifact.content,
+                    None,
+                    ("unchanged", observe(artifact.content)) if verifying else None,
+                )
+                for artifact in models.artifacts
+            ),
+            *(
+                self.artifact(
+                    config.output.joinpath(*plan.path.parts),
+                    "target",
+                    plan.content,
+                    self.target_id,
+                    (plan.action, plan.observed),
+                )
+                for plan in plans
+            ),
+            *(
+                ()
+                if verifying or models.metadata is None
+                else (self.artifact(models.metadata[0], "model_metadata", models.metadata[1], None),)
+            ),
+            *self.lock_artifacts(),
+            inventory := self.artifact(
+                config.output.joinpath(*INVENTORY_PATH.parts),
+                "model_inventory",
+                canonical_document({"schema_version": 1, "model": model}),
+                self.target_id,
+            ),
+            manifest_artifact := self.artifact(
+                config.output / MANIFEST_NAME, "target_manifest", canonical_document(manifest), self.target_id
+            ),
+        )
+        self.check_state(state, inventory, manifest_artifact)
+        self.check_collisions(artifacts)
         return GeneratedProject(
             target=generator.kind,
-            artifacts=(
-                *(
-                    self.artifact(self.model_path(artifact), "model", artifact.content, None, model_action)
-                    for artifact in models.artifacts
-                ),
-                *(
-                    self.artifact(
-                        config.output.joinpath(*plan.path.parts), "target", plan.content, self.target_id, plan.action
-                    )
-                    for plan in plans
-                ),
-                *(
-                    ()
-                    if verifying or models.metadata is None
-                    else (self.artifact(models.metadata[0], "model_metadata", models.metadata[1], None),)
-                ),
-                *(() if models.lock is None else (self.artifact(models.lock[0], "remote_lock", models.lock[1], None),)),
-                self.artifact(
-                    config.output.joinpath(*INVENTORY_PATH.parts),
-                    "model_inventory",
-                    canonical_document({"schema_version": 1, "model": model}),
-                    self.target_id,
-                ),
-                self.artifact(
-                    config.output / MANIFEST_NAME, "target_manifest", canonical_document(manifest), self.target_id
-                ),
-            ),
+            artifacts=artifacts,
             diagnostics=(*exclusions, *rendered.diagnostics, *rendered.persistent_diagnostics),
             generator_version=self.version,
             runtime_revision=self.revision,
         )
 
 
+def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig) -> _Models:
+    from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
+    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
+
+    if _uses_legacy_process_state(effective):
+        with PROCESS_STATE_LOCK:
+            return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True)
+    with PROCESS_STATE_LOCK:
+        cwd = Path.cwd()
+    return _generate_models(input_, effective, config, cwd, use_output_cwd=False)
+
+
+def _plan(
+    input_: _GenerationInput, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+) -> tuple[_Planner, GeneratedProject]:
+    effective = prepare_target(input_, model_config, generator)
+    models = _run_models(input_, effective, config)
+    try:
+        planner = _Planner(models, effective, config, generator)
+        return planner, planner.project()
+    finally:
+        models.product.close()
+
+
 def render_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GeneratedProject:
     """Render one target and its models once, returning every publication candidate without writing it."""
-    from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
+    return _plan(input_, model_config, config, generator)[1]
 
-    effective = prepare_target(input_, model_config, generator)
-    if _uses_legacy_process_state(effective):
-        with PROCESS_STATE_LOCK:
-            models = _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True)
-    else:
-        with PROCESS_STATE_LOCK:
-            cwd = Path.cwd()
-        models = _generate_models(input_, effective, config, cwd, use_output_cwd=False)
-    try:
-        return _Planner(models, effective, config, generator).project()
-    finally:
-        models.product.close()
+
+def generate_target(
+    input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
+) -> GenerationReport:
+    """Render one target and its models once, then publish every change together under the resource locks."""
+    from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
+
+    planner, project = _plan(input_, model_config, config, generator)
+    models = planner.models
+    output = planner.effective.output
+    assert output is not None
+    resources = [(models.cwd / output.expanduser()).resolve(), planner.root]
+    if models.metadata is not None and config.model_mode == "generate":
+        metadata = (models.cwd / models.metadata[0].expanduser()).resolve()
+        if not any(metadata.is_relative_to(resource) for resource in resources):
+            resources.append(metadata)
+    if models.lock is not None:
+        resources.append(models.lock.path)
+    return publish_project(project, planner.observed, cwd=models.cwd, resources=resources, lock=models.lock)

@@ -10,6 +10,25 @@ from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hi
 from typing import Literal, TypeAlias
 
 from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._publication import PublicationRollbackError
+
+__all__ = [
+    "APIGenerationError",
+    "ArtifactAction",
+    "ArtifactKind",
+    "ArtifactRecord",
+    "Diagnostic",
+    "DiagnosticSeverity",
+    "DiagnosticStage",
+    "GeneratedArtifact",
+    "GeneratedProject",
+    "GenerationReport",
+    "OperationRef",
+    "OperationSelection",
+    "OperationSelector",
+    "PublicationRollbackError",
+    "TargetKind",
+]
 
 TargetKind: TypeAlias = Literal["fastapi", "client"]
 DiagnosticSeverity: TypeAlias = Literal["error", "warning", "info"]

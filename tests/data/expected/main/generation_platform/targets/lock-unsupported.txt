@@ -1,0 +1,4 @@
+# lock-unsupported
+generate
+  APIGenerationError
+  E_OUTPUT_LOCK_UNSUPPORTED error publication <root>/server: The file system does not support advisory locks

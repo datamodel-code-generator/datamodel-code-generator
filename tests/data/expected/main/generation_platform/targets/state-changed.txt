@@ -1,0 +1,4 @@
+# state-changed
+generate
+  APIGenerationError
+  E_STATE_CHANGED error publication models.py: The file changed after the target was planned

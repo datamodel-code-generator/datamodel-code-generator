@@ -40,6 +40,7 @@ INVENTORY_PATH: Final = PurePosixPath(".dcg-state", "model-artifacts.json")
 GENERATOR_NAME: Final = "datamodel-code-generator"
 ROOT_URN: Final = "urn:dcg:root"
 ROOT_POINTER: Final = "/inputs/root"
+Observed: TypeAlias = "tuple[str, int] | None"
 RootKind: TypeAlias = Literal["file", "url", "text", "mapping"]
 JSONObject: TypeAlias = "dict[str, JSONValue]"
 
@@ -76,6 +77,16 @@ def canonical_document(value: JSONValue) -> bytes:
 def sha256(data: bytes) -> str:
     """Return the lowercase hexadecimal SHA-256 of bytes."""
     return hashlib.sha256(data).hexdigest()
+
+
+def observe(data: bytes | None) -> Observed:
+    """Return the digest and size of a file's bytes, or None for a missing file."""
+    return None if data is None else (sha256(data), len(data))
+
+
+def observe_file(path: Path) -> Observed:
+    """Observe the regular file at *path* as it is now."""
+    return observe(path.read_bytes() if path.is_file() else None)
 
 
 def target_identity(kind: TargetKind, package: str) -> str:
@@ -298,6 +309,7 @@ class TargetState:
 
     manifest: JSONObject | None = None
     files: Mapping[PurePosixPath, RecordedFile] = field(default_factory=lambda: MappingProxyType({}))
+    snapshot: tuple[Observed, Observed] = (None, None)
 
 
 def _state_error(*, code: str, path: PurePosixPath, message: str, target_id: str) -> APIGenerationError:
@@ -330,16 +342,17 @@ def _is_contained(path: str) -> bool:
     return bool(posix.parts) and posix.as_posix() == path and not windows.anchor and ".." not in windows.parts
 
 
-def _read_json(path: Path, relative: PurePosixPath, target_id: str) -> JSONObject:
+def _read_json(path: Path, relative: PurePosixPath, target_id: str) -> tuple[JSONObject, bytes]:
+    data = path.read_bytes()
     try:
-        value = json.loads(path.read_bytes())
+        value = json.loads(data)
     except ValueError:
         raise _state_error(
             code="E_STATE_CORRUPT", path=relative, message="The management file is not JSON", target_id=target_id
         ) from None
     match value:
         case {"schema_version": 1 as version} if type(version) is int:
-            return value
+            return value, data
         case {"schema_version": int() as version} if type(version) is int:
             raise _state_error(
                 code="E_STATE_VERSION",
@@ -445,8 +458,8 @@ def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState
             )
         case _:
             pass
-    manifest = _read_json(manifest_path, PurePosixPath(MANIFEST_NAME), target_id)
-    inventory = _read_json(inventory_path, INVENTORY_PATH, target_id)
+    manifest, manifest_data = _read_json(manifest_path, PurePosixPath(MANIFEST_NAME), target_id)
+    inventory, inventory_data = _read_json(inventory_path, INVENTORY_PATH, target_id)
     files = _check_manifest(manifest, kind, package, target_id)
     if frozenset(inventory) != _INVENTORY_KEYS or inventory["model"] != manifest["model"]:
         raise _state_error(
@@ -465,7 +478,7 @@ def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState
                 target_id=target_id,
             )
         recorded[record.path] = record
-    return TargetState(manifest=manifest, files=recorded)
+    return TargetState(manifest=manifest, files=recorded, snapshot=(observe(manifest_data), observe(inventory_data)))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -487,6 +500,7 @@ class FilePlan:
     action: ArtifactAction
     content: bytes | None
     group: str | None
+    observed: Observed
 
 
 def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], target_id: str) -> tuple[FilePlan, ...]:
@@ -527,11 +541,29 @@ def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], t
             refuse("E_OUTPUT_CONFLICT", item.path, "An unmanaged file occupies a path the target owns")
             continue
         action: ArtifactAction = "unchanged" if current == item.content else "write"
-        plans.append(FilePlan(path=item.path, kind=item.kind, action=action, content=item.content, group=item.group))
+        plans.append(
+            FilePlan(
+                path=item.path,
+                kind=item.kind,
+                action=action,
+                content=item.content,
+                group=item.group,
+                observed=observe(current),
+            )
+        )
     kept = {item.path for item in planned}
     for path, previous in state.files.items():
-        if path not in kept and owned(path, previous)[0]:
-            plans.append(FilePlan(path=path, kind=previous.kind, action="delete", content=None, group=previous.group))
+        if path not in kept and (checked := owned(path, previous))[0]:
+            plans.append(
+                FilePlan(
+                    path=path,
+                    kind=previous.kind,
+                    action="delete",
+                    content=None,
+                    group=previous.group,
+                    observed=observe(checked[1]),
+                )
+            )
     if problems:
         raise APIGenerationError(tuple(problems))
     return tuple(plans)

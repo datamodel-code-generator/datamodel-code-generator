@@ -3,17 +3,27 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
+from contextlib import ExitStack
 from dataclasses import dataclass, field, fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig
-from datamodel_code_generator._api_generation import TargetBinding, TargetRender, render_target
+from datamodel_code_generator import DataModelType, Error, GenerateConfig, _api_publication
+from datamodel_code_generator._api_generation import TargetBinding, TargetRender, generate_target, render_target
 from datamodel_code_generator._api_manifest import MANIFEST_NAME, PlannedFile
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationSelection
+from datamodel_code_generator._api_publication import lock_path, resource_locks
+from datamodel_code_generator._api_types import (
+    APIGenerationError,
+    Diagnostic,
+    GeneratedProject,
+    GenerationReport,
+    OperationSelection,
+    PublicationRollbackError,
+)
 from datamodel_code_generator._codec_declarations import (
     BuiltinCodecCompatibility,
     ModelExportBinding,
@@ -31,11 +41,12 @@ if TYPE_CHECKING:
     import pytest
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import GeneratedProject, TargetKind
+    from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._generation_contract import OperationContract
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "targets"
 _HASH = re.compile(r'"[0-9a-f]{64}"')
+_PRIVATE = re.compile(r"(?<![0-9a-f])(?:[0-9a-f]{32}|[0-9a-f]{16})(?![0-9a-f])")
 _MASKED = frozenset({"size", "version", "runtime_revision"})
 
 
@@ -66,11 +77,12 @@ class FixtureConfig(TargetConfig):
 class FixtureTarget:
     """Group selected operations by first tag into route modules the target owns."""
 
-    def __init__(self, kind: TargetKind, backends: frozenset[DataModelType]) -> None:
-        """Declare the target kind and the model backends it accepts."""
+    def __init__(self, kind: TargetKind, backends: frozenset[DataModelType], interfere: str | None = None) -> None:
+        """Declare the target kind, the model backends it accepts, and a file it appends to while rendering."""
         self.kind: TargetKind = kind
         self.backends = backends
         self.unsupported_backend = f"E_{kind.upper()}_BACKEND_UNSUPPORTED"
+        self.interfere = interfere
 
     def render(self, request: TargetRequest) -> TargetRender:
         """Plan files, bindings, and manifest data from the coordinator's request."""
@@ -88,6 +100,9 @@ class FixtureTarget:
             )
         selected = {operation.id for operation in request.operations}
         failure = getattr(config, "failure", None)
+        if self.interfere is not None:
+            with Path(self.interfere).open("ab") as handle:
+                handle.write(b" ")
         return TargetRender(
             files=tuple(files),
             target_data={
@@ -137,6 +152,11 @@ TARGETS = {
         "fastapi", frozenset({DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass})
     ),
     "client": FixtureTarget("client", frozenset(DataModelType)),
+    "interfering": FixtureTarget(
+        "fastapi",
+        frozenset({DataModelType.PydanticV2BaseModel}),
+        interfere="server/.dcg-target-manifest.json",
+    ),
 }
 
 
@@ -303,21 +323,43 @@ def _manifest(project: GeneratedProject) -> bytes:
     return next(artifact.content for artifact in project.artifacts if artifact.path.name == MANIFEST_NAME) or b""
 
 
-def _render(case: dict[str, Any], overrides: dict[str, Any], root: Path, server: str | None) -> GeneratedProject | str:
+def _run(
+    case: dict[str, Any], overrides: dict[str, Any], root: Path, server: str | None, *, publish: bool
+) -> GeneratedProject | GenerationReport | str:
     spec = {**case, **{key: value for key, value in overrides.items() if key not in {"model", "config"}}}
     model = {**case.get("model", {}), **overrides.get("model", {})}
     config = {**case.get("config", {}), **overrides.get("config", {})}
     try:
-        return render_target(
+        return (generate_target if publish else render_target)(
             _input(spec["input"], server),
             model_config=_model(model, root),
             config=_config(config),
             generator=TARGETS[spec["target"]],
         )
     except APIGenerationError as error:
-        return "\n".join(["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)])
-    except (BindingCaptureError, Error, RemoteLockError, OSError) as error:
-        return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>")
+        lines = ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+        return "\n".join(lines).replace(root.resolve().as_posix(), "<root>")
+    except PublicationRollbackError as error:
+        unrestored = ", ".join(_relative(path, root) for path in error.unrestored)
+        cause = type(error.__cause__).__name__
+        return f"  PublicationRollbackError after {cause}: unrestored {unrestored}; {len(error.backups)} backups kept"
+    except (BindingCaptureError, Error, RemoteLockError, OSError, KeyboardInterrupt) as error:
+        return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>").replace("\\", "/")
+
+
+def _report_generation(report: GenerationReport, root: Path, lines: list[str]) -> None:
+    lines.append(f"  target={report.target} schema_version={report.schema_version}")
+    for name, records in (
+        ("written", report.written_files),
+        ("unchanged", report.unchanged_files),
+        ("deleted", report.deleted_files),
+    ):
+        lines.extend(
+            f"  {name} {record.kind} {_relative(record.path, root)}"
+            + ("" if record.target_id is None else " (target)")
+            + (f" {record.size} bytes" if record.kind == "target" else "")
+            for record in records
+        )
 
 
 @dataclass
@@ -332,6 +374,7 @@ class _Scenario:
     project: GeneratedProject | None = None
     published: dict[str, bytes] = field(default_factory=dict)
     remembered: dict[str, bytes] = field(default_factory=dict)
+    held: ExitStack = field(default_factory=ExitStack)
 
     @property
     def current(self) -> GeneratedProject:
@@ -341,13 +384,56 @@ class _Scenario:
 
     def render(self, overrides: dict[str, Any]) -> None:
         self.lines.append("render")
-        match _render(self.case, overrides, self.root, self.server):
+        match _run(self.case, overrides, self.root, self.server, publish=False):
             case str() as failure:
                 self.project = None
                 self.lines.append(failure)
-            case rendered:
+            case GeneratedProject() as rendered:
                 self.project = rendered
                 _report_project(rendered, self.root, self.lines)
+            case report:
+                raise AssertionError(report)
+
+    def generate(self, overrides: dict[str, Any]) -> None:
+        self.lines.append("generate")
+        match _run(self.case, overrides, self.root, self.server, publish=True):
+            case str() as failure:
+                self.lines.append(failure)
+            case GenerationReport() as report:
+                _report_generation(report, self.root, self.lines)
+            case project:
+                raise AssertionError(project)
+
+    def hold(self, value: str) -> None:
+        kind, _, name = value.partition(":")
+        resource = (self.root / (name or "server")).resolve()
+        match kind:
+            case "thread":
+                self.held.enter_context(resource_locks([resource]))
+            case _:
+                descriptor = _api_publication._open_lockfile(lock_path(resource))
+                self.held.callback(os.close, descriptor)
+                _api_publication._acquire(descriptor, resource)
+                self.held.callback(_api_publication._release, descriptor)
+        self.lines.append(f"hold {kind} lock on {name or 'server'}")
+
+    def release(self, _: None) -> None:
+        self.held.close()
+        self.lines.append("release")
+
+    def mkdir(self, path: str) -> None:
+        (self.root / path).mkdir(parents=True)
+        self.lines.append(f"mkdir {path}")
+
+    def tree(self, _: None) -> None:
+        self.lines.append("tree")
+        self.lines.extend(
+            sorted(
+                f"  {_PRIVATE.sub('<private>', path.relative_to(self.root).as_posix())}"
+                for path in self.root.rglob("*")
+                if path.is_file() and path.relative_to(self.root).parts[0] != "spec"
+            )
+        )
 
     def publish(self, _: None) -> None:
         _publish(self.current, self.root)
@@ -389,11 +475,11 @@ class _Scenario:
         for source in sources:
             (shutil.copytree if source.is_dir() else shutil.copy2)(source, other / source.name)
         self.monkeypatch.chdir(other)
-        match _render(self.case, {}, other, self.server):
-            case str() as failure:
-                self.lines.append(failure)
-            case relocated:
+        match _run(self.case, {}, other, self.server, publish=False):
+            case GeneratedProject() as relocated:
                 self.lines.append(f"relocated manifest identical: {_manifest(relocated) == _manifest(self.current)}")
+            case failure:
+                raise AssertionError(failure)
         self.monkeypatch.chdir(self.root)
 
 
@@ -403,9 +489,10 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
     shutil.copytree(SOURCE / "spec", root / "spec")
     monkeypatch.chdir(root)
     scenario = _Scenario(case, root, monkeypatch, server, [f"# {case_name}"])
-    for step in case["steps"]:
-        ((name, value),) = step.items()
-        getattr(scenario, name)(value)
+    with scenario.held:
+        for step in case["steps"]:
+            ((name, value),) = step.items()
+            getattr(scenario, name)(value)
     return _HASH.sub('"<sha256>"', "\n".join(scenario.lines)) + "\n"
 
 
