@@ -9,6 +9,7 @@ import subprocess
 import sys
 import threading
 import time
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import import_module
 from importlib.util import find_spec
@@ -310,6 +311,30 @@ def _file_contains(path: Path, expected_text: str) -> bool:
     if not path.is_file():
         return False
     return expected_text in path.read_text(encoding="utf-8")
+
+
+@dataclass
+class _WatchedOutput:
+    """A watched output file and the text that last satisfied a wait for it.
+
+    The watch process may regenerate the file again after a wait succeeds and truncate it while the test reads it,
+    so tests assert the text their wait read instead of reading the file a second time.
+    """
+
+    path: Path
+    text: str = ""
+
+    def contains(self, included: str, excluded: str | None = None) -> Callable[[], bool]:
+        """Return a wait condition that keeps the file's text once it has the included and not the excluded text."""
+
+        def condition() -> bool:
+            text = self.path.read_text(encoding="utf-8") if self.path.is_file() else ""
+            if included not in text or (excluded is not None and excluded in text):
+                return False
+            self.text = text
+            return True
+
+        return condition
 
 
 def _batch_pyproject(jobs: list[tuple[str, Path, Path, Path | None]]) -> str:
@@ -3957,6 +3982,7 @@ def test_watch_cli_tracks_new_reference_after_generation(tmp_path: Path) -> None
     changed = (WATCH_DATA_PATH / "file_change/changed.json").read_text(encoding="utf-8")
     input_file.write_text(initial, encoding="utf-8")
     child_file.write_text(changed, encoding="utf-8")
+    output = _WatchedOutput(output_file)
     process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _start_watch_cli_until_ready(
         input_file,
         output_file,
@@ -3968,19 +3994,19 @@ def test_watch_cli_tracks_new_reference_after_generation(tmp_path: Path) -> None
             stderr_lines,
             input_file,
             (WATCH_DATA_PATH / "file_change/reference.json").read_text(encoding="utf-8"),
-            lambda: _file_contains(output_file, "age: int | None = None"),
+            output.contains("age: int | None = None"),
             "the newly referenced child to generate",
         )
-        assert_output(output_file.read_text(encoding="utf-8"), EXPECTED_MAIN_PATH / "watch_reference_change.py")
+        assert_output(output.text, EXPECTED_MAIN_PATH / "watch_reference_change.py")
         _write_watch_cli_input_and_wait(
             process,
             stdout_lines,
             stderr_lines,
             child_file,
             initial,
-            lambda: _file_contains(output_file, "name: str") and not _file_contains(output_file, "age:"),
+            output.contains("name: str", excluded="age:"),
             "an edit to the newly referenced child to regenerate",
         )
-        assert_output(output_file.read_text(encoding="utf-8"), EXPECTED_MAIN_PATH / "watch_reference_initial.py")
+        assert_output(output.text, EXPECTED_MAIN_PATH / "watch_reference_initial.py")
     finally:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
