@@ -465,19 +465,25 @@ class ServerRenderer:  # noqa: PLR0904
 
     def returns(self, module: Module, spec: OperationSpec) -> Chain:
         """Return a method's result type: the bare primary payload, an HTTPResult of any payload, or a Response."""
-        primary = spec.primary
-        bare: list[Doc] = []
-        if (
-            primary is not None
-            and primary.media is not None
-            and not (spec.head or primary.status < _MIN_CONTENT_STATUS or primary.status in BODYLESS_STATUSES)
-        ):
-            bare.extend(self.media_type(module, primary.media, sent=True).split(" | "))
-        elif primary is not None:
-            bare.append("None")
         payload = module.local("responses", f"{spec.pascal}ResponsePayload")
         result = f"{module.local('_runtime.server.responses', 'HTTPResult')}[{payload}]"
-        return Chain("|", (*bare, result, module.name("fastapi.responses", "Response")))
+        return Chain("|", (*self.bare(module, spec), result, module.name("fastapi.responses", "Response")))
+
+    def bare(self, module: Module, spec: OperationSpec) -> list[str]:
+        """Return the members of the type a method returns bare: the primary payload, None, or nothing.
+
+        A primary response that requires a header takes nothing bare, since a bare value cannot carry the header.
+        """
+        if (primary := spec.primary) is None or any(header.required for header in primary.response.headers):
+            return []
+        if (
+            (media := primary.media) is None
+            or spec.head
+            or primary.status < _MIN_CONTENT_STATUS
+            or primary.status in BODYLESS_STATUSES
+        ):
+            return ["None"]
+        return self.media_type(module, media, sent=True).split(" | ")
 
     def contract(self) -> str:
         """Return the contract module: key types, schemes, and each operation's plans and request adapters."""

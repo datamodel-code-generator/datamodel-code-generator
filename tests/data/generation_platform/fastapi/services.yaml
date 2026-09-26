@@ -19,6 +19,17 @@ paths:
         - {name: petId, in: path, required: true, schema: {type: integer}}
       responses:
         "204": {description: Deleted.}
+  /pets/{petId}/moves:
+    post:
+      operationId: movePet
+      tags: [pets]
+      parameters:
+        - {name: petId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "201":
+          description: Moved.
+          headers:
+            Location: {required: true, schema: {type: string}}
   /health:
     get:
       operationId: getHealth

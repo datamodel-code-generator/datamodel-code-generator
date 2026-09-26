@@ -453,6 +453,7 @@
         "exclude_operations": [
           "/paths/~1pets/get",
           "/paths/~1pets~1{petId}/delete",
+          "/paths/~1pets~1{petId}~1moves/post",
           "/paths/~1health/get"
         ],
         "reason": "No operations yet."
