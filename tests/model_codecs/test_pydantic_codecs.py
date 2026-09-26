@@ -45,6 +45,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
         ("extras", "extras-basemodel"),
         ("extras", "extras-dataclass"),
         ("zoo", "zoo-collapsed"),
+        ("ids", "ids"),
     ],
 )
 def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:

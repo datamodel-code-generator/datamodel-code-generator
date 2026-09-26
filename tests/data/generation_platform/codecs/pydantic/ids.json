@@ -1,0 +1,16 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_ids",
+  "cases": [
+    {"name": "create-server-decode", "use": "/paths/~1tickets/post request_body", "op": "decode",
+     "value": {"id": "01ARZ3NDEKTSV4RRFFQ69G5FAV"}},
+    {"name": "create-server-decode-invalid", "use": "/paths/~1tickets/post request_body", "op": "decode",
+     "value": {"id": "not-a-ulid"}},
+    {"name": "created-server-encode-echo", "use": "/paths/~1tickets/post response_body 201", "op": "encode",
+     "value": {"result": "create-server-decode", "attr": "value"}},
+    {"name": "created-server-encode-native", "use": "/paths/~1tickets/post response_body 201", "op": "encode",
+     "value": {"call": "Ticket", "args": {"id": "01ARZ3NDEKTSV4RRFFQ69G5FAV", "parent": "01BX5ZZKBKACTAV9WEVGEMMVRZ"}}},
+    {"name": "created-server-snapshot", "use": "/paths/~1tickets/post response_body 201", "op": "snapshot",
+     "value": {"call": "Ticket", "args": {"id": "01BX5ZZKBKACTAV9WEVGEMMVRZ"}}}
+  ]
+}

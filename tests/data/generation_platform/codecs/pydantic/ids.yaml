@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Codec ids
+  version: "1"
+paths:
+  /tickets:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Ticket"
+      responses:
+        "201":
+          description: The stored ticket.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+components:
+  schemas:
+    Ticket:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: ulid
+        parent:
+          type: string
+          format: ulid
