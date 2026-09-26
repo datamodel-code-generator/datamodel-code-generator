@@ -221,6 +221,14 @@ render pydantic_v2.BaseModel
     |         response_class=Response,
     |         operation_id='movePet',
     |         tags=['pets'],
+    |         response_description='Moved.',
+    |         openapi_extra={
+    |             'x-dcg-operation': {
+    |                 'version': 1,
+    |                 'package': 'server',
+    |                 'operation': '/paths/~1pets~1{petId}~1moves/post',
+    |             },
+    |         },
     |         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}~1moves/post'),
     |     )
     |
