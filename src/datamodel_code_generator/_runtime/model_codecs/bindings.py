@@ -95,15 +95,19 @@ class FieldBinding:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ModelBinding:
-    """Describe one generated model: its fields, unknown-property policy, and root value."""
+    """Describe one generated model: its fields, unknown-property policy, and root value.
+
+    ``extra_items`` is the type of the extra items a TypedDict declares, which it keeps among its keys.
+    """
 
     symbol: str
-    native_kind: Literal["model", "dataclass", "root"]
+    native_kind: Literal["model", "dataclass", "typed_dict", "root"]
     schema_id: str | None
     fields: tuple[FieldBinding, ...] = ()
     root: TypeNode | None = None
     extra: ExtraPolicy = "ignore"
     open: bool = True
+    extra_items: TypeNode | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

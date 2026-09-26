@@ -1,0 +1,112 @@
+openapi: 3.1.0
+info:
+  title: TypedDict records
+  version: "1"
+paths:
+  /sealed:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Sealed"
+      responses:
+        "200":
+          description: The stored record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sealed"
+  /counts:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Counts"
+      responses:
+        "200":
+          description: The stored counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Counts"
+  /shelves:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Shelf"
+      responses:
+        "200":
+          description: The stored shelf.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shelf"
+  /pets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/Cat"
+                - $ref: "#/components/schemas/Dog"
+      responses:
+        "200":
+          description: The stored pet.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - $ref: "#/components/schemas/Dog"
+components:
+  schemas:
+    Sealed:
+      type: object
+      required: [a]
+      properties:
+        a:
+          type: string
+        b:
+          type: integer
+      additionalProperties: false
+    Counts:
+      type: object
+      properties:
+        total:
+          type: integer
+      additionalProperties:
+        type: integer
+    Item:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    Shelf:
+      type: object
+      properties:
+        label:
+          type: string
+      additionalProperties:
+        $ref: "#/components/schemas/Item"
+    Cat:
+      type: object
+      required: [meow]
+      properties:
+        meow:
+          type: boolean
+        name:
+          type: string
+    Dog:
+      type: object
+      required: [bark]
+      properties:
+        bark:
+          type: integer
+        name:
+          type: string

@@ -77,18 +77,28 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.context import Surface
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
-CodecBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass"]
+CodecBackend: TypeAlias = Literal[
+    "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict"
+]
 ArrayKind: TypeAlias = Literal["list", "set", "frozenset"]
 
 _SYMBOL_BACKENDS: Final[dict[CodecBackend, str]] = {
     "pydantic_v2.BaseModel": "pydantic",
     "pydantic_v2.dataclass": "pydantic_dataclass",
     "dataclasses.dataclass": "dataclass",
+    "typing.TypedDict": "typeddict",
 }
 _STRATEGIES: Final[dict[CodecBackend, ConverterStrategy]] = {
     "pydantic_v2.BaseModel": "pydantic_type_adapter",
     "pydantic_v2.dataclass": "pydantic_type_adapter",
     "dataclasses.dataclass": "dataclass_structural",
+    "typing.TypedDict": "typeddict_structural",
+}
+_NATIVE_KINDS: Final[dict[object, Literal["model", "dataclass", "typed_dict"]]] = {
+    "pydantic": "model",
+    "pydantic_dataclass": "dataclass",
+    "dataclass": "dataclass",
+    "typeddict": "typed_dict",
 }
 _STRUCTURAL_KEYS: Final = frozenset({"str", "object", "typing.Any"})
 _STRUCTURAL_LEAVES: Final = _STRUCTURAL_KEYS | {
@@ -124,8 +134,8 @@ class CodecPlan:
     imports: tuple[tuple[int, str], ...] = ()
 
 
-def _setting(symbol: FinalModelSymbol, name: str) -> object:
-    for setting in symbol.facts.configuration if symbol.facts else ():
+def _setting(symbol: FinalModelSymbol, name: str, *, parameter: bool = False) -> object:
+    for setting in (symbol.facts.parameters if parameter else symbol.facts.configuration) if symbol.facts else ():
         if setting.name == name and setting.present:
             match setting.value:
                 case KnownBackendValue(value=LiteralScalar(value=value)):
@@ -457,10 +467,13 @@ class _CodecPlanner:
             )
             return
         generated = _setting(symbol, "alias_generator") is not None
+        record = symbol.backend == "typeddict"
         planned = [
             (
                 _Member(facts, slot, wire_name, member.schema or source),
-                frozenset({slot.name}) if self.structural else _accepted(facts, slot, wire_name, generated=generated),
+                frozenset({(record and facts.alias) or slot.name})
+                if self.structural
+                else _accepted(facts, slot, wire_name, generated=generated),
             )
             for member in members
             if (facts := member.model_facts) is not None
@@ -468,11 +481,12 @@ class _CodecPlanner:
             and slot.name != _TYPED_EXTRAS
             and (wire_name := member.wire_name) is not None
         ]
-        fields = tuple(self.field(key, member, accepted) for member, accepted in planned)
+        total = _setting(symbol, "total", parameter=True) is not False if record else None
+        fields = tuple(self.field(key, member, accepted, total=total) for member, accepted in planned)
         readers: dict[str, list[str]] = {}
-        for member, accepted in planned:
+        for field, (_, accepted) in zip(fields, planned, strict=True):
             for accepted_key in accepted:
-                readers.setdefault(accepted_key, []).append(member.slot.name)
+                readers.setdefault(accepted_key, []).append(field.native_name)
         for field, (member, _) in zip(fields, planned, strict=True):
             if other := next((name for name in readers[field.validation_key] if name != field.native_name), None):
                 self.report(
@@ -480,13 +494,23 @@ class _CodecPlanner:
                     member.schema,
                     f"The {field.wire_name} property of {symbol.name} is also read by the {other} field",
                 )
+        extra_items = (
+            self.node(items, self.child(self.locations.get(schema_id or ""), "additionalProperties"), source)
+            if symbol.facts is not None and (items := symbol.facts.extra_items) is not None
+            else None
+        )
         self.models[key] = ModelBinding(
             symbol=key,
-            native_kind="model" if symbol.backend == "pydantic" else "dataclass",
+            native_kind=_NATIVE_KINDS[symbol.backend],
             schema_id=schema_id,
             fields=fields,
-            extra=_EXTRA_POLICIES.get(_setting(symbol, "extra"), "ignore"),
+            extra="forbid"
+            if record and _setting(symbol, "closed", parameter=True) is True
+            else "allow"
+            if extra_items is not None
+            else _EXTRA_POLICIES.get(_setting(symbol, "extra"), "ignore"),
             open=self.open(schema_id),
+            extra_items=extra_items,
         )
 
     def open(self, schema_id: str | None) -> bool:
@@ -495,20 +519,24 @@ class _CodecPlanner:
         schema = self.wire.schema(location)[1]
         return schema.get("additionalProperties") is not False and schema.get("unevaluatedProperties") is not False
 
-    def field(self, key: str, member: _Member, accepted: frozenset[str]) -> FieldBinding:
+    def field(self, key: str, member: _Member, accepted: frozenset[str], *, total: bool | None) -> FieldBinding:
+        """Bind one field; ``total`` is the totality of a TypedDict and None for other models."""
         facts, name, wire_name = member.facts, member.slot.name, member.wire_name
         provenance = facts.none_default_provenance
         constructible = not _known_false(facts.backend.constructor_init)
-        required = (
-            constructible and provenance.emitted_default == "absent"
-            if self.structural
-            else facts.required and not facts.has_default and not facts.explicit_default_factory
-        )
+        qualifiers = facts.backend.emitted.qualifiers
+        match total:
+            case _ if not self.structural:
+                required = facts.required and not facts.has_default and not facts.explicit_default_factory
+            case None:
+                required = constructible and provenance.emitted_default == "absent"
+            case _:
+                required = "Required" in qualifiers or (total and "NotRequired" not in qualifiers)
         if required and not facts.required:
             self.gaps.add(f"{key}.{name}")
         return FieldBinding(
             field_id=f"{key}.{name}",
-            native_name=name,
+            native_name=min(accepted) if self.structural else name,
             wire_name=wire_name,
             validation_key=wire_name if wire_name in accepted else min(accepted),
             validation_keys=tuple(sorted(accepted)),
@@ -529,6 +557,8 @@ class _CodecPlanner:
             model = found[symbol] = self.models[symbol]
             if model.root is not None:
                 pending.extend(_models(model.root))
+            if model.extra_items is not None:
+                pending.extend(_models(model.extra_items))
             pending.extend(symbol for field in model.fields for symbol in _models(field.type))
         return tuple(found[symbol] for symbol in sorted(found))
 

@@ -1,6 +1,6 @@
 # S08 implementation record
 
-Status: in progress. S08-1 (standard dataclass codecs) is implemented and verified locally, stacked on a fix of the shared union encoding that it builds on. S08-2 (TypedDict) and S08-3 (msgspec.Struct and the five-backend comparisons) follow. Nothing in this stack has been merged.
+Status: in progress. S08-1 (standard dataclass codecs, #4181) and S08-2 (TypedDict codecs) are implemented and verified, stacked on a fix of the shared union encoding (#4180). S08-3 (msgspec.Struct and the five-backend comparisons) follows. Nothing in this stack has been merged.
 
 ## Baseline and review boundaries
 
@@ -42,6 +42,18 @@ Tests:
 
 Benchmarks (100 pets of the S04 benchmark source, best of 7, µs): the Pydantic BaseModel codec decodes in 3938 (3941 before the refactor) and encodes in 3796 (3777); the Pydantic dataclass codec decodes in 3904 (3966) and encodes in 3763 (3738), all within noise. The structural codec decodes in 3852, encodes in 3145 and encodes one pet in 31.7; about 2300 of each 100-pet call is the common wire validation. Lazy locations cut the structural walk from 561 to 433 per decode, and writing frozen values directly cut encoding from 3388 to 3145.
 
+## S08-2: TypedDict codecs
+
+The `typing.TypedDict` backend plans `typeddict_structural` uses of `typeddict` symbols, whose models are `native_kind="typed_dict"`, and runs through the same `StructuralModelCodec`; a TypedDict value is the dict of its keys, never built with the TypedDict constructor or checked with `isinstance`.
+
+- Keys: a field's native name is the TypedDict key D emitted, the property name for the functional syntax (`'nick-name'`) rather than the Python name of the slot. The alias collision check now compares these native names, so functional TypedDicts no longer report their own keys as collisions.
+- Requiredness comes from the emitted qualifiers and the class totality (`Required`, `NotRequired`, `total=False`). At startup the codec reads the same from the annotations, with `typing_extensions.get_type_hints(..., include_extras=True)`: `__required_keys__` treats every postponed annotation of a `typing.TypedDict` as required, so it cannot be trusted. A TypedDict must declare every bound key with the bound requiredness, and agree with the binding on `closed` and `extra_items`.
+- PEP 728: a `closed` TypedDict has the `forbid` policy, and a member the schema still admits fails with `native.extra_forbidden`. `extra_items` is bound as `ModelBinding.extra_items`, the node of the type S03 captured, so extra members join the dict converted by that type (a model type, written as a string by D, is evaluated in the model's module), and encoding writes the dict's other keys with it. Without either, unknown members stay in the snapshot's extras.
+- Presence is the dict's own: a missing key is absent and a present `None` is sent as `null`, so a non-nullable `None` fails validation, as MC02 requires. Explicit presence may select only keys the dict holds.
+- A union member is chosen for a dict when it holds every required key of the TypedDict and no key outside it, unless the TypedDict has extra items. Map keys may also be the `Literal` aliases D emits for string enums.
+
+Tests: the pets source, the structural source, and a TypedDict source with closed records, typed extra items of a scalar and of a model, and a union of two TypedDicts run through the codec, with `total=False` and without PEP 728 as variants; the startup report refuses a dataclass, an open, a loosened and a shortened TypedDict, missing, disagreeing and unresolved extra items, and reaches `native.extra_forbidden` through a relaxed schema. Rendered bindings of the backend construct the structural codec. `codecs.py` gains TypedDict positive cases and `codecs_negative.py` two lines (49–50), each one error on strict mypy, strict Pyright and ty. Timings match the dataclass codec: 100 pets decode in 3909 µs and encode in 3283 µs, with the dataclass codec at 3967 and 3266 in the same run.
+
 ## Next action
 
-Publish the union fix and S08-1 as the first two PRs of the S08 native stack, then implement S08-2 (TypedDict).
+Publish S08-2 on #4181, then implement S08-3 (msgspec.Struct and the five-backend comparisons).

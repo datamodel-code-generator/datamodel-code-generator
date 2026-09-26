@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from typing_extensions import NotRequired, TypedDict
+
 
 @dataclass
 class InitTicket:
@@ -84,3 +86,41 @@ class NumberKeyed:
     by_color: dict[int, int] | None = None
     by_code: dict[str, int] | None = None
     by_name: dict[str, SetRecord] | None = None
+
+
+class OpenSealed(TypedDict):
+    """Leave the record open, although its binding forbids unknown members."""
+
+    a: str
+    b: NotRequired[int]
+
+
+class LooseSealed(TypedDict, closed=True):
+    """Make the required key optional."""
+
+    a: NotRequired[str]
+    b: NotRequired[int]
+
+
+class ShortSealed(TypedDict, closed=True):
+    """Leave out a bound key."""
+
+    a: str
+
+
+class PlainCounts(TypedDict):
+    """Declare no extra items, although the binding types them."""
+
+    total: NotRequired[int]
+
+
+class NumberShelf(TypedDict, extra_items=int):
+    """Type the extra items as integers, although the binding binds a model."""
+
+    label: NotRequired[str]
+
+
+class MissingShelf(TypedDict, extra_items="Missing"):
+    """Name extra items that do not exist."""
+
+    label: NotRequired[str]

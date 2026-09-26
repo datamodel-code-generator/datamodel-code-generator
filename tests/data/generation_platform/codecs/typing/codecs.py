@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from pydantic import BaseModel
-from typing_extensions import assert_type
+from typing_extensions import TypedDict, assert_type
 
 from datamodel_code_generator._runtime.model_codecs.context import CodecContext
 from datamodel_code_generator._runtime.model_codecs.outbound import (
@@ -24,6 +24,10 @@ class Pet(BaseModel):
 
 @dataclass
 class Tag:
+    name: str
+
+
+class TagRecord(TypedDict):
     name: str
 
 
@@ -69,3 +73,13 @@ def exercise_structural(codec: StructuralModelCodec[Tag], context: CodecContext,
     assert_type(NativeOutboundCodec(codec, context).from_wire(wire), ModelValue[Tag])
     assert_type(codec.encode(tag, context), WireValue)
     assert_type(codec.encode(decoded, context), WireValue)
+
+
+def exercise_record(
+    codec: StructuralModelCodec[TagRecord], context: CodecContext, wire: WireValue, tag: TagRecord
+) -> None:
+    protocol: ModelCodec[TagRecord] = codec
+    assert_type(protocol.decode(wire, context), DecodedValue[TagRecord])
+    assert_type(codec.snapshot(tag, context), ModelValue[TagRecord])
+    assert_type(codec.snapshot({"name": "a"}, context), ModelValue[TagRecord])
+    assert_type(codec.encode(tag, context), WireValue)

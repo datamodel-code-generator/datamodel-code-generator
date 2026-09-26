@@ -13,7 +13,7 @@ from decimal import Decimal
 from enum import Enum
 from math import isfinite
 from types import MappingProxyType, NoneType, UnionType
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, Protocol, TypeAlias, TypeVar, Union, overload
 
 import typing_extensions
 
@@ -54,7 +54,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-_STRATEGIES: Final = {"dataclass_structural": "dataclasses.dataclass"}
+_STRATEGIES: Final = {"dataclass_structural": "dataclasses.dataclass", "typeddict_structural": "typing.TypedDict"}
 _ALIASES: Final[tuple[type[typing_extensions.TypeAliasType], ...]] = tuple({
     typing_extensions.TypeAliasType,
     getattr(typing, "TypeAliasType", typing_extensions.TypeAliasType),
@@ -76,6 +76,7 @@ _MICROSECONDS: Final = (7 * 86_400_000_000, 86_400_000_000, 3_600_000_000, 60_00
 _LONGEST: Final = timedelta.max // timedelta(microseconds=1)
 _MINUTE: Final = timedelta(minutes=1)
 _ABSENT: Final = object()
+_QUALIFIERS: Final = frozenset({typing_extensions.Required, typing_extensions.NotRequired, typing_extensions.ReadOnly})
 
 _JSONKey: TypeAlias = tuple[str, object]
 _Route: TypeAlias = "tuple[_Route, str | int, str | int] | None"
@@ -102,6 +103,9 @@ _ENUM: Final = _Failure("native.enum")
 _LITERAL: Final = _Failure("native.literal_error")
 _UNHASHABLE: Final = _Failure("native.set_item_not_hashable")
 _CONSTRUCTOR: Final = _Failure("native.constructor")
+_EXTRA_FORBIDDEN: Final = _Failure("native.extra_forbidden")
+_DATACLASS_TYPE: Final = _Failure("native.dataclass_type")
+_DICT_TYPE: Final = _Failure("native.dict_type")
 _STRINGS: Final = (
     ("uuid", ("UUID",), _Failure("native.uuid")),
     ("ipaddress", ("IPv4Address", "IPv6Address"), _Failure("native.ip_address")),
@@ -331,12 +335,21 @@ class _Field:
 
 @dataclasses.dataclass(slots=True)
 class _Model:
+    """A dataclass built by its constructor, or a TypedDict (``record``) whose value is a dict of its keys."""
+
     binding: ModelBinding
     native: type
+    record: bool
+    failure: _Failure
     fields: tuple[_Field, ...] = ()
     wire: Mapping[str, _Field] = dataclasses.field(default_factory=dict[str, _Field])
     required: tuple[_Field, ...] = ()
-    failure: ClassVar[_Failure] = _Failure("native.dataclass_type")
+    extras: _Plan | None = None
+
+
+class _TypedDictClass(Protocol):
+    __total__: bool
+    __extra_items__: object
 
 
 _Plan: TypeAlias = _Leaf | _Sequence | _Tuple | _Map | _Union | _Model
@@ -380,24 +393,63 @@ def _required(item: dataclasses.Field[object]) -> bool:
     return item.init and item.default is dataclasses.MISSING and item.default_factory is dataclasses.MISSING
 
 
-def _declared(binding: ModelBinding, native: type) -> dict[str, dataclasses.Field[object]] | None:
-    """Return the fields of a native dataclass when every bound field and every required field agree."""
+def _fits_dataclass(binding: ModelBinding, native: type) -> bool:
+    """Return whether a native dataclass agrees with every bound field and binds every required argument."""
     if not dataclasses.is_dataclass(native):
-        return None
+        return False
     declared = {item.name: item for item in dataclasses.fields(native)}
     planned = {member.native_name: member for member in binding.fields}
-    if all(
+    return all(
         (item := declared.get(name)) is not None
         and item.init == member.constructible
         and _required(item) == member.required
         for name, member in planned.items()
-    ) and all(name in planned for name, item in declared.items() if _required(item)):
-        return declared
-    return None
+    ) and all(name in planned for name, item in declared.items() if _required(item))
+
+
+def _qualifiers(hint: object) -> set[object]:
+    found: set[object] = set()
+    while (origin := typing_extensions.get_origin(hint)) in _QUALIFIERS:
+        found.add(origin)
+        hint = typing_extensions.get_args(hint)[0]
+    return found
+
+
+def _extra_items(native: type) -> object:
+    """Return the evaluated type of a TypedDict's extra items, which may be written as a string."""
+    extra_items = typing.cast("_TypedDictClass", native).__extra_items__
+    if isinstance(extra_items, str):
+        module = vars(sys.modules[native.__module__])
+        return typing_extensions.evaluate_forward_ref(typing.ForwardRef(extra_items), globals=module)
+    return extra_items
+
+
+def _fits_record(binding: ModelBinding, native: type) -> bool:
+    """Return whether a TypedDict declares the bound keys, their requiredness, closure, and extra items.
+
+    Requiredness is read from the annotations, since ``__required_keys__`` misses the qualifiers of postponed ones.
+    """
+    if not typing_extensions.is_typeddict(native):
+        return False
+    total = typing.cast("_TypedDictClass", native).__total__
+    hints = typing_extensions.get_type_hints(native, include_extras=True)
+    required = {
+        key
+        for key, hint in hints.items()
+        if typing_extensions.Required in (found := _qualifiers(hint))
+        or (total and typing_extensions.NotRequired not in found)
+    }
+    return (
+        {member.native_name for member in binding.fields} <= hints.keys()
+        and required == {member.native_name for member in binding.fields if member.required}
+        and (binding.extra == "forbid") == (getattr(native, "__closed__", None) is True)
+        and (binding.extra_items is None)
+        == (getattr(native, "__extra_items__", typing_extensions.NoExtraItems) is typing_extensions.NoExtraItems)
+    )
 
 
 class StructuralModelCodec(BuiltinModelCodec[T]):
-    """Validate, construct, snapshot, and encode one bound use of a standard dataclass model type."""
+    """Validate, construct, snapshot, and encode one bound use of a standard dataclass or TypedDict model type."""
 
     __slots__ = ("_plan", "_plans", "_scan")
 
@@ -495,6 +547,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         match annotation:
             case _ if annotation is str or annotation is Any or annotation is object:
                 return _same
+            case _ if typing.get_origin(annotation) is Literal:
+                return _member(_members(typing.get_args(annotation)), _LITERAL)
             case type() if issubclass(annotation, Enum):
                 return _member(_members(tuple(annotation)), _ENUM)
             case _:
@@ -505,25 +559,25 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         if (existing := self._plans.get(symbol)) is not None:
             return existing
         binding, native = self._models[symbol], self._types[symbol]
-        if (declared := _declared(binding, native)) is None:
-            raise self._mismatch(symbol)
-        plan = self._plans[symbol] = _Model(binding, native)
+        record = binding.native_kind == "typed_dict"
         try:
-            hints = typing.get_type_hints(native)
+            hints = typing_extensions.get_type_hints(native)
+            fits = (_fits_record if record else _fits_dataclass)(binding, native)
+            extra_items = _extra_items(native) if fits and binding.extra_items is not None else None
         except (NameError, TypeError):
             raise self._mismatch(symbol) from None
+        if not fits:
+            raise self._mismatch(symbol)
+        plan = self._plans[symbol] = _Model(binding, native, record, _DICT_TYPE if record else _DATACLASS_TYPE)
         fields = tuple(
-            _Field(
-                member,
-                self._build(
-                    member.type, hints.get(member.native_name, declared[member.native_name].type), member.field_id
-                ),
-            )
+            _Field(member, self._build(member.type, hints[member.native_name], member.field_id))
             for member in binding.fields
         )
         plan.fields = fields
         plan.wire = {member.binding.wire_name: member for member in fields}
         plan.required = tuple(member for member in fields if member.binding.required)
+        if binding.extra_items is not None:
+            plan.extras = self._build(binding.extra_items, extra_items, f"{symbol} extra items")
         return plan
 
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
@@ -605,7 +659,12 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         arguments: dict[str, object] = {}
         for name, entry in wire.items():
             if (member := plan.wire.get(name)) is None:
-                state.extras[_located((route, name, name))[0]] = entry
+                if plan.extras is not None:
+                    arguments[name] = self._decode(entry, plan.extras, (route, name, name), state)
+                elif plan.binding.extra == "forbid":
+                    self._refuse(state, _EXTRA_FORBIDDEN, (route, name, name))
+                else:
+                    state.extras[_located((route, name, name))[0]] = entry
             elif not (binding := member.binding).constructible:
                 state.issues.append(self._gap("FIELD_NOT_CONSTRUCTIBLE", plan, binding, route))
             else:
@@ -624,6 +683,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             raise ModelProjectionError(msg)
         if not state.construct or len(state.native) > failures:
             return None
+        if plan.record:
+            return arguments
         try:
             return plan.native(**arguments)
         except Exception:  # noqa: BLE001
@@ -668,7 +729,9 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         match plan:
             case _ if native is None:
                 return None
-            case _Model(native=kind) if isinstance(native, kind):
+            case _Model(record=True) if is_mapping(native):
+                return self._encode_model(native, plan, presence, route)
+            case _Model(record=False, native=kind) if isinstance(native, kind):
                 return self._encode_model(native, plan, presence, route)
             case _Union(members=members) if (member := _native_plan(native, members)) is not None:
                 return self._encode(native, member, presence, route)
@@ -701,18 +764,42 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         raise shape_error(_located(route)[0])
 
     def _encode_model(self, native: object, plan: _Model, presence: PresenceTree | None, route: _Route) -> WireValue:
-        _object_presence(presence, plan.wire.keys(), route)
+        items = typing.cast("Mapping[object, object]", native) if plan.record else None
+        extras = (
+            {_key_text(name, route): value for name, value in items.items() if name not in plan.wire}
+            if items is not None and plan.extras is not None
+            else {}
+        )
+        if presence is not None:
+            present = {
+                member.binding.wire_name
+                for member in plan.fields
+                if _read(native, items, member.binding.native_name) is not _ABSENT
+            }
+            check_object_presence(presence, present | extras.keys(), _located(route)[0])
         members: dict[str, WireValue] = {}
         for member in plan.fields:
             binding = member.binding
-            if (value := getattr(native, binding.native_name, _ABSENT)) is _ABSENT:
+            value = (
+                getattr(native, binding.native_name, _ABSENT)
+                if items is None
+                else items.get(binding.native_name, _ABSENT)
+            )
+            if value is _ABSENT:
                 continue
             child = None if presence is None else presence.child(binding.wire_name)
             if (presence is not None and child is None) or (presence is None and binding.omit_none and value is None):
                 continue
             name = binding.wire_name
             members[name] = self._encode(value, member.plan, child, (route, name, name))
+        if extras and (extras_plan := plan.extras) is not None:
+            for name, child in selected(presence, extras):
+                members[name] = self._encode(extras[name], extras_plan, child, (route, name, name))
         return MappingProxyType(members)
+
+
+def _read(native: object, items: Mapping[object, object] | None, name: str) -> object:
+    return getattr(native, name, _ABSENT) if items is None else items.get(name, _ABSENT)
 
 
 def _array_presence(presence: PresenceTree | None, length: int, route: _Route) -> None:
@@ -745,6 +832,17 @@ def _sorted(items: Iterable[WireValue]) -> WireValue:
     return tuple(sorted(items, key=encode_json))
 
 
+def _fits(plan: _Model, native: object) -> bool:
+    """Return whether a native value can be a model's: an instance of a dataclass, or a TypedDict's keys."""
+    if not plan.record:
+        return isinstance(native, plan.native)
+    return (
+        is_mapping(native)
+        and all(member.binding.native_name in native for member in plan.required)
+        and (plan.extras is not None or all(name in plan.wire for name in native))
+    )
+
+
 def _outside(value: object) -> bool:
     return isinstance(value, _Failure) and value.outside
 
@@ -757,7 +855,7 @@ def _native_plan(native: object, members: tuple[_Plan, ...]) -> _Plan | None:
         return exact
     for member in members:
         match member:
-            case _Model(native=kind) if isinstance(native, kind):
+            case _Model() if _fits(member, native):
                 return member
             case _Sequence() | _Tuple() if is_sequence(native) or is_set(native):
                 return member

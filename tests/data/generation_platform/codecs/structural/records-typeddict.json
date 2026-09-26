@@ -1,0 +1,28 @@
+{
+  "backend": "typing.TypedDict",
+  "package": "codec_records_typeddict",
+  "scopes": ["schemas", "paths"],
+  "cases": [
+    {"name": "sealed-server-decode", "use": "/paths/~1sealed/post request_body", "op": "decode", "value": {"a": "x", "b": 1}},
+    {"name": "sealed-server-decode-extra", "use": "/paths/~1sealed/post request_body", "op": "decode", "value": {"a": "x", "c": 1}},
+    {"name": "counts-server-decode", "use": "/paths/~1counts/post request_body", "op": "decode", "value": {"total": 1, "x": 2, "y": 3}},
+    {"name": "counts-server-response", "use": "/paths/~1counts/post response_body 200", "op": "encode",
+     "value": {"result": "counts-server-decode", "attr": "value"}},
+    {"name": "counts-server-snapshot-presence", "use": "/paths/~1counts/post response_body 200", "op": "snapshot",
+     "value": {"result": "counts-server-decode", "attr": "value"}, "presence": {"x": 2}},
+    {"name": "counts-server-response-bad-extra", "use": "/paths/~1counts/post response_body 200", "op": "encode",
+     "value": {"call": "Counts", "args": {"total": 1, "z": "s"}}},
+    {"name": "counts-server-response-key", "use": "/paths/~1counts/post response_body 200", "op": "encode",
+     "value": {"py": "dict", "items": [["total", 1], [2, 3]]}},
+    {"name": "shelf-client-decode", "use": "/paths/~1shelves/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"label": "l", "top": {"name": "n"}, "low": {"name": "m", "zz": 1}}},
+    {"name": "shelf-server-encode", "use": "/paths/~1shelves/post response_body 200", "op": "encode",
+     "value": {"result": "shelf-client-decode", "attr": "value"}},
+    {"name": "pets-server-decode-dog", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"bark": 1, "name": "Rex"}},
+    {"name": "pets-server-decode-both", "use": "/paths/~1pets/post request_body", "op": "decode", "value": {"bark": 1, "meow": true}},
+    {"name": "pets-server-encode-dog", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"bark": 2}},
+    {"name": "pets-server-encode-cat", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"meow": false, "name": "Tom"}},
+    {"name": "pets-server-encode-neither", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"name": "Tom"}},
+    {"name": "pets-server-encode-scalar", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": 3}
+  ]
+}

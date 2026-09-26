@@ -82,6 +82,7 @@ _CODECS: Final = {
     "pydantic_v2.BaseModel": ("pydantic_v2", "PydanticModelCodec"),
     "pydantic_v2.dataclass": ("pydantic_v2", "PydanticModelCodec"),
     "dataclasses.dataclass": ("structural", "StructuralModelCodec"),
+    "typing.TypedDict": ("structural", "StructuralModelCodec"),
 }
 _OWN_NAMES: Final = ("Final", "annotations", "cache", "_resources", "_request_view", "_response_view")
 _USE_PREFIXES: Final = ("codec", "CONTEXT", "outbound", "parameter", "validator")

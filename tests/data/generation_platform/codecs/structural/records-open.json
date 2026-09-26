@@ -1,0 +1,11 @@
+{
+  "backend": "typing.TypedDict",
+  "package": "codec_records_open",
+  "scopes": ["schemas", "paths"],
+  "options": {"use_closed_typed_dict": false},
+  "cases": [
+    {"name": "counts-server-decode", "use": "/paths/~1counts/post request_body", "op": "decode", "value": {"total": 1, "x": 2}},
+    {"name": "counts-server-response", "use": "/paths/~1counts/post response_body 200", "op": "encode",
+     "value": {"result": "counts-server-decode", "attr": "value"}}
+  ]
+}
