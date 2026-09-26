@@ -23,6 +23,10 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
     [
         ("pydantic/pets", "pets-dataclass"),
         ("pydantic/pets", "pets-typeddict"),
+        ("pydantic/pets", "pets-msgspec"),
+        ("pydantic/shapes", "shapes-msgspec"),
+        ("structural/structs", "structs-msgspec"),
+        ("structural/structs", "structs-options"),
         ("pydantic/shapes", "shapes-dataclass"),
         ("pydantic/shapes", "shapes-aliases"),
         ("structural/stdlib", "stdlib-dataclass"),
@@ -38,6 +42,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
         ("structural/aliases", "aliases-dataclass"),
         ("structural/aliases", "aliases-type"),
         ("structural/aliases", "aliases-typeddict"),
+        ("structural/aliases", "aliases-msgspec"),
     ],
 )
 def test_structural_codecs(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -53,6 +58,7 @@ def test_structural_codecs(source: str, cases: str, tmp_path: PathType, monkeypa
     [
         ("structural/stdlib", "stdlib-startup"),
         ("structural/records", "records-startup"),
+        ("structural/structs", "structs-startup"),
     ],
 )
 def test_structural_codec_startup(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:

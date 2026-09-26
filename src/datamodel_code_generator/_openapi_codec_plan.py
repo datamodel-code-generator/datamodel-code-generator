@@ -27,6 +27,7 @@ from datamodel_code_generator._generation_contract import (
     GenericType,
     ImportedType,
     LiteralScalar,
+    LiteralType,
     ModelArtifactAddress,
     ModelFieldFacts,
     NoneType,
@@ -78,7 +79,7 @@ if TYPE_CHECKING:
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 CodecBackend: TypeAlias = Literal[
-    "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict"
+    "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"
 ]
 ArrayKind: TypeAlias = Literal["list", "set", "frozenset"]
 
@@ -87,19 +88,41 @@ _SYMBOL_BACKENDS: Final[dict[CodecBackend, str]] = {
     "pydantic_v2.dataclass": "pydantic_dataclass",
     "dataclasses.dataclass": "dataclass",
     "typing.TypedDict": "typeddict",
+    "msgspec.Struct": "msgspec",
 }
 _STRATEGIES: Final[dict[CodecBackend, ConverterStrategy]] = {
     "pydantic_v2.BaseModel": "pydantic_type_adapter",
     "pydantic_v2.dataclass": "pydantic_type_adapter",
     "dataclasses.dataclass": "dataclass_structural",
     "typing.TypedDict": "typeddict_structural",
+    "msgspec.Struct": "msgspec_convert",
 }
-_NATIVE_KINDS: Final[dict[object, Literal["model", "dataclass", "typed_dict"]]] = {
+_NATIVE_KINDS: Final[dict[object, Literal["model", "dataclass", "typed_dict", "struct"]]] = {
     "pydantic": "model",
     "pydantic_dataclass": "dataclass",
     "dataclass": "dataclass",
     "typeddict": "typed_dict",
+    "msgspec": "struct",
 }
+_MSGSPEC_KINDS: Final = ("str", "int", "array", "object")
+_MSGSPEC_STRINGS: Final = frozenset({
+    "str",
+    "bytes",
+    "datetime.datetime",
+    "datetime.date",
+    "datetime.time",
+    "datetime.timedelta",
+    "decimal.Decimal",
+    "uuid.UUID",
+})
+_MSGSPEC_UNSUPPORTED: Final = frozenset({
+    "ipaddress.IPv4Address",
+    "ipaddress.IPv6Address",
+    "ipaddress.IPv4Network",
+    "ipaddress.IPv6Network",
+    "pathlib.Path",
+})
+_MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping"})
 _STRUCTURAL_KEYS: Final = frozenset({"str", "object", "typing.Any"})
 _STRUCTURAL_LEAVES: Final = _STRUCTURAL_KEYS | {
     "bool",
@@ -176,6 +199,26 @@ def _models(node: TypeNode) -> Iterator[str]:
 
 def _at(location: SourceLocation, *tokens: str | int) -> SourceLocation:
     return replace(location, pointer=location.pointer + "".join(f"/{token}" for token in tokens))
+
+
+def _name(value: FinalPythonType) -> str | None:
+    match value:
+        case BuiltinType(name=name):
+            return name
+        case ImportedType(import_=imported):
+            return f"{imported.from_}.{imported.import_}"
+        case _:
+            return None
+
+
+def _literal_kind(value: LiteralType) -> str | None:
+    """Return the one kind msgspec reads a literal's values as, or None for values or mixtures it cannot describe."""
+    kinds = {item.kind if isinstance(item, LiteralScalar) else "enum" for item in value.values}
+    return next(iter(kinds)) if len(kinds) == 1 and kinds <= {"str", "int", "none"} else None
+
+
+def _meta_pattern(facts: ModelFieldFacts) -> bool:
+    return any(name == "pattern" for layer in facts.backend.emitted.meta_layers for name, _ in layer.keywords)
 
 
 def _known_false(value: object) -> bool:
@@ -386,10 +429,8 @@ class _CodecPlanner:
                 )
             case GeneratedSymbolType():
                 return None if (declared := self.symbols[value.symbol]).kind == "enum" else declared.name
-            case BuiltinType(name=name):
-                return None if name in supported else name
-            case ImportedType(import_=imported):
-                return None if (name := f"{imported.from_}.{imported.import_}") in supported else name
+            case BuiltinType() | ImportedType():
+                return None if (name := _name(value)) in supported else name
             case BoundType(binding=binding):
                 return render_python_type_expr(binding.expression)
             case _:
@@ -479,6 +520,7 @@ class _CodecPlanner:
             if (facts := member.model_facts) is not None
             and (slot := member.slot) is not None
             and slot.name != _TYPED_EXTRAS
+            and member.exclusion != "tag"
             and (wire_name := member.wire_name) is not None
         ]
         fields = tuple(
@@ -508,18 +550,34 @@ class _CodecPlanner:
             if symbol.facts is not None and (items := symbol.facts.extra_items) is not None
             else None
         )
+        tag = next(
+            (
+                (member.wire_name, literal.value)
+                for member in members
+                if member.exclusion == "tag"
+                and member.wire_name is not None
+                and member.model_facts is not None
+                and isinstance(value := member.model_facts.type, LiteralType)
+                and len(value.values) == 1
+                and isinstance(literal := value.values[0], LiteralScalar)
+                and isinstance(literal.value, (str, int))
+            ),
+            None,
+        )
         self.models[key] = ModelBinding(
             symbol=key,
             native_kind=_NATIVE_KINDS[symbol.backend],
             schema_id=schema_id,
             fields=fields,
             extra="forbid"
-            if record and _setting(symbol, "closed", parameter=True) is True
+            if (record and _setting(symbol, "closed", parameter=True) is True)
+            or _setting(symbol, "forbid_unknown_fields", parameter=True) is True
             else "allow"
             if extra_items is not None
             else _EXTRA_POLICIES.get(_setting(symbol, "extra"), "ignore"),
             open=self.open(schema_id),
             extra_items=extra_items,
+            tag=tag,
         )
 
     def open(self, schema_id: str | None) -> bool:
@@ -607,10 +665,18 @@ class _CodecPlanner:
             if isinstance(use.type, GeneratedSymbolType)
             else None,
             projection_mode="envelope" if envelope else "native",
-            converter_strategy="registered_adapter" if use.id in self.adapted else _STRATEGIES[self.backend],
+            converter_strategy="registered_adapter" if use.id in self.adapted else self.strategy(use.type),
             type=node,
             models=models,
         )
+
+    def strategy(self, value: FinalPythonType) -> ConverterStrategy:
+        """Return the use's converter; a msgspec type that msgspec.convert refuses takes the structural converter."""
+        if (strategy := _STRATEGIES[self.backend]) == "msgspec_convert" and not _MsgspecTypes(self).convertible(
+            value, set()
+        ):
+            return "msgspec_structural"
+        return strategy
 
     def native_kind(self, value: FinalPythonType, node: TypeNode, models: tuple[ModelBinding, ...]) -> NativeKind:
         match value, node:
@@ -626,6 +692,106 @@ class _CodecPlanner:
                 return "map"
             case _:
                 return "scalar"
+
+
+class _MsgspecTypes:
+    """Decide at generation time whether msgspec.convert reads a final type, as msgspec itself decides at runtime."""
+
+    def __init__(self, planner: _CodecPlanner) -> None:
+        self.planner = planner
+
+    def convertible(self, value: FinalPythonType, seen: set[int]) -> bool:  # noqa: PLR0911
+        """Return whether msgspec.convert reads a final type, which no refused union, leaf, enum or pattern reaches."""
+        symbols, members = self.planner.symbols, self.planner.members
+        match value:
+            case GeneratedSymbolType() if value.symbol in seen:
+                return True
+            case GeneratedSymbolType() if symbols[value.symbol].kind == "enum":
+                return self.enum_kinds(value.symbol) in ({"str"}, {"int"})
+            case GeneratedSymbolType():
+                seen.add(value.symbol)
+                return _setting(symbols[value.symbol], "array_like", parameter=True) is not True and all(
+                    not _meta_pattern(facts) and self.convertible(facts.type, seen)
+                    for member in members.get(value.symbol, [])
+                    if (facts := member.model_facts) is not None
+                )
+            case UnionType(members=items):
+                kinds = self.kinds(items)
+                return (
+                    all(kinds.count(kind) <= 1 for kind in _MSGSPEC_KINDS)
+                    and not ("tagged" in kinds and "object" in kinds)
+                    and all(self.convertible(item, seen) for item in items)
+                )
+            case GenericType(arguments=arguments):
+                return all(self.convertible(argument, seen) for argument in arguments)
+            case LiteralType():
+                return _literal_kind(value) is not None
+            case _:
+                return _name(value) not in _MSGSPEC_UNSUPPORTED
+
+    def flattened(self, items: tuple[FinalPythonType, ...], seen: set[int]) -> Iterator[FinalPythonType]:
+        """Yield union members with the members of aliased types in place of their aliases, as msgspec reads them."""
+        for item in items:
+            if (
+                isinstance(item, GeneratedSymbolType)
+                and self.planner.symbols[item.symbol].kind == "alias"
+                and item.symbol not in seen
+                and (aliased := self.aliased(item.symbol)) is not None
+            ):
+                seen.add(item.symbol)
+                yield from self.flattened(aliased.members if isinstance(aliased, UnionType) else (aliased,), seen)
+            else:
+                yield item
+
+    def aliased(self, symbol: int) -> FinalPythonType | None:
+        return next(
+            (
+                facts.type
+                for member in self.planner.members.get(symbol, [])
+                if (facts := member.model_facts) is not None
+            ),
+            None,
+        )
+
+    def kinds(self, items: tuple[FinalPythonType, ...]) -> list[str]:
+        """Return the msgspec categories of a union's members; literals merge with each other and a plain str or int."""
+        flat = tuple(self.flattened(items, set()))
+        names = {_name(item) for item in flat}
+        literals = {
+            kind
+            for item in flat
+            if isinstance(item, LiteralType) and (kind := _literal_kind(item)) is not None and kind not in names
+        }
+        return [
+            *(kind for item in flat if not isinstance(item, LiteralType) and (kind := self.kind(item)) is not None),
+            *literals,
+        ]
+
+    def kind(self, value: FinalPythonType) -> str | None:
+        """Return the msgspec union category of a member, or None for a type any union may hold."""
+        match value:
+            case GeneratedSymbolType() if self.planner.symbols[value.symbol].kind == "enum":
+                kinds = self.enum_kinds(value.symbol)
+                return next(iter(kinds)) if len(kinds) == 1 else None
+            case GeneratedSymbolType():
+                tagged = _setting(self.planner.symbols[value.symbol], "tag", parameter=True) is not None
+                return "tagged" if tagged else "object"
+            case GenericType(base=base):
+                return "object" if _name(base) in _MAPPINGS else "array"
+            case BuiltinType(name="int"):
+                return "int"
+            case _:
+                return "str" if _name(value) in _MSGSPEC_STRINGS else None
+
+    def enum_kinds(self, symbol: int) -> set[str]:
+        """Return the JSON kinds of an enum's values, read from the schema every generated enum is observed at."""
+        planner = self.planner
+        values = planner.wire.schema(planner.locations[planner.symbol_schemas[symbol]])[1].get("enum")
+        return {
+            "int" if type(item) is int else "str" if type(item) is str else "other"
+            for item in (values if isinstance(values, tuple) else ())
+            if item is not None
+        }
 
 
 def plan_model_codecs(  # noqa: PLR0913

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Annotated
 
+import msgspec
 from typing_extensions import NotRequired, Required, TypedDict
 
 
@@ -138,3 +141,46 @@ class HandKitten(HandAnimal, total=False):
 
     meow: Required[bool]
     tail: str
+
+
+class NamedLimits(msgspec.Struct):
+    """Read the low bound under another wire name."""
+
+    id: int
+    low: int | msgspec.UnsetType = msgspec.field(name="LOW", default=msgspec.UNSET)
+    name: str | msgspec.UnsetType = msgspec.UNSET
+
+
+class RequiredLimits(msgspec.Struct):
+    """Require the low bound, which the binding treats as optional."""
+
+    id: int
+    low: int
+    name: str | msgspec.UnsetType = msgspec.UNSET
+
+
+class TinySmall(msgspec.Struct, tag_field="size", tag="tiny"):
+    """Tag the small variant with another value."""
+
+    contact: str | msgspec.UnsetType = msgspec.UNSET
+
+
+class LocalStamped(msgspec.Struct):
+    """Refuse time zones through a Meta constraint the schema does not have."""
+
+    when: Annotated[datetime, msgspec.Meta(tz=False)] | msgspec.UnsetType = msgspec.UNSET
+    pair: tuple[int, str] | msgspec.UnsetType = msgspec.UNSET
+
+
+class LookaheadStamped(msgspec.Struct):
+    """Constrain the time with a pattern the builtin matcher cannot read."""
+
+    when: Annotated[datetime, msgspec.Meta(pattern="(?=2)")] | msgspec.UnsetType = msgspec.UNSET
+    pair: tuple[int, str] | msgspec.UnsetType = msgspec.UNSET
+
+
+class SizedStamped(msgspec.Struct):
+    """Constrain the fixed pair's length, which no structural check reads."""
+
+    when: datetime | msgspec.UnsetType = msgspec.UNSET
+    pair: Annotated[tuple[int, str], msgspec.Meta(min_length=2)] | msgspec.UnsetType = msgspec.UNSET

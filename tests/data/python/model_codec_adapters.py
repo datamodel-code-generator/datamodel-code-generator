@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib
+import json
 import shutil
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -35,6 +37,27 @@ if TYPE_CHECKING:
     import pytest
 
 RUNTIME = Path(adapters.__file__).parent
+_ISOLATED = """
+import json
+import sys
+
+root, blocked, cases = sys.argv[1], json.loads(sys.argv[2]), json.loads(sys.argv[3])
+for name in blocked:
+    sys.modules[name] = None
+sys.path.insert(0, root)
+import adapted._generated.model_bindings as bindings
+import adapted.models as models
+from adapted.model_codecs import thaw_wire
+
+for name, accessor, operation, value in cases:
+    codec = getattr(bindings, accessor)()
+    if operation == "outbound":
+        result = codec.from_wire(value)
+    else:
+        result = codec.snapshot(getattr(models, value["model"])(**value["args"]))
+    print(f"{name}: model {result.value!r} wire={json.dumps(thaw_wire(result.wire))}")
+print(f"loaded {sorted(module for module in sys.modules if module.split('.')[0] in blocked and sys.modules[module])}")
+"""
 
 
 def _use_key(use: object) -> str:
@@ -294,6 +317,18 @@ def adapter_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pyt
         },
     )
     shutil.copytree(source.parent / "modules", root, ignore=shutil.ignore_patterns("__pycache__"), dirs_exist_ok=True)
+    if blocked := fixture.get("blocked"):
+        cases = [
+            [case["name"], accessors[case["use"]].outbound, case["op"], case["value"]] for case in fixture["cases"]
+        ]
+        result = subprocess.run(
+            [sys.executable, "-c", _ISOLATED, str(root), json.dumps(blocked), json.dumps(cases)],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        lines.extend(result.stdout.splitlines())
+        return "\n".join(lines) + "\n"
     modules = tuple(path.name.removesuffix(".py") for path in (source.parent / "modules").iterdir())
     monkeypatch.syspath_prepend(str(root))
     try:

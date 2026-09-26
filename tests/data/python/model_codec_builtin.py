@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import importlib
 import sys
+from collections import defaultdict
 from dataclasses import replace
 from datetime import datetime, time
 from pathlib import PurePath
@@ -43,6 +44,7 @@ CODECS: dict[str, type[BuiltinModelCodec[object]]] = {
     "pydantic_v2.dataclass": PydanticModelCodec,
     "dataclasses.dataclass": StructuralModelCodec,
     "typing.TypedDict": StructuralModelCodec,
+    "msgspec.Struct": StructuralModelCodec,
 }
 
 
@@ -73,6 +75,9 @@ def _native(value: object) -> str:
                 f"{field.name}={_native(getattr(value, field.name, _UNSET))}" for field in dataclasses.fields(value)
             )
             return f"{type(value).__name__}({fields})"
+        case _ if hasattr(type(value), "__struct_fields__"):
+            fields = ", ".join(f"{name}={_native(getattr(value, name))}" for name in type(value).__struct_fields__)
+            return f"{type(value).__name__}({fields})"
         case set() | frozenset():
             return "{" + ", ".join(sorted(_native(item) for item in value)) + "}"
         case PurePath():
@@ -85,8 +90,10 @@ def _native(value: object) -> str:
             return repr(value)
 
 
-def _result(value: object) -> str:
+def _result(value: object, *, wire_only: bool = False) -> str:
     match value:
+        case ModelValue() if wire_only:
+            return f"model wire={_json(value.wire)} extras={_json(value.extras)}"
         case ModelValue():
             fields_set = getattr(value.value, "model_fields_set", None)
             return (
@@ -114,9 +121,10 @@ def _failure(error: CodecError) -> str:
 
 
 class _Runner:
-    def __init__(self, package: str, codecs: dict[str, BuiltinModelCodec[object]]) -> None:
+    def __init__(self, package: str, codecs: dict[str, BuiltinModelCodec[object]], *, wire_only: bool = False) -> None:
         self.package = package
         self.codecs = codecs
+        self.wire_only = wire_only
         self.results: dict[str, object] = {}
 
     def native(self, spec: object) -> object:
@@ -203,10 +211,13 @@ class _Runner:
                     return f"mutated {case['attr']}"
                 case "require":
                     return f"required {_native(self.results[str(case['target'])].require_model())}"
+                case "echo":
+                    native = codec.decode(value, context).require_model()
+                    result = codec.encode(native, replace(context, surface="server"))
         except CodecError as error:
             return _failure(error)
         self.results[str(case["name"])] = result
-        return _result(result)
+        return _result(result, wire_only=self.wire_only)
 
 
 def _prepare(
@@ -214,6 +225,9 @@ def _prepare(
 ) -> tuple[object, object, str]:
     backend = str(fixture["backend"])
     package = str(fixture["package"])
+    options = dict(fixture.get("options", {}))
+    if "extra_template_data" in options:
+        options["extra_template_data"] = defaultdict(dict, options["extra_template_data"])
     product, _ = generate_product(
         source,
         GenerateConfig(
@@ -221,7 +235,7 @@ def _prepare(
             openapi_scopes=[OpenAPIScope(scope) for scope in fixture.get("scopes", ["api"])],
             formatters=[],
             output_model_type=DataModelType(backend),
-            **fixture.get("options", {}),
+            **options,
         ),
     )
     try:
@@ -257,8 +271,9 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pyt
     codecs: dict[str, BuiltinModelCodec[object]] = {}
     try:
         for use, binding in plan.bindings:
+            strategy = f" {binding.converter_strategy}" if fixture.get("strategies") else ""
             lines.append(
-                f"use {_use_key(use)}: {binding.projection_mode} {binding.native_kind} {binding.native_export} "
+                f"use {_use_key(use)}: {binding.projection_mode} {binding.native_kind} {binding.native_export}{strategy} "
                 f"models={[(model.symbol, model.native_kind, model.extra, model.open) for model in binding.models]}"
             )
             if binding.native_export is not None:
@@ -275,6 +290,39 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pyt
         lines.extend(f"{case['name']}: {runner.run(case)}" for case in fixture["cases"])
     finally:
         _forget(package, monkeypatch)
+    return "\n".join(lines) + "\n"
+
+
+def backend_comparison_report(source: Path, cases: Path, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+    """Run one set of wire cases through the models of every backend, grouping the backends whose outcome agrees."""
+    fixture = thaw_wire(decode_json(cases.read_bytes()))
+    outcomes: dict[str, dict[str, str]] = {case["name"]: {} for case in fixture["cases"]}
+    for backend in fixture["backends"]:
+        package = f"{fixture['package']}_{backend.replace('.', '_').lower()}"
+        plan, wire, package = _prepare(source, {**fixture, "backend": backend, "package": package}, root, monkeypatch)
+        bundles = {view.direction: SchemaBundle(wire.resources, view) for view in wire.views}
+        try:
+            codecs = {
+                _use_key(use): CODECS[binding.backend](
+                    binding,
+                    _export(package, binding.native_export),
+                    {model.symbol: _export(package, model.symbol) for model in binding.models},
+                    bundles[binding.direction],
+                )
+                for use, binding in plan.bindings
+                if binding.native_export is not None
+            }
+            runner = _Runner(package, codecs, wire_only=True)
+            for case in fixture["cases"]:
+                outcomes[case["name"]][backend] = runner.run(case)
+        finally:
+            _forget(package, monkeypatch)
+    lines = []
+    for name, results in outcomes.items():
+        groups: dict[str, list[str]] = {}
+        for backend, outcome in results.items():
+            groups.setdefault(outcome, []).append(backend)
+        lines.extend(f"{name} [{', '.join(backends)}]: {outcome}" for outcome, backends in groups.items())
     return "\n".join(lines) + "\n"
 
 

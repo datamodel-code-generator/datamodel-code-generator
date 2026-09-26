@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import operator
 import re
 import sys
 import typing
@@ -11,9 +12,22 @@ from collections.abc import Callable, Mapping
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
+from functools import partial
 from math import isfinite
 from types import MappingProxyType, NoneType, UnionType
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, Protocol, TypeAlias, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    ClassVar,
+    Final,
+    Literal,
+    Protocol,
+    TypeAlias,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import typing_extensions
 
@@ -22,6 +36,7 @@ from .codec import (
     EMPTY,
     BuiltinModelCodec,
     Walk,
+    child_value,
     directional_gap,
     is_mapping,
     is_sequence,
@@ -31,8 +46,10 @@ from .codec import (
 )
 from .errors import CodecConfigurationError, ModelProjectionError, NativeIssue, NativeValidationError
 from .media import encode_json
+from .patterns import PatternDialectError, PatternPlan, PatternResourceError, plan_pattern, search
 from .values import DecodedValue, ModelInput, ModelValue, ProjectionIssue
 from .wire import (
+    JSONValue,
     PresenceTree,
     WireValue,
     check_array_presence,
@@ -41,7 +58,6 @@ from .wire import (
     checked_scalar,
     escape_pointer_token,
     snapshot_presence,
-    thaw_wire,
 )
 
 if TYPE_CHECKING:
@@ -52,9 +68,16 @@ if TYPE_CHECKING:
     from .patterns import MatchBudget
     from .schema import SchemaBundle, WireValidator
 
+    _Check: TypeAlias = tuple[Callable[[Any, MatchBudget], bool], "_Failure"]
+
 T = TypeVar("T")
 
-_STRATEGIES: Final = {"dataclass_structural": "dataclasses.dataclass", "typeddict_structural": "typing.TypedDict"}
+_STRATEGIES: Final = {
+    "dataclass_structural": "dataclasses.dataclass",
+    "typeddict_structural": "typing.TypedDict",
+    "msgspec_structural": "msgspec.Struct",
+    "msgspec_convert": "msgspec.Struct",
+}
 _ALIASES: Final[tuple[type[typing_extensions.TypeAliasType], ...]] = tuple({
     typing_extensions.TypeAliasType,
     getattr(typing, "TypeAliasType", typing_extensions.TypeAliasType),
@@ -104,8 +127,14 @@ _LITERAL: Final = _Failure("native.literal_error")
 _UNHASHABLE: Final = _Failure("native.set_item_not_hashable")
 _CONSTRUCTOR: Final = _Failure("native.constructor")
 _EXTRA_FORBIDDEN: Final = _Failure("native.extra_forbidden")
-_DATACLASS_TYPE: Final = _Failure("native.dataclass_type")
-_DICT_TYPE: Final = _Failure("native.dict_type")
+_TAG: Final = _Failure("native.tag")
+_KIND_FAILURES: Final = {
+    "dataclass": _Failure("native.dataclass_type"),
+    "typed_dict": _Failure("native.dict_type"),
+    "struct": _Failure("native.struct_type"),
+}
+_BOUNDS: Final = (("gt", operator.gt), ("ge", operator.ge), ("lt", operator.lt), ("le", operator.le))
+_MSGSPEC_PATH: Final = re.compile(r"\[(\d+|\.\.\.)\]")
 _STRINGS: Final = (
     ("uuid", ("UUID",), _Failure("native.uuid")),
     ("ipaddress", ("IPv4Address", "IPv6Address"), _Failure("native.ip_address")),
@@ -136,19 +165,89 @@ def _located(route: _Route) -> tuple[str, tuple[str | int, ...]]:
     return "".join(f"/{escape_pointer_token(token)}" for token in reversed(tokens)), tuple(reversed(names))
 
 
-def _unwrap(annotation: object) -> object:
-    while isinstance(annotation, _ALIASES):
-        annotation = annotation.__value__
-    return annotation
+def _unwrap(annotation: object) -> tuple[object, tuple[object, ...]]:
+    """Return an annotation without its aliases, Annotated layers and TypedDict qualifiers, and the layers' metadata."""
+    metadata: tuple[object, ...] = ()
+    while True:
+        if isinstance(annotation, _ALIASES):
+            annotation = annotation.__value__
+        elif (origin := typing_extensions.get_origin(annotation)) is Annotated:
+            annotation, *extra = typing_extensions.get_args(annotation)
+            metadata = (*metadata, *extra)
+        elif origin in _QUALIFIERS:
+            annotation = typing_extensions.get_args(annotation)[0]
+        else:
+            return annotation, metadata
+
+
+def _absent(member: object) -> bool:
+    """Return whether a union member marks a missing value rather than a type: None, or msgspec's UnsetType."""
+    return member is NoneType or member is getattr(sys.modules.get("msgspec"), "UnsetType", NoneType)
+
+
+def _bounded(compare: Callable[[Any, Any], bool], bound: object, value: object, _: MatchBudget) -> bool:
+    return compare(value, bound)
+
+
+def _multiple(step: float, value: float, _: MatchBudget) -> bool:
+    return value % step == 0
+
+
+def _searched(plan: PatternPlan, value: str, budget: MatchBudget) -> bool:
+    return search(plan, value, budget)
+
+
+def _longer(least: int, value: abc.Sized, _: MatchBudget) -> bool:
+    return len(value) >= least
+
+
+def _shorter(most: int, value: abc.Sized, _: MatchBudget) -> bool:
+    return len(value) <= most
+
+
+def _zoned(aware: bool, value: datetime | time, _: MatchBudget) -> bool:  # noqa: FBT001
+    return (value.tzinfo is not None) == aware
+
+
+def _checks(metadata: tuple[object, ...]) -> tuple[_Check, ...]:
+    """Return the checks of the msgspec Meta constraints among an annotation's metadata."""
+    meta = getattr(sys.modules.get("msgspec"), "Meta", None)
+    return tuple(
+        check for item in metadata if meta is not None and isinstance(item, meta) for check in _meta_checks(item)
+    )
+
+
+def _meta_checks(item: Any) -> list[_Check]:
+    """Return the checks of one msgspec Meta, whose type is loaded only with msgspec."""
+    checks: list[_Check] = [
+        (partial(_bounded, compare, bound), _Failure(f"native.{name}"))
+        for name, compare in _BOUNDS
+        if (bound := getattr(item, name)) is not None
+    ]
+    if item.multiple_of is not None:
+        checks.append((partial(_multiple, item.multiple_of), _Failure("native.multiple_of")))
+    if item.pattern is not None:
+        checks.append((partial(_searched, plan_pattern(item.pattern)), _Failure("native.pattern")))
+    if item.min_length is not None:
+        checks.append((partial(_longer, item.min_length), _Failure("native.min_length")))
+    if item.max_length is not None:
+        checks.append((partial(_shorter, item.max_length), _Failure("native.max_length")))
+    if item.tz is not None:
+        checks.append((partial(_zoned, item.tz), _Failure("native.tz")))
+    return checks
 
 
 def _union_members(annotation: object) -> tuple[object, ...] | None:
     """Return a union's members with the members of aliased unions in place of the aliases, as Python flattens them."""
     if typing.get_origin(annotation) not in {Union, UnionType}:
         return None
-    return tuple(
-        member for item in typing.get_args(annotation) for member in (_union_members(_unwrap(item)) or (item,))
-    )
+    return tuple(member for item in typing.get_args(annotation) for member in _aliased(item))
+
+
+def _aliased(item: object) -> tuple[object, ...]:
+    """Return the members of a union behind an alias without metadata, or else the member itself."""
+    annotation, metadata = _unwrap(item)
+    return (item,) if metadata or (members := _union_members(annotation)) is None else members
 
 
 def _flattened(node: UnionNode) -> tuple[list[TypeNode], bool]:
@@ -181,6 +280,17 @@ def _stringified(value: object) -> bool:
         and isinstance(value, tuple(getattr(loaded, name) for name in names))
         for module, names, _ in _STRINGS
     )
+
+
+def _thawed(wire: WireValue) -> JSONValue:
+    """Copy a frozen snapshot into lists and dictionaries, without the checks that freezing it already made."""
+    match wire:
+        case tuple():
+            return [_thawed(item) for item in wire]
+        case str() | int() | float() | Decimal() | None:
+            return wire
+        case _:
+            return {key: _thawed(item) for key, item in wire.items()}
 
 
 def _same(wire: WireValue) -> WireValue:
@@ -318,6 +428,7 @@ class _Leaf:
     failure: _Failure
     native: type | None = None
     representation: Representation = "value"
+    checks: tuple[_Check, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -325,6 +436,7 @@ class _Sequence:
     item: _Plan
     container: type
     failure: _Failure
+    checks: tuple[_Check, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -337,6 +449,7 @@ class _Tuple:
 class _Map:
     key: Callable[[str], object]
     value: _Plan
+    checks: tuple[_Check, ...] = ()
     failure: ClassVar[_Failure] = _Failure("native.dict_type")
 
 
@@ -355,7 +468,10 @@ class _Field:
 
 @dataclasses.dataclass(slots=True)
 class _Model:
-    """A dataclass built by its constructor, or a TypedDict (``record``) whose value is a dict of its keys."""
+    """A dataclass or msgspec Struct built by its constructor, or a TypedDict (``record``), the dict of its keys.
+
+    ``unset`` is the value that leaves a field out of the wire, and ``tag`` a tagged Struct's tag field and value.
+    """
 
     binding: ModelBinding
     native: type
@@ -366,6 +482,8 @@ class _Model:
     required: tuple[_Field, ...] = ()
     keys: frozenset[str] = frozenset()
     extras: _Plan | None = None
+    unset: object = _ABSENT
+    tag: tuple[str, object] | None = None
 
 
 class _TypedDictClass(Protocol):
@@ -373,9 +491,18 @@ class _TypedDictClass(Protocol):
     __extra_items__: object
 
 
+class _StructConfig(Protocol):
+    tag_field: str | None
+    tag: object
+
+
+class _StructClass(Protocol):
+    __struct_config__: _StructConfig
+
+
 _Plan: TypeAlias = _Leaf | _Sequence | _Tuple | _Map | _Union | _Model
 
-_ANY: Final = _Leaf(_accepts_any, thaw_wire, _STRING_TYPE)
+_ANY: Final = _Leaf(_accepts_any, _thawed, _STRING_TYPE)
 _DECIMAL_STRING: Final = _Leaf(_accepts_string, _decimal_text, _STRING_TYPE, Decimal, "decimal_string")
 _PLAIN: Final[dict[type, _Leaf]] = {
     str: _Leaf(_accepts_string, _same, _STRING_TYPE, str),
@@ -468,6 +595,31 @@ def _record_required(native: type) -> set[str]:
     }
 
 
+def _fits_struct(binding: ModelBinding, native: type) -> bool:
+    """Return whether a msgspec Struct declares every bound field under its wire name and binds each required one."""
+    import msgspec  # noqa: PLC0415 - Only the msgspec backend loads msgspec.
+
+    if not issubclass(native, msgspec.Struct):
+        return False
+    declared = {item.name: item for item in msgspec.structs.fields(native)}
+    planned = {member.native_name: member for member in binding.fields}
+    return (
+        all(
+            (item := declared.get(name)) is not None
+            and item.encode_name == member.wire_name
+            and item.required == member.required
+            for name, member in planned.items()
+        )
+        and all(name in planned for name, item in declared.items() if item.required)
+        and _struct_tag(native) == binding.tag
+    )
+
+
+def _struct_tag(native: type) -> tuple[str, object] | None:
+    config = typing.cast("_StructClass", native).__struct_config__
+    return None if config.tag_field is None else (config.tag_field, config.tag)
+
+
 def _fits_record(binding: ModelBinding, native: type) -> bool:
     """Return whether a TypedDict declares the bound keys, their requiredness, closure, and extra items."""
     if not typing_extensions.is_typeddict(native):
@@ -484,7 +636,7 @@ def _fits_record(binding: ModelBinding, native: type) -> bool:
 class StructuralModelCodec(BuiltinModelCodec[T]):
     """Validate, construct, snapshot, and encode one bound use of a standard dataclass or TypedDict model type."""
 
-    __slots__ = ("_plan", "_plans", "_scan")
+    __slots__ = ("_convert", "_invalid", "_plan", "_plans", "_scan")
 
     @overload
     def __init__(
@@ -534,28 +686,65 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         self._plans: dict[str, _Model] = {}
         self._plan = self._build(binding.type, native_type, binding.native_export or binding.schema_id)
         self._scan = binding.projection_mode == "envelope"
+        self._convert: Callable[[JSONValue], object] | None = None
+        self._invalid: type[Exception] = ModelProjectionError
+        if binding.converter_strategy == "msgspec_convert":
+            self._convert, self._invalid = self._converter(native_type)
+
+    def _converter(self, native_type: object) -> tuple[Callable[[JSONValue], object], type[Exception]]:
+        """Return msgspec's strict converter of the use's type, which msgspec must describe at startup.
+
+        Describing the type walks all of it, so a union msgspec refuses or a type it cannot read from JSON stops here.
+        """
+        import msgspec  # noqa: PLC0415 - Only the msgspec backend loads msgspec.
+
+        try:
+            msgspec.json.schema(native_type)
+        except TypeError:
+            raise self._mismatch(self._binding.native_export or self._binding.schema_id) from None
+        return partial(msgspec.convert, type=native_type, strict=True), msgspec.ValidationError
 
     @staticmethod
     def _mismatch(where: str) -> CodecConfigurationError:
         return CodecConfigurationError(f"The native type of {where} does not match its binding")
 
-    def _build(self, node: TypeNode, annotation: object, where: str) -> _Plan:  # noqa: PLR0911
-        annotation = _unwrap(annotation)
+    def _build(self, node: TypeNode, annotation: object, where: str) -> _Plan:
+        """Build the converter of a node and its annotation, with the checks of its msgspec Meta constraints."""
+        annotation, metadata = _unwrap(annotation)
+        plan = self._shape(node, annotation, where)
+        try:
+            checks = _checks(metadata)
+        except (PatternDialectError, PatternResourceError):
+            raise self._mismatch(where) from None
+        match plan:
+            case _ if not checks:
+                return plan
+            case _Leaf() | _Sequence() | _Map():
+                return dataclasses.replace(plan, checks=checks)
+            case _:
+                pass
+        raise self._mismatch(where)
+
+    def _shape(self, node: TypeNode, annotation: object, where: str) -> _Plan:  # noqa: PLR0911
         members = _union_members(annotation)
         match node:
             case ModelNode() if annotation is self._types[node.symbol]:
                 return self._model(node.symbol)
             case UnionNode() if members is not None:
                 items, nullable = _flattened(node)
-                present = tuple(member for member in members if member is not NoneType)
+                present = tuple(member for member in members if not _absent(member))
                 if (NoneType in members) < nullable or len(present) != len(items):
                     raise self._mismatch(where)
                 return _Union(
                     tuple(self._build(item, member, where) for item, member in zip(items, present, strict=True)),
                     nullable,
                 )
-            case _ if members is not None and NoneType in members and len(members) == 2:  # noqa: PLR2004
-                return self._build(node, next(member for member in members if member is not NoneType), where)
+            case _ if (
+                members is not None
+                and len(real := [item for item in members if not _absent(item)]) == 1
+                and len(real) < len(members)
+            ):
+                return self._build(node, real[0], where)
             case ArrayNode(item=item, container=kind) if (
                 container := _SEQUENCES.get(typing.get_origin(annotation))
             ) is not None:
@@ -570,7 +759,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 )
             case MapNode(value=value) if typing.get_origin(annotation) in _MAPPINGS:
                 key, member = typing.get_args(annotation)
-                return _Map(self._key(_unwrap(key), where), self._build(value, member, where))
+                return _Map(self._key(_unwrap(key)[0], where), self._build(value, member, where))
             case LeafNode(representation=representation) if (leaf := _leaf(annotation, representation)) is not None:
                 return leaf
             case _:
@@ -593,16 +782,19 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         if (existing := self._plans.get(symbol)) is not None:
             return existing
         binding, native = self._models[symbol], self._types[symbol]
-        record = binding.native_kind == "typed_dict"
+        kind = binding.native_kind
         try:
-            hints = typing_extensions.get_type_hints(native)
-            fits = (_fits_record if record else _fits_dataclass)(binding, native)
+            hints = typing_extensions.get_type_hints(native, include_extras=True)
+            fits = {"typed_dict": _fits_record, "struct": _fits_struct}.get(kind, _fits_dataclass)(binding, native)
             extra_items = _extra_items(native) if fits and binding.extra_items is not None else None
         except (NameError, TypeError):
             raise self._mismatch(symbol) from None
         if not fits:
             raise self._mismatch(symbol)
-        plan = self._plans[symbol] = _Model(binding, native, record, _DICT_TYPE if record else _DATACLASS_TYPE)
+        plan = self._plans[symbol] = _Model(binding, native, kind == "typed_dict", _KIND_FAILURES[kind])
+        if kind == "struct":
+            plan.unset = sys.modules["msgspec"].UNSET
+            plan.tag = _struct_tag(native)
         fields = tuple(
             _Field(member, self._build(member.type, hints[member.native_name], member.field_id))
             for member in binding.fields
@@ -618,16 +810,31 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
         presence = snapshot_presence(wire)
         binding_id = self._binding.binding_id
-        if self._scan:
+        if self._scan or self._convert is not None:
             scan = Walk(budget)
             self._decode(wire, self._plan, None, scan)
-            if scan.issues:
+            if scan.issues and self._scan:
                 return ModelInput(
                     binding_id=binding_id,
                     wire=wire,
                     presence=presence,
                     extras=MappingProxyType(scan.extras),
                     issues=tuple(scan.issues),
+                )
+            if scan.issues:
+                msg = f"The native use has an unplanned projection gap at {scan.issues[0].pointer or '/'}"
+                raise ModelProjectionError(msg)
+            if self._convert is not None:
+                try:
+                    value = typing.cast("T", self._convert(_thawed(wire)))
+                except self._invalid as error:
+                    raise NativeValidationError((_msgspec_issue(str(error), wire),)) from None
+                return ModelValue(
+                    value=value,
+                    binding_id=binding_id,
+                    wire=wire,
+                    presence=presence,
+                    extras=MappingProxyType(scan.extras) if scan.extras else EMPTY,
                 )
         state = Walk(budget, construct=True)
         value = typing.cast("T", self._decode(wire, self._plan, None, state))
@@ -654,7 +861,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 if not state.construct:
                     return None
                 try:
-                    return container(items)
+                    return self._checked(container(items), plan.checks, route, state)
                 except TypeError:
                     return self._refuse(state, _UNHASHABLE, route)
             case _Tuple(items=items) if isinstance(wire, tuple) and len(wire) == len(items):
@@ -670,7 +877,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             case _Leaf(accepts=accepts, convert=convert) if accepts(wire):
                 if isinstance(value := convert(wire), _Failure):
                     return self._refuse(state, value, route)
-                return value
+                return self._checked(value, plan.checks, route, state)
             case _:
                 pass
         return self._refuse(state, plan.failure, route)
@@ -680,6 +887,12 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         pointer, path = _located(route)
         state.native.append(NativeIssue(code=failure.code, pointer=pointer, native_path=path))
 
+    def _checked(self, value: object, checks: tuple[_Check, ...], route: _Route, state: Walk) -> object:
+        for check, failure in checks:
+            if not check(value, state.budget):
+                return self._refuse(state, failure, route)
+        return value
+
     def _decode_map(self, wire: Mapping[str, WireValue], plan: _Map, route: _Route, state: Walk) -> object:
         entries: dict[object, object] = {}
         for name, entry in wire.items():
@@ -687,19 +900,14 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 self._refuse(state, key, (route, name, name))
             else:
                 entries[key] = self._decode(entry, plan.value, (route, name, name), state)
-        return entries if state.construct else None
+        return self._checked(entries, plan.checks, route, state) if state.construct else None
 
     def _decode_model(self, wire: Mapping[str, WireValue], plan: _Model, route: _Route, state: Walk) -> object:
         failures, gaps = len(state.native), len(state.issues)
         arguments: dict[str, object] = {}
         for name, entry in wire.items():
             if (member := plan.wire.get(name)) is None:
-                if plan.extras is not None:
-                    arguments[name] = self._decode(entry, plan.extras, (route, name, name), state)
-                elif plan.binding.extra == "forbid":
-                    self._refuse(state, _EXTRA_FORBIDDEN, (route, name, name))
-                else:
-                    state.extras[_located((route, name, name))[0]] = entry
+                self._unbound(name, entry, plan, (route, name, name), state, arguments)
             elif not (binding := member.binding).constructible:
                 state.issues.append(self._gap("FIELD_NOT_CONSTRUCTIBLE", plan, binding, route))
             else:
@@ -724,6 +932,20 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             return plan.native(**arguments)
         except Exception:  # noqa: BLE001
             return self._refuse(state, _CONSTRUCTOR, route)
+
+    def _unbound(  # noqa: PLR0913, PLR0917
+        self, name: str, entry: WireValue, plan: _Model, route: _Route, state: Walk, arguments: dict[str, object]
+    ) -> None:
+        """Take a member no field binds: a Struct's tag, a TypedDict's extra item, a forbidden member, or an extra."""
+        if plan.tag is not None and name == plan.tag[0]:
+            if entry != plan.tag[1]:
+                self._refuse(state, _TAG, route)
+        elif plan.extras is not None:
+            arguments[name] = self._decode(entry, plan.extras, route, state)
+        elif plan.binding.extra == "forbid":
+            self._refuse(state, _EXTRA_FORBIDDEN, route)
+        else:
+            state.extras[_located(route)[0]] = entry
 
     @staticmethod
     def _gap(
@@ -809,10 +1031,11 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             present = {
                 member.binding.wire_name
                 for member in plan.fields
-                if _read(native, items, member.binding.native_name) is not _ABSENT
+                if _read(native, items, member.binding.native_name, plan.unset) is not _ABSENT
             }
-            check_object_presence(presence, present | extras.keys(), _located(route)[0])
-        members: dict[str, WireValue] = {}
+            tag: set[str] = set() if plan.tag is None else {plan.tag[0]}
+            check_object_presence(presence, present | extras.keys() | tag, _located(route)[0])
+        members: dict[str, WireValue] = {} if plan.tag is None else {plan.tag[0]: _scalar(plan.tag[1], route)}
         for member in plan.fields:
             binding = member.binding
             value = (
@@ -820,7 +1043,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 if items is None
                 else items.get(binding.native_name, _ABSENT)
             )
-            if value is _ABSENT:
+            if value is _ABSENT or value is plan.unset:
                 continue
             child = None if presence is None else presence.child(binding.wire_name)
             if (presence is not None and child is None) or (presence is None and binding.omit_none and value is None):
@@ -833,8 +1056,9 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         return MappingProxyType(members)
 
 
-def _read(native: object, items: Mapping[object, object] | None, name: str) -> object:
-    return getattr(native, name, _ABSENT) if items is None else items.get(name, _ABSENT)
+def _read(native: object, items: Mapping[object, object] | None, name: str, unset: object) -> object:
+    value = getattr(native, name, _ABSENT) if items is None else items.get(name, _ABSENT)
+    return _ABSENT if value is unset else value
 
 
 def _array_presence(presence: PresenceTree | None, length: int, route: _Route) -> None:
@@ -876,6 +1100,38 @@ def _fits(plan: _Model, native: object) -> bool:
         and all(member.binding.native_name in native for member in plan.required)
         and (plan.extras is not None or all(name in plan.keys for name in native))
     )
+
+
+def _msgspec_issue(message: str, wire: WireValue) -> NativeIssue:
+    """Locate the issue msgspec reports by walking its ``$`` path through the wire value it read.
+
+    A member name may itself hold dots, so the longest name of the object the path continues with is taken; a map
+    entry, which msgspec writes as ``[...]``, ends the walk at its map.
+    """
+    _, found, rest = message.rpartition(" - at `$")
+    rest = rest.removesuffix("`") if found else ""
+    tokens: list[str | int] = []
+    while rest:
+        if (index := _MSGSPEC_PATH.match(rest)) is not None and index[1] != "...":
+            tokens.append(position := int(index[1]))
+            wire, rest = child_value(wire, position), rest[index.end() :]
+        elif isinstance(wire, Mapping) and (
+            name := max(
+                (
+                    key
+                    for key in wire
+                    if rest.startswith(f".{key}") and rest[len(key) + 1 : len(key) + 2] in {"", ".", "["}
+                ),
+                key=len,
+                default=None,
+            )
+        ):
+            tokens.append(name)
+            wire, rest = wire[name], rest[len(name) + 1 :]
+        else:
+            break
+    pointer = "".join(f"/{escape_pointer_token(token)}" for token in tokens)
+    return NativeIssue(code="native.validation_error", pointer=pointer, native_path=tuple(tokens))
 
 
 def _outside(value: object) -> bool:

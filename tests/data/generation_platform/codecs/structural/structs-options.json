@@ -1,0 +1,22 @@
+{
+  "backend": "msgspec.Struct",
+  "package": "codec_structs_options",
+  "scopes": ["schemas", "paths"],
+  "strategies": true,
+  "options": {"use_standard_primitive_types": true,
+              "extra_template_data": {"Batch": {"base_class_kwargs": {"array_like": true}},
+                                      "Limits": {"base_class_kwargs": {"forbid_unknown_fields": true}},
+                                      "Holder": {"base_class_kwargs": {"forbid_unknown_fields": true, "omit_defaults": true}}}},
+  "cases": [
+    {"name": "limits-server-decode-unknown", "use": "/paths/~1limits/post request_body", "op": "decode", "value": {"low": 2, "zz": 1}},
+    {"name": "limits-client-decode-unknown", "use": "/paths/~1limits/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"id": 1, "zz": 1}},
+    {"name": "holder-server-decode-unknown", "use": "/paths/~1holders/post request_body", "op": "decode", "value": {"count": 0, "zz": 1}},
+    {"name": "holder-server-response-defaults", "use": "/paths/~1holders/post response_body 200", "op": "encode",
+     "value": {"call": "Holder", "args": {}}},
+    {"name": "batch-server-decode", "use": "/paths/~1batches/post request_body", "op": "decode",
+     "value": {"entries": [{"amount": "1.5"}], "a.b": "3"}},
+    {"name": "batch-client-encode", "use": "/paths/~1batches/post request_body", "surface": "client", "op": "encode",
+     "value": {"result": "batch-server-decode", "attr": "value"}}
+  ]
+}

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from msgspec import Struct
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
@@ -48,3 +49,12 @@ class TagRecord(TypedDict):
 def exercise_record(codec: StructuralModelCodec[TagRecord], context: CodecContext) -> None:
     codec.snapshot(Tag("a"), context)
     _tag: Tag = codec.snapshot({"name": "a"}, context).value
+
+
+class TagStruct(Struct):
+    name: str
+
+
+def exercise_struct(codec: StructuralModelCodec[TagStruct], context: CodecContext) -> None:
+    codec.snapshot(Tag("a"), context)
+    _tag: Tag = codec.snapshot(TagStruct("a"), context).value
