@@ -4576,7 +4576,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             use_deferred_annotations=use_deferred_annotations,
         )
 
-    def __change_field_name(
+    def __change_field_name(  # noqa: PLR0912
         self,
         models: list[DataModel],
         *,
@@ -4585,49 +4585,62 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not self.data_model_type.SUPPORTS_FIELD_RENAMING:
             return
 
-        rename_type = self.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
-        all_class_names = {cast("str", m.class_name) for m in models if m.class_name}
-
-        resolver = ModelResolver(
-            snake_case_field=self.snake_case_field,
-            remove_suffix_number=True,
+        rename_type = (
+            self.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
+            and self.data_model_type.FIELD_NAME_MODEL_TYPE is not ModelType.MSGSPEC
         )
+        all_class_names = (
+            {cast("str", model.class_name) for model in models if model.class_name} if rename_type else set()
+        )
+        resolver: ModelResolver | None = None
 
         for model in models:
-            if "Enum" in model.base_class or not model.BASE_CLASS:
+            if "Enum" in model.base_class or (not model.BASE_CLASS and not isinstance(model, self.data_model_type)):
                 continue
 
             for field in (field for field in model.fields if field.name != self.data_model_type.TYPED_EXTRA_FIELD_NAME):
-                filed_name = field.name
+                field_name = field.name
                 reference_type_names: set[str] = set()
                 colliding_reference: Reference | None = None
 
                 for data_type in field.data_type.all_data_types:
-                    if not data_type.reference:
+                    if (reference := data_type.reference) is None:
                         continue
-                    reference_type_names.add(data_type.reference.short_name)
-                    if rename_type and colliding_reference is None and data_type.reference.short_name == filed_name:
-                        colliding_reference = data_type.reference
+                    reference_name = reference.short_name
+                    reference_type_names.add(reference_name)
+                    if rename_type and colliding_reference is None and reference_name == field_name:
+                        colliding_reference = reference
 
-                if colliding_reference is not None:
-                    resolver._reset_for_reuse(all_class_names.copy())  # noqa: SLF001
-                    source = cast("DataModel", colliding_reference.source)
-                    resolver.exclude_names.add(cast("str", filed_name))
-                    new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
-                    source.class_name = new_class_name
-                    all_class_names.add(new_class_name)
-                elif not rename_type:
-                    resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
-                    new_filed_name = resolver._get_unique_field_name(cast("str", filed_name))  # noqa: SLF001
-                    if filed_name != new_filed_name:
-                        _rename_field_preserving_alias(field, new_filed_name)
-                        _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+                if colliding_reference is not None or (
+                    not rename_type
+                    and (
+                        self.data_model_type.FIELD_NAME_MODEL_TYPE is ModelType.PYDANTIC
+                        or field_name in reference_type_names
+                    )
+                ):
+                    resolver = resolver or ModelResolver(
+                        snake_case_field=self.snake_case_field,
+                        remove_suffix_number=True,
+                    )
+                    if colliding_reference is not None:
+                        resolver._reset_for_reuse(all_class_names.copy())  # noqa: SLF001
+                        source = cast("DataModel", colliding_reference.source)
+                        resolver.exclude_names.add(cast("str", field_name))
+                        new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
+                        source.class_name = new_class_name
+                        all_class_names.add(new_class_name)
+                    else:
+                        resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
+                        new_field_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
+                        if field_name != new_field_name:
+                            _rename_field_preserving_alias(field, new_field_name)
+                            _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
                 if (current_name := field.name) in self.builtin_names and any(
                     _is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types
                 ):
                     if field.alias is None:
-                        field.alias = filed_name
+                        field.alias = field_name
                     field.name = f"{current_name}_"
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
