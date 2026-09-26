@@ -16,4 +16,5 @@ constructor-refuses: NativeValidationError native.constructor@[]
 native-gap: ModelProjectionError The native use has an unplanned projection gap at /stamp
 relaxed-union: NativeValidationError native.union@/choice['choice']
 relaxed-leaf: NativeValidationError native.string_type@/name['name']
+relaxed-tuple: NativeValidationError native.tuple_type@/pair['pair']
 relaxed-key: NativeValidationError native.enum@/by_color/blue['by_color', 'blue']

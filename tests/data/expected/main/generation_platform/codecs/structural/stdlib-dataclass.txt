@@ -21,6 +21,8 @@ leaves-server-decode-boxes: NativeValidationError native.set_item_not_hashable@/
 leaves-server-response-boxes: wire={"nothing":null,"boxes":[],"choice":"c","anything":[1]}
 leaves-server-response-object: ModelProjectionError The value at /anything has no JSON representation
 leaves-server-response-infinite: ModelProjectionError A wire number must be finite at /seq/1
+leaves-server-response-naive: ModelProjectionError The value at /when has no UTC offset in whole minutes
+leaves-server-response-offset-seconds: ModelProjectionError The value at /clock has no UTC offset in whole minutes
 leaves-server-response-key: ModelProjectionError A wire object key must be a string at /anything
 record-server-decode: input issues=DIRECTIONAL_REQUIRED@/stamp:models:Record.stamp wire={"name":"a","items":["x"],"hint":"h"} extras={}
 record-client-from-wire: input issues=DIRECTIONAL_REQUIRED@/stamp:models:Record.stamp wire={"name":"a"} extras={}

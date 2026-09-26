@@ -74,6 +74,7 @@ _DURATION_TEXT: Final = re.compile(
 )
 _MICROSECONDS: Final = (7 * 86_400_000_000, 86_400_000_000, 3_600_000_000, 60_000_000, 1_000_000)
 _LONGEST: Final = timedelta.max // timedelta(microseconds=1)
+_MINUTE: Final = timedelta(minutes=1)
 _ABSENT: Final = object()
 
 _JSONKey: TypeAlias = tuple[str, object]
@@ -454,8 +455,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         annotation = _unwrap(annotation)
         members = _union_members(annotation)
         match node:
-            case ModelNode(symbol=symbol) if annotation is self._types[symbol]:
-                return self._model(symbol)
+            case ModelNode() if annotation is self._types[node.symbol]:
+                return self._model(node.symbol)
             case UnionNode() if members is not None and (NoneType in members) >= node.nullable:
                 present = tuple(member for member in members if member is not NoneType)
                 if len(present) != len(node.members):
@@ -562,10 +563,10 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                     return container(items)
                 except TypeError:
                     return self._refuse(state, _UNHASHABLE, route)
-            case _Tuple(items=items) if isinstance(wire, tuple):
+            case _Tuple(items=items) if isinstance(wire, tuple) and len(wire) == len(items):
                 values = tuple(
                     self._decode(entry, item, (route, index, index), state)
-                    for index, (entry, item) in enumerate(zip(wire, items, strict=False))
+                    for index, (entry, item) in enumerate(zip(wire, items, strict=True))
                 )
                 return values if state.construct else None
             case _Map() if isinstance(wire, Mapping):
@@ -770,6 +771,9 @@ def _json(value: object, representation: Representation, presence: PresenceTree 
             return str(value)
         case None | bool() | int() | float() | str() | Decimal():
             return _scalar(value, route)
+        case datetime() | time() if (offset := value.utcoffset()) is None or offset % _MINUTE:
+            msg = f"The value at {_located(route)[0] or '/'} has no UTC offset in whole minutes"
+            raise ModelProjectionError(msg)
         case datetime() | date() | time():
             return value.isoformat()
         case timedelta():

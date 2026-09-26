@@ -36,6 +36,8 @@
      "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Leaves/properties/choice", "keyword": "oneOf", "value": [{"type": "string"}, {"type": "integer"}, {"type": "boolean"}]}},
     {"name": "relaxed-leaf", "use": "/paths/~1records/put response_body 200", "surface": "client", "decode": {"name": 5, "stamp": "s"},
      "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Record/properties/name", "keyword": "type", "value": ["string", "integer"]}},
+    {"name": "relaxed-tuple", "use": "/paths/~1leaves/post request_body", "decode": {"pair": [1]},
+     "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Leaves/properties/pair", "keyword": "minItems", "value": 1}},
     {"name": "relaxed-key", "use": "/paths/~1keyed/post request_body", "decode": {"by_color": {"blue": 1}},
      "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Keyed/properties/by_color", "keyword": "propertyNames", "value": {}}}
   ]

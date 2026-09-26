@@ -6,6 +6,7 @@ import dataclasses
 import importlib
 import sys
 from dataclasses import replace
+from datetime import datetime, time
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
@@ -131,6 +132,10 @@ class _Runner:
                 return object()
             case {"py": "float", "text": str() as text}:
                 return float(text)
+            case {"py": "datetime", "text": str() as text}:
+                return datetime.fromisoformat(text)
+            case {"py": "time", "text": str() as text}:
+                return time.fromisoformat(text)
             case {"py": "set", "items": list() as items}:
                 return {self.native(item) for item in items}
             case {"py": "tuple", "items": list() as items}:

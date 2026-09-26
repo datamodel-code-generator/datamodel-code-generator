@@ -365,17 +365,17 @@ class _CodecPlanner:
     def unstructured(self, value: FinalPythonType, supported: frozenset[str]) -> str | None:
         """Return the name of a type that the structural converters do not read, or None when they do."""
         match value:
-            case GeneratedSymbolType(symbol=symbol) if (declared := self.symbols[symbol]).kind == "alias":
+            case GeneratedSymbolType() if (declared := self.symbols[value.symbol]).kind == "alias":
                 return next(
                     (
                         self.unstructured(facts.type, supported)
-                        for member in self.members.get(symbol, [])
+                        for member in self.members.get(value.symbol, [])
                         if (facts := member.model_facts) is not None
                     ),
                     declared.name,
                 )
-            case GeneratedSymbolType(symbol=symbol):
-                return None if self.symbols[symbol].kind == "enum" else self.symbols[symbol].name
+            case GeneratedSymbolType():
+                return None if (declared := self.symbols[value.symbol]).kind == "enum" else declared.name
             case BuiltinType(name=name):
                 return None if name in supported else name
             case ImportedType(import_=imported):

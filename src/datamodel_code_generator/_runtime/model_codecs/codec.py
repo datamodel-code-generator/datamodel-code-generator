@@ -263,12 +263,10 @@ class BuiltinModelCodec(ABC, Generic[T]):
     @abstractmethod
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
         """Construct the native value of a validated wire value, or its known-gap envelope."""
-        ...
 
     @abstractmethod
     def _native_wire(self, value: object, presence: PresenceTree | None) -> WireValue:
         """Read a native value into its wire form, before directional exclusion and validation."""
-        ...
 
     @staticmethod
     def _nesting() -> CodecResourceLimitError:
