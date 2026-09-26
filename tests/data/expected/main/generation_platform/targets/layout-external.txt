@@ -1,4 +1,29 @@
 # layout-external
+render
+  target=fastapi schema_version=1
+  write model models.py
+  write target server/src/example/server/__init__.py (target)
+  write target server/src/example/server/application.py (target)
+  write target server/src/example/server/routers/__init__.py (target)
+  write target server/src/example/server/routers/pets.py (target)
+  write target server/src/example/server/routers/store.py (target)
+  write target server/src/example/server/routers/untagged.py (target)
+  write target server/src/example/server/_generated/__init__.py (target)
+  write target server/src/example/server/_generated/contract.py (target)
+  write target server/src/example/server/_generated/model_bindings.py (target)
+  write target server/src/example/server/_generated/openapi.py (target)
+  write target server/src/example/server/model_codecs.py (target)
+  write target server/src/example/server/responses.py (target)
+  write target server/src/example/server/errors.py (target)
+  write target server/src/example/server/auth_types.py (target)
+  write target server/src/example/server/services.py (target)
+  write target server/README.md (target)
+  write target server/src/example/server/py.typed (target)
+  write target server/pyproject.toml (target)
+  write model_inventory server/.dcg-state/model-artifacts.json (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['write']
+dependencies ['fastapi>=0.141.1', 'starlette>=1.0.0', 'pydantic>=2.13.5', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'typing-extensions>=4.16', 'example-models>=1,<2']
 generate
   target=fastapi schema_version=1
   written model models.py

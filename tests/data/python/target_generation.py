@@ -322,6 +322,9 @@ class _Scenario:
         self.held.close()
         self.lines.append("release")
 
+    def dependencies(self, _: None) -> None:
+        self.lines.append(f"dependencies {list(self.current.dependencies)}")
+
     def show(self, path: str) -> None:
         self.lines.append(f"show {path}")
         text = (self.root / path).read_bytes().decode("utf-8", errors="backslashreplace")
