@@ -1,0 +1,6 @@
+use /paths/~1tallies/post request_body: native dataclass models:Tally models=[('models:Tally', 'dataclass', 'allow', True)]
+use /paths/~1tallies/post response_body 201: native dataclass models:Tally models=[('models:Tally', 'dataclass', 'allow', True)]
+create-server-decode: model Tally(name='votes') wire={"name":"votes","yes":3,"no":1} presence=['', '/name', '/yes', '/no'] extras={"/yes":3,"/no":1}
+create-server-decode-invalid-extra: WireValidationError schema.type@/yes
+created-server-encode: wire={"name":"votes"}
+created-server-snapshot: CodecBindingError The presence tree does not select existing object members at /

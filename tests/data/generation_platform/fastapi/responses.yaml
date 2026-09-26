@@ -1,0 +1,130 @@
+openapi: 3.1.0
+info: {title: Responses, version: "1.0"}
+paths:
+  /created:
+    post:
+      operationId: create
+      tags: [results]
+      responses:
+        "200":
+          description: Existing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+        "201":
+          description: Created.
+          headers:
+            Location: {required: true, schema: {type: string}}
+            X-Rate: {schema: {type: integer, minimum: 0}}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+            application/vnd.thing+json:
+              schema: {$ref: "#/components/schemas/Thing"}
+            text/plain:
+              schema: {type: string}
+        4XX:
+          description: Client error.
+          content:
+            application/problem+json:
+              schema: {$ref: "#/components/schemas/Problem"}
+  /defaults:
+    get:
+      operationId: onlyDefault
+      tags: [results]
+      responses:
+        default:
+          description: Anything.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Problem"}
+  /ranges:
+    get:
+      operationId: onlyRanges
+      tags: [results]
+      responses:
+        4XX:
+          description: Client error.
+        2XX:
+          description: Success.
+          content:
+            application/json:
+              schema: {type: string}
+  /errors:
+    get:
+      operationId: onlyErrors
+      tags: [results]
+      responses:
+        "404":
+          description: Missing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Problem"}
+  /optional:
+    get:
+      operationId: getOptional
+      tags: [results]
+      responses:
+        "200":
+          description: A loose thing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Loose"}
+  /secret:
+    get:
+      operationId: getSecret
+      tags: [results]
+      responses:
+        "200":
+          description: A thing with a write-only field.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Secret"}
+    head:
+      operationId: headSecret
+      tags: [results]
+      responses:
+        "200":
+          description: Exists.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Secret"}
+  /download:
+    get:
+      operationId: download
+      tags: [files]
+      responses:
+        "200":
+          description: The file.
+          content:
+            application/octet-stream: {}
+            text/csv:
+              schema: {type: string}
+        "202":
+          description: Pending.
+        "303":
+          description: Elsewhere.
+          headers:
+            Location: {schema: {type: string}}
+components:
+  schemas:
+    Thing:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer}
+    Problem:
+      type: object
+      required: [title]
+      properties:
+        title: {type: string}
+    Loose:
+      type: object
+      properties:
+        name: {type: string}
+    Secret:
+      type: object
+      required: [name, token]
+      properties:
+        name: {type: string}
+        token: {type: string, writeOnly: true}

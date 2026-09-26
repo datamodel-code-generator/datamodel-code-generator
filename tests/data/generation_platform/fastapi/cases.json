@@ -1,0 +1,396 @@
+{
+  "pets": {
+    "input": "pets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "show": [
+      "application.py",
+      "routers/pets.py",
+      "routers/store.py",
+      "_generated/contract.py",
+      "responses.py"
+    ]
+  },
+  "parameters": {
+    "input": "parameters.yaml",
+    "show": [
+      "routers/items.py",
+      "routers/adapters.py",
+      "_generated/contract.py"
+    ]
+  },
+  "bodies": {
+    "input": "bodies.yaml",
+    "config": {
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ]
+    },
+    "show": [
+      "routers/json.py",
+      "routers/raw.py",
+      "routers/form.py",
+      "_generated/contract.py"
+    ]
+  },
+  "request": {
+    "input": "bodies.yaml",
+    "config": {
+      "include_request": true,
+      "body_mode": "request",
+      "body_modes": [
+        [
+          "/paths/~1json/post",
+          "typed"
+        ]
+      ],
+      "selection": {
+        "include_operations": [
+          "/paths/~1json/post",
+          "/paths/~1text/post"
+        ],
+        "reason": "Two request modes."
+      }
+    },
+    "show": [
+      "routers/json.py",
+      "routers/raw.py"
+    ]
+  },
+  "responses": {
+    "input": "responses.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "primary_responses": [
+        [
+          "/paths/~1created/post",
+          {
+            "status_code": 201,
+            "media_type": "application/vnd.thing+json"
+          }
+        ]
+      ]
+    },
+    "show": [
+      "routers/results.py",
+      "routers/files.py",
+      "_generated/contract.py",
+      "responses.py"
+    ]
+  },
+  "names": {
+    "input": "names.yaml",
+    "config": {
+      "operation_names": [
+        [
+          "/paths/~1health/get",
+          "health_check"
+        ]
+      ],
+      "router_names": {
+        "untagged": "misc"
+      },
+      "parameter_names": [
+        [
+          "/paths/~1files~1{file.name}~1{dcg_p0}/get",
+          {
+            "query:limit": "page_size"
+          }
+        ]
+      ]
+    },
+    "show": [
+      "application.py",
+      "routers/users.py",
+      "routers/router_2024_files.py"
+    ]
+  },
+  "single": {
+    "input": "pets.yaml",
+    "config": {
+      "layout": "single"
+    },
+    "show": [
+      "application.py",
+      "routes.py"
+    ]
+  },
+  "route-errors": {
+    "input": "route-errors.yaml"
+  },
+  "name-errors": {
+    "input": "name-errors.yaml"
+  },
+  "group-errors": {
+    "input": "group-errors.yaml",
+    "config": {"router_names": {"tag:four": "OPERATIONS"}}
+  },
+  "repeat-32": {
+    "input": "repeat-32.yaml"
+  },
+  "media-errors": {
+    "input": "media-errors.yaml"
+  },
+  "selector-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "operation_names": [
+        [
+          "/paths/~1missing/get",
+          "missing"
+        ],
+        [
+          "/paths/~1pets/get",
+          "all_pets"
+        ],
+        [
+          {
+            "pointer": "/paths/~1pets/get"
+          },
+          "every_pet"
+        ]
+      ],
+      "body_modes": [
+        [
+          "/paths/~1pets/delete",
+          "request"
+        ]
+      ]
+    }
+  },
+  "primary-errors": {
+    "input": "responses.yaml",
+    "config": {
+      "primary_responses": [
+        [
+          "/paths/~1created/post",
+          {
+            "status_code": 201,
+            "media_type": "application/xml"
+          }
+        ],
+        [
+          "/paths/~1download/get",
+          {
+            "status_code": 204
+          }
+        ],
+        [
+          "/paths/~1optional/get",
+          {
+            "status_code": 200,
+            "media_type": "not a media type"
+          }
+        ]
+      ]
+    }
+  },
+  "backend-errors": {
+    "input": "pets.yaml",
+    "backends": [
+      "msgspec.Struct"
+    ]
+  },
+  "types": {
+    "input": "types.yaml",
+    "model": {
+      "use_annotated": true,
+      "field_constraints": true,
+      "output_datetime_class": "datetime"
+    },
+    "show": [
+      "routers/untagged.py",
+      "_generated/contract.py"
+    ]
+  },
+  "unbound": {
+    "input": "unbound.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas"
+      ]
+    },
+    "show": [
+      "routers/untagged.py"
+    ]
+  },
+  "adapters": {
+    "input": "pets.yaml",
+    "config": {
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "limit",
+          "import_ref": "app.codecs:limit",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "integer"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "limit"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "new-pets",
+          "import_ref": "app.codecs:new_pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/post",
+              "role": "request_body",
+              "media_type": "application/json"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "pets",
+          "import_ref": "app.codecs:pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets~1{petId}/get",
+              "role": "response_body",
+              "status": "200",
+              "media_type": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    "show": [
+      "routers/pets.py",
+      "_generated/contract.py"
+    ]
+  },
+  "methods": {
+    "input": "methods.yaml",
+    "show": [
+      "routers/untagged.py",
+      "_generated/contract.py"
+    ]
+  },
+  "codec-errors": {
+    "input": "codec-errors.yaml"
+  },
+  "native": {
+    "input": "native.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ]
+  },
+  "native-settings": {
+    "input": "native-settings.yaml",
+    "model": {
+      "allow_population_by_field_name": true,
+      "aliases": {
+        "title": [
+          "title",
+          "heading"
+        ]
+      },
+      "use_missing_sentinel": true,
+      "field_include_all_keys": true
+    }
+  },
+  "native-readonly": {
+    "input": "bodies.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "selection": {
+        "include_operations": [
+          "/paths/~1json~1envelope/post"
+        ],
+        "reason": "Split models."
+      }
+    }
+  },
+  "native-custom": {
+    "input": "custom-models.yaml",
+    "model": {
+      "base_class": "app.bases.Base"
+    },
+    "config": {
+      "builtin_codec_compatibility": [
+        {
+          "name": "app-bases",
+          "backend": "pydantic_v2.BaseModel"
+        }
+      ]
+    }
+  },
+  "native-generator": {
+    "input": "custom-models.yaml",
+    "model": {
+      "alias_generator": "to_camel"
+    }
+  },
+  "unbound-body": {
+    "input": "unbound-body.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas"
+      ]
+    }
+  },
+  "argument-errors": {
+    "input": "argument-errors.yaml",
+    "config": {
+      "include_request": true,
+      "parameter_names": [
+        [
+          "/paths/~1items/get",
+          {
+            "query:req": "request",
+            "query:page": "limit",
+            "header:size": "limit"
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -10,7 +10,7 @@ from math import isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal, overload
 
-from typing_extensions import TypeAliasType
+from typing_extensions import TypeAliasType, TypeIs
 
 from .errors import CodecBindingError
 
@@ -69,6 +69,11 @@ def freeze_wire(value: JSONValue) -> WireValue: ...
 def freeze_wire(value: WireValue) -> WireValue: ...
 def freeze_wire(value: JSONValue | WireValue) -> WireValue:
     """Copy a JSON-domain value into an immutable snapshot, preserving order."""
+    return _freeze(value, set())
+
+
+def checked_wire(value: object) -> WireValue:
+    """Validate a value of unknown static type, such as a handler's return, and freeze it as a wire snapshot."""
     return _freeze(value, set())
 
 
@@ -182,13 +187,21 @@ def enter(value: object, active: set[int]) -> int:
     return identity
 
 
-def _freeze(value: JSONValue | WireValue, active: set[int]) -> WireValue:
-    if isinstance(value, (list, tuple)):
+def _is_array(value: object) -> TypeIs[list[object] | tuple[object, ...]]:
+    return isinstance(value, (list, tuple))
+
+
+def _is_object(value: object) -> TypeIs[Mapping[object, object]]:
+    return isinstance(value, Mapping)
+
+
+def _freeze(value: object, active: set[int]) -> WireValue:
+    if _is_array(value):
         identity = enter(value, active)
         frozen = tuple(_freeze(item, active) for item in value)
         active.discard(identity)
         return frozen
-    if isinstance(value, Mapping):
+    if _is_object(value):
         identity = enter(value, active)
         frozen_items = {checked_key(key): _freeze(item, active) for key, item in value.items()}
         active.discard(identity)

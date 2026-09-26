@@ -1,0 +1,161 @@
+# results
+serve pydantic_v2.BaseModel
+> GET /results?case=bare
+  get_result(bare)
+< 200 application/json {"id":1}
+> GET /results?case=model-value
+  get_result(model-value)
+< 200 application/json {"id":1}
+> GET /results?case=csv
+  get_result(csv)
+< 200 text/csv; charset=utf-8 a,b
+> GET /results?case=binary
+  get_result(binary)
+< 200 application/octet-stream b'\x00\x01'
+> GET /results?case=image
+  get_result(image)
+< 200 image/png b'png'
+> GET /results?case=html
+  get_result(html)
+< ResponseValidationError: ['The 200 response does not declare the result media type']
+> GET /results?case=bad-media
+  get_result(bad-media)
+< ResponseValidationError: ['The 200 response does not declare the result media type']
+> GET /results?case=csv-bytes
+  get_result(csv-bytes)
+< ResponseValidationError: ['The handler result does not match its declared response']
+> GET /results?case=binary-text
+  get_result(binary-text)
+< ResponseValidationError: ['A binary payload must be bytes']
+> GET /results?case=headers
+  get_result(headers)
+< 200 application/json {"id":1}
+< x-rate: 5
+< x-tag: t
+< x-other: o
+> GET /results?case=negative-rate
+  get_result(negative-rate)
+< ResponseValidationError: ['The handler result does not match its declared response']
+> GET /results?case=bad-name
+  get_result(bad-name)
+< ResponseValidationError: ['A result header has an invalid name or value']
+> GET /results?case=crlf
+  get_result(crlf)
+< ResponseValidationError: ['A result header has an invalid name or value']
+> GET /results?case=owned
+  get_result(owned)
+< ResponseValidationError: ['The runtime sets the Content-Type header']
+> GET /results?case=header-list
+  get_result(header-list)
+< ResponseValidationError: ['Result headers must be a tuple of name and value pairs']
+> GET /results?case=header-item
+  get_result(header-item)
+< ResponseValidationError: ['Result headers must be a tuple of name and value pairs']
+> GET /results?case=created
+  get_result(created)
+< 201 application/json {"id":1}
+< location: /things/1
+> GET /results?case=created-without-location
+  get_result(created-without-location)
+< ResponseValidationError: ['The response requires the Location header']
+> GET /results?case=no-content
+  get_result(no-content)
+< 204 - b''
+> GET /results?case=no-content-body
+  get_result(no-content-body)
+< ResponseValidationError: ['The 204 response carries no body']
+> GET /results?case=range
+  get_result(range)
+< 202 application/json {"any":[1,2.5,null]}
+> GET /results?case=range-object
+  get_result(range-object)
+< ResponseValidationError: ['The payload is not a JSON value']
+> GET /results?case=client-error
+  get_result(client-error)
+< 404 text/plain; charset=utf-8 missing
+> GET /results?case=client-error-bytes
+  get_result(client-error-bytes)
+< ResponseValidationError: ['A text payload must be a string']
+> GET /results?case=problem
+  get_result(problem)
+< 500 application/problem+json {"title":"Broken"}
+> GET /results?case=status-bool
+  get_result(status-bool)
+< ResponseValidationError: ['The result status must be an integer from 100 to 599']
+> GET /results?case=status-low
+  get_result(status-low)
+< ResponseValidationError: ['The result status must be an integer from 100 to 599']
+> GET /results?case=missing-body
+  get_result(missing-body)
+< ResponseValidationError: ['The 200 response needs a body']
+> GET /results?case=response
+  get_result(response)
+< 200 application/json {"id":3}
+> GET /results?case=response-html
+  get_result(response-html)
+< ResponseValidationError: ['The 200 response does not declare text/html; charset=utf-8']
+> GET /results?case=response-header
+  get_result(response-header)
+< ResponseValidationError: ['The response has an invalid header']
+> HEAD /results?case=head-empty
+  head_result(head-empty)
+< 200 - b''
+> HEAD /results?case=head-body
+  head_result(head-body)
+< ResponseValidationError: ['The 200 response carries no body']
+> HEAD /results?case=head-bare
+  head_result(head-bare)
+< ResponseValidationError: ['The 200 response carries no body']
+> HEAD /results?case=head-none
+  head_result(head-none)
+< 200 - b''
+> GET /plain?case=text
+  get_plain(text)
+< 200 text/plain; charset=utf-8 abc
+> GET /plain?case=too-long
+  get_plain(too-long)
+< ResponseValidationError: ['The handler result does not match its declared response']
+> GET /plain?case=undeclared
+  get_plain(undeclared)
+< ResponseValidationError: ['The operation declares no 404 response']
+> GET /plain?case=response-undeclared
+  get_plain(response-undeclared)
+< ResponseValidationError: ['The operation declares no 500 response']
+> GET /nothing?case=value
+  get_nothing(value)
+< ResponseValidationError: ['The operation has no primary response for a bare return value']
+> GET /nothing?case=anything
+  get_nothing(anything)
+< 200 application/json {}
+> POST /empty?case=none
+  post_empty(none)
+< 204 - b''
+> POST /empty?case=value
+  post_empty(value)
+< ResponseValidationError: ['The 204 response carries no body']
+> GET /results?case=response-created
+  get_result(response-created)
+< 201 - b'{}'
+< location: /things/1
+> GET /results?case=response-created-without-location
+  get_result(response-created-without-location)
+< ResponseValidationError: ['The response requires the Location header']
+> GET /results?case=response-negative-rate
+  get_result(response-negative-rate)
+< ResponseValidationError: ['The handler result does not match its declared response']
+> GET /results?case=response-no-content-body
+  get_result(response-no-content-body)
+< ResponseValidationError: ['The 204 response carries no body']
+> GET /latin?case=latin
+  get_latin(latin)
+< 200 text/plain; charset=iso-8859-1 café
+> GET /latin?case=euro
+  get_latin(euro)
+< ResponseValidationError: ['The text payload cannot be encoded as text/plain; charset=iso-8859-1']
+codec GetResultResponseCodecs {'status_code': 200, 'media_type': 'text/csv'}: NativeOutboundCodec
+codec GetResultResponseCodecs {'status_code': 404}: NativeOutboundCodec
+codec GetResultResponseCodecs {'status_code': 503}: NativeOutboundCodec
+codec GetResultResponseCodecs {'status_code': 200, 'media_type': 'text/html'}: CodecSelectionError: The operation declares no codec-bearing body for status 200 and that media type
+codec GetResultResponseCodecs {'status_code': 200, 'media_type': 'not a media type'}: CodecSelectionError: The operation declares no codec-bearing body for status 200 and that media type
+codec GetResultResponseCodecs {'status_code': '200'}: CodecSelectionError: status_code must be an integer
+codec GetNothingResponseCodecs {'status_code': 200}: NativeOutboundCodec

@@ -1,0 +1,212 @@
+openapi: 3.1.0
+info: {title: Bodies, version: "1.0"}
+paths:
+  /json:
+    post:
+      operationId: postJson
+      tags: [json]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+      responses:
+        "204": {description: Done.}
+  /json/optional:
+    post:
+      operationId: postOptional
+      tags: [json]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+      responses:
+        "204": {description: Done.}
+  /json/nullable:
+    post:
+      operationId: postNullable
+      tags: [json]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], required: [name], properties: {name: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /json/envelope:
+    post:
+      operationId: postEnvelope
+      tags: [json]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Account"}
+      responses:
+        "204": {description: Done.}
+  /json/many:
+    post:
+      operationId: postMany
+      tags: [json]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+          application/vnd.item+json:
+            schema: {$ref: "#/components/schemas/Item"}
+      responses:
+        "204": {description: Done.}
+  /text:
+    post:
+      operationId: postText
+      tags: [raw]
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {type: string, maxLength: 10}
+      responses:
+        "204": {description: Done.}
+  /binary:
+    put:
+      operationId: putBinary
+      tags: [raw]
+      requestBody:
+        content:
+          application/octet-stream: {}
+      responses:
+        "204": {description: Done.}
+  /raw:
+    post:
+      operationId: postRaw
+      tags: [raw]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        "204": {description: Done.}
+  /form:
+    post:
+      operationId: postForm
+      tags: [form]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string, maxLength: 20}
+                count: {type: integer, default: 1}
+                tags: {type: array, items: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /form/optional:
+    post:
+      operationId: postOptionalForm
+      tags: [form]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                flags: {type: array, items: {type: boolean}}
+                ratio: {type: number}
+      responses:
+        "204": {description: Done.}
+  /form/either:
+    post:
+      operationId: postEitherForm
+      tags: [form]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                either: {type: [string, integer]}
+                items: {type: array, items: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /form/nested:
+    post:
+      operationId: postNestedForm
+      tags: [form]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                point: {type: object, properties: {x: {type: number}}}
+              additionalProperties: {type: integer}
+      responses:
+        "204": {description: Done.}
+  /form/closed:
+    post:
+      operationId: postClosedForm
+      tags: [form]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name: {type: string}
+      responses:
+        "204": {description: Done.}
+  /form/choice:
+    post:
+      operationId: postChoiceForm
+      tags: [form]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              minProperties: 1
+      responses:
+        "204": {description: Done.}
+  /upload:
+    post:
+      operationId: upload
+      tags: [form]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                extra: {type: array, items: {type: string, format: binary}}
+                note: {type: string}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Item:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+    Account:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}

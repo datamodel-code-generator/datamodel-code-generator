@@ -1,0 +1,24 @@
+"""{{ docstring }}"""
+
+{{ imports }}
+{%- for route in routes %}
+
+
+def {{ route.adder }}(router: {{ router }}, handlers: {{ handlers }}) -> None:
+    {{ route.handler }} = handlers[{{ route.key }}]
+
+    {{ route.signature }}
+        {{ route.body }}
+
+    {{ route.registration }}
+{%- endfor %}
+
+
+OPERATIONS: {{ final }} = {{ operations }}
+LITERAL_ROUTES: {{ final }} = {{ literal }}
+TEMPLATED_ROUTES: {{ final }} = {{ templated }}
+
+
+{{ signature }}
+    """Check the service, then register {{ group }} on a new router, literal paths first."""
+    {{ body }}

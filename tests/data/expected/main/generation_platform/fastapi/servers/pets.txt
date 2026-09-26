@@ -1,0 +1,97 @@
+# pets
+serve pydantic_v2.BaseModel
+build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
+build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
+build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
+> GET /pets
+  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+< 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
+> GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
+  list_pets(limit=1, tags=['a', 'b'], kind='cat', x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session=FieldPetsGetCookieSessionParameter(root='a b'))
+< 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
+> GET /pets?limit=0
+< 422 application/json {"detail":[{"type":"greater_than_equal","loc":["query","limit"],"msg":"Input should be greater than or equal to 1","input":"0","ctx":{"ge":1}}]}
+> GET /pets?kind=bird
+< 422 application/json {"detail":[{"type":"literal_error","loc":["query","kind"],"msg":"Input should be 'cat' or 'dog'","input":"bird","ctx":{"expected":"'cat' or 'dog'"}}]}
+> GET /pets?limit=99
+  list_pets(limit=99, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+< 500 application/json {"code":1,"message":"Too many"}
+> POST /pets
+  create_pet(body=NewPet(name='Tom', tag=None))
+< 201 application/json {"id":3,"name":"Tom","tag":null}
+> POST /pets
+< 422 application/json {"detail":[{"type":"string_too_short","loc":["body","name"],"msg":"String should have at least 1 character","input":"","ctx":{"min_length":1}},{"type":"missing","loc":["body","tag"],"msg":"Field required","input":{"name":""}}]}
+> GET /pets/mine
+  list_my_pets()
+< 200 application/json [{"id":1,"name":"Mimi","tag":null}]
+> GET /pets/1
+  get_pet(pet_id=1)
+< 200 application/json {"id":1,"name":"Mimi","tag":"cat"}
+> GET /pets/7
+  get_pet(pet_id=7)
+< 404 application/json {"code":404,"message":"Not found"}
+> GET /pets/0
+< 422 application/json {"detail":[{"type":"greater_than_equal","loc":["path","petId"],"msg":"Input should be greater than or equal to 1","input":"0","ctx":{"ge":1}}]}
+> DELETE /pets/2
+  delete_pet(pet_id=2)
+< 204 - b''
+> DELETE /pets/7
+  delete_pet(pet_id=7)
+< ResponseValidationError: ['The operation declares no 404 response']
+> GET /store/inventory
+  get_inventory()
+< 200 application/json {"available":2}
+codec GetPetResponseCodecs {'status_code': 200}: NativeOutboundCodec
+codec GetPetResponseCodecs {'status_code': 404, 'media_type': 'application/json'}: NativeOutboundCodec
+codec GetPetResponseCodecs {'status_code': 500}: CodecSelectionError: The operation declares no codec-bearing body for status 500 and that media type
+codec GetPetResponseCodecs {'status_code': 200, 'name': 'part'}: CodecSelectionError: The 200 response declares no part 'part' for its default media
+serve pydantic_v2.dataclass
+build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
+build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
+build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build async-object: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
+build signature: HandlerConfigurationError: The pets.get_pet method does not accept exactly the keywords pet_id
+> GET /pets
+  list_pets(limit=20, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+< 200 application/json [{"id":1,"name":"Mimi","tag":"cat"},{"id":2,"name":"Rex","tag":null}]
+> GET /pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z
+  list_pets(limit=1, tags=['a', 'b'], kind='cat', x_request_id=UUID('00000000-0000-0000-0000-000000000001'), since=datetime.datetime(2024, 1, 1, 0, 0, tzinfo=TzInfo(0)), session='a b')
+< 200 application/json [{"id":1,"name":"Mimi","tag":"cat"}]
+> GET /pets?limit=0
+< 422 application/json {"detail":[{"type":"greater_than_equal","loc":["query","limit"],"msg":"Input should be greater than or equal to 1","input":"0","ctx":{"ge":1}}]}
+> GET /pets?kind=bird
+< 422 application/json {"detail":[{"type":"literal_error","loc":["query","kind"],"msg":"Input should be 'cat' or 'dog'","input":"bird","ctx":{"expected":"'cat' or 'dog'"}}]}
+> GET /pets?limit=99
+  list_pets(limit=99, tags=UNSET, kind=UNSET, x_request_id=UNSET, since=UNSET, session=UNSET)
+< 500 application/json {"code":1,"message":"Too many"}
+> POST /pets
+  create_pet(body=NewPet(name='Tom', tag=None))
+< 201 application/json {"id":3,"name":"Tom","tag":null}
+> POST /pets
+< 422 application/json {"detail":[{"type":"string_too_short","loc":["body","name"],"msg":"String should have at least 1 character","input":"","ctx":{"min_length":1}},{"type":"missing","loc":["body","tag"],"msg":"Field required","input":{"name":""}}]}
+> GET /pets/mine
+  list_my_pets()
+< 200 application/json [{"id":1,"name":"Mimi","tag":null}]
+> GET /pets/1
+  get_pet(pet_id=1)
+< 200 application/json {"id":1,"name":"Mimi","tag":"cat"}
+> GET /pets/7
+  get_pet(pet_id=7)
+< 404 application/json {"code":404,"message":"Not found"}
+> GET /pets/0
+< 422 application/json {"detail":[{"type":"greater_than_equal","loc":["path","petId"],"msg":"Input should be greater than or equal to 1","input":"0","ctx":{"ge":1}}]}
+> DELETE /pets/2
+  delete_pet(pet_id=2)
+< 204 - b''
+> DELETE /pets/7
+  delete_pet(pet_id=7)
+< ResponseValidationError: ['The operation declares no 404 response']
+> GET /store/inventory
+  get_inventory()
+< 200 application/json {"available":2}
+codec GetPetResponseCodecs {'status_code': 200}: NativeOutboundCodec
+codec GetPetResponseCodecs {'status_code': 404, 'media_type': 'application/json'}: NativeOutboundCodec
+codec GetPetResponseCodecs {'status_code': 500}: CodecSelectionError: The operation declares no codec-bearing body for status 500 and that media type
+codec GetPetResponseCodecs {'status_code': 200, 'name': 'part'}: CodecSelectionError: The 200 response declares no part 'part' for its default media

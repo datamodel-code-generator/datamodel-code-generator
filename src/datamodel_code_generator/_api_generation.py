@@ -47,7 +47,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
 
     from datamodel_code_generator import _GenerationInput  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._api_manifest import FilePlan, JSONObject, Observed, TargetState
@@ -72,6 +72,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.enums import DataModelType
+    from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 Strategy: TypeAlias = Literal["native", "envelope", "adapter"]
@@ -109,12 +110,17 @@ class TargetLayout:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RenderedFile:
-    """One text file a target rendered; the coordinator formats, heads, and encodes it."""
+    """One text file a target rendered; the coordinator formats, heads, and encodes it.
+
+    A verbatim file copies one of this package's own sources, such as a runtime module, that is valid for every
+    supported target Python, so the coordinator heads and encodes it without formatting or checking it again.
+    """
 
     path: PurePosixPath
     kind: str
     text: str
     group: str | None = None
+    verbatim: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -132,6 +138,7 @@ class TargetRequest:
     excluded: tuple[Exclusion, ...]
     documents: DocumentTable
     state: TargetState
+    resolve: Callable[[OperationRef], OperationContract | None]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -777,6 +784,7 @@ class _Planner:
                 excluded=excluded,
                 documents=self.documents,
                 state=state,
+                resolve=self.operation,
             )
         )
         if any(item.severity == "error" for item in rendered.diagnostics):
@@ -925,7 +933,7 @@ class _Finisher:
 
         config = self.config
         files = (*rendered.files, *self.layout_files(rendered))
-        self.check_sources(((file.path, file.text) for file in files), "target")
+        self.check_sources(((file.path, file.text) for file in files if not file.verbatim), "target")
         settings = config.formatter_settings
         formatter = CodeFormatter(
             self.effective.target_python_version,
@@ -944,14 +952,18 @@ class _Finisher:
         )
         header = self.header()
         texts = [
-            (file, _normalized(header + formatter.format_code(file.text) if _is_python(file.path) else file.text))
+            (file, _normalized(header + _formatted(file, formatter) if _is_python(file.path) else file.text))
             for file in files
         ]
-        self.check_sources(((file.path, text) for file, text in texts), "format")
+        self.check_sources(((file.path, text) for file, text in texts if not file.verbatim), "format")
         return tuple(
             PlannedFile(path=file.path, kind=file.kind, content=text.encode(config.encoding), group=file.group)
             for file, text in texts
         )
+
+
+def _formatted(file: RenderedFile, formatter: CodeFormatter) -> str:
+    return file.text if file.verbatim else formatter.format_code(file.text)
 
 
 def _syntax_error(filename: str, text: str, version: tuple[int, int]) -> str | None:

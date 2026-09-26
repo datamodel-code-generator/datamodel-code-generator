@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info: {title: Unbound body types, version: "1.0"}
+paths:
+  /values:
+    post:
+      operationId: postValue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [id], properties: {id: {type: integer}}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Unused:
+      type: object
+      properties:
+        id: {type: integer}

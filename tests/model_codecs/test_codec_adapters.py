@@ -25,6 +25,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("rogue", "rogue"),
         ("scripted", "scripted"),
         ("types", "types"),
+        ("types", "listed"),
         ("plans", "plans"),
         ("adapters", "exports"),
         ("modular", "modular"),

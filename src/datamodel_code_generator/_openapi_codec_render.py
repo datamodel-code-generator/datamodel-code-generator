@@ -6,12 +6,13 @@ import dataclasses
 from collections.abc import Mapping
 from dataclasses import dataclass
 from itertools import starmap
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._generation_contract import OperationId
+from datamodel_code_generator._python_layout import Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.capabilities import AdapterManifest
 from datamodel_code_generator._runtime.model_codecs.context import CodecContext
 from datamodel_code_generator._runtime.model_codecs.views import SchemaResourceLimits
@@ -149,33 +150,6 @@ _SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
 }
 
 
-@dataclass(frozen=True, slots=True)
-class _Group:
-    head: str
-    items: tuple[tuple[str, _Doc], ...]
-    tail: str
-    lone: str = ""
-
-
-_Doc: TypeAlias = str | _Group
-
-
-def _flat(doc: _Doc) -> str:
-    if isinstance(doc, str):
-        return doc
-    inner = ", ".join(prefix + _flat(item) for prefix, item in doc.items)
-    return f"{doc.head}{inner}{doc.lone if len(doc.items) == 1 else ''}{doc.tail}"
-
-
-def _layout(doc: _Doc, indent: int, used: int) -> str:
-    flat = _flat(doc)
-    if isinstance(doc, str) or indent + used + len(flat) < _WIDTH:
-        return flat
-    inner = " " * (indent + 4)
-    lines = "".join(f"{inner}{prefix}{_layout(item, indent + 4, len(prefix))},\n" for prefix, item in doc.items)
-    return f"{doc.head}\n{lines}{' ' * indent}{doc.tail}"
-
-
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
     return isinstance(value, Mapping)
 
@@ -188,14 +162,15 @@ def _is_frozenset(value: object) -> TypeIs[frozenset[object]]:
     return isinstance(value, frozenset)
 
 
-def _json(value: object) -> _Doc:
+def _json(value: object) -> Doc:
     match value:
         case _ if _is_mapping(value):
-            return _Group("{", tuple((f"{key!r}: ", _json(item)) for key, item in value.items()), "}")
+            return Group("{", tuple((f"{key!r}: ", _json(item)) for key, item in value.items()), "}")
         case _ if _is_tuple(value):
-            return _Group("[", tuple(("", _json(item)) for item in value), "]")
+            return Group("[", tuple(("", _json(item)) for item in value), "]")
         case _:
-            return repr(value)
+            pass
+    return repr(value)
 
 
 def _is_default(field: dataclasses.Field[object], value: object) -> bool:
@@ -216,9 +191,9 @@ def _description(use: TypeUseId) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
-def _function(name: str, returns: str, body: _Doc, docstring: str = "") -> str:
+def _function(name: str, returns: str, body: Doc, docstring: str = "") -> str:
     lines = f'    """{docstring}"""\n' if docstring else ""
-    return f"@cache\ndef {name}() -> {returns}:\n{lines}    return {_layout(body, 4, 7)}\n"
+    return f"@cache\ndef {name}() -> {returns}:\n{lines}    return {layout(body, 4, 7, _WIDTH)}\n"
 
 
 class _Records:
@@ -231,10 +206,10 @@ class _Records:
         self.imports.setdefault(module, set()).add(name)
         return name
 
-    def call(self, module: str, name: str, items: tuple[tuple[str, _Doc], ...]) -> _Group:
-        return _Group(f"{self.name(module, name)}(", items, ")")
+    def call(self, module: str, name: str, items: tuple[tuple[str, Doc], ...]) -> Group:
+        return Group(f"{self.name(module, name)}(", items, ")")
 
-    def record(self, value: DataclassInstance, **overrides: _Doc) -> _Group:
+    def record(self, value: DataclassInstance, **overrides: Doc) -> Group:
         kind = type(value)
         return self.call(
             kind.__module__.removeprefix(_RUNTIME),
@@ -246,19 +221,20 @@ class _Records:
             ),
         )
 
-    def doc(self, value: object) -> _Doc:
+    def doc(self, value: object) -> Doc:
         match value:
             case _ if _is_mapping(value):
                 items = tuple((f"{key!r}: ", _json(item)) for key, item in value.items())
-                return _Group(f"{self.name('wire', 'freeze_wire')}({{", items, "})")
+                return Group(f"{self.name('wire', 'freeze_wire')}({{", items, "})")
             case _ if _is_tuple(value):
-                return _Group("(", tuple(("", self.doc(item)) for item in value), ")", ",")
+                return Group("(", tuple(("", self.doc(item)) for item in value), ")", ",")
             case _ if _is_frozenset(value):
-                return _Group("frozenset({", tuple(("", repr(item)) for item in sorted(value, key=repr)), "})")
+                return Group("frozenset({", tuple(("", repr(item)) for item in sorted(value, key=repr)), "})")
             case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
                 return self.record(value)
             case _:
-                return repr(value)
+                pass
+        return repr(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -346,7 +322,7 @@ class _Renderer:
             operation_id=binding.operation_id,
             media_type=binding.media_type,
         )
-        sections.append(f"CONTEXT_{index}: Final = {_layout(self.records.doc(context), 0, 18)}\n")
+        sections.append(f"CONTEXT_{index}: Final = {layout(self.records.doc(context), 0, 18, _WIDTH)}\n")
         validator = self.validator(index, use, sections)
         codec, body = self.codec(use, binding, runtime, validator)
         sections.append(_function(f"codec_{index}", f"{codec}[{static}]", body, _description(use)))
@@ -356,7 +332,7 @@ class _Renderer:
             facade = self.records.name(
                 "outbound", "EnvelopeOutboundCodec" if binding.projection_mode == "envelope" else "NativeOutboundCodec"
             )
-            body = _Group(f"{facade}(", (("", f"codec_{index}()"), ("", f"CONTEXT_{index}")), ")")
+            body = Group(f"{facade}(", (("", f"codec_{index}()"), ("", f"CONTEXT_{index}")), ")")
             sections.append(_function(outbound, f"{facade}[{static}]", body))
         parameter = None
         if (planned := self.parameters.get(use)) is not None:
@@ -366,36 +342,34 @@ class _Renderer:
             )
         return UseAccessors(use, f"codec_{index}", f"CONTEXT_{index}", outbound, parameter)
 
-    def codec(self, use: TypeUseId, binding: UseBinding, runtime: str, validator: str | None) -> tuple[str, _Group]:
-        match self.models.get(use):
-            case None:
-                codec = self.records.name("pydantic_v2", "PydanticModelCodec")
-                models = tuple((f"{model.symbol!r}: ", self.symbol(model.symbol)) for model in binding.models)
-                return codec, _Group(
-                    f"{codec}(",
-                    (
-                        ("", self.use_binding(binding)),
-                        ("", runtime),
-                        ("", _Group("{", models, "}")),
-                        ("", f"{binding.direction}_bundle()"),
-                        *((("validator=", validator),) if validator else ()),
-                    ),
-                    ")",
-                )
-            case adapter:
-                codec = self.records.name("adapters", "AdapterModelCodec")
-                return codec, _Group(
-                    f"{codec}(",
-                    (
-                        ("manifest=", self.manifest(adapter)),
-                        ("view=", self.runtime_view(adapter, runtime)),
-                        ("adapter=", f"_factory_{self.factories[adapter.registration.name][0]}()"),
-                        ("validator=", validator or f"{binding.direction}_bundle().validator({binding.schema_id!r})"),
-                    ),
-                    ")",
-                )
+    def codec(self, use: TypeUseId, binding: UseBinding, runtime: str, validator: str | None) -> tuple[str, Group]:
+        if (adapter := self.models.get(use)) is None:
+            codec = self.records.name("pydantic_v2", "PydanticModelCodec")
+            models = tuple((f"{model.symbol!r}: ", self.symbol(model.symbol)) for model in binding.models)
+            return codec, Group(
+                f"{codec}(",
+                (
+                    ("", self.use_binding(binding)),
+                    ("", runtime),
+                    ("", Group("{", models, "}")),
+                    ("", f"{binding.direction}_bundle()"),
+                    *((("validator=", validator),) if validator else ()),
+                ),
+                ")",
+            )
+        codec = self.records.name("adapters", "AdapterModelCodec")
+        return codec, Group(
+            f"{codec}(",
+            (
+                ("manifest=", self.manifest(adapter)),
+                ("view=", self.runtime_view(adapter, runtime)),
+                ("adapter=", f"_factory_{self.factories[adapter.registration.name][0]}()"),
+                ("validator=", validator or f"{binding.direction}_bundle().validator({binding.schema_id!r})"),
+            ),
+            ")",
+        )
 
-    def parameter(self, adapter: AdapterPlan, facts: ParameterViewPlan) -> _Doc:
+    def parameter(self, adapter: AdapterPlan, facts: ParameterViewPlan) -> Doc:
         plan = self.records.call(
             "views",
             "ParameterPlanView",
@@ -437,7 +411,7 @@ class _Renderer:
             ),
         )
         validator = self.records.name("adapters", "SchemaAdapterValidator")
-        body = _Group(
+        body = Group(
             f"{validator}(",
             (
                 ("manifest=", self.manifest(adapter)),
@@ -455,11 +429,11 @@ class _Renderer:
         module, _, name = key.partition(":")
         return f"{self.namespace.module(module)}.{name}"
 
-    def use_binding(self, binding: UseBinding) -> _Doc:
+    def use_binding(self, binding: UseBinding) -> Doc:
         models = tuple(("", f"_model_{self.model_index[model.symbol]}()") for model in binding.models)
-        return self.records.record(binding, models=_Group("(", models, ")", ","))
+        return self.records.record(binding, models=Group("(", models, ")", ","))
 
-    def manifest(self, adapter: AdapterPlan) -> _Doc:
+    def manifest(self, adapter: AdapterPlan) -> Doc:
         registration = adapter.registration
         return self.records.record(
             AdapterManifest(
@@ -467,7 +441,7 @@ class _Renderer:
             )
         )
 
-    def binding_view(self, view: BindingViewPlan) -> _Doc:
+    def binding_view(self, view: BindingViewPlan) -> Doc:
         direction = view.use.direction
         self.registries.setdefault(direction, {})[view.source.schema_id] = view.source
         return self.records.call(
@@ -486,7 +460,7 @@ class _Renderer:
             ),
         )
 
-    def runtime_view(self, adapter: AdapterPlan, runtime: str) -> _Doc:
+    def runtime_view(self, adapter: AdapterPlan, runtime: str) -> Doc:
         fields = tuple(
             (f"{field.field_id!r}: ", self.source.runtime(self.field_types[field.field_id]))
             for field in adapter.binding.fields
@@ -498,7 +472,7 @@ class _Renderer:
             (
                 ("binding=", self.binding_view(adapter.binding)),
                 ("native_type=", runtime),
-                ("native_field_types=", _Group(proxy, fields, "})")),
+                ("native_field_types=", Group(proxy, fields, "})")),
             ),
         )
 
@@ -534,13 +508,13 @@ class _Renderer:
                 if schema.direction == direction
                 for pattern in schema.patterns
             )
-            items: tuple[tuple[str, _Doc], ...] = (
+            items: tuple[tuple[str, Doc], ...] = (
                 ("", "_resources()"),
                 ("", f"_{direction}_view()"),
                 *((("adapted_patterns=", self.records.doc(patterns)),) if patterns else ()),
             )
             bundle = self.records.name("schema", "SchemaBundle")
-            functions.append(_function(f"{direction}_bundle", bundle, _Group(f"{bundle}(", items, ")")))
+            functions.append(_function(f"{direction}_bundle", bundle, Group(f"{bundle}(", items, ")")))
         return functions
 
     def registry_functions(self) -> list[str]:

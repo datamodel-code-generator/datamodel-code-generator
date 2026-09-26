@@ -1,0 +1,6 @@
+# selector-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_OPERATION_REF config operation_names: The operation_names entry '/paths/~1missing/get' selects no root path operation
+  E_CONFIG_VALUE config operation_names: The operation_names setting names '/paths/~1pets/get' twice
+  E_OPERATION_REF config body_modes: The body_modes entry '/paths/~1pets/delete' selects no root path operation

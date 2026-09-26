@@ -1,0 +1,4 @@
+# unbound-body
+render pydantic_v2.BaseModel
+  APIGenerationError
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1values/post/requestBody: The use has no generated native type

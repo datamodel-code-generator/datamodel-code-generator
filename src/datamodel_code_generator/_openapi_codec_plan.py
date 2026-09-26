@@ -83,6 +83,7 @@ _SYMBOL_BACKENDS: Final[dict[PydanticBackend, str]] = {
 _ARRAY_KINDS: Final[dict[str, ArrayKind]] = {"set": "set", "frozenset": "frozenset"}
 _OPTIONAL_FALLBACK: Final = ("none", "synthesized_optional_fallback", "optional_fallback")
 _EXTRA_POLICIES: Final[dict[object, ExtraPolicy]] = {"ignore": "ignore", "allow": "allow", "forbid": "forbid"}
+_TYPED_EXTRAS: Final = "__pydantic_extra__"
 _NO_DECLARATIONS: Final = CodecDeclarations()
 
 
@@ -140,14 +141,15 @@ def _at(location: SourceLocation, *tokens: str | int) -> SourceLocation:
     return replace(location, pointer=location.pointer + "".join(f"/{token}" for token in tokens))
 
 
-def _module(artifact: ModelArtifactAddress) -> str:
+def artifact_module(artifact: ModelArtifactAddress) -> str:
+    """Return the dotted module path of a model artifact below its model package."""
     *parents, name = artifact.relative_path
     modules = () if artifact.result_key == "single" else (*parents, name.removesuffix(".py"))
     return ".".join((artifact.model_package, *modules)).removesuffix(".__init__")
 
 
 def _symbol_key(symbol: FinalModelSymbol) -> str:
-    return f"{_module(symbol.artifact) if symbol.artifact else ''}:{symbol.name}"
+    return f"{artifact_module(symbol.artifact) if symbol.artifact else ''}:{symbol.name}"
 
 
 def _defined(source: str) -> frozenset[str]:
@@ -387,6 +389,7 @@ class _CodecPlanner:
             for member in members
             if (facts := member.model_facts) is not None
             and (slot := member.slot) is not None
+            and slot.name != _TYPED_EXTRAS
             and (wire_name := member.wire_name) is not None
         ]
         fields = tuple(self.field(key, member, accepted) for member, accepted in planned)

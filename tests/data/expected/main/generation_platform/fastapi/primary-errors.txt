@@ -1,0 +1,6 @@
+# primary-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config primary_responses /paths/~1created/post: The primary response chosen for POST /created is not declared
+  E_CONFIG_VALUE config primary_responses /paths/~1optional/get: The primary response chosen for GET /optional is not declared
+  E_CONFIG_VALUE config primary_responses /paths/~1download/get: The primary response chosen for GET /download is not declared

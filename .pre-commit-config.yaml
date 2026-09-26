@@ -22,9 +22,9 @@ repos:
   rev: 'v0.16.8'
   hooks:
   - id: ruff-format
-    exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/model/_compiled_templates/"
+    exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/(model|_fastapi)/_compiled_templates/"
   - id: ruff
-    exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/model/_compiled_templates/"
+    exclude: "^tests/data|^src/datamodel_code_generator/_types/|^src/datamodel_code_generator/(model|_fastapi)/_compiled_templates/"
     # Autouse fixtures intentionally isolate shared state and block accidental network access.
     args: ["--preview", "--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--extend-ignore", "D421,PLW0717,RUF067,RUF069,RUF074,RUF075,RUF105,pytest-fixture-autouse"]
 - repo: https://github.com/codespell-project/codespell
@@ -70,5 +70,5 @@ repos:
     name: Check generated built-in template renderers
     entry: bash -c '[ -x .tox/dev/bin/python ] && PYTHON=.tox/dev/bin/python || PYTHON=.tox/dev/Scripts/python; test -x "$PYTHON" || tox run -e dev --notest -qq; "$PYTHON" scripts/compile_builtin_templates.py --check'
     language: system
-    files: ^(src/datamodel_code_generator/model/template/.*\.jinja2|scripts/_template_compiler/.*\.py|scripts/compile_builtin_templates\.py|src/datamodel_code_generator/model/_compiled_template_runtime\.py|src/datamodel_code_generator/model/_compiled_templates/.*\.py)$
+    files: ^(src/datamodel_code_generator/(model/template|_fastapi/templates)/.*\.jinja2|scripts/_template_compiler/.*\.py|scripts/compile_builtin_templates\.py|src/datamodel_code_generator/model/_compiled_template_runtime\.py|src/datamodel_code_generator/(model|_fastapi)/_compiled_templates/.*\.py)$
     pass_filenames: false

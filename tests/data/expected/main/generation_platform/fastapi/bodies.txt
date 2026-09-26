@@ -1,0 +1,799 @@
+# bodies
+render pydantic_v2.BaseModel
+  __init__.py
+  application.py
+  routers/__init__.py
+  routers/json.py
+  routers/raw.py
+  routers/form.py
+  _generated/__init__.py
+  _generated/contract.py
+  _generated/model_bindings.py
+  model_codecs.py
+  responses.py
+  errors.py
+  py.typed
+  dcg-runtime-requirements.txt
+  .dcg-state/model-artifacts.json
+  .dcg-target-manifest.json
+  layout routers
+  post_json: POST /json -> /json [tag:json] status 204 primary 204 None body typed
+    body /paths/~1json/post/requestBody: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json/post/responses/204
+  post_optional: POST /json/optional -> /json/optional [tag:json] status 204 primary 204 None body typed
+    body /paths/~1json~1optional/post/requestBody: codec_adapter native_required_mismatch at /paths/~1json~1optional/post/requestBody/content/application~1json
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1optional/post/responses/204
+  post_nullable: POST /json/nullable -> /json/nullable [tag:json] status 204 primary 204 None body typed
+    body /paths/~1json~1nullable/post/requestBody: codec_adapter native_nullable_mismatch at /paths/~1json~1nullable/post/requestBody/content/application~1json/schema
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1nullable/post/responses/204
+  post_envelope: POST /json/envelope -> /json/envelope [tag:json] status 204 primary 204 None body typed
+    body /paths/~1json~1envelope/post/requestBody: codec_adapter envelope_required at /components/schemas/Account/properties/id/readOnly
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1envelope/post/responses/204
+  post_many: POST /json/many -> /json/many [tag:json] status 204 primary 204 None body typed
+    body /paths/~1json~1many/post/requestBody: codec_adapter unsupported_wire_shape
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1json~1many/post/responses/204
+  post_text: POST /text -> /text [tag:raw] status 204 primary 204 None body typed
+    body /paths/~1text/post/requestBody: codec_adapter unsupported_wire_shape
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1text/post/responses/204
+  put_binary: PUT /binary -> /binary [tag:raw] status 204 primary 204 None body typed
+    body -: codec_adapter unsupported_wire_shape
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1binary/put/responses/204
+  post_raw: POST /raw -> /raw [tag:raw] status 204 primary 204 None body request
+    body /paths/~1raw/post/requestBody: raw_request explicit_raw
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1raw/post/responses/204
+  post_form: POST /form -> /form [tag:form] status 204 primary 204 None body typed
+    body /paths/~1form/post/requestBody: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form/post/responses/204
+  post_optional_form: POST /form/optional -> /form/optional [tag:form] status 204 primary 204 None body typed
+    body /paths/~1form~1optional/post/requestBody: codec_adapter native_required_mismatch at /paths/~1form~1optional/post/requestBody/content/application~1x-www-form-urlencoded
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1optional/post/responses/204
+  post_either_form: POST /form/either -> /form/either [tag:form] status 204 primary 204 None body typed
+    body /paths/~1form~1either/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1either/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/either
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1either/post/responses/204
+  post_nested_form: POST /form/nested -> /form/nested [tag:form] status 204 primary 204 None body typed
+    body /paths/~1form~1nested/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1nested/post/requestBody/content/application~1x-www-form-urlencoded/schema
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1nested/post/responses/204
+  post_closed_form: POST /form/closed -> /form/closed [tag:form] status 204 primary 204 None body typed
+    body /paths/~1form~1closed/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1closed/post/requestBody/content/application~1x-www-form-urlencoded/schema
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1closed/post/responses/204
+  post_choice_form: POST /form/choice -> /form/choice [tag:form] status 204 primary 204 None body typed
+    body /paths/~1form~1choice/post/requestBody: codec_adapter native_shape_mismatch at /paths/~1form~1choice/post/requestBody/content/application~1x-www-form-urlencoded/schema/minProperties
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1form~1choice/post/responses/204
+  upload: POST /upload -> /upload [tag:form] status 204 primary 204 None body typed
+    body /paths/~1upload/post/requestBody: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1upload/post/responses/204
+  group tag:json -> json (5)
+  group tag:raw -> raw (3)
+  group tag:form -> form (7)
+  show routers/json.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """Endpoints of the json operations; regenerate them instead of editing."""
+    |
+    | from collections.abc import Callable, Mapping
+    | from typing import Annotated, Final
+    |
+    | import models
+    | from fastapi import APIRouter, Body, Depends
+    | from fastapi.responses import Response
+    |
+    | from .._generated import contract
+    | from .._runtime.model_codecs.unset import Unset
+    | from .._runtime.model_codecs.values import DecodedValue
+    | from .._runtime.server.application import build
+    | from .._runtime.server.responses import respond
+    |
+    |
+    | def _add_post_json(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_json_handler = handlers['post_json']
+    |
+    |     def post_json(
+    |         *,
+    |         body: Annotated[models.Item, Body(media_type='application/json')],
+    |     ) -> Response:
+    |         return respond(post_json_handler(body=body), contract.PostJson.RESPONSES)
+    |
+    |     router.add_api_route(
+    |         '/json',
+    |         post_json,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postJson',
+    |         tags=['json'],
+    |     )
+    |
+    |
+    | def _add_post_optional(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_optional_handler = handlers['post_optional']
+    |
+    |     def post_optional(
+    |         *,
+    |         body: Annotated[models.Item | Unset, Depends(contract.PostOptional.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_optional_handler(body=body),
+    |             contract.PostOptional.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/json/optional',
+    |         post_optional,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postOptional',
+    |         tags=['json'],
+    |     )
+    |
+    |
+    | def _add_post_nullable(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_nullable_handler = handlers['post_nullable']
+    |
+    |     def post_nullable(
+    |         *,
+    |         body: Annotated[models.FieldJsonNullablePostRequest, Depends(contract.PostNullable.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_nullable_handler(body=body),
+    |             contract.PostNullable.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/json/nullable',
+    |         post_nullable,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postNullable',
+    |         tags=['json'],
+    |     )
+    |
+    |
+    | def _add_post_envelope(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_envelope_handler = handlers['post_envelope']
+    |
+    |     def post_envelope(
+    |         *,
+    |         body: Annotated[DecodedValue[models.Account], Depends(contract.PostEnvelope.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_envelope_handler(body=body),
+    |             contract.PostEnvelope.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/json/envelope',
+    |         post_envelope,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postEnvelope',
+    |         tags=['json'],
+    |     )
+    |
+    |
+    | def _add_post_many(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_many_handler = handlers['post_many']
+    |
+    |     def post_many(
+    |         *,
+    |         body: Annotated[tuple[str | None, models.Item], Depends(contract.PostMany.BODY.receive)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_many_handler(body=body[1], media_type=body[0]),
+    |             contract.PostMany.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/json/many',
+    |         post_many,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postMany',
+    |         tags=['json'],
+    |     )
+    |
+    |
+    | OPERATIONS: Final = (
+    |     ('json', 'post_json', ('body',)),
+    |     ('json', 'post_optional', ('body',)),
+    |     ('json', 'post_nullable', ('body',)),
+    |     ('json', 'post_envelope', ('body',)),
+    |     ('json', 'post_many', ('body', 'media_type')),
+    | )
+    | LITERAL_ROUTES: Final = (
+    |     _add_post_json,
+    |     _add_post_optional,
+    |     _add_post_nullable,
+    |     _add_post_envelope,
+    |     _add_post_many,
+    | )
+    | TEMPLATED_ROUTES: Final = ()
+    |
+    |
+    | def build_router(*, json: object) -> APIRouter:
+    |     """Check the service, then register the json operations on a new router, literal paths first."""
+    |     return build((*LITERAL_ROUTES, *TEMPLATED_ROUTES), OPERATIONS, {'json': json})
+  show routers/raw.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """Endpoints of the raw operations; regenerate them instead of editing."""
+    |
+    | from collections.abc import Callable, Mapping
+    | from typing import Annotated, Final
+    |
+    | import models
+    | from fastapi import APIRouter, Depends, Request
+    | from fastapi.responses import Response
+    |
+    | from .._generated import contract
+    | from .._runtime.model_codecs.unset import Unset
+    | from .._runtime.server.application import build
+    | from .._runtime.server.responses import respond
+    |
+    |
+    | def _add_post_text(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_text_handler = handlers['post_text']
+    |
+    |     def post_text(
+    |         *,
+    |         body: Annotated[models.FieldTextPostRequest, Depends(contract.PostText.BODY)],
+    |     ) -> Response:
+    |         return respond(post_text_handler(body=body), contract.PostText.RESPONSES)
+    |
+    |     router.add_api_route(
+    |         '/text',
+    |         post_text,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postText',
+    |         tags=['raw'],
+    |     )
+    |
+    |
+    | def _add_put_binary(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     put_binary_handler = handlers['put_binary']
+    |
+    |     def put_binary(
+    |         *,
+    |         body: Annotated[bytes | Unset, Depends(contract.PutBinary.BODY)],
+    |     ) -> Response:
+    |         return respond(put_binary_handler(body=body), contract.PutBinary.RESPONSES)
+    |
+    |     router.add_api_route(
+    |         '/binary',
+    |         put_binary,
+    |         methods=['PUT'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='putBinary',
+    |         tags=['raw'],
+    |     )
+    |
+    |
+    | def _add_post_raw(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_raw_handler = handlers['post_raw']
+    |
+    |     def post_raw(*, request: Request) -> Response:
+    |         return respond(post_raw_handler(request=request), contract.PostRaw.RESPONSES)
+    |
+    |     router.add_api_route(
+    |         '/raw',
+    |         post_raw,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postRaw',
+    |         tags=['raw'],
+    |     )
+    |
+    |
+    | OPERATIONS: Final = (
+    |     ('raw', 'post_text', ('body',)),
+    |     ('raw', 'put_binary', ('body',)),
+    |     ('raw', 'post_raw', ('request',)),
+    | )
+    | LITERAL_ROUTES: Final = (_add_post_text, _add_put_binary, _add_post_raw)
+    | TEMPLATED_ROUTES: Final = ()
+    |
+    |
+    | def build_router(*, raw: object) -> APIRouter:
+    |     """Check the service, then register the raw operations on a new router, literal paths first."""
+    |     return build((*LITERAL_ROUTES, *TEMPLATED_ROUTES), OPERATIONS, {'raw': raw})
+  show routers/form.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """Endpoints of the form operations; regenerate them instead of editing."""
+    |
+    | from collections.abc import Callable, Mapping
+    | from typing import Annotated, Final
+    |
+    | import models
+    | from fastapi import APIRouter, Depends, File, Form, UploadFile
+    | from fastapi.responses import Response
+    |
+    | from .._generated import contract
+    | from .._runtime.model_codecs.unset import Unset
+    | from .._runtime.server.application import build
+    | from .._runtime.server.requests import absent, present
+    | from .._runtime.server.responses import respond
+    |
+    |
+    | def _add_post_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_form_handler = handlers['post_form']
+    |
+    |     def post_form(
+    |         *,
+    |         name: Annotated[str, Form(alias='name', max_length=20)],
+    |         count: Annotated[int, Form(alias='count')] = 1,
+    |         tags: Annotated[list[str], Form(alias='tags', default_factory=absent)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_form_handler(name=name, count=count, tags=present(tags)),
+    |             contract.PostForm.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/form',
+    |         post_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postForm',
+    |         tags=['form'],
+    |     )
+    |
+    |
+    | def _add_post_optional_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_optional_form_handler = handlers['post_optional_form']
+    |
+    |     def post_optional_form(
+    |         *,
+    |         body: Annotated[models.FieldFormOptionalPostRequest | Unset, Depends(contract.PostOptionalForm.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_optional_form_handler(body=body),
+    |             contract.PostOptionalForm.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/form/optional',
+    |         post_optional_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postOptionalForm',
+    |         tags=['form'],
+    |     )
+    |
+    |
+    | def _add_post_either_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_either_form_handler = handlers['post_either_form']
+    |
+    |     def post_either_form(
+    |         *,
+    |         body: Annotated[models.FieldFormEitherPostRequest, Depends(contract.PostEitherForm.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_either_form_handler(body=body),
+    |             contract.PostEitherForm.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/form/either',
+    |         post_either_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postEitherForm',
+    |         tags=['form'],
+    |     )
+    |
+    |
+    | def _add_post_nested_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_nested_form_handler = handlers['post_nested_form']
+    |
+    |     def post_nested_form(
+    |         *,
+    |         body: Annotated[models.FieldFormNestedPostRequest, Depends(contract.PostNestedForm.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_nested_form_handler(body=body),
+    |             contract.PostNestedForm.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/form/nested',
+    |         post_nested_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postNestedForm',
+    |         tags=['form'],
+    |     )
+    |
+    |
+    | def _add_post_closed_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_closed_form_handler = handlers['post_closed_form']
+    |
+    |     def post_closed_form(
+    |         *,
+    |         body: Annotated[models.FieldFormClosedPostRequest, Depends(contract.PostClosedForm.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_closed_form_handler(body=body),
+    |             contract.PostClosedForm.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/form/closed',
+    |         post_closed_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postClosedForm',
+    |         tags=['form'],
+    |     )
+    |
+    |
+    | def _add_post_choice_form(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     post_choice_form_handler = handlers['post_choice_form']
+    |
+    |     def post_choice_form(
+    |         *,
+    |         body: Annotated[models.FieldFormChoicePostRequest, Depends(contract.PostChoiceForm.BODY)],
+    |     ) -> Response:
+    |         return respond(
+    |             post_choice_form_handler(body=body),
+    |             contract.PostChoiceForm.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/form/choice',
+    |         post_choice_form,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='postChoiceForm',
+    |         tags=['form'],
+    |     )
+    |
+    |
+    | def _add_upload(router: APIRouter, handlers: Mapping[str, Callable[..., object]]) -> None:
+    |     upload_handler = handlers['upload']
+    |
+    |     def upload(
+    |         *,
+    |         file: Annotated[UploadFile, File(alias='file')],
+    |         extra: Annotated[list[UploadFile], File(alias='extra', default_factory=absent)],
+    |         note: Annotated[str, Form(alias='note', default_factory=absent)],
+    |     ) -> Response:
+    |         return respond(
+    |             upload_handler(file=file, extra=present(extra), note=present(note)),
+    |             contract.Upload.RESPONSES,
+    |         )
+    |
+    |     router.add_api_route(
+    |         '/upload',
+    |         upload,
+    |         methods=['POST'],
+    |         status_code=204,
+    |         response_model=None,
+    |         response_class=Response,
+    |         operation_id='upload',
+    |         tags=['form'],
+    |     )
+    |
+    |
+    | OPERATIONS: Final = (
+    |     ('form', 'post_form', ('name', 'count', 'tags')),
+    |     ('form', 'post_optional_form', ('body',)),
+    |     ('form', 'post_either_form', ('body',)),
+    |     ('form', 'post_nested_form', ('body',)),
+    |     ('form', 'post_closed_form', ('body',)),
+    |     ('form', 'post_choice_form', ('body',)),
+    |     ('form', 'upload', ('file', 'extra', 'note')),
+    | )
+    | LITERAL_ROUTES: Final = (
+    |     _add_post_form,
+    |     _add_post_optional_form,
+    |     _add_post_either_form,
+    |     _add_post_nested_form,
+    |     _add_post_closed_form,
+    |     _add_post_choice_form,
+    |     _add_upload,
+    | )
+    | TEMPLATED_ROUTES: Final = ()
+    |
+    |
+    | def build_router(*, form: object) -> APIRouter:
+    |     """Check the service, then register the form operations on a new router, literal paths first."""
+    |     return build((*LITERAL_ROUTES, *TEMPLATED_ROUTES), OPERATIONS, {'form': form})
+  show _generated/contract.py
+    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
+    | """Operation plans of this package; regenerate them instead of editing."""
+    |
+    | from __future__ import annotations
+    |
+    | from typing import Final
+    |
+    | from .._runtime.model_codecs.media import FieldPlan
+    | from .._runtime.server.requests import BodyAdapter, BodyMedia
+    | from .._runtime.server.responses import OperationResponses, ResponsePlan
+    | from . import model_bindings
+    |
+    |
+    | class PostJson:
+    |     """Plans of the post_json operation."""
+    |
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostOptional:
+    |     """Plans of the post_optional operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/json',
+    |                 kind='json',
+    |                 codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+    |             ),
+    |         ),
+    |         required=False,
+    |         names=frozenset({'name'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostNullable:
+    |     """Plans of the post_nullable operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/json',
+    |                 kind='json',
+    |                 codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+    |             ),
+    |         ),
+    |         names=frozenset({'name'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostEnvelope:
+    |     """Plans of the post_envelope operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/json',
+    |                 kind='json',
+    |                 codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+    |                 envelope=True,
+    |             ),
+    |         ),
+    |         names=frozenset({'id', 'name'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostMany:
+    |     """Plans of the post_many operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/json',
+    |                 kind='json',
+    |                 codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+    |             ),
+    |             BodyMedia(
+    |                 media_type='application/vnd.item+json',
+    |                 kind='json',
+    |                 codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+    |             ),
+    |         ),
+    |         names=frozenset({'name'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostText:
+    |     """Plans of the post_text operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='text/plain',
+    |                 kind='text',
+    |                 codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+    |             ),
+    |         ),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PutBinary:
+    |     """Plans of the put_binary operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
+    |         required=False,
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostRaw:
+    |     """Plans of the post_raw operation."""
+    |
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostForm:
+    |     """Plans of the post_form operation."""
+    |
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostOptionalForm:
+    |     """Plans of the post_optional_form operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/x-www-form-urlencoded',
+    |                 kind='form',
+    |                 codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+    |                 fields=(
+    |                     FieldPlan('name', 'string'),
+    |                     FieldPlan('flags', 'boolean', repeated=True),
+    |                     FieldPlan('ratio', 'number'),
+    |                 ),
+    |                 additional=FieldPlan('', 'string'),
+    |             ),
+    |         ),
+    |         required=False,
+    |         names=frozenset({'flags', 'name', 'ratio'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostEitherForm:
+    |     """Plans of the post_either_form operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/x-www-form-urlencoded',
+    |                 kind='form',
+    |                 codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+    |                 fields=(
+    |                     FieldPlan('either', 'string'),
+    |                     FieldPlan('items', 'integer', repeated=True),
+    |                 ),
+    |                 additional=FieldPlan('', 'string'),
+    |             ),
+    |         ),
+    |         names=frozenset({'either', 'items'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostNestedForm:
+    |     """Plans of the post_nested_form operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/x-www-form-urlencoded',
+    |                 kind='form',
+    |                 codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
+    |                 fields=(FieldPlan('point', 'string'),),
+    |                 additional=FieldPlan('', 'integer'),
+    |             ),
+    |         ),
+    |         names=frozenset({'point', 'x'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostClosedForm:
+    |     """Plans of the post_closed_form operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/x-www-form-urlencoded',
+    |                 kind='form',
+    |                 codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
+    |                 fields=(FieldPlan('name', 'string'),),
+    |             ),
+    |         ),
+    |         names=frozenset({'name'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class PostChoiceForm:
+    |     """Plans of the post_choice_form operation."""
+    |
+    |     BODY: Final = BodyAdapter(
+    |         media=(
+    |             BodyMedia(
+    |                 media_type='application/x-www-form-urlencoded',
+    |                 kind='form',
+    |                 codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
+    |                 fields=(FieldPlan('name', 'string'),),
+    |                 additional=FieldPlan('', 'string'),
+    |             ),
+    |         ),
+    |         names=frozenset({'name'}),
+    |     )
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )
+    |
+    |
+    | class Upload:
+    |     """Plans of the upload operation."""
+    |
+    |     RESPONSES: Final = OperationResponses(
+    |         responses=(ResponsePlan(status='204'),),
+    |         primary=(204, None),
+    |     )

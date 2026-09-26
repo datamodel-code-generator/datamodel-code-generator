@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info: {title: Server results, version: "1.0"}
+paths:
+  /results:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getResult
+      responses:
+        "200":
+          description: A thing.
+          headers:
+            X-Rate: {schema: {type: integer, minimum: 0}}
+            X-Tag: {content: {text/plain: {}}}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+            text/csv:
+              schema: {type: string}
+            application/octet-stream: {}
+            image/*: {}
+        "201":
+          description: Created.
+          headers:
+            Location: {required: true, schema: {type: string}}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+        "204": {description: Nothing.}
+        2XX:
+          description: Other success.
+          content:
+            application/json: {}
+        4XX:
+          description: Client error.
+          content:
+            text/plain: {}
+        default:
+          description: Error.
+          content:
+            application/problem+json:
+              schema: {$ref: "#/components/schemas/Problem"}
+    head:
+      operationId: headResult
+      responses:
+        "200":
+          description: Exists.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+  /plain:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getPlain
+      responses:
+        "200":
+          description: A short text.
+          content:
+            text/plain:
+              schema: {type: string, maxLength: 3}
+  /latin:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getLatin
+      responses:
+        "200":
+          description: A Latin-1 text.
+          content:
+            text/plain; charset=iso-8859-1:
+              schema: {type: string}
+  /nothing:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getNothing
+      responses:
+        default:
+          description: Anything.
+          content:
+            application/json:
+              schema: {type: object}
+  /empty:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    post:
+      operationId: postEmpty
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Thing:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer}
+    Problem:
+      type: object
+      required: [title]
+      properties:
+        title: {type: string}

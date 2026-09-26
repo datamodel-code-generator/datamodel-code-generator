@@ -1,0 +1,111 @@
+"""Turn common codec failures into the HTTP errors that generated request and response adapters raise."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Final, TypeAlias
+
+from fastapi.exceptions import HTTPException, RequestValidationError, ResponseValidationError
+
+from ..model_codecs.errors import (
+    CodecResourceLimitError,
+    ModelProjectionError,
+    NativeValidationError,
+    WireValidationError,
+)
+from ..model_codecs.wire import pointer_tokens
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
+
+    RequestError: TypeAlias = (
+        WireValidationError | NativeValidationError | ModelProjectionError | CodecResourceLimitError
+    )
+
+_MALFORMED: Final = frozenset({
+    "parameter.duplicate",
+    "parameter.empty",
+    "parameter.encoding",
+    "parameter.object",
+    "parameter.percent",
+    "parameter.syntax",
+})
+_REASONS: Final = {
+    "form.duplicate": ("media_invalid", "Invalid request body"),
+    "form.undeclared": ("extra_forbidden", "Unexpected field"),
+    "parameter.lexical": ("type_error", "Invalid value type"),
+    "parameter.undeclared": ("extra_forbidden", "Unexpected field"),
+    "schema.additionalProperties": ("extra_forbidden", "Unexpected field"),
+    "schema.false": ("extra_forbidden", "Unexpected field"),
+    "schema.required": ("missing", "Field required"),
+    "schema.type": ("type_error", "Invalid value type"),
+    "schema.unevaluatedProperties": ("extra_forbidden", "Unexpected field"),
+    "text.encoding": ("media_invalid", "Invalid request body"),
+}
+REQUEST_ERRORS: Final = (WireValidationError, NativeValidationError, ModelProjectionError, CodecResourceLimitError)
+_JSON: Final = ("json_invalid", "Invalid JSON body")
+_VALUE: Final = ("value_error", "Invalid value")
+
+Record = dict[str, object]
+
+
+def unsupported_media() -> HTTPException:
+    """Return the error for a request body whose media type no declared content accepts."""
+    return HTTPException(status_code=415, detail="Unsupported media type")
+
+
+def malformed_request() -> HTTPException:
+    """Return the error for request data that no declared parameter or media form can represent."""
+    return HTTPException(status_code=400, detail="Invalid request")
+
+
+def missing(location: tuple[str, ...]) -> Record:
+    """Return the record of a required value the request omits."""
+    return {"type": "missing", "loc": location, "msg": "Field required"}
+
+
+def invalid(location: tuple[str, ...]) -> Record:
+    """Return the record of a value the request carries in a form its declaration rejects."""
+    kind, message = _VALUE
+    return {"type": kind, "loc": location, "msg": message}
+
+
+def _declared(pointer: str, names: Collection[str]) -> tuple[str | int, ...]:
+    location: list[str | int] = []
+    for token in pointer_tokens(pointer):
+        if token.isascii() and token.isdecimal():
+            location.append(int(token))
+        elif token in names:
+            location.append(token)
+        else:
+            break
+    return tuple(location)
+
+
+def _record(code: str, location: tuple[str | int, ...]) -> Record:
+    kind, message = _JSON if code.startswith("json.") else _REASONS.get(code, _VALUE)
+    return {"type": kind, "loc": location, "msg": message}
+
+
+def validation_records(error: RequestError, location: tuple[str, ...], names: Collection[str]) -> list[Record] | None:
+    """Return sanitized 422 records for a rejected request value, or None when the request data is malformed.
+
+    Records keep only the location, a reason, and a fixed message. A location stops before the first key that is
+    not a declared property name, so neither rejected values nor dynamic keys reach the response.
+    """
+    if isinstance(error, WireValidationError) and not any(issue.code in _MALFORMED for issue in error.issues):
+        return [_record(issue.code, (*location, *_declared(issue.instance_pointer, names))) for issue in error.issues]
+    if isinstance(error, NativeValidationError):
+        return [_record("native", (*location, *_declared(issue.pointer, names))) for issue in error.issues]
+    return None
+
+
+def request_failure(error: RequestError, location: tuple[str, ...], names: Collection[str]) -> Exception:
+    """Return the sanitized 422, or the fixed 400 for malformed data, of one rejected request value."""
+    if (records := validation_records(error, location, names)) is None:
+        return malformed_request()
+    return RequestValidationError(records)
+
+
+def response_failure(message: str) -> ResponseValidationError:
+    """Return the error for a handler result that no declared response accepts."""
+    return ResponseValidationError([{"type": "value_error", "loc": ("response",), "msg": message}])

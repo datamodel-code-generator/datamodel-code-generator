@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Awaitable, Callable, Mapping
 from decimal import Decimal
-from types import MappingProxyType
+from types import GenericAlias, MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeVar
 from urllib.parse import unquote_to_bytes
 
@@ -17,6 +17,7 @@ from .errors import (
     CodecBindingError,
     CodecConfigurationError,
     CodecError,
+    ModelProjectionError,
     NativeIssue,
     NativeValidationError,
     ParameterEncodingError,
@@ -319,7 +320,18 @@ class SchemaAdapterValidator:
 class AdapterModelCodec(Generic[T]):
     """Run a model adapter inside the core's direction, presence, and wire validation rules."""
 
-    __slots__ = ("_adapter", "_context", "_excluded", "_gaps", "_presence", "_validator", "_view")
+    __slots__ = (
+        "_adapter",
+        "_class",
+        "_context",
+        "_encode_native",
+        "_excluded",
+        "_gaps",
+        "_native_presence",
+        "_presence",
+        "_validator",
+        "_view",
+    )
 
     def __init__(
         self,
@@ -333,7 +345,11 @@ class AdapterModelCodec(Generic[T]):
         binding = view.binding
         checked_adapter(adapter, manifest, lambda: adapter.capabilities(binding=view))
         self._adapter = adapter
+        self._encode_native: Callable[..., WireValue] = adapter.encode_native
+        self._native_presence: Callable[..., object] = adapter.presence
         self._view = view
+        native = view.native_type
+        self._class = native if isinstance(native, type) and not isinstance(native, GenericAlias) else None
         self._validator = validator
         self._context = _context_key(binding)
         self._presence = manifest.capabilities.presence == "native"
@@ -366,8 +382,12 @@ class AdapterModelCodec(Generic[T]):
             value=value, binding_id=self.binding.binding_id, wire=wire, presence=snapshot_presence(wire), extras=_EMPTY
         )
 
-    def encode(self, value: T | ModelValue[T] | ModelInput[T], context: CodecContext) -> WireValue:
-        """Return the validated wire value to send for a native value or a snapshot of this binding."""
+    def encode(self, value: object, context: CodecContext) -> WireValue:
+        """Return the validated wire value to send for a native value or a snapshot of this binding.
+
+        The value may come from a dynamic boundary such as a server handler: a native type that is a class
+        rejects other objects before the adapter reads them, and the adapter's wire value is validated.
+        """
         self._require(context, inbound=False)
         match value:
             case ModelValue() | ModelInput():
@@ -376,7 +396,8 @@ class AdapterModelCodec(Generic[T]):
                     raise CodecBindingError(msg)
                 return self._outbound(freeze_wire(value.wire), context)
             case _:
-                return self._outbound(self._native_wire(value, context, None), context)
+                pass
+        return self._outbound(self._native_wire(value, context, None), context)
 
     def _require(self, context: CodecContext, *, inbound: bool) -> None:
         key = (context.direction, context.schema_id, context.operation_id, context.media_type)
@@ -417,10 +438,13 @@ class AdapterModelCodec(Generic[T]):
             value=value, binding_id=binding.binding_id, wire=wire, presence=snapshot_presence(wire), extras=_EMPTY
         )
 
-    def _native_wire(self, value: T, context: CodecContext, presence: PresenceTree | None) -> WireValue:
+    def _native_wire(self, value: object, context: CodecContext, presence: PresenceTree | None) -> WireValue:
+        if (native := self._class) is not None and not isinstance(value, native):
+            msg = f"The value is not a {native.__name__} value"
+            raise ModelProjectionError(msg)
         try:
-            encoded = self._adapter.encode_native(value=value, binding=self._view, context=context)
-            official: object = self._adapter.presence(value=value, binding=self._view, context=context)
+            encoded = self._encode_native(value=value, binding=self._view, context=context)
+            official = self._native_presence(value=value, binding=self._view, context=context)
         except CodecError:
             raise
         except Exception as error:

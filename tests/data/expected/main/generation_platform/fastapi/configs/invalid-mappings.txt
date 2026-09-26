@@ -1,0 +1,2 @@
+APIGenerationError
+  E_CONFIG_VALUE config parameter_names: parameter_names must map operation selectors to values

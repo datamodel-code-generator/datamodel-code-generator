@@ -226,6 +226,10 @@ jobs:
             name: HTTPX2 minimum HTTP(S) e2e
             os: ubuntu-24.04
             coverage: true
+          - tox_env: fastapi-e2e
+            name: FastAPI server e2e
+            os: ubuntu-24.04
+            coverage: true
     runs-on: ${{ matrix.os }}
     env: &test-http-backends-env
       OS: ${{ matrix.os }}

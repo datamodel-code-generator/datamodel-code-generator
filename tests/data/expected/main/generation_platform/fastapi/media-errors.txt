@@ -1,0 +1,7 @@
+# media-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_MEDIA_UNSUPPORTED target /paths/~1encoded/post/requestBody/content/multipart~1form-data: POST /encoded needs body_mode='request' for multipart/form-data
+  F_MEDIA_UNSUPPORTED target /paths/~1schemaless/post/requestBody/content/application~1x-www-form-urlencoded: POST /schemaless needs body_mode='request' for application/x-www-form-urlencoded
+  F_MEDIA_UNSUPPORTED target /paths/~1mixed/post/requestBody/content/multipart~1form-data: POST /mixed needs body_mode='request' for multipart/form-data
+  F_MEDIA_UNSUPPORTED target /paths/~1form-response/get/responses/200/content/application~1x-www-form-urlencoded: No builtin encoder sends the application/x-www-form-urlencoded response of GET /form-response

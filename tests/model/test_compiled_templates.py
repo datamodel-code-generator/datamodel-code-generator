@@ -1081,6 +1081,7 @@ def test_compile_check_detects_missing_and_stale_generated_files(
     generated_dir = tmp_path / "generated"
     monkeypatch.setattr(compile_builtin_templates, "ROOT", tmp_path)
     monkeypatch.setattr(compile_builtin_templates, "OUTPUT_DIR", generated_dir)
+    monkeypatch.setattr(compile_builtin_templates, "FASTAPI_OUTPUT_DIR", tmp_path / "fastapi")
     sources = compile_builtin_templates.generated_sources()
     for path, source in sources.items():
         path.parent.mkdir(parents=True, exist_ok=True)

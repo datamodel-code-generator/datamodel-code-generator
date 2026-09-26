@@ -1,0 +1,59 @@
+# parameters
+serve pydantic_v2.BaseModel
+> GET /search
+< 422 application/json {"detail":[{"type":"missing","loc":["cookie","session"],"msg":"Field required"}]}
+> GET /search
+< 422 application/json {"detail":[{"type":"value_error","loc":["cookie","session"],"msg":"Invalid value"}]}
+> GET /search
+  search(session=FieldSearchGetCookieSessionParameter(root='abc'), code=FieldSearchGetQueryCodeParameter(root='AB'), filter=UNSET, ids=UNSET, x_ids=UNSET, blob=UNSET, note=UNSET)
+< 204 - b''
+> GET /search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi
+  search(session=FieldSearchGetCookieSessionParameter(root='abc'), code=FieldSearchGetQueryCodeParameter(root='XY'), filter=ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Filter|ModelNode(symbol='parameters_basemodel_models:Filter')", wire=mappingproxy({'name': 'n'}), presence=PresenceTree(pointer='', container='object', members=(('name', PresenceTree(pointer='/name', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/id', schema_location='', field_id='parameters_basemodel_models:Filter.id', message='The native type requires a property that this direction excludes'),), kind='input'), ids=FieldSearchGetQueryIdsParameter(root=[1, 2]), x_ids=FieldSearchGetHeaderXIdsParameter(root=[3, 4]), blob=Blob(a=1), note='hi')
+< 204 - b''
+> GET /search?code=ab&ids=1,x&blob=%7B%22b%22%3A1%7D
+< 422 application/json {"detail":[{"type":"value_error","loc":["query","code"],"msg":"Invalid value"},{"type":"type_error","loc":["query","ids"],"msg":"Invalid value type"},{"type":"extra_forbidden","loc":["query","blob"],"msg":"Unexpected field"}]}
+> GET /search?blob=%7B
+< 422 application/json {"detail":[{"type":"json_invalid","loc":["query","blob"],"msg":"Invalid JSON body"}]}
+> GET /search?code=A&code=B
+< 400 application/json {"detail":"Invalid request"}
+> GET /search?filter%5Bname%5D=n&filter%5Bid%5D=1
+< 422 application/json {"detail":[{"type":"value_error","loc":["query","filter","id"],"msg":"Invalid value"}]}
+> GET /ratios?ratios=1&ratios=2.5
+  get_ratios(ratios=[1.0, 2.5])
+< 204 - b''
+> GET /ratios?ratios=nan
+< 422 application/json {"detail":[{"type":"finite_number","loc":["query","ratios",0],"msg":"Input should be a finite number","input":"nan"}]}
+> GET /ratios?ratios=inf
+< 422 application/json {"detail":[{"type":"finite_number","loc":["query","ratios",0],"msg":"Input should be a finite number","input":"inf"}]}
+> GET /repeat/1/again/1
+  repeat(id=FieldRepeatIdAgainIdGetPathIdParameter(root=1))
+< 204 - b''
+> GET /repeat/1/again/01
+< 422 application/json {"detail":[{"type":"value_error","loc":["path","id"],"msg":"Invalid value"}]}
+> GET /repeat/1/again/2
+< 422 application/json {"detail":[{"type":"value_error","loc":["path","id"],"msg":"Invalid value"}]}
+> GET /repeat/x/again/x
+< 422 application/json {"detail":[{"type":"type_error","loc":["path","id"],"msg":"Invalid value type"}]}
+> GET /repeat/1/again/1
+  repeat(id=FieldRepeatIdAgainIdGetPathIdParameter(root=1))
+< 204 - b''
+> GET /repeat/1/again/1
+< 400 application/json {"detail":"Invalid request"}
+> GET /notes/7
+  get_note(note_id=7)
+< 204 - b''
+> GET /notes/seven
+< 422 application/json {"detail":[{"type":"int_parsing","loc":["path","dcg_p0"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"seven"}]}
+> GET /files/a.txt
+  get_file(file_name=FieldFilesFileNameGetPathFileNameParameter(root='a.txt'))
+< 204 - b''
+> GET /files/A.txt
+< 422 application/json {"detail":[{"type":"value_error","loc":["path","file.name"],"msg":"Invalid value"}]}
+> GET /men%C3%BC/tea
+  get_menu(item=FieldMenüItemGetPathItemParameter(root='tea'))
+< 204 - b''
+> GET /%6Den%c3%bc/tea
+  get_menu(item=FieldMenüItemGetPathItemParameter(root='tea'))
+< 204 - b''
+> GET /men%C3%BC/Tea
+< 422 application/json {"detail":[{"type":"value_error","loc":["path","item"],"msg":"Invalid value"}]}

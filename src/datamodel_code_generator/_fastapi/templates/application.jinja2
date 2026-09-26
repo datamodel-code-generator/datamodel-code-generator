@@ -1,0 +1,11 @@
+"""Build the router of every selected operation from the services that implement them."""
+
+{{ imports }}
+
+OPERATIONS: {{ final }} = {{ operations }}
+ROUTES: {{ final }} = {{ routes }}
+
+
+{{ signature }}
+    """Check the services, then register every operation, literal paths first."""
+    {{ body }}

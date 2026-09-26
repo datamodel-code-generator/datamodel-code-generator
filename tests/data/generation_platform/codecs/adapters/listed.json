@@ -1,0 +1,20 @@
+{
+  "scopes": ["schemas", "paths"],
+  "options": {"collapse_root_models": true, "enum_field_as_literal": "all"},
+  "surface": "client",
+  "declarations": {
+    "adapters": [
+      {
+        "kind": "model",
+        "name": "names",
+        "import_ref": "app.codecs:names_model",
+        "capabilities": {"record": "CodecCapabilities", "backends": ["pydantic_v2.BaseModel"], "native_kinds": ["array"]},
+        "uses": [{"schema": {"pointer": "/paths/~1scalars/post/parameters/6/schema"}, "direction": "request"}]
+      }
+    ]
+  },
+  "cases": [
+    {"name": "tags", "use": "/paths/~1scalars/post parameter query tags", "op": "encode", "value": ["x", "y"]},
+    {"name": "tags-invalid", "use": "/paths/~1scalars/post parameter query tags", "op": "encode", "value": ["x", 1]}
+  ]
+}

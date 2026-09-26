@@ -1,0 +1,14 @@
+diagnostic BND_MODEL_SCOPE_REQUIRED /paths/~1scalars/post/parameters/8: The use has no generated native type
+adapter names /paths/~1scalars/post parameter query tags: registered_adapter native
+use /paths/~1scalars/post parameter query code: codec_0 outbound_0 None
+use /paths/~1scalars/post parameter query count: codec_1 outbound_1 None
+use /paths/~1scalars/post parameter query ratio: codec_2 outbound_2 None
+use /paths/~1scalars/post parameter query when: codec_3 outbound_3 None
+use /paths/~1scalars/post parameter query mode: codec_4 outbound_4 None
+use /paths/~1scalars/post parameter query price: codec_5 outbound_5 None
+use /paths/~1scalars/post parameter query tags: codec_6 outbound_6 None
+use /paths/~1scalars/post parameter query pet: codec_7 outbound_7 None
+use /paths/~1scalars/post request_body: codec_8 outbound_8 None
+use /paths/~1scalars/post response_body 201: codec_9 None None
+tags: wire=["x","y"]
+tags-invalid: WireValidationError schema.type@/1

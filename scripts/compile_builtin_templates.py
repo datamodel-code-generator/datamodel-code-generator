@@ -31,7 +31,10 @@ from scripts._template_compiler.compiler import module_name_for_path  # noqa: E4
 
 TEMPLATE_DIR = ROOT / "src/datamodel_code_generator/model/template"
 OUTPUT_DIR = ROOT / "src/datamodel_code_generator/model/_compiled_templates"
+FASTAPI_TEMPLATE_DIR = ROOT / "src/datamodel_code_generator/_fastapi/templates"
+FASTAPI_OUTPUT_DIR = ROOT / "src/datamodel_code_generator/_fastapi/_compiled_templates"
 _RESERVED_MODULE_NAMES = frozenset({"__init__", "registry"})
+_PACKAGE_FILES = frozenset({"__init__.py", "registry.py"})
 
 
 def _render_registry(template_paths: Iterable[Path]) -> str:
@@ -67,9 +70,11 @@ def _render_registry(template_paths: Iterable[Path]) -> str:
     )
 
 
-def _render_init() -> str:
-    return "\n".join([  # noqa: FLY002
-        '"""Generated standalone renderers for built-in model templates."""',
+def _render_init(docstring: str, *, registry: bool) -> str:
+    if not registry:
+        return f'"""{docstring}"""\n'
+    return "\n".join([
+        f'"""{docstring}"""',
         "",
         "from .registry import get_builtin_renderer",
         "",
@@ -78,18 +83,39 @@ def _render_init() -> str:
     ])
 
 
+def template_sets() -> tuple[tuple[Path, Path, str, bool], ...]:
+    """Return each template directory, its renderer directory, package docstring, and whether paths look up renderers.
+
+    Model templates resolve by path because custom template directories overlay them; the FastAPI target imports its
+    renderers directly until custom server templates exist.
+    """
+    return (
+        (TEMPLATE_DIR, OUTPUT_DIR, "Generated standalone renderers for built-in model templates.", True),
+        (
+            FASTAPI_TEMPLATE_DIR,
+            FASTAPI_OUTPUT_DIR,
+            "Generated standalone renderers for built-in FastAPI templates.",
+            False,
+        ),
+    )
+
+
 def generated_sources() -> dict[Path, str]:
-    """Generate and validate all standalone renderer source files in memory."""
+    """Generate and validate all standalone renderer source files of every template set in memory."""
     environment = build_environment()
-    inventory_templates(TEMPLATE_DIR, environment)
-    template_paths = tuple(path.relative_to(TEMPLATE_DIR) for path in iter_template_paths(TEMPLATE_DIR))
-    _validate_module_names(template_paths)
-    sources = {}
-    for path in template_paths:
-        output_path = OUTPUT_DIR / f"{module_name_for_path(path)}.py"
-        sources[output_path] = _format_python(compile_template(TEMPLATE_DIR, path, environment), output_path)
-    sources[OUTPUT_DIR / "registry.py"] = _format_python(_render_registry(template_paths), OUTPUT_DIR / "registry.py")
-    sources[OUTPUT_DIR / "__init__.py"] = _format_python(_render_init(), OUTPUT_DIR / "__init__.py")
+    sources: dict[Path, str] = {}
+    for template_dir, output_dir, docstring, registry in template_sets():
+        inventory_templates(template_dir, environment)
+        template_paths = tuple(path.relative_to(template_dir) for path in iter_template_paths(template_dir))
+        _validate_module_names(template_paths)
+        for path in template_paths:
+            output_path = output_dir / f"{module_name_for_path(path)}.py"
+            sources[output_path] = _format_python(compile_template(template_dir, path, environment), output_path)
+        if registry:
+            registry_path = output_dir / "registry.py"
+            sources[registry_path] = _format_python(_render_registry(template_paths), registry_path)
+        init = output_dir / "__init__.py"
+        sources[init] = _format_python(_render_init(docstring, registry=registry), init)
     for path, source in sources.items():
         _validate_source(source, path)
     return sources
@@ -145,9 +171,8 @@ def _stale_paths(sources: dict[Path, str]) -> list[Path]:
 
 
 def _orphan_paths(sources: dict[Path, str]) -> list[Path]:
-    generated_names = {path.name for path in sources}
     return sorted(
-        (path for path in OUTPUT_DIR.glob("*.py") if path.name not in generated_names),
+        (path for _, output_dir, _, _ in template_sets() for path in output_dir.glob("*.py") if path not in sources),
         key=lambda path: path.relative_to(ROOT).as_posix(),
     )
 
@@ -160,14 +185,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     sources = generated_sources()
     if args.inventory:
-        print(f"validated {len(sources) - 2} built-in templates")
+        print(f"validated {sum(path.name not in _PACKAGE_FILES for path in sources)} built-in templates")
     if (stale := _stale_paths(sources)) and args.check:
         for path in stale:
             print(path.relative_to(ROOT).as_posix(), file=sys.stderr)
         return 1
     if args.check:
         return 0
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    for _, output_dir, _, _ in template_sets():
+        output_dir.mkdir(parents=True, exist_ok=True)
     for path in _orphan_paths(sources):
         path.unlink()
     for path, source in sources.items():

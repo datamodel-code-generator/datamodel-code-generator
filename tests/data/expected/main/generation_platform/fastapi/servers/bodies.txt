@@ -1,0 +1,81 @@
+# bodies
+serve pydantic_v2.BaseModel
+> POST /items
+  post_item(body=UNSET)
+< 204 - b''
+> POST /items
+  post_item(body=Item(name='a'))
+< 204 - b''
+> POST /items
+< 422 application/json {"detail":[{"type":"extra_forbidden","loc":["body"],"msg":"Unexpected field"}]}
+> POST /items
+< 422 application/json {"detail":[{"type":"json_invalid","loc":["body"],"msg":"Invalid JSON body"}]}
+> POST /items
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /items
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /items
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /accounts
+  post_account(body=ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Account|ModelNode(symbol='bodies_basemodel_models:Account')", wire=mappingproxy({'name': 'a'}), presence=PresenceTree(pointer='', container='object', members=(('name', PresenceTree(pointer='/name', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/id', schema_location='', field_id='bodies_basemodel_models:Account.id', message='The native type requires a property that this direction excludes'),), kind='input'))
+< 204 - b''
+> POST /accounts
+< 422 application/json {"detail":[{"type":"value_error","loc":["body","id"],"msg":"Invalid value"}]}
+> POST /accounts
+< 422 application/json {"detail":[{"type":"missing","loc":["body"],"msg":"Field required"}]}
+> POST /profiles
+  post_profile(body=FieldProfilesPostRequest1(b='x'), media_type='application/json; profile=b')
+< 204 - b''
+> POST /profiles
+  post_profile(body=FieldProfilesPostRequest(a=1), media_type='application/json; profile=a')
+< 204 - b''
+> POST /profiles
+< 422 application/json {"detail":[{"type":"extra_forbidden","loc":["body","b"],"msg":"Unexpected field"}]}
+> POST /profiles
+  post_profile(body=FieldProfilesPostRequest(a=2), media_type='application/json; profile=a')
+< 204 - b''
+> POST /profiles
+  post_profile(body=UNSET, media_type=None)
+< 204 - b''
+> PUT /documents
+  put_document(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> PUT /documents
+  put_document(body=Item(name='b'), media_type='application/vnd.item+json')
+< 204 - b''
+> PUT /documents
+  put_document(body=FieldDocumentsPutRequest(root='hello'), media_type='text/markdown')
+< 204 - b''
+> PUT /documents
+< 422 application/json {"detail":[{"type":"value_error","loc":["body"],"msg":"Invalid value"}]}
+> PUT /documents
+  put_document(body=FieldDocumentsPutRequest(root='ÿ'), media_type='text/plain')
+< 204 - b''
+> PUT /blobs
+  put_blob(body=b'raw bytes')
+< 204 - b''
+> POST /forms
+  post_form(body=FieldFormsPostRequest(name='a', tags=['x', 'y'], count=2, other=3))
+< 204 - b''
+> POST /forms
+< 422 application/json {"detail":[{"type":"type_error","loc":["body"],"msg":"Invalid value type"}]}
+> POST /forms
+< 422 application/json {"detail":[{"type":"media_invalid","loc":["body"],"msg":"Invalid request body"}]}
+> POST /native-forms
+  post_native_form(name='a', count=1)
+< 204 - b''
+> POST /uploads
+  upload(file='a.txt':b'file body', note='n')
+< 204 - b''
+> POST /checks
+  post_check(body=Check(code=12, scores=[1, 2]))
+< 204 - b''
+> POST /checks
+< 422 application/json {"detail":[{"type":"value_error","loc":["body","code"],"msg":"Invalid value"}]}
+> POST /checks
+< 422 application/json {"detail":[{"type":"value_error","loc":["body","scores",1],"msg":"Invalid value"}]}
+> POST /checks
+< 400 application/json {"detail":"Invalid request"}
+> POST /raw
+  post_raw(request=POST /raw)
+< 204 - b''

@@ -1,0 +1,6 @@
+# group-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  F_NAME_CONFLICT target: Several router groups or reserved names take 'OPERATIONS'
+  F_NAME_CONFLICT target: Several router groups or reserved names take 'nul'
+  F_NAME_CONFLICT target: Several router groups or reserved names take 'pets'

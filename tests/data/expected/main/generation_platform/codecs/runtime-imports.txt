@@ -16,3 +16,9 @@ model_codecs/unset.py: __future__, enum, typing
 model_codecs/values.py: .errors, .wire, __future__, collections.abc, dataclasses, typing, typing_extensions
 model_codecs/views.py: .bindings, .capabilities, .context, .parameters, .wire, __future__, collections.abc, dataclasses, referencing, typing
 model_codecs/wire.py: .errors, __future__, collections.abc, dataclasses, decimal, math, re, types, typing, typing_extensions
+server/__init__.py: -
+server/application.py: __future__, collections.abc, fastapi, inspect, types, typing
+server/codecs.py: ..model_codecs.errors, ..model_codecs.media, __future__, collections.abc, typing, typing_extensions
+server/errors.py: ..model_codecs.errors, ..model_codecs.wire, __future__, collections.abc, fastapi.exceptions, typing
+server/requests.py: ..model_codecs.context, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.values, ..model_codecs.wire, .errors, __future__, collections.abc, dataclasses, fastapi.exceptions, re, starlette.requests, typing, typing_extensions, urllib.parse
+server/responses.py: ..model_codecs.context, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.values, ..model_codecs.wire, .errors, __future__, collections.abc, dataclasses, re, starlette.responses, typing, typing_extensions

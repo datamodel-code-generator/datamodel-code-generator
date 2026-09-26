@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info: {title: Route errors, version: "1.0"}
+paths:
+  /a/{b:
+    get:
+      operationId: unmatched
+      responses:
+        "204": {description: Done.}
+  /c/{d:int}:
+    get:
+      operationId: converter
+      parameters:
+        - {name: "d:int", in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /e/{f}:
+    get:
+      operationId: undeclared
+      responses:
+        "204": {description: Done.}
+  /g/{x}:
+    get:
+      operationId: firstShape
+      parameters:
+        - {name: x, in: path, required: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /g/{y}:
+    get:
+      operationId: secondShape
+      parameters:
+        - {name: y, in: path, required: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}

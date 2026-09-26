@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info: {title: Names, version: "1.0"}
+paths:
+  /users/me:
+    get:
+      tags: [Users, admin]
+      responses:
+        "204": {description: Done.}
+  /users/{id}:
+    get:
+      operationId: GetUserByID
+      tags: [Users]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: id, in: query, schema: {type: integer}}
+        - {name: body, in: query, schema: {type: string}}
+        - {name: media_type, in: header, schema: {type: string}}
+        - {name: dcg_p0, in: query, schema: {type: string}}
+        - {name: parameters, in: query, schema: {type: string}}
+        - {name: session, in: cookie, schema: {type: string}}
+        - {name: get_user_by_id_handler, in: query, schema: {type: string}}
+      deprecated: true
+      responses:
+        "204": {description: Done.}
+    put:
+      operationId: class
+      tags: [Users]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: principal, in: query, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                id: {type: string}
+      responses:
+        "204": {description: Done.}
+  /files/{file.name}/{dcg_p0}:
+    get:
+      operationId: getFile
+      tags: ["2024 files"]
+      parameters:
+        - {name: file.name, in: path, required: true, schema: {type: string}}
+        - {name: dcg_p0, in: path, required: true, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /health:
+    get:
+      responses:
+        "204": {description: Done.}

@@ -1,0 +1,391 @@
+openapi: 3.1.0
+info: {title: Native checks, version: "1.0"}
+paths:
+  /discriminated:
+    post:
+      operationId: postDiscriminated
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Discriminated"}
+      responses:
+        "204": {description: Done.}
+  /ranges:
+    post:
+      operationId: postRanges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Ranges"}
+      responses:
+        "204": {description: Done.}
+  /wide:
+    post:
+      operationId: postWide
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Wide"}
+      responses:
+        "204": {description: Done.}
+  /described:
+    post:
+      operationId: postDescribed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Described"}
+      responses:
+        "204": {description: Done.}
+  /patterned:
+    post:
+      operationId: postPatterned
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Patterned"}
+      responses:
+        "204": {description: Done.}
+  /bounded:
+    post:
+      operationId: postBounded
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Bounded"}
+      responses:
+        "204": {description: Done.}
+  /painted:
+    post:
+      operationId: postPainted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Painted"}
+      responses:
+        "204": {description: Done.}
+  /holder:
+    post:
+      operationId: postHolder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Holder"}
+      responses:
+        "204": {description: Done.}
+  /wrapper:
+    post:
+      operationId: postWrapper
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Wrapper"}
+      responses:
+        "204": {description: Done.}
+  /extended:
+    post:
+      operationId: postExtended
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Extended"}
+      responses:
+        "204": {description: Done.}
+  /defaulted:
+    post:
+      operationId: postDefaulted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Defaulted"}
+      responses:
+        "204": {description: Done.}
+  /listed:
+    post:
+      operationId: postListed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Listed"}
+      responses:
+        "204": {description: Done.}
+  /mapped:
+    post:
+      operationId: postMapped
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Mapped"}
+      responses:
+        "204": {description: Done.}
+  /opaque:
+    post:
+      operationId: postOpaque
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Opaque"}
+      responses:
+        "204": {description: Done.}
+  /anything:
+    post:
+      operationId: postAnything
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Anything"}
+      responses:
+        "204": {description: Done.}
+  /constant:
+    post:
+      operationId: postConstant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Constant"}
+      responses:
+        "204": {description: Done.}
+  /stamped:
+    post:
+      operationId: postStamped
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Stamped"}
+      responses:
+        "204": {description: Done.}
+  /closed:
+    post:
+      operationId: postClosed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Closed"}
+      responses:
+        "204": {description: Done.}
+  /twice:
+    post:
+      operationId: postTwice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Twice"}
+      responses:
+        "204": {description: Done.}
+  /node:
+    post:
+      operationId: postNode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Node"}
+      responses:
+        "204": {description: Done.}
+  /extra:
+    post:
+      operationId: postExtra
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Extra"}
+      responses:
+        "204": {description: Done.}
+  /nested:
+    post:
+      operationId: postNested
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Nested"}
+      responses:
+        "204": {description: Done.}
+  /box:
+    post:
+      operationId: postBox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Box"}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Discriminated:
+      type: object
+      required: [pet]
+      properties:
+        pet:
+          oneOf: [{$ref: "#/components/schemas/Cat"}, {$ref: "#/components/schemas/Dog"}]
+          discriminator: {propertyName: kind}
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, const: cat}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string, const: dog}
+    Ranges:
+      type: object
+      required: [small, positive]
+      properties:
+        small: {type: integer, format: int32, minimum: 0, maximum: 10}
+        positive: {type: integer, format: int32, exclusiveMinimum: 0, exclusiveMaximum: 100}
+    Wide:
+      type: object
+      required: [big]
+      properties:
+        big: {type: integer, format: int64}
+    Described:
+      type: object
+      required: [name]
+      properties:
+        name: {$ref: "#/components/schemas/Name", description: The name.}
+    Name:
+      type: string
+    Patterned:
+      type: object
+      required: [code]
+      properties:
+        code: {type: string, pattern: "^[a-z]+$"}
+    Bounded:
+      type: object
+      minProperties: 1
+      properties:
+        name: {type: string}
+    Painted:
+      type: object
+      required: [color]
+      properties:
+        color: {$ref: "#/components/schemas/Color"}
+    Color:
+      type: string
+      enum: [red, blue]
+    Holder:
+      type: object
+      required: [code]
+      properties:
+        code: {$ref: "#/components/schemas/Code"}
+    Code:
+      type: string
+      maxLength: 3
+    Wrapper:
+      type: object
+      required: [inner]
+      properties:
+        inner: {$ref: "#/components/schemas/MaybeInner"}
+    MaybeInner:
+      type: [object, "null"]
+      required: [a]
+      properties:
+        a: {type: string}
+    Closed:
+      type: object
+      additionalProperties: false
+      required: [a]
+      properties:
+        a: {type: string}
+    Extended:
+      allOf:
+        - {$ref: "#/components/schemas/Closed"}
+        - type: object
+          required: [b]
+          properties:
+            b: {type: string}
+    Defaulted:
+      type: object
+      required: [a]
+      properties:
+        a: {type: string, default: x}
+    Listed:
+      type: object
+      required: [items, sized]
+      properties:
+        items: {type: array}
+        sized: {type: array, items: {type: string}, minItems: 1}
+    Mapped:
+      type: object
+      required: [counts]
+      properties:
+        counts: {additionalProperties: {type: integer}}
+    Opaque:
+      type: object
+      required: [mail]
+      properties:
+        mail: {type: string, format: email}
+    Anything:
+      type: object
+      required: [value, other]
+      properties:
+        value: {minLength: 1}
+        other: {}
+    Constant:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: fixed}
+    Stamped:
+      type: object
+      required: [at, host, day]
+      properties:
+        at: {type: integer, format: date-time}
+        host: {type: string, format: hostname}
+        day: {type: string, format: date}
+    Twice:
+      type: object
+      required: [a, b]
+      properties:
+        a: {$ref: "#/components/schemas/Code"}
+        b: {$ref: "#/components/schemas/Code"}
+    Node:
+      type: object
+      required: [children]
+      properties:
+        children: {type: array, items: {$ref: "#/components/schemas/Node"}}
+    Extra:
+      type: object
+      required: [a]
+      properties:
+        a: {type: string}
+      additionalProperties: {type: integer}
+    Nested:
+      type: object
+      required: [grid, loose]
+      properties:
+        grid: {type: array, items: {type: array, items: {type: integer}, minItems: 2}}
+        loose: {type: object}
+    Box:
+      type: object
+      required: [label, closed, multi]
+      properties:
+        label: {$ref: "#/components/schemas/Label"}
+        closed: {type: object, additionalProperties: false}
+        multi: {type: [object, array], additionalProperties: {type: integer}, items: {type: integer}}
+    Label:
+      type: integer
+      x-python-type: str

@@ -1,0 +1,48 @@
+openapi: 3.1.0
+info: {title: Media errors, version: "1.0"}
+paths:
+  /encoded:
+    post:
+      operationId: postEncoded
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                meta: {type: object, properties: {name: {type: string}}}
+            encoding:
+              meta: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /schemaless:
+    post:
+      operationId: postSchemaless
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded: {}
+      responses:
+        "204": {description: Done.}
+  /mixed:
+    post:
+      operationId: postMixed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+          multipart/form-data:
+            schema: {type: object}
+      responses:
+        "204": {description: Done.}
+  /form-response:
+    get:
+      operationId: getForm
+      responses:
+        "200":
+          description: A form.
+          content:
+            application/x-www-form-urlencoded:
+              schema: {type: object}

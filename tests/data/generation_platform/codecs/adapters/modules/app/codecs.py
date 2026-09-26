@@ -39,6 +39,7 @@ LOOKAROUND = SchemaCodecCapabilities(
 )
 PET_MODEL = CodecCapabilities(backends=("pydantic_v2.BaseModel",), native_kinds=("model",), presence="native")
 KEEPER_MODEL = CodecCapabilities(backends=("pydantic_v2.BaseModel",), native_kinds=("model",))
+NAMES = CodecCapabilities(backends=("pydantic_v2.BaseModel",), native_kinds=("array",))
 SCRIPTED = {
     **{
         location: ParameterCodecCapabilities(
@@ -234,6 +235,28 @@ class CatModel(KeeperModel):
 
 def cat_model() -> CatModel:
     return CatModel()
+
+
+class NamesModel:
+    """Read and write lists of names, whose native type is a parameterized list."""
+
+    api_version: Literal[1] = 1
+
+    def capabilities(self, *, binding):
+        return NAMES
+
+    def decode_native(self, *, wire, binding, context):
+        return list(thaw_wire(wire))
+
+    def encode_native(self, *, value, binding, context):
+        return freeze_wire(list(value))
+
+    def presence(self, *, value, binding, context):
+        return None
+
+
+def names_model() -> NamesModel:
+    return NamesModel()
 
 
 class Scripted:

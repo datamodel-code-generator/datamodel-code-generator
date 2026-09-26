@@ -121,6 +121,7 @@ type = [
   "types-pyyaml",
   "types-setuptools>=67.6.0.5,<84",
   "types-toml",
+  { include-group = "fastapi" },
   { include-group = "test" },
 ]
 docs = [
@@ -137,6 +138,11 @@ coverage = [
   "covdefaults>=2.3",
   "coverage[toml]>=7.6.1",
   "diff-cover>=9.7.2",
+]
+fastapi = [
+  "fastapi>=0.141.1,<0.142",
+  "httpx2>=2,<3",
+  "python-multipart>=0.0.32,<0.1",
 ]
 fix = [ "prek>=0.2.22" ]
 isort6 = [ "isort>=6,<7" ]
@@ -210,6 +216,12 @@ lint.per-file-ignores."scripts/*.py" = [
   "PLR0915", # too many statements
   "S",       # subprocess security is fine for build scripts
   "T201",    # print is fine for CLI scripts
+]
+lint.per-file-ignores."src/datamodel_code_generator/_fastapi/_compiled_templates/*.py" = [
+  "ALL", # Generated sources are checked by compile_builtin_templates.py.
+]
+lint.per-file-ignores."src/datamodel_code_generator/_runtime/server/*.py" = [
+  "TID252", # Generated packages copy the runtime, so the server runtime imports its sibling runtime relatively.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/model/_compiled_templates/*.py" = [
   "ALL", # Generated sources are checked by compile_builtin_templates.py.

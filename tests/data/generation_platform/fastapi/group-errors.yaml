@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info: {title: Group errors, version: "1.0"}
+paths:
+  /one:
+    get:
+      operationId: one
+      tags: [Pets]
+      responses:
+        "204": {description: Done.}
+  /two:
+    get:
+      operationId: two
+      tags: [pets]
+      responses:
+        "204": {description: Done.}
+  /three:
+    get:
+      operationId: three
+      tags: [nul]
+      responses:
+        "204": {description: Done.}
+  /four:
+    get:
+      operationId: four
+      tags: [four]
+      responses:
+        "204": {description: Done.}

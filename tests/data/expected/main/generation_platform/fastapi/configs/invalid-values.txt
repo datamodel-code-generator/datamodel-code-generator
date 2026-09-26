@@ -1,0 +1,10 @@
+APIGenerationError
+  E_CONFIG_VALUE config layout: layout must be 'routers' or 'single'
+  E_CONFIG_VALUE config include_request: include_request must be a boolean
+  E_CONFIG_VALUE config body_mode: body_mode must be 'typed' or 'request'
+  E_CONFIG_VALUE config body_modes: body_modes has an invalid entry
+  E_CONFIG_VALUE config primary_responses: primary_responses has an invalid entry
+  E_CONFIG_VALUE config operation_names: operation_names has an invalid entry
+  E_CONFIG_VALUE config parameter_names: parameter_names has an invalid entry
+  E_CONFIG_VALUE config router_names: router_names must map group keys to identifiers
+  E_CONFIG_VALUE config codec_adapters: codec_adapters must be a tuple of registrations

@@ -1,0 +1,745 @@
+{
+  "pets": {
+    "input": "pets.yaml",
+    "services": "pets",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "builds": [
+      "missing",
+      "not-callable",
+      "async",
+      "async-object",
+      "signature"
+    ],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/pets"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=1&tags=a&tags=b&kind=cat&since=2024-01-01T00:00:00Z",
+        "headers": {
+          "X-Request-Id": "00000000-0000-0000-0000-000000000001",
+          "Cookie": "session=a%20b"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=0"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?kind=bird"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?limit=99"
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "Tom",
+          "tag": null
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": ""
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/pets/mine"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/1"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/7"
+      },
+      {
+        "method": "GET",
+        "url": "/pets/0"
+      },
+      {
+        "method": "DELETE",
+        "url": "/pets/2"
+      },
+      {
+        "method": "DELETE",
+        "url": "/pets/7"
+      },
+      {
+        "method": "GET",
+        "url": "/store/inventory"
+      }
+    ],
+    "codecs": [
+      {
+        "facade": "GetPetResponseCodecs",
+        "status_code": 200
+      },
+      {
+        "facade": "GetPetResponseCodecs",
+        "status_code": 404,
+        "media_type": "application/json"
+      },
+      {
+        "facade": "GetPetResponseCodecs",
+        "status_code": 500
+      },
+      {
+        "facade": "GetPetResponseCodecs",
+        "status_code": 200,
+        "name": "part"
+      }
+    ]
+  },
+  "parameters": {
+    "input": "server-parameters.yaml",
+    "services": "parameters",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/search"
+      },
+      {
+        "method": "GET",
+        "url": "/search",
+        "headers": {
+          "Cookie": "session=x"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?code=XY&filter%5Bname%5D=n&ids=1,2&blob=%7B%22a%22%3A1%7D&note=hi",
+        "headers": {
+          "Cookie": "session=abc",
+          "X-Ids": "3, 4"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?code=ab&ids=1,x&blob=%7B%22b%22%3A1%7D",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?blob=%7B",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?code=A&code=B",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/search?filter%5Bname%5D=n&filter%5Bid%5D=1",
+        "headers": {
+          "Cookie": "session=abc"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/ratios?ratios=1&ratios=2.5"
+      },
+      {
+        "method": "GET",
+        "url": "/ratios?ratios=nan"
+      },
+      {
+        "method": "GET",
+        "url": "/ratios?ratios=inf"
+      },
+      {
+        "method": "GET",
+        "url": "/repeat/1/again/1"
+      },
+      {
+        "method": "GET",
+        "url": "/repeat/1/again/01"
+      },
+      {
+        "method": "GET",
+        "url": "/repeat/1/again/2"
+      },
+      {
+        "method": "GET",
+        "url": "/repeat/x/again/x"
+      },
+      {
+        "method": "GET",
+        "url": "/repeat/1/again/1",
+        "headers": {
+          "X-Without-Raw-Path": "1"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/repeat/1/again/1",
+        "headers": {
+          "X-Raw-Path": "/elsewhere"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/notes/7"
+      },
+      {
+        "method": "GET",
+        "url": "/notes/seven"
+      },
+      {
+        "method": "GET",
+        "url": "/files/a.txt"
+      },
+      {
+        "method": "GET",
+        "url": "/files/A.txt"
+      },
+      {
+        "method": "GET",
+        "url": "/men%C3%BC/tea"
+      },
+      {
+        "method": "GET",
+        "url": "/%6Den%c3%bc/tea"
+      },
+      {
+        "method": "GET",
+        "url": "/men%C3%BC/Tea"
+      }
+    ]
+  },
+  "bodies": {
+    "input": "server-bodies.yaml",
+    "services": "bodies",
+    "config": {
+      "body_modes": [
+        [
+          "/paths/~1raw/post",
+          "request"
+        ]
+      ]
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/items"
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "json": {
+          "name": "a",
+          "extra": 1
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "{",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "{}",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "{}"
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "{}",
+        "headers": {
+          "Content-Type": "not a media type"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/accounts",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/accounts",
+        "json": {
+          "id": 1,
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/accounts"
+      },
+      {
+        "method": "POST",
+        "url": "/profiles",
+        "headers": {
+          "Content-Type": "application/json; profile=b"
+        },
+        "content": "{\"b\": \"x\"}"
+      },
+      {
+        "method": "POST",
+        "url": "/profiles",
+        "headers": {
+          "Content-Type": "application/json; profile=a"
+        },
+        "content": "{\"a\": 1}"
+      },
+      {
+        "method": "POST",
+        "url": "/profiles",
+        "headers": {
+          "Content-Type": "application/json; profile=a"
+        },
+        "content": "{\"b\": \"x\"}"
+      },
+      {
+        "method": "POST",
+        "url": "/profiles",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "content": "{\"a\": 2}"
+      },
+      {
+        "method": "POST",
+        "url": "/profiles",
+        "headers": {
+          "Content-Type": "application/json; profile=b"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/documents",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/documents",
+        "content": "{\"name\": \"b\"}",
+        "headers": {
+          "Content-Type": "application/vnd.item+json"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/documents",
+        "content": "hello",
+        "headers": {
+          "Content-Type": "text/markdown; charset=utf-8"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/documents",
+        "content": "too long",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/documents",
+        "content": "ÿ",
+        "headers": {
+          "Content-Type": "text/plain; charset=utf-8"
+        }
+      },
+      {
+        "method": "PUT",
+        "url": "/blobs",
+        "content": "raw bytes",
+        "headers": {
+          "Content-Type": "application/octet-stream"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "name": "a",
+          "tags": [
+            "x",
+            "y"
+          ],
+          "count": "2",
+          "other": "3"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "count": "two"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "content": "name=a&name=b",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/native-forms",
+        "data": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": {
+          "file": [
+            "a.txt",
+            "file body",
+            "text/plain"
+          ]
+        },
+        "data": {
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/checks",
+        "json": {
+          "code": "12",
+          "scores": [
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/checks",
+        "json": {
+          "code": "twelve"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/checks",
+        "json": {
+          "scores": [
+            1,
+            -1
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/checks",
+        "content": "{\"scores\": [11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111]}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/raw",
+        "json": {
+          "any": "thing"
+        }
+      }
+    ]
+  },
+  "results": {
+    "input": "server-results.yaml",
+    "services": "results",
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/results?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=model-value"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=csv"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=binary"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=image"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=html"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=bad-media"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=csv-bytes"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=binary-text"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=headers",
+        "show_headers": [
+          "x-rate",
+          "x-tag",
+          "x-other",
+          "location"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=negative-rate"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=bad-name"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=crlf"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=owned"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=header-list"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=header-item"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=created",
+        "show_headers": [
+          "x-rate",
+          "x-tag",
+          "x-other",
+          "location"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=created-without-location"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=no-content"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=no-content-body"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=range"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=range-object"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=client-error"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=client-error-bytes"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=problem"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=status-bool"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=status-low"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=response"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=response-html"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=response-header"
+      },
+      {
+        "method": "HEAD",
+        "url": "/results?case=head-empty"
+      },
+      {
+        "method": "HEAD",
+        "url": "/results?case=head-body"
+      },
+      {
+        "method": "HEAD",
+        "url": "/results?case=head-bare"
+      },
+      {
+        "method": "HEAD",
+        "url": "/results?case=head-none"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?case=text"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?case=too-long"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?case=undeclared"
+      },
+      {
+        "method": "GET",
+        "url": "/plain?case=response-undeclared"
+      },
+      {
+        "method": "GET",
+        "url": "/nothing?case=value"
+      },
+      {
+        "method": "GET",
+        "url": "/nothing?case=anything"
+      },
+      {
+        "method": "POST",
+        "url": "/empty?case=none"
+      },
+      {
+        "method": "POST",
+        "url": "/empty?case=value"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=response-created",
+        "show_headers": [
+          "location"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=response-created-without-location"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=response-negative-rate"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=response-no-content-body"
+      },
+      {
+        "method": "GET",
+        "url": "/latin?case=latin"
+      },
+      {
+        "method": "GET",
+        "url": "/latin?case=euro"
+      }
+    ],
+    "codecs": [
+      {
+        "facade": "GetResultResponseCodecs",
+        "status_code": 200,
+        "media_type": "text/csv"
+      },
+      {
+        "facade": "GetResultResponseCodecs",
+        "status_code": 404
+      },
+      {
+        "facade": "GetResultResponseCodecs",
+        "status_code": 503
+      },
+      {
+        "facade": "GetResultResponseCodecs",
+        "status_code": 200,
+        "media_type": "text/html"
+      },
+      {
+        "facade": "GetResultResponseCodecs",
+        "status_code": 200,
+        "media_type": "not a media type"
+      },
+      {
+        "facade": "GetResultResponseCodecs",
+        "status_code": "200"
+      },
+      {
+        "facade": "GetNothingResponseCodecs",
+        "status_code": 200
+      }
+    ]
+  }
+}

@@ -93,6 +93,7 @@ _SUPPORTED_GETATTR_ROOT_NAMES = frozenset({
     "loop",
     "ns",
     "pattern_property",
+    "route",
     "rule",
     "schema_runtime_validation",
     "schema_validator_state",

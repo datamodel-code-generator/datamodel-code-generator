@@ -1,6 +1,6 @@
 {
   "code": 1,
   "prepared": [],
-  "stderr": "Invalid coverage file: .coverage.httpx-e2e-ubuntu-24.04\n",
+  "stderr": "Invalid coverage file: .coverage.fastapi-e2e-ubuntu-24.04\n",
   "stdout": ""
 }

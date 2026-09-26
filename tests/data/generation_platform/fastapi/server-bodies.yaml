@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info: {title: Server bodies, version: "1.0"}
+paths:
+  /items:
+    post:
+      operationId: postItem
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+      responses:
+        "204": {description: Done.}
+  /accounts:
+    post:
+      operationId: postAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Account"}
+      responses:
+        "204": {description: Done.}
+  /profiles:
+    post:
+      operationId: postProfile
+      requestBody:
+        content:
+          application/json; profile=a:
+            schema: {type: object, additionalProperties: false, properties: {a: {type: integer}}}
+          application/json; profile=b:
+            schema: {type: object, additionalProperties: false, properties: {b: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /documents:
+    put:
+      operationId: putDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+          application/vnd.item+json:
+            schema: {$ref: "#/components/schemas/Item"}
+          text/*:
+            schema: {type: string, maxLength: 5}
+      responses:
+        "204": {description: Done.}
+  /blobs:
+    put:
+      operationId: putBlob
+      requestBody:
+        required: true
+        content:
+          application/octet-stream: {}
+      responses:
+        "204": {description: Done.}
+  /forms:
+    post:
+      operationId: postForm
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                tags: {type: array, items: {type: string}}
+                count: {type: integer}
+              additionalProperties: {type: integer}
+      responses:
+        "204": {description: Done.}
+  /native-forms:
+    post:
+      operationId: postNativeForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                count: {type: integer, default: 1}
+      responses:
+        "204": {description: Done.}
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                note: {type: string}
+      responses:
+        "204": {description: Done.}
+  /checks:
+    post:
+      operationId: postCheck
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Check"}
+      responses:
+        "204": {description: Done.}
+  /raw:
+    post:
+      operationId: postRaw
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Item:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: {type: string}
+    Account:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer, readOnly: true}
+        name: {type: string}
+    Check:
+      type: object
+      additionalProperties: false
+      properties:
+        code: {type: string, x-python-type: int}
+        scores: {type: array, items: {type: integer, minimum: 0}}

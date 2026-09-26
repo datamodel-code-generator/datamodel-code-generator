@@ -1,0 +1,9 @@
+layout='single'
+include_request=True
+body_mode='request'
+body_modes=mappingproxy({'/paths/~1pets/post': 'typed'})
+primary_responses=mappingproxy({OperationRef(pointer='/paths/~1pets/post', document=None): ResponseChoice(status_code=201, media_type='application/json'), '/paths/~1pets/get': ResponseChoice(status_code=200, media_type=None)})
+operation_names=mappingproxy({'/paths/~1pets/get': 'list_all'})
+router_names=mappingproxy({'tag:pets': 'animals'})
+parameter_names=mappingproxy({'/paths/~1pets/get': mappingproxy({'query:limit': 'page_size', 'header:X-Trace': 'trace'})})
+codec_adapters=()

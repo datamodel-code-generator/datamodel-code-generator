@@ -13,6 +13,7 @@
     "group": "test-${{ github.ref }}"
   },
   "configurations": [
+    "fastapi-e2e:ubuntu-24.04:/:",
     "httpx-both-nocov-e2e:macos-latest:/:",
     "httpx-e2e:ubuntu-24.04:/:",
     "httpx2-max-nocov-e2e:windows-latest:/:",
@@ -76,9 +77,9 @@
     "pydantic213:ubuntu-24.04:/:",
     "pydantic25:ubuntu-24.04:/:"
   ],
-  "coverage_count": 29,
+  "coverage_count": 30,
   "coverage_needs_only_producers": true,
-  "coverage_unique": 29,
+  "coverage_unique": 30,
   "exclude_only_without_coverage": true,
   "exclude_tests": [
     "tests/main/test_payload_validation.py"
@@ -95,7 +96,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 66,
+  "job_count": 67,
   "permissions": {
     "contents": "read"
   },
