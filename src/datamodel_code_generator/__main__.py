@@ -212,6 +212,7 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "target_config",
     "target_output",
     "diagnostics_json",
+    "dependency_format",
 })
 
 ORIGINAL_FIELD_NAME_DELIMITER_ERROR = "`--original-field-name-delimiter` can not be used without `--snake-case-field`."
@@ -225,6 +226,7 @@ _TARGET_OPTIONS: tuple[tuple[str, str], ...] = (
     ("target_config", "--target-config"),
     ("target_output", "--target-output"),
     ("diagnostics_json", "--diagnostics-json"),
+    ("dependency_format", "--dependency-format"),
 )
 _TARGET_EXCLUSIVE: tuple[tuple[str, str], ...] = (
     ("install_skill", "--install-skill"),

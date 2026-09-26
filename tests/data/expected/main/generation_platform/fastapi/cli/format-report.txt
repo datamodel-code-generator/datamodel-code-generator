@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "target": "fastapi",
+  "diagnostics": [
+    {
+      "code": "E_CONFIG_CONFLICT",
+      "severity": "error",
+      "stage": "config",
+      "message": "--dependency-format cannot be used with --diagnostics-json -",
+      "source_uri": null,
+      "source_pointer": null,
+      "operation": null,
+      "option_path": null,
+      "artifact_path": null,
+      "target_id": null
+    }
+  ]
+}

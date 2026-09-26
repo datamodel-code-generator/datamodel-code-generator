@@ -1,0 +1,6 @@
+fastapi>=0.141.1
+starlette>=1.0.0
+pydantic>=2.13.5
+jsonschema[format-nongpl]>=4.26
+referencing>=0.37
+typing-extensions>=4.16

@@ -74,6 +74,9 @@ uv add uvicorn
 uv run uvicorn app:app
 ```
 
+With [`--dependency-format requirements`](cli-reference/manual/dependency-format.md#dependency-format), generation
+prints the lines of a requirements file instead, for pip or `uv pip`.
+
 Because `Pets` subclasses `PetsService`, type checkers report a missing method or one whose arguments or result
 do not match its operation, and Python refuses to create `Pets()` while a method is missing. `create_app` takes
 one service for each group, under the group's name, and checks every method when the application starts; any

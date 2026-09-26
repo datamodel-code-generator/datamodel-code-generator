@@ -716,6 +716,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   -h, --help            show this help message and exit
 
 [36;1mTarget generation options (experimental)[0m:
+  --dependency-format {uv,requirements}
+                        Print what adds the generated package to a project as
+                        a uv add command (default) or requirements lines.
   --diagnostics-json PATH
                         Write the selected target's diagnostics as JSON to
                         PATH, or to stdout with -.

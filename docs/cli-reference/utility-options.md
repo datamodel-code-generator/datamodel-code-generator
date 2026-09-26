@@ -6,6 +6,7 @@
 |--------|-------------|
 | [`--all-jobs`](#all-jobs) | Run every named generation job from pyproject.toml (experimental) |
 | [`--debug`](#debug) | Show debug messages during code generation |
+| [`--dependency-format`](#dependency-format) | Print the generation target's dependencies for uv or a requirements file |
 | [`--diagnostics-json`](#diagnostics-json) | Write the generation target's diagnostics as JSON |
 | [`--generate-prompt`](#generate-prompt) | Generate a prompt for consulting LLMs about CLI options |
 | [`--generate-server`](#generate-server) | Generate a FastAPI server package with the models (experimental) |
@@ -87,6 +88,41 @@ or code generation. Requires the `debug` extra to be installed.
     ```bash
     pip install 'datamodel-code-generator[debug]'
     ```
+
+---
+
+## `--dependency-format` {#dependency-format}
+
+Choose what a generation prints to add the generated package to your project (experimental): `uv`, the
+default, prints a `uv add` command, and `requirements` prints the lines of a requirements file.
+
+**Related:** [`--generate-server`](#generate-server),
+[FastAPI Server](../fastapi-server.md)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input openapi.yaml --input-file-type openapi \
+      --openapi-scopes schemas api --output models.py \
+      --generate-server fastapi --target-config fastapi.toml \
+      --dependency-format requirements > requirements.txt
+    ```
+
+In embedded mode, `requirements` prints one runtime dependency per line, each with the minimum version the
+package needs:
+
+```text
+fastapi>=0.141.1
+starlette>=1.0.0
+pydantic>=2.13.5
+jsonschema[format-nongpl]>=4.26
+referencing>=0.37
+typing-extensions>=4.16
+```
+
+In standalone mode it prints `-e` with the distribution's path, such as `-e ./service`; a path that needs
+quoting is written as a `file:` URL, which pip and uv both read. Nothing is printed for `--check`, and the option
+cannot be combined with `--diagnostics-json -`, which also writes to stdout (`E_CONFIG_CONFLICT`).
 
 ---
 
@@ -223,7 +259,8 @@ The only choice is `fastapi`.
     generated package, and diagnostics may change.
 
 **Related:** [`--target-config`](#target-config), [`--target-output`](#target-output),
-[`--diagnostics-json`](#diagnostics-json), [FastAPI Server](../fastapi-server.md)
+[`--diagnostics-json`](#diagnostics-json),
+[`--dependency-format`](#dependency-format), [FastAPI Server](../fastapi-server.md)
 
 !!! tip "Usage"
 
@@ -241,7 +278,9 @@ The only choice is `fastapi`.
 
 One run generates the models with the usual model options and the server package from the same accepted
 document, then publishes both together. `--check` exits with 1 when a file would change and with 2 for an
-error. Diagnostics go to stderr; the generated code is never printed.
+error. Diagnostics go to stderr, and the generated code is never printed; a generation ends by printing the
+command that adds the package to your project, as [`--dependency-format`](#dependency-format)
+chooses.
 
 `--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
 `--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints

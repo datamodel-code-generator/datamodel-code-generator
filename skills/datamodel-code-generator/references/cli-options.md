@@ -257,3 +257,4 @@ General utility, HTTP, checking, and project integration options.
 - `--target-config`: Read the selected target's settings from a flat TOML file.
 - `--target-output`: Write the selected target to PATH instead of the output its settings name.
 - `--diagnostics-json`: Write the selected target's diagnostics as JSON to PATH, or to stdout with -.
+- `--dependency-format`: Print what adds the generated package to a project as a uv add command (default) or requirements lines. Choices: `uv`, `requirements`.

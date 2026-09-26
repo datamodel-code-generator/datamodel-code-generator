@@ -74,6 +74,8 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
     )
     if flags := _flags(namespace, config, _CONFLICTS):
         raise _refused(flags)
+    if (form := vars(namespace).get("dependency_format")) is not None and report.destination == "-":
+        raise APIGenerationError((_conflict("--dependency-format cannot be used with --diagnostics-json -"),))
     target = _target_config(target_config, output)
     report.guard((), (target.output,))
     effective = _target_settings(config, args, lockfile)
@@ -91,7 +93,7 @@ def _run(args: Sequence[str], namespace: Namespace, config: Any, pyproject_path:
     generated = generate_target(source, model_config=effective, config=target, generator=generator)
     report.extend(generated.diagnostics)
     if report.destination != "-":
-        print(_next_step(target, generated.dependencies))  # noqa: T201
+        print(_next_step(target, generated.dependencies, form))  # noqa: T201
     return _OK
 
 
@@ -101,16 +103,25 @@ def _shown(path: Path) -> str:
     return (path.relative_to(cwd) if path.is_relative_to(cwd) else path).as_posix()
 
 
-def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...]) -> str:
-    """Return the uv command that adds a generated package to its project: its dependencies or its distribution."""
+def _next_step(target: FastAPIConfig, dependencies: tuple[str, ...], form: str | None) -> str:
+    """Return what adds a generated package to a project: a uv command, or the lines of a requirements file.
+
+    A standalone distribution is added editable; a path that needs quoting becomes a file URL, which pip and uv read
+    alike in a requirements file.
+    """
     if target.package_mode != "standalone":
-        return _uv_add(f"the runtime dependencies of {target.package}", dependencies)
-    path = _shown(target.output)
-    location = path if Path(path).is_absolute() else f"./{path}"
-    return _uv_add(f"the {target.distribution_name} distribution", ("--editable", location))
-
-
-def _uv_add(subject: str, arguments: Sequence[str]) -> str:
+        subject, arguments, requirements = f"the runtime dependencies of {target.package}", dependencies, dependencies
+    else:
+        path = _shown(target.output)
+        location = path if Path(path).is_absolute() else f"./{path}"
+        editable = location if _PLAIN.fullmatch(location) else (Path.cwd() / target.output).resolve().as_uri()
+        subject, arguments, requirements = (
+            f"the {target.distribution_name} distribution",
+            ("--editable", location),
+            (f"-e {editable}",),
+        )
+    if form == "requirements":
+        return "\n".join(requirements)
     return f"Add {subject} to your project:\n  uv add {' '.join(map(_argument, arguments))}"
 
 

@@ -107,7 +107,9 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
     "cli-option.generate-server": ExperimentalFeature(
         id="cli-option.generate-server",
         kind="cli-option",
-        target="--generate-server fastapi, --target-config, --target-output, and --diagnostics-json",
+        target=(
+            "--generate-server fastapi, --target-config, --target-output, --diagnostics-json, and --dependency-format"
+        ),
         message=(
             "FastAPI server generation from the CLI is experimental; its options, target configuration file, "
             "generated package, and diagnostics may change."
@@ -116,7 +118,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         note=(
             "--generate-server fastapi generates the models at --output and a server package from the flat TOML "
             "file --target-config names; --target-output overrides the file's output, --check compares without "
-            "writing, and --diagnostics-json writes the target diagnostics as JSON."
+            "writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses "
+            "whether a generation prints a uv add command or requirements lines."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(

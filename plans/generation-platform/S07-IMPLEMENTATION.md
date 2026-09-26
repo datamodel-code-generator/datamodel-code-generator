@@ -149,6 +149,12 @@ The maintainer decided on 2026-09-27 that generated dependency specifiers name o
 
 Tests: the printed command and the standalone `pyproject.toml` expectations lose the upper bounds.
 
+## Requirements output on request
+
+The maintainer asked on 2026-09-27 for an optional requirements format next to the default `uv add` command. `--dependency-format` (experimental, with `--generate-server`) takes `uv`, the default, or `requirements`, which prints one runtime dependency per line in embedded mode and `-e` with the distribution path in standalone mode, ready for `> requirements.txt`, pip, or `uv pip`. pip reads a quoted `-e` path and uv only an unquoted one, so a path that needs quoting becomes an absolute `file:` URL, which both read. Printing stays off for `--check`, and the option with `--diagnostics-json -`, which also writes to stdout, is `E_CONFIG_CONFLICT`. The option is registered like the other target options: a usage error without `--generate-server`, a manual CLI reference page, and the experimental `cli-option.generate-server` entry.
+
+Tests: the CLI dependency cases print requirements for an embedded package and a standalone distribution, a spaced standalone path prints a file URL, the usage case rejects the option without `--generate-server`, and a configuration error case rejects it with `--diagnostics-json -`.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

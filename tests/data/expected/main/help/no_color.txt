@@ -716,6 +716,9 @@ General options:
   -h, --help            show this help message and exit
 
 Target generation options (experimental):
+  --dependency-format {uv,requirements}
+                        Print what adds the generated package to a project as
+                        a uv add command (default) or requirements lines.
   --diagnostics-json PATH
                         Write the selected target's diagnostics as JSON to
                         PATH, or to stdout with -.
