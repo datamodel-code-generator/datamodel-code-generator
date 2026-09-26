@@ -86,7 +86,7 @@ class BearerSecret:
 class CustomSecret(Generic[SecretT_co]):
     """A credential a custom extractor read, kept as the extractor's own opaque value."""
 
-    value: SecretT_co
+    value: SecretT_co  # type: ignore[misc, unused-ignore]
 
     def __repr__(self) -> str:
         """Name the record without its value."""
@@ -97,7 +97,7 @@ class CustomSecret(Generic[SecretT_co]):
 class Credential(Generic[SecretT_co, SchemeT_co]):
     """The credential of one security scheme, named exactly as the source declares the scheme."""
 
-    scheme_name: SchemeT_co
+    scheme_name: SchemeT_co  # type: ignore[misc, unused-ignore]
     payload: ApiKeySecret | BasicSecret | BearerSecret | CustomSecret[SecretT_co]
 
     @property
@@ -123,7 +123,7 @@ class Credential(Generic[SecretT_co, SchemeT_co]):
 class SchemeRequirement(Generic[SchemeT_co]):
     """One scheme an alternative requires, with its declared scopes in order."""
 
-    scheme_name: SchemeT_co
+    scheme_name: SchemeT_co  # type: ignore[misc, unused-ignore]
     scopes: tuple[str, ...]
 
 

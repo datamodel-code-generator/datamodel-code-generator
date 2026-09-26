@@ -139,6 +139,10 @@ The maintainer decided on 2026-09-26 that target-owned files behave like model f
 
 Tests: the ownership scenario publishes over an edited and a missing router and then renders unchanged, the deletion scenario plans nothing for a missing obsolete router, the Python API test generates over an edited README, and the CLI test checks an edited model and a missing README and then rewrites both.
 
+## Covariant dataclass fields under mypy on Python 3.13
+
+From Python 3.13 on, mypy synthesizes the dataclass `__replace__` method and reports a covariant type variable used as its parameter, so `mypy --strict` failed on four fields of the copied runtime: `CustomSecret.value`, `Credential.scheme_name`, and `SchemeRequirement.scheme_name` in `security.py`, and `AdapterManifest.capabilities` in `capabilities.py`. The frozen dataclasses are safely covariant, so each field carries `# type: ignore[misc, unused-ignore]`; the `unused-ignore` code keeps older target versions clean under `--warn-unused-ignores`. A generated server package now passes `mypy --strict` with `--python-version` 3.10 through 3.14 and strict pyright, and `ty check src --error unused-ignore-comment` accepts the comments.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.
