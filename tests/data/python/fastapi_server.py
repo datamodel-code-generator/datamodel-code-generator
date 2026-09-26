@@ -17,9 +17,8 @@ from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
 from datamodel_code_generator import DataModelType, GenerateConfig, _runtime
-from datamodel_code_generator._api_generation import generate_target
-from datamodel_code_generator._fastapi.target import FastAPITarget
 from datamodel_code_generator.enums import OpenAPIScope
+from datamodel_code_generator.fastapi import generate_fastapi
 from datamodel_code_generator.format import Formatter
 from tests.data.python.fastapi_generation import SOURCE, fastapi_config
 
@@ -31,7 +30,7 @@ if TYPE_CHECKING:
 
 
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
-    generate_target(
+    generate_fastapi(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
         model_config=GenerateConfig(
             output=root / f"{package}_models.py",
@@ -46,7 +45,6 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
             {"output": package, "package": package, "model_package": f"{package}_models", **case.get("config", {})},
             root,
         ),
-        generator=FastAPITarget(),
     )
 
 

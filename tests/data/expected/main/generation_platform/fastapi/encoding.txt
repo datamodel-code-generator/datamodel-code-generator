@@ -1,23 +1,49 @@
 # encoding
 render pydantic_v2.BaseModel
-  src/server/__init__.py
-  src/server/application.py
-  src/server/routers/__init__.py
-  src/server/routers/untagged.py
-  src/server/_generated/__init__.py
-  src/server/_generated/contract.py
-  src/server/_generated/model_bindings.py
-  src/server/_generated/openapi.py
-  src/server/model_codecs.py
-  src/server/responses.py
-  src/server/errors.py
-  src/server/auth_types.py
-  src/server/services.py
-  README.md
-  src/server/py.typed
-  pyproject.toml
-  .dcg-state/model-artifacts.json
-  .dcg-target-manifest.json
+  write models.py
+  write server/src/server/__init__.py
+  write server/src/server/application.py
+  write server/src/server/routers/__init__.py
+  write server/src/server/routers/untagged.py
+  write server/src/server/_generated/__init__.py
+  write server/src/server/_generated/contract.py
+  write server/src/server/_generated/model_bindings.py
+  write server/src/server/_generated/openapi.py
+  write server/src/server/model_codecs.py
+  write server/src/server/responses.py
+  write server/src/server/errors.py
+  write server/src/server/auth_types.py
+  write server/src/server/services.py
+  write server/README.md
+  write server/src/server/_runtime/__init__.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/adapters.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/bindings.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/context.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/media.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/outbound.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/patterns.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/schema.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/values.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/views.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/src/server/_runtime/server/__init__.py (copied runtime)
+  write server/src/server/_runtime/server/application.py (copied runtime)
+  write server/src/server/_runtime/server/codecs.py (copied runtime)
+  write server/src/server/_runtime/server/errors.py (copied runtime)
+  write server/src/server/_runtime/server/openapi.py (copied runtime)
+  write server/src/server/_runtime/server/requests.py (copied runtime)
+  write server/src/server/_runtime/server/responses.py (copied runtime)
+  write server/src/server/_runtime/server/security.py (copied runtime)
+  write server/src/server/py.typed
+  write server/pyproject.toml
+  write server/.dcg-state/model-artifacts.json
+  write server/.dcg-target-manifest.json
   layout routers
   search: GET /search -> /search [untagged] status 204 primary 204 None body typed handler sync
     parameter /paths/~1search/get/parameters/0: codec_adapter unsupported_wire_shape
@@ -48,25 +74,7 @@ render pydantic_v2.BaseModel
     parameter /paths/~1menü~1{item}/get/parameters/0: codec_adapter source_assertion_not_projected at /paths/~1menü~1{item}/get/parameters/0/schema/pattern
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1menü~1{item}/get/responses/204
   group untagged -> untagged (6)
-  show pyproject.toml
-    | [build-system]
-    | requires = ["hatchling>=1.27,<2"]
-    | build-backend = "hatchling.build"
-    |
-    | [project]
-    | name = "menu-server"
-    | version = "1.0.0"
-    | requires-python = ">=3.10"
-    | readme = "README.md"
-    | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5", "google-re2>=1.1.20251105,<2", "menu-models>=1.0"]
-    |
-    | [tool.hatch.build.targets.wheel]
-    | only-include = ["src/server"]
-    | sources = ["src"]
-    |
-    | [tool.hatch.build.targets.sdist]
-    | only-include = ["src/server", "README.md", "pyproject.toml"]
-  show README.md
+  file server/README.md
     | # Server parameters
     |
     | The `server` package serves the Server parameters API with FastAPI.
@@ -142,3 +150,24 @@ render pydantic_v2.BaseModel
     | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
     | `pyproject.toml` declares the runtime dependencies of the package.
+  file server/src/server/py.typed
+  file server/pyproject.toml
+    | [build-system]
+    | requires = ["hatchling>=1.27,<2"]
+    | build-backend = "hatchling.build"
+    |
+    | [project]
+    | name = "menu-server"
+    | version = "1.0.0"
+    | requires-python = ">=3.10"
+    | readme = "README.md"
+    | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5", "google-re2>=1.1.20251105,<2", "menu-models>=1.0"]
+    |
+    | [tool.hatch.build.targets.wheel]
+    | only-include = ["src/server"]
+    | sources = ["src"]
+    |
+    | [tool.hatch.build.targets.sdist]
+    | only-include = ["src/server", "README.md", "pyproject.toml"]
+  file server/.dcg-state/model-artifacts.json
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"37be7af70d11eb299e2d181bf4093b2b3070c56e952e5f7709d53d6987951b23","size":1315}],"fingerprint":"f4af3652388bdbee6697422197b1391b8d5ee95fffd97049135ccf72f28c8020","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}

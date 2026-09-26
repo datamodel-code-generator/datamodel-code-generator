@@ -1,24 +1,50 @@
 # standalone
 render pydantic_v2.BaseModel
-  src/server/__init__.py
-  src/server/application.py
-  src/server/routers/__init__.py
-  src/server/routers/pets.py
-  src/server/routers/store.py
-  src/server/_generated/__init__.py
-  src/server/_generated/contract.py
-  src/server/_generated/model_bindings.py
-  src/server/_generated/openapi.py
-  src/server/model_codecs.py
-  src/server/responses.py
-  src/server/errors.py
-  src/server/auth_types.py
-  src/server/services.py
-  README.md
-  src/server/py.typed
-  pyproject.toml
-  .dcg-state/model-artifacts.json
-  .dcg-target-manifest.json
+  write models.py
+  write server/src/server/__init__.py
+  write server/src/server/application.py
+  write server/src/server/routers/__init__.py
+  write server/src/server/routers/pets.py
+  write server/src/server/routers/store.py
+  write server/src/server/_generated/__init__.py
+  write server/src/server/_generated/contract.py
+  write server/src/server/_generated/model_bindings.py
+  write server/src/server/_generated/openapi.py
+  write server/src/server/model_codecs.py
+  write server/src/server/responses.py
+  write server/src/server/errors.py
+  write server/src/server/auth_types.py
+  write server/src/server/services.py
+  write server/README.md
+  write server/src/server/_runtime/__init__.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/adapters.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/bindings.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/context.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/media.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/outbound.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/patterns.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/schema.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/values.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/views.py (copied runtime)
+  write server/src/server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/src/server/_runtime/server/__init__.py (copied runtime)
+  write server/src/server/_runtime/server/application.py (copied runtime)
+  write server/src/server/_runtime/server/codecs.py (copied runtime)
+  write server/src/server/_runtime/server/errors.py (copied runtime)
+  write server/src/server/_runtime/server/openapi.py (copied runtime)
+  write server/src/server/_runtime/server/requests.py (copied runtime)
+  write server/src/server/_runtime/server/responses.py (copied runtime)
+  write server/src/server/_runtime/server/security.py (copied runtime)
+  write server/src/server/py.typed
+  write server/pyproject.toml
+  write server/.dcg-state/model-artifacts.json
+  write server/.dcg-target-manifest.json
   layout routers
   list_pets: GET /pets -> /pets [tag:pets] status 200 primary 200 application/json body typed handler sync
     parameter /paths/~1pets/get/parameters/0: fastapi_native native_supported
@@ -43,25 +69,7 @@ render pydantic_v2.BaseModel
     primary_response /paths/~1store~1inventory/get/responses/200: fastapi_native native_supported
   group tag:pets -> pets (5)
   group tag:store -> store (1)
-  show pyproject.toml
-    | [build-system]
-    | requires = ["hatchling>=1.27,<2"]
-    | build-backend = "hatchling.build"
-    |
-    | [project]
-    | name = "pets-server"
-    | version = "1.0.0"
-    | requires-python = ">=3.10"
-    | readme = "README.md"
-    | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5", "pets-models>=1.0"]
-    |
-    | [tool.hatch.build.targets.wheel]
-    | only-include = ["src/server"]
-    | sources = ["src"]
-    |
-    | [tool.hatch.build.targets.sdist]
-    | only-include = ["src/server", "README.md", "pyproject.toml"]
-  show README.md
+  file server/README.md
     | # Pets
     |
     | The `server` package serves the Pets API with FastAPI.
@@ -141,3 +149,24 @@ render pydantic_v2.BaseModel
     | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
     | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
     | `pyproject.toml` declares the runtime dependencies of the package.
+  file server/src/server/py.typed
+  file server/pyproject.toml
+    | [build-system]
+    | requires = ["hatchling>=1.27,<2"]
+    | build-backend = "hatchling.build"
+    |
+    | [project]
+    | name = "pets-server"
+    | version = "1.0.0"
+    | requires-python = ">=3.10"
+    | readme = "README.md"
+    | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5", "pets-models>=1.0"]
+    |
+    | [tool.hatch.build.targets.wheel]
+    | only-include = ["src/server"]
+    | sources = ["src"]
+    |
+    | [tool.hatch.build.targets.sdist]
+    | only-include = ["src/server", "README.md", "pyproject.toml"]
+  file server/.dcg-state/model-artifacts.json
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"526882ddb8ce44e78ca45216da655b4c4e3d63d27319f1dfca0f0386bf5bc557","size":1362}],"fingerprint":"888039488b961753348af79adc6295093c3b2dc7043d8c25571c77f29466804d","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}

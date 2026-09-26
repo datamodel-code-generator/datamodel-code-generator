@@ -5,23 +5,12 @@
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
     ],
-    "show": [
-      "application.py",
-      "routers/pets.py",
-      "routers/store.py",
-      "_generated/contract.py",
-      "responses.py",
-      "README.md"
+    "runtime": [
+      "pydantic_v2.BaseModel"
     ]
   },
   "parameters": {
-    "input": "parameters.yaml",
-    "show": [
-      "routers/items.py",
-      "routers/adapters.py",
-      "_generated/contract.py",
-      "_generated/openapi.py"
-    ]
+    "input": "parameters.yaml"
   },
   "bodies": {
     "input": "bodies.yaml",
@@ -32,15 +21,7 @@
           "request"
         ]
       ]
-    },
-    "show": [
-      "routers/json.py",
-      "routers/raw.py",
-      "routers/form.py",
-      "_generated/contract.py",
-      "_generated/openapi.py",
-      "README.md"
-    ]
+    }
   },
   "request": {
     "input": "bodies.yaml",
@@ -60,11 +41,7 @@
         ],
         "reason": "Two request modes."
       }
-    },
-    "show": [
-      "routers/json.py",
-      "routers/raw.py"
-    ]
+    }
   },
   "responses": {
     "input": "responses.yaml",
@@ -82,13 +59,7 @@
           }
         ]
       ]
-    },
-    "show": [
-      "routers/results.py",
-      "routers/files.py",
-      "_generated/contract.py",
-      "responses.py"
-    ]
+    }
   },
   "names": {
     "input": "names.yaml",
@@ -110,22 +81,13 @@
           }
         ]
       ]
-    },
-    "show": [
-      "application.py",
-      "routers/users.py",
-      "routers/router_2024_files.py"
-    ]
+    }
   },
   "single": {
     "input": "pets.yaml",
     "config": {
       "layout": "single"
-    },
-    "show": [
-      "application.py",
-      "routes.py"
-    ]
+    }
   },
   "standalone": {
     "input": "pets.yaml",
@@ -134,11 +96,7 @@
       "package_version": "1.0.0",
       "distribution_name": "pets-server",
       "model_dependency": "pets-models>=1.0"
-    },
-    "show": [
-      "pyproject.toml",
-      "README.md"
-    ]
+    }
   },
   "encoding": {
     "input": "server-parameters.yaml",
@@ -148,11 +106,7 @@
       "package_version": "1.0.0",
       "distribution_name": "menu-server",
       "model_dependency": "menu-models>=1.0"
-    },
-    "show": [
-      "pyproject.toml",
-      "README.md"
-    ]
+    }
   },
   "route-errors": {
     "input": "route-errors.yaml"
@@ -162,7 +116,11 @@
   },
   "group-errors": {
     "input": "group-errors.yaml",
-    "config": {"router_names": {"tag:four": "OPERATIONS"}}
+    "config": {
+      "router_names": {
+        "tag:four": "OPERATIONS"
+      }
+    }
   },
   "repeat-32": {
     "input": "repeat-32.yaml"
@@ -236,11 +194,7 @@
       "use_annotated": true,
       "field_constraints": true,
       "output_datetime_class": "datetime"
-    },
-    "show": [
-      "routers/untagged.py",
-      "_generated/contract.py"
-    ]
+    }
   },
   "unbound": {
     "input": "unbound.yaml",
@@ -248,10 +202,7 @@
       "openapi_scopes": [
         "schemas"
       ]
-    },
-    "show": [
-      "routers/untagged.py"
-    ]
+    }
   },
   "adapters": {
     "input": "pets.yaml",
@@ -329,18 +280,10 @@
           ]
         }
       ]
-    },
-    "show": [
-      "routers/pets.py",
-      "_generated/contract.py"
-    ]
+    }
   },
   "methods": {
-    "input": "methods.yaml",
-    "show": [
-      "routers/untagged.py",
-      "_generated/contract.py"
-    ]
+    "input": "methods.yaml"
   },
   "codec-errors": {
     "input": "codec-errors.yaml"
@@ -437,19 +380,7 @@
           "async"
         ]
       ]
-    },
-    "show": [
-      "__init__.py",
-      "application.py",
-      "auth_types.py",
-      "errors.py",
-      "_generated/contract.py",
-      "routers/untagged.py",
-      "routers/public.py",
-      "services.py",
-      "_generated/openapi.py",
-      "README.md"
-    ]
+    }
   },
   "security-errors": {
     "input": "security-errors.yaml"
@@ -458,10 +389,7 @@
     "input": "info.yaml",
     "config": {
       "layout": "single"
-    },
-    "show": [
-      "application.py"
-    ]
+    }
   },
   "callbacks": {
     "input": "callbacks.yaml",
@@ -469,10 +397,7 @@
       "hooks": [
         "record"
       ]
-    },
-    "show": [
-      "_generated/openapi.py"
-    ]
+    }
   },
   "scheme-names": {
     "input": "scheme-names.yaml"
@@ -486,13 +411,7 @@
           "async"
         ]
       ]
-    },
-    "show": [
-      "application.py",
-      "routers/pets.py",
-      "services.py",
-      "README.md"
-    ]
+    }
   },
   "empty": {
     "input": "services.yaml",
@@ -506,13 +425,7 @@
         ],
         "reason": "No operations yet."
       }
-    },
-    "show": [
-      "application.py",
-      "_generated/contract.py",
-      "_generated/model_bindings.py",
-      "services.py"
-    ]
+    }
   },
   "hooks": {
     "input": "hooks.yaml",
@@ -532,10 +445,6 @@
         "record"
       ]
     },
-    "show": [
-      "routers/pets_routes.py",
-      "services.py"
-    ],
     "files": [
       "hooks-paths.yaml"
     ]
@@ -720,17 +629,7 @@
         ]
       ],
       "templates": "templates/custom"
-    },
-    "show": [
-      "README.md",
-      "routers/pets.json",
-      "docs/get_pet.yml",
-      "settings.toml",
-      "checks/get_pet.py",
-      "NOTES",
-      "routers/pets.py",
-      "services.py"
-    ]
+    }
   },
   "template-roles": {
     "input": "hooks.yaml",
@@ -746,11 +645,7 @@
         ]
       ],
       "templates": "templates/roles"
-    },
-    "show": [
-      "application.py",
-      "services.py"
-    ]
+    }
   },
   "template-invalid": {
     "input": "hooks.yaml",

@@ -1,3 +1,21 @@
+output=PurePosixPath('server')
+package='server'
+model_package='models'
+model_mode='generate'
+selection=OperationSelection(include_operations=(), include_tags=(), exclude_operations=(), exclude_tags=(), reason=None)
+formatters=(<Formatter.BUILTIN: 'builtin'>,)
+formatter_settings=PurePosixPath('.')
+custom_formatters=()
+custom_formatter_kwargs=mappingproxy({})
+encoding='utf-8'
+header=None
+include_timestamp=False
+package_mode='embedded'
+package_version=None
+distribution_name=None
+model_dependency=None
+builtin_codec_compatibility=()
+export_bindings=()
 layout='routers'
 handler_mode='sync'
 handler_modes=mappingproxy({})

@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from tests.conftest import assert_output
-from tests.data.python.fastapi_cli import fastapi_cli_report
+from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.fastapi_generation import (
+    fastapi_api_report,
     fastapi_config_report,
-    fastapi_render_report,
+    fastapi_render,
     fastapi_scenario_report,
 )
 
@@ -80,7 +80,10 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
 )
 def test_fastapi_render(case: str, tmp_path: Path) -> None:
     """Plan each operation's parameters, body, and responses, and render the package they need."""
-    assert_output(fastapi_render_report(case, tmp_path), EXPECTED / f"{case}.txt")
+    report, rendered = fastapi_render(case, tmp_path)
+    assert_output(report, EXPECTED / f"{case}.txt")
+    for backend, modules in rendered.items():
+        assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
 
 
 @pytest.mark.parametrize(
@@ -104,28 +107,13 @@ def test_fastapi_regeneration(case: str, tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "case",
-    ["defaults", "values", "invalid-values", "invalid-shapes", "invalid-mappings", "toml-values", "toml-errors"],
+    ["defaults", "values", "invalid-values", "invalid-shapes", "invalid-mappings"],
 )
 def test_fastapi_config(case: str, tmp_path: Path) -> None:
-    """Construct or load the server settings, freezing their mappings and reporting every invalid value."""
+    """Construct the server settings, freezing their mappings and reporting every invalid value."""
     assert_output(fastapi_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
 
 
-@pytest.mark.parametrize(
-    "case",
-    [
-        "generate",
-        "options",
-        "stdin",
-        "usage",
-        "conflicts",
-        "reports",
-        "input-model",
-        "config-errors",
-        "failures",
-        "api",
-    ],
-)
-def test_fastapi_cli(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Publish, check, and report the server target from the command line and the public entry points."""
-    assert_output(fastapi_cli_report(case, tmp_path, monkeypatch), EXPECTED / "cli" / f"{case}.txt")
+def test_fastapi_api(tmp_path: Path) -> None:
+    """Resolve the public annotations, render and generate twice, then refuse to render over an edited file."""
+    assert_output(fastapi_api_report(tmp_path), EXPECTED / "api.txt")

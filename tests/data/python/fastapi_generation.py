@@ -8,23 +8,33 @@ from collections.abc import Mapping
 from dataclasses import fields, is_dataclass, replace
 from pathlib import Path, PurePosixPath
 from types import FunctionType
-from typing import Any
+from typing import Any, TypeAlias, get_type_hints
 
-from datamodel_code_generator import DataModelType, GenerateConfig
-from datamodel_code_generator._api_generation import generate_target, render_target
-from datamodel_code_generator._api_manifest import MANIFEST_NAME
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, GeneratedProject, OperationSelection
-from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._fastapi.target import FastAPITarget
-from datamodel_code_generator._target_config import TargetConfig, load_target_config
+from datamodel_code_generator import DataModelType, GenerateConfig, _runtime
 from datamodel_code_generator.enums import OpenAPIScope
-from datamodel_code_generator.fastapi import FastAPIConfig, HookReference, ResponseChoice
+from datamodel_code_generator.fastapi import (
+    APIGenerationError,
+    Diagnostic,
+    FastAPIConfig,
+    GeneratedProject,
+    GenerationInput,
+    GenerationReport,
+    HookReference,
+    OperationRef,
+    OperationSelection,
+    ResponseChoice,
+    generate_fastapi,
+    render_fastapi,
+)
 from datamodel_code_generator.format import Formatter
 from tests.data.python import fastapi_hooks
 from tests.data.python.model_codec_adapters import declaration
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"
+MANIFEST = ".dcg-target-manifest.json"
+RUNTIME = Path(_runtime.__file__).parent
+Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
 def _selector(value: object) -> object:
@@ -33,11 +43,11 @@ def _selector(value: object) -> object:
 
 def fastapi_config(values: dict[str, Any], root: Path) -> FastAPIConfig:
     """Build a FastAPI configuration from JSON fixture values."""
-    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", **values}
+    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", "formatter_settings": ".", **values}
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
-            case "output":
+            case "output" | "formatter_settings":
                 converted[key] = root / value
             case "selection":
                 converted[key] = OperationSelection(**{
@@ -113,7 +123,7 @@ def _diagnostic(item: Diagnostic) -> str:
 
 
 def _decisions(project: GeneratedProject) -> list[str]:
-    manifest = next(artifact for artifact in project.artifacts if artifact.path.name == MANIFEST_NAME)
+    manifest = next(artifact for artifact in project.artifacts if artifact.path.name == MANIFEST)
     data = json.loads(manifest.content or b"{}")["target_data"]["fastapi"]
     lines = [f"  layout {data['layout']}"]
     for operation in data["operations"]:
@@ -154,7 +164,7 @@ def _primary(chosen: dict[str, Any]) -> str:
     return f"{chosen['status_code']} {chosen['media_type']}"
 
 
-def _render(case: dict[str, Any], backend: str, root: Path) -> list[str]:
+def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) -> list[str]:
     model = {
         "output": root / "models.py",
         "input_file_type": "openapi",
@@ -170,32 +180,37 @@ def _render(case: dict[str, Any], backend: str, root: Path) -> list[str]:
         shutil.copy2(SOURCE / name, root / name)
     fastapi_hooks.RECORDED.clear()
     try:
-        project = render_target(
-            source,
-            model_config=GenerateConfig(**model),
-            config=fastapi_config(case.get("config", {}), root),
-            generator=FastAPITarget(),
+        project = render_fastapi(
+            source, model_config=GenerateConfig(**model), config=fastapi_config(case.get("config", {}), root)
         )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
     except LookupError as error:
         return [f"  {type(error).__name__}: {error}"]
-    package = root / PACKAGE
-    lines = [
-        f"  {artifact.path.relative_to(package).as_posix()}"
-        for artifact in project.artifacts
-        if artifact.path.is_relative_to(package) and "_runtime" not in artifact.path.parts
-    ]
+    encoding = case.get("config", {}).get("encoding", "utf-8")
+    lines: list[str] = []
+    files: list[str] = []
+    for artifact in project.artifacts:
+        path, content = artifact.path.relative_to(root), artifact.content or b""
+        line = f"  {artifact.action} {path.as_posix()}"
+        match path.suffix, path.parts:
+            case _, parts if "_runtime" in parts:
+                copied = content.endswith(RUNTIME.joinpath(*parts[parts.index("_runtime") + 1 :]).read_bytes())
+                line += f" ({'copied' if copied else 'changed'} runtime)"
+                if backend in case.get("runtime", ()):
+                    modules[parts] = content.decode(encoding)
+            case ".py", parts:
+                modules[parts] = content.decode(encoding)
+            case _ if path.name != MANIFEST:
+                files.append(f"  file {path.as_posix()}")
+                files.extend(f"    | {text}" if text else "    |" for text in content.decode().splitlines())
+        lines.append(line)
     lines.extend(_decisions(project))
     lines.extend(_diagnostic(item) for item in project.diagnostics)
     for context in fastapi_hooks.RECORDED:
         lines.append("  context")
         lines.extend(f"    | {line}" for line in json.dumps(_projection(context), indent=2).splitlines())
-    for name in case.get("show", ()):
-        content = next(artifact.content for artifact in project.artifacts if artifact.path == package / name)
-        lines.append(f"  show {name}")
-        lines.extend(f"    | {line}" if line else "    |" for line in (content or b"").decode().splitlines())
-    return lines
+    return [*lines, *files]
 
 
 def _generate(overrides: dict[str, Any], root: Path) -> list[str]:
@@ -208,11 +223,10 @@ def _generate(overrides: dict[str, Any], root: Path) -> list[str]:
         formatters=[Formatter.BUILTIN],
     )
     try:
-        report = generate_target(
+        report = generate_fastapi(
             root / overrides.get("input", "api.yaml"),
             model_config=model,
             config=fastapi_config(overrides.get("config", {}), root),
-            generator=FastAPITarget(),
         )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
@@ -252,31 +266,54 @@ def fastapi_scenario_report(case_name: str, root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def fastapi_render_report(case_name: str, root: Path) -> str:
-    """Render one fixture for each of its backends and report the files, decisions, shown files, or failures."""
+def fastapi_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
+    """Render one fixture for each of its backends, returning a report and every backend's Python modules."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     lines = [f"# {case_name}"]
+    rendered: dict[str, Modules] = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
-        lines.extend(_render(case, backend, root / backend.replace(".", "_")))
-    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
+        lines.extend(_render(case, backend, root / (name := backend.replace(".", "_")), modules := {}))
+        if modules:
+            rendered[name] = modules
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
 
 
 def fastapi_config_report(case_name: str, root: Path) -> str:
-    """Construct or load one FastAPI configuration and report its values or ordered diagnostics."""
+    """Construct one FastAPI configuration and report every setting or the ordered diagnostics."""
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
-        if "toml" in case:
-            path = root / "target.toml"
-            path.write_text(case["toml"], encoding="utf-8")
-            config = load_target_config(path, FastAPIConfig)
-        else:
-            config = fastapi_config(case["python"], root)
+        config = fastapi_config(case, root)
     except APIGenerationError as error:
         return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
-    shared = {item.name for item in fields(TargetConfig)}
-    return "".join(
-        f"{item.name}={_setting(getattr(config, item.name), root)}\n"
-        for item in fields(config)
-        if item.name not in shared
+    return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
+
+
+def fastapi_api_report(root: Path) -> str:
+    """Resolve the entry points' annotations, then render, generate twice, and render over an edited owned file."""
+    hints = {"input_": GenerationInput, "model_config": GenerateConfig, "config": FastAPIConfig}
+    lines = [
+        f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
+        for function, result in ((generate_fastapi, GenerationReport), (render_fastapi, GeneratedProject))
+    ]
+    source = shutil.copy2(SOURCE / "pets.yaml", root / "api.yaml")
+    model = GenerateConfig(
+        output=root / "models.py",
+        input_file_type="openapi",
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
     )
+    config = fastapi_config({}, root)
+    project = render_fastapi(source, model_config=model, config=config)
+    lines.append(f"render {sorted({artifact.action for artifact in project.artifacts})}")
+    for _ in range(2):
+        report = generate_fastapi(source, model_config=model, config=config)
+        lines.append(f"generate wrote {len(report.written_files)} and kept {len(report.unchanged_files)}")
+    (root / PACKAGE / "README.md").write_text("# edited\n", encoding="utf-8")
+    try:
+        render_fastapi(source, model_config=model, config=config)
+    except APIGenerationError as error:
+        lines.extend(_diagnostic(item) for item in error.diagnostics)
+    return "\n".join(lines) + "\n"

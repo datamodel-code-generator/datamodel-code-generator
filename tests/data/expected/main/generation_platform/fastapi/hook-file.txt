@@ -1,25 +1,51 @@
 # hook-file
 render pydantic_v2.BaseModel
-  __init__.py
-  application.py
-  routers/__init__.py
-  routers/pets.py
-  routers/files.py
-  routers/untagged.py
-  _generated/__init__.py
-  _generated/contract.py
-  _generated/model_bindings.py
-  _generated/openapi.py
-  model_codecs.py
-  responses.py
-  errors.py
-  auth_types.py
-  services.py
-  README.md
-  py.typed
-  dcg-runtime-requirements.txt
-  .dcg-state/model-artifacts.json
-  .dcg-target-manifest.json
+  write models.py
+  write server/__init__.py
+  write server/application.py
+  write server/routers/__init__.py
+  write server/routers/pets.py
+  write server/routers/files.py
+  write server/routers/untagged.py
+  write server/_generated/__init__.py
+  write server/_generated/contract.py
+  write server/_generated/model_bindings.py
+  write server/_generated/openapi.py
+  write server/model_codecs.py
+  write server/responses.py
+  write server/errors.py
+  write server/auth_types.py
+  write server/services.py
+  write server/README.md
+  write server/_runtime/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/adapters.py (copied runtime)
+  write server/_runtime/model_codecs/bindings.py (copied runtime)
+  write server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/_runtime/model_codecs/context.py (copied runtime)
+  write server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/_runtime/model_codecs/media.py (copied runtime)
+  write server/_runtime/model_codecs/outbound.py (copied runtime)
+  write server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/_runtime/model_codecs/patterns.py (copied runtime)
+  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
+  write server/_runtime/model_codecs/schema.py (copied runtime)
+  write server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/_runtime/model_codecs/values.py (copied runtime)
+  write server/_runtime/model_codecs/views.py (copied runtime)
+  write server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/_runtime/server/__init__.py (copied runtime)
+  write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/codecs.py (copied runtime)
+  write server/_runtime/server/errors.py (copied runtime)
+  write server/_runtime/server/openapi.py (copied runtime)
+  write server/_runtime/server/requests.py (copied runtime)
+  write server/_runtime/server/responses.py (copied runtime)
+  write server/_runtime/server/security.py (copied runtime)
+  write server/py.typed
+  write server/dcg-runtime-requirements.txt
+  write server/.dcg-state/model-artifacts.json
+  write server/.dcg-target-manifest.json
   layout routers
   pets_get: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
     parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
@@ -43,27 +69,173 @@ render pydantic_v2.BaseModel
   group tag:pets -> pets (2)
   group tag:files -> files (1)
   group untagged -> untagged (2)
+  file server/README.md
+    | # Hooked pets
+    |
+    | The `server` package serves the Hooked pets API with FastAPI.
+    | datamodel-code-generator generated it from the OpenAPI document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+    | Every file of the package belongs to the generator: keep your code in your own modules and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+    |
+    | FastAPI server generation is experimental.
+    | The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
+    | Custom templates, base classes, Python types, codec adapters, and codec compatibility declarations stay within these two backends.
+    |
+    | ## Operations
+    |
+    | | Service | Method | HTTP method | Path | Operation key |
+    | | --- | --- | --- | --- | --- |
+    | | `PetsService` | `pets_get` | GET | `/pets/{petId}` | `/paths/~1pets~1{petId}/get` |
+    | | `PetsService` | `pets_post` | POST | `/pets` | `/paths/~1pets/post` |
+    | | `FilesService` | `files_post` | POST | `/uploads` | `/paths/~1uploads/post` |
+    | | `UntaggedService` | `handle_put__notes` | PUT | `/notes` | `/paths/~1notes/put` |
+    | | `UntaggedService` | `handle_post__raw` | POST | `/raw` | `/paths/~1raw/post` |
+    |
+    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    |
+    | ## Implementing the services
+    |
+    | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
+    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
+    | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+    | The Protocols of groups with secured operations take the type of the principal your authorizer returns.
+    |
+    | ```python
+    | from typing import Never
+    |
+    | from server import create_app
+    | from server.auth_types import AuthContext
+    | from server.services import PetsService, FilesService, UntaggedService
+    |
+    |
+    | class Pets(PetsService[Principal]):
+    |     """Implement `pets_get` and `pets_post`."""
+    |
+    |
+    | class Files(FilesService):
+    |     """Implement `files_post`."""
+    |
+    |
+    | class Untagged(UntaggedService[Principal]):
+    |     """Implement `handle_put__notes` and `handle_post__raw`."""
+    |
+    |
+    | def authorize(context: AuthContext[Never]) -> Principal:
+    |     ...
+    |
+    |
+    | app = create_app(pets=Pets(), files=Files(), untagged=Untagged(), authorizer=authorize)
+    | ```
+    |
+    | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
+    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    |
+    | ```python
+    | from fastapi import FastAPI
+    |
+    | from server import build_router, install_openapi
+    |
+    | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+    | app.include_router(build_router(pets=Pets(), files=Files(), untagged=Untagged(), authorizer=authorize))
+    | install_openapi(app)
+    | app.openapi()  # Check the document once every router is included.
+    | ```
+    |
+    | ## Authentication
+    |
+    | The secured operations use these security schemes:
+    |
+    | - `api_key`: an API key in the `X-API-Key` header
+    | - `bearer`: a bearer token
+    |
+    | Each secured operation receives the principal the authorizer returns.
+    | The authorizer reads the credentials of each security alternative from `AuthContext` and rejects a request by raising `HTTPException`, such as `403`.
+    | A request that presents no complete alternative answers `401`, and missing authentication settings never fall back to anonymous access.
+    | `credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none.
+    | An extractor may return any payload, such as a `BasicSecret` it decodes as UTF-8 or a `CustomSecret` of its own type, so the authorizer checks each credential's `kind` instead of assuming its scheme's builtin credential.
+    | `SecretT` is `Never` while no extractor returns a `CustomSecret`, and otherwise the union of their value types.
+    | Bearer credentials, including OAuth2 and OpenID Connect tokens, reach the authorizer as they are: the package never contacts a token endpoint, and the authorizer checks tokens and scopes.
+    |
+    | ## Served OpenAPI document
+    |
+    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
+    | Pass `operation_keys` when the application includes only some of the operations.
+    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
+    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    |
+    | ## Validation boundaries
+    |
+    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
+    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | Native form bodies follow FastAPI's form extraction, which treats an empty field as missing and applies its default; set the operation's `body_modes` entry to `request` when the exact submitted values matter.
+    | Operations with the `request` body mode receive the Starlette `Request` and read and validate their body themselves.
+    |
+    | ## Regenerating
+    |
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
+    | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
+    | Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+  file server/py.typed
+  file server/dcg-runtime-requirements.txt
+    | fastapi>=0.141.1,<0.142
+    | starlette>=1.0.0,<2
+    | pydantic>=2.13.5,<3
+    | jsonschema[format-nongpl]>=4.26,<5
+    | referencing>=0.37,<1
+    | typing-extensions>=4.16,<5
+    | python-multipart>=0.0.32,<0.1
+    | google-re2>=1.1.20251105,<2
+  file server/.dcg-state/model-artifacts.json
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"7f83e2b107eee124c3832284f33135a49e7c67359ee71f02b1a9eb9a2bd05cbf","size":1034}],"fingerprint":"dc047b643e592c683c2dfb72d31bfd8cd8cb7c2af104d981953287cd859818de","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
 render pydantic_v2.dataclass
-  __init__.py
-  application.py
-  routers/__init__.py
-  routers/pets.py
-  routers/files.py
-  routers/untagged.py
-  _generated/__init__.py
-  _generated/contract.py
-  _generated/model_bindings.py
-  _generated/openapi.py
-  model_codecs.py
-  responses.py
-  errors.py
-  auth_types.py
-  services.py
-  README.md
-  py.typed
-  dcg-runtime-requirements.txt
-  .dcg-state/model-artifacts.json
-  .dcg-target-manifest.json
+  write models.py
+  write server/__init__.py
+  write server/application.py
+  write server/routers/__init__.py
+  write server/routers/pets.py
+  write server/routers/files.py
+  write server/routers/untagged.py
+  write server/_generated/__init__.py
+  write server/_generated/contract.py
+  write server/_generated/model_bindings.py
+  write server/_generated/openapi.py
+  write server/model_codecs.py
+  write server/responses.py
+  write server/errors.py
+  write server/auth_types.py
+  write server/services.py
+  write server/README.md
+  write server/_runtime/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/adapters.py (copied runtime)
+  write server/_runtime/model_codecs/bindings.py (copied runtime)
+  write server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/_runtime/model_codecs/context.py (copied runtime)
+  write server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/_runtime/model_codecs/media.py (copied runtime)
+  write server/_runtime/model_codecs/outbound.py (copied runtime)
+  write server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/_runtime/model_codecs/patterns.py (copied runtime)
+  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
+  write server/_runtime/model_codecs/schema.py (copied runtime)
+  write server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/_runtime/model_codecs/values.py (copied runtime)
+  write server/_runtime/model_codecs/views.py (copied runtime)
+  write server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/_runtime/server/__init__.py (copied runtime)
+  write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/codecs.py (copied runtime)
+  write server/_runtime/server/errors.py (copied runtime)
+  write server/_runtime/server/openapi.py (copied runtime)
+  write server/_runtime/server/requests.py (copied runtime)
+  write server/_runtime/server/responses.py (copied runtime)
+  write server/_runtime/server/security.py (copied runtime)
+  write server/py.typed
+  write server/dcg-runtime-requirements.txt
+  write server/.dcg-state/model-artifacts.json
+  write server/.dcg-target-manifest.json
   layout routers
   pets_get: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
     parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
@@ -87,3 +259,135 @@ render pydantic_v2.dataclass
   group tag:pets -> pets (2)
   group tag:files -> files (1)
   group untagged -> untagged (2)
+  file server/README.md
+    | # Hooked pets
+    |
+    | The `server` package serves the Hooked pets API with FastAPI.
+    | datamodel-code-generator generated it from the OpenAPI document, together with the `models` models of the `pydantic_v2.dataclass` backend.
+    | Every file of the package belongs to the generator: keep your code in your own modules and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+    |
+    | FastAPI server generation is experimental.
+    | The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
+    | Custom templates, base classes, Python types, codec adapters, and codec compatibility declarations stay within these two backends.
+    |
+    | ## Operations
+    |
+    | | Service | Method | HTTP method | Path | Operation key |
+    | | --- | --- | --- | --- | --- |
+    | | `PetsService` | `pets_get` | GET | `/pets/{petId}` | `/paths/~1pets~1{petId}/get` |
+    | | `PetsService` | `pets_post` | POST | `/pets` | `/paths/~1pets/post` |
+    | | `FilesService` | `files_post` | POST | `/uploads` | `/paths/~1uploads/post` |
+    | | `UntaggedService` | `handle_put__notes` | PUT | `/notes` | `/paths/~1notes/put` |
+    | | `UntaggedService` | `handle_post__raw` | POST | `/raw` | `/paths/~1raw/post` |
+    |
+    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    |
+    | ## Implementing the services
+    |
+    | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
+    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
+    | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+    | The Protocols of groups with secured operations take the type of the principal your authorizer returns.
+    |
+    | ```python
+    | from typing import Never
+    |
+    | from server import create_app
+    | from server.auth_types import AuthContext
+    | from server.services import PetsService, FilesService, UntaggedService
+    |
+    |
+    | class Pets(PetsService[Principal]):
+    |     """Implement `pets_get` and `pets_post`."""
+    |
+    |
+    | class Files(FilesService):
+    |     """Implement `files_post`."""
+    |
+    |
+    | class Untagged(UntaggedService[Principal]):
+    |     """Implement `handle_put__notes` and `handle_post__raw`."""
+    |
+    |
+    | def authorize(context: AuthContext[Never]) -> Principal:
+    |     ...
+    |
+    |
+    | app = create_app(pets=Pets(), files=Files(), untagged=Untagged(), authorizer=authorize)
+    | ```
+    |
+    | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
+    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    |
+    | ```python
+    | from fastapi import FastAPI
+    |
+    | from server import build_router, install_openapi
+    |
+    | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+    | app.include_router(build_router(pets=Pets(), files=Files(), untagged=Untagged(), authorizer=authorize))
+    | install_openapi(app)
+    | app.openapi()  # Check the document once every router is included.
+    | ```
+    |
+    | ## Authentication
+    |
+    | The secured operations use these security schemes:
+    |
+    | - `api_key`: an API key in the `X-API-Key` header
+    | - `bearer`: a bearer token
+    |
+    | Each secured operation receives the principal the authorizer returns.
+    | The authorizer reads the credentials of each security alternative from `AuthContext` and rejects a request by raising `HTTPException`, such as `403`.
+    | A request that presents no complete alternative answers `401`, and missing authentication settings never fall back to anonymous access.
+    | `credential_extractors` replace the builtin credential of a scheme, or read a scheme that has none.
+    | An extractor may return any payload, such as a `BasicSecret` it decodes as UTF-8 or a `CustomSecret` of its own type, so the authorizer checks each credential's `kind` instead of assuming its scheme's builtin credential.
+    | `SecretT` is `Never` while no extractor returns a `CustomSecret`, and otherwise the union of their value types.
+    | Bearer credentials, including OAuth2 and OpenID Connect tokens, reach the authorizer as they are: the package never contacts a token endpoint, and the authorizer checks tokens and scopes.
+    |
+    | ## Served OpenAPI document
+    |
+    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
+    | Pass `operation_keys` when the application includes only some of the operations.
+    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
+    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    |
+    | ## Validation boundaries
+    |
+    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
+    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    | Native form bodies follow FastAPI's form extraction, which treats an empty field as missing and applies its default; set the operation's `body_modes` entry to `request` when the exact submitted values matter.
+    | Operations with the `request` body mode receive the Starlette `Request` and read and validate their body themselves.
+    |
+    | A `pydantic_v2.dataclass` value cannot tell an omitted optional field from one set to `None`, and a `PATCH` body may mean a different change for each.
+    | To send a response that keeps a field omitted, return the value a response codec builds from the wire value, or snapshot a dataclass with its explicit presence:
+    |
+    | ```python
+    | from server.model_codecs import presence_of
+    | from server.responses import PetsGetResponseCodecs
+    |
+    | codec = PetsGetResponseCodecs.body(status_code=200)
+    | value = codec.from_wire(wire)
+    | value = codec.snapshot(instance, presence=presence_of(wire))
+    | ```
+    |
+    | ## Regenerating
+    |
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
+    | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
+    | Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+  file server/py.typed
+  file server/dcg-runtime-requirements.txt
+    | fastapi>=0.141.1,<0.142
+    | starlette>=1.0.0,<2
+    | pydantic>=2.13.5,<3
+    | jsonschema[format-nongpl]>=4.26,<5
+    | referencing>=0.37,<1
+    | typing-extensions>=4.16,<5
+    | python-multipart>=0.0.32,<0.1
+    | google-re2>=1.1.20251105,<2
+  file server/.dcg-state/model-artifacts.json
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"b9d8422d826d949d8d8c32a4293adc183410ad7c603a13e6e2db46a3c5fba564","size":1218}],"fingerprint":"5ac43402db97949d7080448bf8b968935e44342e283f784eb3d01f8f124024e9","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
