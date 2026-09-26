@@ -946,7 +946,7 @@ class _Finisher:
         readme = ("README.md",) if any(file.path == _README for file in rendered.files) else ()
         return "\n".join((
             "[build-system]",
-            'requires = ["hatchling>=1.27,<2"]',
+            'requires = ["hatchling>=1.27"]',
             'build-backend = "hatchling.build"',
             "",
             "[project]",

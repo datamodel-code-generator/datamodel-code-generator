@@ -66,8 +66,8 @@ app = create_app(pets=Pets())
 ```
 
 Generation ends by printing the `uv add` command that adds the runtime dependencies of the package to your
-project, with the versions this release of datamodel-code-generator supports. Run it, then start the application
-with an ASGI server:
+project. It names only the minimum version each one needs, so uv adds the latest release and your lock file keeps
+it. Run it, then start the application with an ASGI server:
 
 ```bash
 uv add uvicorn

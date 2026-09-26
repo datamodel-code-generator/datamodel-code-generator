@@ -50,7 +50,7 @@ tree
   25 runtime modules ['present']
 show server/pyproject.toml
   | [build-system]
-  | requires = ["hatchling>=1.27,<2"]
+  | requires = ["hatchling>=1.27"]
   | build-backend = "hatchling.build"
   | 
   | [project]
@@ -58,7 +58,7 @@ show server/pyproject.toml
   | version = "1.2.3"
   | requires-python = ">=3.10"
   | readme = "README.md"
-  | dependencies = ["fastapi>=0.141.1,<0.142", "starlette>=1.0.0,<2", "pydantic>=2.13.5,<3", "jsonschema[format-nongpl]>=4.26,<5", "referencing>=0.37,<1", "typing-extensions>=4.16,<5"]
+  | dependencies = ["fastapi>=0.141.1", "starlette>=1.0.0", "pydantic>=2.13.5", "jsonschema[format-nongpl]>=4.26", "referencing>=0.37", "typing-extensions>=4.16"]
   | 
   | [tool.hatch.build.targets.wheel]
   | only-include = ["src/example/server", "src/example/models.py"]
