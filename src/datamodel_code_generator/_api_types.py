@@ -19,7 +19,7 @@ DiagnosticStage: TypeAlias = Literal[
 ArtifactKind: TypeAlias = Literal[
     "model", "model_metadata", "remote_lock", "target", "model_inventory", "target_manifest"
 ]
-ArtifactAction: TypeAlias = Literal["write", "create_only", "delete", "unchanged"]
+ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
 OperationSelector: TypeAlias = OperationRef | str
 
 

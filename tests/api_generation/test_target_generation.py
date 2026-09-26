@@ -36,7 +36,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
     ],
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Generate models once, select operations, and plan owned, create-only, and management files."""
+    """Generate models once, select operations, and plan target and management files."""
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
 
 

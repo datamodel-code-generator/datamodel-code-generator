@@ -18,8 +18,7 @@
     "steps": [
       {"render": {}},
       {"publish": null},
-      {"write": ["server/handlers/pets.py", "# Handwritten.\n"]},
-      {"remove": "server/handlers/store.py"},
+      {"write": ["server/services/pets.py", "# Handwritten.\n"]},
       {"render": {}},
       {"write": ["server/routes/pets.py", "# Edited.\n"]},
       {"remove": "server/routes/store.py"},
@@ -89,7 +88,7 @@
       {"render": {}},
       {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/1/path": "../victim.py"}}},
       {"render": {}},
-      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/2/path": "handlers\\..\\..\\victim.py"}}},
+      {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/2/path": "routes\\..\\..\\victim.py"}}},
       {"render": {}},
       {"patch": {"file": "server/.dcg-target-manifest.json", "set": {"/files/3/path": "C:/victim.py"}}},
       {"render": {}},

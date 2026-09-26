@@ -64,7 +64,7 @@ class FixtureConfig(TargetConfig):
 
 
 class FixtureTarget:
-    """Group selected operations by first tag into owned route modules and create-only handler stubs."""
+    """Group selected operations by first tag into route modules the target owns."""
 
     def __init__(self, kind: TargetKind, backends: frozenset[DataModelType]) -> None:
         """Declare the target kind and the model backends it accepts."""
@@ -80,25 +80,12 @@ class FixtureTarget:
             tags = dict(operation.facts).get("tags")
             first = tags.items[0] if isinstance(tags, LiteralSequence) and tags.items else None
             groups.setdefault(str(first.value) if isinstance(first, LiteralScalar) else "default", []).append(operation)
-        files = [PlannedFile(path=PurePosixPath("__init__.py"), kind="package", ownership="owned", content=b"")]
+        files = [PlannedFile(path=PurePosixPath("__init__.py"), kind="package", content=b"")]
         for group, operations in groups.items():
             routes = "".join(f"# {operation.method.upper()} {operation.path}\n" for operation in operations)
-            files.extend((
-                PlannedFile(
-                    path=PurePosixPath("routes", f"{group}.py"),
-                    kind="routes",
-                    ownership="owned",
-                    content=routes.encode(),
-                    group=group,
-                ),
-                PlannedFile(
-                    path=PurePosixPath("handlers", f"{group}.py"),
-                    kind="handler",
-                    ownership="create_only",
-                    content=b"# Implement the handlers here.\n",
-                    group=group,
-                ),
-            ))
+            files.append(
+                PlannedFile(path=PurePosixPath("routes", f"{group}.py"), kind="routes", content=routes.encode(), group=group)
+            )
         selected = {operation.id for operation in request.operations}
         failure = getattr(config, "failure", None)
         return TargetRender(
@@ -289,9 +276,6 @@ def _publish(project: GeneratedProject, root: Path) -> None:
         location = root / artifact.path
         match artifact.action, artifact.content:
             case "write", bytes() as content:
-                location.parent.mkdir(parents=True, exist_ok=True)
-                location.write_bytes(content)
-            case "create_only", bytes() as content if not location.exists():
                 location.parent.mkdir(parents=True, exist_ok=True)
                 location.write_bytes(content)
             case "delete", _:

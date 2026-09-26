@@ -4,7 +4,6 @@ render
   write model models.py 15 lines
   write target server/__init__.py (target) 0 lines
   write target server/routes/items.py (target) 1 lines
-  create_only target server/handlers/items.py (target) 1 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
   S_OPERATION_EXCLUDED info selection /paths/~1users/get: GET /users is matched by no include rule: Items only
@@ -81,7 +80,6 @@ render
     {
       "group": null,
       "kind": "package",
-      "ownership": "owned",
       "path": "__init__.py",
       "sha256": "<sha256>",
       "size": "<masked>"
@@ -89,18 +87,9 @@ render
     {
       "group": "items",
       "kind": "routes",
-      "ownership": "owned",
       "path": "routes/items.py",
       "sha256": "<sha256>",
       "size": "<masked>"
-    },
-    {
-      "group": "items",
-      "kind": "handler",
-      "ownership": "create_only",
-      "path": "handlers/items.py",
-      "sha256": null,
-      "size": null
     }
   ],
   "generator": {
@@ -245,9 +234,7 @@ render
   write model models.py 15 lines
   write target server/__init__.py (target) 0 lines
   write target server/routes/items.py (target) 1 lines
-  create_only target server/handlers/items.py (target) 1 lines
   write target server/routes/users.py (target) 1 lines
-  create_only target server/handlers/users.py (target) 1 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The items group has 1 operations

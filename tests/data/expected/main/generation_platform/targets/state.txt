@@ -4,11 +4,8 @@ render
   write model models.py 22 lines
   write target server/__init__.py (target) 0 lines
   write target server/routes/pets.py (target) 2 lines
-  create_only target server/handlers/pets.py (target) 1 lines
   write target server/routes/store.py (target) 1 lines
-  create_only target server/handlers/store.py (target) 1 lines
   write target server/routes/default.py (target) 1 lines
-  create_only target server/handlers/default.py (target) 1 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The pets group has 2 operations
@@ -76,7 +73,7 @@ patch server/.dcg-target-manifest.json {"set": {"/files/1/path": "../victim.py"}
 render
   APIGenerationError
   E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
-patch server/.dcg-target-manifest.json {"set": {"/files/2/path": "handlers\\..\\..\\victim.py"}}
+patch server/.dcg-target-manifest.json {"set": {"/files/2/path": "routes\\..\\..\\victim.py"}}
 render
   APIGenerationError
   E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
@@ -90,11 +87,8 @@ render
   unchanged model models.py 22 lines
   unchanged target server/__init__.py (target) 0 lines
   unchanged target server/routes/pets.py (target) 2 lines
-  unchanged target server/handlers/pets.py (target) 1 lines
   unchanged target server/routes/store.py (target) 1 lines
-  unchanged target server/handlers/store.py (target) 1 lines
   unchanged target server/routes/default.py (target) 1 lines
-  unchanged target server/handlers/default.py (target) 1 lines
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   unchanged target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The pets group has 2 operations

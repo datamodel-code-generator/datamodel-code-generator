@@ -4,11 +4,8 @@ render
   write model models.py 25 lines
   write target server/__init__.py (target) 0 lines
   write target server/routes/pets.py (target) 2 lines
-  create_only target server/handlers/pets.py (target) 1 lines
   write target server/routes/store.py (target) 1 lines
-  create_only target server/handlers/store.py (target) 1 lines
   write target server/routes/default.py (target) 1 lines
-  create_only target server/handlers/default.py (target) 1 lines
   write model_metadata meta/deep/models.json 102 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
@@ -21,11 +18,8 @@ render
   unchanged model models.py 25 lines
   unchanged target server/__init__.py (target) 0 lines
   unchanged target server/routes/pets.py (target) 2 lines
-  unchanged target server/handlers/pets.py (target) 1 lines
   unchanged target server/routes/store.py (target) 1 lines
-  unchanged target server/handlers/store.py (target) 1 lines
   unchanged target server/routes/default.py (target) 1 lines
-  unchanged target server/handlers/default.py (target) 1 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The pets group has 2 operations
@@ -208,7 +202,6 @@ render
     {
       "group": null,
       "kind": "package",
-      "ownership": "owned",
       "path": "__init__.py",
       "sha256": "<sha256>",
       "size": "<masked>"
@@ -216,50 +209,23 @@ render
     {
       "group": "pets",
       "kind": "routes",
-      "ownership": "owned",
       "path": "routes/pets.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
     {
-      "group": "pets",
-      "kind": "handler",
-      "ownership": "create_only",
-      "path": "handlers/pets.py",
-      "sha256": null,
-      "size": null
-    },
-    {
       "group": "store",
       "kind": "routes",
-      "ownership": "owned",
       "path": "routes/store.py",
       "sha256": "<sha256>",
       "size": "<masked>"
     },
     {
-      "group": "store",
-      "kind": "handler",
-      "ownership": "create_only",
-      "path": "handlers/store.py",
-      "sha256": null,
-      "size": null
-    },
-    {
       "group": "default",
       "kind": "routes",
-      "ownership": "owned",
       "path": "routes/default.py",
       "sha256": "<sha256>",
       "size": "<masked>"
-    },
-    {
-      "group": "default",
-      "kind": "handler",
-      "ownership": "create_only",
-      "path": "handlers/default.py",
-      "sha256": null,
-      "size": null
     }
   ],
   "generator": {

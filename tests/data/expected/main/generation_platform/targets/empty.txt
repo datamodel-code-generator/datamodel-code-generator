@@ -3,7 +3,6 @@ render
   target=client schema_version=1
   write target server/__init__.py (target) 0 lines
   write target server/routes/default.py (target) 1 lines
-  create_only target server/handlers/default.py (target) 1 lines
   write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
   write target_manifest server/.dcg-target-manifest.json (target) 1 lines
   I_FIXTURE_GROUP info target: The default group has 1 operations
@@ -32,7 +31,6 @@ render
     {
       "group": null,
       "kind": "package",
-      "ownership": "owned",
       "path": "__init__.py",
       "sha256": "<sha256>",
       "size": "<masked>"
@@ -40,18 +38,9 @@ render
     {
       "group": "default",
       "kind": "routes",
-      "ownership": "owned",
       "path": "routes/default.py",
       "sha256": "<sha256>",
       "size": "<masked>"
-    },
-    {
-      "group": "default",
-      "kind": "handler",
-      "ownership": "create_only",
-      "path": "handlers/default.py",
-      "sha256": null,
-      "size": null
     }
   ],
   "generator": {

@@ -40,7 +40,6 @@ INVENTORY_PATH: Final = PurePosixPath(".dcg-state", "model-artifacts.json")
 GENERATOR_NAME: Final = "datamodel-code-generator"
 ROOT_URN: Final = "urn:dcg:root"
 ROOT_POINTER: Final = "/inputs/root"
-Ownership: TypeAlias = Literal["owned", "create_only"]
 RootKind: TypeAlias = Literal["file", "url", "text", "mapping"]
 JSONObject: TypeAlias = "dict[str, JSONValue]"
 
@@ -55,7 +54,7 @@ _RECORD_KEYS: Final = {
 }
 _MANIFEST_KEYS: Final = frozenset({"schema_version", *_RECORD_KEYS, "files", "diagnostics", "bindings", "target_data"})
 _INVENTORY_KEYS: Final = frozenset({"schema_version", "model"})
-_FILE_KEYS: Final = frozenset({"path", "kind", "ownership", "sha256", "size", "group"})
+_FILE_KEYS: Final = frozenset({"path", "kind", "sha256", "size", "group"})
 _DECLARED_ROLES: Final = frozenset({
     "parameter",
     "response_header",
@@ -285,12 +284,11 @@ def model_record(*, output_uri: str, package: str, mode: str, artifacts: Sequenc
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RecordedFile:
-    """One file of a previous manifest; create-only files carry no hash."""
+    """One file of a previous manifest, with the hash its generation recorded."""
 
     path: PurePosixPath
     kind: str
-    ownership: Ownership
-    sha256: str | None
+    sha256: str
     group: str | None
 
 
@@ -362,7 +360,6 @@ def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
         case {
             "path": str() as path,
             "kind": str() as kind,
-            "ownership": "owned",
             "sha256": digest,
             "size": int() as size,
             "group": str() | None as group,
@@ -373,16 +370,7 @@ def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
             and not isinstance(size, bool)
             and size >= 0
         ):
-            return RecordedFile(path=PurePosixPath(path), kind=kind, ownership="owned", sha256=digest, group=group)
-        case {
-            "path": str() as path,
-            "kind": str() as kind,
-            "ownership": "create_only",
-            "sha256": None,
-            "size": None,
-            "group": str() | None as group,
-        } if len(entry) == len(_FILE_KEYS) and _is_contained(path):
-            return RecordedFile(path=PurePosixPath(path), kind=kind, ownership="create_only", sha256=None, group=group)
+            return RecordedFile(path=PurePosixPath(path), kind=kind, sha256=digest, group=group)
     raise _state_error(
         code="E_STATE_CORRUPT",
         path=PurePosixPath(MANIFEST_NAME),
@@ -482,11 +470,10 @@ def read_target_state(root: Path, kind: TargetKind, package: str) -> TargetState
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PlannedFile:
-    """One target file a renderer produced, with the ownership the target plans for it."""
+    """One target file a renderer produced; the target owns every file it plans."""
 
     path: PurePosixPath
     kind: str
-    ownership: Ownership
     content: bytes
     group: str | None = None
 
@@ -498,7 +485,6 @@ class FilePlan:
     path: PurePosixPath
     kind: str
     action: ArtifactAction
-    ownership: Ownership | None
     content: bytes | None
     group: str | None
 
@@ -523,7 +509,7 @@ def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], t
     def owned(path: PurePosixPath, previous: RecordedFile | None) -> tuple[bool, bytes | None]:
         location = root.joinpath(*path.parts)
         current = location.read_bytes() if location.is_file() else None
-        if previous is None or previous.ownership != "owned":
+        if previous is None:
             return True, current
         if current is None:
             refuse("E_OUTPUT_MODIFIED", path, "A file the target owns is missing")
@@ -535,53 +521,32 @@ def plan_files(root: Path, state: TargetState, planned: Sequence[PlannedFile], t
 
     for item in planned:
         valid, current = owned(item.path, previous := state.files.get(item.path))
-        match item.ownership, current:
-            case _ if not valid:
-                continue
-            case "owned", bytes() if previous is None or previous.ownership != "owned":
-                refuse("E_OUTPUT_CONFLICT", item.path, "An unmanaged file occupies a path the target owns")
-                continue
-            case "owned", _:
-                action: ArtifactAction = "unchanged" if current == item.content else "write"
-                content = item.content
-            case _, None:
-                action, content = "create_only", item.content
-            case _:
-                action, content = "unchanged", current
-        plans.append(
-            FilePlan(
-                path=item.path,
-                kind=item.kind,
-                action=action,
-                ownership=item.ownership,
-                content=content,
-                group=item.group,
-            )
-        )
+        if not valid:
+            continue
+        if current is not None and previous is None:
+            refuse("E_OUTPUT_CONFLICT", item.path, "An unmanaged file occupies a path the target owns")
+            continue
+        action: ArtifactAction = "unchanged" if current == item.content else "write"
+        plans.append(FilePlan(path=item.path, kind=item.kind, action=action, content=item.content, group=item.group))
     kept = {item.path for item in planned}
     for path, previous in state.files.items():
-        if path not in kept and previous.ownership == "owned" and owned(path, previous)[0]:
-            plans.append(
-                FilePlan(
-                    path=path, kind=previous.kind, action="delete", ownership=None, content=None, group=previous.group
-                )
-            )
+        if path not in kept and owned(path, previous)[0]:
+            plans.append(FilePlan(path=path, kind=previous.kind, action="delete", content=None, group=previous.group))
     if problems:
         raise APIGenerationError(tuple(problems))
     return tuple(plans)
 
 
 def manifest_files(plans: Sequence[FilePlan]) -> list[JSONValue]:
-    """Record the final file inventory: owned files with their hashes, create-only files without."""
+    """Record the final file inventory: every file the target keeps, with its hash and size."""
     return [
         {
             "path": plan.path.as_posix(),
             "kind": plan.kind,
-            "ownership": plan.ownership,
-            "sha256": sha256(plan.content) if plan.ownership == "owned" and plan.content is not None else None,
-            "size": len(plan.content) if plan.ownership == "owned" and plan.content is not None else None,
+            "sha256": sha256(content),
+            "size": len(content),
             "group": plan.group,
         }
         for plan in plans
-        if plan.ownership is not None
+        if (content := plan.content) is not None
     ]
