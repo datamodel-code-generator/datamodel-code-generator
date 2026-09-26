@@ -1,0 +1,2 @@
+APIGenerationError
+  E_CONFIG_VALUE error config custom_formatter_kwargs: custom_formatter_kwargs must be a table of JSON values

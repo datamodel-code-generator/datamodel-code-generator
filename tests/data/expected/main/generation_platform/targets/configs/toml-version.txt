@@ -1,0 +1,2 @@
+APIGenerationError
+  E_CONFIG_VALUE error config schema_version: schema_version must be 1

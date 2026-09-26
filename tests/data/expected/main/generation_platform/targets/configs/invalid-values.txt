@@ -1,0 +1,13 @@
+APIGenerationError
+  E_CONFIG_VALUE error config output: output must be a Path
+  E_CONFIG_VALUE error config package: package must be a dotted Python import path
+  E_CONFIG_VALUE error config model_package: model_package must be a dotted Python import path
+  E_CONFIG_VALUE error config model_mode: model_mode must be 'generate' or 'verify'
+  E_CONFIG_VALUE error config formatters: formatters must be a tuple of Formatter values
+  E_CONFIG_VALUE error config formatter_settings: formatter_settings must be a Path or None
+  E_CONFIG_VALUE error config custom_formatters: custom_formatters must be module paths
+  E_CONFIG_VALUE error config custom_formatter_kwargs: custom_formatter_kwargs must be a JSON object
+  E_CONFIG_VALUE error config encoding: encoding must name a Python codec
+  E_CONFIG_VALUE error config header: header must be a string or None
+  E_CONFIG_VALUE error config include_timestamp: include_timestamp must be a boolean
+  E_CONFIG_VALUE error config package_mode: package_mode must be 'embedded' or 'standalone'

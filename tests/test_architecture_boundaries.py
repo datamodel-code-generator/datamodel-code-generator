@@ -39,6 +39,7 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
         (FIXTURE_ROOT / "output_model" / "forbidden.py", "output-model"),
         (FIXTURE_ROOT / "shared_model" / "forbidden.py", "shared-model"),
         (FIXTURE_ROOT / "shared" / "forbidden.py", "shared"),
+        (FIXTURE_ROOT / "target" / "forbidden.py", "target"),
     ]
     violations = check_architecture_boundaries.check_files(files, allowlist={})
 
@@ -84,6 +85,8 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "model" / "__init__.py",
         source_root / "model" / "pydantic_v2" / "base_model.py",
         source_root / "model" / "runtime_validation.py",
+        source_root / "_api_generation.py",
+        source_root / "_target_config.py",
         source_root / "types.py",
     )
     classification = "".join(

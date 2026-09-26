@@ -1,0 +1,3 @@
+APIGenerationError
+  E_CONFIG_VALUE error config package_version: A standalone package needs package_version
+  E_CONFIG_VALUE error config distribution_name: A standalone package needs distribution_name

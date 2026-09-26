@@ -1,0 +1,3 @@
+APIGenerationError
+  E_CONFIG_VALUE error config builtin_codec_compatibility[0].contract: The only compatibility contract is 'builtin-v1'
+  E_CONFIG_VALUE error config export_bindings[0].direction: direction must be 'request', 'response', or 'neutral'

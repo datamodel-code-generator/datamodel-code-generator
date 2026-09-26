@@ -1,0 +1,4 @@
+APIGenerationError
+  E_CONFIG_CONFLICT error config package_version: package_version applies only to package_mode='standalone'
+  E_CONFIG_CONFLICT error config distribution_name: distribution_name applies only to package_mode='standalone'
+  E_CONFIG_CONFLICT error config model_dependency: model_dependency applies only to package_mode='standalone'

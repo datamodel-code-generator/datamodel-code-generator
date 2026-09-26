@@ -1,0 +1,96 @@
+# state
+render
+  target=fastapi schema_version=1
+  write model models.py 22 lines
+  write target server/__init__.py (target) 0 lines
+  write target server/routes/pets.py (target) 2 lines
+  write target server/routes/store.py (target) 1 lines
+  write target server/routes/default.py (target) 1 lines
+  write model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
+  write target_manifest server/.dcg-target-manifest.json (target) 1 lines
+  I_FIXTURE_GROUP info target: The pets group has 2 operations
+  I_FIXTURE_GROUP info target: The store group has 1 operations
+  I_FIXTURE_GROUP info target: The default group has 1 operations
+publish
+remove server/.dcg-state/model-artifacts.json
+render
+  APIGenerationError
+  E_STATE_MISSING error ownership .dcg-state/model-artifacts.json: The model inventory is missing
+patch server/.dcg-state/model-artifacts.json {}
+remove server/.dcg-target-manifest.json
+render
+  APIGenerationError
+  E_STATE_MISSING error ownership .dcg-target-manifest.json: The manifest is missing
+write server/.dcg-target-manifest.json
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The management file is not JSON
+patch server/.dcg-target-manifest.json {"set": {"/schema_version": 2}}
+render
+  APIGenerationError
+  E_STATE_VERSION error ownership .dcg-target-manifest.json: The management file has an unknown version
+patch server/.dcg-target-manifest.json {"set": {"/schema_version": true}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The management file has no schema version
+patch server/.dcg-target-manifest.json {"set": {"/extra": 1}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The manifest has unknown or missing keys
+patch server/.dcg-target-manifest.json {"delete": ["/generator/name"]}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The manifest generator record is invalid
+patch server/.dcg-target-manifest.json {"set": {"/files": {}}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The manifest has an invalid list or target data
+patch server/.dcg-target-manifest.json {"set": {"/target_data": {"client": {}}}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The manifest has an invalid list or target data
+patch server/.dcg-target-manifest.json {"set": {"/target/package": "example.other"}}
+render
+  APIGenerationError
+  E_OUTPUT_CONFLICT error ownership .dcg-target-manifest.json: The manifest belongs to another target
+patch server/.dcg-target-manifest.json {"set": {"/target/id": "0"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The manifest target record is invalid
+patch server/.dcg-target-manifest.json {"set": {"/model/mode": "verify"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-state/model-artifacts.json: The model inventory disagrees with the manifest
+patch server/.dcg-target-manifest.json {"set": {"/files/0/sha256": "0"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
+patch server/.dcg-target-manifest.json {"set": {"/files/1/path": "__init__.py"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: The manifest repeats a file
+patch server/.dcg-target-manifest.json {"set": {"/files/1/path": "../victim.py"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
+patch server/.dcg-target-manifest.json {"set": {"/files/2/path": "routes\\..\\..\\victim.py"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
+patch server/.dcg-target-manifest.json {"set": {"/files/3/path": "C:/victim.py"}}
+render
+  APIGenerationError
+  E_STATE_CORRUPT error ownership .dcg-target-manifest.json: A manifest file record is invalid
+patch server/.dcg-target-manifest.json {}
+render
+  target=fastapi schema_version=1
+  unchanged model models.py 22 lines
+  unchanged target server/__init__.py (target) 0 lines
+  unchanged target server/routes/pets.py (target) 2 lines
+  unchanged target server/routes/store.py (target) 1 lines
+  unchanged target server/routes/default.py (target) 1 lines
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target) 1 lines
+  unchanged target_manifest server/.dcg-target-manifest.json (target) 1 lines
+  I_FIXTURE_GROUP info target: The pets group has 2 operations
+  I_FIXTURE_GROUP info target: The store group has 1 operations
+  I_FIXTURE_GROUP info target: The default group has 1 operations

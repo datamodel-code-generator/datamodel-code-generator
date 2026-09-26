@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -22,6 +23,7 @@ Layer: TypeAlias = Literal[
     "model-composition",
     "output-model",
     "shared-model",
+    "target",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -56,6 +58,12 @@ _SHARED_MODEL_BACKEND_MODULE_ACCESS_MESSAGE: Final = (
     "shared model code must not inspect a concrete backend through sys.modules; "
     "move backend lifecycle or cache management to the backend or composition root"
 )
+_TARGET_MODULES: Final = frozenset({
+    "datamodel_code_generator._api_generation",
+    "datamodel_code_generator._api_manifest",
+    "datamodel_code_generator._api_types",
+    "datamodel_code_generator._target_config",
+})
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
     "enum.py",
@@ -222,6 +230,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "model-composition": "datamodel_code_generator.model.composition_fixture",
             "output-model": "datamodel_code_generator.model.fixture",
             "shared-model": "datamodel_code_generator.model.shared_fixture",
+            "target": "datamodel_code_generator.target_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -499,22 +508,25 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 self._check_import(node, target)
                 continue
             self._record_import_alias(alias.asname or alias.name, module)
-            self._check_import(node, target if self.layer == "reference" or alias.name.startswith("_") else module)
+            self._check_import(
+                node, target if self.layer in {"reference", "target"} or alias.name.startswith("_") else module
+            )
 
     def visit_Call(self, node: ast.Call) -> None:
         """Check dynamic imports, semantic getattr, and backend module identity helpers."""
         chain = _attribute_chain(node.func)
         dynamic_target = None
+        if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
+            dynamic_target = self._resolved_dynamic_target(node, self._resolved_string(argument))
         if (
-            self.layer in {"parser", "config", "reference", "shared-model"}
-            and self._is_dynamic_import(node.func)
-            and (argument := self._dynamic_import_target_argument(node)) is not None
-        ):
-            dynamic_target = self._resolved_string(argument)
-        if dynamic_target and (
-            _is_reference_backend_import(dynamic_target)
-            if self.layer == "reference"
-            else _concrete_backend_module(dynamic_target)
+            dynamic_target
+            and not self._check_target_boundary(node, dynamic_target)
+            and self.layer in {"parser", "config", "reference", "shared-model"}
+            and (
+                _is_reference_backend_import(dynamic_target)
+                if self.layer == "reference"
+                else _concrete_backend_module(dynamic_target)
+            )
         ):
             match self.layer:
                 case "reference":
@@ -761,6 +773,32 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 return len(chain) > 1 and chain[0] in self.dynamic_import_provider_aliases
         return False
 
+    def _resolved_package(self, node: ast.expr | None) -> str | None:
+        match node:
+            case ast.Name(id="__package__"):
+                return (
+                    self.current_module if self.path.name == "__init__.py" else self.current_module.rpartition(".")[0]
+                )
+        return self._resolved_string(node)
+
+    def _resolved_dynamic_target(self, node: ast.Call, target: str | None) -> str | None:
+        match node.func:
+            case ast.Name(id="import_module") | ast.Attribute(attr="import_module") if (
+                target is not None and target.startswith(".")
+            ):
+                package = (
+                    node.args[1]
+                    if len(node.args) > 1
+                    else next((keyword.value for keyword in node.keywords if keyword.arg == "package"), None)
+                )
+                if (anchor := self._resolved_package(package)) is None:
+                    return target
+                try:
+                    return importlib.util.resolve_name(target, anchor)
+                except ImportError:
+                    return target
+        return target
+
     @staticmethod
     def _dynamic_import_target_argument(node: ast.Call) -> ast.expr | None:
         if node.args:
@@ -897,6 +935,29 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         if backend := _concrete_backend_module(target):
             self.backend_aliases[alias] = backend
 
+    def _check_target_boundary(self, node: ast.AST, target: str) -> bool:
+        if self.layer == "target" and (
+            target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser.")
+        ):
+            self._add(
+                node,
+                "target-parser-import",
+                target,
+                "target generation must consume accepted contracts, not parser modules",
+            )
+            return True
+        if self.layer != "target" and any(
+            target == module or target.startswith(f"{module}.") for module in _TARGET_MODULES
+        ):
+            self._add(
+                node,
+                "target-reverse-import",
+                target,
+                "model generation must not depend on target generation; targets depend on the core",
+            )
+            return True
+        return False
+
     def _check_import(self, node: ast.AST, target: str) -> None:
         if self.layer == "reference" and _is_reference_backend_import(target):
             self._add(
@@ -929,6 +990,8 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 target,
                 _SHARED_MODEL_BACKEND_IMPORT_MESSAGE,
             )
+            return
+        if self._check_target_boundary(node, target):
             return
         if (
             self.layer != "parser"
@@ -985,6 +1048,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
+        case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:
+            layer = "target"
         case ("model", "__init__.py"):
             layer = "model-composition"
         case ("model", filename) if filename in _NEUTRAL_MODEL_FILENAMES:
