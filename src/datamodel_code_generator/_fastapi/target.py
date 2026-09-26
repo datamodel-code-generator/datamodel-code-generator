@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import replace
-from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
@@ -30,10 +29,11 @@ from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from pathlib import PurePosixPath
 
     from datamodel_code_generator._api_generation import RenderedFile, TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
-    from datamodel_code_generator._api_types import DiagnosticSeverity, TargetKind
+    from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._fastapi.context import FastAPIContext
     from datamodel_code_generator._fastapi.openapi import ServedDocs
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
@@ -58,6 +58,7 @@ _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
 }
 _PATTERN_KEYWORDS: Final = frozenset({"pattern", "patternProperties"})
+
 
 class FastAPITarget:
     """Render a FastAPI server package for the two Pydantic v2 backends."""
@@ -205,9 +206,7 @@ def _docs(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest, wire:
                 documents=request.documents.pointers,
             ),
         )
-    return DocsBuilder(
-        plan, request, package=config.package, wires=wires, callbacks=nodes
-    ).build()
+    return DocsBuilder(plan, request, package=config.package, wires=wires, callbacks=nodes).build()
 
 
 def _excluded(plan: ServerPlan, request: TargetRequest) -> tuple[Diagnostic, ...]:

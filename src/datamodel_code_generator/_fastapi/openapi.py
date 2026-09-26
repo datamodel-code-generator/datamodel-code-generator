@@ -185,7 +185,7 @@ class _NotJSONError(Exception):
 class DocsBuilder:  # noqa: PLR0904
     """Build each operation's fragment from its declarations and normalized schemas, collecting components."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         plan: ServerPlan,
         request: TargetRequest,
