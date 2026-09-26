@@ -302,6 +302,10 @@ jobs:
             name: HTTPX + HTTPX2 HTTP(S) e2e
             os: macos-latest
             coverage: false
+          - tox_env: fastapi-install-nocov-e2e
+            name: FastAPI server installation e2e
+            os: ubuntu-24.04
+            coverage: false
     runs-on: ${{ matrix.os }}
     env: *test-http-backends-env
     steps: *test-http-backends-steps

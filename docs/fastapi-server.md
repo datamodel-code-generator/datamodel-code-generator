@@ -65,9 +65,10 @@ class Pets(PetsService):
 app = create_app(pets=Pets())
 ```
 
-Generation ends by printing the `uv add` command that adds the runtime dependencies of the package to your
-project. It names only the minimum version each one needs, so uv adds the latest release and your lock file keeps
-it. Run it, then start the application with an ASGI server:
+Generation ends by printing the `uv add` command that adds the runtime dependencies of the package to your project,
+including what the models import, such as `email-validator` for `format: email` and `python-ulid` for
+`format: ulid`. It names only the minimum version each one needs, so uv adds the latest release and your lock file
+keeps it. Run it, then start the application with an ASGI server:
 
 ```bash
 uv add uvicorn

@@ -512,6 +512,14 @@
       {"show": "server/pyproject.toml"}
     ]
   },
+  "model-dependencies": {
+    "input": {"path": "contacts.yaml"},
+    "model": {"openapi_scopes": ["schemas", "api"], "use_pendulum": true},
+    "steps": [
+      {"render": {}},
+      {"dependencies": null}
+    ]
+  },
   "layout-errors": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},

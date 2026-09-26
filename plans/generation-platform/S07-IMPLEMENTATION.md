@@ -169,6 +169,12 @@ An independent review of main `34f144ff` against the plan reported five findings
 
 The Pydantic codec reads native values with `mode="python"` and converted any leaf it did not know with the schema-less `to_jsonable_python`, which cannot serialize types that bring their own Pydantic schema, such as the `ulid.ULID` that `format: ulid` generates. Such a leaf is now converted by a cached `TypeAdapter` of its own type in JSON mode; a type without a Pydantic schema still has no JSON representation (`ModelProjectionError`). The test group adds `python-ulid>=3.2.1`, and the `ids` codec fixture decodes, echoes, encodes, and snapshots ULID fields and rejects an invalid one natively.
 
+### Model dependencies and an isolated installation
+
+The printed dependencies (and the standalone `pyproject.toml`) named only what the server runtime needs, so a server whose models use `EmailStr` failed to import in an environment built from them. The target now reads the top-level import statements of the model artifacts and adds `email-validator>=2.3` for `pydantic.EmailStr` or `pydantic.NameEmail`, `python-ulid>=3.2.1` for `ulid`, and `pendulum>=3.2` for `pendulum`, the third-party modules the Pydantic v2 type map emits (MODEL-CODECS §1). The `model-dependencies` target case reports them for a document with `format: ulid`, `format: email`, and `format: date` under `use_pendulum`.
+
+The gated `fastapi-install-nocov-e2e` environment, run by CI on Ubuntu, generates an embedded and a standalone server with `--dependency-format requirements`, creates a new environment with `uv venv`, installs only the printed lines with `uv pip install` (the standalone case installs the distribution editable), and sends JSON and form requests through the ASGI interface: a valid contact, an invalid e-mail, a nickname outside its pattern, and form bodies inside and outside the pattern. Its first run found the ULID response failure fixed by the previous PR. It also showed that ordinary model generation with `use_pendulum` emits `pendulum.Date`, which Pydantic v2 cannot build a schema for, so those models do not import with any dependencies; that belongs to model generation, not this target, and the installation case leaves `use_pendulum` out.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

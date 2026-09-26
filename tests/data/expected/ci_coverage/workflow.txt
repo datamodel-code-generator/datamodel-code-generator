@@ -14,6 +14,7 @@
   },
   "configurations": [
     "fastapi-e2e:ubuntu-24.04:/:",
+    "fastapi-install-nocov-e2e:ubuntu-24.04:/:",
     "httpx-both-nocov-e2e:macos-latest:/:",
     "httpx-e2e:ubuntu-24.04:/:",
     "httpx2-max-nocov-e2e:windows-latest:/:",
@@ -96,7 +97,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 67,
+  "job_count": 68,
   "permissions": {
     "contents": "read"
   },
