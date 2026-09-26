@@ -4633,8 +4633,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             _rename_field_preserving_alias(field, new_field_name)
                             _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
-                if (current_name := field.name) in self.builtin_names and any(
-                    _is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types
+                if (
+                    self.data_model_type.NORMALIZES_FIELD_NAMES
+                    and (current_name := field.name) in self.builtin_names
+                    and any(_is_builtin_type_collision(current_name, dt) for dt in field.data_type.all_data_types)
                 ):
                     if field.alias is None:
                         field.alias = field_name

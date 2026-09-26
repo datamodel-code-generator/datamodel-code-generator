@@ -2543,13 +2543,12 @@ def test_main_jsonschema_field_type_collision_runtime(
     )
     payload_path = DATA_PATH / "payloads" / "field_type_collision_runtime"
     with _generated_model(output_file, "field_type_collision_runtime", "Payload") as model:
+        validator = partial(msgspec.json.decode, type=model)
+        error_type = msgspec.ValidationError
         match backend:
             case DataModelType.PydanticV2Dataclass:
                 validator = _model_json_validator(model)
                 error_type = ValidationError
-            case _:
-                validator = partial(msgspec.json.decode, type=model)
-                error_type = msgspec.ValidationError
         parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
         with pytest.raises(error_type):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
