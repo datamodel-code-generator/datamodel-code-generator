@@ -12,12 +12,17 @@ from .._runtime.server.application import Dependency, OperationPlan
 from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
 from . import model_bindings
 
-OperationKey: TypeAlias = Literal['/paths/~1greetings/get', '/paths/~1pets~1{id}/get']
+OperationKey: TypeAlias = Literal[
+    '/paths/~1greetings/get',
+    '/paths/~1documents~1{id}/get',
+    '/paths/~1pets~1{id}/get',
+]
 SchemeKey: TypeAlias = Never
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
         '/paths/~1greetings/get': Sequence[Dependency],
+        '/paths/~1documents~1{id}/get': Sequence[Dependency],
         '/paths/~1pets~1{id}/get': Sequence[Dependency],
     },
     total=False,
@@ -51,6 +56,33 @@ class GetGreeting:
     )
 
 
+class GetDocument:
+    """Plans of the get_document operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='get_document',
+        key='/paths/~1documents~1{id}/get',
+        service='untagged',
+        keywords=('id',),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses=(
+            ResponsePlan(
+                status='200',
+                media=(
+                    MediaPlan(media_type='*/*', kind='binary'),
+                    MediaPlan(
+                        media_type='application/json',
+                        kind='json',
+                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                    ),
+                ),
+            ),
+        ),
+        primary=(200, 'application/json'),
+    )
+
+
 class GetPet:
     """Plans of the get_pet operation."""
 
@@ -68,7 +100,7 @@ class GetPet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
                     ),
                 ),
             ),
@@ -78,7 +110,7 @@ class GetPet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
                     ),
                 ),
             ),

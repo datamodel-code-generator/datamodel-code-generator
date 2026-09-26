@@ -61,6 +61,10 @@ class HeaderCodec(Protocol):
         """Validate a wire value to send."""
 
 
+def _keys(media_type: str) -> tuple[str, str]:
+    return media_type, media_type.partition(";")[0]
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MediaPlan:
     """One declared media type of a response, and the codec of its payload when the content has a schema."""
@@ -89,7 +93,11 @@ class ResponsePlan:
     headers: tuple[HeaderPlan, ...] = ()
 
     def select(self, media_type: str | None) -> tuple[MediaPlan, str] | None:
-        """Return the declared media for a media type, or the default media, together with the type to send."""
+        """Return the most specific declared media for a media type, or the default media, with the type to send.
+
+        An exact declaration comes first, then one with the same type and subtype, then type/*, then */*, whatever
+        their declaration order.
+        """
         if media_type is None:
             chosen = next((item for item in self.media if item.media_type == "application/json"), None) or next(
                 (item for item in self.media if item.media_type.partition(";")[0].endswith("+json")), self.media[0]
@@ -100,9 +108,8 @@ class ResponsePlan:
         except ValueError:
             return None
         essence = requested.partition(";")[0]
-        wildcard = f"{essence.partition('/')[0]}/*"
-        for item in self.media:
-            if item.media_type == requested or item.media_type.partition(";")[0] in {essence, wildcard, "*/*"}:
+        for key in (requested, essence, f"{essence.partition('/')[0]}/*", "*/*"):
+            if (item := next((item for item in self.media if key in _keys(item.media_type)), None)) is not None:
                 return item, requested
         return None
 

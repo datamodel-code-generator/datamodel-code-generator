@@ -70,6 +70,9 @@ def _resources() -> tuple[SchemaResource, ...]:
                             },
                         },
                     },
+                    '/archives': {
+                        'put': {'requestBody': {'content': {'text/*': {'schema': {'type': 'string', 'maxLength': 5}}}}},
+                    },
                     '/checks': {
                         'post': {
                             'requestBody': {
@@ -194,6 +197,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/components/schemas/Check',
                 '/components/schemas/Item',
                 '/paths/~1accounts/post/requestBody/content/application~1json/schema',
+                '/paths/~1archives/put/requestBody/content/text~1*/schema',
                 '/paths/~1checks/post/requestBody/content/application~1json/schema',
                 '/paths/~1documents/put/requestBody/content/application~1json/schema',
                 '/paths/~1documents/put/requestBody/content/application~1vnd.item+json/schema',
@@ -353,6 +357,16 @@ def _model_4() -> ModelBinding:
 @cache
 def _model_5() -> ModelBinding:
     return ModelBinding(
+        symbol='bodies_basemodel_models:FieldArchivesPutRequest',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_6() -> ModelBinding:
+    return ModelBinding(
         symbol='bodies_basemodel_models:FieldFormsPostRequest',
         native_kind='model',
         schema_id=None,
@@ -399,7 +413,7 @@ def _model_5() -> ModelBinding:
 
 
 @cache
-def _model_6() -> ModelBinding:
+def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:Check',
         native_kind='model',
@@ -668,6 +682,39 @@ def codec_6() -> PydanticModelCodec[bodies_basemodel_models.FieldDocumentsPutReq
 CONTEXT_7: Final = CodecContext(
     surface='server',
     direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1archives/put/requestBody/content/text~1*/schema',
+    operation_id='/paths/~1archives/put',
+    media_type='text/*',
+)
+
+
+@cache
+def codec_7() -> PydanticModelCodec[bodies_basemodel_models.FieldArchivesPutRequest]:
+    """Codec of /paths/~1archives/put request_body (request text/*)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1archives/put/requestBody/content/text~1*/schema|ModelNode(symbol='bodies_basemodel_models:FieldArchivesPutRequest')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1archives/put/requestBody/content/text~1*/schema',
+            operation_id='/paths/~1archives/put',
+            media_type='text/*',
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='bodies_basemodel_models:FieldArchivesPutRequest',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='bodies_basemodel_models:FieldArchivesPutRequest'),
+            models=(_model_5(),),
+        ),
+        bodies_basemodel_models.FieldArchivesPutRequest,
+        {'bodies_basemodel_models:FieldArchivesPutRequest': bodies_basemodel_models.FieldArchivesPutRequest},
+        request_bundle(),
+    )
+
+
+CONTEXT_8: Final = CodecContext(
+    surface='server',
+    direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema',
     operation_id='/paths/~1forms/post',
     media_type='application/x-www-form-urlencoded',
@@ -675,7 +722,7 @@ CONTEXT_7: Final = CodecContext(
 
 
 @cache
-def codec_7() -> PydanticModelCodec[bodies_basemodel_models.FieldFormsPostRequest]:
+def codec_8() -> PydanticModelCodec[bodies_basemodel_models.FieldFormsPostRequest]:
     """Codec of /paths/~1forms/post request_body (request application/x-www-form-urlencoded)."""
     return PydanticModelCodec(
         UseBinding(
@@ -690,7 +737,7 @@ def codec_7() -> PydanticModelCodec[bodies_basemodel_models.FieldFormsPostReques
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='bodies_basemodel_models:FieldFormsPostRequest'),
-            models=(_model_5(),),
+            models=(_model_6(),),
         ),
         bodies_basemodel_models.FieldFormsPostRequest,
         {'bodies_basemodel_models:FieldFormsPostRequest': bodies_basemodel_models.FieldFormsPostRequest},
@@ -698,7 +745,7 @@ def codec_7() -> PydanticModelCodec[bodies_basemodel_models.FieldFormsPostReques
     )
 
 
-CONTEXT_8: Final = CodecContext(
+CONTEXT_9: Final = CodecContext(
     surface='server',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1checks/post/requestBody/content/application~1json/schema',
@@ -708,7 +755,7 @@ CONTEXT_8: Final = CodecContext(
 
 
 @cache
-def codec_8() -> PydanticModelCodec[bodies_basemodel_models.Check]:
+def codec_9() -> PydanticModelCodec[bodies_basemodel_models.Check]:
     """Codec of /paths/~1checks/post request_body (request application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -723,7 +770,7 @@ def codec_8() -> PydanticModelCodec[bodies_basemodel_models.Check]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='bodies_basemodel_models:Check'),
-            models=(_model_6(),),
+            models=(_model_7(),),
         ),
         bodies_basemodel_models.Check,
         {'bodies_basemodel_models:Check': bodies_basemodel_models.Check},

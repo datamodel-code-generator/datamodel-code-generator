@@ -10,7 +10,12 @@ import responses_dataclass_models
 from fastapi.responses import Response
 
 from .model_codecs import ModelValue, Unset
-from .responses import GetGreetingResponsePayload, GetPetResponsePayload, HTTPResult
+from .responses import (
+    GetDocumentResponsePayload,
+    GetGreetingResponsePayload,
+    GetPetResponsePayload,
+    HTTPResult,
+)
 
 
 class UntaggedService(Protocol):
@@ -25,6 +30,18 @@ class UntaggedService(Protocol):
         responses_dataclass_models.FieldGreetingsGetResponse
         | ModelValue[responses_dataclass_models.FieldGreetingsGetResponse]
         | HTTPResult[GetGreetingResponsePayload]
+        | Response
+    ): ...
+
+    @abstractmethod
+    def get_document(
+        self,
+        *,
+        id: int,
+    ) -> (
+        responses_dataclass_models.Pet
+        | ModelValue[responses_dataclass_models.Pet]
+        | HTTPResult[GetDocumentResponsePayload]
         | Response
     ): ...
 

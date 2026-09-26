@@ -183,6 +183,10 @@ A parameter or form field whose schema is an `enum` or `const` with integer, num
 
 Native form admission checked the Encoding of multipart bodies only, so a URL-encoded array with `style: form, explode: false` was read by FastAPI's `Form` as repeated members: the correct `ids=1,2` was 422 and `ids=1&ids=2` succeeded. The builtin form adapter reads only the default form style with explode as well, so any URL-encoded or multipart Encoding that declares another style, `explode: false`, `allowReserved`, or a `contentType` now stops generation with `F_MEDIA_UNSUPPORTED` at that Encoding, asking for `body_mode='request'`, as MODEL-CODECS §10 and the FastAPI admission rules require for readers the package does not have. The `media-errors` fixture covers `explode: false`, `pipeDelimited`, `allowReserved`, a JSON `contentType`, and a multipart `explode: false`; the `forms` server scenario declares the default encoding explicitly and still reads `tags=x&tags=y` natively.
 
+### Most specific media first
+
+`ResponsePlan.select()` returned the first declaration that matched, so a response declaring `*/*` before `application/json` treated an `HTTPResult` with `media_type="application/json"` and a JSON model as a binary payload and answered 500; reordering the declarations made it 200. It now takes an exact declaration first, then one with the same type and subtype, then `type/*`, then `*/*`, whatever the declaration order, as OpenAPI's most-specific rule and MODEL-CODECS §3 require. Request bodies already tried exact types before wildcards but kept `*/*` before `text/*` when declared first, so a `text/plain` body skipped its string schema; wildcards are now ranked the same way. The `responses` scenario returns a JSON model and raw bytes from a response that declares `*/*` first, and the `bodies` scenario sends text within and beyond its `text/*` limit and a ZIP body to a request that declares `*/*` first.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

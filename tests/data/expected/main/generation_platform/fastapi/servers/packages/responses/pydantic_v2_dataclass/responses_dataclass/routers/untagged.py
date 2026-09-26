@@ -51,6 +51,33 @@ def _add_get_greeting(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_get_document(router: APIRouter, wiring: Wiring) -> None:
+    get_document_handler = wiring.handlers['get_document']
+
+    def get_document(*, id: Annotated[int, Path(alias='id')]) -> object:
+        return dispatch(get_document_handler(id=id), contract.GetDocument.RESPONSES)
+
+    router.add_api_route(
+        '/documents/{id}',
+        get_document,
+        methods=['GET'],
+        status_code=200,
+        response_model=responses_dataclass_models.Pet,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='getDocument',
+        response_description='The document, as a pet or as raw bytes.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'responses_dataclass',
+                'operation': '/paths/~1documents~1{id}/get',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1documents~1{id}/get'),
+    )
+
+
 def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
     get_pet_handler = wiring.handlers['get_pet']
 
@@ -79,7 +106,10 @@ def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
 
 
 LITERAL_ROUTES: Final = ((contract.GetGreeting.OPERATION, _add_get_greeting),)
-TEMPLATED_ROUTES: Final = ((contract.GetPet.OPERATION, _add_get_pet),)
+TEMPLATED_ROUTES: Final = (
+    (contract.GetDocument.OPERATION, _add_get_document),
+    (contract.GetPet.OPERATION, _add_get_pet),
+)
 
 
 def build_router(

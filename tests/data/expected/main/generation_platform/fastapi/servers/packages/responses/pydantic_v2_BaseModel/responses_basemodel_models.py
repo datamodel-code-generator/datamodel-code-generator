@@ -27,5 +27,9 @@ class FieldGreetingsGetResponse(RootModel[str]):
     root: str
 
 
+class FieldDocumentsIdGetPathIdParameter(RootModel[int]):
+    root: int
+
+
 class FieldPetsIdGetPathIdParameter(RootModel[int]):
     root: int

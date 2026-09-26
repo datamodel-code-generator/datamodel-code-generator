@@ -46,6 +46,10 @@ class FieldDocumentsPutRequest(RootModel[constr(max_length=5)]):
     root: constr(max_length=5)
 
 
+class FieldArchivesPutRequest(RootModel[constr(max_length=5)]):
+    root: constr(max_length=5)
+
+
 class FieldFormsPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='allow',
