@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import replace
-from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
@@ -26,10 +25,11 @@ from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from pathlib import PurePosixPath
 
     from datamodel_code_generator._api_generation import RenderedFile, TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
-    from datamodel_code_generator._api_types import DiagnosticSeverity, TargetKind
+    from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._fastapi.context import FastAPIContext
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
     from datamodel_code_generator._fastapi.templates import ExtraFile
@@ -53,6 +53,7 @@ _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
 }
 _PATTERN_KEYWORDS: Final = frozenset({"pattern", "patternProperties"})
+
 
 class FastAPITarget:
     """Render a FastAPI server package for the two Pydantic v2 backends."""
