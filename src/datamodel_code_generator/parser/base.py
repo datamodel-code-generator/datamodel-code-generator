@@ -4606,6 +4606,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for data_type in field.data_type.all_data_types:
                     if (reference := data_type.reference) is None:
                         continue
+                    if rename_type and (alias := data_type.alias) and alias != field_name:
+                        continue
                     reference_name = reference.short_name
                     reference_type_names.add(reference_name)
                     if rename_type and colliding_reference is None and reference_name == field_name:

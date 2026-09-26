@@ -2555,6 +2555,38 @@ def test_main_jsonschema_field_type_collision_runtime(
         assert_output(f"{getattr(parsed.values.left, field_name).x}\n", payload_path / "runtime.txt")
 
 
+@pytest.mark.parametrize("exact_imports", [False, True], ids=["module-import", "exact-import"])
+def test_main_jsonschema_field_type_collision_cross_module(output_dir: Path, exact_imports: bool) -> None:
+    """Keep cross-module aliases bound to their original types with rename-type."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_cross_module",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH
+        / "field_type_collision_cross_module"
+        / ("exact" if exact_imports else "default"),
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2Dataclass.value,
+            "--field-type-collision-strategy",
+            "rename-type",
+            "--target-python-version",
+            "3.11",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *(["--use-exact-imports"] if exact_imports else []),
+        ],
+    )
+    payload_path = DATA_PATH / "payloads" / "field_type_collision_cross_module"
+    with _generated_package_module(output_dir, "a") as module:
+        validator = _model_json_validator(module.Holder)
+        parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
+        with pytest.raises(ValidationError):
+            validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
+        assert_output(f"{parsed.Bar.x}\n", payload_path / "runtime.txt")
+
+
 def test_main_reuse_model_discriminator_literal(output_file: Path) -> None:
     """Reuse inherited discriminator literals instead of injecting the reuse path segment."""
     run_main_and_assert(
