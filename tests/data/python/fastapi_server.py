@@ -48,6 +48,16 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
     )
 
 
+def _generated(root: Path, package: str) -> dict[tuple[str, ...], str]:
+    """Return the Python modules generated for a package and its models, leaving out the copied runtime."""
+    owners = {package, f"{package}_models", f"{package}_models.py"}
+    return {
+        parts: path.read_text(encoding="utf-8")
+        for path in sorted(root.rglob("*.py"))
+        if (parts := path.relative_to(root).parts)[0] in owners and "_runtime" not in parts
+    }
+
+
 def _import(package: str) -> tuple[ModuleType, ModuleType]:
     """Import a generated package whose private runtime resolves to this checkout's runtime sources."""
     runtime = Path(_runtime.__file__).parent
@@ -155,16 +165,23 @@ def _serve(
     return app
 
 
-def fastapi_server_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
-    """Generate one server per backend, then replay the case's builds, applications, requests, and codecs."""
+def fastapi_server_report(
+    case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[str, dict[str, dict[tuple[str, ...], str]]]:
+    """Generate one server per backend, replay the case's builds, applications, requests, and codecs.
+
+    Return the report and each backend's generated modules.
+    """
     case = json.loads((SOURCE / "servers.json").read_text(encoding="utf-8"))[case_name]
     services = importlib.import_module(f"tests.data.python.fastapi_handlers.{case['services']}")
     lines = [f"# {case_name}"]
+    packages: dict[str, dict[tuple[str, ...], str]] = {}
     monkeypatch.syspath_prepend(str(root))
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         package = f"{case_name.replace('-', '_')}_{backend.rpartition('.')[2].lower()}"
         lines.append(f"serve {backend}")
         _generate(case, backend, root, package)
+        packages[backend.replace(".", "_")] = _generated(root, package)
         try:
             server, models = _import(package)
             calls: list[str] = []
@@ -189,4 +206,4 @@ def fastapi_server_report(case_name: str, root: Path, monkeypatch: pytest.Monkey
                 _codec(server, selector, lines)
         finally:
             _forget(package)
-    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", packages

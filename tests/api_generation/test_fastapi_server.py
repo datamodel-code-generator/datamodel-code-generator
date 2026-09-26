@@ -8,7 +8,7 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from tests.conftest import assert_output
+from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.fastapi_openapi import SCENARIOS, fastapi_openapi_report
 from tests.data.python.fastapi_server import fastapi_server_report
 
@@ -17,8 +17,11 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
 
 @pytest.mark.parametrize("case", ["pets", "parameters", "bodies", "results", "security", "customized"])
 def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Build the router from handwritten handlers and exchange requests with the generated endpoints."""
-    assert_output(fastapi_server_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
+    """Generate each server, then build its router from handwritten handlers and exchange requests with it."""
+    report, packages = fastapi_server_report(case, tmp_path, monkeypatch)
+    assert_output(report, EXPECTED / f"{case}.txt")
+    for backend, modules in packages.items():
+        assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
 
 
 @pytest.mark.parametrize("case", list(SCENARIOS))
