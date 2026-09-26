@@ -1,0 +1,14 @@
+schema_version = 1
+output = "server"
+package = "example.server"
+model_package = "example.models"
+
+[[builtin_codec_compatibility]]
+name = "users"
+backend = "pydantic_v2.BaseModel"
+dependencies = ["x", "x"]
+
+[[export_bindings]]
+schema = {pointer = "/Pet"}
+module = "example models"
+symbol = "Pet"

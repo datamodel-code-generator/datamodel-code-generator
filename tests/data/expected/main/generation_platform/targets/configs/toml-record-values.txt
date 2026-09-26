@@ -1,3 +1,2 @@
-APIGenerationError
-  E_CONFIG_VALUE error config builtin_codec_compatibility[0]: dependencies must be distinct nonempty requirements and python_requires a nonempty specifier
-  E_CONFIG_VALUE error config export_bindings[0]: An export binding needs an absolute dotted module and one identifier
+E_CONFIG_VALUE error config builtin_codec_compatibility[0]: dependencies must be distinct nonempty requirements and python_requires a nonempty specifier
+E_CONFIG_VALUE error config export_bindings[0]: An export binding needs an absolute dotted module and one identifier

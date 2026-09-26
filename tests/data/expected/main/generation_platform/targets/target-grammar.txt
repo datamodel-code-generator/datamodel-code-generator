@@ -1,4 +1,4 @@
 # target-grammar
 render
   APIGenerationError
-  E_TARGET_SOURCE error target __init__.py: The generated Python source is invalid: Type statement is only supported in Python 3.12 and greater
+  E_TARGET_SOURCE error target application.py: The generated Python source is invalid: Type statement is only supported in Python 3.12 and greater

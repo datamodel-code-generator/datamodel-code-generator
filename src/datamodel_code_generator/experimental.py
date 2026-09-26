@@ -14,6 +14,7 @@ ExperimentalFeatureId = Literal[
     "behavior.batch-generation-jobs",
     "behavior.remote-reference-lock",
     "cli-option.generate-schema-validators",
+    "cli-option.generate-server",
     "cli-option.install-skill",
     "cli-option.schema-validator-type",
     "cli-option.use-missing-sentinel",
@@ -26,6 +27,7 @@ ExperimentalFeatureId = Literal[
     "input-format.protobuf",
     "input-format.xmlschema",
     "formatter.builtin",
+    "python-api.fastapi-server",
 ]
 
 
@@ -100,6 +102,21 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as "
             "patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property "
             "conditions."
+        ),
+    ),
+    "cli-option.generate-server": ExperimentalFeature(
+        id="cli-option.generate-server",
+        kind="cli-option",
+        target="--generate-server fastapi, --target-config, --target-output, and --diagnostics-json",
+        message=(
+            "FastAPI server generation from the CLI is experimental; its options, target configuration file, "
+            "generated package, and diagnostics may change."
+        ),
+        since_version="0.83.1",
+        note=(
+            "--generate-server fastapi generates the models at --output and a server package from the flat TOML "
+            "file --target-config names; --target-output overrides the file's output, --check compares without "
+            "writing, and --diagnostics-json writes the target diagnostics as JSON."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(
@@ -219,6 +236,22 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         message="The internal formatter is experimental and may change as generated-output coverage is expanded.",
         since_version="0.59.0",
         note="The formatter is designed for generated model modules and is not a general-purpose Python formatter.",
+    ),
+    "python-api.fastapi-server": ExperimentalFeature(
+        id="python-api.fastapi-server",
+        kind="python-api",
+        target="datamodel_code_generator.fastapi and datamodel_code_generator.api_types",
+        message=(
+            "The FastAPI server target is experimental; its entry points, settings, context, generated package, "
+            "and served OpenAPI document may change."
+        ),
+        since_version="0.83.1",
+        note=(
+            "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI "
+            "document with the api scope. The package declares a service Protocol for each router group, builds "
+            "routers from the services you implement in your own modules, and serves the source document's metadata "
+            "through install_openapi."
+        ),
     ),
 }
 

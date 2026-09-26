@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "target": "fastapi",
+  "diagnostics": [
+    {
+      "code": "E_HOOK_FAILURE",
+      "severity": "error",
+      "stage": "hook",
+      "message": "Hook 0 raised LookupError: The hook could not read its settings for 6 operations",
+      "source_uri": null,
+      "source_pointer": null,
+      "operation": null,
+      "option_path": "hooks[0]",
+      "artifact_path": null,
+      "target_id": "3deca778a5f2d7af77744b6d85b16a8880b9708b45cff200725233911affaeba"
+    }
+  ]
+}

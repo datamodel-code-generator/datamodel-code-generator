@@ -253,3 +253,7 @@ General utility, HTTP, checking, and project integration options.
 - `--watch`: Watch input file(s) for changes and regenerate output automatically
 - `--watch-delay`: Debounce delay in seconds for watch mode (default: 0.5)
 - `--version`: show version
+- `--generate-server`: Generate a server package for the models from the --target-config settings (experimental). Choices: `fastapi`.
+- `--target-config`: Read the selected target's settings from a flat TOML file.
+- `--target-output`: Write the selected target to PATH instead of the output its settings name.
+- `--diagnostics-json`: Write the selected target's diagnostics as JSON to PATH, or to stdout with -.

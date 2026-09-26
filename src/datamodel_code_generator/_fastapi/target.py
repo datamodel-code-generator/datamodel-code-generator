@@ -91,6 +91,7 @@ class FastAPITarget:
         renderer = ServerRenderer(
             config=config,
             package=request.layout.package,
+            backend=_BACKENDS[request.model_config.output_model_type],
             plan=plan,
             batch=request.batch,
             wire=stage.wire,
@@ -178,6 +179,7 @@ class _Stage:
             renderer = ServerRenderer(
                 config=self.config,
                 package=self.request.layout.package,
+                backend=_BACKENDS[self.request.model_config.output_model_type],
                 plan=plan,
                 batch=self.request.batch,
                 wire=self.wire,

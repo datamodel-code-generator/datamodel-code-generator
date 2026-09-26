@@ -1,9 +1,11 @@
-"""Render fixture targets through the single-target coordinator: settings, models, selection, and ownership."""
+"""Generate the FastAPI target through the public entry points: settings, models, selection, and ownership."""
 
 from __future__ import annotations
 
 import errno
+import json
 import os
+import shutil
 import sys
 from contextlib import contextmanager
 from itertools import count
@@ -14,9 +16,11 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datamodel_code_generator import _api_manifest, _api_publication, _publication
+from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from tests.conftest import assert_output, freeze_time
 from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
+from tests.main.conftest import run_main_and_assert
 from tests.test_http import _SchemaHandler, local_http_server  # noqa: F401 - Register the existing fixture.
 
 if TYPE_CHECKING:
@@ -115,13 +119,15 @@ def test_target_render_relative_failure(tmp_path: Path, monkeypatch: pytest.Monk
     assert_output(target_render_report("relative-failure", tmp_path, monkeypatch), EXPECTED / "relative-failure.txt")
 
 
-def _failing(original: Callable[..., None], failures: dict[int, BaseException]) -> Callable[..., None]:
+def _failing(
+    original: Callable[..., None], failures: dict[int, BaseException], *, existing: bool = False
+) -> Callable[..., None]:
     calls = count()
 
-    def call(*args: object) -> None:
-        if (failure := failures.get(next(calls))) is not None:
+    def call(file: _publication.StagedFile, *args: object) -> None:
+        if (not existing or file.target.exists()) and (failure := failures.get(next(calls))) is not None:
             raise failure
-        original(*args)
+        original(file, *args)
 
     return call
 
@@ -141,9 +147,9 @@ def test_target_generate_rollback(failure: BaseException, tmp_path: Path, monkey
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows restores backups through the lexical fallback")
-@pytest.mark.parametrize(("case", "failed_call"), [("rollback-created", 1), ("rollback-backup", 9)])
+@pytest.mark.parametrize(("case", "existing"), [("rollback-created", False), ("rollback-backup", True)])
 def test_target_generate_rollback_failure(
-    case: str, failed_call: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    case: str, existing: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Report the destinations and backups a failed rollback could not restore, keeping the cause."""
 
@@ -152,7 +158,9 @@ def test_target_generate_rollback_failure(
         raise OSError(msg)
 
     monkeypatch.setattr(
-        _publication, "_replace_source", _failing(_publication._replace_source, {failed_call: OSError("full")})
+        _publication,
+        "_replace_source",
+        _failing(_publication._replace_source, {1: OSError("full")}, existing=existing),
     )
     monkeypatch.setattr(_publication, "_restore_backup_at", fail)
     if case == "rollback-created":
@@ -242,6 +250,23 @@ def test_target_generate_state_changed(tmp_path: Path, monkeypatch: pytest.Monke
         "standalone-missing",
         "embedded-standalone-fields",
         "standalone",
+    ],
+)
+def test_target_config(case: str) -> None:
+    """Validate the shared target settings of the public configuration, reporting every problem in field order."""
+    assert_output(target_config_report(case), EXPECTED / "configs" / f"{case}.txt")
+
+
+def _toml_arguments(*extra: str) -> list[str]:
+    return [
+        *("--openapi-scopes", "api", "--disable-timestamp", "--formatters", "builtin"),
+        *("--generate-server", "fastapi", "--target-config", "target.toml", *extra),
+    ]
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
         "toml-syntax",
         "toml-version",
         "toml-version-bool",
@@ -250,16 +275,57 @@ def test_target_generate_state_changed(tmp_path: Path, monkeypatch: pytest.Monke
         "toml-missing",
         "toml-values",
         "toml-formatters",
-        "toml-selection",
         "toml-selection-unknown",
         "toml-records",
         "toml-record-errors",
         "toml-record-values",
         "toml-record-backend",
         "toml-kwargs-date",
-        "toml-output-override",
     ],
 )
-def test_target_config(case: str, tmp_path: Path) -> None:
-    """Validate shared target settings from Python values and from a flat TOML file."""
-    assert_output(target_config_report(case, tmp_path), EXPECTED / "configs" / f"{case}.txt")
+def test_target_toml_errors(
+    case: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a flat target file whose syntax, version, keys, values, or records are invalid, writing nothing."""
+    monkeypatch.chdir(tmp_path)
+    shutil.copytree(SOURCE / "spec", tmp_path / "spec")
+    run_main_and_assert(
+        input_path=Path("spec/api.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_toml_arguments(),
+        copy_files=[(SOURCE / "configs" / f"{case}.toml", tmp_path / "target.toml")],
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+    )
+    assert_output(capsys.readouterr().err, EXPECTED / "configs" / f"{case}.txt")
+
+
+@pytest.mark.parametrize(
+    ("case", "arguments", "output"),
+    [("toml-selection", [], "server"), ("toml-output-override", ["--target-output", "elsewhere"], "elsewhere")],
+)
+def test_target_toml_values(
+    case: str,
+    arguments: list[str],
+    output: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Read the selection and paths of a flat target file, recording them in the published manifest."""
+    monkeypatch.chdir(tmp_path)
+    shutil.copytree(SOURCE / "spec", tmp_path / "spec")
+    run_main_and_assert(
+        input_path=Path("spec/api.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_toml_arguments(*arguments),
+        copy_files=[(SOURCE / "configs" / f"{case}.toml", tmp_path / "target.toml")],
+    )
+    manifest = json.loads((tmp_path / output / ".dcg-target-manifest.json").read_text(encoding="utf-8"))
+    recorded = {"selection": manifest["selection"], "target_config": manifest["inputs"]["target_config"]}
+    assert_output(
+        capsys.readouterr().err + json.dumps(recorded, indent=2, sort_keys=True) + "\n",
+        EXPECTED / "configs" / f"{case}.txt",
+    )

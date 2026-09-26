@@ -1,2 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE error config formatters: formatters must be an array
+E_CONFIG_VALUE error config formatters: formatters must be an array

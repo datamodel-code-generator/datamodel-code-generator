@@ -1,4 +1,3 @@
-APIGenerationError
-  E_CONFIG_VALUE error config package: package must be a string
-  E_CONFIG_VALUE error config output: The target file needs output
-  E_CONFIG_VALUE error config model_package: The target file needs model_package
+E_CONFIG_VALUE error config package: package must be a string
+E_CONFIG_VALUE error config output: The target file needs output
+E_CONFIG_VALUE error config model_package: The target file needs model_package

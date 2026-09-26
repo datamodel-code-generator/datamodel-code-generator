@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "target": "fastapi",
+  "diagnostics": [
+    {
+      "code": "E_CONFIG_UNKNOWN",
+      "severity": "error",
+      "stage": "config",
+      "message": "The target file has no setting 'packages'",
+      "source_uri": null,
+      "source_pointer": null,
+      "operation": null,
+      "option_path": "packages",
+      "artifact_path": null,
+      "target_id": null
+    }
+  ]
+}

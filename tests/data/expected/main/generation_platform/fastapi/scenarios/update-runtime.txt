@@ -16,6 +16,7 @@ generate {}
   written server/errors.py
   written server/auth_types.py
   written server/services.py
+  written server/README.md
   written server/py.typed
   written server/dcg-runtime-requirements.txt
   written server/.dcg-state/model-artifacts.json

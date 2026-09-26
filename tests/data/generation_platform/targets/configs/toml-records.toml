@@ -1,0 +1,23 @@
+schema_version = 1
+output = "server"
+package = "example.server"
+model_package = "example.models"
+formatters = ["black", "isort"]
+formatter_settings = "pyproject.toml"
+custom_formatters = ["formatters.fixture"]
+custom_formatter_kwargs = {width = 100, ratio = 1.5, names = ["a", "b"], nested = {flag = true}}
+encoding = "utf-8"
+header = "Generated."
+include_timestamp = true
+model_mode = "verify"
+
+[[builtin_codec_compatibility]]
+name = "orders"
+backend = "pydantic_v2.BaseModel"
+schemas = [{pointer = "/Order", document = "spec/common.yaml"}]
+
+[[export_bindings]]
+schema = {pointer = "/components/schemas/Pet"}
+module = "example.models"
+symbol = "Pet"
+direction = "response"

@@ -173,6 +173,7 @@ if TYPE_CHECKING:
         CommandOutputKind,
         GeneratedFilePayload,
     )
+    from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.json_config import JsonConfigFieldName, JsonConfigSource
     from datamodel_code_generator.validators import ModelValidators
     from datamodel_code_generator.watch_dependencies import WatchDependencies
@@ -207,6 +208,10 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "list_experimental",
     "watch",
     "watch_delay",
+    "generate_server",
+    "target_config",
+    "target_output",
+    "diagnostics_json",
 })
 
 ORIGINAL_FIELD_NAME_DELIMITER_ERROR = "`--original-field-name-delimiter` can not be used without `--snake-case-field`."
@@ -216,6 +221,20 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
+_TARGET_OPTIONS: tuple[tuple[str, str], ...] = (
+    ("target_config", "--target-config"),
+    ("target_output", "--target-output"),
+    ("diagnostics_json", "--diagnostics-json"),
+)
+_TARGET_EXCLUSIVE: tuple[tuple[str, str], ...] = (
+    ("install_skill", "--install-skill"),
+    ("generate_prompt", "--generate-prompt"),
+    ("generate_pyproject_config", "--generate-pyproject-config"),
+    ("generate_cli_command", "--generate-cli-command"),
+    ("output_format_json_schema", "--output-format-json-schema"),
+    ("list_deprecations", "--list-deprecations"),
+    ("list_experimental", "--list-experimental"),
+)
 
 
 class Exit(IntEnum):
@@ -2085,6 +2104,44 @@ def run_generate_from_config(  # noqa: PLR0913, PLR0917
     logical_output: Path | None = None,
 ) -> str | Mapping[tuple[str, ...], str] | None:
     """Run code generation with the given config and parameters."""
+    generation_config = _generation_config(
+        config,
+        output=output,
+        extra_template_data=extra_template_data,
+        aliases=aliases,
+        serialization_aliases=serialization_aliases,
+        command_line=command_line,
+        custom_formatters_kwargs=custom_formatters_kwargs,
+        settings_path=settings_path,
+        validators=validators,
+        default_value_overrides=default_value_overrides,
+        input_filename=input_filename,
+        generation_timestamp=generation_timestamp,
+        logical_output=logical_output,
+    )
+    return generate(
+        input_=input_,
+        config=cast("Any", generation_config),  # ty: ignore[redundant-cast]
+    )
+
+
+def _generation_config(  # noqa: PLR0913
+    config: Config,
+    *,
+    output: Path | None,
+    extra_template_data: defaultdict[str, dict[str, Any]] | None,
+    aliases: Mapping[str, str | list[str]] | None,
+    serialization_aliases: Mapping[str, str] | None,
+    command_line: str | None,
+    custom_formatters_kwargs: dict[str, str] | None,
+    settings_path: Path | None = None,
+    validators: Mapping[str, ModelValidators] | None = None,
+    default_value_overrides: Mapping[str, Any] | None = None,
+    input_filename: str | None = None,
+    generation_timestamp: str | None = None,
+    logical_output: Path | None = None,
+) -> Config:
+    """Return the settings one generation runs with: the CLI config with its run values and no preset."""
     generation_config = config.model_copy(
         update={
             "input_filename": input_filename,
@@ -2106,10 +2163,65 @@ def run_generate_from_config(  # noqa: PLR0913, PLR0917
         generation_config._generation_timestamp = generation_timestamp  # noqa: SLF001
     if logical_output is not None:
         generation_config._logical_output = logical_output  # noqa: SLF001
-    return generate(
-        input_=input_,
-        config=cast("Any", generation_config),  # ty: ignore[redundant-cast]
+    return generation_config
+
+
+def _template_data(config: Config) -> defaultdict[str, dict[str, Any]] | None:
+    """Return the extra template data, moving the additional imports it declares into the config."""
+    if config.extra_template_data is None:
+        return None
+    extra_template_data = cast("defaultdict[str, dict[str, Any]]", config.extra_template_data)
+    if additional_imports := _extract_additional_imports(extra_template_data):
+        config.additional_imports = [*(config.additional_imports or ()), *additional_imports]
+    return extra_template_data
+
+
+def _target_usage_error(namespace: Namespace) -> str | None:
+    """Return why the target options of a command line cannot run together, if they cannot."""
+    selected = vars(namespace)
+    if "generate_server" not in selected:
+        if options := [flag for name, flag in _TARGET_OPTIONS if name in selected]:
+            return f"{', '.join(options)} can only be used with --generate-server"
+        return None
+    if "target_config" not in selected:
+        return "--generate-server requires --target-config"
+    if modes := [flag for name, flag in _TARGET_EXCLUSIVE if selected.get(name) not in {None, False}]:
+        return f"--generate-server cannot be used with {', '.join(modes)}"
+    return None
+
+
+def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path:
+    """Return the remote lock file a generation target's models read or update."""
+    return config.lockfile or _remote_lock_plan(config, pyproject_path).literal_path
+
+
+def _target_settings(config: Config, args: Sequence[str], lockfile: Path) -> GenerateConfig:
+    """Return the model settings a generation target runs with."""
+    from datamodel_code_generator.config import GenerateConfig  # noqa: PLC0415
+
+    settings = _generation_config(
+        config,
+        output=config.output,
+        extra_template_data=_template_data(config),
+        aliases=config.aliases,
+        serialization_aliases=config.serialization_aliases,
+        command_line=_command_header(args) if config.enable_command_header else None,
+        custom_formatters_kwargs=config.custom_formatters_kwargs,
+        settings_path=config.output,
+        validators=config.validators,
+        default_value_overrides=config.default_values,
     )
+    values = vars(settings) | {"lockfile": lockfile}
+    return GenerateConfig.model_construct(**{
+        name: values[name] for name in GenerateConfig.model_fields if name in values
+    })
+
+
+def _run_target(args: Sequence[str], namespace: Namespace, config: Config | None, pyproject_path: Path | None) -> Exit:
+    """Hand the selected generation target to its runner, which reports every diagnostic."""
+    from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
+
+    return Exit(run_target(args, namespace, config, pyproject_path))
 
 
 def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -2738,6 +2850,10 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
     arg_parser.parse_args(args, namespace=namespace)
 
+    if not namespace.version and (target_usage := _target_usage_error(namespace)) is not None:
+        print(f"Error: {target_usage}", file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
+
     if (agent := namespace.install_skill) is not None:
         from datamodel_code_generator._agent_skill_cli import install_agent_skill_command  # noqa: PLC0415
 
@@ -2802,6 +2918,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return Exit.OK
 
     if _batch_config is None and (namespace.job or namespace.all_jobs):
+        if "generate_server" in vars(namespace):
+            return _run_target(args, namespace, None, None)
         try:
             batch_plan = _plan_jobs(namespace)
         except Error as e:
@@ -2983,6 +3101,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
+    if "generate_server" in vars(namespace):
+        return _run_target(args, namespace, config, pyproject_path)
+
     if config.watch and config.check:
         print(  # noqa: T201
             "Error: --watch and --check cannot be used together",
@@ -3151,22 +3272,11 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    extra_template_data: defaultdict[str, dict[str, Any]] | None
-    if config.extra_template_data is None:
-        extra_template_data = None
-    else:
-        extra_template_data = cast("defaultdict[str, dict[str, Any]]", config.extra_template_data)
-        # Extract additional_imports from extra_template_data entries and merge with config
-        try:
-            additional_imports_from_template_data = _extract_additional_imports(extra_template_data)
-        except Error as e:
-            print(str(e), file=sys.stderr)  # noqa: T201
-            return finish_watch_remote_lock_intent(Exit.ERROR)
-        if additional_imports_from_template_data:
-            if config.additional_imports is None:
-                config.additional_imports = additional_imports_from_template_data
-            else:
-                config.additional_imports = list(config.additional_imports) + additional_imports_from_template_data
+    try:
+        extra_template_data = _template_data(config)
+    except Error as e:
+        print(str(e), file=sys.stderr)  # noqa: T201
+        return finish_watch_remote_lock_intent(Exit.ERROR)
 
     aliases = config.aliases
     serialization_aliases = config.serialization_aliases

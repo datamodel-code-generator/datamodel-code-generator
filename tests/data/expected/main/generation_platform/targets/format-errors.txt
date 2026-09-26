@@ -3,13 +3,24 @@ render
   UnicodeEncodeError: 'latin-1' codec can't encode character '/u6f22' in position 33: ordinal not in range(256)
 render
   APIGenerationError
-  E_TARGET_SOURCE error target __init__.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error target application.py: The generated Python source is invalid: invalid syntax
 render
   APIGenerationError
-  E_TARGET_SOURCE error target __init__.py: The generated Python source is invalid: 'return' outside function
+  E_TARGET_SOURCE error target application.py: The generated Python source is invalid: 'return' outside function
 render
   APIGenerationError
   E_TARGET_SOURCE error format __init__.py: The generated Python source is invalid: invalid syntax
-  E_TARGET_SOURCE error format routes/pets.py: The generated Python source is invalid: invalid syntax
-  E_TARGET_SOURCE error format routes/store.py: The generated Python source is invalid: invalid syntax
-  E_TARGET_SOURCE error format routes/default.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format application.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format routers/__init__.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format routers/pets.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format routers/store.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format routers/untagged.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format _generated/__init__.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format _generated/contract.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format _generated/model_bindings.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format _generated/openapi.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format model_codecs.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format responses.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format errors.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format auth_types.py: The generated Python source is invalid: invalid syntax
+  E_TARGET_SOURCE error format services.py: The generated Python source is invalid: invalid syntax

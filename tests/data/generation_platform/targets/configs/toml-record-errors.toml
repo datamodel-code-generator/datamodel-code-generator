@@ -1,0 +1,15 @@
+schema_version = 1
+output = "server"
+package = "example.server"
+model_package = "example.models"
+
+[[builtin_codec_compatibility]]
+name = "orders"
+backend = "pydantic_v2.BaseModel"
+contract = "builtin-v2"
+
+[[export_bindings]]
+schema = {pointer = "/Pet"}
+module = "example.models"
+symbol = "Pet"
+direction = "sideways"

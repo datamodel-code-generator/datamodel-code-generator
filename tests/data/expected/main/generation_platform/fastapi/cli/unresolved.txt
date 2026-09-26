@@ -1,0 +1,2 @@
+E_MODEL_PARSE error model: Unresolved local $ref targets:
+- broken.yaml: #/components/schemas/Missing

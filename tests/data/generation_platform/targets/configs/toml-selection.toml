@@ -1,0 +1,11 @@
+schema_version = 1
+output = "server"
+package = "example.server"
+model_package = "example.models"
+
+[selection]
+include_operations = ["/paths/~1pets/get", {pointer = "/paths/~1pets/post", document = "spec/api.yaml"}]
+include_tags = ["pets"]
+exclude_operations = [{pointer = "/paths/~1health/get"}]
+exclude_tags = ["admin"]
+reason = "Pets only"

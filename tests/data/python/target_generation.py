@@ -1,4 +1,4 @@
-"""Render fixture targets through the single-target coordinator and report artifacts, manifests, and failures."""
+"""Replay target scenarios through the FastAPI entry points and report artifacts, manifests, and failures."""
 
 from __future__ import annotations
 
@@ -12,52 +12,37 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
+import yaml
+
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, _api_publication
-from datamodel_code_generator._api_generation import (
-    RenderedFile,
-    TargetBinding,
-    TargetRender,
-    generate_target,
-    render_target,
-)
-from datamodel_code_generator._api_manifest import MANIFEST_NAME
 from datamodel_code_generator._api_publication import lock_path, resource_locks
-from datamodel_code_generator._api_types import (
+from datamodel_code_generator.fastapi import (
     APIGenerationError,
+    BuiltinCodecCompatibility,
     Diagnostic,
+    FastAPIConfig,
     GeneratedProject,
     GenerationReport,
-    OperationSelection,
-    PublicationRollbackError,
-)
-from datamodel_code_generator._codec_declarations import (
-    BuiltinCodecCompatibility,
     ModelExportBinding,
     OperationRef,
+    OperationSelection,
+    PublicationRollbackError,
+    ResponseChoice,
     SchemaRef,
+    generate_fastapi,
+    render_fastapi,
 )
-from datamodel_code_generator._generation_contract import BindingCaptureError, LiteralScalar, LiteralSequence
-from datamodel_code_generator._source import load_yaml
-from datamodel_code_generator._target_config import TargetConfig, load_target_config
 from datamodel_code_generator.remote_lock import RemoteLockError, RemoteReferenceLock
+from tests.data.python import fastapi_hooks
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     import pytest
 
-    from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import TargetKind
-    from datamodel_code_generator._generation_contract import OperationContract
-
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "targets"
+MANIFEST = ".dcg-target-manifest.json"
 _HASH = re.compile(r'"[0-9a-f]{64}"')
 _PRIVATE = re.compile(r"(?<![0-9a-f])(?:[0-9a-f]{32}|[0-9a-f]{16})(?![0-9a-f])")
 _MASKED = frozenset({"size", "version", "runtime_revision"})
-
-
-def fixture_hook() -> None:
-    """Stand in for a user callable the manifest records only by identity."""
 
 
 def fixture_class_name(name: str) -> str:
@@ -65,118 +50,8 @@ def fixture_class_name(name: str) -> str:
     return f"Fixture{name}"
 
 
-class FixtureToken:
-    """Stand in for an arbitrary settings object the manifest cannot project."""
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class FixtureConfig(TargetConfig):
-    """Add settings a real target might have: a callable, an operation reference, and opaque values."""
-
-    hook: Callable[[], None] | None = None
-    primary: OperationRef | None = None
-    token: object = None
-    labels: frozenset[str] = frozenset()
-    failure: str | None = None
-
-
-class FixtureTarget:
-    """Group selected operations by first tag into route modules the target owns."""
-
-    def __init__(
-        self,
-        kind: TargetKind,
-        backends: frozenset[DataModelType],
-        *,
-        interfere: str | None = None,
-        package: str = "",
-    ) -> None:
-        """Declare the target kind, its model backends, a file it appends to, and its package module source."""
-        self.kind: TargetKind = kind
-        self.backends = backends
-        self.unsupported_backend = f"E_{kind.upper()}_BACKEND_UNSUPPORTED"
-        self.interfere = interfere
-        self.package = package
-
-    def render(self, request: TargetRequest) -> TargetRender:
-        """Plan files, bindings, and manifest data from the coordinator's request."""
-        config = request.config
-        package = request.layout.package
-        groups: dict[str, list[OperationContract]] = {}
-        for operation in request.operations:
-            tags = dict(operation.facts).get("tags")
-            first = tags.items[0] if isinstance(tags, LiteralSequence) and tags.items else None
-            groups.setdefault(str(first.value) if isinstance(first, LiteralScalar) else "default", []).append(operation)
-        files = [RenderedFile(path=package / "__init__.py", kind="package", text=self.package)]
-        for group, operations in groups.items():
-            routes = ", ".join(repr(f"{operation.method.upper()} {operation.path}") for operation in operations)
-            files.append(
-                RenderedFile(path=package / "routes" / f"{group}.py", kind="routes", text=f"ROUTES = [{routes}]", group=group)
-            )
-        selected = {operation.id for operation in request.operations}
-        failure = getattr(config, "failure", None)
-        if self.interfere is not None:
-            with Path(self.interfere).open("ab") as handle:
-                handle.write(b" ")
-        return TargetRender(
-            files=tuple(files),
-            target_data={
-                "groups": {
-                    group: [request.documents.operation(operation.id) for operation in operations]
-                    for group, operations in groups.items()
-                },
-                "excluded": len(request.excluded),
-            },
-            dependencies=(f"{self.kind}-runtime>=1,<2",),
-            bindings=tuple(
-                TargetBinding(
-                    use=use.id,
-                    backend=request.model_config.output_model_type.value,
-                    strategy="native",
-                    converter_strategy="pydantic_type_adapter",
-                )
-                for use in request.batch.type_uses
-                if use.state == "bound" and use.id.owner in selected
-            ),
-            diagnostics=()
-            if failure is None
-            else (
-                Diagnostic(
-                    code=failure,
-                    severity="error",
-                    stage="target",
-                    message="The fixture target refuses to render",
-                    target_id=request.target_id,
-                ),
-            ),
-            persistent_diagnostics=tuple(
-                Diagnostic(
-                    code="I_FIXTURE_GROUP",
-                    severity="info",
-                    stage="target",
-                    message=f"The {group} group has {len(operations)} operations",
-                    target_id=request.target_id,
-                )
-                for group, operations in groups.items()
-            ),
-            protocol_metadata={"models": len(request.models)} if self.kind == "client" else {},
-        )
-
-
-TARGETS = {
-    "server": FixtureTarget(
-        "fastapi", frozenset({DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass})
-    ),
-    "client": FixtureTarget("client", frozenset(DataModelType)),
-    "interfering": FixtureTarget(
-        "fastapi",
-        frozenset({DataModelType.PydanticV2BaseModel}),
-        interfere="server/.dcg-target-manifest.json",
-    ),
-    "broken": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), package="def ("),
-    "misplaced": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), package="return 42\n"),
-    "modern": FixtureTarget("fastapi", frozenset({DataModelType.PydanticV2BaseModel}), package="type Alias = int\n"),
-}
+def _runtime(path: Path) -> bool:
+    return "_runtime" in path.parts
 
 
 def _selector(value: str | dict[str, str]) -> OperationRef | str:
@@ -189,12 +64,12 @@ def _schema(value: dict[str, str]) -> SchemaRef:
     return SchemaRef(**value)
 
 
-def _config(values: dict[str, Any]) -> FixtureConfig:
+def _config(values: dict[str, Any]) -> FastAPIConfig:
     values = {"output": "server", "package": "example.server", "model_package": "example.models", **values}
     converted: dict[str, Any] = {}
     for key, value in values.items():
         match key:
-            case "output" | "formatter_settings" if isinstance(value, str):
+            case "output" | "formatter_settings" | "templates" if isinstance(value, str):
                 converted[key] = Path(value)
             case "selection" if value is not None:
                 converted[key] = OperationSelection(**{
@@ -214,19 +89,17 @@ def _config(values: dict[str, Any]) -> FixtureConfig:
                 converted[key] = tuple(
                     ModelExportBinding(**{**item, "schema": _schema(item["schema"])}) for item in value
                 )
-            case "hook":
-                converted[key] = fixture_hook
-            case "token":
-                converted[key] = FixtureToken()
-            case "primary":
-                converted[key] = _selector(value)
-            case "labels":
-                converted[key] = frozenset(value)
+            case "primary_responses":
+                converted[key] = {_selector(selector): ResponseChoice(**choice) for selector, choice in value}
+            case "operation_names":
+                converted[key] = {_selector(selector): name for selector, name in value}
+            case "hooks":
+                converted[key] = tuple(getattr(fastapi_hooks, name) for name in value)
             case "custom_formatters" | "formatters":
                 converted[key] = tuple(value)
             case _:
                 converted[key] = value
-    return FixtureConfig(**converted)
+    return FastAPIConfig(**converted)
 
 
 def _model(values: dict[str, Any], root: Path) -> GenerateConfig:
@@ -239,18 +112,17 @@ def _model(values: dict[str, Any], root: Path) -> GenerateConfig:
                 converted[key] = None if value is None else Path(value)
             case "custom_class_name_generator":
                 converted[key] = fixture_class_name
+            case "field_extra_keys":
+                converted[key] = set(value)
             case "resolved_lock":
                 resolved = value
             case _:
                 converted[key] = value
     config = GenerateConfig(**converted)
-    match resolved:
-        case "update" | "readonly":
-            config.resolve_remote_lock(
-                RemoteReferenceLock.open(root / "resolved.lock", update=resolved == "update", locked=False)
-            )
-        case _:
-            pass
+    if resolved is not None:
+        config.resolve_remote_lock(
+            RemoteReferenceLock.open(root / "resolved.lock", update=resolved == "update", locked=False)
+        )
     return config
 
 
@@ -261,7 +133,7 @@ def _input(value: dict[str, Any], server: str | None) -> object:
         case {"text": str() as path}:
             return Path("spec", path).read_text(encoding="utf-8")
         case {"mapping": str() as path}:
-            return load_yaml(Path("spec", path).read_text(encoding="utf-8"))
+            return yaml.safe_load(Path("spec", path).read_text(encoding="utf-8"))
         case {"list": list() as paths}:
             return [Path("spec", path) for path in paths]
         case {"directory": str() as path}:
@@ -276,11 +148,19 @@ def _mask(value: Any, server: str | None) -> Any:
     match value:
         case dict():
             return {
-                key: "<masked>" if key in _MASKED and item is not None else _mask(item, server)
+                key: "<fastapi>"
+                if key == "target_data"
+                else "<masked>"
+                if key in _MASKED and item is not None
+                else _mask(item, server)
                 for key, item in value.items()
             }
         case list():
-            return [_mask(item, server) for item in value]
+            return [
+                _mask(item, server)
+                for item in value
+                if not (isinstance(item, dict) and str(item.get("path", "")).startswith("_runtime/"))
+            ]
         case str() if server is not None and server in value:
             return value.replace(server, "http://server")
         case _:
@@ -299,14 +179,19 @@ def _diagnostic(item: Diagnostic) -> str:
     return f"  {item.code} {item.severity} {location}: {item.message}"
 
 
+def _runtime_line(actions: list[str]) -> list[str]:
+    return [f"  {len(actions)} runtime modules {sorted(set(actions))}"] if actions else []
+
+
 def _report_project(project: GeneratedProject, root: Path, lines: list[str]) -> None:
     lines.append(f"  target={project.target} schema_version={project.schema_version}")
     lines.extend(
         f"  {artifact.action} {artifact.kind} {_relative(artifact.path, root)}"
         + ("" if artifact.target_id is None else " (target)")
-        + ("" if artifact.content is None else f" {len(artifact.content.splitlines())} lines")
         for artifact in project.artifacts
+        if not _runtime(artifact.path)
     )
+    lines.extend(_runtime_line([artifact.action for artifact in project.artifacts if _runtime(artifact.path)]))
     lines.extend(_diagnostic(item) for item in project.diagnostics)
 
 
@@ -339,7 +224,7 @@ def _patched(data: bytes, changes: dict[str, Any]) -> bytes:
 
 
 def _manifest(project: GeneratedProject) -> bytes:
-    return next(artifact.content for artifact in project.artifacts if artifact.path.name == MANIFEST_NAME) or b""
+    return next(artifact.content for artifact in project.artifacts if artifact.path.name == MANIFEST) or b""
 
 
 def _run(
@@ -349,11 +234,8 @@ def _run(
     model = {**case.get("model", {}), **overrides.get("model", {})}
     config = {**case.get("config", {}), **overrides.get("config", {})}
     try:
-        return (generate_target if publish else render_target)(
-            _input(spec["input"], server),
-            model_config=_model(model, root),
-            config=_config(config),
-            generator=TARGETS[spec["target"]],
+        return (generate_fastapi if publish else render_fastapi)(
+            _input(spec["input"], server), model_config=_model(model, root), config=_config(config)
         )
     except APIGenerationError as error:
         lines = ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
@@ -362,7 +244,7 @@ def _run(
         unrestored = ", ".join(_relative(path, root) for path in error.unrestored)
         cause = type(error.__cause__).__name__
         return f"  PublicationRollbackError after {cause}: unrestored {unrestored}; {len(error.backups)} backups kept"
-    except (BindingCaptureError, Error, RemoteLockError, OSError, UnicodeError, KeyboardInterrupt) as error:
+    except (Error, RemoteLockError, OSError, UnicodeError, KeyboardInterrupt) as error:
         return f"  {type(error).__name__}: {error}".replace(str(root.resolve()), "<root>").replace("\\", "/")
 
 
@@ -374,11 +256,11 @@ def _report_generation(report: GenerationReport, root: Path, lines: list[str]) -
         ("deleted", report.deleted_files),
     ):
         lines.extend(
-            f"  {name} {record.kind} {_relative(record.path, root)}"
-            + ("" if record.target_id is None else " (target)")
-            + (f" {record.size} bytes" if record.kind == "target" else "")
+            f"  {name} {record.kind} {_relative(record.path, root)}" + ("" if record.target_id is None else " (target)")
             for record in records
+            if not _runtime(record.path)
         )
+        lines.extend(_runtime_line([name for record in records if _runtime(record.path)]))
 
 
 @dataclass
@@ -451,13 +333,15 @@ class _Scenario:
 
     def tree(self, _: None) -> None:
         self.lines.append("tree")
+        files = [
+            path.relative_to(self.root)
+            for path in self.root.rglob("*")
+            if path.is_file() and path.relative_to(self.root).parts[0] not in {"spec", "templates"}
+        ]
         self.lines.extend(
-            sorted(
-                f"  {_PRIVATE.sub('<private>', path.relative_to(self.root).as_posix())}"
-                for path in self.root.rglob("*")
-                if path.is_file() and path.relative_to(self.root).parts[0] != "spec"
-            )
+            sorted(f"  {_PRIVATE.sub('<private>', path.as_posix())}" for path in files if not _runtime(path))
         )
+        self.lines.extend(_runtime_line(["present" for path in files if _runtime(path)]))
 
     def publish(self, _: None) -> None:
         _publish(self.current, self.root)
@@ -515,6 +399,7 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
     """Run one scenario's renders, publications, and edits, reporting every observable outcome."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     shutil.copytree(SOURCE / "spec", root / "spec")
+    shutil.copytree(SOURCE / "templates", root / "templates")
     monkeypatch.chdir(root)
     scenario = _Scenario(case, root, monkeypatch, server, [f"# {case_name}"])
     with scenario.held:
@@ -524,26 +409,14 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
     return _HASH.sub('"<sha256>"', "\n".join(scenario.lines)) + "\n"
 
 
-def target_config_report(case_name: str, root: Path) -> str:
-    """Construct or load one target configuration and report the value or its ordered diagnostics."""
-    case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
+def target_config_report(case_name: str) -> str:
+    """Construct one target configuration and report every setting or the ordered diagnostics."""
+    values = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
-        match case:
-            case {"toml": str() as text, **rest}:
-                path = root / "target.toml"
-                path.write_text(text, encoding="utf-8")
-                output = rest.get("output")
-                config = load_target_config(path, FixtureConfig, output=None if output is None else Path(output))
-            case {"python": dict() as values}:
-                config = _config(values)
-            case _:
-                raise AssertionError(case)
+        config = _config(values)
     except APIGenerationError as error:
         return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
-    values = {
-        item.name: _relative(value, root) if isinstance(value := getattr(config, item.name), Path) else value
+    return "".join(
+        f"{item.name}={value.as_posix() if isinstance(value := getattr(config, item.name), Path) else value!r}\n"
         for item in fields(config)
-    }
-    return (
-        "\n".join(f"{key}={value!r}" for key, value in values.items()).replace(root.resolve().as_uri(), "<root>") + "\n"
     )

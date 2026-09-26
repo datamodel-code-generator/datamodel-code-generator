@@ -715,6 +715,18 @@ General options:
                         0.5)
   -h, --help            show this help message and exit
 
+Target generation options (experimental):
+  --diagnostics-json PATH
+                        Write the selected target's diagnostics as JSON to
+                        PATH, or to stdout with -.
+  --generate-server {fastapi}
+                        Generate a server package for the models from the
+                        --target-config settings (experimental).
+  --target-config PATH  Read the selected target's settings from a flat TOML
+                        file.
+  --target-output PATH  Write the selected target to PATH instead of the
+                        output its settings name.
+
 Documentation: https://datamodel-code-generator.koxudaxi.dev
 Agent skill: https://datamodel-code-generator.koxudaxi.dev/coding-agent-skill/
 GitHub: https://github.com/datamodel-code-generator/datamodel-code-generator

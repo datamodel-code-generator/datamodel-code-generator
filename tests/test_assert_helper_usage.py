@@ -39,6 +39,17 @@ DIRECT_ASSERT_FAILURE_MESSAGE = (
     "Use @pytest.mark.allow_direct_assert for a narrow exception, or add intentional legacy/unit files to "
     f"{DIRECT_ASSERT_EXEMPT_FILES_INI}."
 )
+HELPER_ROOT = Path("data", "python")
+PRIVATE_TARGET_MODULES = (
+    "datamodel_code_generator._api_generation",
+    "datamodel_code_generator._fastapi",
+    "datamodel_code_generator._target_config",
+)
+PRIVATE_TARGET_FAILURE_MESSAGE = (
+    "Generation target tests and their report helpers reach a target through its public entry points, the command "
+    "line or datamodel_code_generator.fastapi, as the model tests reach model generation.\n"
+    "Patch a private function by its dotted name only to inject an abnormal path."
+)
 
 
 @dataclass(frozen=True)
@@ -285,6 +296,39 @@ def _format_direct_assert_failure(direct_asserts: Iterable[DirectAssert]) -> str
     return f"{DIRECT_ASSERT_FAILURE_MESSAGE}\n{details}"
 
 
+def _collect_helper_direct_asserts(tests_root: Path) -> list[DirectAssert]:
+    return [
+        direct_assert
+        for path in sorted(tests_root.joinpath(HELPER_ROOT).rglob("*.py"))
+        for direct_assert in _collect_direct_asserts(path, tests_root)
+    ]
+
+
+def _imported_modules(node: ast.AST) -> list[str]:
+    if isinstance(node, ast.Import):
+        return [alias.name for alias in node.names]
+    if isinstance(node, ast.ImportFrom) and node.module is not None and node.level == 0:
+        return [node.module, *(f"{node.module}.{alias.name}" for alias in node.names)]
+    return []
+
+
+def _is_private_target(module: str) -> bool:
+    return any(module == prefix or module.startswith(f"{prefix}.") for prefix in PRIVATE_TARGET_MODULES)
+
+
+def _collect_private_target_imports(tests_root: Path) -> list[str]:
+    paths = [
+        *(path for path in sorted(tests_root.rglob("*.py")) if _is_test_file(path, tests_root)),
+        *sorted(tests_root.joinpath(HELPER_ROOT).rglob("*.py")),
+    ]
+    return [
+        f"  tests/{path.relative_to(tests_root).as_posix()}:{node.lineno}: {module}"
+        for path in paths
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path)))
+        if (module := next((name for name in _imported_modules(node) if _is_private_target(name)), None))
+    ]
+
+
 def test_modules_use_shared_assertion_helpers(pytestconfig: pytest.Config) -> None:
     """Direct asserts in guarded test modules must be explicitly marked as exceptions."""
     direct_asserts = _collect_guarded_direct_asserts(TESTS_ROOT, _configured_exempt_files(pytestconfig))
@@ -293,6 +337,57 @@ def test_modules_use_shared_assertion_helpers(pytestconfig: pytest.Config) -> No
         return
 
     pytest.fail(_format_direct_assert_failure(direct_asserts), pytrace=False)  # pragma: no cover
+
+
+def test_helpers_use_shared_assertion_helpers() -> None:
+    """Report helpers under tests/data/python leave every comparison to the shared assert helpers, as tests do."""
+    if not (direct_asserts := _collect_helper_direct_asserts(TESTS_ROOT)):
+        return
+    pytest.fail(_format_direct_assert_failure(direct_asserts), pytrace=False)  # pragma: no cover
+
+
+def test_modules_reach_generation_targets_through_public_entry_points() -> None:
+    """Tests and report helpers import no private target coordinator, target, or target settings module."""
+    if not (imports := _collect_private_target_imports(TESTS_ROOT)):
+        return
+    pytest.fail("\n".join((PRIVATE_TARGET_FAILURE_MESSAGE, *imports)), pytrace=False)  # pragma: no cover
+
+
+def test_collect_helper_direct_asserts_reports_helper_assert(tmp_path: Path) -> None:
+    """A direct assert in a report helper is reported, while other test data is left alone."""
+    helper = tmp_path / "data" / "python" / "report.py"
+    helper.parent.mkdir(parents=True)
+    helper.write_text("def report(value):\n    assert value\n    return value\n", encoding="utf-8")
+    (tmp_path / "data" / "expected.py").write_text("assert True\n", encoding="utf-8")
+
+    assert _collect_helper_direct_asserts(tmp_path) == [
+        DirectAssert(Path("data/python/report.py"), "report", 2, "assert value")
+    ]
+
+
+def test_collect_private_target_imports_reports_every_form(tmp_path: Path) -> None:
+    """Every import form of a private target module is reported in test modules and report helpers only."""
+    (tmp_path / "test_target.py").write_text(
+        "import datamodel_code_generator._api_generation\n"
+        "from datamodel_code_generator._fastapi.target import FastAPITarget\n"
+        "from datamodel_code_generator import _target_config, _api_publication\n"
+        "from datamodel_code_generator.fastapi import generate_fastapi\n"
+        "from . import sibling\n",
+        encoding="utf-8",
+    )
+    helper = tmp_path / "data" / "python" / "helper.py"
+    helper.parent.mkdir(parents=True)
+    helper.write_text("from datamodel_code_generator._fastapi import config\n", encoding="utf-8")
+    fixture = tmp_path / "data" / "boundaries" / "forbidden.py"
+    fixture.parent.mkdir(parents=True)
+    fixture.write_text("from datamodel_code_generator._api_generation import render_target\n", encoding="utf-8")
+
+    assert _collect_private_target_imports(tmp_path) == [
+        "  tests/test_target.py:1: datamodel_code_generator._api_generation",
+        "  tests/test_target.py:2: datamodel_code_generator._fastapi.target",
+        "  tests/test_target.py:3: datamodel_code_generator._target_config",
+        "  tests/data/python/helper.py:1: datamodel_code_generator._fastapi",
+    ]
 
 
 def test_modules_never_patch_the_complete_module_registry() -> None:

@@ -1,0 +1,7 @@
+schema_version = 1
+output = "server"
+package = "example.server"
+model_package = "example.models"
+
+[selection]
+include = ["pets"]

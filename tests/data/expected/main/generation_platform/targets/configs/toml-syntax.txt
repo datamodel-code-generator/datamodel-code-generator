@@ -1,2 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE error config: The target file is not TOML
+E_CONFIG_VALUE error config: The target file is not TOML

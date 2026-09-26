@@ -16,7 +16,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
-| 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
+| 📝 [Utility Options](utility-options.md) | 19 | Help, version, debug options |
 
 ## 🎯 Focused Topics
 
@@ -115,6 +115,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--debug`](utility-options.md#debug)
 - [`--default-values`](field-customization.md#default-values)
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
+- [`--diagnostics-json`](utility-options.md#diagnostics-json)
 - [`--diff-against`](general-options.md#diff-against)
 - [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix)
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports)
@@ -155,6 +156,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--generate-prompt`](utility-options.md#generate-prompt)
 - [`--generate-pyproject-config`](general-options.md#generate-pyproject-config)
 - [`--generate-schema-validators`](template-customization.md#generate-schema-validators)
+- [`--generate-server`](utility-options.md#generate-server)
 - [`--graphql-no-typename`](graphql-only-options.md#graphql-no-typename)
 
 ### H {#h}
@@ -264,6 +266,8 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### T {#t}
 
+- [`--target-config`](utility-options.md#target-config)
+- [`--target-output`](utility-options.md#target-output)
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version)
 - [`--target-python-version`](model-customization.md#target-python-version)
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module)

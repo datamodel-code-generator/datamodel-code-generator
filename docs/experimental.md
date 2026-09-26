@@ -9,6 +9,7 @@ This page lists features that are available but still experimental.
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
+| `cli-option.generate-server` | cli-option | `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json` | 0.83.1 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
@@ -21,6 +22,7 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
+| `python-api.fastapi-server` | python-api | `datamodel_code_generator.fastapi and datamodel_code_generator.api_types` | 0.83.1 | - |
 
 ## Details
 
@@ -53,6 +55,16 @@ The lock stores opaque SHA-256 request-identity digests and SHA-256 body digests
 Schema-derived runtime validators are experimental and may change as JSON Schema coverage is expanded.
 
 The option currently targets Pydantic v2 BaseModel output and covers selected object-level rules such as patternProperties, required-only oneOf/anyOf/not groups, and simple if/then/else required-property conditions.
+
+### `cli-option.generate-server`
+
+- **Kind:** cli-option
+- **Target:** `--generate-server fastapi, --target-config, --target-output, and --diagnostics-json`
+- **Since:** 0.83.1
+
+FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.
+
+--generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, and --diagnostics-json writes the target diagnostics as JSON.
 
 ### `cli-option.install-skill`
 
@@ -173,3 +185,13 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
+
+### `python-api.fastapi-server`
+
+- **Kind:** python-api
+- **Target:** `datamodel_code_generator.fastapi and datamodel_code_generator.api_types`
+- **Since:** 0.83.1
+
+The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
+
+generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi.

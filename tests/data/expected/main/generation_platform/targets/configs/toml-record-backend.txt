@@ -1,2 +1,1 @@
-APIGenerationError
-  E_CONFIG_VALUE error config builtin_codec_compatibility[0]: 'attrs' is not a valid DataModelType
+E_CONFIG_VALUE error config builtin_codec_compatibility[0]: 'attrs' is not a valid DataModelType

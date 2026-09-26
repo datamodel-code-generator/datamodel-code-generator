@@ -155,6 +155,10 @@ MANUAL_DOCS: frozenset[str] = frozenset({
     "--overwrite-skill",
     "--list-deprecations",
     "--list-experimental",
+    "--generate-server",
+    "--target-config",
+    "--target-output",
+    "--diagnostics-json",
 })
 
 # Backward compatibility alias

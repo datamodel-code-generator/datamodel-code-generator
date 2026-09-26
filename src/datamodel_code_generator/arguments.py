@@ -8,7 +8,14 @@ template customization, OpenAPI-specific options, and general options.
 from __future__ import annotations
 
 import json
-from argparse import ArgumentParser, ArgumentTypeError, BooleanOptionalAction, Namespace, RawDescriptionHelpFormatter
+from argparse import (
+    SUPPRESS,
+    ArgumentParser,
+    ArgumentTypeError,
+    BooleanOptionalAction,
+    Namespace,
+    RawDescriptionHelpFormatter,
+)
 from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -174,6 +181,8 @@ template_options = arg_parser.add_argument_group("Template customization")
 openapi_options = arg_parser.add_argument_group("OpenAPI-only options")
 graphql_options = arg_parser.add_argument_group("GraphQL-only options")
 general_options = arg_parser.add_argument_group("General options")
+target_options = arg_parser.add_argument_group("Target generation options (experimental)")
+target_selection_options = target_options.add_mutually_exclusive_group()
 
 # ======================================================================================
 # Base options for input/output
@@ -1536,6 +1545,36 @@ general_options.add_argument(
     "--version",
     action="store_true",
     help="show version",
+)
+
+# ======================================================================================
+# Target generation options
+# ======================================================================================
+target_selection_options.add_argument(
+    "--generate-server",
+    choices=["fastapi"],
+    default=SUPPRESS,
+    help="Generate a server package for the models from the --target-config settings (experimental).",
+)
+target_options.add_argument(
+    "--target-config",
+    type=Path,
+    default=SUPPRESS,
+    metavar="PATH",
+    help="Read the selected target's settings from a flat TOML file.",
+)
+target_options.add_argument(
+    "--target-output",
+    type=Path,
+    default=SUPPRESS,
+    metavar="PATH",
+    help="Write the selected target to PATH instead of the output its settings name.",
+)
+target_options.add_argument(
+    "--diagnostics-json",
+    default=SUPPRESS,
+    metavar="PATH",
+    help="Write the selected target's diagnostics as JSON to PATH, or to stdout with -.",
 )
 
 __all__ = [

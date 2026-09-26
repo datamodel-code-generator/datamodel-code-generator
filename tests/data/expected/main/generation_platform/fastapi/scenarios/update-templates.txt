@@ -34,7 +34,6 @@ generate {"config": {"templates": "templates/roles", "update_groups": ["tag:pets
   F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: routers/store.py of a group outside update_groups would change; update every group
 generate {"config": {"update_groups": ["tag:pets", "tag:store"]}}
   APIGenerationError
-  F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete README.md; update every group
   F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete routers/pets.json; update every group
   F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete routers/store.json; update every group
   F_PARTIAL_UPDATE_INCONSISTENT ownership update_groups: A partial update would delete docs/list_pets.yml; update every group

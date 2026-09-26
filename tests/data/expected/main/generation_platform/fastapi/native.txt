@@ -1,22 +1,49 @@
 # native
 render pydantic_v2.BaseModel
-  __init__.py
-  application.py
-  routers/__init__.py
-  routers/untagged.py
-  _generated/__init__.py
-  _generated/contract.py
-  _generated/model_bindings.py
-  _generated/openapi.py
-  model_codecs.py
-  responses.py
-  errors.py
-  auth_types.py
-  services.py
-  py.typed
-  dcg-runtime-requirements.txt
-  .dcg-state/model-artifacts.json
-  .dcg-target-manifest.json
+  write models.py
+  write server/__init__.py
+  write server/application.py
+  write server/routers/__init__.py
+  write server/routers/untagged.py
+  write server/_generated/__init__.py
+  write server/_generated/contract.py
+  write server/_generated/model_bindings.py
+  write server/_generated/openapi.py
+  write server/model_codecs.py
+  write server/responses.py
+  write server/errors.py
+  write server/auth_types.py
+  write server/services.py
+  write server/README.md
+  write server/_runtime/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/adapters.py (copied runtime)
+  write server/_runtime/model_codecs/bindings.py (copied runtime)
+  write server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/_runtime/model_codecs/context.py (copied runtime)
+  write server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/_runtime/model_codecs/media.py (copied runtime)
+  write server/_runtime/model_codecs/outbound.py (copied runtime)
+  write server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/_runtime/model_codecs/patterns.py (copied runtime)
+  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
+  write server/_runtime/model_codecs/schema.py (copied runtime)
+  write server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/_runtime/model_codecs/values.py (copied runtime)
+  write server/_runtime/model_codecs/views.py (copied runtime)
+  write server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/_runtime/server/__init__.py (copied runtime)
+  write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/codecs.py (copied runtime)
+  write server/_runtime/server/errors.py (copied runtime)
+  write server/_runtime/server/openapi.py (copied runtime)
+  write server/_runtime/server/requests.py (copied runtime)
+  write server/_runtime/server/responses.py (copied runtime)
+  write server/_runtime/server/security.py (copied runtime)
+  write server/py.typed
+  write server/dcg-runtime-requirements.txt
+  write server/.dcg-state/model-artifacts.json
+  write server/.dcg-target-manifest.json
   layout routers
   post_discriminated: POST /discriminated -> /discriminated [untagged] status 204 primary 204 None body typed handler sync
     body /paths/~1discriminated/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Discriminated/properties/pet
@@ -88,24 +115,155 @@ render pydantic_v2.BaseModel
     body /paths/~1box/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Label
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1box/post/responses/204
   group untagged -> untagged (23)
+  file server/README.md
+    | # Native checks
+    |
+    | The `server` package serves the Native checks API with FastAPI.
+    | datamodel-code-generator generated it from the OpenAPI document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+    | Every file of the package belongs to the generator: keep your code in your own modules and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+    |
+    | FastAPI server generation is experimental.
+    | The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
+    | Custom templates, base classes, Python types, codec adapters, and codec compatibility declarations stay within these two backends.
+    |
+    | ## Operations
+    |
+    | | Service | Method | HTTP method | Path | Operation key |
+    | | --- | --- | --- | --- | --- |
+    | | `UntaggedService` | `post_discriminated` | POST | `/discriminated` | `/paths/~1discriminated/post` |
+    | | `UntaggedService` | `post_ranges` | POST | `/ranges` | `/paths/~1ranges/post` |
+    | | `UntaggedService` | `post_wide` | POST | `/wide` | `/paths/~1wide/post` |
+    | | `UntaggedService` | `post_described` | POST | `/described` | `/paths/~1described/post` |
+    | | `UntaggedService` | `post_patterned` | POST | `/patterned` | `/paths/~1patterned/post` |
+    | | `UntaggedService` | `post_bounded` | POST | `/bounded` | `/paths/~1bounded/post` |
+    | | `UntaggedService` | `post_painted` | POST | `/painted` | `/paths/~1painted/post` |
+    | | `UntaggedService` | `post_holder` | POST | `/holder` | `/paths/~1holder/post` |
+    | | `UntaggedService` | `post_wrapper` | POST | `/wrapper` | `/paths/~1wrapper/post` |
+    | | `UntaggedService` | `post_extended` | POST | `/extended` | `/paths/~1extended/post` |
+    | | `UntaggedService` | `post_defaulted` | POST | `/defaulted` | `/paths/~1defaulted/post` |
+    | | `UntaggedService` | `post_listed` | POST | `/listed` | `/paths/~1listed/post` |
+    | | `UntaggedService` | `post_mapped` | POST | `/mapped` | `/paths/~1mapped/post` |
+    | | `UntaggedService` | `post_opaque` | POST | `/opaque` | `/paths/~1opaque/post` |
+    | | `UntaggedService` | `post_anything` | POST | `/anything` | `/paths/~1anything/post` |
+    | | `UntaggedService` | `post_constant` | POST | `/constant` | `/paths/~1constant/post` |
+    | | `UntaggedService` | `post_stamped` | POST | `/stamped` | `/paths/~1stamped/post` |
+    | | `UntaggedService` | `post_closed` | POST | `/closed` | `/paths/~1closed/post` |
+    | | `UntaggedService` | `post_twice` | POST | `/twice` | `/paths/~1twice/post` |
+    | | `UntaggedService` | `post_node` | POST | `/node` | `/paths/~1node/post` |
+    | | `UntaggedService` | `post_extra` | POST | `/extra` | `/paths/~1extra/post` |
+    | | `UntaggedService` | `post_nested` | POST | `/nested` | `/paths/~1nested/post` |
+    | | `UntaggedService` | `post_box` | POST | `/box` | `/paths/~1box/post` |
+    |
+    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    |
+    | ## Implementing the services
+    |
+    | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
+    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
+    | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+    |
+    | ```python
+    | from server import create_app
+    | from server.services import UntaggedService
+    |
+    |
+    | class Untagged(UntaggedService):
+    |     """Implement `post_discriminated`, `post_ranges`, `post_wide`, `post_described`, `post_patterned`, `post_bounded`, `post_painted`, `post_holder`, `post_wrapper`, `post_extended`, `post_defaulted`, `post_listed`, `post_mapped`, `post_opaque`, `post_anything`, `post_constant`, `post_stamped`, `post_closed`, `post_twice`, `post_node`, `post_extra`, `post_nested`, and `post_box`."""
+    |
+    |
+    | app = create_app(untagged=Untagged())
+    | ```
+    |
+    | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
+    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    |
+    | ```python
+    | from fastapi import FastAPI
+    |
+    | from server import build_router, install_openapi
+    |
+    | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+    | app.include_router(build_router(untagged=Untagged()))
+    | install_openapi(app)
+    | app.openapi()  # Check the document once every router is included.
+    | ```
+    |
+    | ## Served OpenAPI document
+    |
+    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
+    | Pass `operation_keys` when the application includes only some of the operations.
+    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
+    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    |
+    | ## Validation boundaries
+    |
+    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
+    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    |
+    | ## Regenerating
+    |
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
+    | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
+    | Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+  file server/py.typed
+  file server/dcg-runtime-requirements.txt
+    | fastapi>=0.141.1,<0.142
+    | starlette>=1.0.0,<2
+    | pydantic>=2.13.5,<3
+    | jsonschema[format-nongpl]>=4.26,<5
+    | referencing>=0.37,<1
+    | typing-extensions>=4.16,<5
+    | google-re2>=1.1.20251105,<2
+  file server/.dcg-state/model-artifacts.json
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}
 render pydantic_v2.dataclass
-  __init__.py
-  application.py
-  routers/__init__.py
-  routers/untagged.py
-  _generated/__init__.py
-  _generated/contract.py
-  _generated/model_bindings.py
-  _generated/openapi.py
-  model_codecs.py
-  responses.py
-  errors.py
-  auth_types.py
-  services.py
-  py.typed
-  dcg-runtime-requirements.txt
-  .dcg-state/model-artifacts.json
-  .dcg-target-manifest.json
+  write models.py
+  write server/__init__.py
+  write server/application.py
+  write server/routers/__init__.py
+  write server/routers/untagged.py
+  write server/_generated/__init__.py
+  write server/_generated/contract.py
+  write server/_generated/model_bindings.py
+  write server/_generated/openapi.py
+  write server/model_codecs.py
+  write server/responses.py
+  write server/errors.py
+  write server/auth_types.py
+  write server/services.py
+  write server/README.md
+  write server/_runtime/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/adapters.py (copied runtime)
+  write server/_runtime/model_codecs/bindings.py (copied runtime)
+  write server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/_runtime/model_codecs/context.py (copied runtime)
+  write server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/_runtime/model_codecs/media.py (copied runtime)
+  write server/_runtime/model_codecs/outbound.py (copied runtime)
+  write server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/_runtime/model_codecs/patterns.py (copied runtime)
+  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
+  write server/_runtime/model_codecs/schema.py (copied runtime)
+  write server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/_runtime/model_codecs/values.py (copied runtime)
+  write server/_runtime/model_codecs/views.py (copied runtime)
+  write server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/_runtime/server/__init__.py (copied runtime)
+  write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/codecs.py (copied runtime)
+  write server/_runtime/server/errors.py (copied runtime)
+  write server/_runtime/server/openapi.py (copied runtime)
+  write server/_runtime/server/requests.py (copied runtime)
+  write server/_runtime/server/responses.py (copied runtime)
+  write server/_runtime/server/security.py (copied runtime)
+  write server/py.typed
+  write server/dcg-runtime-requirements.txt
+  write server/.dcg-state/model-artifacts.json
+  write server/.dcg-target-manifest.json
   layout routers
   post_discriminated: POST /discriminated -> /discriminated [untagged] status 204 primary 204 None body typed handler sync
     body /paths/~1discriminated/post/requestBody: codec_adapter native_shape_mismatch at /components/schemas/Discriminated/properties/pet
@@ -177,3 +335,107 @@ render pydantic_v2.dataclass
     body /paths/~1box/post/requestBody: codec_adapter opaque_native_semantics at /components/schemas/Label
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1box/post/responses/204
   group untagged -> untagged (23)
+  file server/README.md
+    | # Native checks
+    |
+    | The `server` package serves the Native checks API with FastAPI.
+    | datamodel-code-generator generated it from the OpenAPI document, together with the `models` models of the `pydantic_v2.dataclass` backend.
+    | Every file of the package belongs to the generator: keep your code in your own modules and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+    |
+    | FastAPI server generation is experimental.
+    | The server supports the `pydantic_v2.BaseModel` and `pydantic_v2.dataclass` model backends, while client generation supports all five.
+    | Custom templates, base classes, Python types, codec adapters, and codec compatibility declarations stay within these two backends.
+    |
+    | ## Operations
+    |
+    | | Service | Method | HTTP method | Path | Operation key |
+    | | --- | --- | --- | --- | --- |
+    | | `UntaggedService` | `post_discriminated` | POST | `/discriminated` | `/paths/~1discriminated/post` |
+    | | `UntaggedService` | `post_ranges` | POST | `/ranges` | `/paths/~1ranges/post` |
+    | | `UntaggedService` | `post_wide` | POST | `/wide` | `/paths/~1wide/post` |
+    | | `UntaggedService` | `post_described` | POST | `/described` | `/paths/~1described/post` |
+    | | `UntaggedService` | `post_patterned` | POST | `/patterned` | `/paths/~1patterned/post` |
+    | | `UntaggedService` | `post_bounded` | POST | `/bounded` | `/paths/~1bounded/post` |
+    | | `UntaggedService` | `post_painted` | POST | `/painted` | `/paths/~1painted/post` |
+    | | `UntaggedService` | `post_holder` | POST | `/holder` | `/paths/~1holder/post` |
+    | | `UntaggedService` | `post_wrapper` | POST | `/wrapper` | `/paths/~1wrapper/post` |
+    | | `UntaggedService` | `post_extended` | POST | `/extended` | `/paths/~1extended/post` |
+    | | `UntaggedService` | `post_defaulted` | POST | `/defaulted` | `/paths/~1defaulted/post` |
+    | | `UntaggedService` | `post_listed` | POST | `/listed` | `/paths/~1listed/post` |
+    | | `UntaggedService` | `post_mapped` | POST | `/mapped` | `/paths/~1mapped/post` |
+    | | `UntaggedService` | `post_opaque` | POST | `/opaque` | `/paths/~1opaque/post` |
+    | | `UntaggedService` | `post_anything` | POST | `/anything` | `/paths/~1anything/post` |
+    | | `UntaggedService` | `post_constant` | POST | `/constant` | `/paths/~1constant/post` |
+    | | `UntaggedService` | `post_stamped` | POST | `/stamped` | `/paths/~1stamped/post` |
+    | | `UntaggedService` | `post_closed` | POST | `/closed` | `/paths/~1closed/post` |
+    | | `UntaggedService` | `post_twice` | POST | `/twice` | `/paths/~1twice/post` |
+    | | `UntaggedService` | `post_node` | POST | `/node` | `/paths/~1node/post` |
+    | | `UntaggedService` | `post_extra` | POST | `/extra` | `/paths/~1extra/post` |
+    | | `UntaggedService` | `post_nested` | POST | `/nested` | `/paths/~1nested/post` |
+    | | `UntaggedService` | `post_box` | POST | `/box` | `/paths/~1box/post` |
+    |
+    | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
+    |
+    | ## Implementing the services
+    |
+    | `services.py` declares a Protocol for each router group, with an abstract method for each operation of the group.
+    | A method takes the operation's arguments as keywords and returns the value, `HTTPResult`, or `Response` to send.
+    | Implement each group in a module of your own and pass an instance to `create_app` under the group's name.
+    | Subclass the Protocol, so that type checkers report a missing or mismatched method and Python refuses to create an instance while a method is missing; any other object with the same methods is checked where you pass it.
+    |
+    | ```python
+    | from server import create_app
+    | from server.services import UntaggedService
+    |
+    |
+    | class Untagged(UntaggedService):
+    |     """Implement `post_discriminated`, `post_ranges`, `post_wide`, `post_described`, `post_patterned`, `post_bounded`, `post_painted`, `post_holder`, `post_wrapper`, `post_extended`, `post_defaulted`, `post_listed`, `post_mapped`, `post_opaque`, `post_anything`, `post_constant`, `post_stamped`, `post_closed`, `post_twice`, `post_node`, `post_extra`, `post_nested`, and `post_box`."""
+    |
+    |
+    | app = create_app(untagged=Untagged())
+    | ```
+    |
+    | Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
+    | To keep your own `FastAPI` application, with its lifespan, exception handlers, or middleware, include the router and install the package's OpenAPI document:
+    |
+    | ```python
+    | from fastapi import FastAPI
+    |
+    | from server import build_router, install_openapi
+    |
+    | app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+    | app.include_router(build_router(untagged=Untagged()))
+    | install_openapi(app)
+    | app.openapi()  # Check the document once every router is included.
+    | ```
+    |
+    | ## Served OpenAPI document
+    |
+    | `create_app` and `install_openapi(app)` make the application serve the source document's operations, schemas, and metadata, composed with its other routes when it first serves or checks the document.
+    | Pass `operation_keys` when the application includes only some of the operations.
+    | If an application registers the same path and method more than once, FastAPI routes requests to the first route while the document describes the last one.
+    | The document cannot reveal the shadowed route, so the package detects such duplicates only among its own operations, when it is generated.
+    |
+    | ## Validation boundaries
+    |
+    | Parameters, bodies, and responses that FastAPI validates exactly as the OpenAPI document describes use ordinary FastAPI declarations.
+    | The rest pass through generated codecs, which answer `400` for a malformed value, `415` for an undeclared media type, and `422`, with FastAPI's error records, for an invalid value.
+    | Native parameters follow FastAPI, which takes the last value of a repeated single-valued query parameter and the first of a repeated header; parameters read through codecs reject both with `400`.
+    |
+    | ## Regenerating
+    |
+    | Run the same generation again whenever the OpenAPI document changes; the `--check` option, or `render_fastapi`, reports the files it would change without writing them.
+    | Generation rewrites every file it owns, refuses to overwrite one you edited, and never touches your own modules.
+    | When an operation is added, removed, or changed, its method in `services.py` changes with it, so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that lacks a new method.
+    | Install the runtime dependencies listed in `dcg-runtime-requirements.txt`.
+  file server/py.typed
+  file server/dcg-runtime-requirements.txt
+    | fastapi>=0.141.1,<0.142
+    | starlette>=1.0.0,<2
+    | pydantic>=2.13.5,<3
+    | jsonschema[format-nongpl]>=4.26,<5
+    | referencing>=0.37,<1
+    | typing-extensions>=4.16,<5
+    | google-re2>=1.1.20251105,<2
+  file server/.dcg-state/model-artifacts.json
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}

@@ -1,40 +1,66 @@
 # templates
 render pydantic_v2.BaseModel
-  __init__.py
-  application.py
-  routers/__init__.py
-  routers/pets.py
-  routers/files.py
-  routers/untagged.py
-  _generated/__init__.py
-  _generated/contract.py
-  _generated/model_bindings.py
-  _generated/openapi.py
-  model_codecs.py
-  responses.py
-  errors.py
-  auth_types.py
-  services.py
-  README.md
-  routers/pets.json
-  routers/files.json
-  routers/untagged.json
-  docs/get_pet.yml
-  docs/add_pet.yml
-  docs/post__uploads.yml
-  docs/put__notes.yml
-  docs/post__raw.yml
-  settings.toml
-  checks/get_pet.py
-  checks/add_pet.py
-  checks/post__uploads.py
-  checks/put__notes.py
-  checks/post__raw.py
-  NOTES
-  py.typed
-  dcg-runtime-requirements.txt
-  .dcg-state/model-artifacts.json
-  .dcg-target-manifest.json
+  write models.py
+  write server/__init__.py
+  write server/application.py
+  write server/routers/__init__.py
+  write server/routers/pets.py
+  write server/routers/files.py
+  write server/routers/untagged.py
+  write server/_generated/__init__.py
+  write server/_generated/contract.py
+  write server/_generated/model_bindings.py
+  write server/_generated/openapi.py
+  write server/model_codecs.py
+  write server/responses.py
+  write server/errors.py
+  write server/auth_types.py
+  write server/services.py
+  write server/README.md
+  write server/routers/pets.json
+  write server/routers/files.json
+  write server/routers/untagged.json
+  write server/docs/get_pet.yml
+  write server/docs/add_pet.yml
+  write server/docs/post__uploads.yml
+  write server/docs/put__notes.yml
+  write server/docs/post__raw.yml
+  write server/settings.toml
+  write server/checks/get_pet.py
+  write server/checks/add_pet.py
+  write server/checks/post__uploads.py
+  write server/checks/put__notes.py
+  write server/checks/post__raw.py
+  write server/NOTES
+  write server/_runtime/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/__init__.py (copied runtime)
+  write server/_runtime/model_codecs/adapters.py (copied runtime)
+  write server/_runtime/model_codecs/bindings.py (copied runtime)
+  write server/_runtime/model_codecs/capabilities.py (copied runtime)
+  write server/_runtime/model_codecs/context.py (copied runtime)
+  write server/_runtime/model_codecs/errors.py (copied runtime)
+  write server/_runtime/model_codecs/media.py (copied runtime)
+  write server/_runtime/model_codecs/outbound.py (copied runtime)
+  write server/_runtime/model_codecs/parameters.py (copied runtime)
+  write server/_runtime/model_codecs/patterns.py (copied runtime)
+  write server/_runtime/model_codecs/pydantic_v2.py (copied runtime)
+  write server/_runtime/model_codecs/schema.py (copied runtime)
+  write server/_runtime/model_codecs/unset.py (copied runtime)
+  write server/_runtime/model_codecs/values.py (copied runtime)
+  write server/_runtime/model_codecs/views.py (copied runtime)
+  write server/_runtime/model_codecs/wire.py (copied runtime)
+  write server/_runtime/server/__init__.py (copied runtime)
+  write server/_runtime/server/application.py (copied runtime)
+  write server/_runtime/server/codecs.py (copied runtime)
+  write server/_runtime/server/errors.py (copied runtime)
+  write server/_runtime/server/openapi.py (copied runtime)
+  write server/_runtime/server/requests.py (copied runtime)
+  write server/_runtime/server/responses.py (copied runtime)
+  write server/_runtime/server/security.py (copied runtime)
+  write server/py.typed
+  write server/dcg-runtime-requirements.txt
+  write server/.dcg-state/model-artifacts.json
+  write server/.dcg-target-manifest.json
   layout routers
   get_pet: GET /pets/{petId} -> /pets/{petId} [tag:pets] status 200 primary 200 application/json body typed handler sync
     parameter /paths/~1pets~1{petId}/get/parameters/0: fastapi_native native_supported
@@ -58,7 +84,7 @@ render pydantic_v2.BaseModel
   group tag:pets -> pets (2)
   group tag:files -> files (1)
   group untagged -> untagged (2)
-  show README.md
+  file server/README.md
     | # Hooked pets
     |
     | - `GET /pets/{petId}` is handled by `get_pet`
@@ -66,9 +92,13 @@ render pydantic_v2.BaseModel
     | - `POST /uploads` is handled by `post__uploads`
     | - `PUT /notes` is handled by `put__notes`
     | - `POST /raw` is handled by `post__raw`
-  show routers/pets.json
+  file server/routers/pets.json
     | {"router": "tag:pets", "tag": "pets", "operations": ["/paths/~1pets~1{petId}/get", "/paths/~1pets/post"]}
-  show docs/get_pet.yml
+  file server/routers/files.json
+    | {"router": "tag:files", "tag": "files", "operations": ["/paths/~1uploads/post"]}
+  file server/routers/untagged.json
+    | {"router": "untagged", "tag": null, "operations": ["/paths/~1notes/put", "/paths/~1raw/post"]}
+  file server/docs/get_pet.yml
     | operation: "/paths/~1pets~1{petId}/get"
     | arguments:
     |   - "request"
@@ -78,242 +108,43 @@ render pydantic_v2.BaseModel
     |   - "x_trace"
     |   - "after"
     |   - "session"
-  show settings.toml
+  file server/docs/add_pet.yml
+    | operation: "/paths/~1pets/post"
+    | arguments:
+    |   - "request"
+    |   - "principal"
+    |   - "body"
+  file server/docs/post__uploads.yml
+    | operation: "/paths/~1uploads/post"
+    | arguments:
+    |   - "request"
+    |   - "file"
+    |   - "note"
+  file server/docs/put__notes.yml
+    | operation: "/paths/~1notes/put"
+    | arguments:
+    |   - "request"
+    |   - "principal"
+    |   - "body"
+    |   - "media_type"
+  file server/docs/post__raw.yml
+    | operation: "/paths/~1raw/post"
+    | arguments:
+    |   - "request"
+  file server/settings.toml
     | title = "Hooked pets"
     | operations = 5
-  show checks/get_pet.py
-    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
-    | """Checks of get_pet that the generator writes on every run."""
-    |
-    | OPERATION = '/paths/~1pets~1{petId}/get'
-  show NOTES
+  file server/NOTES
     | 3 routers
-  show routers/pets.py
-    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
-    | """Endpoints of the pets operations; regenerate them instead of editing.
-    |
-    | Router tag:pets of Hooked pets, tagged pets, with 2 operations.
-    | """
-    |
-    | from collections.abc import Sequence
-    | from typing import Annotated, Final
-    |
-    | import models
-    | from fastapi import APIRouter, Body, Depends, Header, Path, Query, Request
-    | from fastapi.responses import Response
-    |
-    | from .._generated import contract
-    | from .._generated.contract import OperationDependencies
-    | from .._runtime.server.application import Dependency, Wiring, build
-    | from .._runtime.server.requests import absent, present
-    | from .._runtime.server.responses import dispatch, respond
-    | from .._runtime.server.security import PrincipalT, SecretT
-    | from ..auth_types import AsyncAuthorizer, Authorizer, CredentialExtractors
-    | from ..services import PetsService
-    |
-    |
-    | def _add_get_pet(router: APIRouter, wiring: Wiring) -> None:
-    |     get_pet_handler = wiring.handlers['get_pet']
-    |     get_pet_principal = wiring.authenticators['/paths/~1pets~1{petId}/get']
-    |
-    |     def get_pet(
-    |         *,
-    |         request: Request,
-    |         principal: Annotated[object, Depends(get_pet_principal)],
-    |         pet_id: Annotated[int, Path(alias='petId', ge=1)],
-    |         limit: Annotated[int, Query(alias='limit')] = 10,
-    |         x_trace: Annotated[str, Header(
-    |             alias='X-Trace',
-    |             convert_underscores=False,
-    |             default_factory=absent,
-    |         )],
-    |         parameters: Annotated[contract.GetPet.Parameters, Depends(contract.GetPet.PARAMETERS)],
-    |     ) -> Response:
-    |         return respond(
-    |             get_pet_handler(
-    |                 request=request,
-    |                 principal=principal,
-    |                 pet_id=pet_id,
-    |                 limit=limit,
-    |                 x_trace=present(x_trace),
-    |                 after=parameters.after,
-    |                 session=parameters.session,
-    |             ),
-    |             contract.GetPet.RESPONSES,
-    |         )
-    |
-    |     router.add_api_route(
-    |         '/pets/{petId}',
-    |         get_pet,
-    |         methods=['GET'],
-    |         status_code=200,
-    |         response_model=None,
-    |         response_class=Response,
-    |         operation_id='getPet',
-    |         tags=['pets'],
-    |         summary='Read one pet.',
-    |         description='Reads a pet by identifier.',
-    |         response_description='The pet.',
-    |         openapi_extra={
-    |             'x-dcg-operation': {
-    |                 'version': 1,
-    |                 'package': 'server',
-    |                 'operation': '/paths/~1pets~1{petId}/get',
-    |             },
-    |         },
-    |         dependencies=wiring.dependencies.get('/paths/~1pets~1{petId}/get'),
-    |     )
-    |
-    |
-    | def _add_add_pet(router: APIRouter, wiring: Wiring) -> None:
-    |     add_pet_handler = wiring.handlers['add_pet']
-    |     add_pet_principal = wiring.authenticators['/paths/~1pets/post']
-    |
-    |     def add_pet(
-    |         *,
-    |         request: Request,
-    |         principal: Annotated[object, Depends(add_pet_principal)],
-    |         body: Annotated[models.Pet, Body(media_type='application/json')],
-    |     ) -> object:
-    |         return dispatch(
-    |             add_pet_handler(request=request, principal=principal, body=body),
-    |             contract.AddPet.RESPONSES,
-    |         )
-    |
-    |     router.add_api_route(
-    |         '/pets',
-    |         add_pet,
-    |         methods=['POST'],
-    |         status_code=201,
-    |         response_model=models.Pet,
-    |         response_model_by_alias=True,
-    |         response_model_exclude_unset=True,
-    |         operation_id='addPet',
-    |         tags=['pets'],
-    |         deprecated=True,
-    |         response_description='Added.',
-    |         openapi_extra={
-    |             'x-dcg-operation': {
-    |                 'version': 1,
-    |                 'package': 'server',
-    |                 'operation': '/paths/~1pets/post',
-    |             },
-    |         },
-    |         dependencies=wiring.dependencies.get('/paths/~1pets/post'),
-    |     )
-    |
-    |
-    | LITERAL_ROUTES: Final = ((contract.AddPet.OPERATION, _add_add_pet),)
-    | TEMPLATED_ROUTES: Final = ((contract.GetPet.OPERATION, _add_get_pet),)
-    |
-    |
-    | def build_router(
-    |     *,
-    |     pets: PetsService[PrincipalT],
-    |     authorizer: Authorizer[SecretT, PrincipalT] | AsyncAuthorizer[SecretT, PrincipalT],
-    |     credential_extractors: CredentialExtractors[SecretT] | None = None,
-    |     dependencies: Sequence[Dependency] = (),
-    |     operation_dependencies: OperationDependencies | None = None,
-    |     prefix: str = "",
-    | ) -> APIRouter:
-    |     """Check the service and settings, then register the pets operations on a new router, literal paths first."""
-    |     return build(
-    |         (*LITERAL_ROUTES, *TEMPLATED_ROUTES),
-    |         contract.SCHEMES,
-    |         services={'pets': pets},
-    |         authorizer=authorizer,
-    |         credential_extractors=credential_extractors,
-    |         dependencies=dependencies,
-    |         operation_dependencies=operation_dependencies,
-    |         prefix=prefix,
-    |     )
-  show services.py
-    | # Generated by datamodel-code-generator; target=fastapi; schema_version=1
-    | """Service interfaces of Hooked pets; regenerate them instead of editing."""
-    |
-    | from __future__ import annotations
-    |
-    | from abc import abstractmethod
-    | from typing import Protocol
-    |
-    | import models
-    | from fastapi import Request, UploadFile
-    | from fastapi.responses import Response
-    | from typing_extensions import TypeVar
-    |
-    | from .model_codecs import ModelValue, Unset
-    | from .responses import (
-    |     AddPetResponsePayload,
-    |     GetPetResponsePayload,
-    |     HTTPResult,
-    |     PostRawResponsePayload,
-    |     PostUploadsResponsePayload,
-    |     PutNotesResponsePayload,
-    | )
-    |
-    | PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
-    |
-    |
-    | class PetsService(Protocol[PrincipalT_contra]):
-    |     """Implement the pets operations: subclass this Protocol, or give an object its methods."""
-    |
-    |     @abstractmethod
-    |     def get_pet(
-    |         self,
-    |         *,
-    |         request: Request,
-    |         principal: PrincipalT_contra,
-    |         pet_id: int,
-    |         limit: int,
-    |         x_trace: str | Unset,
-    |         after: models.FieldPetsPetIdGetQueryAfterParameter | Unset,
-    |         session: models.FieldPetsPetIdGetCookieSessionParameter | Unset,
-    |     ) -> HTTPResult[GetPetResponsePayload] | Response: ...
-    |
-    |     @abstractmethod
-    |     def add_pet(
-    |         self,
-    |         *,
-    |         request: Request,
-    |         principal: PrincipalT_contra,
-    |         body: models.Pet,
-    |     ) -> (
-    |         models.Pet
-    |         | ModelValue[models.Pet]
-    |         | HTTPResult[AddPetResponsePayload]
-    |         | Response
-    |     ): ...
-    |
-    |
-    | class FilesService(Protocol):
-    |     """Implement the files operations: subclass this Protocol, or give an object its methods."""
-    |
-    |     @abstractmethod
-    |     def post__uploads(
-    |         self,
-    |         *,
-    |         request: Request,
-    |         file: UploadFile,
-    |         note: str | Unset,
-    |     ) -> None | HTTPResult[PostUploadsResponsePayload] | Response: ...
-    |
-    |
-    | class UntaggedService(Protocol[PrincipalT_contra]):
-    |     """Implement the untagged operations: subclass this Protocol, or give an object its methods."""
-    |
-    |     @abstractmethod
-    |     def put__notes(
-    |         self,
-    |         *,
-    |         request: Request,
-    |         principal: PrincipalT_contra | None,
-    |         body: models.FieldNotesPutRequest | models.FieldNotesPutRequest1 | Unset,
-    |         media_type: str | None,
-    |     ) -> None | HTTPResult[PutNotesResponsePayload] | Response: ...
-    |
-    |     @abstractmethod
-    |     def post__raw(
-    |         self,
-    |         *,
-    |         request: Request,
-    |     ) -> None | HTTPResult[PostRawResponsePayload] | Response: ...
+  file server/py.typed
+  file server/dcg-runtime-requirements.txt
+    | fastapi>=0.141.1,<0.142
+    | starlette>=1.0.0,<2
+    | pydantic>=2.13.5,<3
+    | jsonschema[format-nongpl]>=4.26,<5
+    | referencing>=0.37,<1
+    | typing-extensions>=4.16,<5
+    | python-multipart>=0.0.32,<0.1
+    | google-re2>=1.1.20251105,<2
+  file server/.dcg-state/model-artifacts.json
+    | {"model":{"artifacts":[{"kind":"model","path":"models.py","sha256":"<sha256>","size":"<size>"}],"fingerprint":"<sha256>","mode":"generate","output_uri":"../models.py","package":"models"},"schema_version":1}

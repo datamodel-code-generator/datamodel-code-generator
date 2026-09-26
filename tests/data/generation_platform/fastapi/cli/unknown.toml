@@ -1,0 +1,5 @@
+schema_version = 1
+package = "server"
+model_package = "models"
+output = "server"
+packages = ["server"]
