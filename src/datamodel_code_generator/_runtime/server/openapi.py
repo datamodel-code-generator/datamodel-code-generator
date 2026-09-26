@@ -23,6 +23,7 @@ _VERSIONS: Final[dict[object, Version]] = {"3.1.0": "3.1.0", "3.2.1": "3.2.1"}
 _METHODS: Final = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace", "query"})
 _MARKER_KEYS: Final = frozenset({"version", "package", "operation"})
 _PREFIX_FORBIDDEN: Final = frozenset("{}?#")
+_COMPONENTS: Final = "#/components/"
 _PAIR: Final = 2
 
 
@@ -185,6 +186,9 @@ class _Composer:
         for spec in operations:
             for occurrence in self.found.get((plan.package, spec.key), ()):
                 self.merge(spec, occurrence)
+        if len(plan.operation_keys) < len(operations):
+            selected = frozenset(plan.operation_keys)
+            sections = _reachable(sections, [dict(spec.fragment) for spec in operations if spec.key in selected])
         components = _object(self.document.setdefault("components", {}), "components")
         for section, entries in sections.items():
             target = _object(components.setdefault(section, {}), f"components/{section}")
@@ -315,6 +319,52 @@ def _bundle(plan: OpenAPIPackagePlan) -> tuple[list[OperationDocument], dict[str
         msg = f"The OpenAPI plan of package {plan.package!r} has no fragment for {', '.join(missing)}"
         raise OpenAPIConfigurationError(msg)
     return documents, components
+
+
+def _reachable(sections: dict[str, JSONValue], pending: list[JSONValue]) -> dict[str, JSONValue]:
+    """Return the components the fragments reach through references, transitively, and through security requirements.
+
+    A package that serves some of its operations adds only these, as FastAPI's own document adds only the models of
+    the routes it serves. Each section keeps the bundle's order.
+    """
+    reached: dict[str, set[str]] = {}
+    while pending:
+        value = pending.pop()
+        if _is_list(value):
+            pending.extend(value)
+            continue
+        if not _is_object(value):
+            continue
+        for key, item in value.items():
+            if key == "$ref" and isinstance(item, str) and item.startswith(_COMPONENTS):
+                section, _, name = item.removeprefix(_COMPONENTS).partition("/")
+                pending.extend(_reach(sections, reached, section, name))
+            elif key == "security" and _is_list(item):
+                pending.extend(
+                    component
+                    for requirement in item
+                    if _is_object(requirement)
+                    for name in requirement
+                    for component in _reach(sections, reached, "securitySchemes", name)
+                )
+            else:
+                pending.append(item)
+    return {
+        section: {name: value for name, value in entries.items() if name in names}
+        for section, entries in sections.items()
+        if _is_object(entries) and (names := reached.get(section))
+    }
+
+
+def _reach(
+    sections: dict[str, JSONValue], reached: dict[str, set[str]], section: str, name: str
+) -> tuple[JSONValue, ...]:
+    """Record a component of the package the first time it is reached, and return it to walk once."""
+    entries = sections.get(section)
+    if not _is_object(entries) or name not in entries or name in (names := reached.setdefault(section, set())):
+        return ()
+    names.add(name)
+    return (entries[name],)
 
 
 def _is_operation(value: JSONValue) -> bool:

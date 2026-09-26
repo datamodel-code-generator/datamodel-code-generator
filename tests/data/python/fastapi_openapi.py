@@ -193,19 +193,33 @@ def prefixes(packages: dict[str, Any]) -> list[str]:
     return lines
 
 
-@_scenario("pets")
+@_scenario("pets", "secured")
 def subset(packages: dict[str, Any]) -> list[str]:
-    """Install the operations a group router includes, then every operation, then none."""
-    pets = packages["pets"]
+    """Install the operations a group router includes, then every operation, then none.
+
+    A package that serves some of its operations adds only the components and security schemes they use.
+    """
+    pets, secured = packages["pets"], packages["secured"]
     app = FastAPI()
     app.include_router(_connected(pets.routers.store.build_router))
     pets.install_openapi(app, operation_keys=("/paths/~1store~1inventory/get",))
-    lines = [_attempt("store", lambda: list(app.openapi()["paths"]))]
+    lines = [_attempt("store", lambda: _served(app.openapi()))]
     pets.install_openapi(app)
     lines.append(_attempt("every operation", app.openapi))
     pets.install_openapi(app, operation_keys=())
     lines.append(_attempt("no operation", app.openapi))
+    app = FastAPI()
+    app.include_router(_connected(secured.routers.pets.build_router))
+    secured.install_openapi(app, operation_keys=("/paths/~1pets/get",))
+    lines.append(_attempt("secured pets", lambda: _served(app.openapi())))
     return lines
+
+
+def _served(document: dict[str, Any]) -> list[str]:
+    return [
+        *document["paths"],
+        *(f"{section}/{name}" for section, names in document.get("components", {}).items() for name in names),
+    ]
 
 
 @_scenario("pets", "methods")
