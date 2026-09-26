@@ -295,7 +295,7 @@ def fastapi_config_report(case_name: str, root: Path) -> str:
 
 
 def fastapi_api_report(root: Path) -> str:
-    """Resolve the entry points' annotations, then render, generate twice, and render over an edited owned file."""
+    """Resolve the entry points' annotations, then render, generate twice, and generate over an edited owned file."""
     hints = {"input_": GenerationInput, "model_config": GenerateConfig, "config": FastAPIConfig}
     lines = [
         f"{function.__name__} resolves {sorted(hints)}: {get_type_hints(function) == {**hints, 'return': result}}"
@@ -317,8 +317,6 @@ def fastapi_api_report(root: Path) -> str:
         report = generate_fastapi(source, model_config=model, config=config)
         lines.append(f"generate wrote {len(report.written_files)} and kept {len(report.unchanged_files)}")
     (root / PACKAGE / "README.md").write_text("# edited\n", encoding="utf-8")
-    try:
-        render_fastapi(source, model_config=model, config=config)
-    except APIGenerationError as error:
-        lines.extend(_diagnostic(item) for item in error.diagnostics)
+    report = generate_fastapi(source, model_config=model, config=config)
+    lines.append(f"generate rewrote {[item.path.relative_to(root).as_posix() for item in report.written_files]}")
     return "\n".join(lines) + "\n"

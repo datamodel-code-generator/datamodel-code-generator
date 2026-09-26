@@ -187,19 +187,20 @@ callable = "rename"
 | `README.md`, `py.typed` | generator | Documentation and typing marker |
 | `.dcg-target-manifest.json`, `.dcg-state/` | generator | What the last generation wrote, to regenerate and check safely |
 
-The generator owns every file of the package: it replaces them on every generation and refuses to overwrite one
-you edited (`E_OUTPUT_MODIFIED`). Keep the service implementations, the authorizer, and the application in your
-own modules. In standalone mode the package lives under `output/src/<package>` next to `pyproject.toml` and
-`README.md`, the `pyproject.toml` declares the runtime dependencies, and generation prints the
-`uv add --editable` command that adds the distribution to your project instead.
+The generator owns every file of the package and rewrites them on every generation, as it does the models,
+restoring any you edited or deleted. Keep the service implementations, the authorizer, and the application in your
+own modules; a file the generator never wrote at a path it needs stops the run (`E_OUTPUT_CONFLICT`). In standalone
+mode the package lives under `output/src/<package>` next to `pyproject.toml` and `README.md`, the `pyproject.toml`
+declares the runtime dependencies, and generation prints the `uv add --editable` command that adds the distribution
+to your project instead.
 
 ## Regenerating and checking
 
-Run the same command again after the OpenAPI document changes. The service Protocols change with the operations,
-so type checkers point at the implementations to update, and Python refuses to create an instance of a subclass
-that lacks a new method; your own modules are never touched. `--check` renders
-everything without writing it and exits with 0 when nothing would change, 1 when a file would change, and 2 for
-an error; `render_fastapi` returns the same artifacts, each with its action.
+Run the same command again after the OpenAPI document changes. The service Protocols change with the operations, so
+type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
+lacks a new method; your own modules are never touched. `--check` renders everything without writing it and exits
+with 0 when nothing would change, 1 when a file would change, such as a generated file you edited or deleted, and 2
+for an error; `render_fastapi` returns the same artifacts, each with its action.
 
 Server generation always writes the models without the generation timestamp, as `--disable-timestamp` does, so a
 run on unchanged inputs reproduces every byte: it writes nothing, and `--check` exits with 0, also from another

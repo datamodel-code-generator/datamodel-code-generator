@@ -50,6 +50,49 @@ render
 write server/routers/pets.py
 remove server/routers/store.py
 render
-  APIGenerationError
-  E_OUTPUT_MODIFIED error ownership routers/pets.py: A file the target owns was modified
-  E_OUTPUT_MODIFIED error ownership routers/store.py: A file the target owns is missing
+  target=fastapi schema_version=1
+  unchanged model models.py
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  write target server/routers/pets.py (target)
+  write target server/routers/store.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/_generated/model_bindings.py (target)
+  unchanged target server/_generated/openapi.py (target)
+  unchanged target server/model_codecs.py (target)
+  unchanged target server/responses.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/auth_types.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/README.md (target)
+  unchanged target server/py.typed (target)
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
+  unchanged target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['unchanged']
+publish
+render
+  target=fastapi schema_version=1
+  unchanged model models.py
+  unchanged target server/__init__.py (target)
+  unchanged target server/application.py (target)
+  unchanged target server/routers/__init__.py (target)
+  unchanged target server/routers/pets.py (target)
+  unchanged target server/routers/store.py (target)
+  unchanged target server/routers/untagged.py (target)
+  unchanged target server/_generated/__init__.py (target)
+  unchanged target server/_generated/contract.py (target)
+  unchanged target server/_generated/model_bindings.py (target)
+  unchanged target server/_generated/openapi.py (target)
+  unchanged target server/model_codecs.py (target)
+  unchanged target server/responses.py (target)
+  unchanged target server/errors.py (target)
+  unchanged target server/auth_types.py (target)
+  unchanged target server/services.py (target)
+  unchanged target server/README.md (target)
+  unchanged target server/py.typed (target)
+  unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
+  unchanged target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['unchanged']

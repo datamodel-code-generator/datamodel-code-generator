@@ -60,7 +60,7 @@ class _ReadOnlyPath(type(Path())):
 def test_fastapi_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Write the models and the server package, then check them against an edit and a missing owned file."""
+    """Write the models and the server package, check an edit and a missing owned file, then rewrite both."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -108,10 +108,21 @@ def test_fastapi_cli_generate(
         output_path=Path("models.py"),
         input_file_type="openapi",
         extra_args=_server("--check"),
-        expected_exit=Exit.ERROR,
+        expected_exit=Exit.DIFF,
         capsys=capsys,
-        expected_stderr="E_OUTPUT_MODIFIED error ownership README.md: A file the target owns is missing\n",
+        expected_stderr="write models.py\nwrite server/README.md\n",
     )
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server(),
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "dependencies.txt",
+        assert_func=assert_file_content,
+        expected_file=PACKAGE / "models.py",
+    )
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
 
 
 @pytest.mark.parametrize(
