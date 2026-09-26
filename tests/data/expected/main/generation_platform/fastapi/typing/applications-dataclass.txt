@@ -1,0 +1,70 @@
+21 marked lines
+mypy secured and applications.py: clean
+pyright secured and applications.py: clean
+ty secured and applications.py: clean
+mypy applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+  31 override
+  36 override
+  41 override
+  46 override
+  51 override
+  69 typeddict-unknown-key
+  70 dict-item
+  71 typeddict-item
+  72 typeddict-item
+  73 typeddict-unknown-key
+  74 typeddict-unknown-key
+  75 arg-type
+  76 assignment
+  77 assignment
+  78 abstract
+  79 assignment
+  80 misc
+  81 call-arg
+  82 call-arg
+  83 misc
+  84 arg-type
+pyright applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+  31 reportIncompatibleMethodOverride
+  36 reportIncompatibleMethodOverride
+  41 reportIncompatibleMethodOverride
+  46 reportIncompatibleMethodOverride
+  51 reportIncompatibleMethodOverride
+  69 reportAssignmentType
+  70 reportAssignmentType
+  71 reportAssignmentType
+  72 reportAssignmentType
+  73 reportAssignmentType
+  74 reportAssignmentType
+  75 reportArgumentType
+  76 reportAssignmentType
+  77 reportAssignmentType
+  78 reportAbstractUsage
+  79 reportAssignmentType
+  80 reportArgumentType
+  81 reportCallIssue
+  82 reportCallIssue
+  83 reportArgumentType
+  84 reportArgumentType
+ty applications_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+  31 invalid-method-override
+  36 invalid-method-override
+  41 invalid-method-override
+  46 invalid-method-override
+  51 invalid-method-override
+  69 invalid-key
+  70 invalid-argument-type
+  71 invalid-argument-type
+  72 invalid-argument-type
+  73 invalid-key
+  74 invalid-key
+  75 invalid-argument-type
+  76 invalid-assignment
+  77 invalid-assignment
+  78 call-non-callable
+  79 invalid-assignment
+  80 invalid-argument-type
+  81 missing-argument
+  82 missing-argument
+  83 invalid-argument-type
+  84 invalid-argument-type
