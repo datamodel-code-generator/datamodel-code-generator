@@ -14,7 +14,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     def record(name: str, arguments: dict[str, object]) -> None:
         calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
-    class Untagged:
+    class Untagged(server.services.UntaggedService):
         def post_item(self, **arguments: object) -> None:
             record("post_item", arguments)
 

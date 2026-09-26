@@ -70,7 +70,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         calls.append(f"{name}({case})")
         return results[case]()
 
-    class Untagged:
+    class Untagged(server.services.UntaggedService):
         def get_result(self, *, case: str) -> object:
             return respond("get_result", case)
 

@@ -12,6 +12,7 @@ render pydantic_v2.BaseModel
   responses.py
   errors.py
   auth_types.py
+  services.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
@@ -48,6 +49,7 @@ render pydantic_v2.BaseModel
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import dispatch, respond
+    | from ..services import ResultsService
     |
     |
     | def _add_create(router: APIRouter, wiring: Wiring) -> None:
@@ -198,7 +200,7 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     results: object,
+    |     results: ResultsService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -226,6 +228,7 @@ render pydantic_v2.BaseModel
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
+    | from ..services import FilesService
     |
     |
     | def _add_download(router: APIRouter, wiring: Wiring) -> None:
@@ -253,7 +256,7 @@ render pydantic_v2.BaseModel
     |
     | def build_router(
     |     *,
-    |     files: object,
+    |     files: FilesService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -894,6 +897,7 @@ render pydantic_v2.dataclass
   responses.py
   errors.py
   auth_types.py
+  services.py
   py.typed
   dcg-runtime-requirements.txt
   .dcg-state/model-artifacts.json
@@ -930,6 +934,7 @@ render pydantic_v2.dataclass
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import dispatch, respond
+    | from ..services import ResultsService
     |
     |
     | def _add_create(router: APIRouter, wiring: Wiring) -> None:
@@ -1080,7 +1085,7 @@ render pydantic_v2.dataclass
     |
     | def build_router(
     |     *,
-    |     results: object,
+    |     results: ResultsService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",
@@ -1108,6 +1113,7 @@ render pydantic_v2.dataclass
     | from .._generated.contract import OperationDependencies
     | from .._runtime.server.application import Dependency, Wiring, build
     | from .._runtime.server.responses import respond
+    | from ..services import FilesService
     |
     |
     | def _add_download(router: APIRouter, wiring: Wiring) -> None:
@@ -1135,7 +1141,7 @@ render pydantic_v2.dataclass
     |
     | def build_router(
     |     *,
-    |     files: object,
+    |     files: FilesService,
     |     dependencies: Sequence[Dependency] = (),
     |     operation_dependencies: OperationDependencies | None = None,
     |     prefix: str = "",

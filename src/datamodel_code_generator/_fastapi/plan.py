@@ -255,6 +255,11 @@ class SecuritySpec:
 
     requirements: tuple[Requirement, ...]
 
+    @property
+    def anonymous(self) -> bool:
+        """Return whether an alternative requires no scheme, so the handler may receive no principal."""
+        return not all(self.requirements)
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Argument:
@@ -313,12 +318,22 @@ class OperationSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GroupSpec:
-    """One router group: its key, file stem, first tag, and operations in declaration order."""
+    """One router group: its key, name, first tag, and operations in declaration order."""
 
     key: str
     stem: str
     primary_tag: str | None
     operations: tuple[OperationSpec, ...]
+
+    @property
+    def service(self) -> str:
+        """Return the name of the group's service Protocol: Service after the group's PascalCase name."""
+        return "Service" if self.stem == "service" else f"{pascal(self.stem)}Service"
+
+    @property
+    def secured(self) -> bool:
+        """Return whether an operation of the group uses security, so its methods receive a principal."""
+        return any(spec.security is not None for spec in self.operations)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -472,7 +487,7 @@ class Planner:  # noqa: PLR0904
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(stem_conflicts(stems.values()))
         )
-        return tuple(
+        groups = tuple(
             GroupSpec(
                 key=key,
                 stem=stems[key],
@@ -481,6 +496,12 @@ class Planner:  # noqa: PLR0904
             )
             for key, values in members.items()
         )
+        self.problems.extend(
+            _problem("F_NAME_CONFLICT", f"Several router groups take the service name {name!r}")
+            for name, count in sorted(Counter(group.service for group in groups).items())
+            if count > 1
+        )
+        return groups
 
     def check_routes(self, specs: tuple[OperationSpec, ...]) -> None:
         """Reject two operations FastAPI cannot tell apart: the same method and path shape."""

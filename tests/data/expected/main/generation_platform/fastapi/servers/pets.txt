@@ -1,5 +1,9 @@
 # pets
 serve pydantic_v2.BaseModel
+service PetsService: create_pet, delete_pet, get_pet, list_my_pets, list_pets
+service PetsService without its methods: TypeError
+service StoreService: get_inventory
+service StoreService without its methods: TypeError
 build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
 build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
 build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously
@@ -48,6 +52,10 @@ codec GetPetResponseCodecs {'status_code': 404, 'media_type': 'application/json'
 codec GetPetResponseCodecs {'status_code': 500}: CodecSelectionError: The operation declares no codec-bearing body for status 500 and that media type
 codec GetPetResponseCodecs {'status_code': 200, 'name': 'part'}: CodecSelectionError: The 200 response declares no part 'part' for its default media
 serve pydantic_v2.dataclass
+service PetsService: create_pet, delete_pet, get_pet, list_my_pets, list_pets
+service PetsService without its methods: TypeError
+service StoreService: get_inventory
+service StoreService without its methods: TypeError
 build missing: HandlerConfigurationError: The store service needs a callable get_inventory method
 build not-callable: HandlerConfigurationError: The store service needs a callable get_inventory method
 build async: HandlerConfigurationError: The store.get_inventory method is asynchronous, but its operation calls it synchronously

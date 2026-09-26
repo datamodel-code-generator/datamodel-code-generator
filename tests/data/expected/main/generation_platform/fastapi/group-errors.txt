@@ -3,3 +3,4 @@ render pydantic_v2.BaseModel
   APIGenerationError
   F_NAME_CONFLICT target: Several router groups or reserved names take 'nul'
   F_NAME_CONFLICT target: Several router groups or reserved names take 'pets'
+  F_NAME_CONFLICT target: Several router groups take the service name 'PetsService'

@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info: {title: Services, version: "1.0"}
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      responses:
+        "200":
+          description: Names.
+          content:
+            application/json:
+              schema: {type: array, items: {type: string}}
+  /pets/{petId}:
+    delete:
+      operationId: deletePet
+      tags: [pets]
+      parameters:
+        - {name: petId, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Deleted.}
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "204": {description: Done.}

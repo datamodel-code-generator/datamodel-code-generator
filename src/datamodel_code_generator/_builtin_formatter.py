@@ -1634,7 +1634,7 @@ def _format_generated_module_statement(  # noqa: PLR0911
         target = _source_segment(source, statement.targets[0])
         return f"{indent}{target} = {_format_subscript_value(statement.value, indent, line_length, source)}"
     if _is_call(statement.value, "TypedDict") and any(
-        isinstance(argument, ast.Dict) for argument in statement.value.args
+        isinstance(argument, ast.Dict) and argument.keys for argument in statement.value.args
     ):
         indent = _line_indent(line)
         target = _source_segment(source, statement.targets[0])

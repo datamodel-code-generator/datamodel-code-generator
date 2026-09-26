@@ -1,6 +1,6 @@
 # S06 implementation record
 
-Status: in progress. S06 (basic FastAPI generation) stacks on the S05 stack (#4151, #4152, #4154), which is not merged yet. Nothing in this stack has been merged. S06-1 (#4157) is in review, S06-2 is ready for review, and S06-3 follows.
+Status: in progress. S06 (basic FastAPI generation) stacks on the S05 stack (#4151, #4152, #4154), which is not merged yet. Nothing in this stack has been merged. S06-1 (#4157) and S06-2 (#4158) are in review, and S06-3 is ready for review.
 
 ## Baseline and review boundaries
 
@@ -15,7 +15,7 @@ The authoritative contracts are DECISIONS-FASTAPI §§1–6 and §10–11, FASTA
 - DECISIONS-FASTAPI names no diagnostic for security the source cannot support. S06-2 reports `F_SECURITY_INVALID` (stage `target`) for a requirement that names a scheme the root document does not declare, an apiKey scheme without a name or with a location other than header, query or cookie, and a `security` value that is not a list of requirement objects with string scope lists. Failing generation keeps unconfigured authentication from becoming anonymous (§7).
 - `OperationDependencies` is defined in `_generated/contract.py` beside `OperationKey` and `SchemeKey`, not in `application.py`, because the group router modules annotate their own builders with it and `application.py` imports those modules. `FastAPIOptions` and `Dependency` are defined once, with the options validation, in the shared runtime module `_runtime/server/application.py`. `application.py` and the package root re-export the identical types (§4).
 - The authentication records are defined once in `_runtime/server/security.py`, generic in the scheme and operation key types as well as the secret type. Each package's `auth_types.py` binds its own `SchemeKey` and `OperationKey` through generic aliases, so user code writes `Credential[S]`, `AuthContext[S]` or `Authorizer[S, P]` with the TYPING §5 parameters and variance, and constructs records through the same names with the secret type argument, such as `Credential[str](scheme_name="digest", payload=CustomSecret(value=token))`. `isinstance` checks use the secret records, since generic aliases are not classes. The generic records are not slotted: Python 3.10 cannot set `__orig_class__` on a slotted frozen dataclass constructed through a generic alias.
-- Until S06-3 adds the service Protocols, builders take each group's service typed `object`, and authorizers are typed `Authorizer[SecretT, object] | AsyncAuthorizer[SecretT, object]`. A builder whose operations use security requires the authorizer and takes optional credential extractors; a builder without secured operations takes neither, so a type checker rejects a missing authorizer instead of the startup check.
+- A builder whose operations use security requires the authorizer and takes optional credential extractors; a builder without secured operations takes neither, so a type checker rejects a missing authorizer instead of the startup check.
 - `create_app` does not install generated OpenAPI or evaluate `app.openapi()` yet; `install_openapi` and that check arrive with served OpenAPI in S07.
 
 ## S06-1: parameters, bodies, responses, and the adapters they need
@@ -74,6 +74,25 @@ Tests:
 
 Benchmarks (`render_target`, builtin formatter, median of five runs): with runtime copies no longer formatted, S06-1 takes 39.7, 159.0 and 639.0 ms for 10, 50 and 200 operations, and S06-2 42.3, 165.6 and 654.5 ms. Request latency through the test client is unchanged for unsecured routes (330 µs against 321 µs for a handwritten route), and an API-key route costs 410 µs against 398 µs for a handwritten `APIKeyHeader` dependency.
 
+## S06-3: typed service Protocols
+
+The maintainer replaced the plan's handler integration on 2026-09-26 (see Deviations): PR-STACKS' "typed handler Protocols, initial stubs and regeneration protection" becomes one typed service Protocol per router group, regenerated every run like every other file. There are no create-only business stubs, `handlers` package, `auth.py` or `main.py`, no `scaffold` setting, no `Handlers` mapping or per-operation call Protocols, and no handler orphan or path-conflict checks (`I_HANDLER_ORPHAN`, `F_HANDLER_PATH_CONFLICT`); the user's implementations live in their own modules and are passed to the builders.
+
+Generator:
+
+- `plan.py`: `GroupSpec.service` names each group's Protocol `<Group>Service` after the group's PascalCase name (`Service` for a group named `service`, the single layout's default), and `GroupSpec.secured` marks groups whose methods receive a principal. Two groups whose Protocol names coincide are `F_NAME_CONFLICT`. `SecuritySpec.anonymous` gives the optional principal of an anonymous alternative.
+- `render.py`, `templates/services.jinja2` (a new builtin role): `services.py` defines one `typing.Protocol` per router group in group order, with one `@abstractmethod` per operation, named after the operation, taking the endpoint's keyword-only arguments and returning the §6 result type (`async def` for async operations, so an override with the other mode is an incompatible override). Groups with secured operations are generic in a contravariant `PrincipalT_contra`, and anonymous alternatives receive `PrincipalT_contra | None`. The module imports runtime types through the package's public `model_codecs` and `responses` modules, so its signatures read as an implementation spells them. `application.py` and each router module annotate the group arguments with their Protocols (`PetsService[PrincipalT]` for secured groups) and the authorizer as `Authorizer[SecretT, PrincipalT] | AsyncAuthorizer[SecretT, PrincipalT]`, so a checker correlates the services' principal with the authorizer's result. The manifest records each group's `service`.
+- A user subclasses a Protocol (`class Pets(PetsService[User])`), so a checker reports every missing or incompatible method at the class and Python refuses to instantiate it while a method is missing (`TypeError`), or passes any object with the methods, which checkers verify structurally at the builder call and the builder checks at startup (S06-1).
+- Kept from the first S06-3 draft: `_generated/contract.py` imports the model bindings and the dependency types only when an operation uses them, `_openapi_codec_render.py` imports `functools.cache` and `Final` only when a bindings module uses them, and the builtin formatter leaves an empty `TypedDict(..., {})` call alone, which a package without operations renders.
+
+Tests:
+
+- The main suite renders the `services` fixture (two groups, an async operation, a path parameter) and a package without operations (`empty`), and shows `services.py` of the secured fixture; it covers the `_fastapi` package completely.
+- The `fastapi-e2e` services subclass the generated Protocols, and every server case reports each Protocol's abstract methods and that a subclass without them cannot be instantiated.
+- TY08: `tests/data/generation_platform/fastapi/typing/applications.py` implements the secured package's groups with explicit subclasses and a structural object, passes an `Admin` authorizer to services typed for `User` (contravariance), and builds a group router. With both backends, the generated package and the sample have zero diagnostics on strict mypy 2.3.1 and strict Pyright 1.1.414 and 1.1.411. Every line of `applications_negative.py` marked `# error` has exactly one error on mypy, both Pyrights and ty 0.0.84, and no other line has one: a wrong result type, a required principal for an anonymous alternative, each wrong mode, a missing keyword, the plain FastAPI option and key mistakes of S06-2, instantiating a subclass without its method, a structural object with a wrong method, a service narrower than the authorizer's principal, a missing group argument, a missing authorizer, and an extractor for another secret type. ty also reports the positive sample's `build_router` call with an async authorizer: it matches the async callable to the sync `Authorizer` too and joins both principals (`User | CoroutineType[..., Admin]`); the first S06-3 draft's `Handlers` mapping showed the same false positive, and the sync authorizer passes.
+
+Benchmarks (`render_target`, builtin formatter, median of seven runs, 10, 50 and 200 operations in five groups): 46.3, 180.4 and 712.4 ms, against 50.0, 194.4 and 766.4 ms for the first S06-3 draft with its default scaffold.
+
 ## Next action
 
-Open S06-2 as a stacked PR on #4157, then start S06-3 (typed service Protocols).
+Open S06-3 as a stacked PR on #4158, then start S07 (hooks, templates, served OpenAPI, and the public entry points).

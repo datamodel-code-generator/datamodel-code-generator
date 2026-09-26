@@ -302,7 +302,7 @@ class _Renderer:
             self.use(index, use, binding, sections) for index, (use, binding) in enumerate(self.plan.bindings)
         )
         head = [
-            self.resources(),
+            *((self.resources(),) if self.directions else ()),
             *self.views(),
             *self.bundles(),
             *self.registry_functions(),
@@ -543,8 +543,8 @@ class _Renderer:
             "",
             "from __future__ import annotations",
             "",
-            "from functools import cache",
-            "from typing import Final",
+            *(("from functools import cache",) if sections else ()),
+            *(("from typing import Final",) if self.plan.bindings else ()),
             "",
             *self.namespace.imports(),
             "",

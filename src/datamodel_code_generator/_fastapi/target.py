@@ -186,6 +186,7 @@ def _target_data(plan: ServerPlan, config: FastAPIConfig, request: TargetRequest
                 "key": group.key,
                 "file_stem": group.stem,
                 "primary_tag": group.primary_tag,
+                "service": group.service,
                 "operations": [f"/target_data/fastapi/operations/{indexes[spec.key]}" for spec in group.operations],
             }
             for group in plan.groups

@@ -15,7 +15,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     def record(name: str, **arguments: object) -> None:
         calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
-    class Pets:
+    class Pets(server.services.PetsService):
         def list_pets(
             self, *, limit: object, tags: object, kind: object, x_request_id: object, since: object, session: object
         ) -> object:
@@ -42,7 +42,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             record("delete_pet", pet_id=pet_id)
             return None if pet_id in pets else server.HTTPResult(status_code=404, body=models.Error(code=404, message="Gone"))
 
-    class Store:
+    class Store(server.services.StoreService):
         def get_inventory(self) -> object:
             record("get_inventory")
             return {"available": 2}

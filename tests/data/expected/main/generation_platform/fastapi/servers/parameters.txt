@@ -1,5 +1,7 @@
 # parameters
 serve pydantic_v2.BaseModel
+service UntaggedService: get_file, get_menu, get_note, get_ratios, repeat, search
+service UntaggedService without its methods: TypeError
 > GET /search
 < 422 application/json {"detail":[{"type":"missing","loc":["cookie","session"],"msg":"Field required"}]}
 > GET /search
