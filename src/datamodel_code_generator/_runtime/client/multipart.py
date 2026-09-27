@@ -213,7 +213,8 @@ def multipart_member(value: WireValue) -> tuple[bytes, str | None]:
         case Mapping() | tuple():
             return encode_json(value), "application/json"
         case _:
-            return encode_json(value), None
+            pass
+    return encode_json(value), None
 
 
 def encode_multipart(value: WireValue, boundary: str) -> bytes:
