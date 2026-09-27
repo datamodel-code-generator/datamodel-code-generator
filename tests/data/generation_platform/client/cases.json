@@ -1,0 +1,211 @@
+{
+  "pets": {
+    "input": "pets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    }
+  },
+  "media": {
+    "input": "media.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "typing.TypedDict"
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1documents/post",
+          "request_media_type": "application/json",
+          "runtime": {
+            "success_statuses": [
+              302
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "servers": {
+    "input": "servers.yaml",
+    "config": {
+      "server_base_url": "https://api.example.com/root/"
+    }
+  },
+  "default-server": {
+    "input": "default-server.yaml",
+    "config": {
+      "default_base_url": "https://default.example.com/base",
+      "package_mode": "standalone",
+      "distribution_name": "pets-client",
+      "package_version": "1.2.3",
+      "model_dependency": "pets-models>=1"
+    }
+  },
+  "implicit-server": {
+    "input": "default-server.yaml",
+    "config": {
+      "server_base_url": "https://implicit.example.com/api/"
+    }
+  },
+  "names": {
+    "input": "names.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1files~1{fileName}.{ext}/get",
+          "parameter_names": [
+            {
+              "in_": "header",
+              "name": "2fa",
+              "python_name": "two_factor"
+            }
+          ]
+        }
+      ],
+      "resource_names": [
+        {
+          "tag": "Pet Store",
+          "namespace": "store"
+        }
+      ]
+    }
+  },
+  "name-errors": {
+    "input": "name-errors.yaml"
+  },
+  "child-collision": {
+    "input": "names.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1admin~1users/post",
+          "name": "users"
+        }
+      ]
+    }
+  },
+  "media-errors": {
+    "input": "media-errors.yaml"
+  },
+  "server-errors": {
+    "input": "server-errors.yaml"
+  },
+  "codec-errors": {
+    "input": "codec-errors.yaml"
+  },
+  "setting-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "absent",
+              "python_name": "absent"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets/post",
+          "request_media_type": "application/xml"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "image/png",
+          "runtime": {
+            "success_statuses": [
+              301
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "method-collisions": {
+    "input": "method-collisions.yaml"
+  },
+  "reference-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1missing/get"
+        },
+        {
+          "ref": "/paths/~1pets/get"
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/get"
+          }
+        }
+      ]
+    }
+  },
+  "empty": {
+    "input": "pets.yaml",
+    "config": {
+      "selection": {
+        "exclude_tags": [
+          "pets"
+        ],
+        "reason": "No operation is needed yet."
+      }
+    }
+  },
+  "querystring": {
+    "input": "querystring.yaml"
+  }
+}

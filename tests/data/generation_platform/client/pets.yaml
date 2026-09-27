@@ -1,0 +1,148 @@
+openapi: 3.1.0
+info:
+  title: Pets
+  version: 1.0.0
+servers:
+  - url: https://{region}.example.com/v1
+    variables:
+      region:
+        default: api
+        enum: [api, eu]
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      summary: List every pet.
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer}
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items: {type: string}
+        - name: X-Trace
+          in: header
+          required: true
+          schema: {type: string}
+        - name: session
+          in: cookie
+          schema: {type: string}
+      responses:
+        '200':
+          description: The pets.
+          headers:
+            X-Next:
+              schema: {type: string}
+            X-Rate:
+              required: true
+              schema: {type: integer}
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Pet'}
+        default:
+          description: An error.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+    post:
+      operationId: createPet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/NewPet'}
+          text/plain:
+            schema: {type: string}
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+        '4XX':
+          description: Rejected.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema: {type: integer}
+    get:
+      operationId: getPet
+      tags: [pets]
+      description: |
+        Show one pet.
+        The second line stays out of the docstring.
+      responses:
+        '200':
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Pet'}
+            text/plain:
+              schema: {type: string}
+        '404':
+          description: Not found.
+    delete:
+      tags: [pets]
+      responses:
+        '204':
+          description: Deleted.
+    head:
+      operationId: headPet
+      tags: [pets]
+      responses:
+        '200':
+          description: Present.
+          headers:
+            ETag:
+              schema: {type: string}
+  /pets/{petId}/photo:
+    put:
+      operationId: uploadPhoto
+      tags: [pets, photos]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: The stored photo.
+          content:
+            image/*:
+              schema: {type: string, format: binary}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        tag: {type: [string, "null"]}
+    NewPet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        tag: {type: string}
+    Error:
+      type: object
+      required: [code]
+      properties:
+        code: {type: integer}
+        message: {type: string}

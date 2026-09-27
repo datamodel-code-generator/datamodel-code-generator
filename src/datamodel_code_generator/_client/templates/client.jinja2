@@ -1,0 +1,34 @@
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+
+_DEFAULTS = {{ defaults }}
+
+
+class {{ name }}:
+    """{{ class_docstring }}"""
+
+    def __init__(
+        self,
+        *,
+        options: {{ options }} | None = None,
+        http_client: {{ http_client }} | {{ unset }} = {{ unset_value }},
+        http_client_ownership: {{ literal }}["borrowed", "owned"] = "borrowed",
+    ) -> None:
+        """Keep the options; without an HTTPX2 client, create one that closing this client closes."""
+        self._core = {{ core }}(
+            _DEFAULTS, options=options, http_client=http_client, http_client_ownership=http_client_ownership
+        )
+{%- for resource in resources %}
+
+    @{{ cached_property }}
+    def {{ resource.name }}(self) -> {{ resource.class_name }}:
+        """The {{ resource.namespace }} operations."""
+        from {{ resource.module }} import {{ resource.class_name }}
+
+        return {{ resource.class_name }}(self._core)
+{%- endfor %}
+
+{{ lifecycle }}

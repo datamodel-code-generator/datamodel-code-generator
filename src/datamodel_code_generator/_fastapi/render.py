@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import json
 import keyword
-import re
-from functools import cache, cached_property
-from pathlib import Path, PurePosixPath
+from functools import cached_property
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._api_generation import RenderedFile
@@ -25,6 +24,7 @@ from datamodel_code_generator._python_layout import Chain, Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.unset import Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
+from datamodel_code_generator._target_render import field_plan, parameter_plan, runtime_sources
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -53,20 +53,15 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
-    from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
-    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 
 WIDTH: Final = 88
 _MIN_CONTENT_STATUS: Final = 200
-_RUNTIME: Final = Path(__file__).parents[1] / "_runtime"
 _SCALARS: Final = {"str": "str", "int": "int", "float": "float", "bool": "bool"}
 _IMPORTED: Final = {
     "date": ("datetime", "date"),
     "aware_datetime": ("pydantic", "AwareDatetime"),
     "uuid": ("uuid", "UUID"),
 }
-_RUNTIME_IMPORT: Final = re.compile(r"^from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
-_RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)(\w+(?:\.\w+)*) import", re.MULTILINE)
 _SETTINGS: Final = ("dependencies", "operation_dependencies", "prefix")
 _PUBLIC: Final = {
     "_runtime.model_codecs.unset": "model_codecs",
@@ -90,15 +85,6 @@ _CREDENTIALS: Final[dict[SchemeKind, str]] = {
     "basic": "HTTP Basic credentials",
     "bearer": "a bearer token",
     "custom": "no builtin credential; a credential extractor reads it",
-}
-_PLAN_DEFAULTS: Final[dict[str, object]] = {
-    "style": None,
-    "explode": False,
-    "required": False,
-    "allow_reserved": False,
-    "content_media_type": None,
-    "shape": "scalar",
-    "kind": "string",
 }
 
 
@@ -349,18 +335,8 @@ class ServerRenderer:  # noqa: PLR0904
 
     def runtime(self, files: tuple[RenderedFile, ...]) -> Iterator[RenderedFile]:
         """Copy the runtime modules the package imports, with their own imports, in ascending path order."""
-        graph = _runtime_imports()
-        pending = [f"{package}/{module}.py" for file in files for package, module in _RUNTIME_IMPORT.findall(file.text)]
-        needed: set[str] = set()
-        while pending:
-            if (module := pending.pop()) not in needed:
-                needed.add(module)
-                pending.extend(graph[module])
-        packages = {f"{PurePosixPath(module).parent}/__init__.py" for module in needed}
-        for path in sorted({"__init__.py", *packages, *needed}):
-            yield self.file(
-                PurePosixPath("_runtime", path), "runtime", (_RUNTIME / path).read_text(encoding="utf-8"), verbatim=True
-            )
+        for path, text in runtime_sources(file.text for file in files):
+            yield self.file(path, "runtime", text, verbatim=True)
 
     def application(self) -> str:
         """Return the application module, rendered from its builtin template.
@@ -807,7 +783,7 @@ class ServerRenderer:  # noqa: PLR0904
             assert parameter.plan is not None
             entries: list[tuple[str, Doc]] = [
                 ("name=", repr(argument.name)),
-                ("plan=", _parameter_plan(module, parameter.plan)),
+                ("plan=", parameter_plan(module.local, parameter.plan)),
             ]
             if (use := parameter.use) is not None:
                 entries.append(("codec=", self.codec(module, use.id)))
@@ -852,10 +828,10 @@ class ServerRenderer:  # noqa: PLR0904
                     entries.append(("envelope=", "True"))
                 names.update(self.property_names(item.use.id))
             if item.kind == "form":
-                fields = Group("(", _items(_field_plan(module, plan) for plan in body.form_fields), ")", ",")
+                fields = Group("(", _items(field_plan(module.local, plan) for plan in body.form_fields), ")", ",")
                 entries.append(("fields=", fields))
                 if body.form_additional is not None:
-                    entries.append(("additional=", _field_plan(module, body.form_additional)))
+                    entries.append(("additional=", field_plan(module.local, body.form_additional)))
             media.append(Group(f"{module.local('_runtime.server.requests', 'BodyMedia')}(", tuple(entries), ")"))
         items: list[tuple[str, Doc]] = [("media=", Group("(", _items(media), ")", ","))]
         if not body.required:
@@ -900,7 +876,7 @@ class ServerRenderer:  # noqa: PLR0904
             entries.append(("required=", "True"))
         if header.plan is not None and header.use is not None and header.use.id in self.accessors:
             entries.extend((
-                ("plan=", _parameter_plan(module, header.plan)),
+                ("plan=", parameter_plan(module.local, header.plan)),
                 ("codec=", self.codec(module, header.use.id)),
             ))
         return Group(f"{module.local('_runtime.server.responses', 'HeaderPlan')}(", tuple(entries), ")")
@@ -1018,11 +994,6 @@ def _credential(scheme: SchemeSpec) -> str:
     return f"an API key in the `{scheme.parameter}` {place}"
 
 
-def _field_plan(module: Module, field: FieldPlan) -> str:
-    repeated = ", repeated=True" if field.repeated else ""
-    return f"{module.local('_runtime.model_codecs.media', 'FieldPlan')}({field.name!r}, {field.kind!r}{repeated})"
-
-
 def _native(module: Module, name: str, field: NativeField) -> Doc:
     annotated = module.name("typing", "Annotated")
     if field.scalar is None:
@@ -1045,25 +1016,6 @@ def _native(module: Module, name: str, field: NativeField) -> Doc:
         default = f" = {_python(field.default)}"
     api = module.name("fastapi", field.api)
     return Group(f"{name}: {annotated}[{surface}, {api}(", _items(keywords), f")]{default}")
-
-
-def _parameter_plan(module: Module, plan: ParameterPlan) -> Group:
-    items: list[tuple[str, Doc]] = [("location=", repr(plan.location)), ("name=", repr(plan.name))]
-    items.extend(
-        (f"{name}=", repr(value))
-        for name, default in _PLAN_DEFAULTS.items()
-        if (value := getattr(plan, name)) != default
-    )
-    if plan.fields:
-        items.append((
-            "fields=",
-            Group("(", _items(_field_plan(module, item) for item in plan.fields), ")", ","),
-        ))
-    if plan.additional is not None:
-        items.append(("additional=", _field_plan(module, plan.additional)))
-    if plan.reserved_names:
-        items.append(("reserved_names=", repr(plan.reserved_names)))
-    return Group(f"{module.local('_runtime.model_codecs.parameters', 'ParameterPlan')}(", tuple(items), ")")
 
 
 def _registration(module: Module, spec: OperationSpec, package: str) -> Group:
@@ -1186,19 +1138,6 @@ def _overload(overload: str, status: str, media: str, returns: str) -> list[str]
 def _body_signature(status: str, media: str, returns: str) -> str:
     parameters = _items(("self", "*", f"status_code: {status}", f"media_type: {media}"))
     return layout(Group("def body(", parameters, f") -> {returns}"), 4, 0, WIDTH)
-
-
-@cache
-def _runtime_imports() -> dict[str, tuple[str, ...]]:
-    """Map every runtime module to the runtime modules it imports relatively."""
-    graph: dict[str, tuple[str, ...]] = {}
-    for source in _RUNTIME.rglob("*.py"):
-        module = PurePosixPath(source.relative_to(_RUNTIME).as_posix())
-        graph[module.as_posix()] = tuple(
-            f"{module.parents[len(dots) - 1].joinpath(*target.split('.')).as_posix()}.py"
-            for dots, target in _RELATIVE_IMPORT.findall(source.read_text(encoding="utf-8"))
-        )
-    return graph
 
 
 def _settings(*, secured: bool) -> tuple[str, ...]:

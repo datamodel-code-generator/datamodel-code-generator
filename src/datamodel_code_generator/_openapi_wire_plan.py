@@ -53,7 +53,7 @@ from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireV
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Sequence
 
-    from datamodel_code_generator._generation_contract import FrozenLiteral
+    from datamodel_code_generator._generation_contract import FrozenLiteral, TypeUseBinding
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._runtime.model_codecs.context import Direction
     from datamodel_code_generator._source import YamlValue
@@ -136,6 +136,7 @@ class WirePlan:
     documents: tuple[tuple[SourceDocumentId, str], ...] = ()
     version: str = ""
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
+    forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None], ...] = ()
 
     def schema_id(self, location: SourceLocation) -> str:
         """Return the bundled schema identifier of a planned source location."""
@@ -656,18 +657,33 @@ def _legacy_keywords(raw: Mapping[str, YamlValue], normalized: dict[str, JSONVal
             normalized[exclusive] = normalized.pop(inclusive)
 
 
-def plan_wire(
+def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
+    """Return the type uses of an operation's parameters, responses, and body, without encoding headers."""
+    pending = [*operation.parameters, *operation.responses]
+    if operation.request_body is not None:
+        pending.append(operation.request_body)
+    found: list[TypeUseId] = []
+    while pending:
+        declaration = pending.pop(0)
+        found.extend(declaration.schemas)
+        pending.extend(child for child in declaration.children if child.kind != "encoding")
+    return tuple(found)
+
+
+def plan_wire(  # noqa: PLR0913
     batch: GeneratedTypeContractBatch,
     lease: SourceLease,
     uses: Sequence[TypeUseId] | None = None,
     *,
     operations: Collection[OperationId] | None = None,
     documents: Mapping[SourceDocumentId, str] | None = None,
+    forms: Collection[TypeUseId] = (),
 ) -> WirePlan:
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
     Explicit document pointers, such as a target manifest's `/inputs/documents/<index>`, name the bundled
-    resources, so adapter source references match the manifest.
+    resources, so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
+    get their member plans.
     """
     planner = _WirePlanner(batch, lease, documents)
     requested = None if uses is None else frozenset(uses)
@@ -685,6 +701,9 @@ def plan_wire(
         for header in response.children
         if header.kind == "header"
         for use, plan in _response_header(planner, operation.id, header)
+    )
+    planned_forms = tuple(
+        form for use in batch.type_uses if use.id in forms and (form := _form(planner, use)) is not None
     )
     views: list[DirectionalView] = []
     for direction in _FLAGS:
@@ -710,7 +729,22 @@ def plan_wire(
         tuple(sorted(planner.logical.items())),
         planner.version,
         headers,
+        planned_forms,
     )
+
+
+def _form(
+    planner: _WirePlanner, use: TypeUseBinding
+) -> tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None] | None:
+    try:
+        _, _, fields, additional = _shape(planner, _schema_location(planner, (use.id,), use.id.use_site), form=True)
+    except _PlanError as error:
+        owner = use.id.owner
+        planner.diagnostics.append(
+            replace(error.diagnostic, operation=owner if isinstance(owner, OperationId) else None, uses=(use.id,))
+        )
+        return None
+    return use.id, fields, additional
 
 
 @dataclass(frozen=True, slots=True)

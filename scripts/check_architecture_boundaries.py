@@ -63,9 +63,11 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._api_manifest",
     "datamodel_code_generator._api_publication",
     "datamodel_code_generator._api_types",
+    "datamodel_code_generator._client",
     "datamodel_code_generator._fastapi",
     "datamodel_code_generator._target_cli",
     "datamodel_code_generator._target_config",
+    "datamodel_code_generator._target_render",
     "datamodel_code_generator.api_types",
     "datamodel_code_generator.fastapi",
 })
@@ -1059,7 +1061,7 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
-        case ("_fastapi" | "fastapi", *_):
+        case ("_client" | "_fastapi" | "fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:
             layer = "target"

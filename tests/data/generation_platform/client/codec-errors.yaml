@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Codec errors
+  version: 1.0.0
+servers:
+  - url: https://codecs.example.com
+paths:
+  /forms:
+    post:
+      operationId: submit
+      parameters:
+        - name: ids
+          in: query
+          style: spaceDelimited
+          schema: {type: integer}
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema: {type: string}
+      responses:
+        '204':
+          description: Unplannable wire forms.

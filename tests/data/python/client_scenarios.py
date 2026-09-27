@@ -1,0 +1,489 @@
+"""Call generated clients through HTTPX2 mock transports: every request encoding, response dispatch, and failure."""
+
+from __future__ import annotations
+
+import importlib
+from typing import TYPE_CHECKING, Any, Final
+
+import httpx2
+
+from tests.data.python.client_runtime import (
+    Exchange,
+    abroken,
+    arecord,
+    broken,
+    failing,
+    generated,
+    json_response,
+    raw_response,
+    record,
+    run,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from pathlib import Path
+    from types import ModuleType
+
+
+def _modules(package: ModuleType, *names: str) -> list[ModuleType]:
+    return [importlib.import_module(f"{package.__name__}.{name}") for name in names]
+
+
+def _transport(handler: Callable[[httpx2.Request], httpx2.Response]) -> httpx2.MockTransport:
+    return httpx2.MockTransport(handler)
+
+
+def _argument(package: ModuleType, operation: str, location: str, name: str, wire: object) -> object:
+    """Return a parameter value any backend accepts: the snapshot its request codec builds from a wire value."""
+    resource = "pets.photos" if operation == "Upload" else "pets"
+    codecs = getattr(importlib.import_module(f"{package.__name__}.types.{resource}"), f"{operation}RequestCodecs")
+    return codecs.parameter(location=location, name=name).from_wire(wire)
+
+
+def _pet(package: ModuleType, operation: str) -> object:
+    return _argument(package, operation, "path", "petId", 3)
+
+
+def _trace(package: ModuleType, value: str = "t") -> object:
+    return _argument(package, "ListPets", "header", "X-Trace", value)
+
+
+def _options(package: ModuleType, lines: list[str]) -> None:
+    (options,) = _modules(package, "options")
+    selection = options.ServerSelection
+    for label, build in (
+        ("server and base_url", lambda: options.ClientOptions(server=selection(), base_url="https://a.example.com")),
+        ("server type", lambda: options.RequestOptions(server="eu")),
+        ("base_url type", lambda: options.RequestOptions(base_url=5)),
+        ("base_url scheme", lambda: options.RequestOptions(base_url="ftp://a.example.com")),
+        ("base_url port", lambda: options.RequestOptions(base_url="https://a.example.com:port")),
+        ("base_url userinfo", lambda: options.RequestOptions(base_url="https://user@a.example.com")),
+        ("base_url query", lambda: options.RequestOptions(base_url="https://a.example.com/v1?key=1")),
+        ("base_url fragment", lambda: options.RequestOptions(base_url="https://a.example.com/#top")),
+        ("base_url port zero", lambda: options.RequestOptions(base_url="https://a.example.com:0")),
+        ("max_response_bytes bool", lambda: options.RequestOptions(max_response_bytes=True)),
+        ("max_response_bytes negative", lambda: options.RequestOptions(max_response_bytes=-1)),
+        ("max_error_body_bytes zero", lambda: options.RequestOptions(max_error_body_bytes=0)),
+        ("max_error_body_bytes large", lambda: options.RequestOptions(max_error_body_bytes=2 * 1024 * 1024)),
+        ("server index", lambda: selection(index=-1)),
+        ("server variables", lambda: selection(variables={"region": 1})),
+        ("server", lambda: selection(index=0, variables={"region": "eu"})),
+        ("limits", lambda: options.RequestOptions(max_response_bytes=None, max_error_body_bytes=10)),
+    ):
+        record(lines, f"options {label}", build)
+
+
+def _headers(package: ModuleType, lines: list[str]) -> None:
+    (responses,) = _modules(package, "responses")
+    view = responses.HeadersView([("Set-Cookie", "a=1"), ("X-Id", "7"), ("set-cookie", "b=2")])
+    lines.extend((
+        f"  headers {view!r} {len(view)} {list(view)} {view.items()}",
+        f"  headers get {view.get('SET-COOKIE')} {view.get('x-missing')} {view.get_all('set-cookie')}",
+        f"  headers contains {'x-id' in view} {'missing' in view} {5 in view}",
+        f"  headers equal {view == responses.HeadersView(view.items())} {view == 5}",
+        f"  headers hash {hash(view) == hash(responses.HeadersView(view.items()))}",
+    ))
+
+
+def _errors(package: ModuleType, lines: list[str]) -> None:
+    (errors,) = _modules(package, "errors")
+    record(lines, "error condition", lambda: errors.ConfigurationError(condition="Invalid Condition"))
+    error = errors.SDKError()
+    lines.append(
+        f"  error bare {error} {error.reason_code} {errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT)}"
+    )
+
+
+def _lifecycle(package: ModuleType, lines: list[str]) -> None:
+    owned = package.Client()
+    owned.close()
+    owned.close()
+    borrowed_http = httpx2.Client(transport=_transport(lambda _: httpx2.Response(204)))
+    with package.Client(http_client=borrowed_http):
+        pass
+    transferred = httpx2.Client(transport=_transport(lambda _: httpx2.Response(204)))
+    with package.Client(http_client=transferred, http_client_ownership="owned"):
+        pass
+    lines.append(f"  lifecycle borrowed closed {borrowed_http.is_closed} owned closed {transferred.is_closed}")
+    borrowed_http.close()
+    record(lines, "client http_client", lambda: package.Client(http_client="http"))
+    record(lines, "client ownership", lambda: package.Client(http_client_ownership="shared"))
+    record(lines, "client options", lambda: package.Client(options="fast"))
+
+
+def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    (types,) = _modules(package, "types.pets")
+    codecs = types.ListPetsRequestCodecs
+    limit = codecs.parameter(location="query", name="limit").from_wire(5).value
+    labels = codecs.parameter(location="query", name="tags").from_wire(["a b", "c"])
+    trace = codecs.parameter(location="header", name="X-Trace").from_wire("t1").value
+    session = codecs.parameter(location="cookie", name="session").from_wire("s1")
+    headers = {"X-Rate": "10", "X-Next": "abc", "X-Request-Id": "req-1"}
+    pets = [{"id": 1, "name": "cat", "tag": None}]
+    exchange.respond(json_response(200, pets, **headers))
+    record(lines, "list", lambda: api.pets.list_pets(limit=limit, labels=labels, x_trace=trace, session=session))
+    exchange.respond(json_response(200, pets, **{"X-Rate": "10"}))
+    response = record(lines, "list response", lambda: api.pets.with_response.list_pets(x_trace=trace))
+    info = response.info
+    lines.append(f"  info {info.status_code} {info.content_type} {info.request_id} {info.headers!r}")
+    for name in ("X-Next", "x-rate", "X-Other"):
+        record(lines, f"header {name}", lambda name=name: types.decode_list_pets_header(info, name=name))
+    for label, extra in (("missing", {}), ("invalid", {"X-Rate": "many"})):
+        exchange.respond(json_response(200, pets, **extra))
+        response = api.pets.with_response.list_pets(x_trace=trace)
+        record(
+            lines,
+            f"header {label}",
+            lambda response=response: types.decode_list_pets_header(response.info, name="X-Rate"),
+        )
+    for label, responder in (
+        ("error", json_response(500, {"code": 7, "message": "boom"})),
+        ("error syntax", raw_response(500, b"{", "application/json")),
+        ("error media", raw_response(503, b"down", "text/plain")),
+        ("error bare", raw_response(502, b"down")),
+        ("redirect", raw_response(302, b"", Location="https://elsewhere.example.com")),
+        ("success default", json_response(201, {"code": 1})),
+        ("success media", raw_response(200, b"[]")),
+        ("success syntax", raw_response(200, b"[", "application/json")),
+        ("success value", json_response(200, [{"id": "one"}])),
+        ("success empty", raw_response(204)),
+    ):
+        exchange.respond(responder)
+        error = record(lines, f"list {label}", lambda: api.pets.list_pets(x_trace=trace))
+        if error is None and label == "redirect":
+            exchange.respond(raw_response(302, b"", Location="https://elsewhere.example.com"))
+            try:
+                api.pets.list_pets(x_trace=trace)
+            except Exception as failure:  # noqa: BLE001
+                lines.append(f"  redirect info {failure.status_code} {failure.headers!r}")
+        if error is None and label == "error":
+            exchange.respond(json_response(500, {"code": 7}))
+            try:
+                api.pets.list_pets(x_trace=trace)
+            except types.ListPetsHTTPError as failure:
+                lines.append(
+                    f"  error info {failure.status_code} {failure.headers!r} {failure.reason_code} {failure.error_data!r}"
+                )
+                record(
+                    lines,
+                    "header error",
+                    lambda failure=failure: types.decode_list_pets_header(failure.info, name="X-Next"),
+                )
+    exchange.respond(raw_response(500, b"x" * 20, "application/json"))
+    options = importlib.import_module(f"{package.__name__}.options")
+    record(
+        lines,
+        "list truncated",
+        lambda: api.pets.list_pets(x_trace=trace, options=options.RequestOptions(max_error_body_bytes=4)),
+    )
+    record(lines, "list missing", lambda: api.pets.list_pets(x_trace=options.UNSET))
+    record(lines, "list invalid", lambda: api.pets.list_pets(x_trace=_trace(package, "line\nbreak")))
+    record(lines, "list options", lambda: api.pets.list_pets(x_trace=trace, options="fast"))
+    record(lines, "list codec", lambda: codecs.parameter(location="query", name="missing"))
+
+
+def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    (types,) = _modules(package, "types.pets")
+    codecs = types.CreatePetRequestCodecs
+    json_codec = codecs.body(media_type="application/json")
+    text = codecs.body(media_type="text/plain").from_wire("bird").value
+    created = {"id": 2, "name": "dog"}
+    exchange.respond(json_response(201, created), json_response(201, created), json_response(201, created))
+    record(
+        lines,
+        "create",
+        lambda: api.pets.create_pet(body=json_codec.from_wire({"name": "dog"}), media_type="application/json"),
+    )
+    native = json_codec.from_wire({"name": "dog", "tag": "x"}).value
+    record(lines, "create native", lambda: api.pets.create_pet(body=native, media_type="Application/JSON"))
+    record(lines, "create text", lambda: api.pets.create_pet(body=text, media_type="text/plain"))
+    record(lines, "create missing media", lambda: api.pets.create_pet(body=native))
+    unset = importlib.import_module(f"{package.__name__}.options").UNSET
+    record(lines, "create without body", lambda: api.pets.create_pet(body=unset))
+    record(lines, "create undeclared media", lambda: api.pets.create_pet(body=native, media_type="text/csv"))
+    record(lines, "create invalid media", lambda: api.pets.create_pet(body=native, media_type="not media"))
+    record(lines, "create invalid body", lambda: api.pets.create_pet(body=object(), media_type="application/json"))
+    exchange.respond(json_response(422, {"code": 22}))
+    record(lines, "create rejected", lambda: api.pets.create_pet(body=native, media_type="application/json"))
+    record(lines, "create codec default", lambda: codecs.body())
+    record(lines, "create codec media", lambda: codecs.body(media_type="text/csv"))
+
+
+def _get_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    pet = {"id": 3, "name": "fox"}
+    for label, responder, media in (
+        ("get", json_response(200, pet), None),
+        ("get again", json_response(200, pet), None),
+        ("get text", raw_response(200, b"fox", "text/plain; charset=latin-1"), "text/plain"),
+        ("get flowed", raw_response(200, b"fox", "text/plain; format=flowed"), "text/plain"),
+        ("get text mismatch", json_response(200, pet), "text/plain"),
+        ("get missing", raw_response(404), None),
+        ("get missing body", raw_response(404, b"gone", "text/plain"), None),
+        ("get created", json_response(201, pet), None),
+    ):
+        exchange.respond(responder)
+        record(
+            lines,
+            label,
+            lambda media=media: api.pets.get_pet(pet_id=_pet(package, "GetPet"), response_media_type=media),
+        )
+    pet = _pet(package, "GetPet")
+    record(lines, "get undeclared", lambda: api.pets.get_pet(pet_id=pet, response_media_type="image/png"))
+    record(lines, "get invalid", lambda: api.pets.get_pet(pet_id=pet, response_media_type="png"))
+    exchange.respond(raw_response(204), raw_response(204, b"x", "text/plain"), raw_response(200))
+    deleted = _pet(package, "DeletePetsByPetId")
+    record(lines, "delete", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
+    record(lines, "delete body", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
+    record(lines, "delete ok", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
+    exchange.respond(raw_response(200, ETag='"v1"'))
+    response = record(lines, "head", lambda: api.pets.with_response.head_pet(pet_id=_pet(package, "HeadPet")))
+    types = importlib.import_module(f"{package.__name__}.types.pets")
+    record(lines, "head etag", lambda: types.decode_head_pet_header(response.info, name="ETag"))
+
+
+def _upload(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    exchange.respond(raw_response(200, b"\x89PNG", "image/png"), raw_response(200, b"{}", "application/json"))
+    pet = _pet(package, "Upload")
+    record(lines, "upload", lambda: api.pets.photos.upload(pet_id=pet, body=b"\x00\x01"))
+    record(lines, "upload empty", lambda: api.pets.photos.upload(pet_id=pet))
+    record(lines, "upload text", lambda: api.pets.photos.upload(pet_id=pet, body="text"))
+    record(lines, "upload media", lambda: api.pets.photos.upload(pet_id=pet, media_type="application/octet-stream"))
+
+
+def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: list[str]) -> None:
+    (options,) = _modules(package, "options")
+    selection = options.ServerSelection
+    http = httpx2.Client(transport=_transport(exchange.handle))
+    override = options.ClientOptions(base_url="https://override.example.com/root/")
+    pet = _pet(package, "DeletePetsByPetId")
+    with package.Client(http_client=http, options=override) as api:
+        exchange.respond(raw_response(204), raw_response(204))
+        record(lines, "base_url", lambda: api.pets.delete_pets_by_pet_id(pet_id=pet))
+        eu = options.RequestOptions(server=selection(variables={"region": "eu"}))
+        record(lines, "server eu", lambda: api.pets.delete_pets_by_pet_id(pet_id=pet, options=eu))
+        for label, chosen in (
+            ("server moon", selection(variables={"region": "moon"})),
+            ("server zone", selection(variables={"zone": "west"})),
+            ("server index", selection(index=3)),
+        ):
+            record(
+                lines,
+                label,
+                lambda chosen=chosen: api.pets.delete_pets_by_pet_id(
+                    pet_id=pet, options=options.RequestOptions(server=chosen)
+                ),
+            )
+    del api_options
+
+
+def _limits(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    (options,) = _modules(package, "options")
+    pets = [{"id": index, "name": "x" * 20} for index in range(20)]
+    exchange.respond(json_response(200, pets, **{"X-Rate": "1"}), json_response(200, pets, **{"X-Rate": "1"}))
+    trace = _trace(package)
+    record(
+        lines,
+        "too large",
+        lambda: api.pets.list_pets(x_trace=trace, options=options.RequestOptions(max_response_bytes=10)),
+    )
+    unlimited = options.RequestOptions(max_response_bytes=None)
+    record(
+        lines, "unlimited", lambda: api.pets.with_response.list_pets(x_trace=trace, options=unlimited).info.status_code
+    )
+
+
+def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    for error in (
+        httpx2.ConnectError,
+        httpx2.ConnectTimeout,
+        httpx2.PoolTimeout,
+        httpx2.WriteError,
+        httpx2.WriteTimeout,
+        httpx2.ReadTimeout,
+        httpx2.ReadError,
+        httpx2.RemoteProtocolError,
+    ):
+        exchange.respond(failing(error))
+        record(lines, f"transport {error.__name__}", lambda: api.pets.get_pet(pet_id=_pet(package, "GetPet")))
+    exchange.respond(broken)
+    record(lines, "transport broken", lambda: api.pets.get_pet(pet_id=_pet(package, "GetPet")))
+
+
+def pets(package: ModuleType, lines: list[str]) -> None:
+    """Call every pets operation synchronously, then its async client, covering each success and failure."""
+    exchange = Exchange(lines)
+    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+        for step in (_list_pets, _create_pet, _get_pet, _upload, _limits, _transports):
+            step(package, api, exchange, lines)
+    _servers(package, None, exchange, lines)
+    _options(package, lines)
+    _headers(package, lines)
+    _errors(package, lines)
+    _lifecycle(package, lines)
+    run(lambda: _async_pets(package, exchange, lines))
+
+
+async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    (options,) = _modules(package, "options")
+    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    trace, pet = _trace(package), _pet(package, "GetPet")
+    (types,) = _modules(package, "types.pets")
+    text = types.CreatePetRequestCodecs.body(media_type="text/plain").from_wire("dog")
+    async with package.AsyncClient(http_client=http) as api:
+        exchange.respond(json_response(200, [{"id": 1, "name": "cat"}], **{"X-Rate": "1"}))
+        await arecord(lines, "async list", lambda: api.pets.list_pets(x_trace=trace))
+        exchange.respond(json_response(201, {"id": 2, "name": "dog"}))
+        await arecord(
+            lines, "async create", lambda: api.pets.with_response.create_pet(body=text, media_type="text/plain")
+        )
+        exchange.respond(failing(httpx2.ConnectError))
+        await arecord(lines, "async connect", lambda: api.pets.get_pet(pet_id=pet))
+        exchange.respond(abroken)
+        await arecord(lines, "async broken", lambda: api.pets.get_pet(pet_id=pet))
+        exchange.respond(raw_response(200, b"[" * 40, "application/json"))
+        limited = options.RequestOptions(max_response_bytes=10)
+        await arecord(lines, "async too large", lambda: api.pets.list_pets(x_trace=trace, options=limited))
+        exchange.respond(raw_response(500, b"x" * 40, "application/json"))
+        truncated = options.RequestOptions(max_error_body_bytes=4)
+        await arecord(lines, "async truncated", lambda: api.pets.list_pets(x_trace=trace, options=truncated))
+    lines.append(f"  async borrowed closed {http.is_closed}")
+    await http.aclose()
+    owned = package.AsyncClient()
+    await owned.aclose()
+    await owned.aclose()
+    transferred = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    async with package.AsyncClient(http_client=transferred, http_client_ownership="owned"):
+        pass
+    lines.append(f"  async owned closed {transferred.is_closed}")
+    await arecord(lines, "async http_client", _async_invalid(package))
+
+
+def _async_invalid(package: ModuleType) -> Callable[[], Any]:
+    async def build() -> object:
+        return package.AsyncClient(http_client=httpx2.Client())
+
+    return build
+
+
+def media(package: ModuleType, lines: list[str]) -> None:
+    """Send forms, pairs, documents, and notes, and decode forms, texts, envelopes, and object headers."""
+    forms, documents = _modules(package, "types.forms", "types.documents")
+    exchange = Exchange(lines)
+    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+        form = forms.SubmitFormRequestCodecs.body().from_wire({"name": "a b", "count": 2, "labels": ["x", "y"]})
+        exchange.respond(
+            raw_response(200, b"name=a+b&count=2", "application/x-www-form-urlencoded"),
+            raw_response(200, b"count=many", "application/x-www-form-urlencoded"),
+        )
+        record(lines, "form", lambda: api.forms.submit_form(body=form))
+        record(lines, "form invalid", lambda: api.forms.submit_form(body=form.value))
+        exchange.respond(
+            raw_response(200, b"a=1&a=2&b=%20", "application/x-www-form-urlencoded"),
+            raw_response(200, b"a=%zz", "application/x-www-form-urlencoded"),
+        )
+        record(lines, "pairs", lambda: api.forms.submit_pairs(body=(("a", "1"), ("a", "2"), ("b", " "))))
+        record(lines, "pairs invalid", lambda: api.forms.submit_pairs())
+        record(lines, "pairs body", lambda: api.forms.submit_pairs(body=[("a", "1")]))
+        _documents(package, api, exchange, lines, documents)
+
+
+def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[str], documents: ModuleType) -> None:
+    codecs = documents.StoreDocumentRequestCodecs
+    draft = codecs.body(media_type="application/vnd.api+json").from_wire({"title": "t", "secret": "s"})
+    for label, responder, call in (
+        ("store", json_response(200, {"stored": True}), lambda: api.documents.store_document(body={"x": [1, 2]})),
+        (
+            "store text",
+            raw_response(200, "caf\xe9".encode("latin-1"), "text/plain; charset=latin-1"),
+            lambda: api.documents.store_document(body="note", media_type="text/plain; charset=utf-16"),
+        ),
+        (
+            "store draft",
+            raw_response(202),
+            lambda: api.documents.store_document(body=draft, media_type="application/vnd.api+json"),
+        ),
+        ("store moved", json_response(302, {"id": 1, "title": "t"}), lambda: api.documents.store_document(body=1)),
+        ("store moved invalid", json_response(302, {"title": 5}), lambda: api.documents.store_document(body=1)),
+        (
+            "store failed",
+            raw_response(500, b"down", "text/plain; charset=nope"),
+            lambda: api.documents.store_document(body=1),
+        ),
+        ("store syntax", raw_response(200, b"\xff", "text/plain"), lambda: api.documents.store_document(body=1)),
+        (
+            "store narrowed",
+            json_response(302, {"id": 1, "title": "t"}),
+            lambda: api.documents.store_document(body=1, response_media_type="text/plain"),
+        ),
+    ):
+        exchange.respond(responder)
+        record(lines, label, call)
+    record(lines, "store value", lambda: api.documents.store_document(body={1, 2}))
+    record(lines, "store codec", lambda: codecs.body())
+    record(lines, "store codec media", lambda: codecs.body(media_type="application/json"))
+    read = documents.ReadDocumentRequestCodecs.parameter(location="path", name="id").from_wire({"key": "a/b"})
+    exchange.respond(
+        raw_response(200, b'{"id":1,"title":"t"}', "application/vnd.api+json", **{"X-Draft": "id,1,title,h"})
+    )
+    response = record(
+        lines,
+        "read",
+        lambda: api.documents.with_response.read_document(id=read, filter={"q": [1]}, x_mode="fast"),
+    )
+    record(lines, "read header", lambda: documents.decode_read_document_header(response.info, name="X-Draft"))
+    exchange.respond(raw_response(204), raw_response(204), raw_response(204))
+    record(lines, "note", lambda: api.documents.store_note(body=[1], media_type="application/vnd.note+json"))
+    record(lines, "note replace", lambda: api.documents.replace_note())
+    record(lines, "note replace text", lambda: api.documents.replace_note(body="n", media_type="text/plain"))
+    record(lines, "note replace value", lambda: api.documents.replace_note(body=5, media_type="text/plain"))
+    del package
+
+
+def querystring(package: ModuleType, lines: list[str]) -> None:
+    """Send a whole query through one querystring parameter."""
+    (types,) = _modules(package, "types.default")
+    exchange = Exchange(lines)
+    criteria = types.SearchRequestCodecs.parameter(location="querystring", name="criteria").from_wire({
+        "term": "a b",
+        "page": 2,
+    })
+    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+        exchange.respond(json_response(200, ["a"]), json_response(200, []))
+        record(lines, "search", lambda: api.default.search(criteria=criteria))
+        record(lines, "search all", lambda: api.default.search())
+
+
+def servers(package: ModuleType, lines: list[str]) -> None:
+    """Resolve relative servers against their base, default server variables, and later servers by position."""
+    (options,) = _modules(package, "options")
+    exchange = Exchange(lines)
+    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+        exchange.respond(raw_response(204), raw_response(204), raw_response(204))
+        record(lines, "status", lambda: api.default.get_status())
+        record(lines, "regional", lambda: api.default.get_regional())
+        backup = options.RequestOptions(server=options.ServerSelection(index=1))
+        record(lines, "regional backup", lambda: api.default.get_regional(options=backup))
+
+
+def default_server(package: ModuleType, lines: list[str]) -> None:
+    """Send the generated User-Agent of a distribution to its default base URL."""
+    exchange = Exchange(lines)
+    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+        exchange.respond(raw_response(204))
+        record(lines, "status", lambda: api.default.get_status())
+
+
+SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
+    "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
+    "media": ("media", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), media),
+    "querystring": ("querystring", ("pydantic_v2.BaseModel",), querystring),
+    "servers": ("servers", ("pydantic_v2.BaseModel",), servers),
+    "default-server": ("default-server", ("pydantic_v2.BaseModel",), default_server),
+}
+
+
+def client_runtime_report(name: str, root: Path) -> str:
+    """Generate one scenario's package for each backend, run its calls, and report every exchange and outcome."""
+    case, backends, scenario = SCENARIOS[name]
+    return "".join(generated(case, backend, root / backend.replace(".", "_"), scenario) for backend in backends)

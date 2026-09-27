@@ -1,0 +1,12 @@
+# name-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_RESERVED_NAME target /paths/~1close/get: GET /close needs an explicit method name instead of 'close'
+  E_RESERVED_NAME target /paths/~1blank/get: GET /blank needs an explicit method name instead of ''
+  E_RESERVED_NAME target /paths/~1blank/get: The tag '!!!' of GET /blank needs an explicit resource name
+  E_RESERVED_NAME target /paths/~1view/get/parameters/0: The query parameter 'body' of GET /view needs an explicit python_name
+  E_NAME_COLLISION target /paths/~1view/get: The arguments of GET /view take 'user_id' twice
+  E_RESERVED_NAME target /paths/~1view/get: The tag 'with_response' of GET /view needs an explicit resource name
+  E_METADATA_REQUIRED target /paths/~1pets~1{petId}~1{missing}/get: The path placeholder 'missing' of GET /pets/{petId}/{missing} has no path parameter
+  E_NAME_COLLISION target /paths/~1pets~1{petId}~1{missing}/get/responses/200: Several headers of the 200 response of GET /pets/{petId}/{missing} are named 'x-a'
+  E_NAME_COLLISION target /paths/~1pets~1{petId}~1{missing}/get/responses/200: Several media types of GET /pets/{petId}/{missing} normalize to 'application/json'

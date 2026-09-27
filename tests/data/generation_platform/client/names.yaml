@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: Names
+  version: 1.0.0
+servers:
+  - url: https://names.example.com
+paths:
+  /:
+    get:
+      responses:
+        '204':
+          description: The root.
+  /files/{fileName}.{ext}:
+    get:
+      tags: [Pet Store]
+      parameters:
+        - name: fileName
+          in: path
+          required: true
+          schema: {type: string}
+        - name: ext
+          in: path
+          required: true
+          schema: {type: string}
+        - name: class
+          in: query
+          schema: {type: string}
+        - name: 2fa
+          in: header
+          schema: {type: string}
+      responses:
+        '204':
+          description: A file.
+  /users:
+    get:
+      operationId: HTTPGetUsers
+      tags: [ユーザー]
+      responses:
+        '204':
+          description: Users.
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      responses:
+        '204':
+          description: Admin users.
+    post:
+      operationId: createAdminUser
+      tags: [admin]
+      responses:
+        '204':
+          description: Created.

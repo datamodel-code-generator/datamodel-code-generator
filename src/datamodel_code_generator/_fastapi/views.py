@@ -7,7 +7,7 @@ from itertools import starmap
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened, operation_uses
+from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.context import (
     ArgumentView,
     CallbackOperationView,
@@ -35,6 +35,7 @@ from datamodel_code_generator._fastapi.render import Module
 from datamodel_code_generator._fastapi.routes import tags
 from datamodel_code_generator._generation_contract import GeneratedSymbolType, LiteralScalar
 from datamodel_code_generator._openapi_codec_plan import artifact_module
+from datamodel_code_generator._openapi_wire_plan import operation_uses
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, escape_pointer_token, freeze_wire
 

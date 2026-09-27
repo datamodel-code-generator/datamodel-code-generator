@@ -1,0 +1,271 @@
+"""The client target: plan, bind, and render one client package behind the single-target coordinator."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import fields, is_dataclass, replace
+from typing import TYPE_CHECKING, Final
+
+from typing_extensions import TypeIs
+
+from datamodel_code_generator._api_generation import TargetBinding, TargetRender
+from datamodel_code_generator._api_manifest import canonical_bytes, sha256
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._client.config import ClientGenerationConfig
+from datamodel_code_generator._client.plan import PlanError, Planner, form_uses, plan_uses
+from datamodel_code_generator._client.render import ClientRenderer
+from datamodel_code_generator._codec_declarations import CodecDeclarations
+from datamodel_code_generator._codec_type_source import Namespace, TypeSource
+from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
+from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
+from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
+from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
+from datamodel_code_generator.enums import DataModelType
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._api_generation import TargetRequest
+    from datamodel_code_generator._api_manifest import JSONObject
+    from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
+    from datamodel_code_generator._generation_contract import TypeUseBinding
+    from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
+    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+
+DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
+VALIDATION: Final = ("jsonschema[format-nongpl]>=4.26", "referencing>=0.37")
+BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
+    "pydantic_v2.BaseModel": ("pydantic>=2.13.5",),
+    "pydantic_v2.dataclass": ("pydantic>=2.13.5",),
+    "msgspec.Struct": ("msgspec>=0.18",),
+}
+_BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
+    DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
+    DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
+    DataModelType.DataclassesDataclass: "dataclasses.dataclass",
+    DataModelType.TypingTypedDict: "typing.TypedDict",
+    DataModelType.MsgspecStruct: "msgspec.Struct",
+}
+
+
+class ClientTarget:
+    """Render an HTTPX2 client package for every model backend."""
+
+    kind: TargetKind = "client"
+    backends: frozenset[DataModelType] = frozenset(_BACKENDS)
+    unsupported_backend: str = "E_CONFIG_VALUE"
+
+    def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301
+        """Plan the selected operations, bind their codecs, and render the package."""
+        config = request.config
+        assert isinstance(config, ClientGenerationConfig)
+        backend = _BACKENDS[request.model_config.output_model_type]
+        wire = plan_wire(
+            request.batch,
+            request.lease,
+            [use for operation in request.operations for use in operation_uses(operation)],
+            operations=frozenset(operation.id for operation in request.operations),
+            documents=request.documents.pointers,
+            forms=frozenset(form_uses(request)),
+        )
+        try:
+            plan = Planner(request, config, wire).plan()
+        except PlanError as error:
+            raise APIGenerationError(
+                tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
+            ) from None
+        uses = frozenset(plan_uses(plan))
+        codecs = plan_model_codecs(
+            request.batch,
+            replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
+            backend,
+            declarations=CodecDeclarations(
+                compatibility=config.builtin_codec_compatibility,
+                exports=config.export_bindings,
+                adapters=config.codec_adapters,
+            ),
+            surface="client",
+            lease=request.lease,
+            sources=_sources(request),
+        )
+        selected = {spec.contract.id for spec in plan.operations}
+        if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
+            raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+        renderer = ClientRenderer(
+            config=config, package=request.layout.package, plan=plan, batch=request.batch, wire=wire, codecs=codecs
+        )
+        return TargetRender(
+            files=renderer.files(),
+            target_data=_TargetData(plan, config, request, codecs, wire).data(),
+            dependencies=(
+                *DEPENDENCIES,
+                *(VALIDATION if codecs.bindings else ()),
+                *BACKEND_DEPENDENCIES.get(backend, ()),
+                *((PATTERNS,) if patterned(wire) else ()),
+                *model_dependencies(request.models),
+            ),
+            bindings=_bindings(codecs, backend),
+        )
+
+
+def _sources(request: TargetRequest) -> dict[str, str]:
+    contents = {artifact.path: artifact.content.decode(artifact.encoding) for artifact in request.models}
+    return {
+        artifact_module(address): contents[address.relative_path]
+        for address in request.batch.artifacts
+        if address.relative_path in contents
+    }
+
+
+def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
+    return Diagnostic(
+        code=item.code,
+        severity="error",
+        stage="binding",
+        message=item.message,
+        source_uri=request.documents.root_uri,
+        source_pointer=item.source.pointer,
+        target_id=request.target_id,
+    )
+
+
+def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:
+    return tuple(
+        TargetBinding(
+            use=use,
+            backend=backend,
+            strategy="adapter" if binding.converter_strategy == "registered_adapter" else binding.projection_mode,
+            converter_strategy=binding.converter_strategy,
+        )
+        for use, binding in codecs.bindings
+    )
+
+
+class _TargetData:
+    """Record the client's namespace and each public operation with the digests of its contract."""
+
+    def __init__(
+        self,
+        plan: ClientPlan,
+        config: ClientGenerationConfig,
+        request: TargetRequest,
+        codecs: CodecPlan,
+        wire: WirePlan,
+    ) -> None:
+        """Index the selected operations, the use bindings, and the import locations of the generated symbols."""
+        self.plan = plan
+        self.config = config
+        self.request = request
+        self.codecs = codecs
+        self.wire = wire
+        self.bindings = dict(codecs.bindings)
+        self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
+        self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
+
+    def data(self) -> JSONObject:
+        """Return the client manifest data."""
+        extensions = int(self.config.formatter_settings is not None) + len(self.config.custom_formatters)
+        return {
+            "namespace": self.config.package,
+            "public_api": [self.operation(spec) for spec in self.plan.operations],
+            "protocol_helpers": [],
+            "runtime_defaults_ref": "/inputs/target_config/runtime_defaults",
+            "selection_ref": "/selection",
+            "binding_refs": [f"/bindings/{index}" for index in range(len(self.codecs.bindings))],
+            "extension_refs": [f"/extensions/formatters/{index}" for index in range(extensions)],
+        }
+
+    def operation(self, spec: OperationSpec) -> JSONValue:
+        """Return the manifest record of one public operation."""
+        types = f"{self.config.package}.types.{spec.resource}"
+        headers = any(response.headers for response in spec.responses)
+        return {
+            "operation_ref": f"/selection/selected_operations/{self.selected[spec.contract.id]}",
+            "resource": spec.resource,
+            "method": spec.name,
+            "parameters": [
+                {"location": parameter.location, "wire_name": parameter.wire_name, "python_name": parameter.python_name}
+                for parameter in spec.parameters
+            ],
+            "exports": {
+                "response": f"{types}.{spec.pascal}Response",
+                "error_data": f"{types}.{spec.pascal}ErrorData",
+                "http_error": f"{types}.{spec.pascal}HTTPError",
+                "request_codecs": f"{types}.{spec.pascal}RequestCodecs",
+                "header_decoder": f"{types}.decode_{spec.name}_header" if headers else None,
+            },
+            "contract_digests": {name: _digest(value) for name, value in self.contracts(spec)},
+        }
+
+    def contracts(self, spec: OperationSpec) -> tuple[tuple[str, object], ...]:
+        """Return the operation's public signature, request, response, and security contracts."""
+        body = spec.body
+        signature = {
+            "resource": spec.resource,
+            "method": spec.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in spec.parameters],
+            "body": None
+            if body is None
+            else (body.required, body.default, [(media.media_type, self.type(media.use)) for media in body.media]),
+            "responses": [(item.status, [self.type(media.use) for media in item.media]) for item in spec.responses],
+            "response_media_type": spec.response_media_type,
+        }
+        request = {
+            "method": spec.contract.method,
+            "path": spec.contract.path,
+            "servers": spec.servers,
+            "parameters": [(item.plan, self.contract(item.use)) for item in spec.parameters],
+            "body": None
+            if body is None
+            else [(item.media_type, item.fields, item.additional, self.contract(item.use)) for item in body.media],
+        }
+        response = {
+            "success_statuses": spec.success_statuses,
+            "request_id_header": spec.request_id_header,
+            "responses": [
+                (
+                    item.status,
+                    [(media.media_type, self.contract(media.use)) for media in item.media],
+                    [(header.name, header.required, header.plan, self.contract(header.use)) for header in item.headers],
+                )
+                for item in spec.responses
+            ],
+        }
+        security = next((value for key, value in spec.contract.facts if key == "security"), None)
+        return (("signature", signature), ("request", request), ("response", response), ("security", security))
+
+    def type(self, use: TypeUseBinding | None) -> str | None:
+        """Return a use's final type spelled with the import locations of its names, or None without a schema."""
+        return None if use is None or use.type is None else self.spelling.static(use.type)
+
+    def contract(self, use: TypeUseBinding | None) -> object:
+        """Return a use's codec binding and the normalized schema at its site, or None without a schema."""
+        if use is None or use.schema is None:
+            return None
+        return (self.bindings.get(use.id), self.wire.schema(use.schema)[1])
+
+
+def _digest(value: object) -> str:
+    return sha256(canonical_bytes(_projection(value)))
+
+
+def _is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
+    return isinstance(value, (tuple, list))
+
+
+def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:
+    return isinstance(value, Mapping)
+
+
+def _projection(value: object) -> JSONValue:
+    """Project a contract value into canonical JSON: records become objects of their fields."""
+    if _is_sequence(value):
+        return [_projection(item) for item in value]
+    if _is_mapping(value):
+        return {str(key): _projection(item) for key, item in value.items()}
+    if is_dataclass(value) and not isinstance(value, type):
+        return {
+            "kind": type(value).__name__,
+            **{item.name: _projection(getattr(value, item.name)) for item in fields(value)},
+        }
+    return checked_scalar(value)

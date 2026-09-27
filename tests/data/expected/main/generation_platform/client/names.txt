@@ -1,0 +1,61 @@
+# names
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/errors.py
+  write client/responses.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/resources/__init__.py
+  write client/resources/default/__init__.py
+  write client/resources/default/_sync.py
+  write client/resources/default/_async.py
+  write client/resources/store/__init__.py
+  write client/resources/store/_sync.py
+  write client/resources/store/_async.py
+  write client/resources/u30e6_u30fc_u30b6_u30fc/__init__.py
+  write client/resources/u30e6_u30fc_u30b6_u30fc/_sync.py
+  write client/resources/u30e6_u30fc_u30b6_u30fc/_async.py
+  write client/resources/admin/__init__.py
+  write client/resources/admin/_sync.py
+  write client/resources/admin/_async.py
+  write client/resources/admin/users/__init__.py
+  write client/resources/admin/users/_sync.py
+  write client/resources/admin/users/_async.py
+  write client/types/__init__.py
+  write client/types/default/__init__.py
+  write client/types/default/_operations.py
+  write client/types/store/__init__.py
+  write client/types/store/_operations.py
+  write client/types/u30e6_u30fc_u30b6_u30fc/__init__.py
+  write client/types/u30e6_u30fc_u30b6_u30fc/_operations.py
+  write client/types/admin/__init__.py
+  write client/types/admin/_operations.py
+  write client/types/admin/users/__init__.py
+  write client/types/admin/users/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 4
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 default.get_root()
+    exports client.types.default.GetRootResponse client.types.default.GetRootErrorData client.types.default.GetRootHTTPError
+    exports client.types.default.GetRootRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 store.get_files_by_file_name_by_ext(path:fileName=file_name, path:ext=ext, query:class=class_, header:2fa=two_factor)
+    exports client.types.store.GetFilesByFileNameByExtResponse client.types.store.GetFilesByFileNameByExtErrorData client.types.store.GetFilesByFileNameByExtHTTPError
+    exports client.types.store.GetFilesByFileNameByExtRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 u30e6_u30fc_u30b6_u30fc.http_get_users()
+    exports client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersResponse client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersErrorData client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersHTTPError
+    exports client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 admin.users.list_admin_users()
+    exports client.types.admin.users.ListAdminUsersResponse client.types.admin.users.ListAdminUsersErrorData client.types.admin.users.ListAdminUsersHTTPError
+    exports client.types.admin.users.ListAdminUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 admin.create_admin_user()
+    exports client.types.admin.CreateAdminUserResponse client.types.admin.CreateAdminUserErrorData client.types.admin.CreateAdminUserHTTPError
+    exports client.types.admin.CreateAdminUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

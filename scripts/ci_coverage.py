@@ -19,6 +19,7 @@ COVERAGE_ENVS = (
     "httpx-e2e",
     "httpx2-min-e2e",
     "fastapi-e2e",
+    "client-e2e",
 )
 EXPECTED_NAMES = frozenset({
     *(f".coverage.{env}-ubuntu-24.04" for env in COVERAGE_ENVS),

@@ -1,0 +1,7 @@
+# querystring pydantic_v2.BaseModel
+  > GET https://search.example.com/search?term=a+b&page=2
+    [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search = FieldSearchGetResponse(root=['a'])
+  > GET https://search.example.com/search
+    [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search all = FieldSearchGetResponse(root=[])
