@@ -37,7 +37,7 @@ def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
 def multipart(package: ModuleType, lines: list[str]) -> None:
     """Send form-data bodies and read multipart responses, synchronously and with asyncio, refusing broken ones."""
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     with package.Client(http_client=http) as api:
         _profiles(package, api, exchange, lines)
         _parts(package, api, exchange, lines)
@@ -469,7 +469,7 @@ def _answered(exchange: Exchange, call: Callable[[], object]) -> object:
 async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
     bodies, _, types = _modules(package)
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     body, field, file = bodies.AsyncMultipartBody, bodies.FieldPart, bodies.FilePart
 
     async def chunks() -> Any:

@@ -136,6 +136,8 @@
   async adapter stop while reading propagated
   adapter closed
   async owned adapter close bug ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [cause=RuntimeError('adapter close failed')] cleanup_error
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: café] b''
   unicode header = 200
   unicode header bytes [b'caf\xc3\xa9']
   async pre-read response ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error

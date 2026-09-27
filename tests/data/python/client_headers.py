@@ -28,7 +28,7 @@ def headers(package: ModuleType, lines: list[str]) -> None:
     """Patch headers in layers, and refuse patches that relabel a body or a narrowed response, or are malformed."""
     options, bodies, types = _modules(package)
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     patch = (("User-Agent", "custom/1"), ("X-Client", "c"), ("Accept-Encoding", "gzip;q=0.5, identity"))
     with package.Client(http_client=http, options=options.ClientOptions(headers=patch)) as api:
         _layers(api, exchange, lines, options, types)
@@ -134,7 +134,7 @@ def _malformed(lines: list[str], options: ModuleType) -> None:
 async def _async_headers(package: ModuleType, lines: list[str]) -> None:
     options, _, types = _modules(package)
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
     async with package.AsyncClient(http_client=http, options=options.ClientOptions(headers=(("X-Client", "c"),))) as api:
         exchange.respond(json_response(200, {"id": 3, "name": "fox"}))

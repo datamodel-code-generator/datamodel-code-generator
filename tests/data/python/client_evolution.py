@@ -21,7 +21,7 @@ def evolution(package: ModuleType, lines: list[str]) -> None:
     order = codecs.parameter(location="path", name="orderId").from_wire(1)
     brief = codecs.parameter(location="query", name="view").from_wire("brief")
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     with package.Client(http_client=http) as api:
         exchange.respond(json_response(200, {"id": 1, "status": "open", "note": "n", "channel": "web", "payment": _CARD}))
         record(lines, "order", lambda: api.orders.get_order(order_id=order, view=brief))

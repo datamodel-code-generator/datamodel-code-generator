@@ -10,6 +10,7 @@ import httpx2
 
 from tests.data.python.client_runtime import (
     Exchange,
+    Injected,
     abroken,
     aoutcome,
     arecord,
@@ -29,15 +30,18 @@ _PET: Final = {"id": 3, "name": "fox"}
 _RAW: Final = "https://raw.example.com/items?a=1"
 
 
+@Injected
 def _refusing(request: httpx2.Request) -> httpx2.Response:
     msg = "refused"
     raise httpx2.ConnectError(msg, request=request)
 
 
+@Injected
 def _interrupting(request: httpx2.Request) -> httpx2.Response:
     raise KeyboardInterrupt
 
 
+@Injected
 def _cancelling(request: httpx2.Request) -> httpx2.Response:
     raise asyncio.CancelledError
 
@@ -58,6 +62,7 @@ class _InterruptedClose(httpx2.SyncByteStream, httpx2.AsyncByteStream):
         raise asyncio.CancelledError
 
 
+@Injected
 def _interrupted_close(request: httpx2.Request) -> httpx2.Response:
     del request
     return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_InterruptedClose())
@@ -119,7 +124,7 @@ def hooks(package: ModuleType, lines: list[str]) -> None:
     """Report the events of calls that succeed, fail, and are refused, and the errors of hooks that fail on them."""
     options, errors, types = _modules(package)
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     watched = options.ClientOptions(hooks=(Recorder(lines, "a"),), context={"tenant": "t1", "retry": 0})
     pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
     trace = types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t").value
@@ -249,7 +254,7 @@ def _refused(package: ModuleType, lines: list[str], options: ModuleType) -> None
     ):
         record(lines, label, lambda arguments=arguments: options.RequestOptions(**arguments))
     merged = options.ClientOptions(context={"a": "x" * 4096})
-    http = httpx2.Client(transport=httpx2.MockTransport(Exchange(lines).handle))
+    http = Exchange(lines).client()
     with package.Client(http_client=http, options=merged) as api:
         record(lines, "context merged over 8 KiB", lambda: api.with_options(options.RequestOptions(context={"b": "y" * 4096})))
         asynchronous = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "z"),)))
@@ -260,7 +265,7 @@ def _refused(package: ModuleType, lines: list[str], options: ModuleType) -> None
 async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
     options, errors, types = _modules(package)
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
     watched = options.ClientOptions(hooks=(AsyncRecorder(lines, "g"), Recorder(lines, "h")))
     async with package.AsyncClient(http_client=http, options=watched) as api:

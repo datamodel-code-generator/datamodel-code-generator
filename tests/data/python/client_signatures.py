@@ -68,7 +68,7 @@ def signatures(package: ModuleType, lines: list[str]) -> None:
     trace = types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t1").value
     pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     with package.Client(http_client=http) as api:
         _introspection(api, lines, "")
         exchange.respond(json_response(200, []), json_response(200, []), json_response(200, {"id": 3, "name": "fox"}))
@@ -90,7 +90,7 @@ def signatures(package: ModuleType, lines: list[str]) -> None:
 async def _async_signatures(package: ModuleType, lines: list[str], trace: object) -> None:
     """Refuse the same calls with asyncio: explicit binding refuses them when called, unpacked binding when awaited."""
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     async with package.AsyncClient(http_client=http) as api:
         _introspection(api, lines, "async ")
         exchange.respond(json_response(200, []))
@@ -116,7 +116,7 @@ def keywords(package: ModuleType, lines: list[str]) -> None:
     first, second = (codecs.parameter(location="query", name="kwargs").from_wire(value).value for value in ("a", "b"))
     count = codecs.parameter(location="query", name="args").from_wire(2).value
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     with package.Client(http_client=http) as api:
         exchange.respond(json_response(200, {"kwargs": "found"}), json_response(200, {}))
         record(lines, "search", lambda: api.search.search(kwargs=first, args=count))
