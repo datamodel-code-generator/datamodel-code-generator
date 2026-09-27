@@ -15,7 +15,7 @@ ENABLED = "DATAMODEL_CODE_GENERATOR_CODEC_TYPING_E2E"
 
 
 def test_codec_typing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Check every positive sample clean and every marked line of the negative samples with exactly one error."""
+    """Check the positive samples clean and the negative ones marked, pinning every error by line and rule."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking the model codec samples")
     assert_output(codec_typing_report(tmp_path, monkeypatch), EXPECTED / "typing.txt")
