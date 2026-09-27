@@ -364,7 +364,7 @@ class _Renderer:
                     ("", self.use_binding(binding)),
                     ("", runtime),
                     ("", Group("{", models, "}")),
-                    ("", f"{binding.direction}_bundle()"),
+                    ("", f"{binding.direction}_bundle"),
                     *((("validator=", validator),) if validator else ()),
                 ),
                 ")",

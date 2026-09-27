@@ -110,7 +110,7 @@ def codec_0() -> PydanticModelCodec[models.FieldSearchQueryResponse]:
         ),
         models.FieldSearchQueryResponse,
         {'models:FieldSearchQueryResponse': models.FieldSearchQueryResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 

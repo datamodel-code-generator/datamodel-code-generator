@@ -38,3 +38,12 @@ patch-client-encode-from-wire: wire={"name":"B"}
 patch-client-snapshot-presence: model {'name': 'B'} wire={"name":"B"} presence=['', '/name'] extras={}
 patch-client-snapshot-delete: CodecBindingError The presence tree does not select existing object members at /
 limit-server-decode: model 5 wire=5 presence=[''] extras={}
+create-client-serialize: wire={"name":"Mimi","status":"new","password":"pw"}
+created-server-serialize-snapshot: wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"nick-name":null,"hint":"x","born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["b","a"],"scores":{"x":1},"visits":0}
+create-client-check: CodecConfigurationError A standard dataclass, TypedDict, or structurally read Struct has no native validation entry
+created-client-convert: converted {'id': 1, 'name': 'Mimi', 'status': 'new', 'kind': 'cat', 'visits': 0}
+created-client-convert-long: converted {'id': 1, 'name': 'far too long a name', 'status': 'new', 'kind': 'cat', 'visits': 0}
+created-client-convert-type: NativeValidationError native.int_type@/id['id']
+created-client-needs-schema: needs schema False ambiguous False
+create-client-serialize-long: wire={"name":"far too long a name","status":"new"}
+create-client-encode-long: WireValidationError schema.maxLength@/name

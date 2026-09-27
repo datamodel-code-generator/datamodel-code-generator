@@ -8,6 +8,7 @@ import sys
 from collections import defaultdict
 from dataclasses import replace
 from datetime import datetime, time
+from functools import cache, partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
@@ -25,7 +26,7 @@ from datamodel_code_generator._runtime.model_codecs.errors import (
     WireValidationError,
 )
 from datamodel_code_generator._runtime.model_codecs.outbound import EnvelopeOutboundCodec, NativeOutboundCodec
-from datamodel_code_generator._runtime.model_codecs.codec import BuiltinModelCodec
+from datamodel_code_generator._runtime.model_codecs.codec import BuiltinModelCodec, ambiguous, needs_schema
 from datamodel_code_generator._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
 from datamodel_code_generator._runtime.model_codecs.schema import SchemaBundle, SchemaPatch
 from datamodel_code_generator._runtime.model_codecs.structural import StructuralModelCodec
@@ -34,6 +35,7 @@ from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire, pre
 from tests.data.python.generation_session_inputs import generate_product
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
     import pytest
@@ -54,6 +56,15 @@ class _Unset:
 
 
 _UNSET = _Unset()
+
+
+def _bundles(wire: object) -> dict[str, Callable[[], SchemaBundle]]:
+    """Return each direction's bundle as generated bindings supply it, built when a codec first validates."""
+    return {view.direction: cache(partial(SchemaBundle, wire.resources, view)) for view in wire.views}
+
+
+def _supplied(bundle: SchemaBundle) -> Callable[[], SchemaBundle]:
+    return lambda: bundle
 
 
 def _use_key(use: object) -> str:
@@ -214,6 +225,16 @@ class _Runner:
                 case "echo":
                     native = codec.decode(value, context).require_model()
                     result = codec.encode(native, replace(context, surface="server"))
+                case "serialize":
+                    result = codec.serialize(value, context)
+                case "check":
+                    result = codec.serialize(value, context, validate=True)
+                case "convert":
+                    converted = codec.convert(value, context)
+                    self.results[str(case["name"])] = converted
+                    return f"converted {_native(converted)}"
+                case "needs-schema":
+                    return f"needs schema {needs_schema(binding)} ambiguous {ambiguous(binding)}"
         except CodecError as error:
             return _failure(error)
         self.results[str(case["name"])] = result
@@ -267,7 +288,7 @@ def builtin_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pyt
     fixture = thaw_wire(decode_json(cases.read_bytes()))
     plan, wire, package = _prepare(source, fixture, root, monkeypatch)
     lines = [f"diagnostic {item.code} {item.source.pointer}: {item.message}" for item in plan.diagnostics]
-    bundles = {view.direction: SchemaBundle(wire.resources, view) for view in wire.views}
+    bundles = _bundles(wire)
     codecs: dict[str, BuiltinModelCodec[object]] = {}
     try:
         for use, binding in plan.bindings:
@@ -300,7 +321,7 @@ def backend_comparison_report(source: Path, cases: Path, root: Path, monkeypatch
     for backend in fixture["backends"]:
         package = f"{fixture['package']}_{backend.replace('.', '_').lower()}"
         plan, wire, package = _prepare(source, {**fixture, "backend": backend, "package": package}, root, monkeypatch)
-        bundles = {view.direction: SchemaBundle(wire.resources, view) for view in wire.views}
+        bundles = _bundles(wire)
         try:
             codecs = {
                 _use_key(use): CODECS[binding.backend](
@@ -331,7 +352,7 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path, monkeypa
     fixture = thaw_wire(decode_json(cases.read_bytes()))
     plan, wire, package = _prepare(source, fixture, root, monkeypatch)
     bindings = {_use_key(use): binding for use, binding in plan.bindings}
-    bundles = {view.direction: SchemaBundle(wire.resources, view) for view in wire.views}
+    bundles = _bundles(wire)
     lines = []
     try:
         for case in fixture["startup"]:
@@ -344,9 +365,11 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path, monkeypa
                 bundle = bundles[case.get("bundle", binding.direction)]
                 if isinstance(patch := case.get("patch"), dict):
                     view = next(view for view in wire.views if view.direction == binding.direction)
-                    bundle = SchemaBundle(
-                        wire.resources,
-                        replace(view, patches=(*view.patches, SchemaPatch(**{**patch, "value": freeze_wire(patch["value"])}))),
+                    bundle = _supplied(
+                        SchemaBundle(
+                            wire.resources,
+                            replace(view, patches=(*view.patches, SchemaPatch(**{**patch, "value": freeze_wire(patch["value"])}))),
+                        )
                     )
                 codec = CODECS[str(fixture["backend"])](
                     binding,
@@ -354,16 +377,20 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path, monkeypa
                     {key: value for key, value in models.items() if value is not None},
                     bundle,
                 )
-                result = "built"
-                if "decode" in case:
-                    context = CodecContext(
-                        surface=case.get("surface", "server"),
-                        direction=binding.direction,
-                        schema_id=binding.schema_id,
-                        operation_id=binding.operation_id,
-                        media_type=binding.media_type,
-                    )
-                    result = _result(codec.decode(freeze_wire(case["decode"]), context))
+                context = CodecContext(
+                    surface=case.get("surface", "server"),
+                    direction=binding.direction,
+                    schema_id=binding.schema_id,
+                    operation_id=binding.operation_id,
+                    media_type=binding.media_type,
+                )
+                match next((op for op in ("decode", "convert") if op in case), None):
+                    case "decode":
+                        result = _result(codec.decode(freeze_wire(case["decode"]), context))
+                    case "convert":
+                        result = f"converted {_native(codec.convert(freeze_wire(case['convert']), context))}"
+                    case _:
+                        result = "built"
                 lines.append(f"{case['name']}: {result}")
             except CodecError as error:
                 lines.append(f"{case['name']}: {_failure(error)}")

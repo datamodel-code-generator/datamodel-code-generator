@@ -1,0 +1,6 @@
+use /paths/~1loose/post request_body: native dataclass models:Holder models=[('models:Holder', 'dataclass', 'ignore', True), ('models:Tag', 'dataclass', 'ignore', False)]
+use /paths/~1loose/post response_body 200: native dataclass models:Holder models=[('models:Holder', 'dataclass', 'ignore', True), ('models:Tag', 'dataclass', 'ignore', False)]
+holder-client-decode-tag: model Holder(value=Tag(label='x')) wire={"value":{"label":"x"}} presence=['', '/value', '/value/label'] extras={}
+holder-client-decode-other: model Holder(value={'other': 1}) wire={"value":{"other":1}} presence=['', '/value', '/value/other'] extras={}
+holder-client-needs-schema: needs schema True ambiguous True
+holder-client-convert-other: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it

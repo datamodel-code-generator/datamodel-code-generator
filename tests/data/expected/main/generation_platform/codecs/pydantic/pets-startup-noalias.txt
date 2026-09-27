@@ -1,2 +1,3 @@
 native-gap: ModelProjectionError The native use has an unplanned projection gap at /id
 patch-target: CodecConfigurationError A directional view patches no bundled required keyword in https://dcg.invalid/inputs/root
+native-gap-convert: ModelProjectionError The native use has an unplanned projection gap at /id

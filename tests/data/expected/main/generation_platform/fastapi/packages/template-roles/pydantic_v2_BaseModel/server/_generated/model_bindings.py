@@ -291,7 +291,7 @@ def codec_0() -> PydanticModelCodec[models.FieldPetsPetIdGetQueryAfterParameter]
         ),
         models.FieldPetsPetIdGetQueryAfterParameter,
         {'models:FieldPetsPetIdGetQueryAfterParameter': models.FieldPetsPetIdGetQueryAfterParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -323,7 +323,7 @@ def codec_1() -> PydanticModelCodec[models.FieldPetsPetIdGetCookieSessionParamet
         ),
         models.FieldPetsPetIdGetCookieSessionParameter,
         {'models:FieldPetsPetIdGetCookieSessionParameter': models.FieldPetsPetIdGetCookieSessionParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -356,7 +356,7 @@ def codec_2() -> PydanticModelCodec[models.Pet]:
         ),
         models.Pet,
         {'models:Pet': models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -393,7 +393,7 @@ def codec_3() -> PydanticModelCodec[models.FieldPetsPetIdGetResponse200XRateHead
         ),
         models.FieldPetsPetIdGetResponse200XRateHeader,
         {'models:FieldPetsPetIdGetResponse200XRateHeader': models.FieldPetsPetIdGetResponse200XRateHeader},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -431,7 +431,7 @@ def codec_4() -> PydanticModelCodec[models.Pet]:
         ),
         models.Pet,
         {'models:Pet': models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -469,7 +469,7 @@ def codec_5() -> PydanticModelCodec[models.FieldNotesPutRequest]:
         ),
         models.FieldNotesPutRequest,
         {'models:FieldNotesPutRequest': models.FieldNotesPutRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -502,5 +502,5 @@ def codec_6() -> PydanticModelCodec[models.FieldNotesPutRequest1]:
         ),
         models.FieldNotesPutRequest1,
         {'models:FieldNotesPutRequest1': models.FieldNotesPutRequest1},
-        request_bundle(),
+        request_bundle,
     )

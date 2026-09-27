@@ -408,7 +408,7 @@ def codec_0() -> PydanticModelCodec[models.Thing]:
         ),
         models.Thing,
         {'models:Thing': models.Thing},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -446,7 +446,7 @@ def codec_1() -> PydanticModelCodec[models.Thing]:
         ),
         models.Thing,
         {'models:Thing': models.Thing},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -484,7 +484,7 @@ def codec_2() -> PydanticModelCodec[models.Thing]:
         ),
         models.Thing,
         {'models:Thing': models.Thing},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -522,7 +522,7 @@ def codec_3() -> PydanticModelCodec[models.FieldCreatedPostResponse]:
         ),
         models.FieldCreatedPostResponse,
         {'models:FieldCreatedPostResponse': models.FieldCreatedPostResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -559,7 +559,7 @@ def codec_4() -> PydanticModelCodec[models.FieldCreatedPostResponse201LocationHe
         ),
         models.FieldCreatedPostResponse201LocationHeader,
         {'models:FieldCreatedPostResponse201LocationHeader': models.FieldCreatedPostResponse201LocationHeader},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -596,7 +596,7 @@ def codec_5() -> PydanticModelCodec[models.FieldCreatedPostResponse201XRateHeade
         ),
         models.FieldCreatedPostResponse201XRateHeader,
         {'models:FieldCreatedPostResponse201XRateHeader': models.FieldCreatedPostResponse201XRateHeader},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -634,7 +634,7 @@ def codec_6() -> PydanticModelCodec[models.Problem]:
         ),
         models.Problem,
         {'models:Problem': models.Problem},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -672,7 +672,7 @@ def codec_7() -> PydanticModelCodec[models.Problem]:
         ),
         models.Problem,
         {'models:Problem': models.Problem},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -710,7 +710,7 @@ def codec_8() -> PydanticModelCodec[models.FieldRangesGetResponse]:
         ),
         models.FieldRangesGetResponse,
         {'models:FieldRangesGetResponse': models.FieldRangesGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -748,7 +748,7 @@ def codec_9() -> PydanticModelCodec[models.Problem]:
         ),
         models.Problem,
         {'models:Problem': models.Problem},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -786,7 +786,7 @@ def codec_10() -> PydanticModelCodec[models.Loose]:
         ),
         models.Loose,
         {'models:Loose': models.Loose},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -824,7 +824,7 @@ def codec_11() -> PydanticModelCodec[models.Secret]:
         ),
         models.Secret,
         {'models:Secret': models.Secret},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -862,7 +862,7 @@ def codec_12() -> PydanticModelCodec[models.Secret]:
         ),
         models.Secret,
         {'models:Secret': models.Secret},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -900,7 +900,7 @@ def codec_13() -> PydanticModelCodec[models.FieldDownloadGetResponse]:
         ),
         models.FieldDownloadGetResponse,
         {'models:FieldDownloadGetResponse': models.FieldDownloadGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -937,7 +937,7 @@ def codec_14() -> PydanticModelCodec[models.FieldDownloadGetResponse303LocationH
         ),
         models.FieldDownloadGetResponse303LocationHeader,
         {'models:FieldDownloadGetResponse303LocationHeader': models.FieldDownloadGetResponse303LocationHeader},
-        response_bundle(),
+        response_bundle,
     )
 
 

@@ -314,7 +314,7 @@ def codec_0() -> PydanticModelCodec[variants_modular_basemodel_models_pet.Pet]:
             'variants_modular_basemodel_models.owner:Owner': variants_modular_basemodel_models_owner.Owner,
             'variants_modular_basemodel_models.pet:Pet': variants_modular_basemodel_models_pet.Pet,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -351,7 +351,7 @@ def codec_1() -> PydanticModelCodec[variants_modular_basemodel_models_pet.Pet]:
             'variants_modular_basemodel_models.owner:Owner': variants_modular_basemodel_models_owner.Owner,
             'variants_modular_basemodel_models.pet:Pet': variants_modular_basemodel_models_pet.Pet,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -393,7 +393,7 @@ def codec_2() -> PydanticModelCodec[variants_modular_basemodel_models_pet.Pet]:
             'variants_modular_basemodel_models.owner:Owner': variants_modular_basemodel_models_owner.Owner,
             'variants_modular_basemodel_models.pet:Pet': variants_modular_basemodel_models_pet.Pet,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -434,7 +434,7 @@ def codec_3() -> PydanticModelCodec[variants_modular_basemodel_models_field_owne
             'variants_modular_basemodel_models.field_owners_get_response:FieldOwnersGetResponse': variants_modular_basemodel_models_field_owners_get_response.FieldOwnersGetResponse,
             'variants_modular_basemodel_models.owner:Owner': variants_modular_basemodel_models_owner.Owner,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 

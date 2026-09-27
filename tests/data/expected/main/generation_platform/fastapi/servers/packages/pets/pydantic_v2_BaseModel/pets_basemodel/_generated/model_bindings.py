@@ -382,7 +382,7 @@ def codec_0() -> PydanticModelCodec[pets_basemodel_models.FieldPetsGetCookieSess
         {
             'pets_basemodel_models:FieldPetsGetCookieSessionParameter': pets_basemodel_models.FieldPetsGetCookieSessionParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -418,7 +418,7 @@ def codec_1() -> PydanticModelCodec[pets_basemodel_models.FieldPetsGetResponse]:
             'pets_basemodel_models:FieldPetsGetResponse': pets_basemodel_models.FieldPetsGetResponse,
             'pets_basemodel_models:Pet': pets_basemodel_models.Pet,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -456,7 +456,7 @@ def codec_2() -> PydanticModelCodec[pets_basemodel_models.Error]:
         ),
         pets_basemodel_models.Error,
         {'pets_basemodel_models:Error': pets_basemodel_models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -494,7 +494,7 @@ def codec_3() -> PydanticModelCodec[pets_basemodel_models.Pet]:
         ),
         pets_basemodel_models.Pet,
         {'pets_basemodel_models:Pet': pets_basemodel_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -535,7 +535,7 @@ def codec_4() -> PydanticModelCodec[pets_basemodel_models.FieldPetsMineGetRespon
             'pets_basemodel_models:FieldPetsMineGetResponse': pets_basemodel_models.FieldPetsMineGetResponse,
             'pets_basemodel_models:Pet': pets_basemodel_models.Pet,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -573,7 +573,7 @@ def codec_5() -> PydanticModelCodec[pets_basemodel_models.Pet]:
         ),
         pets_basemodel_models.Pet,
         {'pets_basemodel_models:Pet': pets_basemodel_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -611,7 +611,7 @@ def codec_6() -> PydanticModelCodec[pets_basemodel_models.Error]:
         ),
         pets_basemodel_models.Error,
         {'pets_basemodel_models:Error': pets_basemodel_models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -649,7 +649,7 @@ def codec_7() -> PydanticModelCodec[pets_basemodel_models.FieldStoreInventoryGet
         ),
         pets_basemodel_models.FieldStoreInventoryGetResponse,
         {'pets_basemodel_models:FieldStoreInventoryGetResponse': pets_basemodel_models.FieldStoreInventoryGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 

@@ -140,5 +140,5 @@ def codec_0() -> PydanticModelCodec[models.AccountRequest]:
         ),
         models.AccountRequest,
         {'models:AccountRequest': models.AccountRequest},
-        request_bundle(),
+        request_bundle,
     )

@@ -277,7 +277,7 @@ def codec_0() -> PydanticModelCodec[results_basemodel_models.Thing]:
         ),
         results_basemodel_models.Thing,
         {'results_basemodel_models:Thing': results_basemodel_models.Thing},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -315,7 +315,7 @@ def codec_1() -> PydanticModelCodec[results_basemodel_models.FieldResultsGetResp
         ),
         results_basemodel_models.FieldResultsGetResponse,
         {'results_basemodel_models:FieldResultsGetResponse': results_basemodel_models.FieldResultsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -354,7 +354,7 @@ def codec_2() -> PydanticModelCodec[results_basemodel_models.FieldResultsGetResp
         {
             'results_basemodel_models:FieldResultsGetResponse200XRateHeader': results_basemodel_models.FieldResultsGetResponse200XRateHeader,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -392,7 +392,7 @@ def codec_3() -> PydanticModelCodec[results_basemodel_models.Thing]:
         ),
         results_basemodel_models.Thing,
         {'results_basemodel_models:Thing': results_basemodel_models.Thing},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -431,7 +431,7 @@ def codec_4() -> PydanticModelCodec[results_basemodel_models.FieldResultsGetResp
         {
             'results_basemodel_models:FieldResultsGetResponse201LocationHeader': results_basemodel_models.FieldResultsGetResponse201LocationHeader,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -469,7 +469,7 @@ def codec_5() -> PydanticModelCodec[results_basemodel_models.Problem]:
         ),
         results_basemodel_models.Problem,
         {'results_basemodel_models:Problem': results_basemodel_models.Problem},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -507,7 +507,7 @@ def codec_6() -> PydanticModelCodec[results_basemodel_models.Thing]:
         ),
         results_basemodel_models.Thing,
         {'results_basemodel_models:Thing': results_basemodel_models.Thing},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -545,7 +545,7 @@ def codec_7() -> PydanticModelCodec[results_basemodel_models.FieldPlainGetRespon
         ),
         results_basemodel_models.FieldPlainGetResponse,
         {'results_basemodel_models:FieldPlainGetResponse': results_basemodel_models.FieldPlainGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -583,7 +583,7 @@ def codec_8() -> PydanticModelCodec[results_basemodel_models.FieldLatinGetRespon
         ),
         results_basemodel_models.FieldLatinGetResponse,
         {'results_basemodel_models:FieldLatinGetResponse': results_basemodel_models.FieldLatinGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -621,7 +621,7 @@ def codec_9() -> PydanticModelCodec[results_basemodel_models.FieldNothingGetResp
         ),
         results_basemodel_models.FieldNothingGetResponse,
         {'results_basemodel_models:FieldNothingGetResponse': results_basemodel_models.FieldNothingGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 

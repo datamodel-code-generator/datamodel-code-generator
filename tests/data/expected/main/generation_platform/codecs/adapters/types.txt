@@ -318,7 +318,7 @@ def codec_0() -> PydanticModelCodec[str]:
         ),
         pydantic.constr(pattern=r'^[a-z]+$'),
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -350,7 +350,7 @@ def codec_1() -> PydanticModelCodec[int]:
         ),
         pydantic.conint(ge=1),
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -382,7 +382,7 @@ def codec_2() -> PydanticModelCodec[float]:
         ),
         pydantic.confloat(le=1.5),
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -414,7 +414,7 @@ def codec_3() -> PydanticModelCodec[pydantic.AwareDatetime]:
         ),
         pydantic.AwareDatetime,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -446,7 +446,7 @@ def codec_4() -> PydanticModelCodec[typing.Literal['a', 'b']]:
         ),
         typing.Literal['a', 'b'],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -478,7 +478,7 @@ def codec_5() -> PydanticModelCodec[decimal.Decimal]:
         ),
         pydantic.condecimal(le=decimal.Decimal('10')),
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -510,7 +510,7 @@ def codec_6() -> PydanticModelCodec[list[str]]:
         ),
         list[str],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -542,7 +542,7 @@ def codec_7() -> PydanticModelCodec[adapted_models.Cat | adapted_models.Dog]:
         ),
         adapted_models.Cat | adapted_models.Dog,
         {'adapted.models:Cat': adapted_models.Cat, 'adapted.models:Dog': adapted_models.Dog},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -673,7 +673,7 @@ def codec_9() -> PydanticModelCodec[str | None]:
         ),
         str | None,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 

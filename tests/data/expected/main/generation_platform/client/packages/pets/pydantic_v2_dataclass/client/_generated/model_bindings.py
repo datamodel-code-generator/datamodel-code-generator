@@ -395,7 +395,7 @@ def codec_0() -> PydanticModelCodec[models.FieldPetsGetQueryLimitParameter]:
         ),
         models.FieldPetsGetQueryLimitParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -432,7 +432,7 @@ def codec_1() -> PydanticModelCodec[models.FieldPetsGetQueryTagsParameter]:
         ),
         models.FieldPetsGetQueryTagsParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -469,7 +469,7 @@ def codec_2() -> PydanticModelCodec[models.FieldPetsGetHeaderXTraceParameter]:
         ),
         models.FieldPetsGetHeaderXTraceParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -506,7 +506,7 @@ def codec_3() -> PydanticModelCodec[models.FieldPetsGetCookieSessionParameter]:
         ),
         models.FieldPetsGetCookieSessionParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -544,7 +544,7 @@ def codec_4() -> PydanticModelCodec[models.FieldPetsGetResponse]:
         ),
         models.FieldPetsGetResponse,
         {'models:Pet': models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -576,7 +576,7 @@ def codec_5() -> PydanticModelCodec[models.FieldPetsGetResponse200XNextHeader]:
         ),
         models.FieldPetsGetResponse200XNextHeader,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -608,7 +608,7 @@ def codec_6() -> PydanticModelCodec[models.FieldPetsGetResponse200XRateHeader]:
         ),
         models.FieldPetsGetResponse200XRateHeader,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -641,7 +641,7 @@ def codec_7() -> PydanticModelCodec[models.Error]:
         ),
         models.Error,
         {'models:Error': models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -674,7 +674,7 @@ def codec_8() -> PydanticModelCodec[models.NewPet]:
         ),
         models.NewPet,
         {'models:NewPet': models.NewPet},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -712,7 +712,7 @@ def codec_9() -> PydanticModelCodec[models.FieldPetsPostRequest]:
         ),
         models.FieldPetsPostRequest,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -750,7 +750,7 @@ def codec_10() -> PydanticModelCodec[models.Pet]:
         ),
         models.Pet,
         {'models:Pet': models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -783,7 +783,7 @@ def codec_11() -> PydanticModelCodec[models.Error]:
         ),
         models.Error,
         {'models:Error': models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -815,7 +815,7 @@ def codec_12() -> PydanticModelCodec[models.FieldPetsPetIdGetPathPetIdParameter]
         ),
         models.FieldPetsPetIdGetPathPetIdParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -853,7 +853,7 @@ def codec_13() -> PydanticModelCodec[models.Pet]:
         ),
         models.Pet,
         {'models:Pet': models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -886,7 +886,7 @@ def codec_14() -> PydanticModelCodec[models.FieldPetsPetIdGetResponse]:
         ),
         models.FieldPetsPetIdGetResponse,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -918,7 +918,7 @@ def codec_15() -> PydanticModelCodec[models.FieldPetsPetIdGetPathPetIdParameter]
         ),
         models.FieldPetsPetIdGetPathPetIdParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -955,7 +955,7 @@ def codec_16() -> PydanticModelCodec[models.FieldPetsPetIdGetPathPetIdParameter]
         ),
         models.FieldPetsPetIdGetPathPetIdParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -992,7 +992,7 @@ def codec_17() -> PydanticModelCodec[models.FieldPetsPetIdHeadResponse200ETagHea
         ),
         models.FieldPetsPetIdHeadResponse200ETagHeader,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1024,7 +1024,7 @@ def codec_18() -> PydanticModelCodec[models.FieldPetsPetIdPhotoPutPathPetIdParam
         ),
         models.FieldPetsPetIdPhotoPutPathPetIdParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1061,7 +1061,7 @@ def codec_19() -> PydanticModelCodec[models.FieldPetsPetIdFilesPostPathPetIdPara
         ),
         models.FieldPetsPetIdFilesPostPathPetIdParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1098,7 +1098,7 @@ def codec_20() -> PydanticModelCodec[models.FieldPetsPetIdFilesGetPathPetIdParam
         ),
         models.FieldPetsPetIdFilesGetPathPetIdParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1136,7 +1136,7 @@ def codec_21() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1174,7 +1174,7 @@ def codec_22() -> PydanticModelCodec[list[str]]:
         ),
         list[str],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1212,7 +1212,7 @@ def codec_23() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1245,5 +1245,5 @@ def codec_24() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )

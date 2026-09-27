@@ -1434,7 +1434,7 @@ def codec_0() -> StructuralModelCodec[models.FieldFormsPostRequest]:
         ),
         models.FieldFormsPostRequest,
         {'models:FieldFormsPostRequest': models.FieldFormsPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1472,7 +1472,7 @@ def codec_1() -> StructuralModelCodec[models.FieldFormsPostResponse]:
         ),
         models.FieldFormsPostResponse,
         {'models:FieldFormsPostResponse': models.FieldFormsPostResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1505,7 +1505,7 @@ def codec_2() -> StructuralModelCodec[models.FieldProfilesPostRequest]:
         ),
         models.FieldProfilesPostRequest,
         {'models:Address': models.Address, 'models:FieldProfilesPostRequest': models.FieldProfilesPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1543,7 +1543,7 @@ def codec_3() -> StructuralModelCodec[models.FieldProfilesGetResponse]:
         ),
         models.FieldProfilesGetResponse,
         {'models:Address': models.Address, 'models:FieldProfilesGetResponse': models.FieldProfilesGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1576,7 +1576,7 @@ def codec_4() -> StructuralModelCodec[models.FieldAnythingPostRequest]:
         ),
         models.FieldAnythingPostRequest,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1614,7 +1614,7 @@ def codec_5() -> StructuralModelCodec[models.FieldAttachmentsGetResponse]:
         ),
         models.FieldAttachmentsGetResponse,
         {'models:FieldAttachmentsGetResponse': models.FieldAttachmentsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1647,7 +1647,7 @@ def codec_6() -> StructuralModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1685,7 +1685,7 @@ def codec_7() -> StructuralModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1723,7 +1723,7 @@ def codec_8() -> StructuralModelCodec[models.FieldFilesPostRequest2]:
         ),
         models.FieldFilesPostRequest2,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1761,7 +1761,7 @@ def codec_9() -> StructuralModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1798,7 +1798,7 @@ def codec_10() -> StructuralModelCodec[models.FieldSearchesPostRequest]:
             'models:FieldSearchesPostRequest': models.FieldSearchesPostRequest,
             'models:Filter': models.Filter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1836,7 +1836,7 @@ def codec_11() -> StructuralModelCodec[models.FieldCoversPostRequestNoteXTraceEn
         ),
         models.FieldCoversPostRequestNoteXTraceEncodingHeader,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1874,7 +1874,7 @@ def codec_12() -> StructuralModelCodec[models.FieldCoversPostRequestMetaXMetaEnc
         ),
         models.FieldCoversPostRequestMetaXMetaEncodingHeader,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1912,7 +1912,7 @@ def codec_13() -> StructuralModelCodec[models.RateLimitHeader]:
         ),
         models.RateLimitHeader,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1950,7 +1950,7 @@ def codec_14() -> StructuralModelCodec[models.FieldCoversPostRequestScansContent
         ),
         models.FieldCoversPostRequestScansContentDispositionEncodingHeader,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1988,7 +1988,7 @@ def codec_15() -> StructuralModelCodec[models.FieldCardsPostRequest]:
         ),
         models.FieldCardsPostRequest,
         {'models:FieldCardsPostRequest': models.FieldCardsPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2030,7 +2030,7 @@ def codec_16() -> StructuralModelCodec[models.FieldStickersPostRequest]:
             'models:Filter': models.Filter,
             'models:Point': models.Point,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2068,7 +2068,7 @@ def codec_17() -> StructuralModelCodec[models.FieldAlbumsPostRequestBoundsConten
         ),
         models.FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2106,7 +2106,7 @@ def codec_18() -> StructuralModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2144,7 +2144,7 @@ def codec_19() -> StructuralModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2177,7 +2177,7 @@ def codec_20() -> StructuralModelCodec[models.FieldDocumentsIdGetPathIdParameter
         ),
         models.FieldDocumentsIdGetPathIdParameter,
         {'models:FieldDocumentsIdGetPathIdParameter': models.FieldDocumentsIdGetPathIdParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2215,7 +2215,7 @@ def codec_21() -> StructuralModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2247,7 +2247,7 @@ def codec_22() -> StructuralModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2280,7 +2280,7 @@ def codec_23() -> StructuralModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2318,7 +2318,7 @@ def codec_24() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2356,7 +2356,7 @@ def codec_25() -> StructuralModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2394,7 +2394,7 @@ def codec_26() -> StructuralModelCodec[list[str]]:
         ),
         list[str],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2432,7 +2432,7 @@ def codec_27() -> StructuralModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2470,7 +2470,7 @@ def codec_28() -> StructuralModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2508,7 +2508,7 @@ def codec_29() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2541,7 +2541,7 @@ def codec_30() -> StructuralModelCodec[int]:
         ),
         int,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2574,7 +2574,7 @@ def codec_31() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2607,7 +2607,7 @@ def codec_32() -> StructuralModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2640,7 +2640,7 @@ def codec_33() -> StructuralModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2673,7 +2673,7 @@ def codec_34() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2706,7 +2706,7 @@ def codec_35() -> StructuralModelCodec[int]:
         ),
         int,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2739,7 +2739,7 @@ def codec_36() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2772,7 +2772,7 @@ def codec_37() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2810,7 +2810,7 @@ def codec_38() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2848,7 +2848,7 @@ def codec_39() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2886,7 +2886,7 @@ def codec_40() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2924,7 +2924,7 @@ def codec_41() -> StructuralModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2962,7 +2962,7 @@ def codec_42() -> StructuralModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3000,7 +3000,7 @@ def codec_43() -> StructuralModelCodec[typing.Any]:
         ),
         typing.Any,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3038,7 +3038,7 @@ def codec_44() -> StructuralModelCodec[models.Bounds]:
         ),
         models.Bounds,
         {'models:Bounds': models.Bounds},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3076,7 +3076,7 @@ def codec_45() -> StructuralModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3114,7 +3114,7 @@ def codec_46() -> StructuralModelCodec[list[str]]:
         ),
         list[str],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 

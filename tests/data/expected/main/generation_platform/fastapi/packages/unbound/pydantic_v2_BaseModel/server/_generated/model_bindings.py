@@ -129,7 +129,7 @@ def codec_0() -> PydanticModelCodec[models.Value]:
         ),
         models.Value,
         {'models:Value': models.Value},
-        response_bundle(),
+        response_bundle,
     )
 
 

@@ -167,7 +167,7 @@ def codec_0() -> PydanticModelCodec[models.FieldValuesGetQueryAtParameter]:
         ),
         models.FieldValuesGetQueryAtParameter,
         {'models:FieldValuesGetQueryAtParameter': models.FieldValuesGetQueryAtParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -199,7 +199,7 @@ def codec_1() -> PydanticModelCodec[models.FieldValuesGetQueryStampParameter]:
         ),
         models.FieldValuesGetQueryStampParameter,
         {'models:FieldValuesGetQueryStampParameter': models.FieldValuesGetQueryStampParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -231,7 +231,7 @@ def codec_2() -> PydanticModelCodec[models.FieldValuesGetQueryCountParameter]:
         ),
         models.FieldValuesGetQueryCountParameter,
         {'models:FieldValuesGetQueryCountParameter': models.FieldValuesGetQueryCountParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -263,7 +263,7 @@ def codec_3() -> PydanticModelCodec[models.FieldValuesGetQueryHostParameter]:
         ),
         models.FieldValuesGetQueryHostParameter,
         {'models:FieldValuesGetQueryHostParameter': models.FieldValuesGetQueryHostParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -295,7 +295,7 @@ def codec_4() -> PydanticModelCodec[models.FieldValuesGetQueryLabelParameter]:
         ),
         models.FieldValuesGetQueryLabelParameter,
         {'models:FieldValuesGetQueryLabelParameter': models.FieldValuesGetQueryLabelParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -327,5 +327,5 @@ def codec_5() -> PydanticModelCodec[models.FieldValuesGetQueryPointParameter]:
         ),
         models.FieldValuesGetQueryPointParameter,
         {'models:FieldValuesGetQueryPointParameter': models.FieldValuesGetQueryPointParameter},
-        request_bundle(),
+        request_bundle,
     )

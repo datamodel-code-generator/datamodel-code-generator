@@ -35,6 +35,8 @@ from .wire import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from typing_extensions import TypeIs
 
     from .bindings import FieldBinding, ModelBinding, UseBinding
@@ -142,9 +144,80 @@ def model_unions(node: TypeNode | None) -> bool:
 
 
 def _shared(member: TypeNode, members: tuple[TypeNode, ...]) -> bool:
-    """Return whether another member of a union has a container's JSON kind, so its shape alone cannot choose it."""
+    """Return whether another member of a union may hold a value of a container's kind, so its shape cannot choose it.
+
+    A leaf member's node does not tell which values it holds, as Any holds every one, so it competes with each kind.
+    """
     kind = _json_kind(member)
-    return sum(_json_kind(item) == kind for item in members) > 1
+    return any(_json_kind(item) is None for item in members) or sum(_json_kind(item) == kind for item in members) > 1
+
+
+def _ambiguous(node: TypeNode | None, models: Mapping[str, ModelBinding], seen: set[str]) -> bool:
+    """Return whether a type graph holds a union whose members share a JSON kind with a model among them."""
+    match node:
+        case ModelNode() if node.symbol not in seen:
+            seen.add(node.symbol)
+            model = models[node.symbol]
+            return (
+                _ambiguous(model.root, models, seen)
+                or any(_ambiguous(item.type, models, seen) for item in model.fields)
+                or _ambiguous(model.extra_items, models, seen)
+            )
+        case UnionNode():
+            members = node.members
+            return any(_shared(member, members) and has_models(member) for member in members) or any(
+                _ambiguous(member, models, seen) for member in members
+            )
+        case ArrayNode():
+            return _ambiguous(node.item, models, seen)
+        case TupleNode():
+            return any(_ambiguous(item, models, seen) for item in node.items)
+        case MapNode():
+            return _ambiguous(node.value, models, seen)
+        case _:
+            pass
+    return False
+
+
+def _captured(value: object) -> bool:
+    """Return whether a value is a snapshot or an envelope, which keeps its strict contract under every policy."""
+    return isinstance(value, (ModelValue, ModelInput))
+
+
+def ambiguous(binding: UseBinding) -> bool:
+    """Return whether a use's type graph holds a union whose members share a JSON kind with a model among them."""
+    return _ambiguous(binding.type, {model.symbol: model for model in binding.models}, set())
+
+
+def _walked(model: ModelBinding) -> bool:
+    names = {item.wire_name for item in model.fields}
+    return any(
+        item.validation_key != item.wire_name or not names.issuperset(item.validation_keys) for item in model.fields
+    )
+
+
+def walks(binding: UseBinding) -> bool:
+    """Return whether a Pydantic use walks its wire values before validating them.
+
+    The walk renames members to the keys its models read, and sets aside members named like another key they read.
+    """
+    return binding.projection_mode == "envelope" or any(map(_walked, binding.models))
+
+
+def needs_schema(binding: UseBinding) -> bool:
+    """Return whether converting a builtin use's wire value must match it against schemas to choose a union member.
+
+    A member whose JSON kind no other member has is chosen by that kind. msgspec's converter chooses members itself, and
+    so does a Pydantic adapter that reads the wire members as they are.
+    """
+    match binding.converter_strategy:
+        case "msgspec_convert":
+            return False
+        case "pydantic_type_adapter" if not walks(binding):
+            return False
+        case _:
+            pass
+    return ambiguous(binding)
 
 
 def _json_kind(node: TypeNode) -> str | None:
@@ -195,25 +268,25 @@ class Walk:
 class BuiltinModelCodec(ABC, Generic[T]):
     """Check contexts, validate sent and received wire values, and select wire members for one bound use."""
 
-    __slots__ = ("_binding", "_bundle", "_members", "_models", "_types", "_validator", "_wire_fields")
+    __slots__ = ("_binding", "_bundle", "_convertible", "_members", "_models", "_types", "_validator", "_wire_fields")
 
     _types: dict[str, type]
 
     def __init__(
         self,
         binding: UseBinding,
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         validator: WireValidator | None,
         *,
         selects: bool,
         converter: str,
     ) -> None:
-        """Refuse a binding for another converter or a bundle for another direction, then bind the schema view."""
+        """Refuse a binding for another converter, then keep the source of its schema bundle for the first validation.
+
+        Uses that never validate against schemas neither build the bundle nor import a schema validator.
+        """
         if not selects:
             msg = f"The binding does not select {converter}"
-            raise CodecConfigurationError(msg)
-        if bundle.direction != binding.direction:
-            msg = "The schema bundle does not validate the binding's direction"
             raise CodecConfigurationError(msg)
         self._binding = binding
         self._bundle = bundle
@@ -222,7 +295,8 @@ class BuiltinModelCodec(ABC, Generic[T]):
             model.symbol: {member.wire_name: member for member in model.fields} for model in binding.models
         }
         self._members: dict[str, WireSchemaValidator] = {}
-        self._validator: WireValidator = validator if validator is not None else bundle.validator(binding.schema_id)
+        self._validator = validator
+        self._convertible = not needs_schema(binding)
 
     @property
     def binding(self) -> UseBinding:
@@ -235,7 +309,7 @@ class BuiltinModelCodec(ABC, Generic[T]):
         budget = MatchBudget()
         try:
             snapshot = freeze_wire(wire)
-            if issues := self._validator.validate(snapshot, budget=budget, context=context):
+            if issues := self._checker().validate(snapshot, budget=budget, context=context):
                 raise WireValidationError(issues)
             return self._project(snapshot, budget)
         except RecursionError:
@@ -260,6 +334,35 @@ class BuiltinModelCodec(ABC, Generic[T]):
         return ModelValue(
             value=value, binding_id=self._binding.binding_id, wire=wire, presence=snapshot_presence(wire), extras=EMPTY
         )
+
+    def serialize(self, value: object, context: CodecContext, *, validate: bool = False) -> WireValue:
+        """Return the wire value to send for a native value without its schema; a snapshot is encoded as it is.
+
+        With validate, the value first passes its backend's own validation entry, which returns a value the backend
+        trusts, such as a model instance its configuration does not revalidate, as it is. The members its direction
+        excludes are left out while the native value is read.
+        """
+        if _captured(value):
+            return self.encode(value, context)
+        self._require(context, inbound=False)
+        try:
+            return self._native_wire(self._validated(value) if validate else value, None)
+        except RecursionError:
+            raise self._nesting() from None
+
+    def convert(self, wire: WireValue, context: CodecContext) -> T:
+        """Construct the native value of a received wire value through its backend's converter, without its schema.
+
+        The native converter checks the value as the final type declares it, which may differ from the schema.
+        """
+        self._require(context, inbound=True)
+        if not self._convertible:
+            msg = "The use chooses a union member by its schema, so only its schema can convert it"
+            raise CodecConfigurationError(msg)
+        try:
+            return self._converted(freeze_wire(wire), MatchBudget())
+        except RecursionError:
+            raise self._nesting() from None
 
     def encode(self, value: object, context: CodecContext) -> WireValue:
         """Return the validated wire value to send for a native value or a snapshot of this binding.
@@ -286,7 +389,15 @@ class BuiltinModelCodec(ABC, Generic[T]):
 
     @abstractmethod
     def _native_wire(self, value: object, presence: PresenceTree | None) -> WireValue:
-        """Read a native value into its wire form, before directional exclusion and validation."""
+        """Read a native value into its wire form without the members its direction excludes, before validation."""
+
+    @abstractmethod
+    def _validated(self, value: object) -> object:
+        """Validate a native value to send through the backend's validation entry."""
+
+    @abstractmethod
+    def _converted(self, wire: WireValue, budget: MatchBudget) -> T:
+        """Construct the native value of a wire value through the backend's converter alone."""
 
     @staticmethod
     def _nesting() -> CodecResourceLimitError:
@@ -305,11 +416,24 @@ class BuiltinModelCodec(ABC, Generic[T]):
             raise CodecBindingError(msg)
 
     def _outbound(self, wire: WireValue, budget: MatchBudget, context: CodecContext) -> WireValue:
-        if excluded := self._validator.excluded(wire, budget=budget):
+        validator = self._checker()
+        if excluded := validator.excluded(wire, budget=budget):
             wire = without_pointers(wire, excluded)
-        if issues := self._validator.validate(wire, budget=budget, context=context):
+        if issues := validator.validate(wire, budget=budget, context=context):
             raise WireValidationError(issues)
         return wire
+
+    def _schemas(self) -> SchemaBundle:
+        if (bundle := self._bundle()).direction != self._binding.direction:
+            msg = "The schema bundle does not validate the binding's direction"
+            raise CodecConfigurationError(msg)
+        return bundle
+
+    def _checker(self) -> WireValidator:
+        """Return the validator of the use's schema, built from the bundle when it first validates."""
+        if (validator := self._validator) is None:
+            validator = self._validator = self._schemas().validator(self._binding.schema_id)
+        return validator
 
     def _excluded(self, member: FieldBinding) -> bool:
         return member.read_only if self._binding.direction == "request" else member.write_only
@@ -318,13 +442,16 @@ class BuiltinModelCodec(ABC, Generic[T]):
         if (schema_id := (model := self._models[symbol]).schema_id) is None:
             return model.native_kind == "root" or isinstance(wire, Mapping)
         if (validator := self._members.get(symbol)) is None:
-            validator = self._members[symbol] = self._bundle.validator(schema_id)
+            validator = self._members[symbol] = self._schemas().validator(schema_id)
         return not validator.validate(wire, budget=budget)
 
     def _wire_member(self, wire: WireValue, members: tuple[TypeNode, ...], budget: MatchBudget) -> TypeNode | None:
+        """Return a wire value's member: by its JSON kind when no other member shares that kind, else by schema."""
         for member in members:
             match member:
-                case ModelNode(symbol=symbol) if self._matches(symbol, wire, budget):
+                case ModelNode(symbol=symbol) if (
+                    self._matches(symbol, wire, budget) if _shared(member, members) else isinstance(wire, Mapping)
+                ):
                     return member
                 case ArrayNode() | TupleNode() if isinstance(wire, tuple) and (
                     not _shared(member, members) or self._wire_fits(wire, member, budget)

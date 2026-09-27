@@ -6,6 +6,8 @@
     {"name": "animal-server-cat", "use": "/paths/~1animals/post request_body", "op": "decode",
      "value": {"meow": true, "nick-name": "Tom"}},
     {"name": "animal-client-decode-dog", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "decode",
-     "value": {"id": 2, "bark": 3, "nick-name": "Rex"}}
+     "value": {"id": 2, "bark": 3, "nick-name": "Rex"}},
+    {"name": "animals-client-needs-schema", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "needs-schema"},
+    {"name": "animals-client-convert", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "convert", "value": {"id": 1, "meow": true}}
   ]
 }
