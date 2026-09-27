@@ -13,6 +13,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
 from functools import partial
+from itertools import starmap
 from math import isfinite
 from types import MappingProxyType, NoneType, UnionType
 from typing import (
@@ -456,8 +457,11 @@ class _Map:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class _Union:
+    """Members of a union; ``shared`` marks the containers whose JSON kind another member has, which items choose."""
+
     members: tuple[_Plan, ...]
     nullable: bool
+    shared: tuple[bool, ...] = ()
     failure: ClassVar[_Failure] = _Failure("native.union")
 
 
@@ -736,10 +740,8 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 present = tuple(member for member in members if not _absent(member))
                 if (NoneType in members) < nullable or len(present) != len(items):
                     raise self._mismatch(where)
-                return _Union(
-                    tuple(self._build(item, member, where) for item, member in zip(items, present, strict=True)),
-                    nullable,
-                )
+                plans = tuple(self._build(item, member, where) for item, member in zip(items, present, strict=True))
+                return _Union(plans, nullable, _shared(plans))
             case _ if (
                 members is not None
                 and len(real := [item for item in members if not _absent(item)]) == 1
@@ -857,7 +859,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 return self._decode_model(wire, plan, route, state)
             case _Union(nullable=True) if wire is None:
                 return None
-            case _Union(members=members) if (member := self._member(wire, members, state.budget)) is not None:
+            case _Union() if (member := self._member(wire, plan, state.budget)) is not None:
                 return self._decode(wire, member, route, state)
             case _Sequence(item=item, container=container) if isinstance(wire, tuple):
                 items = [self._decode(entry, item, (route, index, index), state) for index, entry in enumerate(wire)]
@@ -967,20 +969,46 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             else "The native constructor requires a property that the wire value omits",
         )
 
-    def _member(self, wire: WireValue, members: tuple[_Plan, ...], budget: MatchBudget) -> _Plan | None:
-        for member in members:
+    def _member(self, wire: WireValue, plan: _Union, budget: MatchBudget) -> _Plan | None:
+        for member, shared in zip(plan.members, plan.shared, strict=True):
             match member:
                 case _Model(binding=binding) if self._matches(binding.symbol, wire, budget):
                     return member
-                case _Sequence() | _Tuple() if isinstance(wire, tuple):
+                case _Sequence() | _Tuple() if isinstance(wire, tuple) and (
+                    not shared or self._within(wire, member, budget)
+                ):
                     return member
-                case _Map() if isinstance(wire, Mapping):
+                case _Map() if isinstance(wire, Mapping) and (not shared or self._within(wire, member, budget)):
                     return member
                 case _Leaf(accepts=accepts, convert=convert) if accepts(wire) and not _outside(convert(wire)):
                     return member
                 case _:
                     continue
         return None
+
+    def _within(self, wire: WireValue, plan: _Plan, budget: MatchBudget) -> bool:
+        """Return whether a wire value lies in a plan's wire domain, item by item, as a union member must."""
+        match plan:
+            case _Model(binding=binding):
+                return self._matches(binding.symbol, wire, budget)
+            case _Union(members=members, nullable=nullable):
+                return (wire is None and nullable) or any(self._within(wire, member, budget) for member in members)
+            case _Sequence(item=item):
+                return isinstance(wire, tuple) and all(self._within(entry, item, budget) for entry in wire)
+            case _Tuple(items=items):
+                return (
+                    isinstance(wire, tuple)
+                    and len(wire) == len(items)
+                    and all(self._within(entry, item, budget) for entry, item in zip(wire, items, strict=True))
+                )
+            case _Map(key=key, value=value):
+                return isinstance(wire, Mapping) and all(
+                    not isinstance(key(name), _Failure) and self._within(entry, value, budget)
+                    for name, entry in wire.items()
+                )
+            case _:
+                pass
+        return plan.accepts(wire) and not _outside(plan.convert(wire))
 
     def _native_wire(self, value: object, presence: PresenceTree | None) -> WireValue:
         return self._encode(value, self._plan, presence, None)
@@ -993,7 +1021,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 return self._encode_model(native, plan, presence, route)
             case _Model(record=False, native=kind) if isinstance(native, kind):
                 return self._encode_model(native, plan, presence, route)
-            case _Union(members=members) if (member := _native_plan(native, members)) is not None:
+            case _Union() if (member := _native_plan(native, plan)) is not None:
                 return self._encode(native, member, presence, route)
             case _Sequence(item=item) if is_set(native):
                 _array_presence(presence, len(native), route)
@@ -1141,25 +1169,62 @@ def _outside(value: object) -> bool:
     return isinstance(value, _Failure) and value.outside
 
 
-def _native_plan(native: object, members: tuple[_Plan, ...]) -> _Plan | None:
+def _native_plan(native: object, plan: _Union) -> _Plan | None:
     """Select the union member that encodes a native value, preferring the model of exactly its type."""
+    members = plan.members
     if (
         exact := next((item for item in members if isinstance(item, _Model) and item.native is type(native)), None)
     ) is not None:
         return exact
-    for member in members:
+    for member, shared in zip(members, plan.shared, strict=True):
         match member:
             case _Model() if _fits(member, native):
                 return member
-            case _Sequence() | _Tuple() if is_sequence(native) or is_set(native):
+            case _Sequence() | _Tuple() if (is_sequence(native) or is_set(native)) and (
+                not shared or _holds(native, member)
+            ):
                 return member
-            case _Map() if is_mapping(native):
+            case _Map() if is_mapping(native) and (not shared or _holds(native, member)):
                 return member
             case _Leaf(native=kind) if kind is not None and isinstance(native, kind):
                 return member
             case _:
                 continue
     return next((member for member in members if isinstance(member, _Leaf)), None)
+
+
+def _holds(native: object, plan: _Plan) -> bool:
+    """Return whether a native value lies in a plan's native domain, item by item, as a union member must."""
+    match plan:
+        case _Model():
+            return _fits(plan, native)
+        case _Union(members=members, nullable=nullable):
+            return (native is None and nullable) or any(_holds(native, member) for member in members)
+        case _Sequence(item=item):
+            return (is_sequence(native) or is_set(native)) and all(_holds(entry, item) for entry in native)
+        case _Tuple(items=items):
+            return (
+                is_sequence(native)
+                and len(native) == len(items)
+                and all(starmap(_holds, zip(native, items, strict=True)))
+            )
+        case _Map(value=value):
+            return is_mapping(native) and all(_holds(entry, value) for entry in native.values())
+        case _:
+            pass
+    return plan.native is None or isinstance(native, plan.native)
+
+
+def _shared(members: tuple[_Plan, ...]) -> tuple[bool, ...]:
+    """Return which container members share their JSON kind with another member, so their shape cannot choose."""
+    kinds = [
+        "array" if isinstance(member, (_Sequence, _Tuple)) else "object" if isinstance(member, (_Map, _Model)) else None
+        for member in members
+    ]
+    return tuple(
+        not isinstance(member, _Model) and kind is not None and kinds.count(kind) > 1
+        for member, kind in zip(members, kinds, strict=True)
+    )
 
 
 def _json(value: object, representation: Representation, presence: PresenceTree | None, route: _Route) -> WireValue:  # noqa: PLR0911

@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
+from itertools import starmap
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, TypeVar
 
@@ -139,6 +140,23 @@ def model_unions(node: TypeNode | None) -> bool:
         case _:
             pass
     return False
+
+
+def _shared(member: TypeNode, members: tuple[TypeNode, ...]) -> bool:
+    """Return whether another member of a union has a container's JSON kind, so its shape alone cannot choose it."""
+    kind = _json_kind(member)
+    return sum(_json_kind(item) == kind for item in members) > 1
+
+
+def _json_kind(node: TypeNode) -> str | None:
+    match node:
+        case ArrayNode() | TupleNode():
+            return "array"
+        case MapNode() | ModelNode():
+            return "object"
+        case _:
+            pass
+    return None
 
 
 def item_node(node: ArrayNode | TupleNode, index: int) -> TypeNode | None:
@@ -309,13 +327,40 @@ class BuiltinModelCodec(ABC, Generic[T]):
             match member:
                 case ModelNode(symbol=symbol) if self._matches(symbol, wire, budget):
                     return member
-                case ArrayNode() | TupleNode() if isinstance(wire, tuple):
+                case ArrayNode() | TupleNode() if isinstance(wire, tuple) and (
+                    not _shared(member, members) or self._wire_fits(wire, member, budget)
+                ):
                     return member
-                case MapNode() if isinstance(wire, Mapping):
+                case MapNode() if isinstance(wire, Mapping) and (
+                    not _shared(member, members) or self._wire_fits(wire, member, budget)
+                ):
                     return member
                 case _:
                     continue
         return None
+
+    def _wire_fits(self, wire: WireValue, node: TypeNode, budget: MatchBudget) -> bool:
+        """Return whether a wire value fits a node's models item by item; leaves are left to the native validator."""
+        match node:
+            case ModelNode(symbol=symbol):
+                return self._matches(symbol, wire, budget)
+            case ArrayNode(item=item):
+                return isinstance(wire, tuple) and all(self._wire_fits(entry, item, budget) for entry in wire)
+            case TupleNode(items=items):
+                return (
+                    isinstance(wire, tuple)
+                    and len(wire) == len(items)
+                    and all(self._wire_fits(entry, item, budget) for entry, item in zip(wire, items, strict=True))
+                )
+            case MapNode(value=value):
+                return isinstance(wire, Mapping) and all(
+                    self._wire_fits(entry, value, budget) for entry in wire.values()
+                )
+            case UnionNode(members=members, nullable=nullable):
+                return (wire is None and nullable) or any(self._wire_fits(wire, member, budget) for member in members)
+            case _:
+                pass
+        return True
 
     def _native_member(self, native: object, members: tuple[TypeNode, ...]) -> TypeNode | None:
         kind = type(native)
@@ -329,10 +374,37 @@ class BuiltinModelCodec(ABC, Generic[T]):
             match member:
                 case ModelNode(symbol=symbol) if isinstance(native, self._types[symbol]):
                     return member
-                case ArrayNode() | TupleNode() if is_sequence(native) or is_set(native):
+                case ArrayNode() | TupleNode() if (is_sequence(native) or is_set(native)) and (
+                    not _shared(member, members) or self._native_fits(native, member)
+                ):
                     return member
-                case MapNode() if is_mapping(native):
+                case MapNode() if is_mapping(native) and (
+                    not _shared(member, members) or self._native_fits(native, member)
+                ):
                     return member
                 case _:
                     continue
         return next((member for member in members if isinstance(member, LeafNode)), None)
+
+    def _native_fits(self, native: object, node: TypeNode) -> bool:
+        """Return whether a native value fits a node's models item by item; leaves are left to the native serializer."""
+        match node:
+            case ModelNode(symbol=symbol):
+                return isinstance(native, self._types[symbol])
+            case ArrayNode(item=item):
+                return (is_sequence(native) or is_set(native)) and all(
+                    self._native_fits(entry, item) for entry in native
+                )
+            case TupleNode(items=items):
+                return (
+                    is_sequence(native)
+                    and len(native) == len(items)
+                    and all(starmap(self._native_fits, zip(native, items, strict=True)))
+                )
+            case MapNode(value=value):
+                return is_mapping(native) and all(self._native_fits(entry, value) for entry in native.values())
+            case UnionNode(members=members, nullable=nullable):
+                return (native is None and nullable) or any(self._native_fits(native, member) for member in members)
+            case _:
+                pass
+        return True

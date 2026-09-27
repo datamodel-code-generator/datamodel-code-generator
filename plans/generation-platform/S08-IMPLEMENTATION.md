@@ -73,6 +73,14 @@ Tests: the pets, shapes, union alias and a Struct source run through both strate
 
 Benchmarks (100 pets of the S04 benchmark source, best of 7, µs, two runs): decoding takes 3961–3973 with BaseModel, 3818–3883 with dataclasses, 3800–3834 with TypedDicts, 3824–3889 with `msgspec_convert` and 3875–3896 with `msgspec_structural`; encoding a native list takes 3769–3784, 3148–3198, 3178–3204, 3127–3231 and 3169–3189. Of a decode, projection is 835 with conversion (presence 415, walk 293, copy 95, `msgspec.convert` 15) and 870 with the structural walk (presence 415, construction 450); the rest is the common validation (about 2250) and freezing (665), which every backend shares.
 
+## Review of the stack (2026-09-27)
+
+A review of the eleven open PRs reported five findings; each fix is its own PR on top of the stack. The first, the precedence of an exact response media over its parameter-free form, is recorded in S07.
+
+### Unions of containers
+
+A union with two members of the same JSON container kind, such as `list[int] | list[str]` or `dict[str, Cat] | dict[str, Dog]`, took the first member whose container shape matched: `["abc"]` failed with `native.int_type` and a `Dog` in a list was read as a `Cat` on all three structural backends, and both Pydantic backends encoded `[Dog(...)]` through the `Cat` member and walked the keys of an aliased `Dog` with `Cat`'s. A container member that shares its JSON kind with another member (an array with an array or a tuple, a map with a map or a model) is now chosen item by item: the structural codec checks each item and value against the member's wire domain when decoding (models by schema, leaves by their domains) and its native domain when encoding, and the shared frame checks the models inside a Pydantic member by schema on the wire and by type natively. A lone container is still chosen by its shape, so unions with one container keep their cost. The five-backend comparison gains a container source whose fifteen values decode and echo identically on every backend, and a Pydantic fixture without aliases decodes aliased models through each container member.
+
 ## Next action
 
 Publish S08-3 on #4183. S09 renders these codecs into client packages.
