@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Shop
+  version: "1"
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      parameters:
+        - {name: limit, in: query, schema: {type: integer}}
+      responses:
+        "200":
+          description: The orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Order"}
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: The order.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Order"}
+    delete:
+      operationId: deleteOrder
+      tags: [orders]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "204": {description: Deleted.}
+components:
+  schemas:
+    Order:
+      type: object
+      required: [id, total]
+      properties:
+        id: {type: integer}
+        total: {type: integer}
