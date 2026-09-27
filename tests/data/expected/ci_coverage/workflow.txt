@@ -15,7 +15,6 @@
   "configurations": [
     "fastapi-e2e:ubuntu-24.04:/:",
     "fastapi-install-nocov-e2e:ubuntu-24.04:/:",
-    "fastapi-typing-nocov-e2e:ubuntu-24.04:/:",
     "httpx-both-nocov-e2e:macos-latest:/:",
     "httpx-e2e:ubuntu-24.04:/:",
     "httpx2-max-nocov-e2e:windows-latest:/:",
@@ -77,7 +76,8 @@
     "pydantic200:ubuntu-24.04:/:",
     "pydantic20:ubuntu-24.04:/:",
     "pydantic213:ubuntu-24.04:/:",
-    "pydantic25:ubuntu-24.04:/:"
+    "pydantic25:ubuntu-24.04:/:",
+    "typing-nocov-e2e:ubuntu-24.04:/:"
   ],
   "coverage_count": 30,
   "coverage_needs_only_producers": true,

@@ -6,11 +6,11 @@ from adapted.models import Keeper, Pet, Secretive
 
 
 def exercise(wire: WireValue, keeper: Keeper) -> None:
-    _widened: ModelCodec[object] = bindings.codec_4()
-    _other: ModelCodec[Keeper] = bindings.codec_4()
-    bindings.outbound_5().snapshot(keeper)
-    _bare: Pet = bindings.codec_4().decode(wire, bindings.CONTEXT_4)
-    _native: NativeOutboundCodec[Secretive] = bindings.outbound_8()
-    _sent: ModelValue[Secretive] = bindings.outbound_8().from_wire(wire)
-    bindings.outbound_4()
-    bindings.parameter_1()
+    _widened: ModelCodec[object] = bindings.codec_4()  # error
+    _other: ModelCodec[Keeper] = bindings.codec_4()  # error
+    bindings.outbound_5().snapshot(keeper)  # error
+    _bare: Pet = bindings.codec_4().decode(wire, bindings.CONTEXT_4)  # error
+    _native: NativeOutboundCodec[Secretive] = bindings.outbound_8()  # error
+    _sent: ModelValue[Secretive] = bindings.outbound_8().from_wire(wire)  # error
+    bindings.outbound_4()  # error
+    bindings.parameter_1()  # error

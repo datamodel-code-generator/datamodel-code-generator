@@ -2,30 +2,16 @@
 
 from __future__ import annotations
 
-import json
-import re
 import shutil
-import subprocess
-import sys
-from collections import Counter
 from pathlib import Path
-from typing import Final
 
 from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
 from datamodel_code_generator.fastapi import FastAPIConfig, generate_fastapi
 from datamodel_code_generator.format import Formatter
+from tests.data.python.strict_typing import checked, marked_lines, negative
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 SAMPLES = SOURCE / "typing"
-PYTHON_VERSION = "3.10"
-MYPY: Final = ("uvx", "--quiet", "mypy@2.3.1")
-PYRIGHT: Final = ("uvx", "--quiet", "pyright@1.1.414")
-TIMEOUT: Final = 600
-BIN = Path(sys.executable).parent
-_MYPY = re.compile(r"^(\S+?):(\d+): error: .*\[([\w-]+)\]$", re.MULTILINE)
-_TY = re.compile(r"^(\S+?):(\d+):\d+: error\[([\w-]+)\]", re.MULTILINE)
-
-Found = list[tuple[str, int, str]]
 
 
 def _generate(root: Path, source: Path, package: str, backend: DataModelType, **settings: object) -> None:
@@ -45,83 +31,6 @@ def _generate(root: Path, source: Path, package: str, backend: DataModelType, **
     )
 
 
-def _run(command: list[str | Path], root: Path) -> subprocess.CompletedProcess[str]:
-    """Run one checker, refusing a stall, a crash, or an exit status that no diagnostics explain."""
-    completed = subprocess.run(command, cwd=root, capture_output=True, text=True, check=False, timeout=TIMEOUT)
-    if completed.returncode not in {0, 1}:
-        msg = f"{command[0]} exited with {completed.returncode}:\n{completed.stdout}{completed.stderr}"
-        raise RuntimeError(msg)
-    return completed
-
-
-def _diagnostics(completed: subprocess.CompletedProcess[str], found: Found) -> Found:
-    if completed.returncode != (1 if found else 0):
-        msg = f"The checker exited with {completed.returncode} for {len(found)} errors:\n{completed.stdout}{completed.stderr}"
-        raise RuntimeError(msg)
-    return found
-
-
-def _mypy(root: Path, targets: list[str]) -> Found:
-    completed = _run(
-        [*MYPY, "--strict", "--no-incremental", "--python-executable", sys.executable, "--python-version", PYTHON_VERSION, *targets],
-        root,
-    )
-    return _diagnostics(completed, [(match[1], int(match[2]), match[3]) for match in _MYPY.finditer(completed.stdout)])
-
-
-def _pyright(root: Path, targets: list[str]) -> Found:
-    (root / "pyrightconfig.json").write_text(
-        json.dumps({
-            "typeCheckingMode": "strict",
-            "pythonVersion": PYTHON_VERSION,
-            "include": targets,
-            "extraPaths": ["."],
-        }),
-        encoding="utf-8",
-    )
-    completed = _run([*PYRIGHT, "--outputjson", "--pythonpath", sys.executable, "--project", "pyrightconfig.json"], root)
-    return _diagnostics(
-        completed,
-        [
-            (Path(item["file"]).relative_to(root.resolve()).as_posix(), item["range"]["start"]["line"] + 1, item["rule"])
-            for item in json.loads(completed.stdout)["generalDiagnostics"]
-            if item["severity"] == "error"
-        ],
-    )
-
-
-def _ty(root: Path, targets: list[str]) -> Found:
-    completed = _run(
-        [
-            BIN / "ty",
-            "check",
-            "--python",
-            sys.executable,
-            "--python-version",
-            PYTHON_VERSION,
-            "--output-format",
-            "concise",
-            "--extra-search-path",
-            ".",
-            *targets,
-        ],
-        root,
-    )
-    return _diagnostics(completed, [(match[1], int(match[2]), match[3]) for match in _TY.finditer(completed.stdout)])
-
-
-CHECKERS = (("mypy", _mypy), ("pyright", _pyright), ("ty", _ty))
-
-
-def _checked(root: Path, targets: list[str], label: str) -> list[str]:
-    lines: list[str] = []
-    for name, check in CHECKERS:
-        found = check(root, targets)
-        lines.append(f"{name} {label}: {'clean' if not found else ''}".rstrip())
-        lines.extend(f"  {file}:{line} {rule}" for file, line, rule in sorted(found))
-    return lines
-
-
 def fastapi_typing_report(root: Path, backend: DataModelType) -> str:
     """Check the secured package with the application sample, then the negative sample line by line."""
     _generate(
@@ -133,21 +42,12 @@ def fastapi_typing_report(root: Path, backend: DataModelType) -> str:
     )
     for sample in ("applications", "applications_negative"):
         shutil.copyfile(SAMPLES / f"{sample}.py", root / f"{sample}.py")
-    marked = {
-        index
-        for index, line in enumerate((root / "applications_negative.py").read_text(encoding="utf-8").splitlines(), 1)
-        if line.endswith("# error")
-    }
-    lines = [f"{len(marked)} marked lines", *_checked(root, ["secured", "applications.py"], "secured and applications.py")]
-    for name, check in CHECKERS:
-        found = check(root, ["applications_negative.py"])
-        counts = Counter(line for file, line, _ in found if file == "applications_negative.py")
-        lines.append(
-            f"{name} applications_negative.py: {sum(counts[line] == 1 for line in marked)}/{len(marked)} marked lines"
-            f" with one error, {sum(count for line, count in counts.items() if line not in marked)} elsewhere,"
-            f" {len([item for item in found if item[0] != 'applications_negative.py'])} in other files"
-        )
-        lines.extend(f"  {line} {rule}" for file, line, rule in sorted(found) if file == "applications_negative.py")
+    marked = marked_lines(root / "applications_negative.py")
+    lines = [
+        f"{len(marked)} marked lines",
+        *checked(root, ["secured", "applications.py"], "secured and applications.py"),
+        *negative(root, "applications_negative.py", marked),
+    ]
     return "\n".join(lines) + "\n"
 
 
@@ -157,5 +57,5 @@ def fastapi_update_report(root: Path) -> str:
     lines: list[str] = []
     for document in ("updates.yaml", "updates-changed.yaml"):
         _generate(root, SAMPLES / document, "shop", DataModelType.PydanticV2BaseModel)
-        lines.extend((f"== {document}", *_checked(root, ["updates_service.py"], "updates_service.py")))
+        lines.extend((f"== {document}", *checked(root, ["updates_service.py"], "updates_service.py")))
     return "\n".join(lines) + "\n"
