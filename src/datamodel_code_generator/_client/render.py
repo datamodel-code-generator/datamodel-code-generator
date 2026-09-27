@@ -84,9 +84,13 @@ _ERROR_NAMES: Final = (
     "BodyProtocolError",
     "ConfigurationError",
     "DecodeError",
+    "DecompressionLimitError",
     "DeliveryState",
     "HTTPStatusError",
     "IOPhase",
+    "ProtocolDataError",
+    "ProtocolError",
+    "ProtocolSizeError",
     "RequestEncodingError",
     "ResponseDecodeError",
     "ResponseHeaderDecodeError",
@@ -97,6 +101,7 @@ _ERROR_NAMES: Final = (
     "TransportError",
     "UnexpectedMediaTypeError",
     "UnexpectedStatusError",
+    "UnsupportedContentCodingError",
 )
 _ERRORS: Final = (
     '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n'
