@@ -33,6 +33,7 @@ from datamodel_code_generator._generation_contract import (
     NoneType,
     OperationId,
     SourceLocation,
+    SymbolId,
     TypeUseBinding,
     TypeUseId,
     UnionType,
@@ -386,9 +387,10 @@ class _CodecPlanner:
             case AnnotatedType(base=base):
                 return self.node(base, schema, source)
             case UnionType(members=members):
-                present = [member for member in members if not isinstance(member, NoneType)]
+                flat = tuple(dict.fromkeys(_union_members(self, members, set())))
+                present = [member for member in flat if not isinstance(member, NoneType)]
                 return UnionNode(
-                    tuple(self.node(member, schema, source) for member in present), len(present) != len(members)
+                    tuple(self.node(member, schema, source) for member in present), len(present) != len(flat)
                 )
             case GenericType(arguments=items, tuple_form="fixed"):
                 return TupleNode(
@@ -684,6 +686,32 @@ class _CodecPlanner:
                 return "scalar"
 
 
+def _aliased(planner: _CodecPlanner, symbol: SymbolId) -> FinalPythonType | None:
+    """Return the final type an alias names, or None for a symbol that is no alias."""
+    if planner.symbols[symbol].kind != "alias":
+        return None
+    return next(
+        (facts.type for member in planner.members.get(symbol, []) if (facts := member.model_facts) is not None),
+        None,
+    )
+
+
+def _union_members(
+    planner: _CodecPlanner, members: tuple[FinalPythonType, ...], seen: set[SymbolId]
+) -> Iterator[FinalPythonType]:
+    """Yield a union's members with the members of aliased unions in place of the aliases, as Python does."""
+    for member in members:
+        if (
+            isinstance(member, GeneratedSymbolType)
+            and member.symbol not in seen
+            and isinstance(aliased := _aliased(planner, member.symbol), UnionType)
+        ):
+            seen.add(member.symbol)
+            yield from _union_members(planner, aliased.members, seen)
+        else:
+            yield member
+
+
 class _MsgspecTypes:
     """Decide at generation time whether msgspec.convert reads a final type, as msgspec itself decides at runtime."""
 
@@ -725,28 +753,17 @@ class _MsgspecTypes:
         for item in items:
             if (
                 isinstance(item, GeneratedSymbolType)
-                and self.planner.symbols[item.symbol].kind == "alias"
                 and item.symbol not in seen
-                and (aliased := self.aliased(item.symbol)) is not None
+                and (aliased := _aliased(self.planner, item.symbol)) is not None
             ):
                 seen.add(item.symbol)
                 yield from self.flattened(aliased.members if isinstance(aliased, UnionType) else (aliased,), seen)
             else:
                 yield item
 
-    def aliased(self, symbol: int) -> FinalPythonType | None:
-        return next(
-            (
-                facts.type
-                for member in self.planner.members.get(symbol, [])
-                if (facts := member.model_facts) is not None
-            ),
-            None,
-        )
-
     def kinds(self, items: tuple[FinalPythonType, ...]) -> list[str]:
         """Return the msgspec categories of a union's members; literals merge with each other and a plain str or int."""
-        flat = tuple(self.flattened(items, set()))
+        flat = tuple(dict.fromkeys(self.flattened(items, set())))
         names = {_name(item) for item in flat}
         literals = {
             kind

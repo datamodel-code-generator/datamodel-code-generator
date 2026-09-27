@@ -1,9 +1,13 @@
 use /paths/~1choices/post request_body: native struct models:Choice msgspec_convert models=[('models:Choice', 'struct', 'ignore', True)]
 use /paths/~1choices/post response_body 200: native struct models:Choice msgspec_convert models=[('models:Choice', 'struct', 'ignore', True)]
-choice-server-decode: model Choice(color_or_count=<Color.red: 'red'>, word_or_list='w', maybe_or_flag=None) wire={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null} presence=['', '/color_or_count', '/word_or_list', '/maybe_or_flag'] extras={}
-choice-server-decode-numbers: model Choice(color_or_count=3, word_or_list=[1, 2], maybe_or_flag=True) wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true} presence=['', '/color_or_count', '/word_or_list', '/word_or_list/0', '/word_or_list/1', '/maybe_or_flag'] extras={}
-choice-server-decode-dated: model Choice(color_or_count=UNSET, word_or_list=5, maybe_or_flag='2020-01-02') wire={"word_or_list":5,"maybe_or_flag":"2020-01-02"} presence=['', '/word_or_list', '/maybe_or_flag'] extras={}
+choice-server-decode: model Choice(color_or_count=<Color.red: 'red'>, word_or_list='w', maybe_or_flag=None, word_or_text=UNSET) wire={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null} presence=['', '/color_or_count', '/word_or_list', '/maybe_or_flag'] extras={}
+choice-server-decode-numbers: model Choice(color_or_count=3, word_or_list=[1, 2], maybe_or_flag=True, word_or_text=UNSET) wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true} presence=['', '/color_or_count', '/word_or_list', '/word_or_list/0', '/word_or_list/1', '/maybe_or_flag'] extras={}
+choice-server-decode-dated: model Choice(color_or_count=UNSET, word_or_list=5, maybe_or_flag='2020-01-02', word_or_text=UNSET) wire={"word_or_list":5,"maybe_or_flag":"2020-01-02"} presence=['', '/word_or_list', '/maybe_or_flag'] extras={}
 choice-server-decode-bad: WireValidationError schema.anyOf@/word_or_list
+choice-server-decode-text: model Choice(color_or_count=UNSET, word_or_list=UNSET, maybe_or_flag=UNSET, word_or_text='x') wire={"word_or_text":"x"} presence=['', '/word_or_text'] extras={}
+choice-server-decode-number: model Choice(color_or_count=UNSET, word_or_list=UNSET, maybe_or_flag=UNSET, word_or_text=2) wire={"word_or_text":2} presence=['', '/word_or_text'] extras={}
+choice-server-response-text: wire={"word_or_text":"x"}
+choice-server-response-number: wire={"word_or_text":2}
 choice-server-response: wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
 choice-server-response-dated: wire={"word_or_list":5,"maybe_or_flag":"2020-01-02"}
 choice-server-response-null: wire={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null}

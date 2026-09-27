@@ -81,6 +81,10 @@ A review of the eleven open PRs reported five findings; each fix is its own PR o
 
 A union with two members of the same JSON container kind, such as `list[int] | list[str]` or `dict[str, Cat] | dict[str, Dog]`, took the first member whose container shape matched: `["abc"]` failed with `native.int_type` and a `Dog` in a list was read as a `Cat` on all three structural backends, and both Pydantic backends encoded `[Dog(...)]` through the `Cat` member and walked the keys of an aliased `Dog` with `Cat`'s. A container member that shares its JSON kind with another member (an array with an array or a tuple, a map with a map or a model) is now chosen item by item: the structural codec checks each item and value against the member's wire domain when decoding (models by schema, leaves by their domains) and its native domain when encoding, and the shared frame checks the models inside a Pydantic member by schema on the wire and by type natively. A lone container is still chosen by its shape, so unions with one container keep their cost. The five-backend comparison gains a container source whose fifteen values decode and echo identically on every backend, and a Pydantic fixture without aliases decodes aliased models through each container member.
 
+### Duplicate members of aliased unions
+
+Expanding `Word: TypeAlias = str | int` inside `Word | str` left the binding with three members while Python keeps `str | int`, so the codec refused a valid generated model at startup: #4183 compared counts only. The planner now flattens aliased unions itself and drops a member equal to an earlier one, as Python does, so a binding carries exactly the members Python keeps; the runtime expands `TypeAliasType` values, which Python leaves in place, with the same deduplication, and the msgspec union check reads the members the same way. The union alias source gains `Word | str`, decoded and encoded through dataclasses with both alias spellings, TypedDicts and Structs.
+
 ## Next action
 
 Publish S08-3 on #4183. S09 renders these codecs into client packages.

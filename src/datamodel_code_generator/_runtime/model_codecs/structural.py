@@ -242,28 +242,17 @@ def _union_members(annotation: object) -> tuple[object, ...] | None:
     """Return a union's members with the members of aliased unions in place of the aliases, as Python flattens them."""
     if typing.get_origin(annotation) not in {Union, UnionType}:
         return None
-    return tuple(member for item in typing.get_args(annotation) for member in _aliased(item))
+    members: list[object] = []
+    for member in (member for item in typing.get_args(annotation) for member in _aliased(item)):
+        if member not in members:
+            members.append(member)
+    return tuple(members)
 
 
 def _aliased(item: object) -> tuple[object, ...]:
     """Return the members of a union behind an alias without metadata, or else the member itself."""
     annotation, metadata = _unwrap(item)
     return (item,) if metadata or (members := _union_members(annotation)) is None else members
-
-
-def _flattened(node: UnionNode) -> tuple[list[TypeNode], bool]:
-    """Return a union node's members with nested unions in place, and whether any of them admits null."""
-    items: list[TypeNode] = []
-    nullable = node.nullable
-    for member in node.members:
-        match member:
-            case UnionNode():
-                nested, optional = _flattened(member)
-                items.extend(nested)
-                nullable |= optional
-            case _:
-                items.append(member)
-    return items, nullable
 
 
 def _string_failure(kind: type) -> _Failure | None:
@@ -735,8 +724,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         match node:
             case ModelNode() if annotation is self._types[node.symbol]:
                 return self._model(node.symbol)
-            case UnionNode() if members is not None:
-                items, nullable = _flattened(node)
+            case UnionNode(members=items, nullable=nullable) if members is not None:
                 present = tuple(member for member in members if not _absent(member))
                 if (NoneType in members) < nullable or len(present) != len(items):
                     raise self._mismatch(where)
