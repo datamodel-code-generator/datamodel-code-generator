@@ -33,7 +33,7 @@
   changed path ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='stat') [operation_id='uploadPhoto'] body_changed_error
   removed path ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=FileNotFoundError(2, 'No such file or directory')] body_factory_error
   missing path: FileNotFoundError secondary []
-  async file to the sync client ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A binary body must be bytes or a file, stream, or factory body of the client's mode")] request_encoding_error
+  async file to the sync client ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] request_encoding_error
   > PUT https://hooks.example.com/file
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 3] b'raw'
   raw file = b'ok'
@@ -135,7 +135,7 @@
   async path = b'\x89PNG'
   async changed path ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='stat') [operation_id='uploadPhoto'] body_changed_error
   async removed path ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=FileNotFoundError(2, 'No such file or directory')] body_factory_error
-  async sync file to the async client ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A binary body must be bytes or a file, stream, or factory body of the client's mode")] request_encoding_error
+  async sync file to the async client ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] request_encoding_error
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'abcd'
   async stream = b'\x89PNG'

@@ -14,15 +14,19 @@ from pets.bodies import (
     AsyncBodyAttempt,
     AsyncBodyFactory,
     AsyncFileBody,
+    AsyncMultipartBody,
     AsyncStreamBody,
     BodyAttempt,
     BodyAttemptContext,
     BodyFactory,
+    FieldPart,
     FileBody,
+    FilePart,
+    MultipartBody,
     StreamBody,
     SyncBinaryBody,
 )
-from pets.model_codecs import JSONValue, ModelValue
+from pets.model_codecs import JSONValue, ModelValue, WireValue
 from pets.options import UNSET, RequestOptions
 from pets.responses import AsyncRawResponse, RawResponse, Response, ResponseInfo
 from pets.transports import (
@@ -156,6 +160,22 @@ async def bodies_async(client: AsyncClient, file: BinaryIO) -> None:
     await client.request_raw("PUT", "https://example.com/file", body=AsyncStreamBody(chunks(), ownership="owned"))
     await body.aclose()
     body.close()
+
+
+def multipart(client: Client, file: BinaryIO) -> None:
+    name: FieldPart[str] = FieldPart("name", "Ada")
+    count = FieldPart("count", 3, content_type="text/plain", headers=(("X-Trace", "t"),))
+    photo = FilePart("photo", FileBody(file), filename="a.png", content_type="image/png")
+    assert_type(photo.content, FileBody)
+    parts: MultipartBody[str | int] = MultipartBody((name, count, photo))
+    assert_type(parts.parts, tuple[FilePart[SyncBinaryBody] | FieldPart[str | int], ...])
+    body = MultipartBody[WireValue]((FieldPart("meta", {"k": 1}), FieldPart("skipped", UNSET), FilePart("f", b"x")))
+    client.request_raw("POST", "https://example.com/forms", body=body)
+
+
+async def multipart_async(client: AsyncClient) -> None:
+    body = AsyncMultipartBody[WireValue]((FieldPart("a", "x"), FilePart("f", AsyncFileBody.from_path("a.bin"))))
+    await client.request_raw("POST", "https://example.com/forms", body=body)
 
 
 class Adapter:

@@ -123,7 +123,7 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
   upload empty ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='uploadPhoto', call_id='<call>') [operation_id='uploadPhoto', body_bytes=b'{}', truncated=False, actual_media_type='application/json', expected_media_types=('image/*',)] unexpected_media_type_error
-  upload text ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A binary body must be bytes or a file, stream, or factory body of the client's mode")] request_encoding_error
+  upload text ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] request_encoding_error
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', field_path='media_type', condition='without_body') [operation_id='uploadPhoto', field_path=('media_type',), condition='without_body'] configuration_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
@@ -341,7 +341,7 @@
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: image/*] b''
   upload empty ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='uploadPhoto', call_id='<call>') [operation_id='uploadPhoto', body_bytes=b'{}', truncated=False, actual_media_type='application/json', expected_media_types=('image/*',)] unexpected_media_type_error
-  upload text ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A binary body must be bytes or a file, stream, or factory body of the client's mode")] request_encoding_error
+  upload text ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A body must be bytes or a file, stream, factory, or multipart body of the client's mode")] request_encoding_error
   upload media ! ConfigurationError: ConfigurationError(operation_id='uploadPhoto', field_path='media_type', condition='without_body') [operation_id='uploadPhoto', field_path=('media_type',), condition='without_body'] configuration_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''

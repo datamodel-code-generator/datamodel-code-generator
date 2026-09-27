@@ -3,7 +3,14 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Any
+
+from pydantic import BaseModel, RootModel
+
+
+class Address(BaseModel):
+    city: str | None = None
+    codes: list[int] | None = None
 
 
 class Draft(BaseModel):
@@ -21,6 +28,19 @@ class FieldFormsPostRequest(BaseModel):
 class FieldFormsPostResponse(BaseModel):
     name: str | None = None
     count: int | None = None
+
+
+class FieldProfilesPostRequest(BaseModel):
+    name: str
+    age: int | None = None
+    active: bool | None = None
+    tags: list[str] | None = None
+    address: Address | None = None
+    nickname: str | None = None
+
+
+class FieldAnythingPostRequest(RootModel[Any]):
+    root: Any
 
 
 class FieldDocumentsIdGetPathIdParameter(BaseModel):
