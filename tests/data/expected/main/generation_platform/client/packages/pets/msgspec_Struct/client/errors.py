@@ -2,6 +2,7 @@
 """Exceptions of this package's clients: every class derives from SDKError."""
 
 from ._runtime.client.errors import (
+    AdapterContractError,
     BodyProtocolError,
     ConfigurationError,
     DecodeError,
@@ -26,6 +27,7 @@ from ._runtime.client.errors import (
 )
 
 __all__ = [
+    'AdapterContractError',
     'BodyProtocolError',
     'ConfigurationError',
     'DecodeError',

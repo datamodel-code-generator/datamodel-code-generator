@@ -38,6 +38,9 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   coding bomb = 'DecompressionLimitError layer=0 ratio=100.0 over=True'
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding pre-read ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   coding chunked = 4000

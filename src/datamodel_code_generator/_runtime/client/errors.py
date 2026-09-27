@@ -598,3 +598,32 @@ class DecompressionLimitError(ProtocolSizeError):
         self.layer = layer
         self.encoded_bytes = encoded_bytes
         self.max_ratio = max_ratio
+
+
+class AdapterContractError(SDKError):
+    """A transport that broke its contract, such as handing over a body something already read; nothing is retried."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep how far the request got."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.delivery_state = delivery_state
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("delivery_state", self.delivery_state.value))

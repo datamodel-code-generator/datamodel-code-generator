@@ -529,6 +529,8 @@ def codings(package: ModuleType, lines: list[str]) -> None:
             record(lines, f"coding {label}", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(_coded("gzip", _BOMB))
         record(lines, "coding bomb", _limit(lambda: api.pets.get_pet(pet_id=pet)))
+        exchange.respond(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"}))
+        record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(
             chunked_response(
                 200, gzip.compress(pets, mtime=0), 100, "application/json", **{"content-encoding": "gzip", "X-Rate": "1"}

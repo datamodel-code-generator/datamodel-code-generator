@@ -81,6 +81,7 @@ from ._runtime.model_codecs.unset import UNSET, Unset
 __all__ = ["UNSET", "ClientOptions", "RequestOptions", "ServerSelection", "Unset"]
 '''
 _ERROR_NAMES: Final = (
+    "AdapterContractError",
     "BodyProtocolError",
     "ConfigurationError",
     "DecodeError",

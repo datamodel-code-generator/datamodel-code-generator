@@ -14,6 +14,7 @@ from ..model_codecs.parameters import FragmentContribution, QueryStringContribut
 from ..model_codecs.unset import UNSET, Unset
 from .coding import ContentDecoder
 from .errors import (
+    AdapterContractError,
     ConfigurationError,
     DeliveryState,
     ProtocolError,
@@ -207,6 +208,17 @@ def _info(
     )
 
 
+def _unconsumed(response: httpx2.Response, operation: OperationPlan[object, object], info: ResponseInfo) -> None:
+    """Refuse a response whose body something already read, such as an HTTPX2 event hook or a pre-read mock."""
+    if response.is_stream_consumed:
+        raise AdapterContractError(
+            delivery_state=DeliveryState.RESPONSE_STARTED,
+            operation_id=operation.operation_id,
+            call_id=info.call_id,
+            info=info,
+        )
+
+
 def _received(decoder: ResponseDecoder[object, object], status: int, settings: _Settings) -> _Body:
     success = decoder.success(status)
     return _Body(settings.max_response_bytes if success else settings.max_error_body_bytes, success=success)
@@ -364,12 +376,9 @@ class ClientCore(_Core):
         try:
             info = _info(response, operation, call_id, started)
             received = _received(decoder, response.status_code, settings)
-            chunks = (
-                response.iter_bytes()
-                if response.is_stream_consumed
-                else ContentDecoder(info, operation.operation_id).decoded(
-                    _chunks(response.iter_raw(), operation, call_id)
-                )
+            _unconsumed(response, operation, info)
+            chunks = ContentDecoder(info, operation.operation_id).decoded(
+                _chunks(response.iter_raw(), operation, call_id)
             )
             try:
                 for chunk in chunks:
@@ -443,12 +452,9 @@ class AsyncClientCore(_Core):
         try:
             info = _info(response, operation, call_id, started)
             received = _received(decoder, response.status_code, settings)
-            chunks = (
-                response.aiter_bytes()
-                if response.is_stream_consumed
-                else ContentDecoder(info, operation.operation_id).adecoded(
-                    _async_chunks(response.aiter_raw(), operation, call_id)
-                )
+            _unconsumed(response, operation, info)
+            chunks = ContentDecoder(info, operation.operation_id).adecoded(
+                _async_chunks(response.aiter_raw(), operation, call_id)
             )
             try:
                 async for chunk in chunks:
