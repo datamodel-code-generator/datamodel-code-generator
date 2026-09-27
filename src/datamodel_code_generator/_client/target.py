@@ -12,7 +12,7 @@ from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.config import ClientGenerationConfig
-from datamodel_code_generator._client.plan import PlanError, Planner, form_uses, plan_uses
+from datamodel_code_generator._client.plan import PlanError, Planner, form_uses, part_uses, plan_uses
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
@@ -23,11 +23,13 @@ from datamodel_code_generator._target_render import PATTERNS, model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
-    from datamodel_code_generator._generation_contract import TypeUseBinding
+    from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
+    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
@@ -60,14 +62,7 @@ class ClientTarget:
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         backend = _BACKENDS[request.model_config.output_model_type]
-        wire = plan_wire(
-            request.batch,
-            request.lease,
-            [use for operation in request.operations for use in operation_uses(operation)],
-            operations=frozenset(operation.id for operation in request.operations),
-            documents=request.documents.pointers,
-            forms=frozenset(form_uses(request)),
-        )
+        wire = _wire(request, request.batch)
         try:
             plan = Planner(request, config, wire).plan()
         except PlanError as error:
@@ -75,8 +70,12 @@ class ClientTarget:
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
             ) from None
         uses = frozenset(plan_uses(plan))
+        batch = request.batch
+        if parts := tuple(part_uses(plan)):
+            batch = replace(batch, type_uses=(*batch.type_uses, *parts))
+            wire = _wire(request, batch, parts)
         codecs = plan_model_codecs(
-            request.batch,
+            batch,
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
             backend,
             declarations=CodecDeclarations(
@@ -92,7 +91,7 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         renderer = ClientRenderer(
-            config=config, package=request.layout.package, plan=plan, batch=request.batch, wire=wire, codecs=codecs
+            config=config, package=request.layout.package, plan=plan, batch=batch, wire=wire, codecs=codecs
         )
         return TargetRender(
             files=renderer.files(),
@@ -106,6 +105,20 @@ class ClientTarget:
             ),
             bindings=_bindings(codecs, backend),
         )
+
+
+def _wire(
+    request: TargetRequest, batch: GeneratedTypeContractBatch, parts: tuple[TypeUseBinding, ...] = ()
+) -> WirePlan:
+    """Plan the wire of the selected operations' uses and of the parts they send; forms get their member plans."""
+    return plan_wire(
+        batch,
+        request.lease,
+        [*(use for operation in request.operations for use in operation_uses(operation)), *(part.id for part in parts)],
+        operations=frozenset(operation.id for operation in request.operations),
+        documents=request.documents.pointers,
+        forms=frozenset(form_uses(request)),
+    )
 
 
 def _sources(request: TargetRequest) -> dict[str, str]:
@@ -206,7 +219,16 @@ class _TargetData:
             "parameters": [(item.python_name, item.required, self.type(item.use)) for item in spec.parameters],
             "body": None
             if body is None
-            else (body.required, body.default, [(media.media_type, self.type(media.use)) for media in body.media]),
+            else (
+                body.required,
+                body.default,
+                [
+                    (media.media_type, self.type(media.use))
+                    if media.sent is None
+                    else (media.media_type, self.type(media.use), self.sent(media, self.type))
+                    for media in body.media
+                ],
+            ),
             "responses": [(item.status, [self.type(media.use) for media in item.media]) for item in spec.responses],
             "response_media_type": spec.response_media_type,
         }
@@ -217,7 +239,12 @@ class _TargetData:
             "parameters": [(item.plan, self.contract(item.use)) for item in spec.parameters],
             "body": None
             if body is None
-            else [(item.media_type, item.fields, item.additional, self.contract(item.use)) for item in body.media],
+            else [
+                (item.media_type, item.fields, item.additional, self.contract(item.use))
+                if item.sent is None
+                else (item.media_type, self.contract(item.use), self.sent(item, self.contract))
+                for item in body.media
+            ],
         }
         response = {
             "success_statuses": spec.success_statuses,
@@ -234,6 +261,15 @@ class _TargetData:
         security = next((value for key, value in spec.contract.facts if key == "security"), None)
         return (("signature", signature), ("request", request), ("response", response), ("security", security))
 
+    @staticmethod
+    def sent(media: MediaSpec, project: Callable[[TypeUseBinding | None], object]) -> object:
+        """Return each member plan of a body sent as parts with a projection of its use, then any other part's."""
+        extra = media.sent_additional
+        return (
+            [(*_plan(part), project(part.use)) for part in media.sent or ()],
+            None if extra is None else (*_plan(extra), project(extra.use)),
+        )
+
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
         return None if use is None or use.type is None else self.spelling.static(use.type)
@@ -243,6 +279,12 @@ class _TargetData:
         if use is None or use.schema is None:
             return None
         return (self.bindings.get(use.id), self.wire.schema(use.schema)[1])
+
+
+def _plan(part: PartSpec) -> tuple[str, bool, bool, bool]:
+    """Return a part's name and whether it repeats, holds files, or is required."""
+    plan = part.plan
+    return plan.name, plan.repeated, plan.file, plan.required
 
 
 def _digest(value: object) -> str:

@@ -125,6 +125,32 @@ paths:
           content:
             image/*:
               schema: {type: string, format: binary}
+  /pets/{petId}/files:
+    post:
+      operationId: attachFiles
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                note: {type: string}
+                labels:
+                  type: array
+                  items: {type: string}
+                file: {type: string, format: binary}
+              additionalProperties: false
+      responses:
+        '204':
+          description: Attached.
 components:
   schemas:
     Pet:

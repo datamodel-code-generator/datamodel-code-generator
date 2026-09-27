@@ -9,6 +9,7 @@ from pets import AsyncClient, Client
 from pets.responses import RawResponse
 from pets.transports import OwnedTransportAdapter
 from pets.types.pets import (
+    AttachFilesRequestCodecs,
     CreatePetRequestCodecs,
     DeletePetsByPetIdRequestCodecs,
     GetPetRequestCodecs,
@@ -80,6 +81,9 @@ def misuse_multipart(client: Client, file: BinaryIO) -> None:
     FieldPart[str]("a", 1)  # error
     parts: MultipartBody[str] = MultipartBody[int](())  # error
     del parts
+    pet = AttachFilesRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    client.pets.attach_files(pet_id=pet, body=MultipartBody((FieldPart("note", 1), FilePart("file", b"x"))))  # error
+    client.pets.attach_files(pet_id=pet, body=MultipartBody[str](()))  # error
 
 
 def misuse_multipart_data(data: object) -> None:

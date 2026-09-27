@@ -12,7 +12,7 @@ from datamodel_code_generator._client._compiled_templates import client as clien
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.naming import pascal
-from datamodel_code_generator._client.plan import success_media
+from datamodel_code_generator._client.plan import sent_parts, success_media
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         MediaSpec,
         OperationSpec,
         ParameterSpec,
+        PartSpec,
         ResourceSpec,
         ResponseSpec,
         ServerSpec,
@@ -485,6 +486,11 @@ class _Typing:
         """Return the union of payload types in a module, or the spelling of an empty union."""
         return _union(self.spell(module, key) for key in keys) or empty
 
+    def part_values(self, module: Module, media: MediaSpec) -> str:
+        """Return the values the field parts of a body sent as parts take: each member's, WireValue for any extra."""
+        keys = (self.key("json", part.use, sent=True) for part in sent_parts(media) if not part.plan.file)
+        return self.union(module, keys, "") or module.name("typing_extensions", "Never")
+
     def codec(self, module: Module, use: TypeUseBinding, *, facade: bool = False) -> str:
         """Return the model bindings accessor of a use: its codec and context, or its outbound facade."""
         accessor = self.accessors[use.id]
@@ -629,6 +635,8 @@ class _Resources(_Typing):
                     surface = module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
                 case "multipart", None:
                     surface = f"{module.local('bodies', f'{prefix}MultipartBody')}[str]"
+                case "multipart", _ if media.sent is not None:
+                    surface = f"{module.local('bodies', f'{prefix}MultipartBody')}[{self.part_values(module, media)}]"
                 case _:
                     surface = self.surface(module, media.kind, media.use, sent=True)
             groups.setdefault(surface, []).append(media.media_type)
@@ -808,28 +816,51 @@ class _Types(_Typing):
             for item in spec.parameters
             if item.use is not None and item.use.id in self.accessors
         ]
+        sent = [media for media in (() if spec.body is None else spec.body.media) if media.sent is not None]
+        parts = [
+            (media.media_type, part.plan.name, *self.part_codec(module, part))
+            for media in sent
+            for part in media.sent or ()
+        ]
+        extras = [
+            (media.media_type, *self.part_codec(module, extra))
+            for media in sent
+            if (extra := media.sent_additional) is not None and extra.use is not None
+        ]
         never = module.name("typing_extensions", "Never")
         body_union = _union(kind for _, kind, _ in bodies) or never
         parameter_union = _union(kind for _, _, kind, _ in parameters) or never
+        if not (part_union := _union((*(kind for _, _, kind, _ in parts if kind), *(kind for _, kind, _ in extras)))):
+            parts, extras = [], []
         name = f"_{spec.pascal}RequestCodecs"
-        base = f"{module.local(_CODECS, 'RequestCodecs')}[{body_union}, {parameter_union}]"
+        unions = f"{body_union}, {parameter_union}{f', {part_union}' if part_union else ''}"
+        base = f"{module.local(_CODECS, 'RequestCodecs')}[{unions}]"
         lines = [
             layout(Group(f"class {name}(", (("", base),), "):"), 0, 0, WIDTH),
             f'    """The outbound codecs of the {spec.name} request."""',
         ]
         arguments: list[tuple[str, Doc]] = []
+        default = None if spec.body is None else spec.body.default
         if bodies:
-            default = None if spec.body is None else spec.body.default
             lines.extend(self.body_methods(module, bodies, default, body_union))
             arguments.append(("bodies=", _tuple(f"({media!r}, {accessor})" for media, _, accessor in bodies)))
-            if any(media == default for media, _, _ in bodies):
-                arguments.append(("default=", repr(default)))
+        if any(media == default for media, *_ in (*bodies, *parts)):
+            arguments.append(("default=", repr(default)))
         if parameters:
             lines.extend(self.parameter_methods(module, parameters, parameter_union))
             arguments.append((
                 "parameters=",
                 _tuple(f"({location!r}, {name!r}, {accessor})" for location, name, _, accessor in parameters),
             ))
+        if parts or extras:
+            lines.extend(self.part_methods(module, parts, default, part_union))
+        if parts:
+            arguments.append((
+                "parts=",
+                _tuple(f"({media!r}, {part!r}, {accessor or 'None'})" for media, part, _, accessor in parts),
+            ))
+        if extras:
+            arguments.append(("extras=", _tuple(f"({media!r}, {accessor})" for media, _, accessor in extras)))
         head = f"{spec.pascal}RequestCodecs: {module.name('typing', 'Final')} = "
         return "\n".join(lines) + f"\n\n\n{head}{layout(_call(name, arguments), 0, len(head), WIDTH)}"
 
@@ -850,6 +881,38 @@ class _Types(_Typing):
             _signature("body", ("media_type: str | None = None",), union, asynchronous=False, stub=False),
             '        """Return the outbound codec of one declared request media type."""',
             "        return self._body(media_type)",
+        ))
+        return lines
+
+    def part_codec(self, module: Module, part: PartSpec) -> tuple[str, str]:
+        """Return the type and accessor of a part's outbound codec facade, or empty ones for a file part."""
+        return (
+            ("", "") if part.use is None else (self.facade(module, part.use), self.codec(module, part.use, facade=True))
+        )
+
+    @staticmethod
+    def part_methods(
+        module: Module, parts: Sequence[tuple[str, str, str, str]], default: str | None, union: str
+    ) -> list[str]:
+        """Return the part method of a request codec facade: an overload for each member with a codec and any name.
+
+        Extras alone take no overloads, only the method for any name.
+        """
+        literal = module.name("typing", "Literal")
+        overload = f"    @{module.name('typing', 'overload')}"
+        keywords = ("name: str", "media_type: str | None = None")
+        lines = [""]
+        for media, name, kind, _ in parts:
+            if kind:
+                media_type = f"{literal}[{media!r}]{' | None = None' if media == default else ''}"
+                named = (f"name: {literal}[{name!r}]", f"media_type: {media_type}")
+                lines.extend((overload, _signature("part", named, kind, asynchronous=False, stub=True)))
+        if len(lines) > 1:
+            lines.extend((overload, _signature("part", keywords, union, asynchronous=False, stub=True)))
+        lines.extend((
+            _signature("part", keywords, union, asynchronous=False, stub=False),
+            '        """Return the outbound codec of one part of a body sent as parts."""',
+            "        return self._part(name, media_type)",
         ))
         return lines
 
@@ -1016,10 +1079,27 @@ class _Registry(_Typing):
         """Return the BodyMedia constructor of one request media type."""
         kind = media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
         entries: list[tuple[str, Doc]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
-        if kind != "binary" and media.use is not None and media.use.id in self.accessors:
+        if media.sent is not None:
+            entries.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.sent)))
+            if media.sent_additional is not None:
+                entries.append(("additional_part=", self.sent_plan(module, media.sent_additional)))
+        elif kind != "binary" and media.use is not None and media.use.id in self.accessors:
             entries.append(("encoder=", self.encoder(module, media.use)))
             entries.extend(self.form(module, media))
         return _call(module.local(_RUNTIME, "BodyMedia"), entries)
+
+    def sent_plan(self, module: Module, part: PartSpec) -> Group:
+        """Return the PartPlan constructor of one member of a body sent as parts."""
+        plan = part.plan
+        flags = (("repeated=", plan.repeated), ("file=", plan.file), ("required=", plan.required))
+        return _call(
+            module.local("_runtime.client.multipart", "PartPlan"),
+            (
+                ("", repr(plan.name)),
+                *((flag, "True") for flag, value in flags if value),
+                *((("encoder=", self.encoder(module, part.use)),) if part.use is not None else ()),
+            ),
+        )
 
     @staticmethod
     def form(module: Module, media: MediaSpec) -> list[tuple[str, Doc]]:

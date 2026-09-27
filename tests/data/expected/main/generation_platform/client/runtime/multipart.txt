@@ -44,6 +44,46 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
+  > POST https://media.example.com/api/uploads
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"city":"Oslo","codes":[7]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="pages"\r\nContent-Type: application/octet-stream\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="pages"\r\nContent-Type: application/octet-stream\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="bonus"\r\n\r\n7\r\n--<boundary>--\r\n'
+  upload = None
+  > POST https://media.example.com/api/uploads
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 271] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>--\r\n'
+  upload of its required parts = None
+  upload without its title ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
+  upload of an unset title ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
+  upload without its photo ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
+  upload of a photo as a field ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data file member takes FileParts, and any other member FieldParts')] request_encoding_error
+  upload of a title as a file ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data file member takes FileParts, and any other member FieldParts')] request_encoding_error
+  upload of a title twice ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data body repeats a single-valued member')] request_encoding_error
+  upload of a photo twice ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data body repeats a single-valued member')] request_encoding_error
+  upload of a count that is no integer ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.count') [operation_id='submitUpload', location=('body', 'count'), cause=WireValidationError('The value does not have an allowed type at /')] request_encoding_error
+  upload of an extra that is no integer ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.bonus') [operation_id='submitUpload', location=('body', 'bonus'), cause=WireValidationError('The value does not have an allowed type at /')] request_encoding_error
+  upload of no tags ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.tags') [operation_id='submitUpload', location=('body', 'tags'), cause=ParameterEncodingError('An empty array cannot be represented by repeated parts')] request_encoding_error
+  upload of a part without a name ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.?') [operation_id='submitUpload', location=('body', '?'), cause=ValueError('A form-data part is not declared')] request_encoding_error
+  upload of a read-only id ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.id') [operation_id='submitUpload', location=('body', 'id'), cause=WireValidationError('The value is read-only and cannot appear in a request at /')] request_encoding_error
+  > POST https://media.example.com/api/avatars
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 395] b'--<boundary>\r\nContent-Disposition: form-data; name="caption"\r\n\r\nme\r\n--<boundary>\r\nContent-Disposition: form-data; name="avatar"\r\nContent-Type: application/octet-stream\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="style"\r\nContent-Type: application/json\r\n\r\n{"k":[1]}\r\n--<boundary>--\r\n'
+  avatar = None
+  > POST https://media.example.com/api/scans
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="scan-1"\r\nContent-Type: application/octet-stream\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="scan-2"\r\nContent-Type: application/octet-stream\r\n\r\n2\r\n--<boundary>--\r\n'
+  scans = None
+  scans of an extra field ! RequestEncodingError: RequestEncodingError(operation_id='submitScans', call_id='<call>', location='body.x') [operation_id='submitScans', location=('body', 'x'), cause=ValueError('A form-data file member takes FileParts, and any other member FieldParts')] request_encoding_error
+  > POST https://media.example.com/api/labels
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 263] b'--<boundary>\r\nContent-Disposition: form-data; name="sheet"\r\nContent-Type: application/octet-stream\r\n\r\ns\r\n--<boundary>\r\nContent-Disposition: form-data; name="color"\r\n\r\nred\r\n--<boundary>--\r\n'
+  labels = None
+  > POST https://media.example.com/api/photos
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 177] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  photos = None
+  photos of an extra part ! RequestEncodingError: RequestEncodingError(operation_id='submitPhotos', call_id='<call>', location='body.x') [operation_id='submitPhotos', location=('body', 'x'), cause=ValueError('A form-data part is not declared')] request_encoding_error
+  title codec = ModelValue(value='t', binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/title|LeafNode(representation='value')", wire='t', presence=PresenceTree(pointer='', container='value', members=()), extras=mappingproxy({}), kind='model')
+  extra codec = ModelValue(value=3, binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/additionalProperties|LeafNode(representation='value')", wire=3, presence=PresenceTree(pointer='', container='value', members=()), extras=mappingproxy({}), kind='model')
+  photo codec ! CodecSelectionError: The operation declares no codec-bearing part 'photo' for that media type [] 
+  title codec of another media type ! CodecSelectionError: The operation declares no codec-bearing part 'title' for that media type [] 
+  caption codec without a media type ! CodecSelectionError: The operation declares no codec-bearing part 'caption' for that media type [] 
+  caption codec = ModelValue(value='c', binding_id="https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/multipart~1form-data/schema/properties/caption|LeafNode(representation='value')", wire='c', presence=PresenceTree(pointer='', container='value', members=()), extras=mappingproxy({}), kind='model')
+  untyped extra codec ! CodecSelectionError: The operation declares no codec-bearing part 'style' for that media type [] 
+  file extra codec ! CodecSelectionError: The operation declares no codec-bearing part 'scan-1' for that media type [] 
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
@@ -137,6 +177,10 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'
+  > POST https://media.example.com/api/uploads
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: application/octet-stream\r\n\r\npng\r\n--<boundary>\r\nContent-Disposition: form-data; name="pages"\r\nContent-Type: application/octet-stream\r\n\r\ns1s2\r\n--<boundary>--\r\n'
+  async upload = None
+  async upload without its photo ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   async profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
@@ -189,6 +233,46 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
+  > POST https://media.example.com/api/uploads
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"city":"Oslo","codes":[7]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="pages"\r\nContent-Type: application/octet-stream\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="pages"\r\nContent-Type: application/octet-stream\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="bonus"\r\n\r\n7\r\n--<boundary>--\r\n'
+  upload = None
+  > POST https://media.example.com/api/uploads
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 271] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>--\r\n'
+  upload of its required parts = None
+  upload without its title ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
+  upload of an unset title ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
+  upload without its photo ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
+  upload of a photo as a field ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data file member takes FileParts, and any other member FieldParts')] request_encoding_error
+  upload of a title as a file ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data file member takes FileParts, and any other member FieldParts')] request_encoding_error
+  upload of a title twice ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.title') [operation_id='submitUpload', location=('body', 'title'), cause=ValueError('A form-data body repeats a single-valued member')] request_encoding_error
+  upload of a photo twice ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data body repeats a single-valued member')] request_encoding_error
+  upload of a count that is no integer ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.count') [operation_id='submitUpload', location=('body', 'count'), cause=WireValidationError('The value does not have an allowed type at /')] request_encoding_error
+  upload of an extra that is no integer ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.bonus') [operation_id='submitUpload', location=('body', 'bonus'), cause=WireValidationError('The value does not have an allowed type at /')] request_encoding_error
+  upload of no tags ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.tags') [operation_id='submitUpload', location=('body', 'tags'), cause=ParameterEncodingError('An empty array cannot be represented by repeated parts')] request_encoding_error
+  upload of a part without a name ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.?') [operation_id='submitUpload', location=('body', '?'), cause=ValueError('A form-data part is not declared')] request_encoding_error
+  upload of a read-only id ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.id') [operation_id='submitUpload', location=('body', 'id'), cause=WireValidationError('The value is read-only and cannot appear in a request at /')] request_encoding_error
+  > POST https://media.example.com/api/avatars
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 395] b'--<boundary>\r\nContent-Disposition: form-data; name="caption"\r\n\r\nme\r\n--<boundary>\r\nContent-Disposition: form-data; name="avatar"\r\nContent-Type: application/octet-stream\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="style"\r\nContent-Type: application/json\r\n\r\n{"k":[1]}\r\n--<boundary>--\r\n'
+  avatar = None
+  > POST https://media.example.com/api/scans
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="scan-1"\r\nContent-Type: application/octet-stream\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="scan-2"\r\nContent-Type: application/octet-stream\r\n\r\n2\r\n--<boundary>--\r\n'
+  scans = None
+  scans of an extra field ! RequestEncodingError: RequestEncodingError(operation_id='submitScans', call_id='<call>', location='body.x') [operation_id='submitScans', location=('body', 'x'), cause=ValueError('A form-data file member takes FileParts, and any other member FieldParts')] request_encoding_error
+  > POST https://media.example.com/api/labels
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 263] b'--<boundary>\r\nContent-Disposition: form-data; name="sheet"\r\nContent-Type: application/octet-stream\r\n\r\ns\r\n--<boundary>\r\nContent-Disposition: form-data; name="color"\r\n\r\nred\r\n--<boundary>--\r\n'
+  labels = None
+  > POST https://media.example.com/api/photos
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 177] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: image/png\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  photos = None
+  photos of an extra part ! RequestEncodingError: RequestEncodingError(operation_id='submitPhotos', call_id='<call>', location='body.x') [operation_id='submitPhotos', location=('body', 'x'), cause=ValueError('A form-data part is not declared')] request_encoding_error
+  title codec = ModelValue(value='t', binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/title|LeafNode(representation='value')", wire='t', presence=PresenceTree(pointer='', container='value', members=()), extras=mappingproxy({}), kind='model')
+  extra codec = ModelValue(value=3, binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/additionalProperties|LeafNode(representation='value')", wire=3, presence=PresenceTree(pointer='', container='value', members=()), extras=mappingproxy({}), kind='model')
+  photo codec ! CodecSelectionError: The operation declares no codec-bearing part 'photo' for that media type [] 
+  title codec of another media type ! CodecSelectionError: The operation declares no codec-bearing part 'title' for that media type [] 
+  caption codec without a media type ! CodecSelectionError: The operation declares no codec-bearing part 'caption' for that media type [] 
+  caption codec = ModelValue(value='c', binding_id="https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/multipart~1form-data/schema/properties/caption|LeafNode(representation='value')", wire='c', presence=PresenceTree(pointer='', container='value', members=()), extras=mappingproxy({}), kind='model')
+  untyped extra codec ! CodecSelectionError: The operation declares no codec-bearing part 'style' for that media type [] 
+  file extra codec ! CodecSelectionError: The operation declares no codec-bearing part 'scan-1' for that media type [] 
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}
@@ -282,6 +366,10 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'
+  > POST https://media.example.com/api/uploads
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="photo"; filename="a.png"\r\nContent-Type: application/octet-stream\r\n\r\npng\r\n--<boundary>\r\nContent-Disposition: form-data; name="pages"\r\nContent-Type: application/octet-stream\r\n\r\ns1s2\r\n--<boundary>--\r\n'
+  async upload = None
+  async upload without its photo ! RequestEncodingError: RequestEncodingError(operation_id='submitUpload', call_id='<call>', location='body.photo') [operation_id='submitUpload', location=('body', 'photo'), cause=ValueError('A form-data body lacks a required member')] request_encoding_error
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   async profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}

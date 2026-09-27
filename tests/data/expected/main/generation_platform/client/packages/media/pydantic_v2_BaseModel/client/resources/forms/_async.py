@@ -7,25 +7,32 @@ from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal, overload
 
+from models import Address as _dcg_type_4
 from models import FieldAnythingPostRequest as _dcg_type_2
 from models import FieldAttachmentsGetResponse as _dcg_type_3
 from models import FieldFormsPostRequest as _dcg_type_0
 from models import FieldProfilesPostRequest as _dcg_type_1
+from typing_extensions import Never
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody, FormData, MultipartData
-from ...model_codecs import ModelValue
+from ...model_codecs import ModelValue, WireValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.forms import (
     ReadPartsResponse,
     ReadProfileResponse,
     SubmitAnythingResponse,
+    SubmitAvatarResponse,
     SubmitFormResponse,
+    SubmitLabelsResponse,
     SubmitPairsResponse,
     SubmitPartsResponse,
+    SubmitPhotosResponse,
     SubmitProfileResponse,
+    SubmitScansResponse,
+    SubmitUploadResponse,
 )
 
 
@@ -184,6 +191,110 @@ class AsyncFormsResource:
             response_media_type=response_media_type,
         )).data
 
+    async def submit_upload(
+        self,
+        *,
+        body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitUploadResponse:
+        """Call POST /uploads."""
+        return (await self._core.execute(
+            _operations.OPERATION_7,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> SubmitAvatarResponse: ...
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        options: RequestOptions | None = None,
+    ) -> SubmitAvatarResponse: ...
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: Unset = UNSET,
+        media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitAvatarResponse: ...
+    async def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitAvatarResponse:
+        """Call POST /avatars."""
+        return (await self._core.execute(
+            _operations.OPERATION_8,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
+    async def submit_scans(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitScansResponse:
+        """Call POST /scans."""
+        return (await self._core.execute(
+            _operations.OPERATION_9,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
+    async def submit_photos(
+        self,
+        *,
+        body: AsyncMultipartBody[Never],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitPhotosResponse:
+        """Call POST /photos."""
+        return (await self._core.execute(
+            _operations.OPERATION_10,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
+    async def submit_labels(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitLabelsResponse:
+        """Call POST /labels."""
+        return (await self._core.execute(
+            _operations.OPERATION_11,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
 
 class AsyncFormsWithResponse:
     """The forms operations, returning each result with its response metadata."""
@@ -325,6 +436,110 @@ class AsyncFormsWithResponse:
             response_media_type=response_media_type,
         )
 
+    async def submit_upload(
+        self,
+        *,
+        body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitUploadResponse]:
+        """Call POST /uploads."""
+        return await self._core.execute(
+            _operations.OPERATION_7,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitAvatarResponse]: ...
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitAvatarResponse]: ...
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: Unset = UNSET,
+        media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitAvatarResponse]: ...
+    async def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitAvatarResponse]:
+        """Call POST /avatars."""
+        return await self._core.execute(
+            _operations.OPERATION_8,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_scans(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitScansResponse]:
+        """Call POST /scans."""
+        return await self._core.execute(
+            _operations.OPERATION_9,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_photos(
+        self,
+        *,
+        body: AsyncMultipartBody[Never],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitPhotosResponse]:
+        """Call POST /photos."""
+        return await self._core.execute(
+            _operations.OPERATION_10,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_labels(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitLabelsResponse]:
+        """Call POST /labels."""
+        return await self._core.execute(
+            _operations.OPERATION_11,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithRawResponse:
     """The forms operations, returning each raw response with its body read into memory."""
@@ -445,6 +660,110 @@ class AsyncFormsWithRawResponse:
             response_media_type=response_media_type,
         )
 
+    async def submit_upload(
+        self,
+        *,
+        body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /uploads."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_7,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse: ...
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse: ...
+    @overload
+    async def submit_avatar(
+        self,
+        *,
+        body: Unset = UNSET,
+        media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse: ...
+    async def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /avatars."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_8,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_scans(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /scans."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_9,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_photos(
+        self,
+        *,
+        body: AsyncMultipartBody[Never],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /photos."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_10,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_labels(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /labels."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_11,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithStreamingResponse:
     """The forms operations, returning blocks that send each call on entry and stream its response."""
@@ -563,4 +882,108 @@ class AsyncFormsWithStreamingResponse:
             media_type=media_type,
             options=options,
             response_media_type=response_media_type,
+        )
+
+    def submit_upload(
+        self,
+        *,
+        body: AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_4 | ModelValue[_dcg_type_4]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /uploads."""
+        return self._core.stream(
+            _operations.OPERATION_7,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    @overload
+    def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    @overload
+    def submit_avatar(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    @overload
+    def submit_avatar(
+        self,
+        *,
+        body: Unset = UNSET,
+        media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    def submit_avatar(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | WireValue] | _dcg_type_4 | ModelValue[_dcg_type_4] | Unset = UNSET,
+        media_type: Literal['multipart/form-data', 'application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /avatars."""
+        return self._core.stream(
+            _operations.OPERATION_8,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_scans(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]] | Unset = UNSET,
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /scans."""
+        return self._core.stream(
+            _operations.OPERATION_9,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_photos(
+        self,
+        *,
+        body: AsyncMultipartBody[Never],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /photos."""
+        return self._core.stream(
+            _operations.OPERATION_10,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_labels(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /labels."""
+        return self._core.stream(
+            _operations.OPERATION_11,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
         )

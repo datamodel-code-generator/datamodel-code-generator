@@ -74,6 +74,28 @@ def _resources() -> tuple[SchemaResource, ...]:
                             },
                         },
                     },
+                    '/avatars': {
+                        'post': {
+                            'requestBody': {
+                                'content': {
+                                    'application/json': {
+                                        'schema': {
+                                            '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Address',
+                                        },
+                                    },
+                                    'multipart/form-data': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'properties': {
+                                                'caption': {'type': 'string'},
+                                                'avatar': {'type': 'string', 'format': 'binary'},
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     '/documents': {
                         'post': {
                             'requestBody': {
@@ -161,6 +183,37 @@ def _resources() -> tuple[SchemaResource, ...]:
                             },
                         },
                     },
+                    '/labels': {
+                        'post': {
+                            'requestBody': {
+                                'content': {
+                                    'multipart/form-data': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'properties': {'sheet': {'type': 'string', 'format': 'binary'}},
+                                            'additionalProperties': {'type': 'string'},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    '/photos': {
+                        'post': {
+                            'requestBody': {
+                                'content': {
+                                    'multipart/form-data': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'required': ['photo'],
+                                            'properties': {'photo': {'type': 'string', 'format': 'binary'}},
+                                            'additionalProperties': False,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     '/profiles': {
                         'get': {
                             'responses': {
@@ -211,6 +264,50 @@ def _resources() -> tuple[SchemaResource, ...]:
                             },
                         },
                     },
+                    '/scans': {
+                        'post': {
+                            'requestBody': {
+                                'content': {
+                                    'multipart/form-data': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'properties': {'note': {'type': 'string'}},
+                                            'additionalProperties': {'type': 'string', 'format': 'binary'},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    '/uploads': {
+                        'post': {
+                            'requestBody': {
+                                'content': {
+                                    'multipart/form-data': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'required': ['id', 'title', 'photo'],
+                                            'properties': {
+                                                'id': {'type': 'integer', 'readOnly': True},
+                                                'title': {'type': 'string'},
+                                                'count': {'type': 'integer'},
+                                                'tags': {'type': 'array', 'items': {'type': 'string'}},
+                                                'meta': {
+                                                    '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Address',
+                                                },
+                                                'photo': {'type': 'string', 'format': 'binary'},
+                                                'pages': {
+                                                    'type': 'array',
+                                                    'items': {'type': 'string', 'contentMediaType': 'application/pdf'},
+                                                },
+                                            },
+                                            'additionalProperties': {'type': 'integer'},
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
             }),
             roots=(
@@ -218,6 +315,8 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/components/schemas/Draft',
                 '/paths/~1anything/post/requestBody/content/multipart~1form-data/schema',
                 '/paths/~1attachments/get/responses/202/content/multipart~1form-data/schema',
+                '/paths/~1avatars/post/requestBody/content/application~1json/schema',
+                '/paths/~1avatars/post/requestBody/content/multipart~1form-data/schema',
                 '/paths/~1documents/post/requestBody/content/application~1vnd.api+json/schema',
                 '/paths/~1documents/post/responses/3XX/content/application~1json/schema',
                 '/paths/~1documents~1{id}/get/parameters/0/content/application~1json/schema',
@@ -225,8 +324,12 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1documents~1{id}/get/responses/200/headers/X-Draft/schema',
                 '/paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema',
                 '/paths/~1forms/post/responses/200/content/application~1x-www-form-urlencoded/schema',
+                '/paths/~1labels/post/requestBody/content/multipart~1form-data/schema',
+                '/paths/~1photos/post/requestBody/content/multipart~1form-data/schema',
                 '/paths/~1profiles/get/responses/200/content/multipart~1form-data/schema',
                 '/paths/~1profiles/post/requestBody/content/multipart~1form-data/schema',
+                '/paths/~1scans/post/requestBody/content/multipart~1form-data/schema',
+                '/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema',
             ),
         ),
     )
@@ -239,6 +342,12 @@ def _request_view() -> DirectionalView:
         patches=(
             SchemaPatch(
                 uri='https://dcg.invalid/inputs/root',
+                pointer='/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema',
+                keyword='required',
+                value=('title', 'photo'),
+            ),
+            SchemaPatch(
+                uri='https://dcg.invalid/inputs/root',
                 pointer='/components/schemas/Draft',
                 keyword='required',
                 value=('title', 'secret'),
@@ -246,6 +355,8 @@ def _request_view() -> DirectionalView:
         ),
         flagged=(
             'https://dcg.invalid/inputs/root#/paths/~1documents/post/requestBody/content/application~1vnd.api+json/schema',
+            'https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema',
+            'https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/id',
         ),
     )
 
@@ -887,6 +998,44 @@ def codec_5() -> StructuralModelCodec[models.FieldAttachmentsGetResponse]:
 CONTEXT_6: Final = CodecContext(
     surface='client',
     direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/application~1json/schema',
+    operation_id='/paths/~1avatars/post',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_6() -> StructuralModelCodec[models.Address]:
+    """Codec of /paths/~1avatars/post request_body (request application/json)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Address|ModelNode(symbol='models:Address')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/application~1json/schema',
+            operation_id='/paths/~1avatars/post',
+            media_type='application/json',
+            backend='typing.TypedDict',
+            native_kind='typed_dict',
+            native_export='models:Address',
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=ModelNode(symbol='models:Address'),
+            models=(_model_2(),),
+        ),
+        models.Address,
+        {'models:Address': models.Address},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_6() -> NativeOutboundCodec[models.Address]:
+    return NativeOutboundCodec(codec_6(), CONTEXT_6)
+
+
+CONTEXT_7: Final = CodecContext(
+    surface='client',
+    direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents/post/requestBody/content/application~1vnd.api+json/schema',
     operation_id='/paths/~1documents/post',
     media_type='application/vnd.api+json',
@@ -894,7 +1043,7 @@ CONTEXT_6: Final = CodecContext(
 
 
 @cache
-def codec_6() -> StructuralModelCodec[models.Draft]:
+def codec_7() -> StructuralModelCodec[models.Draft]:
     """Codec of /paths/~1documents/post request_body (request application/vnd.api+json)."""
     return StructuralModelCodec(
         UseBinding(
@@ -918,11 +1067,11 @@ def codec_6() -> StructuralModelCodec[models.Draft]:
 
 
 @cache
-def outbound_6() -> EnvelopeOutboundCodec[models.Draft]:
-    return EnvelopeOutboundCodec(codec_6(), CONTEXT_6)
+def outbound_7() -> EnvelopeOutboundCodec[models.Draft]:
+    return EnvelopeOutboundCodec(codec_7(), CONTEXT_7)
 
 
-CONTEXT_7: Final = CodecContext(
+CONTEXT_8: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents/post/responses/3XX/content/application~1json/schema',
@@ -932,7 +1081,7 @@ CONTEXT_7: Final = CodecContext(
 
 
 @cache
-def codec_7() -> StructuralModelCodec[models.Draft]:
+def codec_8() -> StructuralModelCodec[models.Draft]:
     """Codec of /paths/~1documents/post response_body (response 3XX application/json)."""
     return StructuralModelCodec(
         UseBinding(
@@ -955,7 +1104,7 @@ def codec_7() -> StructuralModelCodec[models.Draft]:
     )
 
 
-CONTEXT_8: Final = CodecContext(
+CONTEXT_9: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/parameters/0/content/application~1json/schema',
@@ -965,7 +1114,7 @@ CONTEXT_8: Final = CodecContext(
 
 
 @cache
-def codec_8() -> StructuralModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
+def codec_9() -> StructuralModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
     """Codec of /paths/~1documents~1{id}/get parameter (request path id application/json)."""
     return StructuralModelCodec(
         UseBinding(
@@ -989,11 +1138,11 @@ def codec_8() -> StructuralModelCodec[models.FieldDocumentsIdGetPathIdParameter]
 
 
 @cache
-def outbound_8() -> NativeOutboundCodec[models.FieldDocumentsIdGetPathIdParameter]:
-    return NativeOutboundCodec(codec_8(), CONTEXT_8)
+def outbound_9() -> NativeOutboundCodec[models.FieldDocumentsIdGetPathIdParameter]:
+    return NativeOutboundCodec(codec_9(), CONTEXT_9)
 
 
-CONTEXT_9: Final = CodecContext(
+CONTEXT_10: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/responses/200/content/application~1vnd.api+json/schema',
@@ -1003,7 +1152,7 @@ CONTEXT_9: Final = CodecContext(
 
 
 @cache
-def codec_9() -> StructuralModelCodec[models.Draft]:
+def codec_10() -> StructuralModelCodec[models.Draft]:
     """Codec of /paths/~1documents~1{id}/get response_body (response 200 application/vnd.api+json)."""
     return StructuralModelCodec(
         UseBinding(
@@ -1026,7 +1175,7 @@ def codec_9() -> StructuralModelCodec[models.Draft]:
     )
 
 
-CONTEXT_10: Final = CodecContext(
+CONTEXT_11: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/responses/200/headers/X-Draft/schema',
@@ -1035,7 +1184,7 @@ CONTEXT_10: Final = CodecContext(
 
 
 @cache
-def codec_10() -> StructuralModelCodec[models.Draft]:
+def codec_11() -> StructuralModelCodec[models.Draft]:
     """Codec of /paths/~1documents~1{id}/get response_header (response X-Draft 200)."""
     return StructuralModelCodec(
         UseBinding(
@@ -1056,3 +1205,345 @@ def codec_10() -> StructuralModelCodec[models.Draft]:
         {'models:Draft': models.Draft},
         response_bundle(),
     )
+
+
+CONTEXT_12: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/id',
+    operation_id='/paths/~1uploads/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_12() -> StructuralModelCodec[int]:
+    """Codec of /paths/~1uploads/post request_body (request id multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/id|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/id',
+            operation_id='/paths/~1uploads/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        int,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_12() -> NativeOutboundCodec[int]:
+    return NativeOutboundCodec(codec_12(), CONTEXT_12)
+
+
+CONTEXT_13: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/title',
+    operation_id='/paths/~1uploads/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_13() -> StructuralModelCodec[str]:
+    """Codec of /paths/~1uploads/post request_body (request title multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/title|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/title',
+            operation_id='/paths/~1uploads/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_13() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_13(), CONTEXT_13)
+
+
+CONTEXT_14: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/count',
+    operation_id='/paths/~1uploads/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_14() -> StructuralModelCodec[int]:
+    """Codec of /paths/~1uploads/post request_body (request count multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/count|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/count',
+            operation_id='/paths/~1uploads/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        int,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_14() -> NativeOutboundCodec[int]:
+    return NativeOutboundCodec(codec_14(), CONTEXT_14)
+
+
+CONTEXT_15: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/tags',
+    operation_id='/paths/~1uploads/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_15() -> StructuralModelCodec[list[str]]:
+    """Codec of /paths/~1uploads/post request_body (request tags multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/tags|ArrayNode(item=LeafNode(representation='value'), container='list')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/tags',
+            operation_id='/paths/~1uploads/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='array',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=ArrayNode(item=LeafNode()),
+            models=(),
+        ),
+        list[str],
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_15() -> NativeOutboundCodec[list[str]]:
+    return NativeOutboundCodec(codec_15(), CONTEXT_15)
+
+
+CONTEXT_16: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/meta',
+    operation_id='/paths/~1uploads/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_16() -> StructuralModelCodec[models.Address]:
+    """Codec of /paths/~1uploads/post request_body (request meta multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Address|ModelNode(symbol='models:Address')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/meta',
+            operation_id='/paths/~1uploads/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='typed_dict',
+            native_export='models:Address',
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=ModelNode(symbol='models:Address'),
+            models=(_model_2(),),
+        ),
+        models.Address,
+        {'models:Address': models.Address},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_16() -> NativeOutboundCodec[models.Address]:
+    return NativeOutboundCodec(codec_16(), CONTEXT_16)
+
+
+CONTEXT_17: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/additionalProperties',
+    operation_id='/paths/~1uploads/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_17() -> StructuralModelCodec[int]:
+    """Codec of /paths/~1uploads/post request_body (request multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/additionalProperties|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/additionalProperties',
+            operation_id='/paths/~1uploads/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        int,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_17() -> NativeOutboundCodec[int]:
+    return NativeOutboundCodec(codec_17(), CONTEXT_17)
+
+
+CONTEXT_18: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/multipart~1form-data/schema/properties/caption',
+    operation_id='/paths/~1avatars/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_18() -> StructuralModelCodec[str]:
+    """Codec of /paths/~1avatars/post request_body (request caption multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/multipart~1form-data/schema/properties/caption|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/multipart~1form-data/schema/properties/caption',
+            operation_id='/paths/~1avatars/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_18() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_18(), CONTEXT_18)
+
+
+CONTEXT_19: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1scans/post/requestBody/content/multipart~1form-data/schema/properties/note',
+    operation_id='/paths/~1scans/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_19() -> StructuralModelCodec[str]:
+    """Codec of /paths/~1scans/post request_body (request note multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1scans/post/requestBody/content/multipart~1form-data/schema/properties/note|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1scans/post/requestBody/content/multipart~1form-data/schema/properties/note',
+            operation_id='/paths/~1scans/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_19() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_19(), CONTEXT_19)
+
+
+CONTEXT_20: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1labels/post/requestBody/content/multipart~1form-data/schema/additionalProperties',
+    operation_id='/paths/~1labels/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_20() -> StructuralModelCodec[str]:
+    """Codec of /paths/~1labels/post request_body (request multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1labels/post/requestBody/content/multipart~1form-data/schema/additionalProperties|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1labels/post/requestBody/content/multipart~1form-data/schema/additionalProperties',
+            operation_id='/paths/~1labels/post',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_20() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_20(), CONTEXT_20)

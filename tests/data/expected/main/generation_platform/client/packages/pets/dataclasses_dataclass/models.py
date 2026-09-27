@@ -66,3 +66,13 @@ FieldPetsPetIdPhotoPutRequest: TypeAlias = bytes
 
 
 FieldPetsPetIdPhotoPutResponse: TypeAlias = bytes
+
+
+FieldPetsPetIdFilesPostPathPetIdParameter: TypeAlias = int
+
+
+@dataclass
+class FieldPetsPetIdFilesPostRequest:
+    file: bytes
+    note: str | None = None
+    labels: list[str] | None = None

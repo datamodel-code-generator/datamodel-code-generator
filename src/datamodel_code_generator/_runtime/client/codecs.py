@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, NoReturn
 
-from typing_extensions import TypeVar
+from typing_extensions import Never, TypeVar
 
 from ..model_codecs.errors import CodecSelectionError
 from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_parameter
@@ -28,12 +28,13 @@ T_co = TypeVar("T_co", covariant=True)
 M_co = TypeVar("M_co", covariant=True)
 BodyT_co = TypeVar("BodyT_co", covariant=True)
 ParameterT_co = TypeVar("ParameterT_co", covariant=True)
+PartT_co = TypeVar("PartT_co", covariant=True, default=Never)
 
 
-class RequestCodecs(Generic[BodyT_co, ParameterT_co]):
-    """The outbound codecs of one operation's request body media and parameters, selected by declaration."""
+class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co]):
+    """The outbound codecs of one operation's request body media, parameters, and parts, selected by declaration."""
 
-    __slots__ = ("_bodies", "_default", "_parameters")
+    __slots__ = ("_bodies", "_default", "_extras", "_parameters", "_parts")
 
     def __init__(
         self,
@@ -41,11 +42,18 @@ class RequestCodecs(Generic[BodyT_co, ParameterT_co]):
         bodies: tuple[tuple[str, Callable[[], BodyT_co]], ...] = (),
         default: str | None = None,
         parameters: tuple[tuple[str, str, Callable[[], ParameterT_co]], ...] = (),
+        parts: tuple[tuple[str, str, Callable[[], PartT_co] | None], ...] = (),
+        extras: tuple[tuple[str, Callable[[], PartT_co]], ...] = (),
     ) -> None:
-        """Keep each declared media type's codec accessor, the default media, and each parameter's accessor."""
+        """Keep the accessors of each declared media type, parameter, part, and media's extra parts, and the default.
+
+        A part without an accessor is a file member, which has no codec and takes no extra part's codec either.
+        """
         self._bodies = dict(bodies)
         self._default = default
         self._parameters = {(location, name): accessor for location, name, accessor in parameters}
+        self._parts = {(media_type, name): accessor for media_type, name, accessor in parts}
+        self._extras = dict(extras)
 
     def _body(self, media_type: str | None) -> BodyT_co:
         wanted = self._default if media_type is None else normalized(media_type)
@@ -57,6 +65,13 @@ class RequestCodecs(Generic[BodyT_co, ParameterT_co]):
     def _parameter(self, location: str, name: str) -> ParameterT_co:
         if (accessor := self._parameters.get((location, name))) is None:
             msg = f"The operation declares no codec-bearing {location} parameter {name!r}"
+            raise CodecSelectionError(msg)
+        return accessor()
+
+    def _part(self, name: str, media_type: str | None) -> PartT_co:
+        wanted = (self._default if media_type is None else normalized(media_type)) or ""
+        if (accessor := self._parts.get((wanted, name), self._extras.get(wanted))) is None:
+            msg = f"The operation declares no codec-bearing part {name!r} for that media type"
             raise CodecSelectionError(msg)
         return accessor()
 

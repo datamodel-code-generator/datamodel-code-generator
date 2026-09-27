@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
+from ._runtime.client.multipart import PartPlan
 from ._runtime.client.operations import (
     BodyMedia,
     Encoder,
@@ -21,6 +22,9 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.pets import (
+    AttachFilesErrorData,
+    AttachFilesHTTPError,
+    AttachFilesResponse,
     CreatePetErrorData,
     CreatePetHTTPError,
     CreatePetResponse,
@@ -261,5 +265,47 @@ OPERATION_5: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPl
     body=RequestBody(
         media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
         default='application/octet-stream',
+    ),
+)
+
+OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = OperationPlan(
+    operation_id='attachFiles',
+    method='POST',
+    path='/pets/{petId}/files',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), AttachFilesHTTPError),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
+        ),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                parts=(
+                    PartPlan(
+                        'note',
+                        encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+                    ),
+                    PartPlan(
+                        'labels',
+                        repeated=True,
+                        encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
+                    ),
+                    PartPlan('file', file=True, required=True),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
     ),
 )

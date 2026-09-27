@@ -141,6 +141,27 @@ def _resources() -> tuple[SchemaResource, ...]:
                         'head': {'responses': {'200': {'headers': {'ETag': {'schema': {'type': 'string'}}}}}},
                         'parameters': [{'schema': {'type': 'integer'}}],
                     },
+                    '/pets/{petId}/files': {
+                        'post': {
+                            'parameters': [{'schema': {'type': 'integer'}}],
+                            'requestBody': {
+                                'content': {
+                                    'multipart/form-data': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'required': ['file'],
+                                            'properties': {
+                                                'note': {'type': 'string'},
+                                                'labels': {'type': 'array', 'items': {'type': 'string'}},
+                                                'file': {'type': 'string', 'format': 'binary'},
+                                            },
+                                            'additionalProperties': False,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     '/pets/{petId}/photo': {
                         'put': {
                             'parameters': [{'schema': {'type': 'integer'}}],
@@ -176,6 +197,8 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1pets~1{petId}/get/responses/200/content/text~1plain/schema',
                 '/paths/~1pets~1{petId}/head/responses/200/headers/ETag/schema',
                 '/paths/~1pets~1{petId}/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1files/post/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1files/post/requestBody/content/multipart~1form-data/schema',
                 '/paths/~1pets~1{petId}~1photo/put/parameters/0/schema',
                 '/paths/~1pets~1{petId}~1photo/put/requestBody/content/application~1octet-stream/schema',
                 '/paths/~1pets~1{petId}~1photo/put/responses/200/content/image~1*/schema',
@@ -985,3 +1008,116 @@ def codec_18() -> StructuralModelCodec[models.FieldPetsPetIdPhotoPutPathPetIdPar
 @cache
 def outbound_18() -> NativeOutboundCodec[models.FieldPetsPetIdPhotoPutPathPetIdParameter]:
     return NativeOutboundCodec(codec_18(), CONTEXT_18)
+
+
+CONTEXT_19: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/parameters/0/schema',
+    operation_id='/paths/~1pets~1{petId}~1files/post',
+)
+
+
+@cache
+def codec_19() -> StructuralModelCodec[models.FieldPetsPetIdFilesPostPathPetIdParameter]:
+    """Codec of /paths/~1pets~1{petId}~1files/post parameter (request path petId)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/parameters/0/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/parameters/0/schema',
+            operation_id='/paths/~1pets~1{petId}~1files/post',
+            media_type=None,
+            backend='msgspec.Struct',
+            native_kind='alias',
+            native_export='models:FieldPetsPetIdFilesPostPathPetIdParameter',
+            projection_mode='native',
+            converter_strategy='msgspec_convert',
+            type=LeafNode(),
+            models=(),
+        ),
+        models.FieldPetsPetIdFilesPostPathPetIdParameter,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_19() -> NativeOutboundCodec[models.FieldPetsPetIdFilesPostPathPetIdParameter]:
+    return NativeOutboundCodec(codec_19(), CONTEXT_19)
+
+
+CONTEXT_20: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/note',
+    operation_id='/paths/~1pets~1{petId}~1files/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_20() -> StructuralModelCodec[str]:
+    """Codec of /paths/~1pets~1{petId}~1files/post request_body (request note multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/note|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/note',
+            operation_id='/paths/~1pets~1{petId}~1files/post',
+            media_type='multipart/form-data',
+            backend='msgspec.Struct',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='msgspec_convert',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_20() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_20(), CONTEXT_20)
+
+
+CONTEXT_21: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/labels',
+    operation_id='/paths/~1pets~1{petId}~1files/post',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_21() -> StructuralModelCodec[list[str]]:
+    """Codec of /paths/~1pets~1{petId}~1files/post request_body (request labels multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/labels|ArrayNode(item=LeafNode(representation='value'), container='list')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/labels',
+            operation_id='/paths/~1pets~1{petId}~1files/post',
+            media_type='multipart/form-data',
+            backend='msgspec.Struct',
+            native_kind='array',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='msgspec_convert',
+            type=ArrayNode(item=LeafNode()),
+            models=(),
+        ),
+        list[str],
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_21() -> NativeOutboundCodec[list[str]]:
+    return NativeOutboundCodec(codec_21(), CONTEXT_21)

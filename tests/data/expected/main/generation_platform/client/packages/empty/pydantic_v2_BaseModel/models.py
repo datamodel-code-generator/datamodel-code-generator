@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, ConfigDict, RootModel
 
 
 class Pet(BaseModel):
@@ -76,3 +76,16 @@ class FieldPetsPetIdPhotoPutRequest(RootModel[bytes]):
 
 class FieldPetsPetIdPhotoPutResponse(RootModel[bytes]):
     root: bytes
+
+
+class FieldPetsPetIdFilesPostPathPetIdParameter(RootModel[int]):
+    root: int
+
+
+class FieldPetsPetIdFilesPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    note: str | None = None
+    labels: list[str] | None = None
+    file: bytes

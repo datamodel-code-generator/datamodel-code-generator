@@ -56,5 +56,32 @@ class FieldAttachmentsGetResponse(TypedDict, closed=True):
     id: NotRequired[int]
 
 
+class FieldUploadsPostRequest(TypedDict, extra_items=int):
+    id: int
+    title: str
+    count: NotRequired[int]
+    tags: NotRequired[list[str]]
+    meta: NotRequired[Address]
+    photo: bytes
+    pages: NotRequired[list[str]]
+
+
+class FieldAvatarsPostRequest(TypedDict):
+    caption: NotRequired[str]
+    avatar: NotRequired[bytes]
+
+
+class FieldScansPostRequest(TypedDict, extra_items=bytes):
+    note: NotRequired[str]
+
+
+class FieldPhotosPostRequest(TypedDict, closed=True):
+    photo: bytes
+
+
+class FieldLabelsPostRequest(TypedDict, extra_items=str):
+    sheet: NotRequired[bytes]
+
+
 class FieldDocumentsIdGetPathIdParameter(TypedDict):
     key: NotRequired[str]

@@ -41,6 +41,7 @@ def multipart(package: ModuleType, lines: list[str]) -> None:
     with package.Client(http_client=http) as api:
         _profiles(package, api, exchange, lines)
         _parts(package, api, exchange, lines)
+        _uploads(package, api, exchange, lines)
         _responses(api, exchange, lines)
     http.close()
     run(lambda: _async_multipart(package, lines))
@@ -227,6 +228,80 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
     record(lines, "raw parts", lambda: api.request_raw("POST", "https://forms.example.com/raw", body=raw).body_bytes)
 
 
+def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send bodies with file parts: each member's values through its part codec, refusing parts the schema forbids."""
+    bodies, options, types = _modules(package)
+    body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
+    codecs = types.SubmitUploadRequestCodecs
+    meta = codecs.part(name="meta").from_wire({"city": "Oslo", "codes": [7]})
+    title, photo = field("title", "Notes"), file("photo", b"\x89PNG", filename="a.png", content_type="image/png")
+    for label, parts in (
+        (
+            "upload",
+            (
+                title,
+                field("count", options.UNSET),
+                field("tags", ["a", "b"]),
+                field("meta", meta),
+                photo,
+                file("pages", b"1"),
+                file("pages", bodies.StreamBody([b"2"])),
+                field("bonus", 7),
+            ),
+        ),
+        ("upload of its required parts", (photo, title)),
+    ):
+        exchange.respond(raw_response(204))
+        record(lines, label, lambda parts=parts: api.forms.submit_upload(body=body(parts)))
+    for label, parts in (
+        ("upload without its title", (photo,)),
+        ("upload of an unset title", (field("title", options.UNSET), photo)),
+        ("upload without its photo", (title,)),
+        ("upload of a photo as a field", (title, field("photo", "x"))),
+        ("upload of a title as a file", (file("title", b"x"), photo)),
+        ("upload of a title twice", (title, title, photo)),
+        ("upload of a photo twice", (title, photo, photo)),
+        ("upload of a count that is no integer", (title, photo, field("count", "x"))),
+        ("upload of an extra that is no integer", (title, photo, field("bonus", "x"))),
+        ("upload of no tags", (title, photo, field("tags", []))),
+        ("upload of a part without a name", (title, photo, field(1, "x"))),
+        ("upload of a read-only id", (title, photo, field("id", 1))),
+    ):
+        record(lines, label, lambda parts=parts: api.forms.submit_upload(body=body(parts)))
+    exchange.respond(raw_response(204))
+    avatar = (field("caption", "me"), file("avatar", b"a"), field("style", {"k": [1]}))
+    record(lines, "avatar", lambda: api.forms.submit_avatar(body=body(avatar), media_type="multipart/form-data"))
+    exchange.respond(raw_response(204))
+    scans = (field("note", "n"), file("scan-1", b"1"), file("scan-2", b"2"))
+    record(lines, "scans", lambda: api.forms.submit_scans(body=body(scans)))
+    record(lines, "scans of an extra field", lambda: api.forms.submit_scans(body=body((field("x", "1"),))))
+    exchange.respond(raw_response(204))
+    color = types.SubmitLabelsRequestCodecs.part(name="color").from_wire("red")
+    record(lines, "labels", lambda: api.forms.submit_labels(body=body((file("sheet", b"s"), field("color", color)))))
+    exchange.respond(raw_response(204))
+    record(lines, "photos", lambda: api.forms.submit_photos(body=body((photo,))))
+    record(lines, "photos of an extra part", lambda: api.forms.submit_photos(body=body((photo, file("x", b"")))))
+    for label, select in (
+        ("title codec", lambda: codecs.part(name="title").from_wire("t")),
+        ("extra codec", lambda: codecs.part(name="bonus", media_type="multipart/form-data").from_wire(3)),
+        ("photo codec", lambda: codecs.part(name="photo")),
+        ("title codec of another media type", lambda: codecs.part(name="title", media_type="application/json")),
+        ("caption codec without a media type", lambda: types.SubmitAvatarRequestCodecs.part(name="caption")),
+        (
+            "caption codec",
+            lambda: types.SubmitAvatarRequestCodecs.part(name="caption", media_type="multipart/form-data").from_wire(
+                "c"
+            ),
+        ),
+        (
+            "untyped extra codec",
+            lambda: types.SubmitAvatarRequestCodecs.part(name="style", media_type="multipart/form-data"),
+        ),
+        ("file extra codec", lambda: types.SubmitScansRequestCodecs.part(name="scan-1")),
+    ):
+        record(lines, label, select)
+
+
 def _answered(exchange: Exchange, call: Callable[[], object]) -> object:
     exchange.respond(raw_response(204))
     return call()
@@ -286,6 +361,15 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
             return (await api.request_raw("POST", "https://forms.example.com/raw", body=raw)).body_bytes
 
         await arecord(lines, "async raw parts", raw_call)
+        upload = body((
+            field("title", "Notes"),
+            file("photo", bodies.AsyncFileBody(io.BytesIO(b"png")), filename="a.png"),
+            file("pages", bodies.AsyncStreamBody(chunks())),
+        ))
+        exchange.respond(raw_response(204))
+        await arecord(lines, "async upload", lambda: api.forms.submit_upload(body=upload))
+        missing = body((field("title", "Notes"),))
+        await arecord(lines, "async upload without its photo", lambda: api.forms.submit_upload(body=missing))
         exchange.respond(raw_response(200, _form(*_PROFILE_PARTS), "multipart/form-data; boundary=b1"))
         await arecord(lines, "async profile read", api.forms.read_profile)
         exchange.respond(raw_response(200, _form((_NAMED % b"x", b"1")), "multipart/mixed; boundary=b1"))

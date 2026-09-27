@@ -168,13 +168,18 @@ class EncodedBody:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class BodyMedia:
-    """One declared request media type and how an argument becomes its bytes."""
+    """One declared request media type and how an argument becomes its bytes.
+
+    A form-data schema with file parts takes parts, which the plans of its members check.
+    """
 
     media_type: str
     kind: BodyKind
     encoder: Encoder | None = None
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
+    parts: tuple[PartPlan, ...] | None = None
+    additional_part: PartPlan | None = None
 
     def encode(self, value: object) -> object:
         """Encode one body argument, or raise the codec or media failure; a binary body is sent as it is given."""
@@ -199,9 +204,9 @@ class BodyMedia:
         return checked_wire(value) if self.encoder is None else self.encoder.encode(value)
 
     def multipart(self, value: object, boundary: str) -> object:
-        """Return a form-data body: an object's members as parts, or the parts a body without a schema gives."""
+        """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""
         if self.encoder is None:
-            return MultipartSource(value, boundary)
+            return MultipartSource(value, boundary, self.parts, self.additional_part)
         return encode_multipart(self.encoder.encode(value), boundary)
 
 

@@ -128,6 +128,98 @@ paths:
           description: The echoed pairs.
           content:
             application/x-www-form-urlencoded: {}
+  /uploads:
+    post:
+      operationId: submitUpload
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [id, title, photo]
+              properties:
+                id: {type: integer, readOnly: true}
+                title: {type: string}
+                count: {type: integer}
+                tags:
+                  type: array
+                  items: {type: string}
+                meta: {$ref: '#/components/schemas/Address'}
+                photo: {type: string, format: binary}
+                pages:
+                  type: array
+                  items: {type: string, contentMediaType: application/pdf}
+              additionalProperties: {type: integer}
+      responses:
+        '204':
+          description: Stored.
+  /avatars:
+    post:
+      operationId: submitAvatar
+      tags: [forms]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                caption: {type: string}
+                avatar: {type: string, format: binary}
+          application/json:
+            schema: {$ref: '#/components/schemas/Address'}
+      responses:
+        '204':
+          description: Stored.
+  /scans:
+    post:
+      operationId: submitScans
+      tags: [forms]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note: {type: string}
+              additionalProperties: {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /photos:
+    post:
+      operationId: submitPhotos
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: {type: string, format: binary}
+              additionalProperties: false
+      responses:
+        '204':
+          description: Stored.
+  /labels:
+    post:
+      operationId: submitLabels
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                sheet: {type: string, format: binary}
+              additionalProperties: {type: string}
+      responses:
+        '204':
+          description: Stored.
   /documents:
     post:
       operationId: storeDocument

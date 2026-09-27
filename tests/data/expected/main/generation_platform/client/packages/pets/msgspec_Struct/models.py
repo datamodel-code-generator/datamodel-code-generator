@@ -64,3 +64,12 @@ FieldPetsPetIdPhotoPutRequest: TypeAlias = bytes
 
 
 FieldPetsPetIdPhotoPutResponse: TypeAlias = bytes
+
+
+FieldPetsPetIdFilesPostPathPetIdParameter: TypeAlias = int
+
+
+class FieldPetsPetIdFilesPostRequest(Struct):
+    file: bytes
+    note: str | UnsetType = UNSET
+    labels: list[str] | UnsetType = UNSET

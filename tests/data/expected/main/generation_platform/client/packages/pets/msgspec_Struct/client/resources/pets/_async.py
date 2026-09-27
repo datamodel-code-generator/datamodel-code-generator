@@ -11,6 +11,7 @@ from models import FieldPetsGetCookieSessionParameter as _dcg_type_3
 from models import FieldPetsGetHeaderXTraceParameter as _dcg_type_2
 from models import FieldPetsGetQueryLimitParameter as _dcg_type_0
 from models import FieldPetsGetQueryTagsParameter as _dcg_type_1
+from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_9
 from models import FieldPetsPetIdGetPathPetIdParameter as _dcg_type_6
 from models import FieldPetsPetIdGetResponse as _dcg_type_8
 from models import FieldPetsPostRequest as _dcg_type_5
@@ -19,10 +20,12 @@ from models import Pet as _dcg_type_7
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
+from ...bodies import AsyncMultipartBody
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.pets import (
+    AttachFilesResponse,
     CreatePetResponse,
     DeletePetsByPetIdResponse,
     GetPetResponse,
@@ -178,6 +181,23 @@ class AsyncPetsResource:
             options=options,
         )).data
 
+    async def attach_files(
+        self,
+        *,
+        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
+        body: AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AttachFilesResponse:
+        """Call POST /pets/{petId}/files."""
+        return (await self._core.execute(
+            _operations.OPERATION_6,
+            (pet_id,),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
 
 class AsyncPetsWithResponse:
     """The pets operations, returning each result with its response metadata."""
@@ -305,6 +325,23 @@ class AsyncPetsWithResponse:
             options=options,
         )
 
+    async def attach_files(
+        self,
+        *,
+        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
+        body: AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[AttachFilesResponse]:
+        """Call POST /pets/{petId}/files."""
+        return await self._core.execute(
+            _operations.OPERATION_6,
+            (pet_id,),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncPetsWithRawResponse:
     """The pets operations, returning each raw response with its body read into memory."""
@@ -408,6 +445,23 @@ class AsyncPetsWithRawResponse:
             options=options,
         )
 
+    async def attach_files(
+        self,
+        *,
+        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
+        body: AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /pets/{petId}/files."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_6,
+            (pet_id,),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncPetsWithStreamingResponse:
     """The pets operations, returning blocks that send each call on entry and stream its response."""
@@ -502,3 +556,20 @@ class AsyncPetsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call HEAD /pets/{petId}."""
         return self._core.stream(_operations.OPERATION_4, (pet_id,), options=options)
+
+    def attach_files(
+        self,
+        *,
+        pet_id: _dcg_type_9 | ModelValue[_dcg_type_9],
+        body: AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]],
+        media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /pets/{petId}/files."""
+        return self._core.stream(
+            _operations.OPERATION_6,
+            (pet_id,),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )

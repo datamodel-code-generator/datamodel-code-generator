@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias, overload
 
+from models import Address as _dcg_type_6
 from models import FieldAnythingPostRequest as _dcg_type_4
 from models import FieldAttachmentsGetResponse as _dcg_type_5
 from models import FieldFormsPostRequest as _dcg_type_1
@@ -189,3 +190,231 @@ class _SubmitPairsRequestCodecs(RequestCodecs[Never, Never]):
 
 
 SubmitPairsRequestCodecs: Final = _SubmitPairsRequestCodecs()
+
+
+SubmitUploadResponse: TypeAlias = None
+SubmitUploadErrorData: TypeAlias = None
+
+
+class SubmitUploadHTTPError(HTTPStatusError[SubmitUploadErrorData]):
+    """An error response of submit_upload, with its decoded payload when one is declared."""
+
+
+class _SubmitUploadRequestCodecs(
+    RequestCodecs[Never, Never, NativeOutboundCodec[int] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_6]],
+):
+    """The outbound codecs of the submit_upload request."""
+
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['id'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[int]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['title'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[str]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['count'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[int]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['tags'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[list[str]]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['meta'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_6]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[int] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_6]: ...
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[int] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_6]:
+        """Return the outbound codec of one part of a body sent as parts."""
+        return self._part(name, media_type)
+
+
+SubmitUploadRequestCodecs: Final = _SubmitUploadRequestCodecs(
+    default='multipart/form-data',
+    parts=(
+        ('multipart/form-data', 'id', model_bindings.outbound_12),
+        ('multipart/form-data', 'title', model_bindings.outbound_13),
+        ('multipart/form-data', 'count', model_bindings.outbound_14),
+        ('multipart/form-data', 'tags', model_bindings.outbound_15),
+        ('multipart/form-data', 'meta', model_bindings.outbound_16),
+        ('multipart/form-data', 'photo', None),
+        ('multipart/form-data', 'pages', None),
+    ),
+    extras=(('multipart/form-data', model_bindings.outbound_17),),
+)
+
+
+SubmitAvatarResponse: TypeAlias = None
+SubmitAvatarErrorData: TypeAlias = None
+
+
+class SubmitAvatarHTTPError(HTTPStatusError[SubmitAvatarErrorData]):
+    """An error response of submit_avatar, with its decoded payload when one is declared."""
+
+
+class _SubmitAvatarRequestCodecs(
+    RequestCodecs[NativeOutboundCodec[_dcg_type_6], Never, NativeOutboundCodec[str]],
+):
+    """The outbound codecs of the submit_avatar request."""
+
+    @overload
+    def body(
+        self,
+        *,
+        media_type: Literal['application/json'],
+    ) -> NativeOutboundCodec[_dcg_type_6]: ...
+    @overload
+    def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_6]: ...
+    def body(
+        self,
+        *,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_6]:
+        """Return the outbound codec of one declared request media type."""
+        return self._body(media_type)
+
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['caption'],
+        media_type: Literal['multipart/form-data'],
+    ) -> NativeOutboundCodec[str]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str]: ...
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str]:
+        """Return the outbound codec of one part of a body sent as parts."""
+        return self._part(name, media_type)
+
+
+SubmitAvatarRequestCodecs: Final = _SubmitAvatarRequestCodecs(
+    bodies=(('application/json', model_bindings.outbound_6),),
+    parts=(
+        ('multipart/form-data', 'caption', model_bindings.outbound_18),
+        ('multipart/form-data', 'avatar', None),
+    ),
+)
+
+
+SubmitScansResponse: TypeAlias = None
+SubmitScansErrorData: TypeAlias = None
+
+
+class SubmitScansHTTPError(HTTPStatusError[SubmitScansErrorData]):
+    """An error response of submit_scans, with its decoded payload when one is declared."""
+
+
+class _SubmitScansRequestCodecs(RequestCodecs[Never, Never, NativeOutboundCodec[str]]):
+    """The outbound codecs of the submit_scans request."""
+
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['note'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[str]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str]: ...
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str]:
+        """Return the outbound codec of one part of a body sent as parts."""
+        return self._part(name, media_type)
+
+
+SubmitScansRequestCodecs: Final = _SubmitScansRequestCodecs(
+    default='multipart/form-data',
+    parts=(('multipart/form-data', 'note', model_bindings.outbound_19),),
+)
+
+
+SubmitPhotosResponse: TypeAlias = None
+SubmitPhotosErrorData: TypeAlias = None
+
+
+class SubmitPhotosHTTPError(HTTPStatusError[SubmitPhotosErrorData]):
+    """An error response of submit_photos, with its decoded payload when one is declared."""
+
+
+class _SubmitPhotosRequestCodecs(RequestCodecs[Never, Never]):
+    """The outbound codecs of the submit_photos request."""
+
+
+SubmitPhotosRequestCodecs: Final = _SubmitPhotosRequestCodecs()
+
+
+SubmitLabelsResponse: TypeAlias = None
+SubmitLabelsErrorData: TypeAlias = None
+
+
+class SubmitLabelsHTTPError(HTTPStatusError[SubmitLabelsErrorData]):
+    """An error response of submit_labels, with its decoded payload when one is declared."""
+
+
+class _SubmitLabelsRequestCodecs(
+    RequestCodecs[Never, Never, NativeOutboundCodec[str]],
+):
+    """The outbound codecs of the submit_labels request."""
+
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str]:
+        """Return the outbound codec of one part of a body sent as parts."""
+        return self._part(name, media_type)
+
+
+SubmitLabelsRequestCodecs: Final = _SubmitLabelsRequestCodecs(
+    default='multipart/form-data',
+    parts=(('multipart/form-data', 'sheet', None),),
+    extras=(('multipart/form-data', model_bindings.outbound_20),),
+)
