@@ -59,8 +59,8 @@ class BytesCookie:
         return b""
 
 
-_other_model: ModelCodecAdapterV1[Keeper] = PetAdapter()
-_wrong_capabilities: ModelCodecAdapterV1[Pet] = PetAdapter()
-_wrong_version: SchemaCodecAdapterV1 = VersionTwo()
-_wrong_contribution: ParameterCodecAdapterV1 = BytesCookie()
-_incomplete_issue = WireIssue(code="schema.type", message="m", instance_pointer="", schema_id="s")
+_other_model: ModelCodecAdapterV1[Keeper] = PetAdapter()  # error
+_wrong_capabilities: ModelCodecAdapterV1[Pet] = PetAdapter()  # error
+_wrong_version: SchemaCodecAdapterV1 = VersionTwo()  # error
+_wrong_contribution: ParameterCodecAdapterV1 = BytesCookie()  # error
+_incomplete_issue = WireIssue(code="schema.type", message="m", instance_pointer="", schema_id="s")  # error

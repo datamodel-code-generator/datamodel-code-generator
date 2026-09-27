@@ -23,12 +23,12 @@ class Owner(BaseModel):
 
 
 def exercise(codec: PydanticModelCodec[Pet], context: CodecContext, wire: WireValue, owner: Owner) -> None:
-    _widened: ModelCodec[object] = codec
-    NativeOutboundCodec(codec, context).snapshot(owner)
-    _value: ModelValue[Owner] = NativeOutboundCodec(codec, context).from_wire(wire)
-    _bare: Pet = EnvelopeOutboundCodec(codec, context).from_wire(wire)
-    _native: NativeOutboundCodec[Pet] = EnvelopeOutboundCodec(codec, context)
-    _sent: ModelValue[Pet] = EnvelopeOutboundCodec(codec, context).from_wire(wire)
+    _widened: ModelCodec[object] = codec  # error
+    NativeOutboundCodec(codec, context).snapshot(owner)  # error
+    _value: ModelValue[Owner] = NativeOutboundCodec(codec, context).from_wire(wire)  # error
+    _bare: Pet = EnvelopeOutboundCodec(codec, context).from_wire(wire)  # error
+    _native: NativeOutboundCodec[Pet] = EnvelopeOutboundCodec(codec, context)  # error
+    _sent: ModelValue[Pet] = EnvelopeOutboundCodec(codec, context).from_wire(wire)  # error
 
 
 @dataclass
@@ -37,9 +37,9 @@ class Tag:
 
 
 def exercise_structural(codec: StructuralModelCodec[Tag], context: CodecContext, wire: WireValue) -> None:
-    _widened: ModelCodec[object] = codec
-    _bare: Tag = codec.decode(wire, context)
-    _value: ModelValue[Owner] = codec.snapshot(Tag("a"), context)
+    _widened: ModelCodec[object] = codec  # error
+    _bare: Tag = codec.decode(wire, context)  # error
+    _value: ModelValue[Owner] = codec.snapshot(Tag("a"), context)  # error
 
 
 class TagRecord(TypedDict):
@@ -47,8 +47,8 @@ class TagRecord(TypedDict):
 
 
 def exercise_record(codec: StructuralModelCodec[TagRecord], context: CodecContext) -> None:
-    codec.snapshot(Tag("a"), context)
-    _tag: Tag = codec.snapshot({"name": "a"}, context).value
+    codec.snapshot(Tag("a"), context)  # error
+    _tag: Tag = codec.snapshot({"name": "a"}, context).value  # error
 
 
 class TagStruct(Struct):
@@ -56,5 +56,5 @@ class TagStruct(Struct):
 
 
 def exercise_struct(codec: StructuralModelCodec[TagStruct], context: CodecContext) -> None:
-    codec.snapshot(Tag("a"), context)
-    _tag: Tag = codec.snapshot(TagStruct("a"), context).value
+    codec.snapshot(Tag("a"), context)  # error
+    _tag: Tag = codec.snapshot(TagStruct("a"), context).value  # error

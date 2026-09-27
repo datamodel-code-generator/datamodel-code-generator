@@ -341,6 +341,7 @@ run.omit = [
   "tests/main/test_jsonschema_suite_conformance.py",
   "tests/main/test_memory.py",
   "tests/main/test_performance.py",
+  "tests/model_codecs/test_codec_typing.py",
   "tests/model_codecs/test_json_schema_suite.py",
 ]
 run.dynamic_context = "none"

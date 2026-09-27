@@ -306,8 +306,8 @@ jobs:
             name: FastAPI server installation e2e
             os: ubuntu-24.04
             coverage: false
-          - tox_env: fastapi-typing-nocov-e2e
-            name: FastAPI server typing e2e
+          - tox_env: typing-nocov-e2e
+            name: FastAPI server and model codec typing e2e
             os: ubuntu-24.04
             coverage: false
     runs-on: ${{ matrix.os }}
