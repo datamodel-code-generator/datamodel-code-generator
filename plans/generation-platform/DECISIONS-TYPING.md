@@ -96,14 +96,21 @@ CLIENT §4.1–4.4 owns body_arguments configuration, field eligibility/naming, 
 ```python
 @overload
 def create_pet(
-    *, body: NewPet | ModelValue[NewPet], name: Unset = UNSET,
-    tag: Unset = UNSET, media_type: Literal["application/json"] = "application/json",
+    *,
+    body: NewPet | ModelValue[NewPet],
+    name: Unset = UNSET,
+    tag: Unset = UNSET,
+    media_type: Literal["application/json"] = "application/json",
     options: RequestOptions | None = None,
 ) -> Pet: ...
 
+
 @overload
 def create_pet(
-    *, body: Unset = UNSET, name: str, tag: str | None | Unset = UNSET,
+    *,
+    body: Unset = UNSET,
+    name: str,
+    tag: str | None | Unset = UNSET,
     media_type: Literal["application/json"] = "application/json",
     options: RequestOptions | None = None,
 ) -> Pet: ...
