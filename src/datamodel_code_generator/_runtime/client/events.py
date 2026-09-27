@@ -34,6 +34,7 @@ class CallEvents:
         "call_id",
         "context",
         "delivery",
+        "handed",
         "hooks",
         "info",
         "operation_id",
@@ -66,6 +67,7 @@ class CallEvents:
         self.delivery = DeliveryState.NOT_SENT
         self.info: ResponseInfo | None = None
         self.attempt: float | None = None
+        self.handed: float | None = None
         self.started = monotonic()
 
     def event(  # noqa: PLR0913
@@ -213,7 +215,10 @@ class CallEvents:
                 add_secondary(error, failure)
 
     def finish(self, completed: Response[object] | Unset, *, handed_off: bool = False) -> None:
-        """End a call that succeeded, raising the first hook failure with the success it completed."""
+        """End a call that succeeded, raising the first hook failure with the success it completed.
+
+        A handle handed over this way is the caller's once no hook failed, and then reports its stream's end.
+        """
         failed: tuple[EventName, list[Exception]] | None = None
         for event in self.ending(None, handed_off=handed_off):
             if (failures := self.notify(event)) and failed is None:
@@ -222,9 +227,14 @@ class CallEvents:
                 failed[1].extend(failures)
         if failed is not None:
             raise self.failed(*failed, completed)
+        if handed_off:
+            self.handed = monotonic()
 
     async def afinish(self, completed: Response[object] | Unset, *, handed_off: bool = False) -> None:
-        """End an asynchronous call that succeeded, raising the first hook failure with the success it completed."""
+        """End an asynchronous call that succeeded, raising the first hook failure with the success it completed.
+
+        A handle handed over this way is the caller's once no hook failed, and then reports its stream's end.
+        """
         failed: tuple[EventName, list[Exception]] | None = None
         for event in self.ending(None, handed_off=handed_off):
             if (failures := await self.anotify(event)) and failed is None:
@@ -233,6 +243,41 @@ class CallEvents:
                 failed[1].extend(failures)
         if failed is not None:
             raise self.failed(*failed, completed)
+        if handed_off:
+            self.handed = monotonic()
+
+    def stream_ending(self, error: BaseException | None, *, early: bool) -> CallEvent | None:
+        """Return the end of a handed-over stream: read to its end, closed early, failed, or cancelled."""
+        if (handed := self.handed) is None:
+            return None
+        self.handed = None
+        match error:
+            case None:
+                outcome: CallOutcome = "cancel" if early else "success"
+            case Exception():
+                outcome = "error"
+            case _:
+                outcome = "cancel"
+        status = None if self.info is None else self.info.status_code
+        return self.event("stream_end", sent=True, status=status, duration=monotonic() - handed, outcome=outcome)
+
+    def streamed(self, error: BaseException | None, *, early: bool) -> None:
+        """Report a handed-over stream's end, raising a hook failure unless the stream already failed."""
+        if (event := self.stream_ending(error, early=early)) is not None and (failures := self.notify(event)):
+            self.stream_failed(error, failures)
+
+    async def astreamed(self, error: BaseException | None, *, early: bool) -> None:
+        """Report a handed-over asynchronous stream's end, raising a hook failure unless the stream already failed."""
+        if (event := self.stream_ending(error, early=early)) is not None and (failures := await self.anotify(event)):
+            self.stream_failed(error, failures)
+
+    def stream_failed(self, error: BaseException | None, failures: list[Exception]) -> None:
+        """Raise the failure of the hooks that failed on a stream's end, or keep it beside the stream's own failure."""
+        if error is None:
+            name: EventName = "stream_end"
+            raise self.failed(name, failures)
+        for failure in failures:
+            add_secondary(error, failure)
 
 
 def call_events(

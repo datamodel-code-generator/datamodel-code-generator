@@ -1151,6 +1151,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                     source=source,
                     close=response.close,
                     scope=scope,
+                    events=events if stream else None,
                 )
                 scope.handoff(handle)
             except BaseException:
@@ -1529,6 +1530,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                     source=source,
                     close=response.aclose,
                     scope=scope,
+                    events=events if stream else None,
                 )
                 scope.handoff(handle)
             except BaseException:
