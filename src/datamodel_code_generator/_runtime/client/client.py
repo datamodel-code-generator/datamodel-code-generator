@@ -27,7 +27,16 @@ from typing_extensions import Self, TypeIs
 
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
 from ..model_codecs.unset import UNSET, Unset
-from .bodies import EncodedAttempt
+from .bodies import (
+    AsyncBodyFactory,
+    AsyncFileBody,
+    AsyncStreamBody,
+    BodyAttemptContext,
+    BodyFactory,
+    EncodedAttempt,
+    FileBody,
+    StreamBody,
+)
 from .coding import ContentDecoder
 from .errors import (
     AdapterContractError,
@@ -72,7 +81,7 @@ if TYPE_CHECKING:
     )
 
     from ..model_codecs.parameters import ParameterFragment
-    from .bodies import AsyncBodyAttempt, BodyAttempt
+    from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
     from .operations import OperationPlan, ServerPlan
     from .transports import AsyncTransportAdapter, AsyncTransportResponse, TransportAdapter, TransportResponse
 
@@ -88,6 +97,7 @@ _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
+_BINARY: Final = "A binary body must be bytes or a file, stream, or factory body of the client's mode"
 _MIN_STATUS: Final = 200
 _MAX_STATUS: Final = 599
 
@@ -242,20 +252,44 @@ def _attributed(error: SDKError, operation_id: str | None, call_id: str) -> SDKE
     return error
 
 
-def _raw_request(method: object, url: object, body: object) -> tuple[str, str, EncodedAttempt | None]:
-    """Check the method, absolute URL, and bytes body of a raw request."""
+def _encoded(content: object, media_type: str | None) -> tuple[EncodedAttempt | None, object]:
+    """Split a body into the attempt of bytes, sent as they are, and an input that builds its own attempts, or UNSET."""
+    if type(content) is bytes:
+        return EncodedAttempt(content, media_type), UNSET
+    return None, content
+
+
+def _context(call_id: str) -> BodyAttemptContext:
+    return BodyAttemptContext(call_id=call_id, attempt_index=0, hop_index=0, remaining_timeout=None)
+
+
+def _attempt(content: object, call_id: str) -> BodyAttempt:
+    """Return what a synchronous file, stream, or factory body builds for an attempt, refusing any other input."""
+    match content:
+        case FileBody() | StreamBody() | BodyFactory():
+            return content(_context(call_id))
+        case _:
+            pass
+    raise RequestEncodingError(location=("body",), cause=TypeError(_BINARY))
+
+
+async def _aattempt(content: object, call_id: str) -> AsyncBodyAttempt:
+    """Return what an async file, stream, or factory body builds for an attempt, refusing any other input."""
+    match content:
+        case AsyncFileBody() | AsyncStreamBody() | AsyncBodyFactory():
+            return await content(_context(call_id))
+        case _:
+            pass
+    raise RequestEncodingError(location=("body",), cause=TypeError(_BINARY))
+
+
+def _checked_raw(method: object, url: object) -> tuple[str, str]:
+    """Check the method and absolute URL of a raw request."""
     if not isinstance(method, str) or not _TOKEN.fullmatch(method):
         raise ConfigurationError(field_path=("method",), condition="invalid_value")
     if not isinstance(url, str) or not _absolute(url):
         raise ConfigurationError(field_path=("url",), condition="invalid_url")
-    match body:
-        case Unset():
-            return method, url, None
-        case bytes():
-            return method, url, EncodedAttempt(body, None)
-        case _:
-            pass
-    raise ConfigurationError(field_path=("body",), condition="invalid_type")
+    return method, url
 
 
 def _absolute(url: str) -> bool:
@@ -412,13 +446,20 @@ class _Core(Generic[AdapterT, HandleT]):
 
     def _raw_prepared(
         self, method: object, url: object, body: object, options: object
-    ) -> tuple[PreparedRequest[EncodedAttempt], Settings]:
-        """Return the prepared request of a raw call to any URL, with the client's fixed headers only."""
+    ) -> tuple[PreparedRequest[EncodedAttempt], object, Settings]:
+        """Return a raw call's request to any URL, with the client's fixed headers and a factory's media type.
+
+        Bytes are the request's attempt; any other body is returned beside it, to build its own attempt.
+        """
         if options is not None and not isinstance(options, RequestOptions):
             raise ConfigurationError(field_path=("options",), condition="invalid_type")
         settings = self._settings if options is None else _layered(self._settings, options)
-        verb, target, attempt = _raw_request(method, url, body)
-        return PreparedRequest(method=verb, url=target, headers=HeadersView(self._shared.fixed), body=attempt), settings
+        verb, target = _checked_raw(method, url)
+        media_type = body.content_type if isinstance(body, (BodyFactory, AsyncBodyFactory)) else None
+        fixed = self._shared.fixed
+        headers = HeadersView(fixed if media_type is None else (*fixed, ("Content-Type", media_type)))
+        attempt, deferred = _encoded(body, None)
+        return PreparedRequest(method=verb, url=target, headers=headers, body=attempt), deferred, settings
 
     def _base(self, operation: OperationPlan[object, object], settings: Settings) -> str:
         """Return a call's base URL, resolving the client's server selection once per server list."""
@@ -450,7 +491,8 @@ class _Core(Generic[AdapterT, HandleT]):
         media_type: str | None,
         options: object,
         accept: str | None,
-    ) -> tuple[PreparedRequest[EncodedAttempt], Settings]:
+    ) -> tuple[PreparedRequest[EncodedAttempt], object, Settings]:
+        """Return a call's request, its body input when that builds its own attempts or else UNSET, and its settings."""
         if options is not None and not isinstance(options, RequestOptions):
             raise ConfigurationError(
                 field_path=("options",), condition="invalid_type", operation_id=operation.operation_id
@@ -479,14 +521,17 @@ class _Core(Generic[AdapterT, HandleT]):
         headers.extend(request.headers)
         if request.cookies:
             headers.append(("Cookie", "; ".join(request.cookies)))
+        url = f"{base}{route}{'?' if query else ''}{query}"
+        attempt: EncodedAttempt | None = None
+        deferred: object = UNSET
         if encoded is not None:
             headers.append(("Content-Type", encoded.media_type))
-        return PreparedRequest(
-            method=operation.method,
-            url=f"{base}{route}{'?' if query else ''}{query}",
-            headers=HeadersView(headers),
-            body=None if encoded is None else EncodedAttempt(encoded.content, encoded.media_type),
-        ), settings
+            attempt, deferred = _encoded(encoded.content, encoded.media_type)
+        return (
+            PreparedRequest(method=operation.method, url=url, headers=HeadersView(headers), body=attempt),
+            deferred,
+            settings,
+        )
 
 
 def _ownership(http_client: object, ownership: object, transport_adapter: object) -> None:
@@ -585,10 +630,9 @@ def _released(response: TransportResponse, operation_id: str | None, call_id: st
         ) from None
 
 
-def _discarded(response: TransportResponse, error: BaseException) -> None:
-    try:
-        response.close()
-    except Exception as failure:  # noqa: BLE001
+def _discarded(close: Callable[[], object], error: BaseException) -> None:
+    """Run a close while an error propagates, keeping its failure beside that error."""
+    if (failure := _quietly(close)) is not None:
         add_secondary(error, failure)
 
 
@@ -601,10 +645,9 @@ async def _areleased(response: AsyncTransportResponse, operation_id: str | None,
         ) from None
 
 
-async def _adiscarded(response: AsyncTransportResponse, error: BaseException) -> None:
-    try:
-        await response.aclose()
-    except Exception as failure:  # noqa: BLE001
+async def _adiscarded(close: Callable[[], Awaitable[None]], error: BaseException) -> None:
+    """Await a close while an error propagates, keeping its failure beside that error."""
+    if (failure := await _aquietly(close)) is not None:
         add_secondary(error, failure)
 
 
@@ -700,20 +743,20 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         self._admitted(operation_id, call_id)
         try:
             decoder = self._decoder(operation, response_media_type)
-            request, settings = self._prepare(
+            request, deferred, settings = self._prepare(
                 operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
             )
             started, trace = monotonic(), AttemptTrace()
-            response = self._send(request, trace, operation_id, call_id)
+            response = self._send(request, deferred, trace, operation_id, call_id)
             try:
                 info = self._response_info(response, trace, operation.request_id_header, call_id, started)
                 received = self._read(response, info, decoder, settings, operation_id=operation_id)
             except Exception as error:  # noqa: BLE001
                 failure = self._failure(error, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
-                _discarded(response, failure)
+                _discarded(response.close, failure)
                 raise failure from None
             except BaseException as error:
-                _discarded(response, error)
+                _discarded(response.close, error)
                 raise
             _released(response, operation_id, call_id)
         finally:
@@ -736,7 +779,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         self._admitted(operation_id, call_id)
         try:
             decoder = self._decoder(operation, response_media_type)
-            request, settings = self._prepare(
+            request, deferred, settings = self._prepare(
                 operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
             )
         except BaseException:
@@ -744,6 +787,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             raise
         return self._raw(
             request,
+            deferred,
             decoder,
             settings,
             operation_id=operation_id,
@@ -780,7 +824,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: bytes | Unset = UNSET,
+        body: SyncBinaryBody | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> RawResponse:
@@ -788,16 +832,23 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         call_id = str(uuid4())
         self._admitted(None, call_id)
         try:
-            request, settings = self._raw_prepared(method, url, body, options)
+            request, deferred, settings = self._raw_prepared(method, url, body, options)
         except BaseException:
             self._scope.release()
             raise
         return self._raw(
-            request, RAW_DECODER, settings, operation_id=None, request_id_header=None, call_id=call_id, stream=stream
+            request,
+            deferred,
+            RAW_DECODER,
+            settings,
+            operation_id=None,
+            request_id_header=None,
+            call_id=call_id,
+            stream=stream,
         )
 
     def stream_raw(
-        self, method: str, url: str, *, body: bytes | Unset = UNSET, options: RequestOptions | None = None
+        self, method: str, url: str, *, body: SyncBinaryBody | Unset = UNSET, options: RequestOptions | None = None
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
@@ -805,6 +856,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     def _raw(  # noqa: PLR0913
         self,
         request: PreparedRequest[BodyAttempt],
+        deferred: object,
         decoder: ResponseDecoder[object, object],
         settings: Settings,
         *,
@@ -817,15 +869,15 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         scope = self._scope
         try:
             started, trace = monotonic(), AttemptTrace()
-            response = self._send(request, trace, operation_id, call_id)
+            response = self._send(request, deferred, trace, operation_id, call_id)
             try:
                 info = self._response_info(response, trace, request_id_header, call_id, started)
             except Exception as error:  # noqa: BLE001
                 failure = self._failure(error, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
-                _discarded(response, failure)
+                _discarded(response.close, failure)
                 raise failure from None
             except BaseException as error:
-                _discarded(response, error)
+                _discarded(response.close, error)
                 raise
             source = response.iter_raw_bytes if self._shared.trusted else partial(_checked_chunks, response)
             handle = RawResponse(
@@ -851,16 +903,37 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         return handle
 
     def _send(
-        self, request: PreparedRequest[BodyAttempt], trace: AttemptTrace, operation_id: str | None, call_id: str
+        self,
+        request: PreparedRequest[BodyAttempt],
+        deferred: object,
+        trace: AttemptTrace,
+        operation_id: str | None,
+        call_id: str,
     ) -> TransportResponse:
+        """Send one attempt, building its body from a deferred file, stream, or factory, then close the body."""
+        attempt = request.body
         try:
-            return self._shared.adapter.send(request, AttemptIOContext(TIMEOUT, trace))
+            if not isinstance(deferred, Unset):
+                attempt = _attempt(deferred, call_id)
+                request = PreparedRequest(method=request.method, url=request.url, headers=request.headers, body=attempt)
+            response = self._shared.adapter.send(request, AttemptIOContext(TIMEOUT, trace))
         except Exception as error:  # noqa: BLE001
-            delivery = _delivery(trace, self._shared.adapter.capabilities)
-            raise self._failure(error, operation_id, call_id, delivery) from None
-        finally:
-            if request.body is not None:
-                request.body.close()
+            failure = self._failure(error, operation_id, call_id, _delivery(trace, self._shared.adapter.capabilities))
+            if attempt is not None:
+                _discarded(attempt.close, failure)
+            raise failure from None
+        except BaseException as error:
+            if attempt is not None:
+                _discarded(attempt.close, error)
+            raise
+        if attempt is not None:
+            try:
+                attempt.close()
+            except Exception as problem:  # noqa: BLE001
+                closed = self._failure(problem, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
+                _discarded(response.close, closed)
+                raise closed from None
+        return response
 
     def _read(
         self,
@@ -964,20 +1037,20 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self._admitted(operation_id, call_id)
         try:
             decoder = self._decoder(operation, response_media_type)
-            request, settings = self._prepare(
+            request, deferred, settings = self._prepare(
                 operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
             )
             started, trace = monotonic(), AttemptTrace()
-            response = await self._send(request, trace, operation_id, call_id)
+            response = await self._send(request, deferred, trace, operation_id, call_id)
             try:
                 info = self._response_info(response, trace, operation.request_id_header, call_id, started)
                 received = await self._read(response, info, decoder, settings, operation_id=operation_id)
             except Exception as error:  # noqa: BLE001
                 failure = self._failure(error, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
-                await _adiscarded(response, failure)
+                await _adiscarded(response.aclose, failure)
                 raise failure from None
             except BaseException as error:
-                await _adiscarded(response, error)
+                await _adiscarded(response.aclose, error)
                 raise
             await _areleased(response, operation_id, call_id)
         finally:
@@ -1001,7 +1074,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self._admitted(operation_id, call_id)
         try:
             decoder = self._decoder(operation, response_media_type)
-            request, settings = self._prepare(
+            request, deferred, settings = self._prepare(
                 operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
             )
         except BaseException:
@@ -1009,6 +1082,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             raise
         return await self._raw(
             request,
+            deferred,
             decoder,
             settings,
             operation_id=operation_id,
@@ -1045,7 +1119,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: bytes | Unset = UNSET,
+        body: AsyncBinaryBody | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
@@ -1054,16 +1128,23 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self._running(None, call_id)
         self._admitted(None, call_id)
         try:
-            request, settings = self._raw_prepared(method, url, body, options)
+            request, deferred, settings = self._raw_prepared(method, url, body, options)
         except BaseException:
             self._scope.release()
             raise
         return await self._raw(
-            request, RAW_DECODER, settings, operation_id=None, request_id_header=None, call_id=call_id, stream=stream
+            request,
+            deferred,
+            RAW_DECODER,
+            settings,
+            operation_id=None,
+            request_id_header=None,
+            call_id=call_id,
+            stream=stream,
         )
 
     def stream_raw(
-        self, method: str, url: str, *, body: bytes | Unset = UNSET, options: RequestOptions | None = None
+        self, method: str, url: str, *, body: AsyncBinaryBody | Unset = UNSET, options: RequestOptions | None = None
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
@@ -1071,6 +1152,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
     async def _raw(  # noqa: PLR0913
         self,
         request: PreparedRequest[AsyncBodyAttempt],
+        deferred: object,
         decoder: ResponseDecoder[object, object],
         settings: Settings,
         *,
@@ -1083,15 +1165,15 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         scope = self._scope
         try:
             started, trace = monotonic(), AttemptTrace()
-            response = await self._send(request, trace, operation_id, call_id)
+            response = await self._send(request, deferred, trace, operation_id, call_id)
             try:
                 info = self._response_info(response, trace, request_id_header, call_id, started)
             except Exception as error:  # noqa: BLE001
                 failure = self._failure(error, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
-                await _adiscarded(response, failure)
+                await _adiscarded(response.aclose, failure)
                 raise failure from None
             except BaseException as error:
-                await _adiscarded(response, error)
+                await _adiscarded(response.aclose, error)
                 raise
             source = response.iter_raw_bytes if self._shared.trusted else partial(_achecked_chunks, response)
             handle = AsyncRawResponse(
@@ -1117,16 +1199,37 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         return handle
 
     async def _send(
-        self, request: PreparedRequest[AsyncBodyAttempt], trace: AttemptTrace, operation_id: str | None, call_id: str
+        self,
+        request: PreparedRequest[AsyncBodyAttempt],
+        deferred: object,
+        trace: AttemptTrace,
+        operation_id: str | None,
+        call_id: str,
     ) -> AsyncTransportResponse:
+        """Send one attempt, building its body from a deferred file, stream, or factory, then close the body."""
+        attempt = request.body
         try:
-            return await self._shared.adapter.send(request, AttemptIOContext(TIMEOUT, trace))
+            if not isinstance(deferred, Unset):
+                attempt = await _aattempt(deferred, call_id)
+                request = PreparedRequest(method=request.method, url=request.url, headers=request.headers, body=attempt)
+            response = await self._shared.adapter.send(request, AttemptIOContext(TIMEOUT, trace))
         except Exception as error:  # noqa: BLE001
-            delivery = _delivery(trace, self._shared.adapter.capabilities)
-            raise self._failure(error, operation_id, call_id, delivery) from None
-        finally:
-            if request.body is not None:
-                await request.body.aclose()
+            failure = self._failure(error, operation_id, call_id, _delivery(trace, self._shared.adapter.capabilities))
+            if attempt is not None:
+                await _adiscarded(attempt.aclose, failure)
+            raise failure from None
+        except BaseException as error:
+            if attempt is not None:
+                await _adiscarded(attempt.aclose, error)
+            raise
+        if attempt is not None:
+            try:
+                await attempt.aclose()
+            except Exception as problem:  # noqa: BLE001
+                closed = self._failure(problem, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
+                await _adiscarded(response.aclose, closed)
+                raise closed from None
+        return response
 
     async def _read(
         self,

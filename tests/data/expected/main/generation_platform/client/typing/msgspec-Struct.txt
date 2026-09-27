@@ -1,58 +1,73 @@
-16 marked lines
+21 marked lines
 mypy pets and clients.py: clean
 pyright pets and clients.py: clean
 ty pets and clients.py: clean
-mypy clients_negative.py: 16/16 marked lines with one error, 0 elsewhere, 0 in other files
-  24 call-arg
-  25 arg-type
-  26 call-overload
+mypy clients_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+  25 call-arg
+  26 arg-type
   27 call-overload
-  29 call-overload
-  31 arg-type
-  33 arg-type
-  39 arg-type
+  28 call-overload
+  30 call-overload
+  32 arg-type
+  34 arg-type
   40 arg-type
   41 arg-type
-  47 arg-type
-  48 assignment
-  50 arg-type
-  51 call-arg
-  56 misc
-  58 assignment
-pyright clients_negative.py: 13/16 marked lines with one error, 0 elsewhere, 0 in other files
-  24 reportCallIssue
-  25 reportArgumentType
+  42 arg-type
+  48 arg-type
+  49 assignment
+  51 arg-type
+  52 call-arg
+  57 misc
+  59 assignment
+  67 arg-type
+  68 arg-type
+  69 list-item
+  70 arg-type
+  71 arg-type
+pyright clients_negative.py: 18/21 marked lines with one error, 0 elsewhere, 0 in other files
+  25 reportCallIssue
   26 reportArgumentType
-  26 reportCallIssue
   27 reportArgumentType
   27 reportCallIssue
-  29 reportArgumentType
-  29 reportCallIssue
-  31 reportArgumentType
-  33 reportArgumentType
-  39 reportArgumentType
+  28 reportArgumentType
+  28 reportCallIssue
+  30 reportArgumentType
+  30 reportCallIssue
+  32 reportArgumentType
+  34 reportArgumentType
   40 reportArgumentType
   41 reportArgumentType
-  47 reportArgumentType
-  48 reportAssignmentType
-  50 reportArgumentType
-  51 reportCallIssue
-  56 reportGeneralTypeIssues
-  58 reportAssignmentType
-ty clients_negative.py: 16/16 marked lines with one error, 0 elsewhere, 0 in other files
-  24 missing-argument
-  25 invalid-argument-type
-  26 no-matching-overload
+  42 reportArgumentType
+  48 reportArgumentType
+  49 reportAssignmentType
+  51 reportArgumentType
+  52 reportCallIssue
+  57 reportGeneralTypeIssues
+  59 reportAssignmentType
+  67 reportArgumentType
+  68 reportArgumentType
+  69 reportArgumentType
+  70 reportArgumentType
+  71 reportArgumentType
+ty clients_negative.py: 21/21 marked lines with one error, 0 elsewhere, 0 in other files
+  25 missing-argument
+  26 invalid-argument-type
   27 no-matching-overload
-  29 no-matching-overload
-  31 invalid-argument-type
-  33 invalid-argument-type
-  39 invalid-argument-type
+  28 no-matching-overload
+  30 no-matching-overload
+  32 invalid-argument-type
+  34 invalid-argument-type
   40 invalid-argument-type
   41 invalid-argument-type
-  47 invalid-argument-type
-  48 invalid-assignment
-  50 invalid-argument-type
-  51 missing-argument
-  56 invalid-await
-  58 invalid-assignment
+  42 invalid-argument-type
+  48 invalid-argument-type
+  49 invalid-assignment
+  51 invalid-argument-type
+  52 missing-argument
+  57 invalid-await
+  59 invalid-assignment
+  67 invalid-argument-type
+  68 invalid-argument-type
+  69 invalid-argument-type
+  70 invalid-argument-type
+  71 invalid-argument-type

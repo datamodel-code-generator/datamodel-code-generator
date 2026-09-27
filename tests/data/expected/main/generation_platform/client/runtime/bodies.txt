@@ -1,0 +1,178 @@
+# pets pydantic_v2.BaseModel
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'cdef'
+  file from its position = b'\x89PNG'
+    borrowed file left open at 6 True
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 0] b''
+  file again from where it stopped = b'\x89PNG'
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 5] b'owned'
+  owned file = b'\x89PNG'
+    owned file closed True
+  owned file again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'once'
+  file that cannot seek = b'\x89PNG'
+  file that cannot seek again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
+  unreadable file ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('disk failed')] body_factory_error
+  file without a position ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('tell failed')] body_factory_error
+  file longer than its end ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='length') [operation_id='uploadPhoto'] body_changed_error
+  file shorter than its end ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='length') [operation_id='uploadPhoto'] body_changed_error
+  interrupted file propagated
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 6] b'shared'
+  file another call reads ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='concurrent') [operation_id='uploadPhoto', condition='concurrent'] body_not_replayable_error
+  first reader = b'\x89PNG'
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
+  path = b'\x89PNG'
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
+  path again = b'\x89PNG'
+  changed path ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='stat') [operation_id='uploadPhoto'] body_changed_error
+  removed path ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=FileNotFoundError(2, 'No such file or directory')] body_factory_error
+  missing path: FileNotFoundError secondary []
+  async file to the sync client ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A binary body must be bytes or a file, stream, or factory body of the client's mode")] request_encoding_error
+  > PUT https://hooks.example.com/file
+    [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 3] b'raw'
+  raw file = b'ok'
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'abcd'
+  stream = b'\x89PNG'
+  stream again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'x'
+  chunks closed
+  owned stream = b'\x89PNG'
+  stream of text ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=TypeError('A body chunk must be bytes')] body_factory_error
+  failing stream ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('stream failed')] body_factory_error
+  stream that is not iterable ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=TypeError("'int' object is not iterable")] body_factory_error
+  chunks closed
+  interrupted owned stream propagated
+  factory declares 4 image/png b'f'
+  factory <call> 0 0 None
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'made'
+  attempt closed
+  factory = b'\x89PNG'
+  factory <call> 0 0 None
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'made'
+  attempt closed
+  factory again = b'\x89PNG'
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'c'
+  attempt closed
+  factory once = b'\x89PNG'
+  factory returning the same attempt ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='factory', condition='same_attempt') [operation_id='uploadPhoto', condition='same_attempt'] body_not_replayable_error
+  failing factory ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('factory failed')] body_factory_error
+  factory <call> 0 0 None
+  attempt closed
+  attempt of another length ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='factory', check='length') [operation_id='uploadPhoto'] body_changed_error
+  factory <call> 0 0 None
+  attempt closed
+  attempt of another length that fails to close: BodyChangedError secondary ['RuntimeError']
+  factory <call> 0 0 None
+  attempt closed
+  attempt longer than declared ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='factory', check='length') [operation_id='uploadPhoto'] body_changed_error
+  factory <call> 0 0 None
+  attempt closed
+  attempt shorter than declared ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='factory', check='length') [operation_id='uploadPhoto'] body_changed_error
+  factory <call> 0 0 None
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'ok'
+  attempt closed
+  attempt failing to close ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('close failed')] body_factory_error
+  factory <call> 0 0 None
+  attempt closed
+  attempt failing to read and to close: BodyFactoryError secondary ['BodyFactoryError']
+  factory <call> 0 0 None
+  attempt closed
+  attempt that cannot iterate ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('cannot iterate')] body_factory_error
+  factory <call> 0 0 None
+  > POST https://hooks.example.com/upload
+    [host: hooks.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 3] b'raw'
+  attempt closed
+  raw factory = b'ok'
+  file attempt built directly 6 None b'direct'
+  factory own 2 1 9.5
+  factory attempt built directly None application/x-attempt b'direct'
+  attempt closed
+  attempt closed
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'cdef'
+  async file from its position = b'\x89PNG'
+    async borrowed file left open at 6 True
+  async closed file body ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 5] b'owned'
+  async owned file = b'\x89PNG'
+    async owned file closed True
+  async owned file again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'once'
+  async file that cannot seek = b'\x89PNG'
+  async file that cannot seek again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
+  async unreadable file ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('disk failed')] body_factory_error
+  async file without a position ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('tell failed')] body_factory_error
+  async file longer than its end ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='length') [operation_id='uploadPhoto'] body_changed_error
+  async interrupted file propagated
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'\x89PNG'
+  async path = b'\x89PNG'
+  async changed path ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='stat') [operation_id='uploadPhoto'] body_changed_error
+  async removed path ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=FileNotFoundError(2, 'No such file or directory')] body_factory_error
+  async sync file to the async client ! RequestEncodingError: RequestEncodingError(operation_id='uploadPhoto', call_id='<call>', location='body') [operation_id='uploadPhoto', location=('body',), cause=TypeError("A binary body must be bytes or a file, stream, or factory body of the client's mode")] request_encoding_error
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'abcd'
+  async stream = b'\x89PNG'
+  async stream again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'x'
+  async chunks closed
+  async owned stream = b'\x89PNG'
+  async stream of text ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=TypeError('A body chunk must be bytes')] body_factory_error
+  async failing stream ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('stream failed')] body_factory_error
+  async stream that is not async iterable ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=TypeError("'int' object is not an async iterable")] body_factory_error
+  async factory declares 4 image/png b'f'
+  factory <call> 0 0 None
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'made'
+  attempt closed
+  async factory = b'\x89PNG'
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'c'
+  attempt closed
+  async factory once = b'\x89PNG'
+  async factory returning the same attempt ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='factory', condition='same_attempt') [operation_id='uploadPhoto', condition='same_attempt'] body_not_replayable_error
+  async failing factory ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('factory failed')] body_factory_error
+  factory <call> 0 0 None
+  attempt closed
+  async attempt of another length that fails to close: BodyChangedError secondary ['RuntimeError']
+  factory <call> 0 0 None
+  attempt closed
+  async attempt of another length ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='factory', check='length') [operation_id='uploadPhoto'] body_changed_error
+  factory <call> 0 0 None
+  > PUT https://api.example.com/v1/pets/1/photo
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, transfer-encoding: chunked] b'ok'
+  attempt closed
+  async attempt failing to close ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('close failed')] body_factory_error
+  factory <call> 0 0 None
+  attempt closed
+  async attempt failing to read and to close: BodyFactoryError secondary ['BodyFactoryError']
+  factory <call> 0 0 None
+  attempt closed
+  async attempt that cannot iterate ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=RuntimeError('cannot iterate')] body_factory_error
+  factory <call> 0 0 None
+  > POST https://hooks.example.com/upload
+    [host: hooks.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 3] b'raw'
+  attempt closed
+  async raw factory = b'ok'
+  async chunks closed
+  async interrupted owned stream propagated
+  async file attempt built directly 6 None [b'direct']
+  factory own 2 1 None
+  async factory attempt built directly None application/x-attempt [b'direct']
+  attempt closed
+  attempt closed

@@ -150,10 +150,10 @@ class ParameterSpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class EncodedBody:
-    """A request body encoded for its selected media type."""
+    """A request body encoded for its selected media type; a binary body stays the input the call was given."""
 
     media_type: str
-    content: bytes
+    content: object
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -166,8 +166,8 @@ class BodyMedia:
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
 
-    def encode(self, value: object) -> bytes:
-        """Encode one body argument, or raise the codec or media failure."""
+    def encode(self, value: object) -> object:
+        """Encode one body argument, or raise the codec or media failure; a binary body is sent as it is given."""
         match self.kind:
             case "json":
                 return encode_json(self.wire(value))
@@ -182,9 +182,6 @@ class BodyMedia:
                 return _form_data(value)
             case _:
                 pass
-        if not isinstance(value, bytes):
-            msg = "A binary body must be bytes"
-            raise ParameterEncodingError(msg)
         return value
 
     def wire(self, value: object) -> WireValue:

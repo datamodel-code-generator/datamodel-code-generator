@@ -163,6 +163,102 @@ class RequestEncodingError(SDKError):
         return (*super()._details(), ("location", ".".join(map(str, self.location)) or None))
 
 
+BodySourceKind: TypeAlias = Literal["bytes", "file", "stream", "factory", "multipart"]
+
+
+class BodyNotReplayableError(SDKError):
+    """A body that cannot be sent again: a one-shot source already read, or one another call is reading."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        source_kind: BodySourceKind,
+        condition: Literal["one_shot", "consumed", "same_attempt", "concurrent", "digest_unavailable", "not_seekable"],
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the kind of body source and why it cannot be sent."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.source_kind: BodySourceKind = source_kind
+        self.condition = condition
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("source_kind", self.source_kind), ("condition", self.condition))
+
+
+class BodyChangedError(SDKError):
+    """A body that differs from what its source declared or first showed; its bytes are never sent again."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        source_kind: Literal["file", "factory", "multipart"],
+        check: Literal["stat", "length", "fingerprint", "digest"],
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the kind of body source and the check that found the difference."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.source_kind: Literal["file", "factory", "multipart"] = source_kind
+        self.check = check
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("source_kind", self.source_kind), ("check", self.check))
+
+
+class BodyFactoryError(SDKError):
+    """A body factory, file, or stream that failed while it was opened or read; the cause is its exception."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        attempt_index: int | None = None,
+        hop_index: int | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the attempt and redirect hop whose body failed."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.attempt_index = attempt_index
+        self.hop_index = hop_index
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("attempt_index", self.attempt_index), ("hop_index", self.hop_index))
+
+
 class TransportError(SDKError):
     """A classified I/O failure of the HTTP transport, with how far the request got."""
 

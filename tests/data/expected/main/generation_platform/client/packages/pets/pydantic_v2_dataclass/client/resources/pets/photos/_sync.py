@@ -11,6 +11,7 @@ from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_0
 
 from .... import _operations
 from ...._runtime.client.client import ClientCore
+from ....bodies import SyncBinaryBody
 from ....model_codecs import ModelValue
 from ....options import UNSET, RequestOptions, Unset
 from ....responses import RawResponse, Response
@@ -43,7 +44,7 @@ class PetsPhotosResource:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> UploadResponse:
@@ -68,7 +69,7 @@ class PetsPhotosWithResponse:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UploadResponse]:
@@ -93,7 +94,7 @@ class PetsPhotosWithRawResponse:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -118,7 +119,7 @@ class PetsPhotosWithStreamingResponse:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: SyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
