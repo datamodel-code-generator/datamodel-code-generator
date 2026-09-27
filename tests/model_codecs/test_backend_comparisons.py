@@ -19,6 +19,8 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
     [
         ("pydantic/pets", "backends"),
         ("pydantic/containers", "containers"),
+        ("pydantic/names", "names"),
+        ("pydantic/names", "names-noalias"),
     ],
 )
 def test_backend_comparisons(source: str, cases: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

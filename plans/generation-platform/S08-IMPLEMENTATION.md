@@ -93,6 +93,10 @@ A Struct tagged through its class parameters rather than a discriminator, such a
 
 The samples in `tests/data/generation_platform/codecs/typing/`, the S04 wire, binding and adapter samples and the codec samples of S08, were checked only by a scratchpad script, so CI would pass while a codec accepted another model or returned the wrong type. `test_codec_typing.py` now generates the adapters fixture's package with a copy of the runtime, as S04 did by hand, copies the samples into a `samples` package (so `codecs.py` does not shadow the standard library), and runs strict mypy 2.3.1 and Pyright 1.1.414 through `uvx` and the environment's ty: the positive samples are clean on each checker, and every line a negative sample marks `# error` has an error on each checker and no other line has one. Pyright reports two errors on four of the marked lines, a failed overload with its argument or an unknown attribute with its member; the expected output lists every diagnostic, so any change fails. The runner of #4178 moved to a shared helper, now with mypy's `--follow-imports=silent`, so like Pyright and ty it reports only the files it checks; the FastAPI reports are unchanged. The gated environment is now `typing-nocov-e2e`, which CI runs on Ubuntu as "FastAPI server and model codec typing e2e".
 
+### TypedDict keys by syntax
+
+Found while checking the fixes: D keys a class-syntax TypedDict by its field names and a functional one by the property names, whatever the alias settings, but the planner took a field's alias or else its slot name. With `snake_case_field`, `petName` became the class field `pet_name` while the binding read `petName`; with `no_alias`, the functional `'pet-name'` key was bound as `pet_name`; either way the codec refused the generated model at startup. The planner now keys a field by the wire name when the TypedDict declaring it uses the functional syntax, and by its field name otherwise. The five-backend comparison gains a source with a camel-case and a kebab-case property, run with `snake_case_field` and with `no_alias` as well.
+
 ## Next action
 
 Publish S08-3 on #4183. S09 renders these codecs into client packages.

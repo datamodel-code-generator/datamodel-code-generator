@@ -1,0 +1,6 @@
+camel [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict]: model wire={"petName":"Mimi","age":2} extras={}
+camel-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict]: wire={"petName":"Mimi","age":2}
+camel-required [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict]: WireValidationError schema.required@/petName
+camel-required-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict]: WireValidationError schema.required@/petName
+kebab [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict]: model wire={"pet-name":"Mimi","age":2} extras={}
+kebab-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict]: wire={"pet-name":"Mimi","age":2}
