@@ -29,4 +29,7 @@ class FieldGreetingsGetQueryModeParameter(Enum):
 FieldGreetingsGetResponse = TypeAliasType("FieldGreetingsGetResponse", str)
 
 
+FieldDocumentsIdGetPathIdParameter = TypeAliasType("FieldDocumentsIdGetPathIdParameter", int)
+
+
 FieldPetsIdGetPathIdParameter = TypeAliasType("FieldPetsIdGetPathIdParameter", int)

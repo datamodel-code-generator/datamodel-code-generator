@@ -27,6 +27,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def put_document(self, **arguments: object) -> None:
             record("put_document", arguments)
 
+        def put_archive(self, **arguments: object) -> None:
+            record("put_archive", arguments)
+
         def put_blob(self, **arguments: object) -> None:
             record("put_blob", arguments)
 

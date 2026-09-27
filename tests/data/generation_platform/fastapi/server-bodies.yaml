@@ -45,6 +45,17 @@ paths:
             schema: {type: string, maxLength: 5}
       responses:
         "204": {description: Done.}
+  /archives:
+    put:
+      operationId: putArchive
+      requestBody:
+        required: true
+        content:
+          "*/*": {}
+          text/*:
+            schema: {type: string, maxLength: 5}
+      responses:
+        "204": {description: Done.}
   /blobs:
     put:
       operationId: putBlob

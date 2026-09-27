@@ -225,9 +225,9 @@ class BodyAdapter:
     _essences: tuple[tuple[str, BodyMedia], ...] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
-        """Index the declared media by essence, exact types before wildcards."""
+        """Index the declared media by essence, most specific first: exact types, then type/*, then */*."""
         essences = [(item.media_type.partition(";")[0], item) for item in self.media]
-        object.__setattr__(self, "_essences", tuple(sorted(essences, key=lambda pair: "*" in pair[0])))
+        object.__setattr__(self, "_essences", tuple(sorted(essences, key=lambda pair: pair[0].count("*"))))
 
     async def __call__(self, request: Request) -> object:
         """Return the decoded body, the envelope of a directional body, or UNSET for an omitted optional body."""

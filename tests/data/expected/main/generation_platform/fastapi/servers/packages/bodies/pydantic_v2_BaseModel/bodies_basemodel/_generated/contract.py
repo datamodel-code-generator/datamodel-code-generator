@@ -19,6 +19,7 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1accounts/post',
     '/paths/~1profiles/post',
     '/paths/~1documents/put',
+    '/paths/~1archives/put',
     '/paths/~1blobs/put',
     '/paths/~1forms/post',
     '/paths/~1native-forms/post',
@@ -34,6 +35,7 @@ OperationDependencies = TypedDict(
         '/paths/~1accounts/post': Sequence[Dependency],
         '/paths/~1profiles/post': Sequence[Dependency],
         '/paths/~1documents/put': Sequence[Dependency],
+        '/paths/~1archives/put': Sequence[Dependency],
         '/paths/~1blobs/put': Sequence[Dependency],
         '/paths/~1forms/post': Sequence[Dependency],
         '/paths/~1native-forms/post': Sequence[Dependency],
@@ -164,6 +166,31 @@ class PutDocument:
     )
 
 
+class PutArchive:
+    """Plans of the put_archive operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='put_archive',
+        key='/paths/~1archives/put',
+        service='untagged',
+        keywords=('body', 'media_type'),
+    )
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(media_type='*/*', kind='binary'),
+            BodyMedia(
+                media_type='text/*',
+                kind='text',
+                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+            ),
+        ),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses=(ResponsePlan(status='204'),),
+        primary=(204, None),
+    )
+
+
 class PutBlob:
     """Plans of the put_blob operation."""
 
@@ -196,7 +223,7 @@ class PostForm:
             BodyMedia(
                 media_type='application/x-www-form-urlencoded',
                 kind='form',
-                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
                 fields=(
                     FieldPlan('name', 'string'),
                     FieldPlan('tags', 'string', repeated=True),
@@ -258,7 +285,7 @@ class PostCheck:
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
             ),
         ),
         required=False,

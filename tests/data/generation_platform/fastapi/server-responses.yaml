@@ -12,6 +12,18 @@ paths:
           content:
             application/json:
               schema: {type: string}
+  /documents/{id}:
+    get:
+      operationId: getDocument
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: The document, as a pet or as raw bytes.
+          content:
+            "*/*": {}
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
   /pets/{id}:
     get:
       operationId: getPet

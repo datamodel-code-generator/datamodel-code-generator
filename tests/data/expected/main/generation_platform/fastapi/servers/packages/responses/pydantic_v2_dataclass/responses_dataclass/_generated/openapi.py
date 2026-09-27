@@ -39,6 +39,38 @@ _BUNDLE = r"""{
    }
   },
   {
+   "key": "/paths/~1documents~1{id}/get",
+   "method": "get",
+   "route_path": "/documents/{id}",
+   "slots": [],
+   "fragment": {
+    "responses": {
+     "200": {
+      "description": "The document, as a pet or as raw bytes.",
+      "content": {
+       "*/*": {},
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Pet__9892769da028"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__6d30b2af1e65"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
+  },
+  {
    "key": "/paths/~1pets~1{id}/get",
    "method": "get",
    "route_path": "/pets/{id}",
@@ -118,6 +150,10 @@ PLAN: Final = OpenAPIPackagePlan(
     package='responses_dataclass',
     version='3.1.0',
     repeated=False,
-    operation_keys=('/paths/~1greetings/get', '/paths/~1pets~1{id}/get'),
+    operation_keys=(
+        '/paths/~1greetings/get',
+        '/paths/~1documents~1{id}/get',
+        '/paths/~1pets~1{id}/get',
+    ),
     bundle=_BUNDLE,
 )
