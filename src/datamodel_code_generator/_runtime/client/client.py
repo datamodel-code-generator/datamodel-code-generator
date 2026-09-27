@@ -933,6 +933,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 closed = self._failure(problem, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
                 _discarded(response.close, closed)
                 raise closed from None
+            except BaseException as error:
+                _discarded(response.close, error)
+                raise
         return response
 
     def _read(
@@ -1229,6 +1232,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 closed = self._failure(problem, operation_id, call_id, DeliveryState.RESPONSE_STARTED)
                 await _adiscarded(response.aclose, closed)
                 raise closed from None
+            except BaseException as error:
+                await _adiscarded(response.aclose, error)
+                raise
         return response
 
     async def _read(

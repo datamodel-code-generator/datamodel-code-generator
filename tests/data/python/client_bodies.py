@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 import httpx2
 
 from tests.data.python.client_runtime import Exchange, aoutcome, arecord, outcome, raw_response, record, run
-from tests.data.python.client_transports import Stop
+from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -108,12 +108,14 @@ class _Attempt:
         *,
         close_error: bool = False,
         iter_error: bool = False,
+        interrupt: bool = False,
     ) -> None:
         self.lines = lines
         self.chunks = chunks
         self.length = length
         self.close_error = close_error
         self.iter_error = iter_error
+        self.interrupt = interrupt
 
     @property
     def content_length(self) -> int | None:
@@ -137,6 +139,8 @@ class _Attempt:
 
     def close(self) -> None:
         self.lines.append("  attempt closed")
+        if self.interrupt:
+            raise Stop
         if self.close_error:
             msg = "close failed"
             raise RuntimeError(msg)
@@ -189,7 +193,39 @@ def bodies(package: ModuleType, lines: list[str]) -> None:
         _streams(package, api, exchange, lines)
         _factories(package, api, exchange, lines)
     http.close()
+    _interrupted_close(package, lines)
     run(lambda: _async_bodies(package, lines))
+
+
+def _interrupted_close(package: ModuleType, lines: list[str]) -> None:
+    """Close the response when an interruption stops the body's close after the adapter answered."""
+    transports, responses, bodies_module = (
+        importlib.import_module(f"{package.__name__}.{name}") for name in ("transports", "responses", "bodies")
+    )
+    image = responses.HeadersView([("content-type", "image/png")])
+    adapter = Adapter(transports, lines)
+    adapter.replies.append(lambda request, context: Response(lines, 200, image, (_PNG,)))
+    with package.Client(transport_adapter=adapter) as api:
+        try:
+            api.pets.photos.upload(pet_id=_photo(package), body=bodies_module.BodyFactory(_factory(lines, b"x", interrupt=True)))
+        except Stop:
+            lines.append("  interrupted attempt close propagated")
+    run(lambda: _async_interrupted_close(package, lines))
+
+
+async def _async_interrupted_close(package: ModuleType, lines: list[str]) -> None:
+    transports, responses, bodies_module = (
+        importlib.import_module(f"{package.__name__}.{name}") for name in ("transports", "responses", "bodies")
+    )
+    image = responses.HeadersView([("content-type", "image/png")])
+    adapter = AsyncAdapter(transports, lines)
+    adapter.replies.append(lambda request, context: AsyncResponse(lines, 200, image, (_PNG,)))
+    async with package.AsyncClient(transport_adapter=adapter) as api:
+        body = bodies_module.AsyncBodyFactory(_afactory(lines, b"x", interrupt=True))
+        try:
+            await api.pets.photos.upload(pet_id=_photo(package), body=body)
+        except Stop:
+            lines.append("  async interrupted attempt close propagated")
 
 
 def _uploader(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> Callable[..., None]:

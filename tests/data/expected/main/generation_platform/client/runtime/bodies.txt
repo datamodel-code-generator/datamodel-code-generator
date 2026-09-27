@@ -100,6 +100,18 @@
   factory attempt built directly None application/x-attempt b'direct'
   attempt closed
   attempt closed
+  factory <call> 0 0 None
+  > PUT https://api.example.com/v1/pets/1/photo [Accept-Encoding: gzip, deflate, Accept: image/*, Content-Type: application/octet-stream] b'x' None application/x-attempt
+    unknown 5.0/30.0/30.0/5.0
+  attempt closed
+  < closed
+  interrupted attempt close propagated
+  factory <call> 0 0 None
+  > PUT https://api.example.com/v1/pets/1/photo [Accept-Encoding: gzip, deflate, Accept: image/*, Content-Type: application/octet-stream] b'x' None application/x-attempt
+    unknown 5.0/30.0/30.0/5.0
+  attempt closed
+  < closed
+  async interrupted attempt close propagated
   > PUT https://api.example.com/v1/pets/1/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 4] b'cdef'
   async file from its position = b'\x89PNG'

@@ -294,7 +294,7 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
     with streaming.get_pet(pet_id=pet) as response, pytest.MonkeyPatch.context() as fault:
         fault.setattr(os, "link", _broken_link)
-        lines.append(f"  move failed {_outcome(lambda: response.stream_to(failed))} {_files(directory)}")
+        lines.append(f"  move failed {outcome(lambda: response.stream_to(failed))} {_files(directory)}")
     with streaming.get_pet(pet_id=pet) as response:
         response.stream_to(failed)
     lines.append(f"  moved again {failed.read_bytes()!r} {_files(directory)}")
@@ -572,7 +572,7 @@ async def _async_download(streaming: Any, pet: object, exchange: Exchange, lines
     async with streaming.get_pet(pet_id=pet) as response:
         with pytest.MonkeyPatch.context() as fault:
             fault.setattr(os, "link", _broken_link)
-            lines.append(f"  async move failed {await _aoutcome(lambda: response.stream_to(failed))} {_files(directory)}")
+            lines.append(f"  async move failed {await aoutcome(lambda: response.stream_to(failed))} {_files(directory)}")
     async with streaming.get_pet(pet_id=pet) as response:
         await response.stream_to(failed)
     lines.append(f"  async moved again {failed.read_bytes()!r} {_files(directory)}")
