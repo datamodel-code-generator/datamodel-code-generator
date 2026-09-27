@@ -9,31 +9,35 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Final, Generic, NoReturn, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, TypeVar, cast
 
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
-from ..model_codecs.media import encode_json, normalize_media_type
+from ..model_codecs.media import decode_json, encode_json, issue, normalize_media_type, typed
 from ..model_codecs.unset import Unset
-from ..model_codecs.wire import checked_wire
+from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
 from .errors import RequestEncodingError, add_secondary
+from .responses import HeadersView
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
 
-    from ..model_codecs.wire import WireValue
+    from ..model_codecs.wire import JSONValue, WireValue
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, BodyAttemptContext, SyncBinaryBody
 
 PartT = TypeVar("PartT")
 InputT = TypeVar("InputT")
 PartT_co = TypeVar("PartT_co", covariant=True)
+T_co = TypeVar("T_co", covariant=True)
+PartKind: TypeAlias = Literal["string", "integer", "number", "boolean", "json"]
 ContentT_co = TypeVar("ContentT_co", bound="SyncBinaryBody | AsyncBinaryBody", covariant=True)
 _MULTIPART: Final = "A multipart body must be of the client's mode"
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-zA-Z-]+")
 _BREAK: Final = re.compile(r"[\r\n\x00]")
 _PART_HEADERS: Final = frozenset({"content-type", "content-disposition"})
+_PARAMETERS: Final = r';\s*([^\s;=]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^\s;]*))'
 _PART: Final = "A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode"
 _SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
 _ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
@@ -439,3 +443,197 @@ class MultipartSource:
             ])
             raise
         return _AsyncMultipartAttempt(pieces)
+
+
+class DecodedPart(Generic[T_co]):
+    """One part of a multipart response: its name, value, filename, media type, and headers in their order.
+
+    Its representation names only the part and its media type, never its value, filename, or header values.
+    """
+
+    __slots__ = ("_content_type", "_filename", "_headers", "_name", "_value")
+
+    def __init__(
+        self, name: str | None, value: T_co, filename: str | None, content_type: str | None, headers: HeadersView
+    ) -> None:
+        """Keep the part as it arrived, with its value decoded."""
+        self._name = name
+        self._value = value
+        self._filename = filename
+        self._content_type = content_type
+        self._headers = headers
+
+    @property
+    def name(self) -> str | None:
+        """Return the part's form-data name, or None when its Content-Disposition names none."""
+        return self._name
+
+    @property
+    def value(self) -> T_co:
+        """Return the part's value."""
+        return self._value
+
+    @property
+    def filename(self) -> str | None:
+        """Return the filename the part names, which is never used as a path."""
+        return self._filename
+
+    @property
+    def content_type(self) -> str | None:
+        """Return the part's media type, or None when it names none."""
+        return self._content_type
+
+    @property
+    def headers(self) -> HeadersView:
+        """Return the part's headers in their order, duplicates included."""
+        return self._headers
+
+    def __eq__(self, other: object) -> bool:
+        """Compare the parts field by field."""
+        return _is_part(other) and self._fields() == other._fields()
+
+    def __hash__(self) -> int:
+        """Hash the part's fields."""
+        return hash(self._fields())
+
+    def __repr__(self) -> str:
+        """Name the part and its media type only."""
+        return f"DecodedPart(name={self._name!r}, content_type={self._content_type!r})"
+
+    def _fields(self) -> tuple[str | None, T_co, str | None, str | None, HeadersView]:
+        return self._name, self._value, self._filename, self._content_type, self._headers
+
+
+class MultipartData(Generic[T_co]):
+    """The parts of a multipart response in their order; its representation counts them and shows nothing else."""
+
+    __slots__ = ("_parts",)
+
+    def __init__(self, parts: tuple[DecodedPart[T_co], ...]) -> None:
+        """Keep the parts in their order."""
+        self._parts = parts
+
+    @property
+    def parts(self) -> tuple[DecodedPart[T_co], ...]:
+        """Return the parts in their order."""
+        return self._parts
+
+    def __eq__(self, other: object) -> bool:
+        """Compare the parts in their order."""
+        return _is_data(other) and self._parts == other._parts
+
+    def __hash__(self) -> int:
+        """Hash the parts in their order."""
+        return hash(self._parts)
+
+    def __repr__(self) -> str:
+        """Count the parts."""
+        return f"MultipartData(<{len(self._parts)} parts>)"
+
+
+def _is_part(value: object) -> TypeIs[DecodedPart[object]]:
+    return isinstance(value, DecodedPart)
+
+
+def _is_data(value: object) -> TypeIs[MultipartData[object]]:
+    return isinstance(value, MultipartData)
+
+
+class PartPlan:
+    """How one form-data member of a schema is read: its lexical kind, or JSON, and whether its parts repeat."""
+
+    __slots__ = ("kind", "name", "repeated")
+
+    def __init__(self, name: str, kind: PartKind = "string", *, repeated: bool = False) -> None:
+        """Keep the member's name, kind, and whether each item of an array arrives as its own part."""
+        self.name = name
+        self.kind: PartKind = kind
+        self.repeated = repeated
+
+
+def _parameter(value: str, name: str) -> str | None:
+    """Return a parameter of a header value: a token, or a quoted string with its escapes removed."""
+    for found in re.finditer(_PARAMETERS, value):
+        if found[1].lower() == name:
+            return found[3] if found[2] is None else re.sub(r"\\(.)", r"\1", found[2])
+    return None
+
+
+def _headers(head: bytes) -> HeadersView:
+    items: list[tuple[str, str]] = []
+    for line in head.decode().split("\r\n"):
+        key, colon, value = line.partition(":")
+        if not colon or not _TOKEN.fullmatch(key):
+            msg = "A part header must be a token, a colon, and a value"
+            raise ValueError(msg)
+        items.append((key, value.strip()))
+    return HeadersView(items)
+
+
+def parse_multipart(body: bytes, content_type: str | None) -> tuple[DecodedPart[bytes], ...]:
+    """Split a multipart body into its parts by the boundary its Content-Type names; raise ValueError if broken.
+
+    Delimiters start their own lines and may carry transport padding; the preamble and epilogue are skipped.
+    """
+    if content_type is None or not (boundary := _parameter(content_type, "boundary")):
+        msg = "A multipart response must name its boundary"
+        raise ValueError(msg)
+    delimiter = b"\r\n--" + boundary.encode()
+    if body.startswith(delimiter[2:]):
+        position = len(delimiter) - 2
+    elif (found := body.find(delimiter)) >= 0:
+        position = found + len(delimiter)
+    else:
+        msg = "A multipart body must hold its boundary"
+        raise ValueError(msg)
+    parts: list[DecodedPart[bytes]] = []
+    while not body.startswith(b"--", position):
+        line = body.find(b"\r\n", position)
+        if line < 0 or body[position:line].strip(b" \t") or (end := body.find(delimiter, line + 2)) < 0:
+            msg = "A multipart part must start on its own line and end at the next boundary"
+            raise ValueError(msg)
+        split = body.find(b"\r\n\r\n", line, end + 2)
+        head, content = (body[line + 2 : end], b"") if split < 0 else (body[line + 2 : split], body[split + 4 : end])
+        headers = _headers(head) if head else HeadersView()
+        disposition = headers.get("content-disposition") or ""
+        parts.append(
+            DecodedPart(
+                _parameter(disposition, "name"),
+                content,
+                _parameter(disposition, "filename"),
+                headers.get("content-type"),
+                headers,
+            )
+        )
+        position = end + len(delimiter)
+    return tuple(parts)
+
+
+def _json_part(part: DecodedPart[bytes]) -> bool:
+    media = (part.content_type or "").partition(";")[0].strip().lower()
+    return media == "application/json" or media.endswith("+json")
+
+
+def _part_value(part: DecodedPart[bytes], plan: PartPlan) -> WireValue:
+    if plan.kind == "json" or _json_part(part):
+        return decode_json(part.value)
+    return typed(part.value.decode(), plan.kind)
+
+
+def decode_parts(
+    parts: tuple[DecodedPart[bytes], ...], plans: tuple[PartPlan, ...], additional: PartPlan | None
+) -> WireValue:
+    """Read form-data parts into an object by their members' plans, collecting repeated members into arrays."""
+    declared = {plan.name: plan for plan in plans}
+    result: dict[str, JSONValue] = {}
+    for part in parts:
+        if part.name is None or (plan := declared.get(part.name, additional)) is None:
+            raise issue(code="multipart.undeclared", message="A form-data part is not declared")
+        value = thaw_wire(_part_value(part, plan))
+        if part.name not in result:
+            result[part.name] = [value] if plan.repeated else value
+        elif plan.repeated:
+            cast("list[JSONValue]", result[part.name]).append(value)
+        else:
+            raise issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
+    return freeze_wire(result)

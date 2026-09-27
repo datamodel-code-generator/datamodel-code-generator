@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
+from ._runtime.client.multipart import PartPlan
 from ._runtime.client.operations import (
     BodyMedia,
     Encoder,
@@ -19,6 +20,7 @@ from ._runtime.client.operations import (
     envelope_branch,
     form_branch,
     model_branch,
+    multipart_branch,
     text_branch,
     wire_branch,
 )
@@ -39,6 +41,12 @@ from .types.documents import (
     StoreNoteResponse,
 )
 from .types.forms import (
+    ReadPartsErrorData,
+    ReadPartsHTTPError,
+    ReadPartsResponse,
+    ReadProfileErrorData,
+    ReadProfileHTTPError,
+    ReadProfileResponse,
     SubmitAnythingErrorData,
     SubmitAnythingHTTPError,
     SubmitAnythingResponse,
@@ -115,7 +123,36 @@ OPERATION_1: Final[OperationPlan[SubmitProfileResponse, SubmitProfileErrorData]]
     ),
 )
 
-OPERATION_2: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData]] = OperationPlan(
+OPERATION_2: Final[OperationPlan[ReadProfileResponse, ReadProfileErrorData]] = OperationPlan(
+    operation_id='readProfile',
+    method='GET',
+    path='/profiles',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '200',
+                'multipart/form-data',
+                'multipart',
+                model_bindings.codec_3, model_bindings.CONTEXT_3,
+                parts=(
+                    PartPlan('name', 'string'),
+                    PartPlan('age', 'integer'),
+                    PartPlan('score', 'number'),
+                    PartPlan('ratio', 'number'),
+                    PartPlan('active', 'boolean'),
+                    PartPlan('tags', 'string', repeated=True),
+                    PartPlan('address', 'json'),
+                ),
+                additional_part=PartPlan('', 'integer'),
+            ),
+        ),
+        (),
+        ReadProfileHTTPError,
+    ),
+)
+
+OPERATION_3: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData]] = OperationPlan(
     operation_id='submitAnything',
     method='POST',
     path='/anything',
@@ -126,7 +163,7 @@ OPERATION_2: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData
             BodyMedia(
                 media_type='multipart/form-data',
                 kind='multipart',
-                encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
             ),
         ),
         default='multipart/form-data',
@@ -134,7 +171,7 @@ OPERATION_2: Final[OperationPlan[SubmitAnythingResponse, SubmitAnythingErrorData
     ),
 )
 
-OPERATION_3: Final[OperationPlan[SubmitPartsResponse, SubmitPartsErrorData]] = OperationPlan(
+OPERATION_4: Final[OperationPlan[SubmitPartsResponse, SubmitPartsErrorData]] = OperationPlan(
     operation_id='submitParts',
     method='POST',
     path='/attachments',
@@ -146,7 +183,28 @@ OPERATION_3: Final[OperationPlan[SubmitPartsResponse, SubmitPartsErrorData]] = O
     ),
 )
 
-OPERATION_4: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[ReadPartsResponse, ReadPartsErrorData]] = OperationPlan(
+    operation_id='readParts',
+    method='GET',
+    path='/attachments',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            multipart_branch('200', 'multipart/mixed'),
+            model_branch(
+                '202',
+                'multipart/form-data',
+                'multipart',
+                model_bindings.codec_5, model_bindings.CONTEXT_5,
+                parts=(PartPlan('id', 'integer'),),
+            ),
+        ),
+        (),
+        ReadPartsHTTPError,
+    ),
+)
+
+OPERATION_6: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = OperationPlan(
     operation_id='submitPairs',
     method='POST',
     path='/pairs',
@@ -162,7 +220,7 @@ OPERATION_4: Final[OperationPlan[SubmitPairsResponse, SubmitPairsErrorData]] = O
     ),
 )
 
-OPERATION_5: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
+OPERATION_7: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
     operation_id='storeDocument',
     method='POST',
     path='/documents',
@@ -176,7 +234,7 @@ OPERATION_5: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]]
                 '3XX',
                 'application/json',
                 'json',
-                model_bindings.codec_5, model_bindings.CONTEXT_5,
+                model_bindings.codec_7, model_bindings.CONTEXT_7,
             ),
         ),
         (text_branch('5XX', 'text/plain'),),
@@ -190,7 +248,7 @@ OPERATION_5: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]]
             BodyMedia(
                 media_type='application/vnd.api+json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                encoder=Encoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
             ),
         ),
         default='application/json',
@@ -198,7 +256,7 @@ OPERATION_5: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]]
     ),
 )
 
-OPERATION_6: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
     operation_id='readDocument',
     method='GET',
     path='/documents/{id}',
@@ -209,7 +267,7 @@ OPERATION_6: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] =
                 '200',
                 'application/vnd.api+json',
                 'json',
-                model_bindings.codec_7, model_bindings.CONTEXT_7,
+                model_bindings.codec_9, model_bindings.CONTEXT_9,
             ),
         ),
         (),
@@ -223,7 +281,7 @@ OPERATION_6: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] =
                 required=True,
                 content_media_type='application/json',
             ),
-            encoder=Encoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+            encoder=Encoder(model_bindings.codec_8, model_bindings.CONTEXT_8),
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -242,7 +300,7 @@ OPERATION_6: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] =
     ),
 )
 
-OPERATION_7: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
+OPERATION_9: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
     operation_id='storeNote',
     method='POST',
     path='/notes',
@@ -257,7 +315,7 @@ OPERATION_7: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = Opera
     ),
 )
 
-OPERATION_8: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
+OPERATION_10: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
     operation_id='replaceNote',
     method='PUT',
     path='/notes',

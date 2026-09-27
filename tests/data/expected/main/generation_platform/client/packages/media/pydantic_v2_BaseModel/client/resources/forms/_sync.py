@@ -5,19 +5,22 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager
 from functools import cached_property
-from typing import Literal
+from typing import Literal, overload
 
 from models import FieldAnythingPostRequest as _dcg_type_2
+from models import FieldAttachmentsGetResponse as _dcg_type_3
 from models import FieldFormsPostRequest as _dcg_type_0
 from models import FieldProfilesPostRequest as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...bodies import FormData, MultipartBody
+from ...bodies import FormData, MultipartBody, MultipartData
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.forms import (
+    ReadPartsResponse,
+    ReadProfileResponse,
     SubmitAnythingResponse,
     SubmitFormResponse,
     SubmitPairsResponse,
@@ -82,6 +85,20 @@ class FormsResource:
             options=options,
         ).data
 
+    def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadProfileResponse:
+        """Call GET /profiles."""
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        ).data
+
     def submit_anything(
         self,
         *,
@@ -91,7 +108,7 @@ class FormsResource:
     ) -> SubmitAnythingResponse:
         """Call POST /anything."""
         return self._core.execute(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -107,11 +124,46 @@ class FormsResource:
     ) -> SubmitPartsResponse:
         """Call POST /attachments."""
         return self._core.execute(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        ).data
+
+    @overload
+    def read_parts(
+        self,
+        *,
+        response_media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadPartsResponse: ...
+    @overload
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed'],
+        options: RequestOptions | None = None,
+    ) -> MultipartData[bytes]: ...
+    @overload
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> _dcg_type_3: ...
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadPartsResponse:
+        """Call GET /attachments."""
+        return self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         ).data
 
     def submit_pairs(
@@ -124,7 +176,7 @@ class FormsResource:
     ) -> SubmitPairsResponse:
         """Call POST /pairs."""
         return self._core.execute(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,
@@ -174,6 +226,20 @@ class FormsWithResponse:
             options=options,
         )
 
+    def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadProfileResponse]:
+        """Call GET /profiles."""
+        return self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def submit_anything(
         self,
         *,
@@ -183,7 +249,7 @@ class FormsWithResponse:
     ) -> Response[SubmitAnythingResponse]:
         """Call POST /anything."""
         return self._core.execute(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -199,11 +265,46 @@ class FormsWithResponse:
     ) -> Response[SubmitPartsResponse]:
         """Call POST /attachments."""
         return self._core.execute(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        )
+
+    @overload
+    def read_parts(
+        self,
+        *,
+        response_media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadPartsResponse]: ...
+    @overload
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed'],
+        options: RequestOptions | None = None,
+    ) -> Response[MultipartData[bytes]]: ...
+    @overload
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> Response[_dcg_type_3]: ...
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadPartsResponse]:
+        """Call GET /attachments."""
+        return self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         )
 
     def submit_pairs(
@@ -216,7 +317,7 @@ class FormsWithResponse:
     ) -> Response[SubmitPairsResponse]:
         """Call POST /pairs."""
         return self._core.execute(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,
@@ -266,6 +367,20 @@ class FormsWithRawResponse:
             options=options,
         )
 
+    def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /profiles."""
+        return self._core.execute_raw(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def submit_anything(
         self,
         *,
@@ -275,7 +390,7 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /anything."""
         return self._core.execute_raw(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -291,11 +406,25 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /attachments."""
         return self._core.execute_raw(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        )
+
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /attachments."""
+        return self._core.execute_raw(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         )
 
     def submit_pairs(
@@ -308,7 +437,7 @@ class FormsWithRawResponse:
     ) -> RawResponse:
         """Call POST /pairs."""
         return self._core.execute_raw(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,
@@ -358,6 +487,20 @@ class FormsWithStreamingResponse:
             options=options,
         )
 
+    def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /profiles."""
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def submit_anything(
         self,
         *,
@@ -367,7 +510,7 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /anything."""
         return self._core.stream(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -383,11 +526,25 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /attachments."""
         return self._core.stream(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        )
+
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /attachments."""
+        return self._core.stream(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         )
 
     def submit_pairs(
@@ -400,7 +557,7 @@ class FormsWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /pairs."""
         return self._core.stream(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,

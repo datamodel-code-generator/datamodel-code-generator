@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, ConfigDict, RootModel
 
 
 class Address(BaseModel):
@@ -39,8 +39,31 @@ class FieldProfilesPostRequest(BaseModel):
     nickname: str | None = None
 
 
+class FieldProfilesGetResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, int],
+    }
+    name: str
+    age: int | None = None
+    score: float | None = None
+    ratio: int | float | None = None
+    active: bool | None = None
+    tags: list[str] | None = None
+    address: Address | None = None
+
+
 class FieldAnythingPostRequest(RootModel[Any]):
     root: Any
+
+
+class FieldAttachmentsGetResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int | None = None
 
 
 class FieldDocumentsIdGetPathIdParameter(BaseModel):

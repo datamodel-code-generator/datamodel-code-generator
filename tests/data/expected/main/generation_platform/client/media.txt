@@ -27,7 +27,7 @@ render pydantic_v2.BaseModel
   write client/_operations.py
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 9
+  namespace client helpers [] bindings 11
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 forms.submit_form()
     exports client.types.forms.SubmitFormResponse client.types.forms.SubmitFormErrorData client.types.forms.SubmitFormHTTPError
@@ -35,25 +35,31 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/1 forms.submit_profile()
     exports client.types.forms.SubmitProfileResponse client.types.forms.SubmitProfileErrorData client.types.forms.SubmitProfileHTTPError
     exports client.types.forms.SubmitProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/2 forms.submit_anything()
+  /selection/selected_operations/2 forms.read_profile()
+    exports client.types.forms.ReadProfileResponse client.types.forms.ReadProfileErrorData client.types.forms.ReadProfileHTTPError
+    exports client.types.forms.ReadProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 forms.submit_anything()
     exports client.types.forms.SubmitAnythingResponse client.types.forms.SubmitAnythingErrorData client.types.forms.SubmitAnythingHTTPError
     exports client.types.forms.SubmitAnythingRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 forms.submit_parts()
+  /selection/selected_operations/4 forms.submit_parts()
     exports client.types.forms.SubmitPartsResponse client.types.forms.SubmitPartsErrorData client.types.forms.SubmitPartsHTTPError
     exports client.types.forms.SubmitPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/4 forms.submit_pairs()
+  /selection/selected_operations/5 forms.read_parts()
+    exports client.types.forms.ReadPartsResponse client.types.forms.ReadPartsErrorData client.types.forms.ReadPartsHTTPError
+    exports client.types.forms.ReadPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 forms.submit_pairs()
     exports client.types.forms.SubmitPairsResponse client.types.forms.SubmitPairsErrorData client.types.forms.SubmitPairsHTTPError
     exports client.types.forms.SubmitPairsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/5 documents.store_document()
+  /selection/selected_operations/7 documents.store_document()
     exports client.types.documents.StoreDocumentResponse client.types.documents.StoreDocumentErrorData client.types.documents.StoreDocumentHTTPError
     exports client.types.documents.StoreDocumentRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/6 documents.read_document(path:id=id, query:filter=filter, header:X-Mode=x_mode)
+  /selection/selected_operations/8 documents.read_document(path:id=id, query:filter=filter, header:X-Mode=x_mode)
     exports client.types.documents.ReadDocumentResponse client.types.documents.ReadDocumentErrorData client.types.documents.ReadDocumentHTTPError
     exports client.types.documents.ReadDocumentRequestCodecs client.types.documents.decode_read_document_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/7 documents.store_note()
+  /selection/selected_operations/9 documents.store_note()
     exports client.types.documents.StoreNoteResponse client.types.documents.StoreNoteErrorData client.types.documents.StoreNoteHTTPError
     exports client.types.documents.StoreNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/8 documents.replace_note()
+  /selection/selected_operations/10 documents.replace_note()
     exports client.types.documents.ReplaceNoteResponse client.types.documents.ReplaceNoteErrorData client.types.documents.ReplaceNoteHTTPError
     exports client.types.documents.ReplaceNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -85,7 +91,7 @@ render typing.TypedDict
   write client/_operations.py
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 9
+  namespace client helpers [] bindings 11
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 forms.submit_form()
     exports client.types.forms.SubmitFormResponse client.types.forms.SubmitFormErrorData client.types.forms.SubmitFormHTTPError
@@ -93,25 +99,31 @@ render typing.TypedDict
   /selection/selected_operations/1 forms.submit_profile()
     exports client.types.forms.SubmitProfileResponse client.types.forms.SubmitProfileErrorData client.types.forms.SubmitProfileHTTPError
     exports client.types.forms.SubmitProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/2 forms.submit_anything()
+  /selection/selected_operations/2 forms.read_profile()
+    exports client.types.forms.ReadProfileResponse client.types.forms.ReadProfileErrorData client.types.forms.ReadProfileHTTPError
+    exports client.types.forms.ReadProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 forms.submit_anything()
     exports client.types.forms.SubmitAnythingResponse client.types.forms.SubmitAnythingErrorData client.types.forms.SubmitAnythingHTTPError
     exports client.types.forms.SubmitAnythingRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 forms.submit_parts()
+  /selection/selected_operations/4 forms.submit_parts()
     exports client.types.forms.SubmitPartsResponse client.types.forms.SubmitPartsErrorData client.types.forms.SubmitPartsHTTPError
     exports client.types.forms.SubmitPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/4 forms.submit_pairs()
+  /selection/selected_operations/5 forms.read_parts()
+    exports client.types.forms.ReadPartsResponse client.types.forms.ReadPartsErrorData client.types.forms.ReadPartsHTTPError
+    exports client.types.forms.ReadPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 forms.submit_pairs()
     exports client.types.forms.SubmitPairsResponse client.types.forms.SubmitPairsErrorData client.types.forms.SubmitPairsHTTPError
     exports client.types.forms.SubmitPairsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/5 documents.store_document()
+  /selection/selected_operations/7 documents.store_document()
     exports client.types.documents.StoreDocumentResponse client.types.documents.StoreDocumentErrorData client.types.documents.StoreDocumentHTTPError
     exports client.types.documents.StoreDocumentRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/6 documents.read_document(path:id=id, query:filter=filter, header:X-Mode=x_mode)
+  /selection/selected_operations/8 documents.read_document(path:id=id, query:filter=filter, header:X-Mode=x_mode)
     exports client.types.documents.ReadDocumentResponse client.types.documents.ReadDocumentErrorData client.types.documents.ReadDocumentHTTPError
     exports client.types.documents.ReadDocumentRequestCodecs client.types.documents.decode_read_document_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/7 documents.store_note()
+  /selection/selected_operations/9 documents.store_note()
     exports client.types.documents.StoreNoteResponse client.types.documents.StoreNoteErrorData client.types.documents.StoreNoteHTTPError
     exports client.types.documents.StoreNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/8 documents.replace_note()
+  /selection/selected_operations/10 documents.replace_note()
     exports client.types.documents.ReplaceNoteResponse client.types.documents.ReplaceNoteErrorData client.types.documents.ReplaceNoteHTTPError
     exports client.types.documents.ReplaceNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']

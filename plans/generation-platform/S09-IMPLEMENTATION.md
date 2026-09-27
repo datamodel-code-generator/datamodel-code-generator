@@ -1,6 +1,6 @@
 # S09 implementation record
 
-Status: in progress. S09-1 (client operations, #4193), S09-2 (response content codings, #4195), S09-3 (transport adapters, the client lifecycle, and views, #4196), S09-4 (raw and streaming responses, #4197), S09-5 (file, stream, and factory request bodies, #4198) and S09-6 (multipart/form-data request bodies) are implemented and verified. They open a new native stack on #4192, which updates the locked HTTPX2 to 2.13.1 on top of the S08 stack and its review fixes (#4179, top #4191), because that stack is still under review. The rest of S09 follows on this stack. Nothing in it has been merged.
+Status: in progress. S09-1 (client operations, #4193), S09-2 (response content codings, #4195), S09-3 (transport adapters, the client lifecycle, and views, #4196), S09-4 (raw and streaming responses, #4197), S09-5 (file, stream, and factory request bodies, #4198), S09-6 (multipart/form-data request bodies, #4199) and S09-7 (multipart responses) are implemented and verified. They open a new native stack on #4192, which updates the locked HTTPX2 to 2.13.1 on top of the S08 stack and its review fixes (#4179, top #4191), because that stack is still under review. The rest of S09 follows on this stack. Nothing in it has been merged.
 
 ## Baseline and review boundaries
 
@@ -18,7 +18,7 @@ PR-STACKS plans a second PR for HTTPX2 sync and asyncio, injection, ownership an
 
 ## Deviations from the plan
 
-- Until the rest of the media land, generation fails with the temporary `E_CLIENT_UNSUPPORTED` for multipart/form-data bodies with file parts, multipart responses and other multipart request media, wildcard request media, a form-data schema that is no object, and form or form-data encodings the writers do not read, so no operation is generated without a capability it needs. The last of those PRs removes the code.
+- Until the rest of the media land, generation fails with the temporary `E_CLIENT_UNSUPPORTED` for form-data bodies and responses with file parts, multipart request media other than form-data, multipart responses with a schema other than form-data, wildcard request media, a form-data schema that is no object, and form or form-data encodings the writers do not read, so no operation is generated without a capability it needs. The last of those PRs removes the code.
 - A media type name that is not a media type, such as `json`, fails with `E_METADATA_REQUIRED` instead of raising `ValueError`. The FastAPI planner still raises; that is left to a separate fix.
 - A base URL carries no query, besides the userinfo and fragment the plan excludes: the operation path and query are appended to it, so a query would end up inside the path. One predicate, `options.is_base_url` in the runtime, decides for `ClientOptions`/`RequestOptions`, `default_base_url`, `server_base_url` and resolved servers, so generation and the runtime never disagree.
 - `ProtocolError` has no `helper_id` or `operation`, and `ProtocolDataError` no `location`, until the protocol helpers define `OperationRef`, `Selector` and `RequestTarget` (S11).
@@ -143,6 +143,21 @@ Tests: the `media` case gains a form-data profile (scalars, a string array, a re
 
 Benchmarks (best of 7 × 3000 calls, µs, S09-5 then S09-6 over two alternating runs): GET 101.2–102.5 and 102.2–102.9, POST 117.2–119.4 and 119.0–119.8, DELETE 39.2–39.5 and 39.0–39.3, `request_raw` 29.9–30.9 and 30.0–31.2, async GET 105.9–107.1 and 106.1–106.5, within noise. Importing `multipart.py` takes 0.21 ms. `operations.py` itself takes 2.4 ms, 1.25 ms of it in creating its eight frozen dataclasses (0.13 to 0.31 ms each); making the runtime's value records plain slotted classes is left for a separate change.
 
+## S09-7: multipart responses
+
+Runtime:
+
+- `pkg.bodies` gains the covariant value records `DecodedPart[T](name, value, filename, content_type, headers)` and `MultipartData[T](parts)` (RUNTIME §9). They compare and hash field by field like the other records, and their representations name a part and its media type, or count the parts, and never show a value, filename, or header value.
+- A multipart response is split by the boundary its Content-Type names, quoted or not, as RFC 2046 frames it: a delimiter starts its own line and may carry transport padding, the preamble and epilogue are skipped, a part's headers end at an empty line or at the next delimiter, and they must be tokens with a colon. A part's name and filename come from its Content-Disposition parameters, read in order so that a quoted value cannot hide another, quoted strings unescaped, and the filename is only ever a value. A body that breaks this framing is a `BodyProtocolError(condition="invalid_framing")`, raised once the response is released, with nothing partly decoded.
+- A multipart response without a schema is `MultipartData[bytes]`, whatever its multipart media. A form-data response whose object schema has no file parts decodes into the schema's type: each part goes to the member of its name, a scalar read in its lexical kind unless the part names a JSON media type, an object or array of objects parsed as JSON, repeated parts collected into an array, and other names read by the `additionalProperties` schema, as text when it allows anything, or refused when it is false. An undeclared name, a single-valued member sent twice, and a value that is not its kind or not JSON are `DecodeError`s, and the model codec validates the object, a failure being a `ResponseValidationError`. The planner derives each member's plan from the schema's members, `allOf` branches included.
+- Decode failures are published by the failure itself, so `BodyProtocolError` can carry its condition.
+
+Generator: multipart responses without a schema render `multipart_branch` and the payload type `MultipartData[bytes]`; form-data responses with an object schema render model or envelope branches with the part plans. Responses with file parts, and multipart responses with a schema other than form-data, keep `E_CLIENT_UNSUPPORTED`.
+
+Tests: the `media` case reads a profile as form-data parts (every scalar kind, a number that may be an integer, a string array, a referenced object, and integer extras), parts of `multipart/mixed` without a schema, and an id of a form-data response that allows no extras; `media-errors` gains a `multipart/mixed` response with a schema and a form-data response with a file part. The `multipart` scenario reads the profile on both backends, synchronously and with asyncio, with a quoted boundary, a preamble, transport padding, an epilogue, and a boundary mid-line in the preamble, and refuses a missing or other boundary, a part off its line, a body ending at its boundary, an unterminated part, a header without a colon, a part without a name, a name twice, a null member twice, an extra that is no integer, broken JSON, text that is not UTF-8, and a missing required member; it reads mixed parts with headers, without them, with headers only, and empty, a quoted and an unquoted filename, a quoted filename holding `; name=`, and extra headers, compares and hashes two reads of them, and refuses an undeclared part where no extras are allowed. The runtime and generator stay at 100% coverage. The typing samples read every field of `DecodedPart[bytes]` and widen `MultipartData[bytes]` to `MultipartData[bytes | str]`; the negative sample narrows `MultipartData[bytes]` to `MultipartData[str]`, one error on each checker.
+
+Benchmarks (best of 7 × 3000 calls, µs, S09-6 and S09-7 over five alternating runs): GET 101.5–103.8 and 101.8–104.0, POST 118.1–121.1 and 118.7–120.7, DELETE 38.9–40.4 and 39.2–39.8, `request_raw` 30.0–30.7 and 30.6–31.3, within noise. `multipart.py` takes 0.28 ms instead of 0.21.
+
 ## Next action
 
-Publish S09-6 on the #4194 stack, then file parts with `RequestCodecs.part`, multipart responses, and wildcard request media.
+Publish S09-7 on the #4194 stack, then file parts with `RequestCodecs.part` and wildcard request media.

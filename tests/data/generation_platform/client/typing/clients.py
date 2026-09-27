@@ -19,16 +19,18 @@ from pets.bodies import (
     BodyAttempt,
     BodyAttemptContext,
     BodyFactory,
+    DecodedPart,
     FieldPart,
     FileBody,
     FilePart,
     MultipartBody,
+    MultipartData,
     StreamBody,
     SyncBinaryBody,
 )
 from pets.model_codecs import JSONValue, ModelValue, WireValue
 from pets.options import UNSET, RequestOptions
-from pets.responses import AsyncRawResponse, RawResponse, Response, ResponseInfo
+from pets.responses import AsyncRawResponse, HeadersView, RawResponse, Response, ResponseInfo
 from pets.transports import (
     AsyncTransportResponse,
     AttemptIOContext,
@@ -171,6 +173,18 @@ def multipart(client: Client, file: BinaryIO) -> None:
     assert_type(parts.parts, tuple[FilePart[SyncBinaryBody] | FieldPart[str | int], ...])
     body = MultipartBody[WireValue]((FieldPart("meta", {"k": 1}), FieldPart("skipped", UNSET), FilePart("f", b"x")))
     client.request_raw("POST", "https://example.com/forms", body=body)
+
+
+def multipart_data(data: MultipartData[bytes]) -> None:
+    for part in data.parts:
+        assert_type(part, DecodedPart[bytes])
+        assert_type(part.value, bytes)
+        assert_type(part.name, str | None)
+        assert_type(part.filename, str | None)
+        assert_type(part.content_type, str | None)
+        assert_type(part.headers, HeadersView)
+    widened: MultipartData[bytes | str] = data
+    del widened
 
 
 async def multipart_async(client: AsyncClient) -> None:
