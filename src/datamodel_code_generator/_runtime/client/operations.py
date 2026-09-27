@@ -27,6 +27,7 @@ from ..model_codecs.media import (
     percent_decode,
     split_form,
 )
+from ..model_codecs.selectors import MediaSelector, RequestMedia
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire
 from .errors import (
@@ -54,7 +55,7 @@ from .multipart import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Sequence
+    from collections.abc import Callable, Container, Iterable, Sequence
 
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
@@ -240,8 +241,14 @@ class RequestBody:
     default: str | None = None
     required: bool = False
 
-    def encode(self, operation_id: str | None, value: object, media_type: str | None) -> EncodedBody | None:
-        """Select the media and encode the argument; an omitted optional body sends nothing."""
+    def encode(
+        self, operation_id: str | None, value: object, media_type: str | MediaSelector | None, owner: object = None
+    ) -> EncodedBody | None:
+        """Select the media and encode the argument; an omitted optional body sends nothing.
+
+        A request media selector of the operation sends its concrete media type with its declared type's encoding;
+        a media range such as image/* is only sent through one.
+        """
         if isinstance(value, Unset):
             if media_type is not None:
                 raise ConfigurationError(
@@ -250,18 +257,28 @@ class RequestBody:
             if self.required:
                 raise RequestEncodingError(location=("body",), operation_id=operation_id)
             return None
+        concrete: str | None = None
+        match media_type:
+            case None:
+                pass
+            case MediaSelector():
+                media_type, concrete = RequestMedia.chosen(media_type, owner)
+            case str() if "*" in _essence(media_type):
+                raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
+            case _:
+                pass
         selected = self.select(operation_id, media_type)
-        declared = selected.media_type
+        sent = concrete or selected.media_type
         try:
             if selected.kind == "multipart":
                 boundary = new_boundary()
                 return EncodedBody(
-                    media_type=f"{declared}; boundary={boundary}", content=selected.multipart(value, boundary)
+                    media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary)
                 )
             content = selected.encode(value)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
-        return EncodedBody(media_type=declared, content=content)
+        return EncodedBody(media_type=sent, content=content)
 
     def select(self, operation_id: str | None, media_type: str | None) -> BodyMedia:
         """Return the declared media a call names, or the default media when it names none."""
@@ -279,6 +296,23 @@ def normalized(media_type: str) -> str | None:
         return normalize_media_type(media_type)
     except ValueError:
         return None
+
+
+def most_specific(received: str, declared: Iterable[str]) -> str | None:
+    """Return the declared media type a concrete one falls under: itself, without parameters, type/*, then */*."""
+    declared = tuple(declared)
+    if received in declared:
+        return received
+    essence = _essence(received)
+    return next(
+        (
+            media
+            for candidate in (essence, f"{essence.partition('/')[0]}/*", "*/*")
+            for media in declared
+            if _essence(media) == candidate
+        ),
+        None,
+    )
 
 
 class Branch(Generic[T_co]):
@@ -565,13 +599,9 @@ def _matching(received: str, branches: Sequence[Branch[T]]) -> Branch[T] | None:
     """Return the branch of a received media type: exact type, then parameters ignored, then type/*, then */*."""
     if found := next((branch for branch in branches if branch.media_type == received), None):
         return found
-    essence = _essence(received)
-    for candidate in (essence, f"{essence.partition('/')[0]}/*", "*/*"):
-        if found := next(
-            (branch for branch in branches if branch.media_type and _essence(branch.media_type) == candidate), None
-        ):
-            return found
-    return None
+    if (winner := most_specific(received, (item.media_type for item in branches if item.media_type))) is None:
+        return None
+    return next(branch for branch in branches if branch.media_type == winner)
 
 
 class ResponseDecoder(Generic[T_co, E_co]):
@@ -585,6 +615,7 @@ class ResponseDecoder(Generic[T_co, E_co]):
         "_head",
         "_keys",
         "_narrowed",
+        "_permitted",
         "_success",
         "_successes",
         "accept",
@@ -599,10 +630,12 @@ class ResponseDecoder(Generic[T_co, E_co]):
         success_statuses: frozenset[int] = frozenset(),
         head: bool = False,
         keys: frozenset[str] | None = None,
+        permitted: str | None = None,
     ) -> None:
         """Bind the success and failure branches, the operation's error class, and its extra success statuses.
 
-        A narrowed decoder keeps the status keys of every success branch, so a status still selects its response.
+        A narrowed decoder keeps the status keys of every success branch, so a status still selects its response, and
+        permits a success body only of its concrete media type.
         """
         self._success = success
         self._errors = errors
@@ -613,26 +646,37 @@ class ResponseDecoder(Generic[T_co, E_co]):
         self._groups = _grouped(success)
         self._error_groups = _grouped(errors)
         self._narrowed: dict[str, ResponseDecoder[T_co, E_co]] = {}
+        self._permitted = permitted
         media = dict.fromkeys(branch.media_type for branch in success if branch.media_type is not None)
-        self.accept = None if head else ", ".join(media) or None
+        self.accept = None if head else permitted or ", ".join(media) or None
 
     def narrowed(self, operation_id: str | None, media_type: str) -> ResponseDecoder[T_co, E_co]:
-        """Return this decoder with successes restricted to one declared media type, which Accept then names."""
-        wanted = normalized(media_type)
-        if wanted is None or all(branch.media_type != wanted for branch in self._success):
+        """Return this decoder with successes restricted to one concrete media type, which Accept then names.
+
+        Each status keeps the branch the media type dispatches to, the most specific one, and its bodyless branch.
+        """
+        if (wanted := normalized(media_type)) is not None and (decoder := self._narrowed.get(wanted)) is not None:
+            return decoder
+        success = tuple(
+            branch
+            for group in self._groups.values()
+            for winner in (_matching(wanted or "", group),)
+            for branch in group
+            if branch.media_type is None or branch is winner
+        )
+        if wanted is None or "*" in _essence(wanted) or all(branch.media_type is None for branch in success):
             raise ConfigurationError(
                 field_path=("response_media_type",), condition="undeclared", operation_id=operation_id
             )
-        if (decoder := self._narrowed.get(wanted)) is None:
-            success = tuple(branch for branch in self._success if branch.media_type in {wanted, None})
-            decoder = self._narrowed[wanted] = ResponseDecoder(
-                success,
-                self._errors,
-                self._error_class,
-                success_statuses=self._successes,
-                head=self._head,
-                keys=self._keys,
-            )
+        decoder = self._narrowed[wanted] = ResponseDecoder(
+            success,
+            self._errors,
+            self._error_class,
+            success_statuses=self._successes,
+            head=self._head,
+            keys=self._keys,
+            permitted=wanted,
+        )
         return decoder
 
     def success(self, status: int) -> bool:
@@ -666,7 +710,20 @@ class ResponseDecoder(Generic[T_co, E_co]):
     def _branch(self, info: ResponseInfo, body: bytes) -> Branch[T_co]:
         if (key := status_key(info.status_code, self._keys)) is None:
             raise UnexpectedStatusError(info=info, body_bytes=body, call_id=info.call_id)
-        return _select(info, body, self._groups.get(key, ()), bodyless=self._bodyless(info.status_code))
+        branch = _select(info, body, self._groups.get(key, ()), bodyless=self._bodyless(info.status_code))
+        if (
+            (permitted := self._permitted) is not None
+            and branch.media_type is not None
+            and (most_specific(info.content_type or "", (permitted,)) is None)
+        ):
+            raise UnexpectedMediaTypeError(
+                info=info,
+                actual_media_type=info.content_type,
+                expected_media_types=(permitted,),
+                body_bytes=body,
+                call_id=info.call_id,
+            )
+        return branch
 
     @staticmethod
     def _decoded(info: ResponseInfo, body: bytes, branch: Branch[T]) -> T:
@@ -733,3 +790,4 @@ class OperationPlan(Generic[T_co, E_co]):
     body: RequestBody | None = None
     request_id_header: str | None = None
     response_media_type: str | None = None
+    codecs: object = None

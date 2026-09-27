@@ -152,5 +152,17 @@ class FieldLabelsPostRequest(BaseModel):
     sheet: bytes | None = None
 
 
+class FieldFilesPostRequest(RootModel[bytes]):
+    root: bytes
+
+
+class FieldFilesPostRequest2(RootModel[str]):
+    root: str
+
+
+class FieldFilesPostResponse(RootModel[bytes]):
+    root: bytes
+
+
 class FieldDocumentsIdGetPathIdParameter(BaseModel):
     key: str | None = None

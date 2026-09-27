@@ -21,6 +21,7 @@ from .transports import OwnedTransportAdapter, TransportAdapter
 
 if TYPE_CHECKING:
     from .resources.documents._sync import DocumentsResource
+    from .resources.files._sync import FilesResource
     from .resources.forms._sync import FormsResource
 
 _DEFAULTS = ClientDefaults(user_agent=None)
@@ -77,6 +78,13 @@ class Client:
         from .resources.forms._sync import FormsResource
 
         return FormsResource(self._core)
+
+    @cached_property
+    def files(self) -> FilesResource:
+        """The files operations."""
+        from .resources.files._sync import FilesResource
+
+        return FilesResource(self._core)
 
     @cached_property
     def documents(self) -> DocumentsResource:

@@ -13,6 +13,7 @@ import httpx2
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_raw import raw
+from tests.data.python.client_selectors import selectors
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_runtime import (
     Exchange,
@@ -579,6 +580,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "raw": ("pets", ("pydantic_v2.BaseModel",), raw),
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
+    "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
 }
 
 

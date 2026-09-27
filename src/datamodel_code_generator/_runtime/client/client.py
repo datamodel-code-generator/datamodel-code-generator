@@ -26,6 +26,7 @@ import httpx2
 from typing_extensions import Self, TypeIs
 
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
+from ..model_codecs.selectors import MediaSelector, ResponseMedia
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import (
     AsyncBodyFactory,
@@ -485,12 +486,23 @@ class _Core(Generic[AdapterT, HandleT]):
         return url
 
     @staticmethod
-    def _decoder(operation: OperationPlan[T, object], response_media_type: str | None) -> ResponseDecoder[T, object]:
-        """Return the operation's decoder, narrowed to the call's response media or else the operation's."""
+    def _decoder(
+        operation: OperationPlan[T, object], response_media_type: str | MediaSelector | None
+    ) -> ResponseDecoder[T, object]:
+        """Return the operation's decoder, narrowed to the call's response media or else the operation's.
+
+        A response media selector of the operation narrows it to the selector's concrete media type.
+        """
         decoder = operation.responses
-        if (media_type := response_media_type or operation.response_media_type) is None:
-            return decoder
-        return decoder.narrowed(operation.operation_id, media_type)
+        media_type: str | None
+        match response_media_type:
+            case None:
+                media_type = operation.response_media_type
+            case MediaSelector():
+                _, media_type = ResponseMedia.chosen(response_media_type, operation.codecs)
+            case _:
+                media_type = response_media_type or operation.response_media_type
+        return decoder if media_type is None else decoder.narrowed(operation.operation_id, media_type)
 
     def _prepare(  # noqa: PLR0913
         self,
@@ -498,7 +510,7 @@ class _Core(Generic[AdapterT, HandleT]):
         arguments: tuple[object, ...],
         *,
         body: object,
-        media_type: str | None,
+        media_type: str | MediaSelector | None,
         options: object,
         accept: str | None,
     ) -> tuple[PreparedRequest[EncodedAttempt], object, Settings]:
@@ -520,7 +532,11 @@ class _Core(Generic[AdapterT, HandleT]):
             except (*DATA_ERRORS, ValueError, TypeError) as error:
                 raise _encoding_error(operation, (plan.location, plan.name), error) from None
             request.add(contribution, plan.name)
-        encoded = None if operation.body is None else operation.body.encode(operation.operation_id, body, media_type)
+        encoded = (
+            None
+            if operation.body is None
+            else operation.body.encode(operation.operation_id, body, media_type, operation.codecs)
+        )
         base = self._base(operation, settings)
         path = request.path
         route = _PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
@@ -744,9 +760,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
-        media_type: str | None = None,
+        media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | None = None,
+        response_media_type: str | MediaSelector | None = None,
     ) -> Response[T]:
         """Send one call and return its decoded success, or raise its typed failure."""
         operation_id, call_id = operation.operation_id, str(uuid4())
@@ -779,9 +795,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
-        media_type: str | None = None,
+        media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | None = None,
+        response_media_type: str | MediaSelector | None = None,
         stream: bool = False,
     ) -> RawResponse:
         """Send one call and return its raw response: buffered, or a streaming handle when asked."""
@@ -812,9 +828,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
-        media_type: str | None = None,
+        media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | None = None,
+        response_media_type: str | MediaSelector | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends one call on entry and yields its streaming response until exit."""
         return _streamed(
@@ -1045,9 +1061,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
-        media_type: str | None = None,
+        media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | None = None,
+        response_media_type: str | MediaSelector | None = None,
     ) -> Response[T]:
         """Send one call and return its decoded success, or raise its typed failure."""
         operation_id, call_id = operation.operation_id, str(uuid4())
@@ -1081,9 +1097,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
-        media_type: str | None = None,
+        media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | None = None,
+        response_media_type: str | MediaSelector | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
         """Send one call and return its raw response: buffered, or a streaming handle when asked."""
@@ -1115,9 +1131,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
-        media_type: str | None = None,
+        media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
-        response_media_type: str | None = None,
+        response_media_type: str | MediaSelector | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends one call on entry and yields its streaming response until exit."""
         return _astreamed(

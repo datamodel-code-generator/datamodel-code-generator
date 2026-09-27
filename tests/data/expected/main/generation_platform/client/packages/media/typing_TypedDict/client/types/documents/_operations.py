@@ -24,6 +24,8 @@ from ...model_codecs import (
     DecodedValue,
     EnvelopeOutboundCodec,
     NativeOutboundCodec,
+    RequestMedia,
+    ResponseMedia,
     WireValue,
 )
 from ...options import Unset
@@ -38,7 +40,7 @@ class StoreDocumentHTTPError(HTTPStatusError[StoreDocumentErrorData]):
 
 
 class _StoreDocumentRequestCodecs(
-    RequestCodecs[EnvelopeOutboundCodec[_dcg_type_0], Never],
+    RequestCodecs[EnvelopeOutboundCodec[_dcg_type_0], Never, Never, RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]], ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None]],
 ):
     """The outbound codecs of the store_document request."""
 
@@ -49,18 +51,83 @@ class _StoreDocumentRequestCodecs(
         media_type: Literal['application/vnd.api+json'],
     ) -> EnvelopeOutboundCodec[_dcg_type_0]: ...
     @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
+    ) -> EnvelopeOutboundCodec[_dcg_type_0]: ...
+    @overload
     def body(self, *, media_type: str) -> EnvelopeOutboundCodec[_dcg_type_0]: ...
     def body(
         self,
         *,
-        media_type: str | None = None,
+        media_type: str | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]] | None = None,
     ) -> EnvelopeOutboundCodec[_dcg_type_0]:
-        """Return the outbound codec of one declared request media type."""
+        """Return the outbound codec of one declared request media type, or of a selector's."""
         return self._body(media_type)
+
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> RequestMedia[WireValue, WireValue]: ...
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['text/plain; charset=utf-16'],
+        concrete_media: str,
+    ) -> RequestMedia[str, str]: ...
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/vnd.api+json'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]]: ...
+    def select_request_media(
+        self,
+        *,
+        declared_media: str,
+        concrete_media: str,
+    ) -> RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
+    @overload
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]]: ...
+    @overload
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['text/plain'],
+        concrete_media: str,
+    ) -> ResponseMedia[str | None]: ...
+    def select_response_media(
+        self,
+        *,
+        declared_media: str,
+        concrete_media: str,
+    ) -> ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
 
 
 StoreDocumentRequestCodecs: Final = _StoreDocumentRequestCodecs(
-    bodies=(('application/vnd.api+json', model_bindings.outbound_7),),
+    bodies=(('application/vnd.api+json', model_bindings.outbound_10),),
+    requests=(
+        'application/json',
+        'text/plain; charset=utf-16',
+        'application/vnd.api+json',
+    ),
+    responses=('application/json', 'text/plain'),
 )
 
 
@@ -73,7 +140,7 @@ class ReadDocumentHTTPError(HTTPStatusError[ReadDocumentErrorData]):
 
 
 class _ReadDocumentRequestCodecs(
-    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_1]],
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_1], Never, Never, ResponseMedia[ReadDocumentResponse]],
 ):
     """The outbound codecs of the read_document request."""
 
@@ -100,9 +167,19 @@ class _ReadDocumentRequestCodecs(
         """Return the outbound codec of one declared parameter."""
         return self._parameter(location, name)
 
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/vnd.api+json'],
+        concrete_media: str,
+    ) -> ResponseMedia[ReadDocumentResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
+
 
 ReadDocumentRequestCodecs: Final = _ReadDocumentRequestCodecs(
-    parameters=(('path', 'id', model_bindings.outbound_9),),
+    parameters=(('path', 'id', model_bindings.outbound_12),),
+    responses=('application/vnd.api+json',),
 )
 
 
@@ -128,7 +205,7 @@ _READ_DOCUMENT_HEADERS: Final[ResponseHeaders[DecodedValue[_dcg_type_0], Unset]]
                             ),
                             additional=FieldPlan('', 'string'),
                         ),
-                        decode=envelope_value(model_bindings.codec_11, model_bindings.CONTEXT_11),
+                        decode=envelope_value(model_bindings.codec_14, model_bindings.CONTEXT_14),
                         missing=optional_header,
                     ),
                 ),
@@ -155,11 +232,24 @@ class StoreNoteHTTPError(HTTPStatusError[StoreNoteErrorData]):
     """An error response of store_note, with its decoded payload when one is declared."""
 
 
-class _StoreNoteRequestCodecs(RequestCodecs[Never, Never]):
+class _StoreNoteRequestCodecs(
+    RequestCodecs[Never, Never, Never, RequestMedia[WireValue, WireValue]],
+):
     """The outbound codecs of the store_note request."""
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/json', 'application/vnd.note+json'],
+        concrete_media: str,
+    ) -> RequestMedia[WireValue, WireValue]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
 
-StoreNoteRequestCodecs: Final = _StoreNoteRequestCodecs()
+
+StoreNoteRequestCodecs: Final = _StoreNoteRequestCodecs(
+    requests=('application/json', 'application/vnd.note+json'),
+)
 
 
 ReplaceNoteResponse: TypeAlias = None
@@ -170,8 +260,35 @@ class ReplaceNoteHTTPError(HTTPStatusError[ReplaceNoteErrorData]):
     """An error response of replace_note, with its decoded payload when one is declared."""
 
 
-class _ReplaceNoteRequestCodecs(RequestCodecs[Never, Never]):
+class _ReplaceNoteRequestCodecs(
+    RequestCodecs[Never, Never, Never, RequestMedia[WireValue, WireValue] | RequestMedia[str, str]],
+):
     """The outbound codecs of the replace_note request."""
 
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> RequestMedia[WireValue, WireValue]: ...
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['text/plain'],
+        concrete_media: str,
+    ) -> RequestMedia[str, str]: ...
+    def select_request_media(
+        self,
+        *,
+        declared_media: str,
+        concrete_media: str,
+    ) -> RequestMedia[WireValue, WireValue] | RequestMedia[str, str]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
 
-ReplaceNoteRequestCodecs: Final = _ReplaceNoteRequestCodecs()
+
+ReplaceNoteRequestCodecs: Final = _ReplaceNoteRequestCodecs(
+    requests=('application/json', 'text/plain'),
+)

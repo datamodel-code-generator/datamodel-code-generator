@@ -12,7 +12,13 @@ from models import FieldDocumentsIdGetPathIdParameter as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
-from ...model_codecs import DecodedValue, ModelValue, WireValue
+from ...model_codecs import (
+    DecodedValue,
+    ModelValue,
+    RequestMedia,
+    ResponseMedia,
+    WireValue,
+)
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import RawResponse, Response
 from ...types.documents import (
@@ -50,7 +56,7 @@ class DocumentsResource:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse: ...
@@ -59,8 +65,8 @@ class DocumentsResource:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
-        response_media_type: Literal['application/json'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
+        response_media_type: Literal['application/json'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]],
         options: RequestOptions | None = None,
     ) -> WireValue | None | DecodedValue[_dcg_type_0]: ...
     @overload
@@ -68,8 +74,8 @@ class DocumentsResource:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
-        response_media_type: Literal['text/plain'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
+        response_media_type: Literal['text/plain'] | ResponseMedia[str | None],
         options: RequestOptions | None = None,
     ) -> str | None: ...
     @overload
@@ -77,7 +83,7 @@ class DocumentsResource:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse: ...
@@ -86,8 +92,8 @@ class DocumentsResource:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
-        response_media_type: Literal['application/json'],
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
+        response_media_type: Literal['application/json'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]],
         options: RequestOptions | None = None,
     ) -> WireValue | None | DecodedValue[_dcg_type_0]: ...
     @overload
@@ -95,8 +101,8 @@ class DocumentsResource:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
-        response_media_type: Literal['text/plain'],
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
+        response_media_type: Literal['text/plain'] | ResponseMedia[str | None],
         options: RequestOptions | None = None,
     ) -> str | None: ...
     @overload
@@ -104,7 +110,7 @@ class DocumentsResource:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse: ...
@@ -113,8 +119,8 @@ class DocumentsResource:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
-        response_media_type: Literal['application/json'],
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
+        response_media_type: Literal['application/json'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]],
         options: RequestOptions | None = None,
     ) -> WireValue | None | DecodedValue[_dcg_type_0]: ...
     @overload
@@ -122,21 +128,21 @@ class DocumentsResource:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
-        response_media_type: Literal['text/plain'],
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
+        response_media_type: Literal['text/plain'] | ResponseMedia[str | None],
         options: RequestOptions | None = None,
     ) -> str | None: ...
     def store_document(
         self,
         *,
         body: WireValue | str | _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse:
         """Call POST /documents."""
         return self._core.execute(
-            _operations.OPERATION_13,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,
@@ -150,12 +156,12 @@ class DocumentsResource:
         id: _dcg_type_1 | ModelValue[_dcg_type_1],
         filter: WireValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
-        response_media_type: Literal['application/vnd.api+json'] | None = None,
+        response_media_type: Literal['application/vnd.api+json'] | ResponseMedia[ReadDocumentResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> ReadDocumentResponse:
         """Call GET /documents/{id}."""
         return self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_16,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -165,12 +171,12 @@ class DocumentsResource:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json', 'application/vnd.note+json'],
+        media_type: Literal['application/json', 'application/vnd.note+json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> StoreNoteResponse:
         """Call POST /notes."""
         return self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -182,7 +188,7 @@ class DocumentsResource:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse: ...
     @overload
@@ -190,7 +196,7 @@ class DocumentsResource:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'],
+        media_type: Literal['text/plain'] | RequestMedia[str, str],
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse: ...
     @overload
@@ -205,12 +211,12 @@ class DocumentsResource:
         self,
         *,
         body: WireValue | str | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | None = None,
         options: RequestOptions | None = None,
     ) -> ReplaceNoteResponse:
         """Call PUT /notes."""
         return self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -230,7 +236,7 @@ class DocumentsWithResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]: ...
@@ -239,8 +245,8 @@ class DocumentsWithResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
-        response_media_type: Literal['application/json'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
+        response_media_type: Literal['application/json'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]],
         options: RequestOptions | None = None,
     ) -> Response[WireValue | None | DecodedValue[_dcg_type_0]]: ...
     @overload
@@ -248,8 +254,8 @@ class DocumentsWithResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
-        response_media_type: Literal['text/plain'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
+        response_media_type: Literal['text/plain'] | ResponseMedia[str | None],
         options: RequestOptions | None = None,
     ) -> Response[str | None]: ...
     @overload
@@ -257,7 +263,7 @@ class DocumentsWithResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]: ...
@@ -266,8 +272,8 @@ class DocumentsWithResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
-        response_media_type: Literal['application/json'],
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
+        response_media_type: Literal['application/json'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]],
         options: RequestOptions | None = None,
     ) -> Response[WireValue | None | DecodedValue[_dcg_type_0]]: ...
     @overload
@@ -275,8 +281,8 @@ class DocumentsWithResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
-        response_media_type: Literal['text/plain'],
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
+        response_media_type: Literal['text/plain'] | ResponseMedia[str | None],
         options: RequestOptions | None = None,
     ) -> Response[str | None]: ...
     @overload
@@ -284,7 +290,7 @@ class DocumentsWithResponse:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
         response_media_type: None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]: ...
@@ -293,8 +299,8 @@ class DocumentsWithResponse:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
-        response_media_type: Literal['application/json'],
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
+        response_media_type: Literal['application/json'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]],
         options: RequestOptions | None = None,
     ) -> Response[WireValue | None | DecodedValue[_dcg_type_0]]: ...
     @overload
@@ -302,21 +308,21 @@ class DocumentsWithResponse:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
-        response_media_type: Literal['text/plain'],
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
+        response_media_type: Literal['text/plain'] | ResponseMedia[str | None],
         options: RequestOptions | None = None,
     ) -> Response[str | None]: ...
     def store_document(
         self,
         *,
         body: WireValue | str | _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]:
         """Call POST /documents."""
         return self._core.execute(
-            _operations.OPERATION_13,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,
@@ -330,12 +336,12 @@ class DocumentsWithResponse:
         id: _dcg_type_1 | ModelValue[_dcg_type_1],
         filter: WireValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
-        response_media_type: Literal['application/vnd.api+json'] | None = None,
+        response_media_type: Literal['application/vnd.api+json'] | ResponseMedia[ReadDocumentResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadDocumentResponse]:
         """Call GET /documents/{id}."""
         return self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_16,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -345,12 +351,12 @@ class DocumentsWithResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json', 'application/vnd.note+json'],
+        media_type: Literal['application/json', 'application/vnd.note+json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> Response[StoreNoteResponse]:
         """Call POST /notes."""
         return self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -362,7 +368,7 @@ class DocumentsWithResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]: ...
     @overload
@@ -370,7 +376,7 @@ class DocumentsWithResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'],
+        media_type: Literal['text/plain'] | RequestMedia[str, str],
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]: ...
     @overload
@@ -385,12 +391,12 @@ class DocumentsWithResponse:
         self,
         *,
         body: WireValue | str | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[ReplaceNoteResponse]:
         """Call PUT /notes."""
         return self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -410,8 +416,8 @@ class DocumentsWithRawResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -419,8 +425,8 @@ class DocumentsWithRawResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -428,21 +434,21 @@ class DocumentsWithRawResponse:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     def store_document(
         self,
         *,
         body: WireValue | str | _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /documents."""
         return self._core.execute_raw(
-            _operations.OPERATION_13,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,
@@ -456,12 +462,12 @@ class DocumentsWithRawResponse:
         id: _dcg_type_1 | ModelValue[_dcg_type_1],
         filter: WireValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
-        response_media_type: Literal['application/vnd.api+json'] | None = None,
+        response_media_type: Literal['application/vnd.api+json'] | ResponseMedia[ReadDocumentResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call GET /documents/{id}."""
         return self._core.execute_raw(
-            _operations.OPERATION_14,
+            _operations.OPERATION_16,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -471,12 +477,12 @@ class DocumentsWithRawResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json', 'application/vnd.note+json'],
+        media_type: Literal['application/json', 'application/vnd.note+json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /notes."""
         return self._core.execute_raw(
-            _operations.OPERATION_15,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -488,7 +494,7 @@ class DocumentsWithRawResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -496,7 +502,7 @@ class DocumentsWithRawResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'],
+        media_type: Literal['text/plain'] | RequestMedia[str, str],
         options: RequestOptions | None = None,
     ) -> RawResponse: ...
     @overload
@@ -511,12 +517,12 @@ class DocumentsWithRawResponse:
         self,
         *,
         body: WireValue | str | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call PUT /notes."""
         return self._core.execute_raw(
-            _operations.OPERATION_16,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,
@@ -536,8 +542,8 @@ class DocumentsWithStreamingResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'] | None = None,
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -545,8 +551,8 @@ class DocumentsWithStreamingResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain; charset=utf-16'],
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['text/plain; charset=utf-16'] | RequestMedia[str, str],
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -554,21 +560,21 @@ class DocumentsWithStreamingResponse:
         self,
         *,
         body: _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/vnd.api+json'],
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/vnd.api+json'] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]],
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     def store_document(
         self,
         *,
         body: WireValue | str | _dcg_type_0 | DecodedValue[_dcg_type_0],
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
-        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | RequestMedia[_dcg_type_0 | DecodedValue[_dcg_type_0], _dcg_type_0 | DecodedValue[_dcg_type_0]] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | ResponseMedia[WireValue | None | DecodedValue[_dcg_type_0]] | ResponseMedia[str | None] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /documents."""
         return self._core.stream(
-            _operations.OPERATION_13,
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,
@@ -582,12 +588,12 @@ class DocumentsWithStreamingResponse:
         id: _dcg_type_1 | ModelValue[_dcg_type_1],
         filter: WireValue | Unset = UNSET,
         x_mode: str | Unset = UNSET,
-        response_media_type: Literal['application/vnd.api+json'] | None = None,
+        response_media_type: Literal['application/vnd.api+json'] | ResponseMedia[ReadDocumentResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /documents/{id}."""
         return self._core.stream(
-            _operations.OPERATION_14,
+            _operations.OPERATION_16,
             (id, filter, x_mode),
             options=options,
             response_media_type=response_media_type,
@@ -597,12 +603,12 @@ class DocumentsWithStreamingResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json', 'application/vnd.note+json'],
+        media_type: Literal['application/json', 'application/vnd.note+json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /notes."""
         return self._core.stream(
-            _operations.OPERATION_15,
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,
@@ -614,7 +620,7 @@ class DocumentsWithStreamingResponse:
         self,
         *,
         body: WireValue,
-        media_type: Literal['application/json'],
+        media_type: Literal['application/json'] | RequestMedia[WireValue, WireValue],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -622,7 +628,7 @@ class DocumentsWithStreamingResponse:
         self,
         *,
         body: str,
-        media_type: Literal['text/plain'],
+        media_type: Literal['text/plain'] | RequestMedia[str, str],
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]: ...
     @overload
@@ -637,12 +643,12 @@ class DocumentsWithStreamingResponse:
         self,
         *,
         body: WireValue | str | Unset = UNSET,
-        media_type: Literal['application/json', 'text/plain'] | None = None,
+        media_type: Literal['application/json', 'text/plain'] | RequestMedia[WireValue, WireValue] | RequestMedia[str, str] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /notes."""
         return self._core.stream(
-            _operations.OPERATION_16,
+            _operations.OPERATION_18,
             (),
             body=body,
             media_type=media_type,

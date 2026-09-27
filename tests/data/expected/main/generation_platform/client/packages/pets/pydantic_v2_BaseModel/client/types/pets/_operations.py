@@ -33,9 +33,9 @@ from ..._runtime.client.codecs import (
     required_header,
 )
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...bodies import MultipartData
+from ...bodies import AsyncMultipartBody, MultipartBody, MultipartData
 from ...errors import HTTPStatusError
-from ...model_codecs import NativeOutboundCodec
+from ...model_codecs import ModelValue, NativeOutboundCodec, RequestMedia, ResponseMedia
 from ...options import Unset
 from ...responses import ResponseInfo
 
@@ -48,7 +48,7 @@ class ListPetsHTTPError(HTTPStatusError[ListPetsErrorData]):
 
 
 class _ListPetsRequestCodecs(
-    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_2] | NativeOutboundCodec[_dcg_type_3] | NativeOutboundCodec[_dcg_type_4] | NativeOutboundCodec[_dcg_type_5]],
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_2] | NativeOutboundCodec[_dcg_type_3] | NativeOutboundCodec[_dcg_type_4] | NativeOutboundCodec[_dcg_type_5], Never, Never, ResponseMedia[ListPetsResponse]],
 ):
     """The outbound codecs of the list_pets request."""
 
@@ -96,6 +96,15 @@ class _ListPetsRequestCodecs(
         """Return the outbound codec of one declared parameter."""
         return self._parameter(location, name)
 
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> ResponseMedia[ListPetsResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
+
 
 ListPetsRequestCodecs: Final = _ListPetsRequestCodecs(
     parameters=(
@@ -104,6 +113,7 @@ ListPetsRequestCodecs: Final = _ListPetsRequestCodecs(
         ('header', 'X-Trace', model_bindings.outbound_2),
         ('cookie', 'session', model_bindings.outbound_3),
     ),
+    responses=('application/json',),
 )
 
 
@@ -183,7 +193,7 @@ class CreatePetHTTPError(HTTPStatusError[CreatePetErrorData]):
 
 
 class _CreatePetRequestCodecs(
-    RequestCodecs[NativeOutboundCodec[_dcg_type_9] | NativeOutboundCodec[_dcg_type_10], Never],
+    RequestCodecs[NativeOutboundCodec[_dcg_type_9] | NativeOutboundCodec[_dcg_type_10], Never, Never, RequestMedia[_dcg_type_9 | ModelValue[_dcg_type_9], _dcg_type_9 | ModelValue[_dcg_type_9]] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]], ResponseMedia[CreatePetResponse]],
 ):
     """The outbound codecs of the create_pet request."""
 
@@ -197,7 +207,19 @@ class _CreatePetRequestCodecs(
     def body(
         self,
         *,
+        media_type: RequestMedia[_dcg_type_9 | ModelValue[_dcg_type_9], _dcg_type_9 | ModelValue[_dcg_type_9]],
+    ) -> NativeOutboundCodec[_dcg_type_9]: ...
+    @overload
+    def body(
+        self,
+        *,
         media_type: Literal['text/plain'],
+    ) -> NativeOutboundCodec[_dcg_type_10]: ...
+    @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]],
     ) -> NativeOutboundCodec[_dcg_type_10]: ...
     @overload
     def body(
@@ -208,10 +230,42 @@ class _CreatePetRequestCodecs(
     def body(
         self,
         *,
-        media_type: str | None = None,
+        media_type: str | RequestMedia[_dcg_type_9 | ModelValue[_dcg_type_9], _dcg_type_9 | ModelValue[_dcg_type_9]] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
     ) -> NativeOutboundCodec[_dcg_type_9] | NativeOutboundCodec[_dcg_type_10]:
-        """Return the outbound codec of one declared request media type."""
+        """Return the outbound codec of one declared request media type, or of a selector's."""
         return self._body(media_type)
+
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_9 | ModelValue[_dcg_type_9], _dcg_type_9 | ModelValue[_dcg_type_9]]: ...
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['text/plain'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]]: ...
+    def select_request_media(
+        self,
+        *,
+        declared_media: str,
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_9 | ModelValue[_dcg_type_9], _dcg_type_9 | ModelValue[_dcg_type_9]] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> ResponseMedia[CreatePetResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
 
 
 CreatePetRequestCodecs: Final = _CreatePetRequestCodecs(
@@ -219,6 +273,8 @@ CreatePetRequestCodecs: Final = _CreatePetRequestCodecs(
         ('application/json', model_bindings.outbound_8),
         ('text/plain', model_bindings.outbound_9),
     ),
+    requests=('application/json', 'text/plain'),
+    responses=('application/json',),
 )
 
 
@@ -230,7 +286,9 @@ class GetPetHTTPError(HTTPStatusError[GetPetErrorData]):
     """An error response of get_pet, with its decoded payload when one is declared."""
 
 
-class _GetPetRequestCodecs(RequestCodecs[Never, NativeOutboundCodec[_dcg_type_12]]):
+class _GetPetRequestCodecs(
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_12], Never, Never, ResponseMedia[_dcg_type_8] | ResponseMedia[_dcg_type_11]],
+):
     """The outbound codecs of the get_pet request."""
 
     @overload
@@ -256,9 +314,33 @@ class _GetPetRequestCodecs(RequestCodecs[Never, NativeOutboundCodec[_dcg_type_12
         """Return the outbound codec of one declared parameter."""
         return self._parameter(location, name)
 
+    @overload
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> ResponseMedia[_dcg_type_8]: ...
+    @overload
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['text/plain'],
+        concrete_media: str,
+    ) -> ResponseMedia[_dcg_type_11]: ...
+    def select_response_media(
+        self,
+        *,
+        declared_media: str,
+        concrete_media: str,
+    ) -> ResponseMedia[_dcg_type_8] | ResponseMedia[_dcg_type_11]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
+
 
 GetPetRequestCodecs: Final = _GetPetRequestCodecs(
     parameters=(('path', 'petId', model_bindings.outbound_12),),
+    responses=('application/json', 'text/plain'),
 )
 
 
@@ -387,7 +469,7 @@ class AttachFilesHTTPError(HTTPStatusError[AttachFilesErrorData]):
 
 
 class _AttachFilesRequestCodecs(
-    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_14], NativeOutboundCodec[str] | NativeOutboundCodec[list[str]]],
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_14], NativeOutboundCodec[str] | NativeOutboundCodec[list[str]], RequestMedia[MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]], AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]]]],
 ):
     """The outbound codecs of the attach_files request."""
 
@@ -444,6 +526,15 @@ class _AttachFilesRequestCodecs(
         """Return the outbound codec of one part of a body sent as parts."""
         return self._part(name, media_type)
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]], AsyncMultipartBody[str | ModelValue[str] | list[str] | ModelValue[list[str]]]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
 
 AttachFilesRequestCodecs: Final = _AttachFilesRequestCodecs(
     default='multipart/form-data',
@@ -453,6 +544,7 @@ AttachFilesRequestCodecs: Final = _AttachFilesRequestCodecs(
         ('multipart/form-data', 'labels', model_bindings.outbound_22),
         ('multipart/form-data', 'file', None),
     ),
+    requests=('multipart/form-data',),
 )
 
 
@@ -464,7 +556,9 @@ class ReadFilesHTTPError(HTTPStatusError[ReadFilesErrorData]):
     """An error response of read_files, with its decoded payload when one is declared."""
 
 
-class _ReadFilesRequestCodecs(RequestCodecs[Never, NativeOutboundCodec[_dcg_type_15]]):
+class _ReadFilesRequestCodecs(
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_15], Never, Never, ResponseMedia[ReadFilesResponse]],
+):
     """The outbound codecs of the read_files request."""
 
     @overload
@@ -490,7 +584,17 @@ class _ReadFilesRequestCodecs(RequestCodecs[Never, NativeOutboundCodec[_dcg_type
         """Return the outbound codec of one declared parameter."""
         return self._parameter(location, name)
 
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> ResponseMedia[ReadFilesResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
+
 
 ReadFilesRequestCodecs: Final = _ReadFilesRequestCodecs(
     parameters=(('path', 'petId', model_bindings.outbound_20),),
+    responses=('multipart/form-data',),
 )

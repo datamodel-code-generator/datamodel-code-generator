@@ -17,9 +17,16 @@ from typing_extensions import Never
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import RequestCodecs
-from ...bodies import FormData, MultipartData
+from ...bodies import AsyncMultipartBody, FormData, MultipartBody, MultipartData
 from ...errors import HTTPStatusError
-from ...model_codecs import DecodedValue, NativeOutboundCodec
+from ...model_codecs import (
+    DecodedValue,
+    ModelValue,
+    NativeOutboundCodec,
+    RequestMedia,
+    ResponseMedia,
+    WireValue,
+)
 
 SubmitFormResponse: TypeAlias = _dcg_type_0
 SubmitFormErrorData: TypeAlias = None
@@ -29,7 +36,9 @@ class SubmitFormHTTPError(HTTPStatusError[SubmitFormErrorData]):
     """An error response of submit_form, with its decoded payload when one is declared."""
 
 
-class _SubmitFormRequestCodecs(RequestCodecs[NativeOutboundCodec[_dcg_type_1], Never]):
+class _SubmitFormRequestCodecs(
+    RequestCodecs[NativeOutboundCodec[_dcg_type_1], Never, Never, RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]], ResponseMedia[SubmitFormResponse]],
+):
     """The outbound codecs of the submit_form request."""
 
     @overload
@@ -41,19 +50,45 @@ class _SubmitFormRequestCodecs(RequestCodecs[NativeOutboundCodec[_dcg_type_1], N
         media_type: Literal['application/x-www-form-urlencoded'],
     ) -> NativeOutboundCodec[_dcg_type_1]: ...
     @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]],
+    ) -> NativeOutboundCodec[_dcg_type_1]: ...
+    @overload
     def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_1]: ...
     def body(
         self,
         *,
-        media_type: str | None = None,
+        media_type: str | RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]] | None = None,
     ) -> NativeOutboundCodec[_dcg_type_1]:
-        """Return the outbound codec of one declared request media type."""
+        """Return the outbound codec of one declared request media type, or of a selector's."""
         return self._body(media_type)
+
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/x-www-form-urlencoded'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_1 | ModelValue[_dcg_type_1], _dcg_type_1 | ModelValue[_dcg_type_1]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/x-www-form-urlencoded'],
+        concrete_media: str,
+    ) -> ResponseMedia[SubmitFormResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
 
 
 SubmitFormRequestCodecs: Final = _SubmitFormRequestCodecs(
     bodies=(('application/x-www-form-urlencoded', model_bindings.outbound_0),),
     default='application/x-www-form-urlencoded',
+    requests=('application/x-www-form-urlencoded',),
+    responses=('application/x-www-form-urlencoded',),
 )
 
 
@@ -66,7 +101,7 @@ class SubmitProfileHTTPError(HTTPStatusError[SubmitProfileErrorData]):
 
 
 class _SubmitProfileRequestCodecs(
-    RequestCodecs[NativeOutboundCodec[_dcg_type_2], Never],
+    RequestCodecs[NativeOutboundCodec[_dcg_type_2], Never, Never, RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]]],
 ):
     """The outbound codecs of the submit_profile request."""
 
@@ -79,19 +114,35 @@ class _SubmitProfileRequestCodecs(
         media_type: Literal['multipart/form-data'],
     ) -> NativeOutboundCodec[_dcg_type_2]: ...
     @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]],
+    ) -> NativeOutboundCodec[_dcg_type_2]: ...
+    @overload
     def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_2]: ...
     def body(
         self,
         *,
-        media_type: str | None = None,
+        media_type: str | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
     ) -> NativeOutboundCodec[_dcg_type_2]:
-        """Return the outbound codec of one declared request media type."""
+        """Return the outbound codec of one declared request media type, or of a selector's."""
         return self._body(media_type)
+
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
 
 
 SubmitProfileRequestCodecs: Final = _SubmitProfileRequestCodecs(
     bodies=(('multipart/form-data', model_bindings.outbound_2),),
     default='multipart/form-data',
+    requests=('multipart/form-data',),
 )
 
 
@@ -103,11 +154,24 @@ class ReadProfileHTTPError(HTTPStatusError[ReadProfileErrorData]):
     """An error response of read_profile, with its decoded payload when one is declared."""
 
 
-class _ReadProfileRequestCodecs(RequestCodecs[Never, Never]):
+class _ReadProfileRequestCodecs(
+    RequestCodecs[Never, Never, Never, Never, ResponseMedia[ReadProfileResponse]],
+):
     """The outbound codecs of the read_profile request."""
 
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> ResponseMedia[ReadProfileResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
 
-ReadProfileRequestCodecs: Final = _ReadProfileRequestCodecs()
+
+ReadProfileRequestCodecs: Final = _ReadProfileRequestCodecs(
+    responses=('multipart/form-data',),
+)
 
 
 SubmitAnythingResponse: TypeAlias = None
@@ -119,7 +183,7 @@ class SubmitAnythingHTTPError(HTTPStatusError[SubmitAnythingErrorData]):
 
 
 class _SubmitAnythingRequestCodecs(
-    RequestCodecs[NativeOutboundCodec[_dcg_type_4], Never],
+    RequestCodecs[NativeOutboundCodec[_dcg_type_4], Never, Never, RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]]],
 ):
     """The outbound codecs of the submit_anything request."""
 
@@ -132,19 +196,35 @@ class _SubmitAnythingRequestCodecs(
         media_type: Literal['multipart/form-data'],
     ) -> NativeOutboundCodec[_dcg_type_4]: ...
     @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]],
+    ) -> NativeOutboundCodec[_dcg_type_4]: ...
+    @overload
     def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_4]: ...
     def body(
         self,
         *,
-        media_type: str | None = None,
+        media_type: str | RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]] | None = None,
     ) -> NativeOutboundCodec[_dcg_type_4]:
-        """Return the outbound codec of one declared request media type."""
+        """Return the outbound codec of one declared request media type, or of a selector's."""
         return self._body(media_type)
+
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_4 | ModelValue[_dcg_type_4], _dcg_type_4 | ModelValue[_dcg_type_4]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
 
 
 SubmitAnythingRequestCodecs: Final = _SubmitAnythingRequestCodecs(
     bodies=(('multipart/form-data', model_bindings.outbound_4),),
     default='multipart/form-data',
+    requests=('multipart/form-data',),
 )
 
 
@@ -156,11 +236,24 @@ class SubmitPartsHTTPError(HTTPStatusError[SubmitPartsErrorData]):
     """An error response of submit_parts, with its decoded payload when one is declared."""
 
 
-class _SubmitPartsRequestCodecs(RequestCodecs[Never, Never]):
+class _SubmitPartsRequestCodecs(
+    RequestCodecs[Never, Never, Never, RequestMedia[MultipartBody[str], AsyncMultipartBody[str]]],
+):
     """The outbound codecs of the submit_parts request."""
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[str], AsyncMultipartBody[str]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
 
-SubmitPartsRequestCodecs: Final = _SubmitPartsRequestCodecs()
+
+SubmitPartsRequestCodecs: Final = _SubmitPartsRequestCodecs(
+    requests=('multipart/form-data',),
+)
 
 
 ReadPartsResponse: TypeAlias = MultipartData[bytes] | _dcg_type_5
@@ -171,11 +264,38 @@ class ReadPartsHTTPError(HTTPStatusError[ReadPartsErrorData]):
     """An error response of read_parts, with its decoded payload when one is declared."""
 
 
-class _ReadPartsRequestCodecs(RequestCodecs[Never, Never]):
+class _ReadPartsRequestCodecs(
+    RequestCodecs[Never, Never, Never, Never, ResponseMedia[MultipartData[bytes]] | ResponseMedia[_dcg_type_5]],
+):
     """The outbound codecs of the read_parts request."""
 
+    @overload
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['multipart/mixed'],
+        concrete_media: str,
+    ) -> ResponseMedia[MultipartData[bytes]]: ...
+    @overload
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> ResponseMedia[_dcg_type_5]: ...
+    def select_response_media(
+        self,
+        *,
+        declared_media: str,
+        concrete_media: str,
+    ) -> ResponseMedia[MultipartData[bytes]] | ResponseMedia[_dcg_type_5]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
 
-ReadPartsRequestCodecs: Final = _ReadPartsRequestCodecs()
+
+ReadPartsRequestCodecs: Final = _ReadPartsRequestCodecs(
+    responses=('multipart/mixed', 'multipart/form-data'),
+)
 
 
 SubmitPairsResponse: TypeAlias = FormData
@@ -186,11 +306,34 @@ class SubmitPairsHTTPError(HTTPStatusError[SubmitPairsErrorData]):
     """An error response of submit_pairs, with its decoded payload when one is declared."""
 
 
-class _SubmitPairsRequestCodecs(RequestCodecs[Never, Never]):
+class _SubmitPairsRequestCodecs(
+    RequestCodecs[Never, Never, Never, RequestMedia[FormData, FormData], ResponseMedia[SubmitPairsResponse]],
+):
     """The outbound codecs of the submit_pairs request."""
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/x-www-form-urlencoded'],
+        concrete_media: str,
+    ) -> RequestMedia[FormData, FormData]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
 
-SubmitPairsRequestCodecs: Final = _SubmitPairsRequestCodecs()
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/x-www-form-urlencoded'],
+        concrete_media: str,
+    ) -> ResponseMedia[SubmitPairsResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
+
+
+SubmitPairsRequestCodecs: Final = _SubmitPairsRequestCodecs(
+    requests=('application/x-www-form-urlencoded',),
+    responses=('application/x-www-form-urlencoded',),
+)
 
 
 SubmitUploadResponse: TypeAlias = None
@@ -202,7 +345,7 @@ class SubmitUploadHTTPError(HTTPStatusError[SubmitUploadErrorData]):
 
 
 class _SubmitUploadRequestCodecs(
-    RequestCodecs[Never, Never, NativeOutboundCodec[int] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_6]],
+    RequestCodecs[Never, Never, NativeOutboundCodec[int] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_6], RequestMedia[MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_6 | ModelValue[_dcg_type_6]], AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_6 | ModelValue[_dcg_type_6]]]],
 ):
     """The outbound codecs of the submit_upload request."""
 
@@ -257,19 +400,29 @@ class _SubmitUploadRequestCodecs(
         """Return the outbound codec of one part of a body sent as parts."""
         return self._part(name, media_type)
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_6 | ModelValue[_dcg_type_6]], AsyncMultipartBody[int | ModelValue[int] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | _dcg_type_6 | ModelValue[_dcg_type_6]]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
 
 SubmitUploadRequestCodecs: Final = _SubmitUploadRequestCodecs(
     default='multipart/form-data',
     parts=(
-        ('multipart/form-data', 'id', model_bindings.outbound_12),
-        ('multipart/form-data', 'title', model_bindings.outbound_13),
-        ('multipart/form-data', 'count', model_bindings.outbound_14),
-        ('multipart/form-data', 'tags', model_bindings.outbound_15),
-        ('multipart/form-data', 'meta', model_bindings.outbound_16),
+        ('multipart/form-data', 'id', model_bindings.outbound_15),
+        ('multipart/form-data', 'title', model_bindings.outbound_16),
+        ('multipart/form-data', 'count', model_bindings.outbound_17),
+        ('multipart/form-data', 'tags', model_bindings.outbound_18),
+        ('multipart/form-data', 'meta', model_bindings.outbound_19),
         ('multipart/form-data', 'photo', None),
         ('multipart/form-data', 'pages', None),
     ),
-    extras=(('multipart/form-data', model_bindings.outbound_17),),
+    extras=(('multipart/form-data', model_bindings.outbound_20),),
+    requests=('multipart/form-data',),
 )
 
 
@@ -281,11 +434,24 @@ class ReadUploadHTTPError(HTTPStatusError[ReadUploadErrorData]):
     """An error response of read_upload, with its decoded payload when one is declared."""
 
 
-class _ReadUploadRequestCodecs(RequestCodecs[Never, Never]):
+class _ReadUploadRequestCodecs(
+    RequestCodecs[Never, Never, Never, Never, ResponseMedia[ReadUploadResponse]],
+):
     """The outbound codecs of the read_upload request."""
 
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> ResponseMedia[ReadUploadResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
 
-ReadUploadRequestCodecs: Final = _ReadUploadRequestCodecs()
+
+ReadUploadRequestCodecs: Final = _ReadUploadRequestCodecs(
+    responses=('multipart/form-data',),
+)
 
 
 SubmitAvatarResponse: TypeAlias = None
@@ -297,7 +463,7 @@ class SubmitAvatarHTTPError(HTTPStatusError[SubmitAvatarErrorData]):
 
 
 class _SubmitAvatarRequestCodecs(
-    RequestCodecs[NativeOutboundCodec[_dcg_type_6], Never, NativeOutboundCodec[str]],
+    RequestCodecs[NativeOutboundCodec[_dcg_type_6], Never, NativeOutboundCodec[str], RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]]],
 ):
     """The outbound codecs of the submit_avatar request."""
 
@@ -308,13 +474,19 @@ class _SubmitAvatarRequestCodecs(
         media_type: Literal['application/json'],
     ) -> NativeOutboundCodec[_dcg_type_6]: ...
     @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]],
+    ) -> NativeOutboundCodec[_dcg_type_6]: ...
+    @overload
     def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_6]: ...
     def body(
         self,
         *,
-        media_type: str | None = None,
+        media_type: str | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]] | None = None,
     ) -> NativeOutboundCodec[_dcg_type_6]:
-        """Return the outbound codec of one declared request media type."""
+        """Return the outbound codec of one declared request media type, or of a selector's."""
         return self._body(media_type)
 
     @overload
@@ -340,13 +512,37 @@ class _SubmitAvatarRequestCodecs(
         """Return the outbound codec of one part of a body sent as parts."""
         return self._part(name, media_type)
 
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]]: ...
+    @overload
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/json'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]]: ...
+    def select_request_media(
+        self,
+        *,
+        declared_media: str,
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[str | ModelValue[str] | WireValue], AsyncMultipartBody[str | ModelValue[str] | WireValue]] | RequestMedia[_dcg_type_6 | ModelValue[_dcg_type_6], _dcg_type_6 | ModelValue[_dcg_type_6]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
 
 SubmitAvatarRequestCodecs: Final = _SubmitAvatarRequestCodecs(
     bodies=(('application/json', model_bindings.outbound_6),),
     parts=(
-        ('multipart/form-data', 'caption', model_bindings.outbound_26),
+        ('multipart/form-data', 'caption', model_bindings.outbound_29),
         ('multipart/form-data', 'avatar', None),
     ),
+    requests=('multipart/form-data', 'application/json'),
 )
 
 
@@ -358,7 +554,9 @@ class SubmitScansHTTPError(HTTPStatusError[SubmitScansErrorData]):
     """An error response of submit_scans, with its decoded payload when one is declared."""
 
 
-class _SubmitScansRequestCodecs(RequestCodecs[Never, Never, NativeOutboundCodec[str]]):
+class _SubmitScansRequestCodecs(
+    RequestCodecs[Never, Never, NativeOutboundCodec[str], RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]]],
+):
     """The outbound codecs of the submit_scans request."""
 
     @overload
@@ -384,10 +582,20 @@ class _SubmitScansRequestCodecs(RequestCodecs[Never, Never, NativeOutboundCodec[
         """Return the outbound codec of one part of a body sent as parts."""
         return self._part(name, media_type)
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
 
 SubmitScansRequestCodecs: Final = _SubmitScansRequestCodecs(
     default='multipart/form-data',
-    parts=(('multipart/form-data', 'note', model_bindings.outbound_27),),
+    parts=(('multipart/form-data', 'note', model_bindings.outbound_30),),
+    requests=('multipart/form-data',),
 )
 
 
@@ -399,11 +607,24 @@ class SubmitPhotosHTTPError(HTTPStatusError[SubmitPhotosErrorData]):
     """An error response of submit_photos, with its decoded payload when one is declared."""
 
 
-class _SubmitPhotosRequestCodecs(RequestCodecs[Never, Never]):
+class _SubmitPhotosRequestCodecs(
+    RequestCodecs[Never, Never, Never, RequestMedia[MultipartBody[Never], AsyncMultipartBody[Never]]],
+):
     """The outbound codecs of the submit_photos request."""
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[Never], AsyncMultipartBody[Never]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
 
-SubmitPhotosRequestCodecs: Final = _SubmitPhotosRequestCodecs()
+
+SubmitPhotosRequestCodecs: Final = _SubmitPhotosRequestCodecs(
+    requests=('multipart/form-data',),
+)
 
 
 SubmitLabelsResponse: TypeAlias = None
@@ -415,7 +636,7 @@ class SubmitLabelsHTTPError(HTTPStatusError[SubmitLabelsErrorData]):
 
 
 class _SubmitLabelsRequestCodecs(
-    RequestCodecs[Never, Never, NativeOutboundCodec[str]],
+    RequestCodecs[Never, Never, NativeOutboundCodec[str], RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]]],
 ):
     """The outbound codecs of the submit_labels request."""
 
@@ -428,9 +649,19 @@ class _SubmitLabelsRequestCodecs(
         """Return the outbound codec of one part of a body sent as parts."""
         return self._part(name, media_type)
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[str | ModelValue[str]], AsyncMultipartBody[str | ModelValue[str]]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
 
 SubmitLabelsRequestCodecs: Final = _SubmitLabelsRequestCodecs(
     default='multipart/form-data',
     parts=(('multipart/form-data', 'sheet', None),),
-    extras=(('multipart/form-data', model_bindings.outbound_28),),
+    extras=(('multipart/form-data', model_bindings.outbound_31),),
+    requests=('multipart/form-data',),
 )

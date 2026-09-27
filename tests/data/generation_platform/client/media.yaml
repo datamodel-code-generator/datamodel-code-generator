@@ -271,6 +271,47 @@ paths:
       responses:
         '204':
           description: Stored.
+  /files:
+    post:
+      operationId: storeFile
+      tags: [files]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Address'}
+          application/*:
+            schema: {type: string, format: binary}
+          image/*:
+            schema: {type: string, format: binary}
+          text/*:
+            schema: {type: string}
+      responses:
+        '200':
+          description: The stored file.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Address'}
+            image/*:
+              schema: {type: string, format: binary}
+            '*/*':
+              schema: {type: string, format: binary}
+        '201':
+          description: A copy.
+          content:
+            image/png:
+              schema: {type: string, format: binary}
+        '204':
+          description: Stored without a body.
+    put:
+      operationId: replaceFile
+      tags: [files]
+      requestBody:
+        content:
+          '*/*': {}
+      responses:
+        '204':
+          description: Replaced.
   /documents:
     post:
       operationId: storeDocument

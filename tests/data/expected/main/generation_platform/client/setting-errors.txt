@@ -2,6 +2,6 @@
 render pydantic_v2.BaseModel
   APIGenerationError
   E_CONFIG_VALUE config operations: The parameter name of the query parameter 'absent' of GET /pets names no parameter
-  E_CONFIG_VALUE config operations /paths/~1pets/post: The request media type 'application/xml' of POST /pets is not declared
+  E_CONFIG_VALUE config operations /paths/~1pets/post: The request media type 'application/xml' of POST /pets is not a declared concrete type
   E_CONFIG_VALUE config operations /paths/~1pets~1{petId}/get: The success status 301 of GET /pets/{petId} selects no declared response
   E_CONFIG_VALUE config operations /paths/~1pets~1{petId}/get: The response media type 'image/png' of GET /pets/{petId} is not a declared success media

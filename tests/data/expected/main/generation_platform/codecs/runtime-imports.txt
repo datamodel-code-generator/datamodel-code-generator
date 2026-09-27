@@ -1,17 +1,16 @@
 __init__.py: -
 client/__init__.py: -
 client/bodies.py: .coding, .errors, __future__, asyncio, collections.abc, concurrent.futures, os, pathlib, threading, typing
-client/client.py: ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.wire, .bodies, .coding, .errors, .lifecycle, .multipart, .native, .operations, .options, .raw, .responses, .transports, __future__, asyncio, collections.abc, contextlib, dataclasses, functools, httpx2, inspect, re, time, typing, typing_extensions, uuid
-client/codecs.py: ..model_codecs.context, ..model_codecs.errors, ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.values, ..model_codecs.wire, .errors, .operations, .responses, __future__, collections.abc, dataclasses, typing, typing_extensions
+client/client.py: ..model_codecs.parameters, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .bodies, .coding, .errors, .lifecycle, .multipart, .native, .operations, .options, .raw, .responses, .transports, __future__, asyncio, collections.abc, contextlib, dataclasses, functools, httpx2, inspect, re, time, typing, typing_extensions, uuid
+client/codecs.py: ..model_codecs.context, ..model_codecs.errors, ..model_codecs.parameters, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.values, ..model_codecs.wire, .errors, .operations, .responses, __future__, collections.abc, dataclasses, typing, typing_extensions
 client/coding.py: .errors, .responses, __future__, collections.abc, typing, zlib
 client/errors.py: .responses, __future__, enum, re, typing, typing_extensions
 client/lifecycle.py: .errors, __future__, asyncio, threading, time, typing
-client/media.py: __future__, codecs
-client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, ..model_codecs.wire, .bodies, .errors, .media, .responses, __future__, collections.abc, os, re, typing, typing_extensions
+client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, ..model_codecs.wire, .bodies, .errors, .responses, __future__, collections.abc, os, re, typing, typing_extensions
 client/native.py: .bodies, .errors, .responses, .transports, __future__, collections.abc, httpx2, typing
-client/operations.py: ..model_codecs.context, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.values, ..model_codecs.wire, .errors, .media, .multipart, .responses, __future__, collections.abc, dataclasses, typing, typing_extensions
+client/operations.py: ..model_codecs.context, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.values, ..model_codecs.wire, .errors, .multipart, .responses, __future__, codecs, collections.abc, dataclasses, typing, typing_extensions
 client/options.py: ..model_codecs.unset, .errors, __future__, collections.abc, dataclasses, math, types, typing, urllib.parse
-client/raw.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .coding, .errors, .lifecycle, .media, .operations, .options, .responses, __future__, collections.abc, errno, os, pathlib, types, typing, typing_extensions
+client/raw.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .coding, .errors, .lifecycle, .operations, .options, .responses, __future__, collections.abc, errno, os, pathlib, types, typing, typing_extensions
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
 client/transports.py: .bodies, .errors, .responses, __future__, collections.abc, dataclasses, typing, typing_extensions
 model_codecs/__init__.py: -
@@ -28,6 +27,7 @@ model_codecs/patterns.py: .errors, __future__, dataclasses, functools, importlib
 model_codecs/pydantic_v2.py: .bindings, .codec, .errors, .media, .patterns, .schema, .values, .wire, __future__, collections.abc, dataclasses, decimal, enum, itertools, pydantic, pydantic.dataclasses, pydantic.errors, pydantic.fields, pydantic_core, types, typing, typing_extensions
 model_codecs/registry.py: .schema, .views, .wire, __future__, collections.abc, dataclasses, referencing, referencing.jsonschema, typing, typing_extensions
 model_codecs/schema.py: .context, .errors, .patterns, .wire, __future__, collections.abc, contextvars, dataclasses, datetime, decimal, functools, importlib, jsonschema, jsonschema.exceptions, math, referencing.exceptions, referencing.jsonschema, typing, typing_extensions, urllib.parse
+model_codecs/selectors.py: .errors, __future__, typing
 model_codecs/structural.py: .bindings, .codec, .errors, .media, .patterns, .schema, .values, .wire, __future__, collections, collections.abc, dataclasses, datetime, decimal, enum, functools, itertools, math, msgspec, operator, re, sys, types, typing, typing_extensions
 model_codecs/unset.py: __future__, enum, typing
 model_codecs/values.py: .errors, .wire, __future__, collections.abc, dataclasses, typing, typing_extensions
