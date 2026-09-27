@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
 from types import MappingProxyType
@@ -20,6 +21,17 @@ _SCHEMES: Final = frozenset({"http", "https"})
 def _count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
     if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
         raise ConfigurationError(field_path=path, condition="out_of_range")
+
+
+def _positive_seconds(value: object, path: tuple[str, ...]) -> None:
+    match value:
+        case bool():
+            pass
+        case int() | float() if 0 < value < math.inf:
+            return
+        case _:
+            pass
+    raise ConfigurationError(field_path=path, condition="out_of_range")
 
 
 def _server(value: object) -> bool:
@@ -69,6 +81,7 @@ class _Options:
     base_url: str | Unset = UNSET
     max_response_bytes: int | Unset | None = UNSET
     max_error_body_bytes: int | Unset = UNSET
+    cleanup_timeout: float | Unset = UNSET
 
     def __post_init__(self) -> None:
         if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
@@ -83,6 +96,8 @@ class _Options:
             _count(self.max_response_bytes, ("max_response_bytes",))
         if not isinstance(self.max_error_body_bytes, Unset):
             _count(self.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
+        if not isinstance(self.cleanup_timeout, Unset):
+            _positive_seconds(self.cleanup_timeout, ("cleanup_timeout",))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

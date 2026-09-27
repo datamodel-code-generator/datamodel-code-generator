@@ -16,11 +16,25 @@ class {{ name }}:
         options: {{ options }} | None = None,
         http_client: {{ http_client }} | {{ unset }} = {{ unset_value }},
         http_client_ownership: {{ literal }}["borrowed", "owned"] = "borrowed",
+        transport_adapter: {{ adapter }} | {{ owned_adapter }}[{{ adapter }}] | {{ unset }} = {{ unset_value }},
     ) -> None:
-        """Keep the options; without an HTTPX2 client, create one that closing this client closes."""
-        self._core = {{ core }}(
-            _DEFAULTS, options=options, http_client=http_client, http_client_ownership=http_client_ownership
+        """Send through the transport adapter or HTTPX2 client given, borrowed unless its ownership moves.
+
+        Without either, the client creates an HTTPX2 client that closing it closes.
+        """
+        self._core = {{ core }}.create(
+            _DEFAULTS,
+            options=options,
+            http_client=http_client,
+            http_client_ownership=http_client_ownership,
+            transport_adapter=transport_adapter,
         )
+
+    def with_options(self, options: {{ request_options }}) -> {{ name }}:
+        """Return a view whose calls layer these options on the client's; it shares the client's transport."""
+        view = {{ name }}.__new__({{ name }})
+        view._core = self._core.view(options)
+        return view
 {%- for resource in resources %}
 
     @{{ cached_property }}

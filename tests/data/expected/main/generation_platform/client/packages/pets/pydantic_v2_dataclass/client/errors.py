@@ -3,7 +3,10 @@
 
 from ._runtime.client.errors import (
     AdapterContractError,
+    AdapterExecutionError,
     BodyProtocolError,
+    CleanupError,
+    ClientClosedError,
     ConfigurationError,
     DecodeError,
     DecompressionLimitError,
@@ -23,12 +26,16 @@ from ._runtime.client.errors import (
     TransportError,
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
+    UnsupportedAsyncBackendError,
     UnsupportedContentCodingError,
 )
 
 __all__ = [
     'AdapterContractError',
+    'AdapterExecutionError',
     'BodyProtocolError',
+    'CleanupError',
+    'ClientClosedError',
     'ConfigurationError',
     'DecodeError',
     'DecompressionLimitError',
@@ -48,5 +55,6 @@ __all__ = [
     'TransportError',
     'UnexpectedMediaTypeError',
     'UnexpectedStatusError',
+    'UnsupportedAsyncBackendError',
     'UnsupportedContentCodingError',
 ]

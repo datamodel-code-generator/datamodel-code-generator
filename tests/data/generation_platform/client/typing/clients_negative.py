@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from pets import Client
+from pets import AsyncClient, Client
+from pets.transports import OwnedTransportAdapter
 from pets.types.pets import (
     CreatePetRequestCodecs,
     DeletePetsByPetIdRequestCodecs,
@@ -27,3 +28,12 @@ def misuse(client: Client) -> None:
     client.pets.photos.upload(pet_id=photo, body="text")  # error
     deleted = DeletePetsByPetIdRequestCodecs.parameter(location="path", name="petId").from_wire(1)
     client.pets.delete_pets_by_pet_id(pet_id=deleted, options="fast")  # error
+
+
+def misuse_transports(client: Client, adapter: object) -> None:
+    from clients import Adapter, AsyncAdapter
+
+    Client(transport_adapter=OwnedTransportAdapter(AsyncAdapter()))  # error
+    AsyncClient(transport_adapter=Adapter())  # error
+    client.with_options(None)  # error
+    del adapter

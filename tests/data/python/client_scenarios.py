@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
+from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_runtime import (
     Exchange,
     abroken,
@@ -570,6 +571,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "servers": ("servers", ("pydantic_v2.BaseModel",), servers),
     "default-server": ("default-server", ("pydantic_v2.BaseModel",), default_server),
     "codings": ("pets", ("pydantic_v2.BaseModel",), codings),
+    "transports": ("pets", ("pydantic_v2.BaseModel",), transports),
+    "lifecycle": ("pets", ("pydantic_v2.BaseModel",), lifecycle),
 }
 
 

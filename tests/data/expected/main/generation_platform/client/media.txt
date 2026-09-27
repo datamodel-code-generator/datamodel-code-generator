@@ -9,6 +9,7 @@ render pydantic_v2.BaseModel
   write client/responses.py
   write client/bodies.py
   write client/model_codecs.py
+  write client/transports.py
   write client/resources/__init__.py
   write client/resources/forms/__init__.py
   write client/resources/forms/_sync.py
@@ -57,6 +58,7 @@ render typing.TypedDict
   write client/responses.py
   write client/bodies.py
   write client/model_codecs.py
+  write client/transports.py
   write client/resources/__init__.py
   write client/resources/forms/__init__.py
   write client/resources/forms/_sync.py
