@@ -35,7 +35,8 @@
       }
     ],
     "default_base_url": "https://api.example.com/v1",
-    "server_base_url": "http://localhost:8080"
+    "server_base_url": "http://localhost:8080",
+    "signature_style": "unpack"
   },
   "invalid-values": {
     "schema_version": 2,
@@ -95,7 +96,8 @@
       }
     ],
     "default_base_url": "ftp://example.com",
-    "server_base_url": "https://user@example.com:0/"
+    "server_base_url": "https://user@example.com:0/",
+    "signature_style": "Unpack"
   },
   "invalid-urls": {
     "default_base_url": "https://example.com/v1?key=1",
@@ -117,7 +119,7 @@
     ]
   },
   "toml-values": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntransport = \"httpx2\"\ndefault_base_url = \"https://api.example.com\"\nserver_base_url = \"https://api.example.com/base/\"\n\n[[resource_names]]\ntag = \"pets\"\nnamespace = \"animals\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nresource = \"animals\"\nname = \"list_pets\"\nrequest_media_type = \"application/json\"\nresponse_media_type = \"application/json\"\ndescription = \"List them.\"\nparameter_names = [{ in = \"query\", name = \"limit\", python_name = \"page_size\" }]\nruntime = { request_id_header = \"X-Request-Id\", success_statuses = [302] }\n\n[[operations]]\nref = { pointer = \"/paths/~1pets/post\" }\n"
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntransport = \"httpx2\"\ndefault_base_url = \"https://api.example.com\"\nserver_base_url = \"https://api.example.com/base/\"\nsignature_style = \"unpack\"\n\n[[resource_names]]\ntag = \"pets\"\nnamespace = \"animals\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nresource = \"animals\"\nname = \"list_pets\"\nrequest_media_type = \"application/json\"\nresponse_media_type = \"application/json\"\ndescription = \"List them.\"\nparameter_names = [{ in = \"query\", name = \"limit\", python_name = \"page_size\" }]\nruntime = { request_id_header = \"X-Request-Id\", success_statuses = [302] }\n\n[[operations]]\nref = { pointer = \"/paths/~1pets/post\" }\n"
   },
   "toml-invalid-location": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nparameter_names = [{ in = \"body\", name = \"limit\", python_name = \"limit\" }]\n"

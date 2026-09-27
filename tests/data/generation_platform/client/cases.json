@@ -47,6 +47,48 @@
       ]
     }
   },
+  "pets-unpack": {
+    "input": "pets.yaml",
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ],
+      "signature_style": "unpack"
+    }
+  },
   "media": {
     "input": "media.yaml",
     "backends": [
@@ -96,10 +138,6 @@
         {
           "ref": "/paths/~1admin~1users/get",
           "resource": "admin.users"
-        },
-        {
-          "ref": "/paths/~1reports~1daily/get",
-          "resource": "archive.reports"
         },
         {
           "ref": "/paths/~1files~1{fileName}.{ext}/get",
@@ -211,5 +249,11 @@
   },
   "querystring": {
     "input": "querystring.yaml"
+  },
+  "keywords": {
+    "input": "keywords.yaml",
+    "config": {
+      "signature_style": "unpack"
+    }
   }
 }

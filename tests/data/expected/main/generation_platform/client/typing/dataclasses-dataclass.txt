@@ -1,116 +1,114 @@
-35 marked lines
-mypy pets and clients.py: clean
-pyright pets and clients.py: clean
-ty pets and clients.py: clean
-mypy clients_negative.py: 35/35 marked lines with one error, 0 elsewhere, 0 in other files
-  28 call-arg
-  29 arg-type
+mypy pets and clients.py and signatures.py: clean
+pyright pets and clients.py and signatures.py: clean
+ty pets and clients.py and signatures.py: clean
+clients_negative.py 31 marked lines
+mypy clients_negative.py: 31/31 marked lines with one error, 0 elsewhere, 0 in other files
+  27 call-arg
+  28 arg-type
+  29 call-overload
   30 call-overload
-  31 call-overload
-  33 call-overload
-  35 arg-type
-  37 arg-type
-  42 typeddict-unknown-key
-  43 typeddict-item
-  44 typeddict-item
-  45 typeddict-unknown-key
-  52 arg-type
+  32 call-overload
+  34 arg-type
+  36 arg-type
+  42 arg-type
+  43 arg-type
+  44 arg-type
+  50 arg-type
+  51 assignment
   53 arg-type
-  54 arg-type
-  60 arg-type
+  54 call-arg
+  59 misc
   61 assignment
-  63 arg-type
-  64 call-arg
-  69 misc
-  71 assignment
-  79 arg-type
-  80 arg-type
-  81 list-item
+  69 arg-type
+  70 arg-type
+  71 list-item
+  72 arg-type
+  73 arg-type
+  81 arg-type
   82 arg-type
-  83 arg-type
+  89 arg-type
+  90 arg-type
   91 arg-type
-  92 arg-type
-  99 arg-type
-  100 arg-type
-  101 arg-type
-  102 assignment
-  105 arg-type
-  106 arg-type
-  108 assignment
-  115 assignment
-pyright clients_negative.py: 31/35 marked lines with one error, 0 elsewhere, 0 in other files
-  28 reportCallIssue
+  92 assignment
+  95 arg-type
+  96 arg-type
+  98 assignment
+  105 assignment
+pyright clients_negative.py: 27/31 marked lines with one error, 0 elsewhere, 0 in other files
+  27 reportCallIssue
+  28 reportArgumentType
   29 reportArgumentType
+  29 reportCallIssue
   30 reportArgumentType
   30 reportCallIssue
-  31 reportArgumentType
-  31 reportCallIssue
-  33 reportArgumentType
-  33 reportCallIssue
-  35 reportArgumentType
-  37 reportArgumentType
-  42 reportCallIssue
-  43 reportAssignmentType
+  32 reportArgumentType
+  32 reportCallIssue
+  34 reportArgumentType
+  36 reportArgumentType
+  42 reportArgumentType
+  43 reportArgumentType
   44 reportArgumentType
-  45 reportCallIssue
-  52 reportArgumentType
+  50 reportArgumentType
+  51 reportAssignmentType
   53 reportArgumentType
-  54 reportArgumentType
-  60 reportArgumentType
+  54 reportCallIssue
+  59 reportGeneralTypeIssues
   61 reportAssignmentType
-  63 reportArgumentType
-  64 reportCallIssue
-  69 reportGeneralTypeIssues
-  71 reportAssignmentType
-  79 reportArgumentType
-  80 reportArgumentType
+  69 reportArgumentType
+  70 reportArgumentType
+  71 reportArgumentType
+  72 reportArgumentType
+  73 reportArgumentType
   81 reportArgumentType
   82 reportArgumentType
-  83 reportArgumentType
+  82 reportCallIssue
+  89 reportArgumentType
+  90 reportArgumentType
   91 reportArgumentType
-  92 reportArgumentType
-  92 reportCallIssue
-  99 reportArgumentType
-  100 reportArgumentType
-  101 reportArgumentType
-  102 reportAssignmentType
-  105 reportArgumentType
-  106 reportArgumentType
-  108 reportAssignmentType
-  115 reportAssignmentType
-ty clients_negative.py: 35/35 marked lines with one error, 0 elsewhere, 0 in other files
-  28 missing-argument
-  29 invalid-argument-type
+  92 reportAssignmentType
+  95 reportArgumentType
+  96 reportArgumentType
+  98 reportAssignmentType
+  105 reportAssignmentType
+ty clients_negative.py: 31/31 marked lines with one error, 0 elsewhere, 0 in other files
+  27 missing-argument
+  28 invalid-argument-type
+  29 no-matching-overload
   30 no-matching-overload
-  31 no-matching-overload
-  33 no-matching-overload
-  35 invalid-argument-type
-  37 invalid-argument-type
-  42 invalid-key
-  43 missing-typed-dict-key
+  32 no-matching-overload
+  34 invalid-argument-type
+  36 invalid-argument-type
+  42 invalid-argument-type
+  43 invalid-argument-type
   44 invalid-argument-type
-  45 invalid-key
-  52 invalid-argument-type
+  50 invalid-argument-type
+  51 invalid-assignment
   53 invalid-argument-type
-  54 invalid-argument-type
-  60 invalid-argument-type
+  54 missing-argument
+  59 invalid-await
   61 invalid-assignment
-  63 invalid-argument-type
-  64 missing-argument
-  69 invalid-await
-  71 invalid-assignment
-  79 invalid-argument-type
-  80 invalid-argument-type
+  69 invalid-argument-type
+  70 invalid-argument-type
+  71 invalid-argument-type
+  72 invalid-argument-type
+  73 invalid-argument-type
   81 invalid-argument-type
-  82 invalid-argument-type
-  83 invalid-argument-type
+  82 no-matching-overload
+  89 invalid-argument-type
+  90 invalid-argument-type
   91 invalid-argument-type
-  92 no-matching-overload
-  99 invalid-argument-type
-  100 invalid-argument-type
-  101 invalid-argument-type
-  102 invalid-assignment
-  105 invalid-argument-type
-  106 invalid-argument-type
-  108 invalid-assignment
-  115 invalid-assignment
+  92 invalid-assignment
+  95 invalid-argument-type
+  96 invalid-argument-type
+  98 invalid-assignment
+  105 invalid-assignment
+signatures_negative.py 2 marked lines
+mypy signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  42 misc
+  43 assignment
+pyright signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  42 reportCallIssue
+  43 reportAssignmentType
+ty signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  42 unknown-argument
+  43 invalid-assignment

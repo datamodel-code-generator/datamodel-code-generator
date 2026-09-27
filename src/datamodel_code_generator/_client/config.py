@@ -33,9 +33,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 Transport: TypeAlias = Literal["httpx2"]
+SignatureStyle: TypeAlias = Literal["explicit", "unpack"]
 RecordT = TypeVar("RecordT")
 
 _LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
+_SIGNATURE_STYLES: Final = frozenset({"explicit", "unpack"})
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _MIN_REDIRECT: Final = 300
 _MAX_REDIRECT: Final = 399
@@ -88,6 +90,7 @@ class ClientGenerationConfig(TargetConfig):
     transport: Transport = "httpx2"
     resource_names: tuple[ResourceName, ...] = ()
     operations: tuple[ClientOperationConfig, ...] = ()
+    signature_style: SignatureStyle = "explicit"
     default_base_url: str | None = None
     server_base_url: str | None = None
     codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
@@ -102,6 +105,8 @@ class ClientGenerationConfig(TargetConfig):
             yield _diagnostic("E_CONFIG_VALUE", "transport", "transport must be 'httpx2'")
         yield from _resource_name_problems(self.resource_names)
         yield from _operation_problems(self.operations)
+        if self.signature_style not in _SIGNATURE_STYLES:
+            yield _diagnostic("E_CONFIG_VALUE", "signature_style", "signature_style must be 'explicit' or 'unpack'")
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
                 yield _diagnostic(
@@ -312,6 +317,7 @@ ClientGenerationConfig.toml_converters = MappingProxyType({
     "transport": _string,
     "resource_names": _resource_names,
     "operations": _records(_operation_config),
+    "signature_style": _string,
     "default_base_url": _string,
     "server_base_url": _string,
 })

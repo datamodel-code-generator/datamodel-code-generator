@@ -47,7 +47,7 @@ class AdminResource:
         options: RequestOptions | None = None,
     ) -> CreateAdminUserResponse:
         """Call POST /admin/users."""
-        return self._core.execute(_operations.OPERATION_5, (), options=options).data
+        return self._core.execute(_operations.OPERATION_4, (), options=options).data
 
 
 class AdminWithResponse:
@@ -63,7 +63,7 @@ class AdminWithResponse:
         options: RequestOptions | None = None,
     ) -> Response[CreateAdminUserResponse]:
         """Call POST /admin/users."""
-        return self._core.execute(_operations.OPERATION_5, (), options=options)
+        return self._core.execute(_operations.OPERATION_4, (), options=options)
 
 
 class AdminWithRawResponse:
@@ -79,7 +79,7 @@ class AdminWithRawResponse:
         options: RequestOptions | None = None,
     ) -> RawResponse:
         """Call POST /admin/users."""
-        return self._core.execute_raw(_operations.OPERATION_5, (), options=options)
+        return self._core.execute_raw(_operations.OPERATION_4, (), options=options)
 
 
 class AdminWithStreamingResponse:
@@ -95,4 +95,4 @@ class AdminWithStreamingResponse:
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /admin/users."""
-        return self._core.stream(_operations.OPERATION_5, (), options=options)
+        return self._core.stream(_operations.OPERATION_4, (), options=options)

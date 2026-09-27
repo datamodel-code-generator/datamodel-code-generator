@@ -23,13 +23,10 @@ render pydantic_v2.BaseModel
   write client/types/__init__.py
   write client/types/forms/__init__.py
   write client/types/forms/_operations.py
-  write client/types/forms/_arguments.py
   write client/types/files/__init__.py
   write client/types/files/_operations.py
-  write client/types/files/_arguments.py
   write client/types/documents/__init__.py
   write client/types/documents/_operations.py
-  write client/types/documents/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
@@ -134,13 +131,10 @@ render typing.TypedDict
   write client/types/__init__.py
   write client/types/forms/__init__.py
   write client/types/forms/_operations.py
-  write client/types/forms/_arguments.py
   write client/types/files/__init__.py
   write client/types/files/_operations.py
-  write client/types/files/_arguments.py
   write client/types/documents/__init__.py
   write client/types/documents/_operations.py
-  write client/types/documents/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py

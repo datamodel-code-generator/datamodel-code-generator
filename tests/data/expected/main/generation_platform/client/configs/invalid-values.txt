@@ -16,5 +16,6 @@ APIGenerationError
   E_CONFIG_VALUE config operations[0].runtime.success_statuses: success_statuses must be distinct statuses 300 to 399
   E_CONFIG_VALUE config operations[0].description: description must be a string
   E_CONFIG_VALUE config operations[1].runtime: runtime must be a RuntimeOperationMetadata record
+  E_CONFIG_VALUE config signature_style: signature_style must be 'explicit' or 'unpack'
   E_CONFIG_VALUE config default_base_url: default_base_url must be an absolute http or https URL without userinfo, query, or fragment
   E_CONFIG_VALUE config server_base_url: server_base_url must be an absolute http or https URL without userinfo, query, or fragment

@@ -15,6 +15,7 @@ EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generatio
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
 
 
+@pytest.mark.parametrize("case", ["pets", "pets-unpack"])
 @pytest.mark.parametrize(
     "backend",
     [
@@ -25,8 +26,14 @@ ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
         DataModelType.MsgspecStruct,
     ],
 )
-def test_client_typing(backend: DataModelType, tmp_path: Path) -> None:
-    """Check the package and positive sample clean, and one error on each marked line of the negative sample."""
+def test_client_typing(backend: DataModelType, case: str, tmp_path: Path) -> None:
+    """Check the package and positive samples clean, and each checker's errors on the marked lines of the negatives.
+
+    Both signature styles take the same calls; the negatives pin where a checker treats unpacked keywords differently.
+    """
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(client_typing_report(tmp_path, backend), EXPECTED / f"{backend.value.replace('.', '-')}.txt")
+    suffix = case.removeprefix("pets")
+    assert_output(
+        client_typing_report(tmp_path, backend, case), EXPECTED / f"{backend.value.replace('.', '-')}{suffix}.txt"
+    )

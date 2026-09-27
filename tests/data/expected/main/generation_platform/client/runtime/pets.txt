@@ -2,11 +2,6 @@
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
-  > GET https://api.example.com/v1/pets?limit=5
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list with its arguments unpacked = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
-  types without MissingArguments ! AttributeError: module 'pets_pydantic_v2_basemodel.types.pets' has no attribute 'MissingArguments' [] 
-  types without Missing ! AttributeError: module 'pets_pydantic_v2_basemodel.types.pets' has no attribute 'Missing' [] 
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list response = Response(FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)]), 200, 'application/json', None, [('x-rate', '10'), ('content-length', '34'), ('content-type', 'application/json')])
@@ -225,11 +220,6 @@
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
   list = [{'id': 1, 'name': 'cat', 'tag': None}]
-  > GET https://api.example.com/v1/pets?limit=5
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list with its arguments unpacked = [{'id': 1, 'name': 'cat', 'tag': None}]
-  types without MissingArguments ! AttributeError: module 'pets_typing_typeddict.types.pets' has no attribute 'MissingArguments' [] 
-  types without Missing ! AttributeError: module 'pets_typing_typeddict.types.pets' has no attribute 'Missing' [] 
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list response = Response([{'id': 1, 'name': 'cat', 'tag': None}], 200, 'application/json', None, [('x-rate', '10'), ('content-length', '34'), ('content-type', 'application/json')])

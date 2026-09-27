@@ -1,0 +1,57 @@
+# pets-unpack
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/errors.py
+  write client/responses.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/resources/__init__.py
+  write client/resources/pets/__init__.py
+  write client/resources/pets/_sync.py
+  write client/resources/pets/_async.py
+  write client/resources/pets/photos/__init__.py
+  write client/resources/pets/photos/_sync.py
+  write client/resources/pets/photos/_async.py
+  write client/types/__init__.py
+  write client/types/pets/__init__.py
+  write client/types/pets/_operations.py
+  write client/types/pets/photos/__init__.py
+  write client/types/pets/photos/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/client_arguments.py
+  write client/_operations.py
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 25
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 pets.list_pets(query:limit=limit, query:tags=labels, header:X-Trace=x_trace, cookie:session=session)
+    exports client.types.pets.ListPetsResponse client.types.pets.ListPetsErrorData client.types.pets.ListPetsHTTPError
+    exports client.types.pets.ListPetsRequestCodecs client.types.pets.decode_list_pets_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 pets.create_pet()
+    exports client.types.pets.CreatePetResponse client.types.pets.CreatePetErrorData client.types.pets.CreatePetHTTPError
+    exports client.types.pets.CreatePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 pets.get_pet(path:petId=pet_id)
+    exports client.types.pets.GetPetResponse client.types.pets.GetPetErrorData client.types.pets.GetPetHTTPError
+    exports client.types.pets.GetPetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 pets.delete_pets_by_pet_id(path:petId=pet_id)
+    exports client.types.pets.DeletePetsByPetIdResponse client.types.pets.DeletePetsByPetIdErrorData client.types.pets.DeletePetsByPetIdHTTPError
+    exports client.types.pets.DeletePetsByPetIdRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 pets.head_pet(path:petId=pet_id)
+    exports client.types.pets.HeadPetResponse client.types.pets.HeadPetErrorData client.types.pets.HeadPetHTTPError
+    exports client.types.pets.HeadPetRequestCodecs client.types.pets.decode_head_pet_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 pets.photos.upload(path:petId=pet_id)
+    exports client.types.pets.photos.UploadResponse client.types.pets.photos.UploadErrorData client.types.pets.photos.UploadHTTPError
+    exports client.types.pets.photos.UploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 pets.attach_files(path:petId=pet_id)
+    exports client.types.pets.AttachFilesResponse client.types.pets.AttachFilesErrorData client.types.pets.AttachFilesHTTPError
+    exports client.types.pets.AttachFilesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
+    exports client.types.pets.ReadFilesResponse client.types.pets.ReadFilesErrorData client.types.pets.ReadFilesHTTPError
+    exports client.types.pets.ReadFilesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

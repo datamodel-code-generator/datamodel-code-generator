@@ -20,10 +20,8 @@ render pydantic_v2.BaseModel
   write client/types/__init__.py
   write client/types/pets/__init__.py
   write client/types/pets/_operations.py
-  write client/types/pets/_arguments.py
   write client/types/pets/photos/__init__.py
   write client/types/pets/photos/_operations.py
-  write client/types/pets/photos/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
@@ -77,10 +75,8 @@ render pydantic_v2.dataclass
   write client/types/__init__.py
   write client/types/pets/__init__.py
   write client/types/pets/_operations.py
-  write client/types/pets/_arguments.py
   write client/types/pets/photos/__init__.py
   write client/types/pets/photos/_operations.py
-  write client/types/pets/photos/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
@@ -134,10 +130,8 @@ render dataclasses.dataclass
   write client/types/__init__.py
   write client/types/pets/__init__.py
   write client/types/pets/_operations.py
-  write client/types/pets/_arguments.py
   write client/types/pets/photos/__init__.py
   write client/types/pets/photos/_operations.py
-  write client/types/pets/photos/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
@@ -191,10 +185,8 @@ render typing.TypedDict
   write client/types/__init__.py
   write client/types/pets/__init__.py
   write client/types/pets/_operations.py
-  write client/types/pets/_arguments.py
   write client/types/pets/photos/__init__.py
   write client/types/pets/photos/_operations.py
-  write client/types/pets/photos/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
@@ -248,10 +240,8 @@ render msgspec.Struct
   write client/types/__init__.py
   write client/types/pets/__init__.py
   write client/types/pets/_operations.py
-  write client/types/pets/_arguments.py
   write client/types/pets/photos/__init__.py
   write client/types/pets/photos/_operations.py
-  write client/types/pets/photos/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py

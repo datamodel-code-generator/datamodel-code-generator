@@ -83,15 +83,6 @@ from ._runtime.model_codecs.unset import UNSET, Unset
 
 __all__ = ["UNSET", "ClientOptions", "HeaderPatch", "QueryPatch", "RequestOptions", "ServerSelection", "Unset"]
 '''
-_ARGUMENTS_GETATTR: Final = '''def __getattr__(name: str) -> object:
-    """Import the TypedDicts of the operations' arguments on first use, which no call needs."""
-    if name.endswith("Arguments") and name in __all__:
-        from . import _arguments
-
-        return getattr(_arguments, name)
-    msg = f"module {__name__!r} has no attribute {name!r}"
-    raise AttributeError(msg)
-'''
 _ERROR_NAMES: Final = (
     "AdapterContractError",
     "AdapterExecutionError",
@@ -254,12 +245,55 @@ _SURFACES: Final = {
 _Headers: TypeAlias = "dict[str, tuple[str, list[tuple[ResponseSpec, HeaderSpec]]]]"
 
 
+Default: TypeAlias = Literal["required", "unset", "none"]
+
+
+@dataclass(frozen=True, slots=True)
+class _Argument:
+    """One keyword argument of an operation method: its name, its type spelled in one module, and its default."""
+
+    name: str
+    annotation: str
+    default: Default = "required"
+
+    def parameter(self, module: Module) -> str:
+        """Return the argument as a keyword parameter of a signature."""
+        match self.default:
+            case "required":
+                return f"{self.name}: {self.annotation}"
+            case "unset":
+                return f"{self.name}: {self.annotation} = {module.local('options', 'UNSET')}"
+            case _:
+                return f"{self.name}: {self.annotation} = None"
+
+    def key(self, module: Module) -> str:
+        """Return the argument as a key of a TypedDict, which a call may omit unless the argument is required."""
+        if self.default == "required":
+            return f"{self.name}: {self.annotation}"
+        return f"{self.name}: {module.name('typing_extensions', 'NotRequired')}[{self.annotation}]"
+
+    def lookup(self, module: Module) -> str:
+        """Return the argument read from the keywords an unpacked method was given, with its default when omitted."""
+        match self.default:
+            case "required":
+                return f"kwargs[{self.name!r}]"
+            case "unset":
+                return f"kwargs.get({self.name!r}, {module.local('options', 'UNSET')})"
+            case _:
+                return f"kwargs.get({self.name!r})"
+
+
 @dataclass(frozen=True, slots=True)
 class _Variant:
-    """One signature's keyword parameters and, for response media choices, its result type."""
+    """One signature's keyword arguments and, for response media choices, its result type."""
 
-    parameters: tuple[str, ...]
+    parameters: tuple[_Argument, ...]
     returns: str = ""
+
+
+_Choice: TypeAlias = "tuple[tuple[_Argument, ...], tuple[_Key, ...]]"
+_Branch: TypeAlias = tuple[int, bool, "View", int]
+_IMPLEMENTATION: Final = -1
 
 
 def _docstring(text: str) -> str:
@@ -314,6 +348,7 @@ def _header_names(spec: OperationSpec) -> _Headers:
 
 
 View: TypeAlias = Literal["plain", "metadata", "raw", "streaming"]
+_SIGNATURE_VIEWS: Final[tuple[View, ...]] = ("plain", "metadata", "raw", "streaming")
 _VIEW_CALLS: Final[dict[tuple[View, bool], tuple[str, str, str]]] = {
     ("plain", False): ("return ", "self._core.execute(", ").data"),
     ("plain", True): ("return ", "(await self._core.execute(", ")).data"),
@@ -335,17 +370,28 @@ _VIEWS: Final[tuple[tuple[View, str, str, str], ...]] = (
 )
 
 
-def _arguments(module: Module, spec: OperationSpec, *, media: bool) -> tuple[tuple[str, Doc], ...]:
-    """Return the arguments an operation method passes the client core."""
+def _media_argument(variant: _Variant) -> bool:
+    """Return whether a signature takes the response media type."""
+    return any(argument.name == "response_media_type" for argument in variant.parameters)
+
+
+def _arguments(
+    module: Module, spec: OperationSpec, *, media: bool, values: Mapping[str, str] | None = None
+) -> tuple[tuple[str, Doc], ...]:
+    """Return the arguments an operation method passes the client core: its parameters, or the values read for them."""
+
+    def value(name: str) -> str:
+        return name if values is None else values[name]
+
     call: list[tuple[str, Doc]] = [
         ("", f"{module.root('_operations')}.OPERATION_{spec.index}"),
-        ("", _tuple(parameter.python_name for parameter in spec.parameters)),
+        ("", _tuple(value(parameter.python_name) for parameter in spec.parameters)),
     ]
     if spec.body is not None:
-        call.extend((("body=", "body"), ("media_type=", "media_type")))
-    call.append(("options=", "options"))
+        call.extend((("body=", value("body")), ("media_type=", value("media_type"))))
+    call.append(("options=", value("options")))
     if media:
-        call.append(("response_media_type=", "response_media_type"))
+        call.append(("response_media_type=", value("response_media_type")))
     return tuple(call)
 
 
@@ -359,6 +405,13 @@ def _signature(name: str, parameters: tuple[str, ...], returns: str, *, asynchro
     head = f"    {'async ' if asynchronous else ''}def {name}("
     return layout(
         Group(head, items(("self", "*", *parameters)), f") -> {returns}:{' ...' if stub else ''}"), 4, 0, WIDTH
+    )
+
+
+def _unpacked(name: str, record: str, returns: str, *, asynchronous: bool, stub: bool) -> str:
+    head = f"    {'async ' if asynchronous else ''}def {name}("
+    return layout(
+        Group(head, items(("self", f"**kwargs: {record}")), f") -> {returns}:{' ...' if stub else ''}"), 4, 0, WIDTH
     )
 
 
@@ -400,21 +453,11 @@ def _resource_package(resource: ResourceSpec) -> str:
 
 
 def _types_package(resource: ResourceSpec) -> str:
-    """Return the package of a resource's types, which imports its operations' arguments only when one is used."""
     names = sorted(name for spec in resource.operations for name in exports(spec))
-    arguments = sorted(f"{spec.pascal}Arguments" for spec in resource.operations)
-    listing = "".join(f"    {name!r},\n" for name in sorted((*names, *arguments)))
-    docstring = f'"""The types of the {resource.namespace} operations."""\n\n'
-    if not names:
-        return f"{docstring}__all__ = [\n{listing}]\n"
+    listing = "".join(f"    {name!r},\n" for name in names)
     imported = "".join(f"    {name},\n" for name in names)
-    deferred = "".join(f"        {name},\n" for name in arguments)
-    return (
-        f"{docstring}from typing import TYPE_CHECKING\n\n"
-        f"from ._operations import (\n{imported})\n\n"
-        f"if TYPE_CHECKING:\n    from ._arguments import (\n{deferred}    )\n\n"
-        f"__all__ = [\n{listing}]\n\n\n{_ARGUMENTS_GETATTR}"
-    )
+    imports = f"from ._operations import (\n{imported})\n\n" if names else ""
+    return f'"""The types of the {resource.namespace} operations."""\n\n{imports}__all__ = [\n{listing}]\n'
 
 
 class Module:
@@ -581,11 +624,18 @@ class _Resources(_Typing):
     """Render the root clients and the resource modules with their typed operation methods."""
 
     def __init__(
-        self, plan: ClientPlan, codecs: CodecPlan, accessors: dict[TypeUseId, UseAccessors], user_agent: str | None
+        self,
+        plan: ClientPlan,
+        codecs: CodecPlan,
+        accessors: dict[TypeUseId, UseAccessors],
+        user_agent: str | None,
+        *,
+        unpacked: bool = False,
     ) -> None:
-        """Keep the typing context and the generated User-Agent."""
+        """Keep the typing context, the generated User-Agent, and the TypedDicts of unpacked methods."""
         super().__init__(plan, codecs, accessors)
         self.user_agent = user_agent
+        self.records = _Records(self) if unpacked else None
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -684,14 +734,15 @@ class _Resources(_Typing):
             views=classes,
         )
 
-    def parameter(self, module: Module, parameter: ParameterSpec) -> str:
+    def parameter(self, module: Module, parameter: ParameterSpec) -> _Argument:
         """Return one argument of an operation method: optional ones default to UNSET."""
-        argument = f"{parameter.python_name}: {self.argument(module, parameter)}"
-        return argument if parameter.required else f"{argument} = {module.local('options', 'UNSET')}"
+        return _Argument(
+            parameter.python_name, self.argument(module, parameter), "required" if parameter.required else "unset"
+        )
 
     def requests(
         self, module: Module, spec: OperationSpec, *, asynchronous: bool
-    ) -> tuple[list[_Variant], tuple[str, ...]]:
+    ) -> tuple[list[_Variant], tuple[_Argument, ...]]:
         """Return the body signatures of an operation and the body keywords of its implementation.
 
         A binary body takes the bytes, file, stream, and factory inputs of the client's mode.
@@ -699,7 +750,7 @@ class _Resources(_Typing):
         if (body := spec.body) is None:
             return [_Variant(())], ()
         literal = module.name("typing", "Literal")
-        omitted = f"{module.local('options', 'Unset')} = {module.local('options', 'UNSET')}"
+        unset = module.local("options", "Unset")
         groups: dict[str, list[tuple[str, str]]] = {}
         for media in body.media:
             surface = self.body_surfaces(module, media)[asynchronous]
@@ -711,43 +762,42 @@ class _Resources(_Typing):
 
         surfaces = _union(groups)
         implementation = (
-            f"body: {surfaces}" if body.required else f"body: {surfaces} | {omitted}",
-            f"media_type: {choices([entry for entries in groups.values() for entry in entries])} | None = None",
+            _Argument("body", surfaces) if body.required else _Argument("body", f"{surfaces} | {unset}", "unset"),
+            _Argument(
+                "media_type", f"{choices([entry for entries in groups.values() for entry in entries])} | None", "none"
+            ),
         )
         if len(groups) == 1 and (body.default is not None or body.required):
             surface, declared = next(iter(groups.items()))
             if body.default is None:
-                single = (f"body: {surface}", f"media_type: {choices(declared)}")
+                single = (_Argument("body", surface), _Argument("media_type", choices(declared)))
                 return [_Variant(single)], single
             return [_Variant(implementation)], implementation
         variants = [
             _Variant((
-                f"body: {surface}",
-                f"media_type: {choices(media)}{' | None = None' if body.default in dict(media) else ''}",
+                _Argument("body", surface),
+                _Argument("media_type", f"{choices(media)} | None", "none")
+                if body.default in dict(media)
+                else _Argument("media_type", choices(media)),
             ))
             for surface, media in groups.items()
         ]
         if not body.required:
-            variants.append(_Variant((f"body: {omitted}", "media_type: None = None")))
+            variants.append(_Variant((_Argument("body", unset, "unset"), _Argument("media_type", "None", "none"))))
         return variants, implementation
 
-    def responses(self, module: Module, spec: OperationSpec) -> tuple[list[_Variant], _Variant]:
-        """Return the response media signatures of an operation with their results, and its implementation's.
+    def named(self, module: Module, spec: OperationSpec, keys: tuple[_Key, ...]) -> str:
+        """Return a union of success types, spelled by the operation's Response alias when it is every one of them."""
+        if keys == (every := self.successes(spec)):
+            return module.local(f"types.{spec.resource}", f"{spec.pascal}Response")
+        return self.union(module, keys, "" if every else module.name("typing_extensions", "Never"))
 
-        A result that is every success type is spelled by the operation's Response alias.
-        """
-        every = self.successes(spec)
-        never = "" if every else module.name("typing_extensions", "Never")
-
-        def named(keys: tuple[_Key, ...]) -> str:
-            if keys == every:
-                return module.local(f"types.{spec.resource}", f"{spec.pascal}Response")
-            return self.union(module, keys, never)
-
+    def response_arguments(self, module: Module, spec: OperationSpec) -> tuple[list[_Choice], _Choice]:
+        """Return the response media arguments of each signature with its success types, and the implementation's."""
         declared = success_media(spec.responses, ranges=True)
         default = self.successes(spec, spec.response_media_type)
         if not declared:
-            return [_Variant((), named(default))], _Variant((), named(default))
+            return [((), default)], ((), default)
         literal = module.name("typing", "Literal")
         selector = module.local("model_codecs", "ResponseMedia")
         groups: dict[tuple[_Key, ...], tuple[list[str], list[str]]] = {}
@@ -756,7 +806,7 @@ class _Resources(_Typing):
             concrete, selectors = groups.setdefault(keys, ([], []))
             if not media_range(media_type):
                 concrete.append(media_type)
-            selectors.append(f"{selector}[{named(keys)}]")
+            selectors.append(f"{selector}[{self.named(module, spec, keys)}]")
 
         def choices(concrete: list[str], selectors: list[str]) -> str:
             return _union((*((_literal(literal, concrete),) if concrete else ()), *selectors))
@@ -765,83 +815,177 @@ class _Resources(_Typing):
             [media for concrete, _ in groups.values() for media in concrete],
             [kind for _, selectors in groups.values() for kind in selectors],
         )
-        parameters = (f"response_media_type: {every_choice} | None = None",)
+        parameters = (_Argument("response_media_type", f"{every_choice} | None", "none"),)
         if set(groups) == {default}:
-            return [_Variant(parameters, named(default))], _Variant(parameters, named(default))
-        variants = [_Variant(("response_media_type: None = None",), named(default))]
+            return [(parameters, default)], (parameters, default)
+        variants: list[_Choice] = [((_Argument("response_media_type", "None", "none"),), default)]
         variants.extend(
-            _Variant((f"response_media_type: {choices(*values)}",), named(keys)) for keys, values in groups.items()
+            ((_Argument("response_media_type", choices(*values)),), keys) for keys, values in groups.items()
         )
-        return variants, _Variant(parameters, named(every))
+        return variants, (parameters, self.successes(spec))
 
-    def method(self, module: Module, spec: OperationSpec, *, asynchronous: bool, view: View) -> str:
-        """Return one operation method of a view: its overloads by body and response media, then its implementation."""
-        arguments = [self.parameter(module, parameter) for parameter in spec.parameters]
-        options = f"options: {module.local('options', 'RequestOptions')} | None = None"
-        bodies, body = self.requests(module, spec, asynchronous=asynchronous)
-        results, result = self.results(module, spec, asynchronous=asynchronous, view=view)
-        coroutine = asynchronous and view != "streaming"
-        lines: list[str] = []
-        if len(bodies) * len(results) > 1:
-            overload = module.name("typing", "overload")
-            lines.extend(
-                line
-                for variant in bodies
-                for choice in results
-                for line in (
-                    f"    @{overload}",
-                    _signature(
-                        spec.name,
-                        (*arguments, *variant.parameters, *choice.parameters, options),
-                        choice.returns,
-                        asynchronous=coroutine,
-                        stub=True,
-                    ),
-                )
-            )
-        head, opening, closing = _VIEW_CALLS[view, coroutine]
-        call = Group(opening, _arguments(module, spec, media=bool(result.parameters)), closing)
-        lines.extend((
-            _signature(
-                spec.name,
-                (*arguments, *body, *result.parameters, options),
-                result.returns,
-                asynchronous=coroutine,
-                stub=False,
-            ),
-            f'        """{_summary(spec)}"""',
-            f"        {head}{layout(call, 8, len(head), WIDTH)}",
-        ))
-        return "\n".join(lines)
-
-    def results(
-        self, module: Module, spec: OperationSpec, *, asynchronous: bool, view: View
+    def branches(  # noqa: PLR0913
+        self,
+        module: Module,
+        spec: OperationSpec,
+        *,
+        asynchronous: bool,
+        view: View,
+        returns: bool = True,
+        arguments_elsewhere: bool = False,
     ) -> tuple[list[_Variant], _Variant]:
-        """Return the response media signatures of an operation's method in a view, and its implementation's.
+        """Return the overloads of an operation method in a view, none for a single signature, and its implementation.
 
         Raw and streaming views return the raw response whatever media answered, so only the body chooses overloads.
+        Without returns, only the keyword arguments are spelled; when they are spelled elsewhere, the module imports
+        none of their types.
         """
-        results, result = self.responses(module, spec)
+        spelling = Module((), self.symbols, level=module.level) if arguments_elsewhere else module
+        arguments = tuple(self.parameter(spelling, parameter) for parameter in spec.parameters)
+        options = _Argument("options", f"{spelling.local('options', 'RequestOptions')} | None", "none")
+        bodies, body = self.requests(spelling, spec, asynchronous=asynchronous)
+        choices, implementation = self.response_arguments(spelling, spec)
+        if view in {"raw", "streaming"}:
+            choices = [implementation]
+
+        def result(keys: tuple[_Key, ...]) -> str:
+            return self.result(module, spec, keys, asynchronous=asynchronous, view=view) if returns else ""
+
+        overloads = (
+            [
+                _Variant((*arguments, *variant.parameters, *parameters, options), result(keys))
+                for variant in bodies
+                for parameters, keys in choices
+            ]
+            if len(bodies) * len(choices) > 1
+            else []
+        )
+        return overloads, _Variant((*arguments, *body, *implementation[0], options), result(implementation[1]))
+
+    def method(self, module: Module, spec: OperationSpec, *, asynchronous: bool, view: View) -> str:
+        """Return one operation method of a view: its overloads by body and response media, then its implementation.
+
+        An unpacked method takes each signature's keywords as a TypedDict and checks them as Python binds explicit ones.
+        """
+        overloads, implementation = self.branches(
+            module, spec, asynchronous=asynchronous, view=view, arguments_elsewhere=self.records is not None
+        )
+        coroutine = asynchronous and view != "streaming"
+        branches = [*enumerate(overloads), (_IMPLEMENTATION, implementation)]
+        lines = [
+            line
+            for position, variant in branches
+            for line in self.signature(
+                module, spec, variant, (spec.index, asynchronous, view, position), coroutine=coroutine
+            )
+        ]
+        lines.append(f'        """{_summary(spec)}"""')
+        values = None
+        if self.records is not None:
+            lines.append(
+                f"        {module.local('_generated.client_arguments', f'KEYWORDS_{spec.index}')}.check(kwargs)"
+            )
+            values = {argument.name: argument.lookup(module) for argument in implementation.parameters}
+        head, opening, closing = _VIEW_CALLS[view, coroutine]
+        call = Group(opening, _arguments(module, spec, media=_media_argument(implementation), values=values), closing)
+        lines.append(f"        {head}{layout(call, 8, len(head), WIDTH)}")
+        return "\n".join(lines)
+
+    def signature(
+        self, module: Module, spec: OperationSpec, variant: _Variant, branch: _Branch, *, coroutine: bool
+    ) -> list[str]:
+        """Return one signature of an operation method: an overload stub, or the head of its implementation."""
+        stub = branch[3] != _IMPLEMENTATION
+        lines = [f"    @{module.name('typing', 'overload')}"] if stub else []
+        if (records := self.records) is None:
+            parameters = tuple(argument.parameter(module) for argument in variant.parameters)
+            lines.append(_signature(spec.name, parameters, variant.returns, asynchronous=coroutine, stub=stub))
+        else:
+            record = module.local("_generated.client_arguments", records.names[branch])
+            unpacked = f"{module.name('typing_extensions', 'Unpack')}[{record}]"
+            lines.append(_unpacked(spec.name, unpacked, variant.returns, asynchronous=coroutine, stub=stub))
+        return lines
+
+    def result(
+        self, module: Module, spec: OperationSpec, keys: tuple[_Key, ...], *, asynchronous: bool, view: View
+    ) -> str:
+        """Return what an operation method of a view returns when it answers with one of some success types."""
         prefix = "Async" if asynchronous else ""
         match view:
             case "metadata":
-                response = module.local("responses", "Response")
-                return (
-                    [_Variant(choice.parameters, f"{response}[{choice.returns}]") for choice in results],
-                    _Variant(result.parameters, f"{response}[{result.returns}]"),
-                )
+                return f"{module.local('responses', 'Response')}[{self.named(module, spec, keys)}]"
             case "raw":
-                raw = _Variant(result.parameters, module.local("responses", f"{prefix}RawResponse"))
-                return [raw], raw
+                return module.local("responses", f"{prefix}RawResponse")
             case "streaming":
                 manager = module.name("contextlib", f"Abstract{prefix}ContextManager")
-                streaming = _Variant(
-                    result.parameters, f"{manager}[{module.local('responses', f'{prefix}RawResponse')}]"
-                )
-                return [streaming], streaming
+                return f"{manager}[{module.local('responses', f'{prefix}RawResponse')}]"
             case _:
                 pass
-        return results, result
+        return self.named(module, spec, keys)
+
+
+class _Records:
+    """The TypedDicts that unpacked methods take: one for each distinct signature of an operation, shared by its views.
+
+    Their names follow the operation's index and the order its signatures first appear, sync before asyncio, in the
+    private module that also holds each operation's binding plan.
+    """
+
+    def __init__(self, resources: _Resources) -> None:
+        """Spell the arguments of every signature of every operation in the module that defines the TypedDicts."""
+        self.module = module = Module((), resources.symbols, level=2)
+        self.names: dict[_Branch, str] = {}
+        self.definitions: list[tuple[str, str, tuple[_Argument, ...]]] = []
+        self.keywords: list[tuple[int, str, tuple[_Argument, ...]]] = []
+        for spec in resources.plan.operations:
+            shapes: dict[tuple[_Argument, ...], str] = {}
+            for asynchronous in (False, True):
+                for view in _SIGNATURE_VIEWS:
+                    overloads, implementation = resources.branches(
+                        module, spec, asynchronous=asynchronous, view=view, returns=False
+                    )
+                    for position, variant in (*enumerate(overloads), (_IMPLEMENTATION, implementation)):
+                        if (name := shapes.get(variant.parameters)) is None:
+                            name = shapes[variant.parameters] = f"Operation{spec.index}Arguments{len(shapes) or ''}"
+                            self.definitions.append((name, spec.name, variant.parameters))
+                        self.names[spec.index, asynchronous, view, position] = name
+                    if (asynchronous, view) == (False, "plain"):
+                        self.keywords.append((spec.index, spec.name, implementation.parameters))
+
+    def source(self) -> str:
+        """Return the private module of the TypedDicts and binding plans."""
+        module = self.module
+        typed_dict = module.name("typing_extensions", "TypedDict")
+        sections = [
+            f"class {name}({typed_dict}):\n"
+            f'    """The keyword arguments of one signature of {method}."""\n\n'
+            + "\n".join(f"    {argument.key(module)}" for argument in arguments)
+            for name, method, arguments in self.definitions
+        ]
+        final, keywords = module.name("typing", "Final"), module.local("_runtime.client.arguments", "Keywords")
+        sections.extend(
+            layout(
+                Group(
+                    f"KEYWORDS_{index}: {final} = {keywords}(",
+                    items((
+                        repr(method),
+                        _tuple(repr(argument.name) for argument in arguments),
+                        _tuple(repr(argument.name) for argument in arguments if argument.default == "required"),
+                    )),
+                    ")",
+                    ",",
+                ),
+                0,
+                0,
+                WIDTH,
+            )
+            for index, method, arguments in self.keywords
+        )
+        return types_template.render(
+            docstring="The keyword arguments that unpacked operation methods take, with how each binds them.",
+            imports=module.imports(),
+            sections=sections,
+        )
 
 
 class _Types(_Typing):
@@ -856,18 +1000,6 @@ class _Types(_Typing):
         sections = [section for spec in resource.operations for section in self.sections(module, spec)]
         return types_template.render(
             docstring=f"The result types, errors, codecs, and header accessors of the {resource.namespace} operations.",
-            imports=module.imports(),
-            sections=sections,
-        )
-
-    def arguments_module(self, resource: ResourceSpec) -> str:
-        """Return the module of the TypedDicts of one resource's operations' arguments."""
-        module = Module(
-            {f"{spec.pascal}Arguments" for spec in resource.operations}, self.symbols, level=len(resource.parts) + 2
-        )
-        sections = [self.arguments(module, spec) for spec in resource.operations]
-        return types_template.render(
-            docstring=f"The arguments of the {resource.namespace} operations, which calls take unpacked.",
             imports=module.imports(),
             sections=sections,
         )
@@ -889,19 +1021,6 @@ class _Types(_Typing):
         if headers := _header_names(spec):
             sections.append(self.header_accessor(module, spec, headers))
         return sections
-
-    def arguments(self, module: Module, spec: OperationSpec) -> str:
-        """Return the TypedDict of an operation's parameters, which a call takes unpacked as its keyword arguments."""
-        fields = "".join(
-            f"\n    {parameter.python_name}: "
-            f"{module.name('typing_extensions', 'Required' if parameter.required else 'NotRequired')}"
-            f"[{self.argument(module, parameter)}]"
-            for parameter in spec.parameters
-        )
-        return (
-            f"class {spec.pascal}Arguments({module.name('typing_extensions', 'TypedDict')}):\n"
-            f'    """The parameters of {spec.name}, which a call takes unpacked as keyword arguments."""\n{fields}'
-        )
 
     def facade(self, module: Module, use: TypeUseBinding) -> str:
         """Return the type of a use's outbound codec facade."""
@@ -1414,7 +1533,9 @@ class ClientRenderer:
         user_agent = None
         if config.package_mode == "standalone":
             user_agent = f"{config.distribution_name}/{config.package_version}"
-        resources = _Resources(self.plan, self.codecs, self.accessors, user_agent)
+        resources = _Resources(
+            self.plan, self.codecs, self.accessors, user_agent, unpacked=config.signature_style == "unpack"
+        )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)
         files = [
@@ -1443,14 +1564,14 @@ class ClientRenderer:
                 self.file(directory / "__init__.py", "package", _types_package(resource)),
                 self.file(directory / "_operations.py", "types", types.module(resource)),
             ))
-            if resource.operations:
-                files.append(self.file(directory / "_arguments.py", "types", types.arguments_module(resource)))
         files.extend((
             self.file(
                 PurePosixPath("_generated", "__init__.py"), "package", '"""Generated plans of this package."""\n'
             ),
             self.file(PurePosixPath("_generated", "model_bindings.py"), "model_bindings", self.bindings.source),
-            self.file(PurePosixPath("_operations.py"), "operations", registry.module()),
         ))
+        if (records := resources.records) is not None:
+            files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
+        files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         runtime = runtime_sources(file.text for file in files)
         return (*files, *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime))
