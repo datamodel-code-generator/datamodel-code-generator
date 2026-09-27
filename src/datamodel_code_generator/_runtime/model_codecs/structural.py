@@ -143,7 +143,27 @@ def _unwrap(annotation: object) -> object:
 
 
 def _union_members(annotation: object) -> tuple[object, ...] | None:
-    return typing.get_args(annotation) if typing.get_origin(annotation) in {Union, UnionType} else None
+    """Return a union's members with the members of aliased unions in place of the aliases, as Python flattens them."""
+    if typing.get_origin(annotation) not in {Union, UnionType}:
+        return None
+    return tuple(
+        member for item in typing.get_args(annotation) for member in (_union_members(_unwrap(item)) or (item,))
+    )
+
+
+def _flattened(node: UnionNode) -> tuple[list[TypeNode], bool]:
+    """Return a union node's members with nested unions in place, and whether any of them admits null."""
+    items: list[TypeNode] = []
+    nullable = node.nullable
+    for member in node.members:
+        match member:
+            case UnionNode():
+                nested, optional = _flattened(member)
+                items.extend(nested)
+                nullable |= optional
+            case _:
+                items.append(member)
+    return items, nullable
 
 
 def _string_failure(kind: type) -> _Failure | None:
@@ -525,13 +545,14 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         match node:
             case ModelNode() if annotation is self._types[node.symbol]:
                 return self._model(node.symbol)
-            case UnionNode() if members is not None and (NoneType in members) >= node.nullable:
+            case UnionNode() if members is not None:
+                items, nullable = _flattened(node)
                 present = tuple(member for member in members if member is not NoneType)
-                if len(present) != len(node.members):
+                if (NoneType in members) < nullable or len(present) != len(items):
                     raise self._mismatch(where)
                 return _Union(
-                    tuple(self._build(item, member, where) for item, member in zip(node.members, present, strict=True)),
-                    node.nullable,
+                    tuple(self._build(item, member, where) for item, member in zip(items, present, strict=True)),
+                    nullable,
                 )
             case _ if members is not None and NoneType in members and len(members) == 2:  # noqa: PLR2004
                 return self._build(node, next(member for member in members if member is not NoneType), where)

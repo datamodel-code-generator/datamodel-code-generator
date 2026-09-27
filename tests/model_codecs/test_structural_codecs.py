@@ -35,6 +35,9 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
         ("structural/records", "records-open"),
         ("structural/stdlib", "stdlib-typeddict"),
         ("structural/untyped", "untyped"),
+        ("structural/aliases", "aliases-dataclass"),
+        ("structural/aliases", "aliases-type"),
+        ("structural/aliases", "aliases-typeddict"),
     ],
 )
 def test_structural_codecs(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
