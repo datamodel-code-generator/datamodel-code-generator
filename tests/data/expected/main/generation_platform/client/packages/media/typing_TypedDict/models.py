@@ -130,5 +130,20 @@ class FieldSearchesPostRequest(TypedDict):
     extra: NotRequired[dict[str, str]]
 
 
+class FieldCoversPostRequest(TypedDict):
+    note: NotRequired[str]
+    size: NotRequired[int]
+    meta: NotRequired[Address]
+    cover: bytes
+    scans: NotRequired[list[bytes]]
+    extra: NotRequired[Any]
+
+
+class FieldCardsPostRequest(TypedDict):
+    title: NotRequired[str]
+    count: NotRequired[int]
+    tags: NotRequired[list[str]]
+
+
 class FieldDocumentsIdGetPathIdParameter(TypedDict):
     key: NotRequired[str]

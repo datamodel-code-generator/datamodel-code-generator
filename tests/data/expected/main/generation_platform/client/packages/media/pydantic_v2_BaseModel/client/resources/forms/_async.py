@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
 from functools import cached_property
+from typing import Any as _dcg_type_6
 from typing import Literal, overload
 
 from models import Address as _dcg_type_4
 from models import FieldAnythingPostRequest as _dcg_type_2
 from models import FieldAttachmentsGetResponse as _dcg_type_3
+from models import FieldCardsPostRequest as _dcg_type_7
 from models import FieldFormsPostRequest as _dcg_type_0
 from models import FieldProfilesPostRequest as _dcg_type_1
 from models import FieldSearchesPostRequest as _dcg_type_5
@@ -27,6 +29,8 @@ from ...types.forms import (
     ReadUploadResponse,
     SubmitAnythingResponse,
     SubmitAvatarResponse,
+    SubmitCardResponse,
+    SubmitCoverResponse,
     SubmitFormResponse,
     SubmitLabelsResponse,
     SubmitPairsResponse,
@@ -328,6 +332,38 @@ class AsyncFormsResource:
             options=options,
         )).data
 
+    async def submit_cover(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitCoverResponse:
+        """Call POST /covers."""
+        return (await self._core.execute(
+            _operations.OPERATION_16,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
+    async def submit_card(
+        self,
+        *,
+        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitCardResponse:
+        """Call POST /cards."""
+        return (await self._core.execute(
+            _operations.OPERATION_17,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
 
 class AsyncFormsWithResponse:
     """The forms operations, returning each result with its response metadata."""
@@ -603,6 +639,38 @@ class AsyncFormsWithResponse:
             options=options,
         )
 
+    async def submit_cover(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitCoverResponse]:
+        """Call POST /covers."""
+        return await self._core.execute(
+            _operations.OPERATION_16,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_card(
+        self,
+        *,
+        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitCardResponse]:
+        """Call POST /cards."""
+        return await self._core.execute(
+            _operations.OPERATION_17,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithRawResponse:
     """The forms operations, returning each raw response with its body read into memory."""
@@ -857,6 +925,38 @@ class AsyncFormsWithRawResponse:
             options=options,
         )
 
+    async def submit_cover(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /covers."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_16,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_card(
+        self,
+        *,
+        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /cards."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_17,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithStreamingResponse:
     """The forms operations, returning blocks that send each call on entry and stream its response."""
@@ -1105,6 +1205,38 @@ class AsyncFormsWithStreamingResponse:
         """Call POST /searches."""
         return self._core.stream(
             _operations.OPERATION_15,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_cover(
+        self,
+        *,
+        body: AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_6 | ModelValue[_dcg_type_6] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /covers."""
+        return self._core.stream(
+            _operations.OPERATION_16,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_card(
+        self,
+        *,
+        body: _dcg_type_7 | ModelValue[_dcg_type_7],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /cards."""
+        return self._core.stream(
+            _operations.OPERATION_17,
             (),
             body=body,
             media_type=media_type,

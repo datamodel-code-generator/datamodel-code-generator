@@ -83,6 +83,14 @@ from .types.forms import (
     SubmitAvatarHTTPError,
     SubmitAvatarRequestCodecs,
     SubmitAvatarResponse,
+    SubmitCardErrorData,
+    SubmitCardHTTPError,
+    SubmitCardRequestCodecs,
+    SubmitCardResponse,
+    SubmitCoverErrorData,
+    SubmitCoverHTTPError,
+    SubmitCoverRequestCodecs,
+    SubmitCoverResponse,
     SubmitFormErrorData,
     SubmitFormHTTPError,
     SubmitFormRequestCodecs,
@@ -298,32 +306,32 @@ OPERATION_7: Final[OperationPlan[SubmitUploadResponse, SubmitUploadErrorData]] =
                 parts=(
                     PartPlan(
                         'id',
-                        encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+                        encoder=Encoder(model_bindings.codec_17, model_bindings.CONTEXT_17),
                     ),
                     PartPlan(
                         'title',
                         required=True,
-                        encoder=Encoder(model_bindings.codec_17, model_bindings.CONTEXT_17),
+                        encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
                     ),
                     PartPlan(
                         'count',
-                        encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+                        encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
                     ),
                     PartPlan(
                         'tags',
                         repeated=True,
-                        encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
+                        encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
                     ),
                     PartPlan(
                         'meta',
-                        encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+                        encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
                     ),
                     PartPlan('photo', file=True, required=True),
                     PartPlan('pages', repeated=True, file=True),
                 ),
                 additional_part=PartPlan(
                     '',
-                    encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
+                    encoder=Encoder(model_bindings.codec_22, model_bindings.CONTEXT_22),
                 ),
             ),
         ),
@@ -348,42 +356,42 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
                         value_part(
                             'title',
                             'string',
-                            native_value(model_bindings.codec_22, model_bindings.CONTEXT_22),
+                            native_value(model_bindings.codec_23, model_bindings.CONTEXT_23),
                             required=True,
                         ),
                         value_part(
                             'count',
                             'integer',
-                            native_value(model_bindings.codec_23, model_bindings.CONTEXT_23),
+                            native_value(model_bindings.codec_24, model_bindings.CONTEXT_24),
                         ),
                         value_part(
                             'tags',
                             'string',
-                            native_value(model_bindings.codec_24, model_bindings.CONTEXT_24),
+                            native_value(model_bindings.codec_25, model_bindings.CONTEXT_25),
                             repeated=True,
                         ),
                         value_part(
                             'meta',
                             'json',
-                            native_value(model_bindings.codec_25, model_bindings.CONTEXT_25),
+                            native_value(model_bindings.codec_26, model_bindings.CONTEXT_26),
                         ),
                         value_part(
                             'draft',
                             'json',
-                            envelope_value(model_bindings.codec_26, model_bindings.CONTEXT_26),
+                            envelope_value(model_bindings.codec_27, model_bindings.CONTEXT_27),
                         ),
                         file_part('photo', required=True),
                         file_part('pages', repeated=True),
                         value_part(
                             'secret',
                             'string',
-                            native_value(model_bindings.codec_27, model_bindings.CONTEXT_27),
+                            native_value(model_bindings.codec_28, model_bindings.CONTEXT_28),
                         ),
                     ),
                     additional=value_part(
                         '',
                         'integer',
-                        native_value(model_bindings.codec_28, model_bindings.CONTEXT_28),
+                        native_value(model_bindings.codec_29, model_bindings.CONTEXT_29),
                     ),
                 ),
             ),
@@ -395,7 +403,7 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
                         value_part(
                             'note',
                             'string',
-                            native_value(model_bindings.codec_29, model_bindings.CONTEXT_29),
+                            native_value(model_bindings.codec_30, model_bindings.CONTEXT_30),
                         ),
                     ),
                     additional=file_part(''),
@@ -435,7 +443,7 @@ OPERATION_9: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] =
                 parts=(
                     PartPlan(
                         'caption',
-                        encoder=Encoder(model_bindings.codec_30, model_bindings.CONTEXT_30),
+                        encoder=Encoder(model_bindings.codec_31, model_bindings.CONTEXT_31),
                     ),
                     PartPlan('avatar', file=True),
                 ),
@@ -465,7 +473,7 @@ OPERATION_10: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = 
                 parts=(
                     PartPlan(
                         'note',
-                        encoder=Encoder(model_bindings.codec_31, model_bindings.CONTEXT_31),
+                        encoder=Encoder(model_bindings.codec_32, model_bindings.CONTEXT_32),
                     ),
                 ),
                 additional_part=PartPlan('', file=True),
@@ -510,7 +518,7 @@ OPERATION_12: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] 
                 parts=(PartPlan('sheet', file=True),),
                 additional_part=PartPlan(
                     '',
-                    encoder=Encoder(model_bindings.codec_32, model_bindings.CONTEXT_32),
+                    encoder=Encoder(model_bindings.codec_33, model_bindings.CONTEXT_33),
                 ),
             ),
         ),
@@ -645,7 +653,86 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
     codecs=SubmitSearchRequestCodecs,
 )
 
-OPERATION_16: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
+OPERATION_16: Final[OperationPlan[SubmitCoverResponse, SubmitCoverErrorData]] = OperationPlan(
+    operation_id='submitCover',
+    method='POST',
+    path='/covers',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), SubmitCoverHTTPError),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                parts=(
+                    PartPlan(
+                        'note',
+                        encoder=Encoder(model_bindings.codec_34, model_bindings.CONTEXT_34),
+                        content_types=('text/plain; charset=utf-16',),
+                    ),
+                    PartPlan(
+                        'size',
+                        encoder=Encoder(model_bindings.codec_35, model_bindings.CONTEXT_35),
+                        content_types=('application/json',),
+                    ),
+                    PartPlan(
+                        'meta',
+                        encoder=Encoder(model_bindings.codec_36, model_bindings.CONTEXT_36),
+                        content_types=('application/vnd.meta+json',),
+                    ),
+                    PartPlan(
+                        'cover',
+                        file=True,
+                        required=True,
+                        content_types=('image/png', 'image/jpeg'),
+                    ),
+                    PartPlan(
+                        'scans',
+                        repeated=True,
+                        file=True,
+                        content_types=('image/*',),
+                    ),
+                    PartPlan(
+                        'extra',
+                        encoder=Encoder(model_bindings.codec_37, model_bindings.CONTEXT_37),
+                        content_types=('text/plain',),
+                    ),
+                ),
+                additional_part=PartPlan(''),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
+    codecs=SubmitCoverRequestCodecs,
+)
+
+OPERATION_17: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = OperationPlan(
+    operation_id='submitCard',
+    method='POST',
+    path='/cards',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), SubmitCardHTTPError),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
+                content_types=(
+                    ('title', 'text/plain; charset=utf-16'),
+                    ('count', 'application/json'),
+                    ('tags', 'text/plain'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
+    codecs=SubmitCardRequestCodecs,
+)
+
+OPERATION_18: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
     operation_id='storeDocument',
     method='POST',
     path='/documents',
@@ -659,7 +746,7 @@ OPERATION_16: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
                 '3XX',
                 'application/json',
                 'json',
-                model_bindings.codec_12, model_bindings.CONTEXT_12,
+                model_bindings.codec_13, model_bindings.CONTEXT_13,
             ),
         ),
         (text_branch('5XX', 'text/plain'),),
@@ -673,7 +760,7 @@ OPERATION_16: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
             BodyMedia(
                 media_type='application/vnd.api+json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
+                encoder=Encoder(model_bindings.codec_12, model_bindings.CONTEXT_12),
             ),
         ),
         default='application/json',
@@ -682,7 +769,7 @@ OPERATION_16: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
     codecs=StoreDocumentRequestCodecs,
 )
 
-OPERATION_17: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
+OPERATION_19: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
     operation_id='readDocument',
     method='GET',
     path='/documents/{id}',
@@ -693,7 +780,7 @@ OPERATION_17: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
                 '200',
                 'application/vnd.api+json',
                 'json',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
+                model_bindings.codec_15, model_bindings.CONTEXT_15,
             ),
         ),
         (),
@@ -707,7 +794,7 @@ OPERATION_17: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
                 required=True,
                 content_media_type='application/json',
             ),
-            encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
+            encoder=Encoder(model_bindings.codec_14, model_bindings.CONTEXT_14),
         ),
         ParameterSpec(
             plan=ParameterPlan(
@@ -727,7 +814,7 @@ OPERATION_17: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
     codecs=ReadDocumentRequestCodecs,
 )
 
-OPERATION_18: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
+OPERATION_20: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
     operation_id='storeNote',
     method='POST',
     path='/notes',
@@ -743,7 +830,7 @@ OPERATION_18: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = Oper
     codecs=StoreNoteRequestCodecs,
 )
 
-OPERATION_19: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
+OPERATION_21: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
     operation_id='replaceNote',
     method='PUT',
     path='/notes',

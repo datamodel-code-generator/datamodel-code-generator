@@ -12,7 +12,8 @@ from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_pa
 from ..model_codecs.selectors import MediaSelector, RequestMedia, ResponseMedia, select_media
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ResponseHeaderDecodeError
-from .operations import DATA_ERRORS, most_specific, normalized, status_key
+from .media import most_specific, normalized
+from .operations import DATA_ERRORS, status_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable

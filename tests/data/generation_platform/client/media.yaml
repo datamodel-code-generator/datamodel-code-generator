@@ -354,6 +354,59 @@ paths:
       responses:
         '204':
           description: Searched.
+  /covers:
+    post:
+      operationId: submitCover
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [cover]
+              properties:
+                note: {type: string}
+                size: {type: integer}
+                meta: {$ref: '#/components/schemas/Address'}
+                cover: {type: string, format: binary}
+                scans:
+                  type: array
+                  items: {type: string, format: binary}
+                extra: {}
+            encoding:
+              note: {contentType: text/plain; charset=utf-16}
+              extra: {contentType: text/plain}
+              size: {contentType: application/json}
+              meta: {contentType: application/vnd.meta+json}
+              cover: {contentType: 'image/png, image/jpeg'}
+              scans: {contentType: 'image/*'}
+      responses:
+        '204':
+          description: Stored.
+  /cards:
+    post:
+      operationId: submitCard
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                count: {type: integer}
+                tags:
+                  type: array
+                  items: {type: string}
+            encoding:
+              title: {contentType: text/plain; charset=utf-16}
+              count: {contentType: application/json}
+              tags: {contentType: text/plain}
+      responses:
+        '204':
+          description: Stored.
   /documents:
     post:
       operationId: storeDocument

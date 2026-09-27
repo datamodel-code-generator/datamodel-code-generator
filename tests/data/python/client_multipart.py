@@ -42,6 +42,7 @@ def multipart(package: ModuleType, lines: list[str]) -> None:
         _profiles(package, api, exchange, lines)
         _parts(package, api, exchange, lines)
         _uploads(package, api, exchange, lines)
+        _covers(package, api, exchange, lines)
         _responses(api, exchange, lines)
     http.close()
     run(lambda: _async_multipart(package, lines))
@@ -344,6 +345,46 @@ def _uploads(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
         ("file extra codec", lambda: types.SubmitScansRequestCodecs.part(name="scan-1")),
     ):
         record(lines, label, select)
+
+
+def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send members in the media types their encodings name, and refuse a part of a media type outside them."""
+    bodies, _, types = _modules(package)
+    body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
+    meta = types.SubmitCoverRequestCodecs.part(name="meta").from_wire({"city": "Oslo"})
+    cover = file("cover", b"\x89PNG")
+    exchange.respond(raw_response(204), raw_response(204))
+    record(
+        lines,
+        "cover",
+        lambda: api.forms.submit_cover(
+            body=body((
+                field("note", "h\xe9llo"),
+                field("size", 3),
+                field("meta", meta),
+                field("extra", 7),
+                cover,
+                file("scans", b"g", content_type="image/gif"),
+            ))
+        ),
+    )
+    record(
+        lines,
+        "cover of a note in plain text",
+        lambda: api.forms.submit_cover(
+            body=body((field("note", "hi", content_type="text/plain"), file("cover", b"j", content_type="image/jpeg")))
+        ),
+    )
+    for label, parts in (
+        ("cover of a note in JSON", (field("note", "hi", content_type="application/json"), cover)),
+        ("cover in text", (file("cover", b"x", content_type="text/plain"),)),
+        ("cover of a scan without its media type", (cover, file("scans", b"s"))),
+        ("cover of an object as text", (cover, field("extra", {"k": 1}))),
+    ):
+        record(lines, label, lambda parts=parts: api.forms.submit_cover(body=body(parts)))
+    card = types.SubmitCardRequestCodecs.body().from_wire({"title": "h\xe9llo", "count": 2, "tags": ["a", "b"]})
+    exchange.respond(raw_response(204))
+    record(lines, "card", lambda: api.forms.submit_card(body=card))
 
 
 def _answered(exchange: Exchange, call: Callable[[], object]) -> object:

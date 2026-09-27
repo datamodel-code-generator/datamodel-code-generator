@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+from typing import Any as _dcg_type_9
 from typing import Final, Literal, TypeAlias, overload
 
 from models import Address as _dcg_type_6
 from models import Draft as _dcg_type_7
 from models import FieldAnythingPostRequest as _dcg_type_4
 from models import FieldAttachmentsGetResponse as _dcg_type_5
+from models import FieldCardsPostRequest as _dcg_type_10
 from models import FieldFormsPostRequest as _dcg_type_1
 from models import FieldFormsPostResponse as _dcg_type_0
 from models import FieldProfilesGetResponse as _dcg_type_3
@@ -414,15 +416,15 @@ class _SubmitUploadRequestCodecs(
 SubmitUploadRequestCodecs: Final = _SubmitUploadRequestCodecs(
     default='multipart/form-data',
     parts=(
-        ('multipart/form-data', 'id', model_bindings.outbound_16),
-        ('multipart/form-data', 'title', model_bindings.outbound_17),
-        ('multipart/form-data', 'count', model_bindings.outbound_18),
-        ('multipart/form-data', 'tags', model_bindings.outbound_19),
-        ('multipart/form-data', 'meta', model_bindings.outbound_20),
+        ('multipart/form-data', 'id', model_bindings.outbound_17),
+        ('multipart/form-data', 'title', model_bindings.outbound_18),
+        ('multipart/form-data', 'count', model_bindings.outbound_19),
+        ('multipart/form-data', 'tags', model_bindings.outbound_20),
+        ('multipart/form-data', 'meta', model_bindings.outbound_21),
         ('multipart/form-data', 'photo', None),
         ('multipart/form-data', 'pages', None),
     ),
-    extras=(('multipart/form-data', model_bindings.outbound_21),),
+    extras=(('multipart/form-data', model_bindings.outbound_22),),
     requests=('multipart/form-data',),
 )
 
@@ -540,7 +542,7 @@ class _SubmitAvatarRequestCodecs(
 SubmitAvatarRequestCodecs: Final = _SubmitAvatarRequestCodecs(
     bodies=(('application/json', model_bindings.outbound_6),),
     parts=(
-        ('multipart/form-data', 'caption', model_bindings.outbound_30),
+        ('multipart/form-data', 'caption', model_bindings.outbound_31),
         ('multipart/form-data', 'avatar', None),
     ),
     requests=('multipart/form-data', 'application/json'),
@@ -595,7 +597,7 @@ class _SubmitScansRequestCodecs(
 
 SubmitScansRequestCodecs: Final = _SubmitScansRequestCodecs(
     default='multipart/form-data',
-    parts=(('multipart/form-data', 'note', model_bindings.outbound_31),),
+    parts=(('multipart/form-data', 'note', model_bindings.outbound_32),),
     requests=('multipart/form-data',),
 )
 
@@ -663,7 +665,7 @@ class _SubmitLabelsRequestCodecs(
 SubmitLabelsRequestCodecs: Final = _SubmitLabelsRequestCodecs(
     default='multipart/form-data',
     parts=(('multipart/form-data', 'sheet', None),),
-    extras=(('multipart/form-data', model_bindings.outbound_32),),
+    extras=(('multipart/form-data', model_bindings.outbound_33),),
     requests=('multipart/form-data',),
 )
 
@@ -719,4 +721,139 @@ SubmitSearchRequestCodecs: Final = _SubmitSearchRequestCodecs(
     bodies=(('application/x-www-form-urlencoded', model_bindings.outbound_10),),
     default='application/x-www-form-urlencoded',
     requests=('application/x-www-form-urlencoded',),
+)
+
+
+SubmitCoverResponse: TypeAlias = None
+SubmitCoverErrorData: TypeAlias = None
+
+
+class SubmitCoverHTTPError(HTTPStatusError[SubmitCoverErrorData]):
+    """An error response of submit_cover, with its decoded payload when one is declared."""
+
+
+class _SubmitCoverRequestCodecs(
+    RequestCodecs[Never, Never, NativeOutboundCodec[str] | NativeOutboundCodec[int] | NativeOutboundCodec[_dcg_type_6] | NativeOutboundCodec[_dcg_type_9], RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_6 | ModelValue[_dcg_type_6] | _dcg_type_9 | ModelValue[_dcg_type_9] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_6 | ModelValue[_dcg_type_6] | _dcg_type_9 | ModelValue[_dcg_type_9] | WireValue]]],
+):
+    """The outbound codecs of the submit_cover request."""
+
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['note'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[str]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['size'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[int]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['meta'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_6]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['extra'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_9]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str] | NativeOutboundCodec[int] | NativeOutboundCodec[_dcg_type_6] | NativeOutboundCodec[_dcg_type_9]: ...
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str] | NativeOutboundCodec[int] | NativeOutboundCodec[_dcg_type_6] | NativeOutboundCodec[_dcg_type_9]:
+        """Return the outbound codec of one part of a body sent as parts."""
+        return self._part(name, media_type)
+
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[MultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_6 | ModelValue[_dcg_type_6] | _dcg_type_9 | ModelValue[_dcg_type_9] | WireValue], AsyncMultipartBody[str | ModelValue[str] | int | ModelValue[int] | _dcg_type_6 | ModelValue[_dcg_type_6] | _dcg_type_9 | ModelValue[_dcg_type_9] | WireValue]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
+
+SubmitCoverRequestCodecs: Final = _SubmitCoverRequestCodecs(
+    default='multipart/form-data',
+    parts=(
+        ('multipart/form-data', 'note', model_bindings.outbound_34),
+        ('multipart/form-data', 'size', model_bindings.outbound_35),
+        ('multipart/form-data', 'meta', model_bindings.outbound_36),
+        ('multipart/form-data', 'cover', None),
+        ('multipart/form-data', 'scans', None),
+        ('multipart/form-data', 'extra', model_bindings.outbound_37),
+    ),
+    requests=('multipart/form-data',),
+)
+
+
+SubmitCardResponse: TypeAlias = None
+SubmitCardErrorData: TypeAlias = None
+
+
+class SubmitCardHTTPError(HTTPStatusError[SubmitCardErrorData]):
+    """An error response of submit_card, with its decoded payload when one is declared."""
+
+
+class _SubmitCardRequestCodecs(
+    RequestCodecs[NativeOutboundCodec[_dcg_type_10], Never, Never, RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]]],
+):
+    """The outbound codecs of the submit_card request."""
+
+    @overload
+    def body(self) -> NativeOutboundCodec[_dcg_type_10]: ...
+    @overload
+    def body(
+        self,
+        *,
+        media_type: Literal['multipart/form-data'],
+    ) -> NativeOutboundCodec[_dcg_type_10]: ...
+    @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]],
+    ) -> NativeOutboundCodec[_dcg_type_10]: ...
+    @overload
+    def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_10]: ...
+    def body(
+        self,
+        *,
+        media_type: str | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_10]:
+        """Return the outbound codec of one declared request media type, or of a selector's."""
+        return self._body(media_type)
+
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['multipart/form-data'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
+
+SubmitCardRequestCodecs: Final = _SubmitCardRequestCodecs(
+    bodies=(('multipart/form-data', model_bindings.outbound_11),),
+    default='multipart/form-data',
+    requests=('multipart/form-data',),
 )

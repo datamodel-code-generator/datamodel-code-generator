@@ -55,9 +55,10 @@ from .errors import (
     add_secondary,
 )
 from .lifecycle import Scope
+from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary
 from .native import AsyncHttpx2Transport, Httpx2Transport
-from .operations import DATA_ERRORS, ResponseDecoder, normalized
+from .operations import DATA_ERRORS, ResponseDecoder
 from .options import ClientOptions, RequestOptions, ServerSelection, Settings, checked_base_url, is_base_url
 from .raw import AsyncRawResponse, RawResponse
 from .responses import HeadersView, Response, ResponseInfo
