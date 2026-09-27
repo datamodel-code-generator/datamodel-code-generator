@@ -54,6 +54,11 @@ def _resources() -> tuple[SchemaResource, ...]:
                                                 '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Pet',
                                             },
                                         },
+                                        'application/json;profile=v1': {
+                                            'schema': {
+                                                '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Error',
+                                            },
+                                        },
                                     },
                                 },
                             },
@@ -97,6 +102,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/components/schemas/Pet',
                 '/paths/~1documents~1{id}/get/parameters/0/schema',
                 '/paths/~1documents~1{id}/get/responses/200/content/application~1json/schema',
+                '/paths/~1documents~1{id}/get/responses/200/content/application~1json;profile=v1/schema',
                 '/paths/~1greetings/get/parameters/0/schema',
                 '/paths/~1greetings/get/responses/200/content/application~1json/schema',
                 '/paths/~1pets~1{id}/get/parameters/0/schema',
@@ -120,6 +126,29 @@ def response_bundle() -> SchemaBundle:
 @cache
 def _model_0() -> ModelBinding:
     return ModelBinding(
+        symbol='responses_dataclass_models:Error',
+        native_kind='dataclass',
+        schema_id=None,
+        fields=(
+            FieldBinding(
+                field_id='responses_dataclass_models:Error.message',
+                native_name='message',
+                wire_name='message',
+                validation_key='message',
+                validation_keys=('message',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_1() -> ModelBinding:
+    return ModelBinding(
         symbol='responses_dataclass_models:Pet',
         native_kind='dataclass',
         schema_id=None,
@@ -142,29 +171,6 @@ def _model_0() -> ModelBinding:
                 wire_name='name',
                 validation_key='name',
                 validation_keys=('name',),
-                required=True,
-                read_only=False,
-                write_only=False,
-                omit_none=False,
-                type=LeafNode(),
-            ),
-        ),
-    )
-
-
-@cache
-def _model_1() -> ModelBinding:
-    return ModelBinding(
-        symbol='responses_dataclass_models:Error',
-        native_kind='dataclass',
-        schema_id=None,
-        fields=(
-            FieldBinding(
-                field_id='responses_dataclass_models:Error.message',
-                native_name='message',
-                wire_name='message',
-                validation_key='message',
-                validation_keys=('message',),
                 required=True,
                 read_only=False,
                 write_only=False,
@@ -216,6 +222,44 @@ def outbound_0() -> NativeOutboundCodec[responses_dataclass_models.FieldGreeting
 CONTEXT_1: Final = CodecContext(
     surface='server',
     direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/responses/200/content/application~1json;profile=v1/schema',
+    operation_id='/paths/~1documents~1{id}/get',
+    media_type='application/json;profile=v1',
+)
+
+
+@cache
+def codec_1() -> PydanticModelCodec[responses_dataclass_models.Error]:
+    """Codec of /paths/~1documents~1{id}/get response_body (response 200 application/json;profile=v1)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Error|ModelNode(symbol='responses_dataclass_models:Error')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/responses/200/content/application~1json;profile=v1/schema',
+            operation_id='/paths/~1documents~1{id}/get',
+            media_type='application/json;profile=v1',
+            backend='pydantic_v2.dataclass',
+            native_kind='dataclass',
+            native_export='responses_dataclass_models:Error',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='responses_dataclass_models:Error'),
+            models=(_model_0(),),
+        ),
+        responses_dataclass_models.Error,
+        {'responses_dataclass_models:Error': responses_dataclass_models.Error},
+        response_bundle(),
+    )
+
+
+@cache
+def outbound_1() -> NativeOutboundCodec[responses_dataclass_models.Error]:
+    return NativeOutboundCodec(codec_1(), CONTEXT_1)
+
+
+CONTEXT_2: Final = CodecContext(
+    surface='server',
+    direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/responses/200/content/application~1json/schema',
     operation_id='/paths/~1documents~1{id}/get',
     media_type='application/json',
@@ -223,7 +267,7 @@ CONTEXT_1: Final = CodecContext(
 
 
 @cache
-def codec_1() -> PydanticModelCodec[responses_dataclass_models.Pet]:
+def codec_2() -> PydanticModelCodec[responses_dataclass_models.Pet]:
     """Codec of /paths/~1documents~1{id}/get response_body (response 200 application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -238,45 +282,7 @@ def codec_1() -> PydanticModelCodec[responses_dataclass_models.Pet]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='responses_dataclass_models:Pet'),
-            models=(_model_0(),),
-        ),
-        responses_dataclass_models.Pet,
-        {'responses_dataclass_models:Pet': responses_dataclass_models.Pet},
-        response_bundle(),
-    )
-
-
-@cache
-def outbound_1() -> NativeOutboundCodec[responses_dataclass_models.Pet]:
-    return NativeOutboundCodec(codec_1(), CONTEXT_1)
-
-
-CONTEXT_2: Final = CodecContext(
-    surface='server',
-    direction='response',
-    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7Bid%7D/get/responses/200/content/application~1json/schema',
-    operation_id='/paths/~1pets~1{id}/get',
-    media_type='application/json',
-)
-
-
-@cache
-def codec_2() -> PydanticModelCodec[responses_dataclass_models.Pet]:
-    """Codec of /paths/~1pets~1{id}/get response_body (response 200 application/json)."""
-    return PydanticModelCodec(
-        UseBinding(
-            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='responses_dataclass_models:Pet')",
-            direction='response',
-            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7Bid%7D/get/responses/200/content/application~1json/schema',
-            operation_id='/paths/~1pets~1{id}/get',
-            media_type='application/json',
-            backend='pydantic_v2.dataclass',
-            native_kind='dataclass',
-            native_export='responses_dataclass_models:Pet',
-            projection_mode='native',
-            converter_strategy='pydantic_type_adapter',
-            type=ModelNode(symbol='responses_dataclass_models:Pet'),
-            models=(_model_0(),),
+            models=(_model_1(),),
         ),
         responses_dataclass_models.Pet,
         {'responses_dataclass_models:Pet': responses_dataclass_models.Pet},
@@ -292,6 +298,44 @@ def outbound_2() -> NativeOutboundCodec[responses_dataclass_models.Pet]:
 CONTEXT_3: Final = CodecContext(
     surface='server',
     direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7Bid%7D/get/responses/200/content/application~1json/schema',
+    operation_id='/paths/~1pets~1{id}/get',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_3() -> PydanticModelCodec[responses_dataclass_models.Pet]:
+    """Codec of /paths/~1pets~1{id}/get response_body (response 200 application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Pet|ModelNode(symbol='responses_dataclass_models:Pet')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7Bid%7D/get/responses/200/content/application~1json/schema',
+            operation_id='/paths/~1pets~1{id}/get',
+            media_type='application/json',
+            backend='pydantic_v2.dataclass',
+            native_kind='dataclass',
+            native_export='responses_dataclass_models:Pet',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='responses_dataclass_models:Pet'),
+            models=(_model_1(),),
+        ),
+        responses_dataclass_models.Pet,
+        {'responses_dataclass_models:Pet': responses_dataclass_models.Pet},
+        response_bundle(),
+    )
+
+
+@cache
+def outbound_3() -> NativeOutboundCodec[responses_dataclass_models.Pet]:
+    return NativeOutboundCodec(codec_3(), CONTEXT_3)
+
+
+CONTEXT_4: Final = CodecContext(
+    surface='server',
+    direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7Bid%7D/get/responses/404/content/application~1json/schema',
     operation_id='/paths/~1pets~1{id}/get',
     media_type='application/json',
@@ -299,7 +343,7 @@ CONTEXT_3: Final = CodecContext(
 
 
 @cache
-def codec_3() -> PydanticModelCodec[responses_dataclass_models.Error]:
+def codec_4() -> PydanticModelCodec[responses_dataclass_models.Error]:
     """Codec of /paths/~1pets~1{id}/get response_body (response 404 application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -314,7 +358,7 @@ def codec_3() -> PydanticModelCodec[responses_dataclass_models.Error]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='responses_dataclass_models:Error'),
-            models=(_model_1(),),
+            models=(_model_0(),),
         ),
         responses_dataclass_models.Error,
         {'responses_dataclass_models:Error': responses_dataclass_models.Error},
@@ -323,5 +367,5 @@ def codec_3() -> PydanticModelCodec[responses_dataclass_models.Error]:
 
 
 @cache
-def outbound_3() -> NativeOutboundCodec[responses_dataclass_models.Error]:
-    return NativeOutboundCodec(codec_3(), CONTEXT_3)
+def outbound_4() -> NativeOutboundCodec[responses_dataclass_models.Error]:
+    return NativeOutboundCodec(codec_4(), CONTEXT_4)

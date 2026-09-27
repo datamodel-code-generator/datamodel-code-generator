@@ -46,9 +46,14 @@ _BUNDLE = r"""{
    "fragment": {
     "responses": {
      "200": {
-      "description": "The document, as a pet or as raw bytes.",
+      "description": "The document, as a pet, a profiled error or raw bytes.",
       "content": {
        "*/*": {},
+       "application/json;profile=v1": {
+        "schema": {
+         "$ref": "#/components/schemas/Error__95258823efb6"
+        }
+       },
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/Pet__9892769da028"
@@ -117,6 +122,17 @@ _BUNDLE = r"""{
    "dcg_server_error__6d30b2af1e65": {
     "type": "string"
    },
+   "Error__95258823efb6": {
+    "type": "object",
+    "required": [
+     "message"
+    ],
+    "properties": {
+     "message": {
+      "type": "string"
+     }
+    }
+   },
    "Pet__9892769da028": {
     "type": "object",
     "required": [
@@ -128,17 +144,6 @@ _BUNDLE = r"""{
       "type": "integer"
      },
      "name": {
-      "type": "string"
-     }
-    }
-   },
-   "Error__95258823efb6": {
-    "type": "object",
-    "required": [
-     "message"
-    ],
-    "properties": {
-     "message": {
       "type": "string"
      }
     }

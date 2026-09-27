@@ -20,6 +20,7 @@ from .responses import (
     PostNativeFormResponsePayload,
     PostProfileResponsePayload,
     PostRawResponsePayload,
+    PostVariantResponsePayload,
     PutArchiveResponsePayload,
     PutBlobResponsePayload,
     PutDocumentResponsePayload,
@@ -51,6 +52,14 @@ class UntaggedService(Protocol):
         body: bodies_basemodel_models.FieldProfilesPostRequest | bodies_basemodel_models.FieldProfilesPostRequest1 | Unset,
         media_type: str | None,
     ) -> None | HTTPResult[PostProfileResponsePayload] | Response: ...
+
+    @abstractmethod
+    def post_variant(
+        self,
+        *,
+        body: bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset,
+        media_type: str | None,
+    ) -> None | HTTPResult[PostVariantResponsePayload] | Response: ...
 
     @abstractmethod
     def put_document(

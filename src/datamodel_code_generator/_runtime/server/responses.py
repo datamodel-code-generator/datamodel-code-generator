@@ -61,10 +61,6 @@ class HeaderCodec(Protocol):
         """Validate a wire value to send."""
 
 
-def _keys(media_type: str) -> tuple[str, str]:
-    return media_type, media_type.partition(";")[0]
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MediaPlan:
     """One declared media type of a response, and the codec of its payload when the content has a schema."""
@@ -91,6 +87,17 @@ class ResponsePlan:
     status: str
     media: tuple[MediaPlan, ...] = ()
     headers: tuple[HeaderPlan, ...] = ()
+    _essences: tuple[tuple[str, MediaPlan], ...] = field(init=False, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """Index the declared media by essence, most specific first: exact types, then type/*, then */*.
+
+        Within each, a declaration without parameters comes before one with parameters the request did not name.
+        """
+        essences = [(item.media_type.partition(";")[0], item) for item in self.media]
+        object.__setattr__(
+            self, "_essences", tuple(sorted(essences, key=lambda pair: (pair[0].count("*"), ";" in pair[1].media_type)))
+        )
 
     def select(self, media_type: str | None) -> tuple[MediaPlan, str] | None:
         """Return the most specific declared media for a media type, or the default media, with the type to send.
@@ -107,11 +114,11 @@ class ResponsePlan:
             requested = normalize_media_type(media_type)
         except ValueError:
             return None
+        if (exact := next((item for item in self.media if item.media_type == requested), None)) is not None:
+            return exact, requested
         essence = requested.partition(";")[0]
-        for key in (requested, essence, f"{essence.partition('/')[0]}/*", "*/*"):
-            if (item := next((item for item in self.media if key in _keys(item.media_type)), None)) is not None:
-                return item, requested
-        return None
+        matches = {essence, f"{essence.partition('/')[0]}/*", "*/*"}
+        return next(((item, requested) for key, item in self._essences if key in matches), None)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

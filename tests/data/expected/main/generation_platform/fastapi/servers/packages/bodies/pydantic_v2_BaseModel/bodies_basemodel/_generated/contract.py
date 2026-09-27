@@ -18,6 +18,7 @@ OperationKey: TypeAlias = Literal[
     '/paths/~1items/post',
     '/paths/~1accounts/post',
     '/paths/~1profiles/post',
+    '/paths/~1variants/post',
     '/paths/~1documents/put',
     '/paths/~1archives/put',
     '/paths/~1blobs/put',
@@ -34,6 +35,7 @@ OperationDependencies = TypedDict(
         '/paths/~1items/post': Sequence[Dependency],
         '/paths/~1accounts/post': Sequence[Dependency],
         '/paths/~1profiles/post': Sequence[Dependency],
+        '/paths/~1variants/post': Sequence[Dependency],
         '/paths/~1documents/put': Sequence[Dependency],
         '/paths/~1archives/put': Sequence[Dependency],
         '/paths/~1blobs/put': Sequence[Dependency],
@@ -131,6 +133,37 @@ class PostProfile:
     )
 
 
+class PostVariant:
+    """Plans of the post_variant operation."""
+
+    OPERATION: Final = OperationPlan(
+        name='post_variant',
+        key='/paths/~1variants/post',
+        service='untagged',
+        keywords=('body', 'media_type'),
+    )
+    BODY: Final = BodyAdapter(
+        media=(
+            BodyMedia(
+                media_type='application/json; profile=v1',
+                kind='json',
+                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+            ),
+            BodyMedia(
+                media_type='application/json',
+                kind='json',
+                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+            ),
+        ),
+        required=False,
+        names=frozenset({'a', 'c'}),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses=(ResponsePlan(status='204'),),
+        primary=(204, None),
+    )
+
+
 class PutDocument:
     """Plans of the put_document operation."""
 
@@ -145,17 +178,17 @@ class PutDocument:
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
+                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
             ),
             BodyMedia(
                 media_type='application/vnd.item+json',
                 kind='json',
-                codec=(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
             ),
             BodyMedia(
                 media_type='text/*',
                 kind='text',
-                codec=(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
             ),
         ),
         names=frozenset({'name'}),
@@ -181,7 +214,7 @@ class PutArchive:
             BodyMedia(
                 media_type='text/*',
                 kind='text',
-                codec=(model_bindings.codec_7, model_bindings.CONTEXT_7),
+                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
             ),
         ),
     )
@@ -223,7 +256,7 @@ class PostForm:
             BodyMedia(
                 media_type='application/x-www-form-urlencoded',
                 kind='form',
-                codec=(model_bindings.codec_8, model_bindings.CONTEXT_8),
+                codec=(model_bindings.codec_10, model_bindings.CONTEXT_10),
                 fields=(
                     FieldPlan('name', 'string'),
                     FieldPlan('tags', 'string', repeated=True),
@@ -285,7 +318,7 @@ class PostCheck:
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                codec=(model_bindings.codec_9, model_bindings.CONTEXT_9),
+                codec=(model_bindings.codec_11, model_bindings.CONTEXT_11),
             ),
         ),
         required=False,

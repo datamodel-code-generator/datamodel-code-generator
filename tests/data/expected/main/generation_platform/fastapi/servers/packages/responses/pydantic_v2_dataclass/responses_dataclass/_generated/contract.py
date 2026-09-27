@@ -72,9 +72,14 @@ class GetDocument:
                 media=(
                     MediaPlan(media_type='*/*', kind='binary'),
                     MediaPlan(
-                        media_type='application/json',
+                        media_type='application/json; profile=v1',
                         kind='json',
                         codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
+                    ),
+                    MediaPlan(
+                        media_type='application/json',
+                        kind='json',
+                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
                     ),
                 ),
             ),
@@ -100,7 +105,7 @@ class GetPet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_2, model_bindings.CONTEXT_2),
+                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
                     ),
                 ),
             ),
@@ -110,7 +115,7 @@ class GetPet:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_3, model_bindings.CONTEXT_3),
+                        codec=(model_bindings.codec_4, model_bindings.CONTEXT_4),
                     ),
                 ),
             ),

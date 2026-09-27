@@ -24,6 +24,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_account(self, **arguments: object) -> None:
             record("post_account", arguments)
 
+        def post_variant(self, **arguments: object) -> None:
+            record("post_variant", arguments)
+
         def put_document(self, **arguments: object) -> None:
             record("put_document", arguments)
 

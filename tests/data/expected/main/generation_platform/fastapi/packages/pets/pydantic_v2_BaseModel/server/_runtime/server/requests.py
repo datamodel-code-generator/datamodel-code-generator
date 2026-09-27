@@ -226,9 +226,14 @@ class BodyAdapter:
     _essences: tuple[tuple[str, BodyMedia], ...] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
-        """Index the declared media by essence, most specific first: exact types, then type/*, then */*."""
+        """Index the declared media by essence, most specific first: exact types, then type/*, then */*.
+
+        Within each, a declaration without parameters comes before one with parameters the request did not name.
+        """
         essences = [(item.media_type.partition(";")[0], item) for item in self.media]
-        object.__setattr__(self, "_essences", tuple(sorted(essences, key=lambda pair: pair[0].count("*"))))
+        object.__setattr__(
+            self, "_essences", tuple(sorted(essences, key=lambda pair: (pair[0].count("*"), ";" in pair[1].media_type)))
+        )
 
     async def __call__(self, request: Request) -> object:
         """Return the decoded body, the envelope of a directional body, or UNSET for an omitted optional body."""
