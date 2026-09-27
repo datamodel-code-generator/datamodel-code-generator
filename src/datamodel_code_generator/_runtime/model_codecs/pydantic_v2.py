@@ -252,6 +252,15 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
             )
         )
 
+    def _constructed(self, model: ModelBinding, fields: Mapping[str, object], *, validate: bool) -> object:
+        """Construct the model through its validation entry, which is also how its constructor builds it."""
+        del validate
+        keys = self._wire_fields[model.symbol]
+        try:
+            return self._adapter.validate_python({keys[name].validation_key: value for name, value in fields.items()})
+        except ValidationError as error:
+            raise self._invalid(error, None, MatchBudget(), schema=False) from None
+
     def _validated(self, value: object) -> object:
         try:
             return self._adapter.validate_python(value)

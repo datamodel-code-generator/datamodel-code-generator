@@ -1,0 +1,10 @@
+# fields-body and fields-both
+  models same True
+  default.create_pet same ['request', 'response', 'security'] different ['signature']
+  default.update_pet same ['request', 'response', 'security'] different ['signature']
+  default.log_visit same ['request', 'response', 'security'] different ['signature']
+  default.set_owner same ['request', 'response', 'security', 'signature'] different []
+  default.create_owner same ['request', 'response', 'security'] different ['signature']
+  default.put_labels same ['request', 'response', 'security', 'signature'] different []
+  default.put_photo same ['request', 'response', 'security', 'signature'] different []
+  default.replace_pet same ['request', 'response', 'security', 'signature'] different []

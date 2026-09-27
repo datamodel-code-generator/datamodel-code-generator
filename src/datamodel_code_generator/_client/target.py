@@ -12,6 +12,7 @@ from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.config import ClientGenerationConfig
+from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.plan import (
     PlanError,
     Planner,
@@ -101,7 +102,8 @@ class ClientTarget:
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
-        if refused := tuple(admission_problems(config.validation, codecs, argument_uses(plan))):
+        plan, named = plan_fields(plan, codecs, batch, wire)
+        if refused := (*named, *admission_problems(config.validation, codecs, argument_uses(plan))):
             raise APIGenerationError(
                 tuple(
                     replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
@@ -244,7 +246,7 @@ class _TargetData:
     def contracts(self, spec: OperationSpec) -> tuple[tuple[str, object], ...]:
         """Return the operation's public signature, request, response, and security contracts."""
         body = spec.body
-        signature = {
+        signature: dict[str, object] = {
             "style": self.config.signature_style,
             "resource": spec.resource,
             "method": spec.name,
@@ -275,6 +277,17 @@ class _TargetData:
             ],
             "response_media_type": spec.response_media_type,
         }
+        if spec.fields:
+            signature["fields"] = [
+                (
+                    branch.media_type,
+                    [
+                        (field.python_name, field.wire_name, field.required, self.spelling.static(field.type))
+                        for field in branch.fields
+                    ],
+                )
+                for branch in spec.fields
+            ]
         request = {
             "method": spec.contract.method,
             "path": spec.contract.path,

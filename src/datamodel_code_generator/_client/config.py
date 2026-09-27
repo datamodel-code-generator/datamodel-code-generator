@@ -41,10 +41,12 @@ if TYPE_CHECKING:
 
 Transport: TypeAlias = Literal["httpx2"]
 SignatureStyle: TypeAlias = Literal["explicit", "unpack"]
+BodyArguments: TypeAlias = Literal["body", "both"]
 RecordT = TypeVar("RecordT")
 
 _LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
 _SIGNATURE_STYLES: Final = frozenset({"explicit", "unpack"})
+_BODY_ARGUMENTS: Final = frozenset({"body", "both"})
 _VALIDATION_AXES: Final = (
     ("request", "request_overrides", ("none", "native", "schema")),
     ("response", "response_overrides", ("native", "schema")),
@@ -73,6 +75,15 @@ class ParameterName:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class BodyFieldName:
+    """Name the keyword argument of one field of a body media type, selected by the media and its wire property."""
+
+    media_type: str
+    name: str
+    python_name: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class RuntimeOperationMetadata:
     """Runtime facts of one operation that the source cannot declare."""
 
@@ -92,6 +103,8 @@ class ClientOperationConfig:
     response_media_type: str | None = None
     runtime: RuntimeOperationMetadata = field(default_factory=RuntimeOperationMetadata)
     description: str | None = None
+    body_arguments: BodyArguments | None = None
+    body_field_names: tuple[BodyFieldName, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -120,6 +133,7 @@ class ClientGenerationConfig(TargetConfig):
     resource_names: tuple[ResourceName, ...] = ()
     operations: tuple[ClientOperationConfig, ...] = ()
     signature_style: SignatureStyle = "explicit"
+    body_arguments: BodyArguments = "body"
     validation: ClientValidationConfig = field(default_factory=ClientValidationConfig)
     default_base_url: str | None = None
     server_base_url: str | None = None
@@ -134,9 +148,11 @@ class ClientGenerationConfig(TargetConfig):
         if self.transport != "httpx2":
             yield _diagnostic("E_CONFIG_VALUE", "transport", "transport must be 'httpx2'")
         yield from _resource_name_problems(self.resource_names)
-        yield from _operation_problems(self.operations)
+        yield from _operation_problems(self.operations, self.body_arguments)
         if self.signature_style not in _SIGNATURE_STYLES:
             yield _diagnostic("E_CONFIG_VALUE", "signature_style", "signature_style must be 'explicit' or 'unpack'")
+        if self.body_arguments not in _BODY_ARGUMENTS:
+            yield _diagnostic("E_CONFIG_VALUE", "body_arguments", "body_arguments must be 'body' or 'both'")
         yield from _validation_problems(self.validation)
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
@@ -228,12 +244,45 @@ def _resource_name_problems(value: object) -> Iterator[Diagnostic]:
             yield _diagnostic("E_CONFIG_VALUE", f"{at}.namespace", problem)
 
 
-def _operation_problems(value: object) -> Iterator[Diagnostic]:
+def _operation_problems(value: object, default: object) -> Iterator[Diagnostic]:
     if not _tuple_of(value, ClientOperationConfig):
         yield _diagnostic("E_CONFIG_VALUE", "operations", "operations must be a tuple of ClientOperationConfig records")
         return
     for index, item in enumerate(value):
         yield from _operation_config_problems(item, f"operations[{index}]")
+        yield from _field_name_problems(item, default, f"operations[{index}]")
+
+
+def _field_name_problems(item: ClientOperationConfig, default: object, at: str) -> Iterator[Diagnostic]:
+    """Refuse an invalid body mode, and field names that are malformed, repeated, or for a body-only operation."""
+    if item.body_arguments is not None and item.body_arguments not in _BODY_ARGUMENTS:
+        yield _diagnostic("E_CONFIG_VALUE", f"{at}.body_arguments", "body_arguments must be 'body', 'both', or None")
+    names = item.body_field_names
+    if not _tuple_of(names, BodyFieldName):
+        yield _diagnostic(
+            "E_CONFIG_VALUE", f"{at}.body_field_names", "body_field_names must be a tuple of BodyFieldName"
+        )
+        return
+    if names and (item.body_arguments or default) != "both":
+        yield _diagnostic(
+            "E_CONFIG_VALUE", f"{at}.body_field_names", "body_field_names need body_arguments 'both' for the operation"
+        )
+    seen: set[tuple[str, str]] = set()
+    for index, name in enumerate(names):
+        if not (_media(name.media_type) and _text(name.name) and identifier(name.python_name)):
+            yield _diagnostic(
+                "E_CONFIG_VALUE",
+                f"{at}.body_field_names[{index}]",
+                "A body field name needs a media type, a wire property, and an identifier",
+            )
+        elif (key := (normalize_media_type(name.media_type), name.name)) in seen:
+            yield _diagnostic(
+                "E_CONFIG_VALUE",
+                f"{at}.body_field_names[{index}]",
+                f"The {name.media_type} body field {name.name!r} is named twice",
+            )
+        else:
+            seen.add(key)
 
 
 def _operation_config_problems(item: ClientOperationConfig, at: str) -> Iterator[Diagnostic]:
@@ -344,6 +393,21 @@ def _runtime(value: object, base: Path, option_path: str) -> RuntimeOperationMet
     )
 
 
+def _body_field_names(value: object, base: Path, option_path: str) -> tuple[BodyFieldName, ...]:
+    names: list[BodyFieldName] = []
+    for index, item in enumerate(_array(value, option_path)):
+        at = f"{option_path}[{index}]"
+        table = _table(item, at, frozenset({"media_type", "name", "python_name"}))
+        names.append(
+            BodyFieldName(
+                media_type=_string(table.get("media_type"), base, f"{at}.media_type"),
+                name=_string(table.get("name"), base, f"{at}.name"),
+                python_name=_string(table.get("python_name"), base, f"{at}.python_name"),
+            )
+        )
+    return tuple(names)
+
+
 def _operation_config(value: object, base: Path, option_path: str) -> ClientOperationConfig:
     table = _table(
         value,
@@ -357,8 +421,16 @@ def _operation_config(value: object, base: Path, option_path: str) -> ClientOper
             "response_media_type",
             "runtime",
             "description",
+            "body_arguments",
+            "body_field_names",
         }),
     )
+    values: dict[str, Any] = {
+        "body_arguments": _optional(table, "body_arguments", base, option_path),
+        "body_field_names": _body_field_names(
+            table.get("body_field_names", []), base, f"{option_path}.body_field_names"
+        ),
+    }
     return ClientOperationConfig(
         ref=_operation(table.get("ref"), base, f"{option_path}.ref"),
         resource=_optional(table, "resource", base, option_path),
@@ -368,6 +440,7 @@ def _operation_config(value: object, base: Path, option_path: str) -> ClientOper
         response_media_type=_optional(table, "response_media_type", base, option_path),
         runtime=_runtime(table.get("runtime", {}), base, f"{option_path}.runtime"),
         description=_optional(table, "description", base, option_path),
+        **values,
     )
 
 
@@ -395,6 +468,7 @@ ClientGenerationConfig.toml_converters = MappingProxyType({
     "resource_names": _resource_names,
     "operations": _records(_operation_config),
     "signature_style": _string,
+    "body_arguments": _string,
     "validation": _validation,
     "default_base_url": _string,
     "server_base_url": _string,

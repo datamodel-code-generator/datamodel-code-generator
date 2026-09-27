@@ -17,7 +17,6 @@ from ._runtime.client.operations import (
     RequestBody,
     ResponseDecoder,
     ServerPlan,
-    ServerVariable,
     empty_branch,
     envelope_branch,
     model_branch,

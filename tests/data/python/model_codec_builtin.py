@@ -229,6 +229,8 @@ class _Runner:
                     result = codec.serialize(value, context)
                 case "check":
                     result = codec.serialize(value, context, validate=True)
+                case "assemble":
+                    result = codec.assemble(self.native(case["fields"]), context)
                 case "convert":
                     converted = codec.convert(value, context)
                     self.results[str(case["name"])] = converted

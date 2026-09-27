@@ -395,6 +395,38 @@ class BuiltinModelCodec(ABC, Generic[T]):
         except RecursionError:
             raise self._nesting() from None
 
+    def assemble(
+        self, fields: Mapping[str, object], context: CodecContext, *, validate: bool = False, strict: bool = False
+    ) -> WireValue:
+        """Construct the model of an object use from the fields a call gives by wire name, and return its wire value.
+
+        The backend's constructor builds the model, through its validation entry with validate, and only the given
+        fields are present in the wire value, whatever defaults the model fills in; strict validates it against its
+        schema.
+        """
+        self._require(context, inbound=False)
+        try:
+            wire = self._native_wire(self._constructed(self._object(), fields, validate=validate), None)
+            assert isinstance(wire, Mapping)
+            present: WireValue = MappingProxyType({name: value for name, value in wire.items() if name in fields})
+            return self._outbound(present, MatchBudget(), context) if strict else present
+        except RecursionError:
+            raise self._nesting() from None
+
+    def _object(self) -> ModelBinding:
+        """Return the model of an object use: alone, with null, or as the root of a root model."""
+        node = self._binding.type
+        if isinstance(node, ModelNode) and (root := self._models[node.symbol].root) is not None:
+            node = root
+        if isinstance(node, UnionNode):
+            node = node.members[0]
+        assert isinstance(node, ModelNode)
+        return self._models[node.symbol]
+
+    @abstractmethod
+    def _constructed(self, model: ModelBinding, fields: Mapping[str, object], *, validate: bool) -> object:
+        """Construct a model from the fields a call gives by wire name, through its constructor or validation entry."""
+
     @abstractmethod
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
         """Construct the native value of a validated wire value, or its known-gap envelope."""

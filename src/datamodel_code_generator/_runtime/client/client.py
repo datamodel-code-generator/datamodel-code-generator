@@ -975,12 +975,15 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
+        fields: tuple[object, ...] = (),
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
     ) -> Response[T]:
         """Send one call and return its decoded success, or raise its typed failure."""
         operation_id, call_id = operation.operation_id, str(uuid4())
+        if fields:
+            body = operation.bound(body, fields, media_type)
         self._admitted(operation_id, call_id)
         events: CallEvents | None = None
         try:
@@ -1036,6 +1039,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
+        fields: tuple[object, ...] = (),
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
@@ -1043,6 +1047,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     ) -> RawResponse:
         """Send one call and return its raw response: buffered, or a streaming handle when asked."""
         operation_id, call_id = operation.operation_id, str(uuid4())
+        if fields:
+            body = operation.bound(body, fields, media_type)
         self._admitted(operation_id, call_id)
         events: CallEvents | None = None
         try:
@@ -1086,11 +1092,17 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
+        fields: tuple[object, ...] = (),
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
     ) -> AbstractContextManager[RawResponse]:
-        """Return a block that sends one call on entry and yields its streaming response until exit."""
+        """Return a block that sends one call on entry and yields its streaming response until exit.
+
+        The call's arguments bind when the block is made, before it sends anything.
+        """
+        if fields:
+            body = operation.bound(body, fields, media_type)
         return _streamed(
             lambda: self.execute_raw(
                 operation,
@@ -1351,12 +1363,15 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
+        fields: tuple[object, ...] = (),
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
     ) -> Response[T]:
         """Send one call and return its decoded success, or raise its typed failure."""
         operation_id, call_id = operation.operation_id, str(uuid4())
+        if fields:
+            body = operation.bound(body, fields, media_type)
         self._running(operation_id, call_id)
         self._admitted(operation_id, call_id)
         events: CallEvents | None = None
@@ -1413,6 +1428,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
+        fields: tuple[object, ...] = (),
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
@@ -1420,6 +1436,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
     ) -> AsyncRawResponse:
         """Send one call and return its raw response: buffered, or a streaming handle when asked."""
         operation_id, call_id = operation.operation_id, str(uuid4())
+        if fields:
+            body = operation.bound(body, fields, media_type)
         self._running(operation_id, call_id)
         self._admitted(operation_id, call_id)
         events: CallEvents | None = None
@@ -1464,11 +1482,17 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         arguments: tuple[object, ...],
         *,
         body: object = UNSET,
+        fields: tuple[object, ...] = (),
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
-        """Return a block that sends one call on entry and yields its streaming response until exit."""
+        """Return a block that sends one call on entry and yields its streaming response until exit.
+
+        The call's arguments bind when the block is made, before it sends anything.
+        """
+        if fields:
+            body = operation.bound(body, fields, media_type)
         return _astreamed(
             lambda: self.execute_raw(
                 operation,

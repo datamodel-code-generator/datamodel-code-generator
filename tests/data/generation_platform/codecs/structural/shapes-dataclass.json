@@ -83,6 +83,8 @@
     {"name": "tree-client-needs-schema", "use": "/paths/~1tree/put response_body 200", "surface": "client", "op": "needs-schema"},
     {"name": "values-client-serialize-nested", "use": "/paths/~1values/post request_body", "surface": "client", "op": "serialize",
      "value": {"call": "Values", "args": {"any": {"k": {"nested": 3000}}}}},
-    {"name": "values-client-convert-nested", "use": "/paths/~1values/post response_body 200", "surface": "client", "op": "convert", "value": {"nested": 3000}}
+    {"name": "values-client-convert-nested", "use": "/paths/~1values/post response_body 200", "surface": "client", "op": "convert", "value": {"nested": 3000}},
+    {"name": "values-client-assemble-nested", "use": "/paths/~1values/post request_body", "surface": "client", "op": "assemble",
+     "fields": {"any": {"k": {"nested": 3000}}}}
   ]
 }

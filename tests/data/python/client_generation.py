@@ -13,6 +13,7 @@ from datamodel_code_generator import DataModelType, GenerateConfig
 from datamodel_code_generator._api_generation import render_target
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationSelection
 from datamodel_code_generator._client.config import (
+    BodyFieldName,
     ClientGenerationConfig,
     ClientOperationConfig,
     ClientValidationConfig,
@@ -45,6 +46,10 @@ def _operation(value: object) -> object:
     if isinstance(names := value.get("parameter_names"), list):
         converted["parameter_names"] = tuple(
             ParameterName(**item) if isinstance(item, dict) else item for item in names
+        )
+    if isinstance(fields := value.get("body_field_names"), list):
+        converted["body_field_names"] = tuple(
+            BodyFieldName(**item) if isinstance(item, dict) else item for item in fields
         )
     if isinstance(runtime := value.get("runtime"), dict):
         statuses = runtime.get("success_statuses", ())

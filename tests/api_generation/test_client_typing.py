@@ -56,3 +56,25 @@ def test_client_typing_arguments(backend: DataModelType, tmp_path: Path) -> None
         client_typing_report(tmp_path, backend, "pets-arguments"),
         EXPECTED / f"{backend.value.replace('.', '-')}-arguments.txt",
     )
+
+
+@pytest.mark.parametrize("case", ["fields-both", "fields-unpack"])
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_fields(backend: DataModelType, case: str, tmp_path: Path) -> None:
+    """Check calls that give a body's fields: each media's overloads, the witnesses of an optional body, and views."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    suffix = case.removeprefix("fields").removeprefix("-both")
+    assert_output(
+        client_typing_report(tmp_path, backend, case, ("fields",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-fields{suffix}.txt",
+    )

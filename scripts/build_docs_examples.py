@@ -380,6 +380,62 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.body-fields.toml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-body-fields"]["toml"]
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.body-fields.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "fields-errors.txt").splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.body-fields.overloads",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "fields"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "resources"
+                    / "default"
+                    / "_sync.py",
+                    "def update_pet(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.body-fields.refusals",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.rstrip()
+                    for line in report_lines(
+                        EXPECTED_CLIENT / "runtime" / "fields.txt",
+                        "a body and fields",
+                        "fields missing a required one",
+                        "a field of another media",
+                        "fields for text",
+                        "fields without a media type",
+                        "update naming only a media type",
+                    ).splitlines()
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.validation.toml",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

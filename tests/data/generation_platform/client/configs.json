@@ -181,5 +181,76 @@
   },
   "toml-validation-types": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[validation]\nrequest_overrides = \"schema\"\n"
+  },
+  "body-fields": {
+    "body_arguments": "both",
+    "operations": [
+      {
+        "ref": "/paths/~1pets~1{petId}/put",
+        "body_arguments": "body"
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "body_field_names": [
+          {
+            "media_type": "application/json",
+            "name": "tag",
+            "python_name": "pet_tag"
+          }
+        ]
+      }
+    ]
+  },
+  "body-fields-invalid": {
+    "body_arguments": "all",
+    "operations": [
+      {
+        "ref": "/paths/~1pets/get",
+        "body_arguments": "fields",
+        "body_field_names": "tag"
+      }
+    ]
+  },
+  "body-field-names-invalid": {
+    "body_arguments": "both",
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "body_arguments": "body",
+        "body_field_names": [
+          {
+            "media_type": "application/json",
+            "name": "tag",
+            "python_name": "pet_tag"
+          }
+        ]
+      },
+      {
+        "ref": "/paths/~1pets/put",
+        "body_field_names": [
+          {
+            "media_type": "json",
+            "name": "",
+            "python_name": "Tag"
+          },
+          {
+            "media_type": "application/json",
+            "name": "tag",
+            "python_name": "pet_tag"
+          },
+          {
+            "media_type": "Application/JSON",
+            "name": "tag",
+            "python_name": "label"
+          }
+        ]
+      }
+    ]
+  },
+  "toml-body-fields": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nbody_arguments = \"both\"\n\n[[operations]]\nref = \"/paths/~1pets~1{petId}/put\"\nbody_arguments = \"body\"\n\n[[operations]]\nref = \"/paths/~1pets/post\"\nbody_field_names = [{ media_type = \"application/json\", name = \"tag\", python_name = \"pet_tag\" }]\n"
+  },
+  "toml-body-field-names-unknown": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nbody_arguments = \"both\"\n\n[[operations]]\nref = \"/paths/~1pets/post\"\nbody_field_names = [{ media_type = \"application/json\", name = \"tag\", python = \"pet_tag\" }]\n"
   }
 }
