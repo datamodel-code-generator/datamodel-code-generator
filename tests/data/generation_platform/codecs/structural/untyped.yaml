@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Untyped model and array schemas
+  version: "1"
+paths:
+  /untyped:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Untyped"
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Inner:
+      properties:
+        v:
+          type: integer
+    Untyped:
+      type: object
+      required: [inner, seq]
+      properties:
+        inner:
+          $ref: "#/components/schemas/Inner"
+        seq:
+          items:
+            type: integer

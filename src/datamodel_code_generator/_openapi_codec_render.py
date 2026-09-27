@@ -72,11 +72,17 @@ _RUNTIME_NAMES: Final = (
     "SchemaResourceLimits",
     "SchemaSource",
     "ServerMediaCodecCapabilities",
+    "StructuralModelCodec",
     "TupleNode",
     "UnionNode",
     "UseBinding",
     "freeze_wire",
 )
+_CODECS: Final = {
+    "pydantic_v2.BaseModel": ("pydantic_v2", "PydanticModelCodec"),
+    "pydantic_v2.dataclass": ("pydantic_v2", "PydanticModelCodec"),
+    "dataclasses.dataclass": ("structural", "StructuralModelCodec"),
+}
 _OWN_NAMES: Final = ("Final", "annotations", "cache", "_resources", "_request_view", "_response_view")
 _USE_PREFIXES: Final = ("codec", "CONTEXT", "outbound", "parameter", "validator")
 _FACTORY_PROTOCOLS: Final = {"parameter": "ParameterCodecAdapterV1", "schema": "SchemaCodecAdapterV1"}
@@ -344,7 +350,7 @@ class _Renderer:
 
     def codec(self, use: TypeUseId, binding: UseBinding, runtime: str, validator: str | None) -> tuple[str, Group]:
         if (adapter := self.models.get(use)) is None:
-            codec = self.records.name("pydantic_v2", "PydanticModelCodec")
+            codec = self.records.name(*_CODECS[binding.backend])
             models = tuple((f"{model.symbol!r}: ", self.symbol(model.symbol)) for model in binding.models)
             return codec, Group(
                 f"{codec}(",

@@ -1,0 +1,13 @@
+use /paths/~1leaves/post request_body: native dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
+use /paths/~1leaves/post response_body 200: native dataclass models:Leaves models=[('models:Box', 'dataclass', 'ignore', True), ('models:Leaves', 'dataclass', 'ignore', True)]
+use /paths/~1records/put request_body: envelope dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1records/put response_body 200: envelope dataclass models:Record models=[('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1keyed/post request_body: envelope dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1keyed/post response_body 200: envelope dataclass models:Keyed models=[('models:Keyed', 'dataclass', 'ignore', True), ('models:Record', 'dataclass', 'ignore', True)]
+use /paths/~1tickets/post request_body: native dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
+use /paths/~1tickets/post response_body 200: envelope dataclass models:Ticket models=[('models:Ticket', 'dataclass', 'ignore', True)]
+leaves-server-decode-boxes: model Leaves(when=None, day=None, clock=None, span=None, uid=None, v4=None, v6=None, net4=None, net6=None, file=None, price=None, cents=None, ratio=None, count=None, flag=None, nothing=None, mode=None, pick=None, color=None, level=None, tags=None, boxes={Box(size=1), Box(size=2)}, pair=None, seq=None, choice=None, rank=None, moments=None, idents=None, anything=None) wire={"boxes":[{"size":2},{"size":1}]} presence=['', '/boxes', '/boxes/0', '/boxes/0/size', '/boxes/1', '/boxes/1/size'] extras={}
+leaves-server-response-boxes: wire={"nothing":null,"boxes":[{"size":1},{"size":2}],"anything":null}
+record-client-decode: model Record(name='a', stamp='s', items=['x'], note=None, hint=None) wire={"name":"a","stamp":"s","items":["x"]} presence=['', '/name', '/stamp', '/items', '/items/0'] extras={}
+record-server-encode: wire={"name":"a","stamp":"s","items":["x"]}
+ticket-server-decode: model Ticket(code=<unset>, label='x') wire={"label":"x"} presence=['', '/label'] extras={}

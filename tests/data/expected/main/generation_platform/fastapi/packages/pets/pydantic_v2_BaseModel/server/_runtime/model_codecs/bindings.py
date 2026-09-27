@@ -76,7 +76,10 @@ TypeNode: TypeAlias = ModelNode | ArrayNode | TupleNode | MapNode | UnionNode | 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class FieldBinding:
-    """Join one wire property to the native attribute, the input keys it reads, and the key the codec uses."""
+    """Join one wire property to the native attribute, the input keys it reads, and the key the codec uses.
+
+    ``required`` means the native constructor needs a value, and ``constructible`` whether it accepts one at all.
+    """
 
     field_id: str
     native_name: str
@@ -88,6 +91,7 @@ class FieldBinding:
     write_only: bool
     omit_none: bool
     type: TypeNode
+    constructible: bool = True
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

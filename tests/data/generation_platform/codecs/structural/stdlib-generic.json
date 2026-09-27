@@ -1,0 +1,16 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_stdlib_generic",
+  "scopes": ["schemas", "paths"],
+  "options": {"use_unique_items_as_set": true, "use_generic_container_types": true, "field_extra_keys": ["init", "kw_only"]},
+  "cases": [
+    {"name": "leaves-server-decode", "use": "/paths/~1leaves/post request_body", "op": "decode",
+     "value": {"tags": ["b", "a"], "seq": [2, 1], "moments": ["x"]}},
+    {"name": "leaves-server-response", "use": "/paths/~1leaves/post response_body 200", "op": "encode",
+     "value": {"result": "leaves-server-decode", "attr": "value"}},
+    {"name": "keyed-client-decode", "use": "/paths/~1keyed/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"by_name": {"x": {"name": "a", "stamp": "s", "items": ["i"]}}}},
+    {"name": "keyed-server-encode", "use": "/paths/~1keyed/post response_body 200", "op": "encode",
+     "value": {"result": "keyed-client-decode", "attr": "value"}}
+  ]
+}

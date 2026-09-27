@@ -1,0 +1,20 @@
+matching: built
+converter: CodecConfigurationError The binding does not select a structural converter
+backend: CodecConfigurationError The binding does not select a structural converter
+bundle-direction: CodecConfigurationError The schema bundle does not validate the binding's direction
+missing-model: CodecConfigurationError The native type of models:Ticket does not match its binding
+not-dataclass: CodecConfigurationError The native type of models:Ticket does not match its binding
+init-disagrees: CodecConfigurationError The native type of models:Ticket does not match its binding
+required-disagrees: CodecConfigurationError The native type of models:Ticket does not match its binding
+unbound-required: CodecConfigurationError The native type of models:Ticket does not match its binding
+unresolved-annotation: CodecConfigurationError The native type of models:Ticket does not match its binding
+leaf-disagrees: CodecConfigurationError The native type of models:Ticket.label does not match its binding
+union-disagrees: CodecConfigurationError The native type of models:Ticket.label does not match its binding
+container-disagrees: CodecConfigurationError The native type of models:Record.items does not match its binding
+key-disagrees: CodecConfigurationError The native type of models:Keyed.by_color does not match its binding
+constructor-refuses: NativeValidationError native.constructor@[]
+native-gap: ModelProjectionError The native use has an unplanned projection gap at /stamp
+relaxed-union: NativeValidationError native.union@/choice['choice']
+relaxed-leaf: NativeValidationError native.string_type@/name['name']
+relaxed-tuple: NativeValidationError native.tuple_type@/pair['pair']
+relaxed-key: NativeValidationError native.enum@/by_color/blue['by_color', 'blue']

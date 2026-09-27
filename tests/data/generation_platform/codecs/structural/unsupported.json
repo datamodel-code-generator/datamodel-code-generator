@@ -1,0 +1,7 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_stdlib_unsupported",
+  "scopes": ["schemas", "paths"],
+  "options": {"use_standard_primitive_types": true},
+  "cases": []
+}

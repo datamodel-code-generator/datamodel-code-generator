@@ -1,0 +1,18 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_stdlib_frozen",
+  "scopes": ["schemas", "paths"],
+  "options": {"use_unique_items_as_set": true, "field_extra_keys": ["init", "kw_only"],
+              "dataclass_arguments": {"frozen": true, "slots": true, "kw_only": true}},
+  "cases": [
+    {"name": "leaves-server-decode-boxes", "use": "/paths/~1leaves/post request_body", "op": "decode",
+     "value": {"boxes": [{"size": 2}, {"size": 1}]}},
+    {"name": "leaves-server-response-boxes", "use": "/paths/~1leaves/post response_body 200", "op": "encode",
+     "value": {"result": "leaves-server-decode-boxes", "attr": "value"}},
+    {"name": "record-client-decode", "use": "/paths/~1records/put response_body 200", "surface": "client", "op": "decode",
+     "value": {"name": "a", "stamp": "s", "items": ["x"]}},
+    {"name": "record-server-encode", "use": "/paths/~1records/put response_body 200", "op": "encode",
+     "value": {"result": "record-client-decode", "attr": "value"}},
+    {"name": "ticket-server-decode", "use": "/paths/~1tickets/post request_body", "op": "decode", "value": {"label": "x"}}
+  ]
+}

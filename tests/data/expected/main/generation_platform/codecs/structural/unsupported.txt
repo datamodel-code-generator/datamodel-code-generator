@@ -1,0 +1,8 @@
+diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/data: The bytes type has no structural conversion; register a model adapter
+diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/queue: The deque[int] type has no structural conversion; register a model adapter
+diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/by_id: The uuid.UUID key type has no structural conversion; register a model adapter
+diagnostic MC_ADAPTER_REQUIRED /paths/~1trees/post/requestBody: The recursive Tree alias has no structural conversion; register a model adapter
+use /paths/~1files/post request_body: native dataclass models:File models=[('models:File', 'dataclass', 'ignore', True)]
+codec /paths/~1files/post request_body: CodecConfigurationError The native type of models:File.data does not match its binding
+use /paths/~1trees/post request_body: native alias models:Tree models=[]
+codec /paths/~1trees/post request_body: CodecConfigurationError The native type of models:Tree does not match its binding
