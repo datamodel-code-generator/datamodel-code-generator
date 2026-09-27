@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
+from pets.options import RequestOptions
 from pets.responses import RawResponse
 from pets.transports import OwnedTransportAdapter
 from pets.types.pets import (
@@ -104,3 +105,9 @@ def misuse_multipart_data(data: object) -> None:
 
     narrowed: MultipartData[str] = MultipartData[bytes](())  # error
     del narrowed, data
+
+
+def misuse_hooks() -> None:
+    RequestOptions(hooks=("trace",))  # error
+    RequestOptions(context={"tags": ["a"]})  # error
+

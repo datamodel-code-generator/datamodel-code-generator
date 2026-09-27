@@ -12,6 +12,7 @@ import httpx2
 
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_headers import headers
+from tests.data.python.client_hooks import hooks
 from tests.data.python.client_query import query
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_raw import raw
@@ -616,6 +617,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
+    "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
 }
 
 

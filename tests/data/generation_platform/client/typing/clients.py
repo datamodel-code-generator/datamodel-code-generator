@@ -29,7 +29,9 @@ from pets.bodies import (
     SyncBinaryBody,
 )
 from pets.model_codecs import JSONValue, ModelValue, NativeOutboundCodec, RequestMedia, ResponseMedia, WireValue
-from pets.options import UNSET, RequestOptions
+from pets.errors import HookExecutionError
+from pets.hooks import CallEvent
+from pets.options import UNSET, ClientOptions, RequestOptions
 from pets.responses import AsyncRawResponse, HeadersView, RawResponse, Response, ResponseInfo
 from pets.transports import (
     AsyncTransportResponse,
@@ -275,3 +277,25 @@ def transports() -> None:
     assert_type(
         AsyncClient(transport_adapter=OwnedTransportAdapter(AsyncAdapter())).with_options(RequestOptions()), AsyncClient
     )
+
+
+class Tracer:
+    def on_event(self, event: CallEvent) -> None:
+        del event
+
+
+class AsyncTracer:
+    async def on_event(self, event: CallEvent) -> None:
+        del event
+
+
+def hooks(client: Client) -> None:
+    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    options = ClientOptions(hooks=(Tracer(), AsyncTracer()), context={"tenant": "t", "retry": 1, "user": None})
+    Client(options=options)
+    try:
+        client.pets.get_pet(pet_id=pet, options=RequestOptions(hooks=(), context={"retry": 2}))
+    except HookExecutionError as error:
+        assert_type(error.require_result().info.status_code, int)
+        assert_type(error.has_completed_result, bool)
+

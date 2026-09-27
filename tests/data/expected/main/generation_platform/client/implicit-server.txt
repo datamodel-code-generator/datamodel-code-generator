@@ -4,6 +4,7 @@ render pydantic_v2.BaseModel
   write client/_client.py
   write client/_async_client.py
   write client/options.py
+  write client/hooks.py
   write client/errors.py
   write client/responses.py
   write client/bodies.py
