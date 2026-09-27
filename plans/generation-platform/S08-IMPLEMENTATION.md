@@ -97,6 +97,10 @@ The samples in `tests/data/generation_platform/codecs/typing/`, the S04 wire, bi
 
 Found while checking the fixes: D keys a class-syntax TypedDict by its field names and a functional one by the property names, whatever the alias settings, but the planner took a field's alias or else its slot name. With `snake_case_field`, `petName` became the class field `pet_name` while the binding read `petName`; with `no_alias`, the functional `'pet-name'` key was bound as `pet_name`; either way the codec refused the generated model at startup. The planner now keys a field by the wire name when the TypedDict declaring it uses the functional syntax, and by its field name otherwise. The five-backend comparison gains a source with a camel-case and a kebab-case property, run with `snake_case_field` and with `no_alias` as well.
 
+### Structs encoded under other names
+
+With `no_alias`, D emits Struct fields without `field(name=...)`, so msgspec encodes `pet_name` where the wire has `petName`; the codec required every encode name to be the wire name and refused the model at startup, although only `msgspec.convert` reads encode names. The planner now selects `msgspec_structural` for a Struct that encodes a field under another name than its wire name (its alias, or else its name), which builds it through the constructor by attribute, and the startup check compares encode names only under `msgspec_convert`. A `rename` configuration takes the same path. The comparison without aliases now covers Structs, and a msgspec fixture shows the structural strategy for both properties.
+
 ## Next action
 
 Publish S08-3 on #4183. S09 renders these codecs into client packages.

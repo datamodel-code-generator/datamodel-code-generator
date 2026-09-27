@@ -1,5 +1,5 @@
 {
-  "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict"],
+  "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
   "package": "codec_names_noalias",
   "options": {"snake_case_field": true, "no_alias": true},
   "cases": [

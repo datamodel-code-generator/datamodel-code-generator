@@ -242,6 +242,16 @@ def _functional(symbol: FinalModelSymbol) -> bool:
     return symbol.facts is not None and symbol.facts.functional_typeddict
 
 
+def _encoded_as_wire(member: FieldUseBinding, facts: ModelFieldFacts) -> bool:
+    """Return whether a Struct encodes a field under its wire name, its alias or else its name, as msgspec reads it."""
+    return (
+        (slot := member.slot) is None
+        or member.wire_name is None
+        or member.exclusion == "tag"
+        or (facts.alias or slot.name) == member.wire_name
+    )
+
+
 def _meta_pattern(facts: ModelFieldFacts) -> bool:
     return any(name == "pattern" for layer in facts.backend.emitted.meta_layers for name, _ in layer.keywords)
 
@@ -752,7 +762,7 @@ class _MsgspecTypes:
             case GeneratedSymbolType():
                 seen.add(value.symbol)
                 return _setting(symbols[value.symbol], "array_like", parameter=True) is not True and all(
-                    not _meta_pattern(facts) and self.convertible(facts.type, seen)
+                    not _meta_pattern(facts) and _encoded_as_wire(member, facts) and self.convertible(facts.type, seen)
                     for member in members.get(value.symbol, [])
                     if (facts := member.model_facts) is not None
                 )

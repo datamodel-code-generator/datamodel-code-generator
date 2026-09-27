@@ -1,0 +1,15 @@
+{
+  "backend": "msgspec.Struct",
+  "package": "codec_names_msgspec",
+  "scopes": ["schemas", "paths"],
+  "strategies": true,
+  "options": {"snake_case_field": true, "no_alias": true},
+  "cases": [
+    {"name": "camel-server-decode", "use": "/paths/~1camels/post request_body", "op": "decode", "value": {"petName": "Mimi", "age": 2}},
+    {"name": "camel-server-response", "use": "/paths/~1camels/post response_body 200", "op": "encode",
+     "value": {"result": "camel-server-decode", "attr": "value"}},
+    {"name": "kebab-server-decode", "use": "/paths/~1kebabs/post request_body", "op": "decode", "value": {"pet-name": "Mimi"}},
+    {"name": "kebab-server-response", "use": "/paths/~1kebabs/post response_body 200", "op": "encode",
+     "value": {"result": "kebab-server-decode", "attr": "value"}}
+  ]
+}

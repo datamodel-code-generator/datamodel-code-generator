@@ -43,6 +43,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
         ("structural/aliases", "aliases-type"),
         ("structural/aliases", "aliases-typeddict"),
         ("structural/aliases", "aliases-msgspec"),
+        ("pydantic/names", "names-msgspec"),
     ],
 )
 def test_structural_codecs(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
