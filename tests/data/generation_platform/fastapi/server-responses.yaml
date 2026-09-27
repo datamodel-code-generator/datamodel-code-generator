@@ -19,9 +19,11 @@ paths:
         - {name: id, in: path, required: true, schema: {type: integer}}
       responses:
         "200":
-          description: The document, as a pet or as raw bytes.
+          description: The document, as a pet, a profiled error or raw bytes.
           content:
             "*/*": {}
+            application/json;profile=v1:
+              schema: {$ref: "#/components/schemas/Error"}
             application/json:
               schema: {$ref: "#/components/schemas/Pet"}
   /pets/{id}:

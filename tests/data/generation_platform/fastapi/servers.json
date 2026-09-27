@@ -1690,6 +1690,10 @@
             "url": "/documents/2"
           },
           {
+            "method": "GET",
+            "url": "/documents/3"
+          },
+          {
             "openapi": [
               "/greetings",
               "get",

@@ -66,7 +66,7 @@ def _add_get_document(router: APIRouter, wiring: Wiring) -> None:
         response_model_by_alias=True,
         response_model_exclude_unset=True,
         operation_id='getDocument',
-        response_description='The document, as a pet or as raw bytes.',
+        response_description='The document, as a pet, a profiled error or raw bytes.',
         openapi_extra={
             'x-dcg-operation': {
                 'version': 1,

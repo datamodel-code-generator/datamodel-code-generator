@@ -54,14 +54,20 @@ GetGreetingResponseCodecs: Final = _GetGreetingResponseCodecs(
 
 GetDocumentResponsePayload: TypeAlias = (
     bytes
+    | responses_dataclass_models.Error
+    | ModelValue[responses_dataclass_models.Error]
     | responses_dataclass_models.Pet
     | ModelValue[responses_dataclass_models.Pet]
 )
 
 
-class _GetDocumentResponseCodecs(
-    ResponseCodecs[NativeOutboundCodec[responses_dataclass_models.Pet]],
-):
+_GetDocumentResponseCodec: TypeAlias = (
+    NativeOutboundCodec[responses_dataclass_models.Error]
+    | NativeOutboundCodec[responses_dataclass_models.Pet]
+)
+
+
+class _GetDocumentResponseCodecs(ResponseCodecs[_GetDocumentResponseCodec]):
     """Outbound codecs of the get_document response bodies."""
 
     @overload
@@ -69,7 +75,21 @@ class _GetDocumentResponseCodecs(
         self,
         *,
         status_code: Literal[200],
-        media_type: Literal['application/json'] | None = None,
+        media_type: Literal['application/json; profile=v1'],
+    ) -> NativeOutboundCodec[responses_dataclass_models.Error]: ...
+    @overload
+    def body(
+        self,
+        *,
+        status_code: Literal[200],
+        media_type: Literal['application/json'],
+    ) -> NativeOutboundCodec[responses_dataclass_models.Pet]: ...
+    @overload
+    def body(
+        self,
+        *,
+        status_code: Literal[200],
+        media_type: None = None,
     ) -> NativeOutboundCodec[responses_dataclass_models.Pet]: ...
     @overload
     def body(
@@ -77,19 +97,27 @@ class _GetDocumentResponseCodecs(
         *,
         status_code: int,
         media_type: str | None = None,
-    ) -> NativeOutboundCodec[responses_dataclass_models.Pet]: ...
+    ) -> _GetDocumentResponseCodec: ...
     def body(
         self,
         *,
         status_code: int,
         media_type: str | None = None,
-    ) -> NativeOutboundCodec[responses_dataclass_models.Pet]:
+    ) -> _GetDocumentResponseCodec:
         """Return the outbound codec of one declared response body."""
         return self.select(status_code, media_type)
 
 
 GetDocumentResponseCodecs: Final = _GetDocumentResponseCodecs(
-    (('200', (('application/json', model_bindings.outbound_1),)),),
+    (
+        (
+            '200',
+            (
+                ('application/json; profile=v1', model_bindings.outbound_1),
+                ('application/json', model_bindings.outbound_2),
+            ),
+        ),
+    ),
 )
 
 
@@ -143,8 +171,8 @@ class _GetPetResponseCodecs(ResponseCodecs[_GetPetResponseCodec]):
 
 GetPetResponseCodecs: Final = _GetPetResponseCodecs(
     (
-        ('200', (('application/json', model_bindings.outbound_2),)),
-        ('404', (('application/json', model_bindings.outbound_3),)),
+        ('200', (('application/json', model_bindings.outbound_3),)),
+        ('404', (('application/json', model_bindings.outbound_4),)),
     ),
 )
 
