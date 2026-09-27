@@ -18,7 +18,7 @@
   narrowed Accept removed ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='headers.Accept', condition='conflicts_with_response_media') [operation_id='getPet', field_path=('headers', 'Accept'), condition='conflicts_with_response_media'] configuration_error
   raw parts relabeled ! ConfigurationError: ConfigurationError(field_path='headers.Content-Type', condition='conflicts_with_body_media') [field_path=('headers', 'Content-Type'), condition='conflicts_with_body_media'] configuration_error
   > GET https://api.example.com/v1/pets/3
-    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c] b''
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: Application/JSON, user-agent: custom/1, x-client: c] b''
   no body without a media type, narrowed Accept repeated = Pet(id=3, name='fox', tag=None)
   > POST https://raw.example.com/items
     [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: application/xml, content-length: 4] b'<a/>'

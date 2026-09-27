@@ -97,7 +97,7 @@ def _framing(  # noqa: PLR0913, PLR0917
     record(
         lines,
         "no body without a media type, narrowed Accept repeated",
-        lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json", options=options.RequestOptions(headers=(("Content-Type", None), ("Accept", "application/json")))),
+        lambda: api.pets.get_pet(pet_id=pet, response_media_type="application/json", options=options.RequestOptions(headers=(("Content-Type", None), ("Accept", "Application/JSON")))),
     )
     exchange.respond(raw_response(200, b"ok", "text/plain"), raw_response(200, b"ok", "text/plain"))
     record(

@@ -203,7 +203,7 @@ def _unframed(
     """Refuse header patches that relabel a call's body or its narrowed response media.
 
     A Content-Type patch must name the body's media type, or remove it from a call without a body, and an Accept patch
-    must repeat the Accept of a call that narrowed its response media type.
+    must name the media type a call narrowed its response to; media types compare normalized.
     """
     for patch in patches:
         for name, value in patch:
@@ -215,7 +215,7 @@ def _conflict(name: str, value: str | None, media_type: str | None, accept: str 
     match name.lower():
         case "content-type" if _relabels(value, media_type):
             return "conflicts_with_body_media"
-        case "accept" if accept is not None and value != accept:
+        case "accept" if accept is not None and _relabels(value, accept):
             return "conflicts_with_response_media"
         case _:
             return None
