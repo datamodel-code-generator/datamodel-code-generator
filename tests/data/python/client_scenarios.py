@@ -401,9 +401,12 @@ def media(package: ModuleType, lines: list[str]) -> None:
             "ids": [1, 2],
             "meta": {"city": "Oslo"},
             "path": "/a?b",
+            "extra": {"page": "2"},
         })
         exchange.respond(raw_response(204))
         record(lines, "search", lambda: api.forms.submit_search(body=search))
+        clash = forms.SubmitSearchRequestCodecs.body().from_wire({"term": "a", "extra": {"term": "b"}})
+        record(lines, "search of an extra named as another member", lambda: api.forms.submit_search(body=clash))
         _documents(package, api, exchange, lines, documents)
 
 

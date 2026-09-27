@@ -176,6 +176,7 @@ class FieldSearchesPostRequest(BaseModel):
     ids: list[int] | None = None
     meta: Address | None = None
     path: str | None = None
+    extra: dict[str, str] | None = None
 
 
 class FieldDocumentsIdGetPathIdParameter(BaseModel):

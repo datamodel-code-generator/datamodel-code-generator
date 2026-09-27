@@ -337,7 +337,11 @@ paths:
                   items: {type: integer}
                 meta: {$ref: '#/components/schemas/Address'}
                 path: {type: string}
+                extra:
+                  type: object
+                  additionalProperties: {type: string}
             encoding:
+              extra: {style: form, explode: true}
               filter: {style: deepObject, explode: true}
               tags: {style: pipeDelimited, explode: false}
               ids: {style: form, explode: false}

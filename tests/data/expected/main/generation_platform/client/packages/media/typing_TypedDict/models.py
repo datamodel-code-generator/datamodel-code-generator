@@ -127,6 +127,7 @@ class FieldSearchesPostRequest(TypedDict):
     ids: NotRequired[list[int]]
     meta: NotRequired[Address]
     path: NotRequired[str]
+    extra: NotRequired[dict[str, str]]
 
 
 class FieldDocumentsIdGetPathIdParameter(TypedDict):

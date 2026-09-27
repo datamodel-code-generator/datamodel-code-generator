@@ -588,6 +588,15 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
                 encoded=(
                     ParameterPlan(
                         location='query',
+                        name='extra',
+                        style='form',
+                        explode=True,
+                        shape='object',
+                        additional=FieldPlan('', 'string'),
+                        reserved_names=('filter', 'ids', 'meta', 'path', 'tags', 'term'),
+                    ),
+                    ParameterPlan(
+                        location='query',
                         name='filter',
                         style='deepObject',
                         explode=True,
@@ -597,14 +606,14 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
                             FieldPlan('min', 'integer'),
                         ),
                         additional=FieldPlan('', 'string'),
-                        reserved_names=('ids', 'meta', 'path', 'tags', 'term'),
+                        reserved_names=('extra', 'ids', 'meta', 'path', 'tags', 'term'),
                     ),
                     ParameterPlan(
                         location='query',
                         name='tags',
                         style='pipeDelimited',
                         shape='array',
-                        reserved_names=('filter', 'ids', 'meta', 'path', 'term'),
+                        reserved_names=('extra', 'filter', 'ids', 'meta', 'path', 'term'),
                     ),
                     ParameterPlan(
                         location='query',
@@ -612,7 +621,7 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
                         style='form',
                         shape='array',
                         kind='integer',
-                        reserved_names=('filter', 'meta', 'path', 'tags', 'term'),
+                        reserved_names=('extra', 'filter', 'meta', 'path', 'tags', 'term'),
                     ),
                     ParameterPlan(
                         location='query',
@@ -625,7 +634,7 @@ OPERATION_15: Final[OperationPlan[SubmitSearchResponse, SubmitSearchErrorData]] 
                         style='form',
                         explode=True,
                         allow_reserved=True,
-                        reserved_names=('filter', 'ids', 'meta', 'tags', 'term'),
+                        reserved_names=('extra', 'filter', 'ids', 'meta', 'tags', 'term'),
                     ),
                 ),
             ),

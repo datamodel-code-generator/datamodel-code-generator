@@ -277,23 +277,31 @@ def encode_form(
 ) -> bytes:
     """Serialize a flat object as ordered URL-encoded pairs, repeating array members.
 
-    A member in `styled` writes its own pairs, as its encoding's query parameter style or content does.
+    A member in `styled` writes its own pairs, as its encoding's query parameter style or content does, and no two
+    members may then write the same name.
     """
     if not isinstance(value, Mapping):
         msg = "A URL-encoded form value must be an object"
         raise ParameterEncodingError(msg)
     declared = {field.name: field for field in fields}
     pairs: list[str] = []
+    owners: dict[str, str] = {}
     for name, item in value.items():
         if styled and (style := styled.get(name)) is not None:
-            pairs.extend(style(item))
+            written = list(style(item))
+            keys = [percent_decode(pair.partition("=")[0].encode("ascii"), plus=True) for pair in written]
         elif (field := declared.get(name, additional)) is None:
             msg = "A URL-encoded form member is not declared"
             raise ParameterEncodingError(msg)
         else:
-            pairs.extend(
+            written = [
                 f"{form_encode(name)}={form_encode(lexical(member, field.kind))}" for member in _members(item, field)
-            )
+            ]
+            keys = [name]
+        if styled and any(owners.setdefault(key, name) != name for key in keys):
+            msg = "Two URL-encoded form members write the same name"
+            raise ParameterEncodingError(msg)
+        pairs.extend(written)
     return "&".join(pairs).encode("ascii")
 
 

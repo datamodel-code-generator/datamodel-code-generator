@@ -67,3 +67,22 @@ paths:
       responses:
         '204':
           description: A style its member's shape has no form for.
+  /spread-clash:
+    post:
+      operationId: submitSpreadClash
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+                opts:
+                  type: object
+                  properties:
+                    term: {type: string}
+            encoding:
+              opts: {style: form, explode: true}
+      responses:
+        '204':
+          description: An exploded member naming another member.

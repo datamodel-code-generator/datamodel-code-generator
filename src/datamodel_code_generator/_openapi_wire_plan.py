@@ -743,6 +743,7 @@ def _form(
         styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
         _, _, fields, additional = _shape(planner, location, form=True, skip=frozenset(styled))
         encoded = tuple(_encoding(planner, location, declaration) for declaration in styled.values())
+        _distinct(location, fields, encoded)
     except _PlanError as error:
         owner = use.id.owner
         planner.diagnostics.append(
@@ -750,6 +751,19 @@ def _form(
         )
         return None
     return use.id, fields, additional, encoded
+
+
+def _distinct(location: SourceLocation, fields: tuple[FieldPlan, ...], encoded: tuple[ParameterPlan, ...]) -> None:
+    """Refuse a URL-encoded form whose members, an exploded member's own included, write a name twice."""
+    claimed = [
+        *(item.name for plan in encoded if _spread(plan) for item in plan.fields),
+        *(field.name for field in fields),
+        *(plan.name for plan in encoded if not _spread(plan)),
+    ]
+    if len(set(claimed)) != len(claimed):
+        raise _PlanError(
+            code="MC_PARAMETER_ENCODING", source=location, message="Expanded URL-encoded member names collide"
+        )
 
 
 def _styled(encoding: WireDeclaration) -> bool:
