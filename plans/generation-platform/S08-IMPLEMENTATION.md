@@ -85,6 +85,10 @@ A union with two members of the same JSON container kind, such as `list[int] | l
 
 Expanding `Word: TypeAlias = str | int` inside `Word | str` left the binding with three members while Python keeps `str | int`, so the codec refused a valid generated model at startup: #4183 compared counts only. The planner now flattens aliased unions itself and drops a member equal to an earlier one, as Python does, so a binding carries exactly the members Python keeps; the runtime expands `TypeAliasType` values, which Python leaves in place, with the same deduplication, and the msgspec union check reads the members the same way. The union alias source gains `Word | str`, decoded and encoded through dataclasses with both alias spellings, TypedDicts and Structs. An alias expanded once must still expand where another alias names it: with `Wide: TypeAlias = Word | float`, the member `Word | Wide` left `Word` unexpanded inside `Wide` and bound four members for Python's three (CodeRabbit on #4187), so the planner and the msgspec check now track the aliases expanded on each branch only, and the source gains `Word | Wide`.
 
+### Default msgspec tags
+
+A Struct tagged through its class parameters rather than a discriminator, such as `base_class_kwargs={"tag": True}` or `{"tag": "probe"}` in `extra_template_data`, bound no tag, because the planner read only explicit string or integer `tag` and `tag_field` values; the codec then refused the valid model at startup. The planner now derives the tag as msgspec does: `tag=True` or a `tag_field` alone tags a Struct with its class name, the field defaults to `type`, and `tag=False` leaves it untagged; the msgspec union check uses the same rule, so such a Struct counts as tagged. A tag function, whose value only running it tells, still refuses the codec at startup. The Struct options fixture tags one Struct with `True`, one with `"probe"`, one with `tag_field` alone and none with `tag=False`, decodes each without and with its tag, refuses another tag with `native.tag`, and encodes the tag first.
+
 ## Next action
 
 Publish S08-3 on #4183. S09 renders these codecs into client packages.
