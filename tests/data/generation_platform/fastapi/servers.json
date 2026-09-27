@@ -472,6 +472,22 @@
         }
       },
       {
+        "method": "POST",
+        "url": "/variants",
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "content": "{\"c\": true}"
+      },
+      {
+        "method": "POST",
+        "url": "/variants",
+        "headers": {
+          "Content-Type": "application/json; profile=v1"
+        },
+        "content": "{\"a\": 1}"
+      },
+      {
         "method": "PUT",
         "url": "/documents",
         "json": {
@@ -1692,6 +1708,10 @@
           {
             "method": "GET",
             "url": "/documents/3"
+          },
+          {
+            "method": "GET",
+            "url": "/documents/4"
           },
           {
             "openapi": [

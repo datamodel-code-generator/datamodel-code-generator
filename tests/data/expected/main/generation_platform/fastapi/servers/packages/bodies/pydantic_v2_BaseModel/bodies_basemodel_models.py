@@ -42,6 +42,20 @@ class FieldProfilesPostRequest1(BaseModel):
     b: str | None = None
 
 
+class FieldVariantsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    a: int | None = None
+
+
+class FieldVariantsPostRequest1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    c: bool | None = None
+
+
 class FieldDocumentsPutRequest(RootModel[constr(max_length=5)]):
     root: constr(max_length=5)
 

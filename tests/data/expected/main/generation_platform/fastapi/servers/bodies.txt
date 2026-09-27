@@ -1,6 +1,6 @@
 # bodies
 serve pydantic_v2.BaseModel
-service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_profile, post_raw, put_archive, put_blob, put_document, upload
+service UntaggedService: post_account, post_check, post_form, post_item, post_native_form, post_profile, post_raw, post_variant, put_archive, put_blob, put_document, upload
 service UntaggedService without its methods: TypeError
 > POST /items
   post_item(body=UNSET)
@@ -38,6 +38,12 @@ service UntaggedService without its methods: TypeError
 < 204 - b''
 > POST /profiles
   post_profile(body=UNSET, media_type=None)
+< 204 - b''
+> POST /variants
+  post_variant(body=FieldVariantsPostRequest1(c=True), media_type='application/json')
+< 204 - b''
+> POST /variants
+  post_variant(body=FieldVariantsPostRequest(a=1), media_type='application/json; profile=v1')
 < 204 - b''
 > PUT /documents
   put_document(body=Item(name='a'), media_type='application/json')

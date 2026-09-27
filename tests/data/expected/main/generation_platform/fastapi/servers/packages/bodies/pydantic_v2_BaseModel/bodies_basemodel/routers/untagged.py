@@ -108,6 +108,38 @@ def _add_post_profile(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
+def _add_post_variant(router: APIRouter, wiring: Wiring) -> None:
+    post_variant_handler = wiring.handlers['post_variant']
+
+    def post_variant(
+        *,
+        body: Annotated[tuple[str | None, bodies_basemodel_models.FieldVariantsPostRequest | bodies_basemodel_models.FieldVariantsPostRequest1 | Unset], Depends(contract.PostVariant.BODY.receive)],
+    ) -> Response:
+        return respond(
+            post_variant_handler(body=body[1], media_type=body[0]),
+            contract.PostVariant.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/variants',
+        post_variant,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postVariant',
+        response_description='Done.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'bodies_basemodel',
+                'operation': '/paths/~1variants/post',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1variants/post'),
+    )
+
+
 def _add_put_document(router: APIRouter, wiring: Wiring) -> None:
     put_document_handler = wiring.handlers['put_document']
 
@@ -358,6 +390,7 @@ LITERAL_ROUTES: Final = (
     (contract.PostItem.OPERATION, _add_post_item),
     (contract.PostAccount.OPERATION, _add_post_account),
     (contract.PostProfile.OPERATION, _add_post_profile),
+    (contract.PostVariant.OPERATION, _add_post_variant),
     (contract.PutDocument.OPERATION, _add_put_document),
     (contract.PutArchive.OPERATION, _add_put_archive),
     (contract.PutBlob.OPERATION, _add_put_blob),

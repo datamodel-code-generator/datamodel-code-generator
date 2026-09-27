@@ -31,6 +31,9 @@ app standard
 > GET /documents/3
   get_document(id=3)
 < 200 application/json; profile=v1 {"message":"v1"}
+> GET /documents/4
+  get_document(id=4)
+< 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
 < {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
 > openapi /pets/{id} get 404
@@ -115,6 +118,9 @@ app standard
 > GET /documents/3
   get_document(id=3)
 < 200 application/json; profile=v1 {"message":"v1"}
+> GET /documents/4
+  get_document(id=4)
+< 200 application/json; charset=utf-8 {"id":4,"name":"Mimi"}
 > openapi /greetings get 200
 < {"application/json": {"schema": {"anyOf": [{"$ref": "#/components/schemas/FieldGreetingsGetResponse"}, {"type": "string"}]}}}
 > openapi /pets/{id} get 404

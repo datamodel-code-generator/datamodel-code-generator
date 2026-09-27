@@ -31,6 +31,17 @@ paths:
             schema: {type: object, additionalProperties: false, properties: {b: {type: string}}}
       responses:
         "204": {description: Done.}
+  /variants:
+    post:
+      operationId: postVariant
+      requestBody:
+        content:
+          application/json; profile=v1:
+            schema: {type: object, additionalProperties: false, properties: {a: {type: integer}}}
+          application/json:
+            schema: {type: object, additionalProperties: false, properties: {c: {type: boolean}}}
+      responses:
+        "204": {description: Done.}
   /documents:
     put:
       operationId: putDocument

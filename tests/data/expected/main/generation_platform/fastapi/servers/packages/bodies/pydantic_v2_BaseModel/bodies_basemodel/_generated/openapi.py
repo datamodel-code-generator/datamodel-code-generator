@@ -233,6 +233,92 @@ _BUNDLE = r"""{
    }
   },
   {
+   "key": "/paths/~1variants/post",
+   "method": "post",
+   "route_path": "/variants",
+   "slots": [],
+   "fragment": {
+    "requestBody": {
+     "content": {
+      "application/json; profile=v1": {
+       "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+         "a": {
+          "type": "integer"
+         }
+        }
+       }
+      },
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+         "c": {
+          "type": "boolean"
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__155f96e10e70"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Unsupported media type",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__155f96e10e70"
+        },
+        "example": {
+         "detail": "Unsupported media type"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__155f96e10e70"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__155f96e10e70"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
+  },
+  {
    "key": "/paths/~1documents/put",
    "method": "put",
    "route_path": "/documents",
@@ -799,6 +885,7 @@ PLAN: Final = OpenAPIPackagePlan(
         '/paths/~1items/post',
         '/paths/~1accounts/post',
         '/paths/~1profiles/post',
+        '/paths/~1variants/post',
         '/paths/~1documents/put',
         '/paths/~1archives/put',
         '/paths/~1blobs/put',

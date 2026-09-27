@@ -35,6 +35,10 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
                 return server.HTTPResult(
                     status_code=200, body=models.Pet(id=1, name="Mimi"), media_type="application/json"
                 )
+            if id == 4:
+                return server.HTTPResult(
+                    status_code=200, body=models.Pet(id=4, name="Mimi"), media_type="application/json; charset=utf-8"
+                )
             if id == 3:
                 return server.HTTPResult(
                     status_code=200, body=models.Error(message="v1"), media_type="application/json;profile=v1"
