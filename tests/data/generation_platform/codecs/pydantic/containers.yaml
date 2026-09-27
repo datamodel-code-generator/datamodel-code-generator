@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: Container unions
+  version: "1"
+paths:
+  /bags:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Bag"
+      responses:
+        "200":
+          description: The stored bag.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bag"
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [cat-name]
+      properties:
+        cat-name:
+          type: string
+      additionalProperties: false
+    Dog:
+      type: object
+      required: [dog-age]
+      properties:
+        dog-age:
+          type: integer
+      additionalProperties: false
+    Bag:
+      type: object
+      properties:
+        numbers:
+          anyOf:
+            - type: array
+              items:
+                type: integer
+            - type: array
+              items:
+                type: string
+            - type: string
+        tables:
+          anyOf:
+            - type: object
+              additionalProperties:
+                type: integer
+            - type: object
+              additionalProperties:
+                type: string
+        pets:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/Cat"
+            - type: array
+              items:
+                $ref: "#/components/schemas/Dog"
+        kennels:
+          anyOf:
+            - type: object
+              additionalProperties:
+                $ref: "#/components/schemas/Cat"
+            - type: object
+              additionalProperties:
+                $ref: "#/components/schemas/Dog"
+        pairs:
+          anyOf:
+            - type: array
+              prefixItems:
+                - $ref: "#/components/schemas/Cat"
+                - $ref: "#/components/schemas/Cat"
+              items: false
+              minItems: 2
+              maxItems: 2
+            - type: array
+              items:
+                $ref: "#/components/schemas/Dog"
+        maybe:
+          anyOf:
+            - type: array
+              items:
+                anyOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - type: "null"
+            - type: array
+              items:
+                $ref: "#/components/schemas/Dog"
+        words:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/Cat"
+            - type: array
+              items:
+                type: string

@@ -1,0 +1,16 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_containers_noalias",
+  "options": {"no_alias": true, "snake_case_field": true},
+  "cases": [
+    {"name": "pets-dog-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"pets": [{"dog-age": 1}]}},
+    {"name": "pets-cat-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"pets": [{"cat-name": "m"}]}},
+    {"name": "kennels-dog-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"kennels": {"k": {"dog-age": 1}}}},
+    {"name": "pairs-dogs-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"pairs": [{"dog-age": 1}]}},
+    {"name": "pairs-cats-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"pairs": [{"cat-name": "a"}, {"cat-name": "b"}]}},
+    {"name": "maybe-null-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"maybe": [null]}},
+    {"name": "maybe-dog-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"maybe": [{"dog-age": 1}]}},
+    {"name": "words-text-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"words": ["w"]}},
+    {"name": "tables-text-server-decode", "use": "/paths/~1bags/post request_body", "op": "decode", "value": {"tables": {"a": "x"}}}
+  ]
+}
