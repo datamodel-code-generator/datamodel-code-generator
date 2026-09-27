@@ -380,6 +380,9 @@ paths:
                 headers:
                   X-Trace:
                     schema: {type: string, pattern: '^t'}
+                  Content-Type:
+                    required: true
+                    schema: {type: string, pattern: '^never'}
               extra: {contentType: text/plain}
               size: {contentType: application/json}
               meta:
