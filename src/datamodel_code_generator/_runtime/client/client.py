@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote_plus
 from uuid import uuid4
 
 import httpx2
@@ -206,9 +206,10 @@ def _headers(
 def _query(lower: tuple[QueryPatch, ...], explicit: list[str], call: QueryPatch) -> str:
     """Return a query with its layers applied: the client's and views' patches, the explicit pairs, and the call's.
 
-    A patch's names and values are percent-encoded once, and explicit pairs compare by their decoded names.
+    A patch's names and values are percent-encoded once, and explicit pairs compare by their names decoded as forms
+    decode them, a plus sign being a space.
     """
-    named: list[tuple[str, str | None]] = [(unquote(pair.partition("=")[0]), pair) for pair in explicit]
+    named: list[tuple[str, str | None]] = [(unquote_plus(pair.partition("=")[0]), pair) for pair in explicit]
     pairs: list[tuple[str, str]] = []
     for layer in (*map(_encoded_query, lower), named, _encoded_query(call)):
         pairs = _patched(pairs, layer, str)

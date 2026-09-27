@@ -12,7 +12,7 @@ from tests.data.python.client_runtime import Exchange, arecord, json_response, r
 if TYPE_CHECKING:
     from types import ModuleType
 
-_RAW: Final = "https://raw.example.com/items?a=1&limit=2"
+_RAW: Final = "https://raw.example.com/items?a=1&limit=2&trace+id=old"
 
 
 def query(package: ModuleType, lines: list[str]) -> None:
@@ -34,7 +34,8 @@ def query(package: ModuleType, lines: list[str]) -> None:
         call = options.RequestOptions(query=(("limit", "7"), ("tags", None), ("x", "1"), ("x", "2")))
         record(lines, "call query over the parameters", lambda: view.pets.list_pets(x_trace=trace, limit=limit, labels=labels, options=call))
         exchange.respond(raw_response(200, b"ok", "text/plain"))
-        record(lines, "raw query", lambda: api.request_raw("GET", _RAW, options=options.RequestOptions(query=(("a", None),))).body_bytes)
+        raw = options.RequestOptions(query=(("a", None), ("trace id", "new")))
+        record(lines, "raw query", lambda: api.request_raw("GET", _RAW, options=raw).body_bytes)
     http.close()
     for label, patch in (
         ("query name that is empty", (("", "v"),)),
