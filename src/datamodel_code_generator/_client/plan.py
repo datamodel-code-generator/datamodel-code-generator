@@ -695,7 +695,8 @@ def _part_plans(wire: WirePlan, use: TypeUseBinding | None) -> tuple[tuple[PartP
             extra_location = SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
             return parts, _part_plan(wire, "", extra_location)
         case _:
-            return parts, PartPlan("")
+            pass
+    return parts, PartPlan("")
 
 
 def _part_plan(wire: WirePlan, name: str, location: SourceLocation) -> PartPlan:
@@ -709,7 +710,8 @@ def _part_plan(wire: WirePlan, name: str, location: SourceLocation) -> PartPlan:
         case ["integer", "number"]:
             return PartPlan(name, "number", repeated=repeated)
         case _:
-            return PartPlan(name, "json", repeated=repeated)
+            pass
+    return PartPlan(name, "json", repeated=repeated)
 
 
 def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:

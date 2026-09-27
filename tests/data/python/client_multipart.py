@@ -119,6 +119,7 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
         b"\r\n--b1\r\n\r\n\x00two\r\n\r\n"
         b'\r\n--b1\r\nContent-Disposition: form-data; filename="x; name=y"; name=third; filename=plain.bin\r\n\r\n3'
         b"\r\n--b1\r\nX-Only: 1\r\n"
+        b'\r\n--b1\r\nContent-Disposition: attachment; filename="caf\xe9.txt"\r\n\r\n4'
         b"\r\n--b1\r\nX-Bare: 2"
         b"\r\n--b1\r\n"
         b"\r\n--b1--"

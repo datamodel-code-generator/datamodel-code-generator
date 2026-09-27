@@ -560,8 +560,13 @@ def _parameter(value: str, name: str) -> str | None:
 
 
 def _headers(head: bytes) -> HeadersView:
+    """Return a part's headers, read as UTF-8, or as Latin-1 when they are not UTF-8."""
+    try:
+        text = head.decode()
+    except UnicodeDecodeError:
+        text = head.decode("latin-1")
     items: list[tuple[str, str]] = []
-    for line in head.decode().split("\r\n"):
+    for line in text.split("\r\n"):
         key, colon, value = line.partition(":")
         if not colon or not _TOKEN.fullmatch(key):
             msg = "A part header must be a token, a colon, and a value"
