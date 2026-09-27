@@ -163,7 +163,7 @@ class _Request:
                 self.query.extend(_pairs(fragments))
             case "header":
                 self.headers.extend(
-                    ((fragment.name or b"").decode("ascii"), fragment.value.decode("ascii")) for fragment in fragments
+                    ((fragment.name or b"").decode("ascii"), fragment.value.decode()) for fragment in fragments
                 )
             case _:
                 self.cookies.extend(_pairs(fragments))

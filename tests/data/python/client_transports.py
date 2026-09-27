@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import threading
+import time
 from typing import TYPE_CHECKING, Any
 
 import httpx2
@@ -295,10 +296,25 @@ async def _async_transports(package: ModuleType, lines: list[str]) -> None:
     owned.close_error = True
     client = package.AsyncClient(transport_adapter=transport_module.OwnedTransportAdapter(owned))
     await arecord(lines, "async owned adapter close bug", client.aclose)
+    sent: list[object] = []
+    unicode = httpx2.Client(transport=httpx2.MockTransport(lambda request: _header_echo(request, sent)))
+    with package.Client(http_client=unicode) as api:
+        trace = importlib.import_module(f"{package.__name__}.types.pets").ListPetsRequestCodecs.parameter(
+            location="header", name="X-Trace"
+        ).from_wire("café")
+        record(lines, "unicode header", lambda: api.pets.with_response.list_pets(x_trace=trace).info.status_code)
+    lines.append(f"  unicode header bytes {sent}")
     native = httpx2.AsyncClient(transport=httpx2.MockTransport(lambda request: httpx2.Response(200, json={"id": 3})))
     async with package.AsyncClient(http_client=native) as api:
         await arecord(lines, "async pre-read response", lambda: api.pets.get_pet(pet_id=_pet(package)))
     await native.aclose()
+
+
+def _header_echo(request: httpx2.Request, sent: list[object]) -> httpx2.Response:
+    sent.extend(value for name, value in request.headers.raw if name.lower() == b"x-trace")
+    content = b'[{"id":1,"name":"cat"}]'
+    headers = {"content-type": "application/json", "x-rate": "1"}
+    return httpx2.Response(200, headers=headers, stream=httpx2.ByteStream(content))
 
 
 def _asecondary(call: Callable[[], Any]) -> Callable[[], Any]:
@@ -350,13 +366,16 @@ def _closing(package: ModuleType, lines: list[str], label: str, cleanup: float, 
     record(outcome, "probe", lambda: api.pets.get_pet(pet_id=_pet(package), options="refused only once closing"))
     closer = threading.Thread(target=lambda: record(outcome, "close", api.close))
     closer.start()
+    deadline = time.monotonic() + 30
     while True:
         try:
             api.pets.get_pet(pet_id=_pet(package), options="refused only once closing")
         except errors.ClientClosedError:
             break
         except errors.ConfigurationError:
-            continue
+            if time.monotonic() > deadline:
+                msg = "The client never started closing"
+                raise TimeoutError(msg) from None
     if cleanup < 1:
         closer.join()
     adapter.proceed.set()

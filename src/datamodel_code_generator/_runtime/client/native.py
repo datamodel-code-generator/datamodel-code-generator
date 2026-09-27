@@ -49,10 +49,13 @@ def _request(
     context: AttemptIOContext,
     content: Iterator[bytes] | AsyncIterator[bytes] | None,
 ) -> httpx2.Request:
-    """Build the HTTPX2 request of an attempt, framing a body of known length with its Content-Length."""
-    headers = prepared.headers.items()
+    """Build the HTTPX2 request of an attempt, framing a body of known length with its Content-Length.
+
+    Header values go out as UTF-8, as the parameter codecs encode them.
+    """
+    headers = [(name.encode(), value.encode()) for name, value in prepared.headers]
     if (body := prepared.body) is not None and (length := body.content_length) is not None:
-        headers = (*headers, ("Content-Length", str(length)))
+        headers.append((b"Content-Length", str(length).encode()))
     timeout = context.timeout
     extensions = {
         "timeout": {"connect": timeout.connect, "read": timeout.read, "write": timeout.write, "pool": timeout.pool}

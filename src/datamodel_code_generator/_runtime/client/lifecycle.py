@@ -84,7 +84,7 @@ class Scope:
         deadline = monotonic() + timeout
         with self.condition:
             while self.active and (remaining := deadline - monotonic()) > 0:
-                self.condition.wait(remaining)
+                self.condition.wait(min(remaining, threading.TIMEOUT_MAX))
             return self.active
 
     async def adrain(self, timeout: float) -> int:
