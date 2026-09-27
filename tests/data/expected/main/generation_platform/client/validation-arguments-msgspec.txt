@@ -1,0 +1,4 @@
+# validation-arguments-msgspec
+render msgspec.Struct
+  APIGenerationError
+  E_CONFIG_VALUE binding validation.argument_overrides[0] /paths/~1pets/post/requestBody: The 'pydantic' arguments validation cannot take the request body application/json of POST /pets, which holds msgspec Structs that Pydantic cannot validate; select 'none'

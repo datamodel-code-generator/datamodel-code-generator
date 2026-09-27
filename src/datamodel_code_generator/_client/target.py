@@ -22,7 +22,7 @@ from datamodel_code_generator._client.plan import (
     style_uses,
 )
 from datamodel_code_generator._client.render import ClientRenderer
-from datamodel_code_generator._client.validation import admission_problems
+from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
@@ -46,9 +46,10 @@ if TYPE_CHECKING:
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
 VALIDATION: Final = ("jsonschema[format-nongpl]>=4.26", "referencing>=0.37")
+PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
-    "pydantic_v2.BaseModel": ("pydantic>=2.13.5",),
-    "pydantic_v2.dataclass": ("pydantic>=2.13.5",),
+    "pydantic_v2.BaseModel": (PYDANTIC,),
+    "pydantic_v2.dataclass": (PYDANTIC,),
     "msgspec.Struct": ("msgspec>=0.18",),
 }
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
@@ -100,7 +101,7 @@ class ClientTarget:
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
-        if refused := tuple(admission_problems(config.validation, codecs)):
+        if refused := tuple(admission_problems(config.validation, codecs, argument_uses(plan))):
             raise APIGenerationError(
                 tuple(
                     replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
@@ -110,13 +111,21 @@ class ClientTarget:
         renderer = ClientRenderer(
             config=config, package=request.layout.package, plan=plan, batch=batch, wire=wire, codecs=codecs
         )
+        validation = config.validation
         return TargetRender(
             files=renderer.files(),
             target_data=_TargetData(plan, config, request, codecs, wire).data(),
             dependencies=(
                 *DEPENDENCIES,
                 *(VALIDATION if codecs.bindings else ()),
-                *BACKEND_DEPENDENCIES.get(backend, ()),
+                *dict.fromkeys((
+                    *BACKEND_DEPENDENCIES.get(backend, ()),
+                    *(
+                        (PYDANTIC,)
+                        if "pydantic" in allowed(validation.arguments, validation.argument_overrides)
+                        else ()
+                    ),
+                )),
                 *((PATTERNS,) if patterned(wire) else ()),
                 *model_dependencies(request.models),
             ),

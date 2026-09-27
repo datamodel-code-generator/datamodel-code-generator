@@ -104,6 +104,7 @@ if TYPE_CHECKING:
     from .bodies import AsyncBodyAttempt, BodyAttempt
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ServerPlan
+    from .options import RequestValidation
     from .transports import AsyncTransportAdapter, AsyncTransportResponse, TransportAdapter, TransportResponse
 
 T = TypeVar("T")
@@ -305,6 +306,25 @@ def _encoding_error(
     operation: OperationPlan[object, object], location: tuple[str, str], error: BaseException | None = None
 ) -> RequestEncodingError:
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
+
+
+def _parameters(
+    operation: OperationPlan[object, object], arguments: tuple[object, ...], mode: RequestValidation
+) -> _Request:
+    """Return a call's request with its parameters encoded as its request validation mode selects."""
+    request = _Request()
+    for spec, value in zip(operation.parameters, arguments, strict=True):
+        plan = spec.plan
+        if isinstance(value, Unset):
+            if plan.required:
+                raise _encoding_error(operation, (plan.location, plan.name))
+            continue
+        try:
+            contribution = encode_parameter(plan, spec.encode(value, mode))
+        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            raise _encoding_error(operation, (plan.location, plan.name), error) from None
+        request.add(contribution, plan.name)
+    return request
 
 
 class _Request:
@@ -682,23 +702,16 @@ class _Core(Generic[AdapterT, HandleT]):
         Header patches apply in layers: the client's and views' over the generated headers, the parameters' over those,
         and the call's last; the body's media type and a narrowed Accept stay as the call chose them.
         """
-        request = _Request()
-        mode = settings.validation.request
-        for spec, value in zip(operation.parameters, arguments, strict=True):
-            plan = spec.plan
-            if isinstance(value, Unset):
-                if plan.required:
-                    raise _encoding_error(operation, (plan.location, plan.name))
-                continue
-            try:
-                contribution = encode_parameter(plan, spec.encode(value, mode))
-            except (*DATA_ERRORS, ValueError, TypeError) as error:
-                raise _encoding_error(operation, (plan.location, plan.name), error) from None
-            request.add(contribution, plan.name)
+        validation = settings.validation
+        if validation.arguments == "pydantic":
+            arguments, body = operation.checked(arguments, body, media_type)
+        request = _parameters(operation, arguments, validation.request)
         encoded = (
             None
             if operation.body is None
-            else operation.body.encode(operation.operation_id, body, media_type, operation.codecs, mode=mode)
+            else operation.body.encode(
+                operation.operation_id, body, media_type, operation.codecs, mode=validation.request
+            )
         )
         base = self._base(operation, settings)
         path = request.path

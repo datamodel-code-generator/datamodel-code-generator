@@ -37,6 +37,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "validation-ambiguous",
         "validation-adapters",
         "validation-adapters-schema",
+        "validation-arguments",
+        "validation-arguments-msgspec",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
