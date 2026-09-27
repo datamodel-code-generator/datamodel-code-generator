@@ -30,6 +30,7 @@ from datamodel_code_generator._generation_contract import (
     SourceLocation,
     TypeUseBinding,
 )
+from datamodel_code_generator._openapi_wire_plan import property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
@@ -830,13 +831,9 @@ def _file(wire: WirePlan, location: SourceLocation) -> bool:
 def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldFacts]]:
     """Return the members of a form-data use as its model declares them, allOf branches included."""
     return [
-        (member.wire_name, member.schema, facts)
-        for member in use.members
-        if member.member_kind == "property"
-        and member.wire_name is not None
-        and member.schema is not None
-        and member.exclusion is None
-        and (facts := member.model_facts) is not None
+        (name, schema, facts)
+        for name, schema, member in property_members(use)
+        if member.exclusion is None and (facts := member.model_facts) is not None
     ]
 
 

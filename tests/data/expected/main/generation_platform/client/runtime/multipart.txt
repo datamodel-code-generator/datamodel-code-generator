@@ -117,8 +117,12 @@
   > POST https://media.example.com/api/albums
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 524] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na b\r\n--<boundary>\r\nContent-Disposition: form-data; name="w"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="h"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nt\r\n--<boundary>--\r\n'
   album = None
+  > POST https://media.example.com/api/albums
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 261] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\n1\r\n--<boundary>--\r\n'
+  album of an omitted title beside a bound's extra of its name = None
   album of bounds whose extra is named as another member ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.title') [operation_id='submitAlbum', location=('body', 'title'), cause=ValueError('Two form-data members write parts of the same name')] request_encoding_error
   album of another member named as a bound's extra ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=ValueError('Two form-data members write parts of the same name')] request_encoding_error
+  album of a bound's extra its disposition pattern refuses ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=WireValidationError('The value does not satisfy pattern at /')] request_encoding_error
   album of a tag holding its delimiter ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] request_encoding_error
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
@@ -384,8 +388,12 @@
   > POST https://media.example.com/api/albums
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 524] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na b\r\n--<boundary>\r\nContent-Disposition: form-data; name="w"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="h"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nt\r\n--<boundary>--\r\n'
   album = None
+  > POST https://media.example.com/api/albums
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 261] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\n1\r\n--<boundary>--\r\n'
+  album of an omitted title beside a bound's extra of its name = None
   album of bounds whose extra is named as another member ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.title') [operation_id='submitAlbum', location=('body', 'title'), cause=ValueError('Two form-data members write parts of the same name')] request_encoding_error
   album of another member named as a bound's extra ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=ValueError('Two form-data members write parts of the same name')] request_encoding_error
+  album of a bound's extra its disposition pattern refuses ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=WireValidationError('The value does not satisfy pattern at /')] request_encoding_error
   album of a tag holding its delimiter ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] request_encoding_error
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''

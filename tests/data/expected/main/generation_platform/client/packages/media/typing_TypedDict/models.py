@@ -177,9 +177,12 @@ class Bounds(TypedDict, extra_items=int):
 
 class FieldAlbumsPostRequest(TypedDict):
     photo: bytes
-    tags: NotRequired[list[str]]
     bounds: NotRequired[Bounds]
     title: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader: TypeAlias = str
 
 
 class FieldDocumentsIdGetPathIdParameter(TypedDict):

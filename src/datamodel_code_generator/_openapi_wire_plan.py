@@ -53,7 +53,7 @@ from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireV
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Sequence
 
-    from datamodel_code_generator._generation_contract import FrozenLiteral, TypeUseBinding
+    from datamodel_code_generator._generation_contract import FieldUseBinding, FrozenLiteral, TypeUseBinding
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._runtime.model_codecs.context import Direction
     from datamodel_code_generator._source import YamlValue
@@ -750,7 +750,8 @@ def _form(
         location = _schema_location(planner, (use.id,), use.id.use_site)
         styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
         _, _, fields, additional = _shape(planner, location, form=True, skip=frozenset(styled))
-        encoded = tuple(_encoding(planner, location, declaration) for declaration in styled.values())
+        members = {name: schema for name, schema, _ in property_members(use)}
+        encoded = tuple(_encoding(planner, members, declaration) for declaration in styled.values())
         _distinct(location, [field.name for field in fields], encoded)
     except _PlanError as error:
         _refused(planner, use, error)
@@ -764,18 +765,21 @@ def _styles(
     """Return the query parameter plans of the form-data members whose encodings name a style or its options."""
     try:
         location = _schema_location(planner, (use.id,), use.id.use_site)
-        encoded = tuple(_encoding(planner, location, declaration) for declaration in encodings)
-        properties = planner.resolved(location)[0].get("properties")
+        members = {name: schema for name, schema, _ in property_members(use)}
+        encoded = tuple(_encoding(planner, members, declaration) for declaration in encodings)
         styled = {plan.name for plan in encoded}
-        _distinct(
-            location,
-            [name for name in (properties if isinstance(properties, dict) else {}) if name not in styled],
-            encoded,
-        )
+        _distinct(location, [name for name in members if name not in styled], encoded)
     except _PlanError as error:
         _refused(planner, use, error)
         return None
     return use.id, encoded
+
+
+def property_members(use: TypeUseBinding) -> Iterator[tuple[str, SourceLocation, FieldUseBinding]]:
+    """Yield each property a use's model declares, its allOf branches' included, with its wire name and schema."""
+    for member in use.members:
+        if member.member_kind == "property" and member.wire_name is not None and member.schema is not None:
+            yield member.wire_name, member.schema, member
 
 
 def _refused(planner: _WirePlanner, use: TypeUseBinding, error: _PlanError) -> None:
@@ -801,15 +805,13 @@ def _styled(encoding: WireDeclaration) -> bool:
     return any(_fact(encoding, key) is not None for key in ("style", "explode", "allowReserved", "contentType"))
 
 
-def _encoding(planner: _WirePlanner, location: SourceLocation, encoding: WireDeclaration) -> ParameterPlan:
-    """Return the query parameter plan of a URL-encoded member: its style, or its content when only that is named.
+def _encoding(planner: _WirePlanner, members: Mapping[str, SourceLocation], encoding: WireDeclaration) -> ParameterPlan:
+    """Return the query parameter plan of a form member: its style, or its content when only that is named.
 
     A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes.
     """
     name, source = encoding.name or "", encoding.use_site
-    value, resolved = planner.resolved(location)
-    properties = value.get("properties")
-    if not isinstance(properties, dict) or name not in properties:
+    if (member := members.get(name)) is None:
         raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message="An encoding names no member of its form")
     style, explode, reserved, content = (
         _fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
@@ -824,7 +826,7 @@ def _encoding(planner: _WirePlanner, location: SourceLocation, encoding: WireDec
                     message="The member content requires an explicit parameter adapter",
                 )
             return ParameterPlan(location="query", name=name, content_media_type=media)
-        shape, kind, fields, additional = _shape(planner, _at(resolved, "properties", name), form=False)
+        shape, kind, fields, additional = _shape(planner, member, form=False)
         chosen = str(style or "form")
         return ParameterPlan(
             location="query",
@@ -836,7 +838,7 @@ def _encoding(planner: _WirePlanner, location: SourceLocation, encoding: WireDec
             kind=kind,
             fields=fields,
             additional=additional,
-            reserved_names=tuple(sorted(str(other) for other in properties if other != name)),
+            reserved_names=tuple(sorted(other for other in members if other != name)),
         )
     except ValueError as error:
         raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=str(error)) from None

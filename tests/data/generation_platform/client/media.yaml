@@ -479,22 +479,29 @@ paths:
         content:
           multipart/form-data:
             schema:
-              type: object
-              required: [photo]
-              properties:
-                photo: {type: string, format: binary}
-                tags:
-                  type: array
-                  items: {type: string}
-                bounds:
-                  type: object
+              allOf:
+                - type: object
+                  required: [photo]
                   properties:
-                    w: {type: integer}
-                  additionalProperties: {type: integer}
-                title: {type: string}
+                    photo: {type: string, format: binary}
+                    bounds:
+                      type: object
+                      properties:
+                        w: {type: integer}
+                      additionalProperties: {type: integer}
+                    title: {type: string}
+                - type: object
+                  properties:
+                    tags:
+                      type: array
+                      items: {type: string}
             encoding:
               tags: {style: spaceDelimited}
-              bounds: {explode: true}
+              bounds:
+                explode: true
+                headers:
+                  Content-Disposition:
+                    schema: {type: string, pattern: 'name="[^b]'}
       responses:
         '204':
           description: Stored.

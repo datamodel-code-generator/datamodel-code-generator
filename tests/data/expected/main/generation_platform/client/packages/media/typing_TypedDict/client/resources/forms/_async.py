@@ -387,8 +387,8 @@ class AsyncFormsResource:
     async def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAlbumResponse:
         """Call POST /albums."""
@@ -726,8 +726,8 @@ class AsyncFormsWithResponse:
     async def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAlbumResponse]:
         """Call POST /albums."""
@@ -1044,8 +1044,8 @@ class AsyncFormsWithRawResponse:
     async def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call POST /albums."""
@@ -1362,8 +1362,8 @@ class AsyncFormsWithStreamingResponse:
     def submit_album(
         self,
         *,
-        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
-        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        body: AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /albums."""

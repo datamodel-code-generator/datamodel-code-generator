@@ -277,11 +277,14 @@ class PartHeader:
 
 
 def _checked(
-    part: FieldPart[object] | FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan, filename: str | None
+    part: FieldPart[object] | FilePart[SyncBinaryBody | AsyncBinaryBody],
+    plan: PartPlan,
+    name: str,
+    filename: str | None,
 ) -> None:
-    """Check the headers a part carries, its Content-Disposition among them, against its member's encoding."""
+    """Check the headers a part carries, its Content-Disposition of the name it is sent under among them."""
     fragments = (
-        ParameterFragment(b"Content-Disposition", _disposition(part.name, filename).encode()),
+        ParameterFragment(b"Content-Disposition", _disposition(name, filename).encode()),
         *(ParameterFragment(key.encode(), value.encode()) for key, value in part.headers),
     )
     try:
@@ -314,8 +317,6 @@ class _Names:
         if name in self.seen and not (file and plan.repeated):
             raise _malformed(name, ValueError(_REPEATED))
         self.seen.add(name)
-        if self.owners is not None and plan.style is None:
-            self.claim(name, (name,))
         return plan
 
     def claim(self, member: str, written: Iterable[str]) -> None:
@@ -452,12 +453,11 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names
     try:
         wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value)
         if plan.style is not None and names is not None:
-            pairs = part_pairs(plan.style, wire)
-            names.claim(part.name, [key for key, _ in pairs])
-            return b"".join([
-                multipart_head(boundary, key, None, part.content_type, part.headers) + text.encode() + b"\r\n"
-                for key, text in pairs
-            ])
+            return _styled(part, boundary, plan, part_pairs(plan.style, wire), names)
+        if names is not None and names.owners is not None:
+            names.claim(part.name, (part.name,))
+        if plan.headers:
+            _checked(part, plan, part.name, None)
         if not plan.repeated or not isinstance(wire, tuple):
             return _member(part, boundary, wire, plan)
         if not wire:
@@ -465,6 +465,20 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names
         return b"".join([_member(part, boundary, item, plan) for item in wire])
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
+
+
+def _styled(
+    part: FieldPart[object], boundary: str, plan: PartPlan, pairs: tuple[tuple[str, str], ...], names: _Names
+) -> bytes:
+    """Return the parts a styled member writes, each name claimed for it and its headers checked under that name."""
+    names.claim(part.name, [key for key, _ in pairs])
+    if plan.headers:
+        for key, _ in pairs:
+            _checked(part, plan, key, None)
+    return b"".join([
+        multipart_head(boundary, key, None, part.content_type, part.headers) + text.encode() + b"\r\n"
+        for key, text in pairs
+    ])
 
 
 def _member(part: FieldPart[object], boundary: str, item: WireValue, plan: PartPlan) -> bytes:
@@ -621,14 +635,14 @@ def _layout(
         if _is_field(part):
             plan = _ANY if names is None else names.plan(part.name, file=False)
             if (field := _field(part, boundary, plan, names)) is not None:
-                if plan.headers:
-                    _checked(part, plan, None)
                 encoded.append(field)
         elif _is_file(part):
             file = _ANY if names is None else names.plan(part.name, file=True)
+            if names is not None and names.owners is not None:
+                names.claim(part.name, (part.name,))
             encoded.append(_file_head(part, boundary, file))
             if file.headers:
-                _checked(part, file, part.filename)
+                _checked(part, file, part.name, part.filename)
             pieces.extend((b"".join(encoded), part))
             encoded = [b"\r\n"]
         else:

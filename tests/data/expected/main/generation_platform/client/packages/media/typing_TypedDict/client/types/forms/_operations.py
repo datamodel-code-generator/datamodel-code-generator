@@ -418,15 +418,15 @@ class _SubmitUploadRequestCodecs(
 SubmitUploadRequestCodecs: Final = _SubmitUploadRequestCodecs(
     default='multipart/form-data',
     parts=(
-        ('multipart/form-data', 'id', model_bindings.outbound_22),
-        ('multipart/form-data', 'title', model_bindings.outbound_23),
-        ('multipart/form-data', 'count', model_bindings.outbound_24),
-        ('multipart/form-data', 'tags', model_bindings.outbound_25),
-        ('multipart/form-data', 'meta', model_bindings.outbound_26),
+        ('multipart/form-data', 'id', model_bindings.outbound_23),
+        ('multipart/form-data', 'title', model_bindings.outbound_24),
+        ('multipart/form-data', 'count', model_bindings.outbound_25),
+        ('multipart/form-data', 'tags', model_bindings.outbound_26),
+        ('multipart/form-data', 'meta', model_bindings.outbound_27),
         ('multipart/form-data', 'photo', None),
         ('multipart/form-data', 'pages', None),
     ),
-    extras=(('multipart/form-data', model_bindings.outbound_27),),
+    extras=(('multipart/form-data', model_bindings.outbound_28),),
     requests=('multipart/form-data',),
 )
 
@@ -544,7 +544,7 @@ class _SubmitAvatarRequestCodecs(
 SubmitAvatarRequestCodecs: Final = _SubmitAvatarRequestCodecs(
     bodies=(('application/json', model_bindings.outbound_6),),
     parts=(
-        ('multipart/form-data', 'caption', model_bindings.outbound_36),
+        ('multipart/form-data', 'caption', model_bindings.outbound_37),
         ('multipart/form-data', 'avatar', None),
     ),
     requests=('multipart/form-data', 'application/json'),
@@ -599,7 +599,7 @@ class _SubmitScansRequestCodecs(
 
 SubmitScansRequestCodecs: Final = _SubmitScansRequestCodecs(
     default='multipart/form-data',
-    parts=(('multipart/form-data', 'note', model_bindings.outbound_37),),
+    parts=(('multipart/form-data', 'note', model_bindings.outbound_38),),
     requests=('multipart/form-data',),
 )
 
@@ -667,7 +667,7 @@ class _SubmitLabelsRequestCodecs(
 SubmitLabelsRequestCodecs: Final = _SubmitLabelsRequestCodecs(
     default='multipart/form-data',
     parts=(('multipart/form-data', 'sheet', None),),
-    extras=(('multipart/form-data', model_bindings.outbound_38),),
+    extras=(('multipart/form-data', model_bindings.outbound_39),),
     requests=('multipart/form-data',),
 )
 
@@ -796,12 +796,12 @@ class _SubmitCoverRequestCodecs(
 SubmitCoverRequestCodecs: Final = _SubmitCoverRequestCodecs(
     default='multipart/form-data',
     parts=(
-        ('multipart/form-data', 'note', model_bindings.outbound_39),
-        ('multipart/form-data', 'size', model_bindings.outbound_40),
-        ('multipart/form-data', 'meta', model_bindings.outbound_41),
+        ('multipart/form-data', 'note', model_bindings.outbound_40),
+        ('multipart/form-data', 'size', model_bindings.outbound_41),
+        ('multipart/form-data', 'meta', model_bindings.outbound_42),
         ('multipart/form-data', 'cover', None),
         ('multipart/form-data', 'scans', None),
-        ('multipart/form-data', 'extra', model_bindings.outbound_42),
+        ('multipart/form-data', 'extra', model_bindings.outbound_43),
     ),
     requests=('multipart/form-data',),
 )
@@ -924,17 +924,10 @@ class SubmitAlbumHTTPError(HTTPStatusError[SubmitAlbumErrorData]):
 
 
 class _SubmitAlbumRequestCodecs(
-    RequestCodecs[Never, Never, NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_12] | NativeOutboundCodec[str], RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | WireValue]]],
+    RequestCodecs[Never, Never, NativeOutboundCodec[_dcg_type_12] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]], RequestMedia[MultipartBody[_dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]]],
 ):
     """The outbound codecs of the submit_album request."""
 
-    @overload
-    def part(
-        self,
-        *,
-        name: Literal['tags'],
-        media_type: Literal['multipart/form-data'] | None = None,
-    ) -> NativeOutboundCodec[list[str]]: ...
     @overload
     def part(
         self,
@@ -953,15 +946,22 @@ class _SubmitAlbumRequestCodecs(
     def part(
         self,
         *,
-        name: str,
-        media_type: str | None = None,
-    ) -> NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_12] | NativeOutboundCodec[str]: ...
+        name: Literal['tags'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[list[str]]: ...
+    @overload
     def part(
         self,
         *,
         name: str,
         media_type: str | None = None,
-    ) -> NativeOutboundCodec[list[str]] | NativeOutboundCodec[_dcg_type_12] | NativeOutboundCodec[str]:
+    ) -> NativeOutboundCodec[_dcg_type_12] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]]: ...
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_12] | NativeOutboundCodec[str] | NativeOutboundCodec[list[str]]:
         """Return the outbound codec of one part of a body sent as parts."""
         return self._part(name, media_type)
 
@@ -970,7 +970,7 @@ class _SubmitAlbumRequestCodecs(
         *,
         declared_media: Literal['multipart/form-data'],
         concrete_media: str,
-    ) -> RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | WireValue]]:
+    ) -> RequestMedia[MultipartBody[_dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue], AsyncMultipartBody[_dcg_type_12 | ModelValue[_dcg_type_12] | str | ModelValue[str] | list[str] | ModelValue[list[str]] | WireValue]]:
         """Return the selector of a declared request media type for a concrete one."""
         return self._request_media(declared_media, concrete_media)
 
@@ -979,9 +979,9 @@ SubmitAlbumRequestCodecs: Final = _SubmitAlbumRequestCodecs(
     default='multipart/form-data',
     parts=(
         ('multipart/form-data', 'photo', None),
-        ('multipart/form-data', 'tags', model_bindings.outbound_43),
         ('multipart/form-data', 'bounds', model_bindings.outbound_44),
         ('multipart/form-data', 'title', model_bindings.outbound_45),
+        ('multipart/form-data', 'tags', model_bindings.outbound_46),
     ),
     requests=('multipart/form-data',),
 )

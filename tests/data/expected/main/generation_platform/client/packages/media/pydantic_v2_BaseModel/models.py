@@ -244,9 +244,15 @@ class Bounds(BaseModel):
 
 class FieldAlbumsPostRequest(BaseModel):
     photo: bytes
-    tags: list[str] | None = None
     bounds: Bounds | None = None
     title: str | None = None
+    tags: list[str] | None = None
+
+
+class FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader(
+    RootModel[constr(pattern=r'name="[^b]')]
+):
+    root: constr(pattern=r'name="[^b]')
 
 
 class FieldDocumentsIdGetPathIdParameter(BaseModel):

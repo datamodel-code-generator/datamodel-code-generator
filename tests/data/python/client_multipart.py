@@ -404,7 +404,7 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
 
 def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send members in the parts their query styles give, without percent-encoding, and refuse names two members write."""
-    bodies, _, types = _modules(package)
+    bodies, options, types = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
     stickers = types.SubmitStickersRequestCodecs.body()
     sticker = {
@@ -440,9 +440,16 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         ),
     )
     clash = field("bounds", bounds.from_wire({"title": 1}))
+    exchange.respond(raw_response(204))
+    record(
+        lines,
+        "album of an omitted title beside a bound's extra of its name",
+        lambda: api.forms.submit_album(body=body((photo, field("title", options.UNSET), clash))),
+    )
     for label, parts in (
         ("album of bounds whose extra is named as another member", (photo, clash, field("title", "t"))),
         ("album of another member named as a bound's extra", (photo, field("title", "t"), clash)),
+        ("album of a bound's extra its disposition pattern refuses", (photo, field("bounds", bounds.from_wire({"b2": 1})))),
         ("album of a tag holding its delimiter", (photo, field("tags", ["a b"]))),
     ):
         record(lines, label, lambda parts=parts: api.forms.submit_album(body=body(parts)))
