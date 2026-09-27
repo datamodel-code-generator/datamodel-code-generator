@@ -111,3 +111,15 @@ class ClientOptions(_Options):
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RequestOptions(_Options):
     """Settings of one call; every field left UNSET inherits the client's."""
+
+
+@dataclass(frozen=True, slots=True)
+class Settings:
+    """The settings a call runs with: its client's or view's, with the call's options layered on them."""
+
+    base_url: str | None
+    server: ServerSelection
+    max_response_bytes: int | None
+    max_error_body_bytes: int
+    cleanup_timeout: float
+    max_stream_bytes: int | None

@@ -6,6 +6,7 @@ import asyncio
 import gzip
 import importlib
 import io
+import stat
 import tempfile
 import threading
 import time
@@ -264,7 +265,12 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
         response.stream_to(sink)
     with streaming.get_pet(pet_id=pet) as response:
         response.stream_to(target)
+    plain = directory / "plain.json"
+    plain.write_bytes(b"")
+    permissions = stat.S_IMODE(target.stat().st_mode) == stat.S_IMODE(plain.stat().st_mode)
+    plain.unlink()
     lines.append(f"  downloaded {sink.getvalue()!r} open {not sink.closed} {target.read_bytes()!r} {_files(directory)}")
+    lines.append(f"  downloaded with the permissions of a new file {permissions}")
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"[]",)), _streamed(200, (b"{", b"}"), fail=True))
     with streaming.get_pet(pet_id=pet) as response:
         lines.append(f"  existing {_outcome(lambda: response.stream_to(target))} then read {response.read()!r}")
@@ -398,15 +404,17 @@ def _adapters(package: ModuleType, lines: list[str]) -> None:
             lambda request, context: Response(lines, 200, json, (_PET[:5], "text")),
             lambda request, context: Response(lines, "200", json, ()),
             lambda request, context: _Interrupted(),
+            lambda request, context: Response(lines, 200, json, (b"{", Stop())),
         ))
         lines.append(f"  adapter saved {_saved(api.pets.with_raw_response.get_pet(pet_id=pet))}")
         with api.pets.with_streaming_response.get_pet(pet_id=pet) as response:
             record(lines, "adapter chunk type", lambda: list(response.iter_bytes()))
         record(lines, "adapter status type", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
-        try:
-            api.pets.with_raw_response.get_pet(pet_id=pet)
-        except Stop:
-            lines.append("  adapter stop before the headers propagated")
+        for label in ("before the headers", "while reading a saved body"):
+            try:
+                api.pets.with_raw_response.get_pet(pet_id=pet)
+            except Stop:
+                lines.append(f"  adapter stop {label} propagated")
         adapter.replies.append(_raise(Stop()))
         try:
             api.request_raw("GET", "https://x.example.com")
@@ -572,6 +580,7 @@ async def _async_handles(package: ModuleType, lines: list[str]) -> None:
         lambda request, context: AsyncResponse(lines, 200, json, (_PET[:5], "text")),
         lambda request, context: AsyncResponse(lines, "200", json, ()),
         lambda request, context: _Interrupted(),
+        lambda request, context: AsyncResponse(lines, 200, json, (b"{", Stop())),
         lambda request, context: AsyncResponse(lines, 200, json, (_PET,), close_error=True),
         lambda request, context: AsyncResponse(lines, 200, json, (b"{", RuntimeError("read bug")), close_error=True),
         lambda request, context: AsyncResponse(lines, 200, json, (_PET[:5], _PET[5:]), close_error=True),
@@ -582,10 +591,11 @@ async def _async_handles(package: ModuleType, lines: list[str]) -> None:
     async with api.pets.with_streaming_response.get_pet(pet_id=pet) as held:
         await arecord(lines, "async adapter chunk type", lambda: _alist(held.iter_bytes()))
     await arecord(lines, "async adapter status type", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
-    try:
-        await api.pets.with_raw_response.get_pet(pet_id=pet)
-    except Stop:
-        lines.append("  async adapter stop before the headers propagated")
+    for label in ("before the headers", "while reading a saved body"):
+        try:
+            await api.pets.with_raw_response.get_pet(pet_id=pet)
+        except Stop:
+            lines.append(f"  async adapter stop {label} propagated")
     await arecord(lines, "async handle close failure", lambda: _aentered(api.pets.with_streaming_response.get_pet(pet_id=pet)))
     lines.append(f"  async read and close failures {await _aoutcome(lambda: _aread_in_block(api, pet))}")
     lines.append(f"  async refused read and close failure {await _aoutcome(lambda: _aswitch_in_block(api, pet))}")

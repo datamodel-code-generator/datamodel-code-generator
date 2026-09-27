@@ -47,7 +47,7 @@ from .errors import (
 from .lifecycle import Scope
 from .native import AsyncHttpx2Transport, Httpx2Transport
 from .operations import DATA_ERRORS, ResponseDecoder, normalized
-from .options import ClientOptions, RequestOptions, ServerSelection, checked_base_url, is_base_url
+from .options import ClientOptions, RequestOptions, ServerSelection, Settings, checked_base_url, is_base_url
 from .raw import AsyncRawResponse, RawResponse
 from .responses import HeadersView, Response, ResponseInfo
 from .transports import (
@@ -97,18 +97,6 @@ class ClientDefaults:
     """The generated defaults of one client package."""
 
     user_agent: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class Settings:
-    """The settings a call runs with: its client's or view's, with the call's options layered on them."""
-
-    base_url: str | None
-    server: ServerSelection
-    max_response_bytes: int | None
-    max_error_body_bytes: int
-    cleanup_timeout: float
-    max_stream_bytes: int | None
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
@@ -855,7 +843,11 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             scope.release()
             raise
         if not stream:
-            handle.read()
+            try:
+                handle.read()
+            except BaseException as error:
+                handle.discard(error)
+                raise
         return handle
 
     def _send(
@@ -1117,7 +1109,11 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             scope.release()
             raise
         if not stream:
-            await handle.read()
+            try:
+                await handle.read()
+            except BaseException as error:
+                await handle.discard(error)
+                raise
         return handle
 
     async def _send(

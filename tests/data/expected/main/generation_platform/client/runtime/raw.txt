@@ -125,6 +125,7 @@
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   downloaded b'{"id":3,"name":"fox"}' open True b'{"id":3,"name":"fox"}' ['pet.json']
+  downloaded with the permissions of a new file True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   existing FileExistsError secondary [] then read b'{}'
@@ -225,6 +226,10 @@
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   adapter stop before the headers propagated
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter stop while reading a saved body propagated
   > GET https://x.example.com [Accept-Encoding: gzip, deflate] None None None
     unknown 5.0/30.0/30.0/5.0
   adapter stop while sending propagated
@@ -324,6 +329,10 @@
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   async adapter stop before the headers propagated
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter stop while reading a saved body propagated
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed

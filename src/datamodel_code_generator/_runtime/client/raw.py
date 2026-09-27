@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import errno
 import os
-import tempfile
 from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, BinaryIO, Generic, Literal, TypeAlias
+from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
 
 from typing_extensions import Self, TypeVar
 
@@ -34,11 +33,12 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ..model_codecs.wire import JSONValue
-    from .client import Settings
     from .lifecycle import Scope
     from .operations import ResponseDecoder
+    from .options import Settings
     from .responses import ResponseInfo
 
+_BINARY: Final[int] = getattr(os, "O_BINARY", 0)
 Action: TypeAlias = Literal["read", "text", "json", "iter_bytes", "iter_raw_bytes", "stream_to"]
 State: TypeAlias = Literal["buffered", "open", "streaming", "consumed", "closed", "failed"]
 SourceT = TypeVar("SourceT")
@@ -69,8 +69,9 @@ class _SavedPieces:
 
 
 def _temporary(path: Path) -> tuple[int, Path]:
-    handle, name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".part")
-    return handle, Path(name)
+    """Create a new file beside the target, with the permissions a plain new file gets under the umask."""
+    temporary = path.with_name(f".{path.name}.{os.urandom(8).hex()}.part")
+    return os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | _BINARY, 0o666), temporary
 
 
 def _commit(temporary: Path, path: Path, *, overwrite: bool) -> None:
