@@ -12,7 +12,14 @@ from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.config import ClientGenerationConfig
-from datamodel_code_generator._client.plan import PlanError, Planner, form_uses, part_uses, plan_uses
+from datamodel_code_generator._client.plan import (
+    PlanError,
+    Planner,
+    encoding_header_uses,
+    form_uses,
+    part_uses,
+    plan_uses,
+)
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
@@ -114,7 +121,11 @@ def _wire(
     return plan_wire(
         batch,
         request.lease,
-        [*(use for operation in request.operations for use in operation_uses(operation)), *(part.id for part in parts)],
+        [
+            *(use for operation in request.operations for use in operation_uses(operation)),
+            *encoding_header_uses(request),
+            *(part.id for part in parts),
+        ],
         operations=frozenset(operation.id for operation in request.operations),
         documents=request.documents.pointers,
         forms=dict(form_uses(request)),
@@ -289,7 +300,14 @@ class _TargetData:
         """Return each member plan of media sent or read as parts with a projection of its use, then any other's."""
         extra = media.extra
         return (
-            [(*_plan(part), project(part.use)) for part in media.members or ()],
+            [
+                (
+                    *_plan(part),
+                    project(part.use),
+                    [(header.name, header.required, header.plan, project(header.use)) for header in part.headers],
+                )
+                for part in media.members or ()
+            ],
             None if extra is None else (*_plan(extra), project(extra.use)),
         )
 

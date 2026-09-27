@@ -87,6 +87,31 @@ paths:
       responses:
         '204':
           description: Form-data encodings the client does not send yet.
+  /required-part-header:
+    post:
+      operationId: postRequiredPartHeader
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                a: {type: string}
+                b: {type: string}
+            encoding:
+              a:
+                headers:
+                  X-Trace:
+                    required: true
+                    schema: {type: string}
+              b:
+                headers:
+                  Content-Disposition:
+                    required: true
+                    schema: {type: string}
+      responses:
+        '204':
+          description: A required part header on an object sent whole.
   /invalid:
     post:
       operationId: postInvalid

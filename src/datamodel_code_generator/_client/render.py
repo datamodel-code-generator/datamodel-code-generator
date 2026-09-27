@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cached_property, partial
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
@@ -1218,6 +1218,22 @@ class _Registry(_Typing):
                 *((flag, "True") for flag, value in flags if value),
                 *((("encoder=", self.encoder(module, part.use)),) if part.use is not None else ()),
                 *((("content_types=", _tuple(map(repr, plan.content_types))),) if plan.content_types else ()),
+                *(
+                    (("headers=", _tuple(map(partial(self.part_header, module), part.headers))),)
+                    if part.headers
+                    else ()
+                ),
+            ),
+        )
+
+    def part_header(self, module: Module, header: HeaderSpec) -> Group:
+        """Return the PartHeader constructor of one header an encoding declares for a member's parts."""
+        assert header.use is not None
+        return _call(
+            module.local("_runtime.client.multipart", "PartHeader"),
+            (
+                ("", parameter_plan(module.local, header.plan)),
+                ("", self.codec(module, header.use, facade=True)),
             ),
         )
 

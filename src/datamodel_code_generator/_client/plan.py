@@ -79,10 +79,14 @@ _STYLED: Final = ("style", "explode", "allowReserved")
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PartSpec:
-    """One member of a form-data body with file parts: its plan, and the type use of its values unless it is a file."""
+    """One member of a form-data body with file parts: its plan, its values' type use, and its encoding's headers.
+
+    A file member has no type use of its values.
+    """
 
     plan: PartPlan
     use: TypeUseBinding | None = None
+    headers: tuple[HeaderSpec, ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -129,7 +133,7 @@ class BodySpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class HeaderSpec:
-    """One effective declared response header, with the plan and type use that decode its value."""
+    """One effective declared header of a response or a member's parts, with the plan and use that decode its value."""
 
     name: str
     required: bool
@@ -481,15 +485,31 @@ class Planner:
         fields, additional, encoded = (
             self.forms.get(use.id, ((), None, ())) if kind == "form" and use is not None else ((), None, ())
         )
-        media_of = self.part_media(operation, declaration, media_type, use) if kind == "multipart" and request else {}
+        media_of, headers_of = (
+            self.part_media(operation, declaration, media_type, use) if kind == "multipart" and request else ({}, {})
+        )
         members: tuple[PartSpec, ...] | None = None
         extra: PartSpec | None = None
         if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None:
             members, extra = (
-                _sent(self.wire, self._schemas, use, use.schema, media_of)
+                _sent(self.wire, self._schemas, use, use.schema, media_of=media_of, headers_of=headers_of)
                 if request
                 else _received(self.wire, self._schemas, use, use.schema)
             )
+            if members is None:
+                self.problems.extend(
+                    _problem(
+                        "E_CLIENT_UNSUPPORTED",
+                        f"The {encoding.name} encoding of the {media_type} media of {_label(operation)} requires a "
+                        "header only a body sent as parts carries",
+                        encoding.use_site,
+                    )
+                    for encoding in declaration.children
+                    if any(
+                        header.required and header.name.lower() != "content-disposition"
+                        for header in headers_of.get(encoding.name or "", ())
+                    )
+                )
         parts, additional_part = (
             _part_plans(self.wire, use) if kind == "multipart" and not request and members is None else ((), None)
         )
@@ -511,20 +531,24 @@ class Planner:
 
     def part_media(
         self, operation: OperationContract, declaration: WireDeclaration, media_type: str, use: TypeUseBinding | None
-    ) -> dict[str, tuple[str, ...]]:
-        """Return the media types each form-data member's encoding names, reporting the encodings not sent yet.
+    ) -> tuple[dict[str, tuple[str, ...]], dict[str, tuple[HeaderSpec, ...]]]:
+        """Return the media types and headers each form-data member's encoding names, reporting those not sent yet.
 
         A member holding no files takes one JSON or text media type; a file member takes any media types and ranges.
+        A declared header with a schema is checked on the member's parts; one without a schema is not.
         """
         members = {} if use is None else {name: member for name, member, _ in _members(use)}
         media_of: dict[str, tuple[str, ...]] = {}
+        headers_of: dict[str, tuple[HeaderSpec, ...]] = {}
         for encoding in (child for child in declaration.children if child.kind == "encoding"):
             name = encoding.name or ""
             label = f"The {name} encoding of the {media_type} media of {_label(operation)}"
+            if name in members and (headers := self._part_headers(encoding)):
+                headers_of[name] = headers
             match _content_types(encoding):
                 case _ if name not in members:
                     self.problems.append(_problem("E_METADATA_REQUIRED", f"{label} names no member", encoding.use_site))
-                case _ if encoding.children or any(fact(encoding, key) is not None for key in _STYLED):
+                case _ if any(fact(encoding, key) is not None for key in _STYLED):
                     self.problems.append(
                         _problem("E_CLIENT_UNSUPPORTED", f"{label} is not supported yet", encoding.use_site)
                     )
@@ -532,6 +556,8 @@ class Planner:
                     self.problems.append(
                         _problem("E_METADATA_REQUIRED", f"{label} names no media type", encoding.use_site)
                     )
+                case ():
+                    pass
                 case (single,) if not media_range(single) and (
                     media_kind(single) == "json"
                     or (media_kind(single) == "text" and not _structured(self.wire, members[name]))
@@ -542,7 +568,17 @@ class Planner:
                 case _:
                     message = f"{label} needs a media adapter for a member holding no files"
                     self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
-        return media_of
+        return media_of, headers_of
+
+    def _part_headers(self, encoding: WireDeclaration) -> tuple[HeaderSpec, ...]:
+        """Return the headers with a schema an encoding declares, with the plans that read their values."""
+        return tuple(
+            HeaderSpec(name=child.name or "", required=fact(child, "required") is True, use=use, plan=plan)
+            for child in encoding.children
+            if child.kind == "header"
+            and (use := self.use(_uses(child))) is not None
+            and (plan := self.header_plans.get(use.id)) is not None
+        )
 
     def unsupported(self, kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:
         """Return why a media type cannot be sent or read yet, or None when it can.
@@ -794,12 +830,14 @@ def _extra(location: SourceLocation) -> SourceLocation:
     return SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
 
 
-def _sent(
+def _sent(  # noqa: PLR0913
     wire: WirePlan,
     schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
     use: TypeUseBinding,
     site: SourceLocation,
+    *,
     media_of: Mapping[str, tuple[str, ...]],
+    headers_of: Mapping[str, tuple[HeaderSpec, ...]],
 ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
     """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
 
@@ -835,6 +873,7 @@ def _sent(
             use=None
             if name in files
             else _part_use(use, member, name, TypeUseBinding(use.id, "bound", facts.type, None)),
+            headers=headers_of.get(name, ()),
         )
         for name, member, facts in members
     ), additional
@@ -1066,6 +1105,13 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
                 for media in spec.body.media
                 if media.use is not None and media.kind != "binary" and media.members is None
             )
+            yield from (
+                header.use.id
+                for media in spec.body.media
+                for part in member_parts(media)
+                for header in part.headers
+                if header.use is not None
+            )
         for response in spec.responses:
             if not response.bodyless:
                 yield from (
@@ -1075,6 +1121,14 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
                 )
             yield from (header.use.id for header in response.headers if header.use is not None)
     yield from (use.id for use in part_uses(plan))
+
+
+def encoding_header_uses(request: TargetRequest) -> Iterator[TypeUseId]:
+    """Yield the uses of the headers the encodings of the selected operations' request bodies declare."""
+    for operation in request.operations:
+        for media in () if operation.request_body is None else operation.request_body.children:
+            for encoding in (child for child in media.children if child.kind == "encoding"):
+                yield from (use for header in encoding.children if header.kind == "header" for use in _uses(header))
 
 
 def form_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:

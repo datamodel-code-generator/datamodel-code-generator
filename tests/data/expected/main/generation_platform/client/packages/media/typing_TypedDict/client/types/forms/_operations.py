@@ -416,15 +416,15 @@ class _SubmitUploadRequestCodecs(
 SubmitUploadRequestCodecs: Final = _SubmitUploadRequestCodecs(
     default='multipart/form-data',
     parts=(
-        ('multipart/form-data', 'id', model_bindings.outbound_17),
-        ('multipart/form-data', 'title', model_bindings.outbound_18),
-        ('multipart/form-data', 'count', model_bindings.outbound_19),
-        ('multipart/form-data', 'tags', model_bindings.outbound_20),
-        ('multipart/form-data', 'meta', model_bindings.outbound_21),
+        ('multipart/form-data', 'id', model_bindings.outbound_21),
+        ('multipart/form-data', 'title', model_bindings.outbound_22),
+        ('multipart/form-data', 'count', model_bindings.outbound_23),
+        ('multipart/form-data', 'tags', model_bindings.outbound_24),
+        ('multipart/form-data', 'meta', model_bindings.outbound_25),
         ('multipart/form-data', 'photo', None),
         ('multipart/form-data', 'pages', None),
     ),
-    extras=(('multipart/form-data', model_bindings.outbound_22),),
+    extras=(('multipart/form-data', model_bindings.outbound_26),),
     requests=('multipart/form-data',),
 )
 
@@ -542,7 +542,7 @@ class _SubmitAvatarRequestCodecs(
 SubmitAvatarRequestCodecs: Final = _SubmitAvatarRequestCodecs(
     bodies=(('application/json', model_bindings.outbound_6),),
     parts=(
-        ('multipart/form-data', 'caption', model_bindings.outbound_31),
+        ('multipart/form-data', 'caption', model_bindings.outbound_35),
         ('multipart/form-data', 'avatar', None),
     ),
     requests=('multipart/form-data', 'application/json'),
@@ -597,7 +597,7 @@ class _SubmitScansRequestCodecs(
 
 SubmitScansRequestCodecs: Final = _SubmitScansRequestCodecs(
     default='multipart/form-data',
-    parts=(('multipart/form-data', 'note', model_bindings.outbound_32),),
+    parts=(('multipart/form-data', 'note', model_bindings.outbound_36),),
     requests=('multipart/form-data',),
 )
 
@@ -665,7 +665,7 @@ class _SubmitLabelsRequestCodecs(
 SubmitLabelsRequestCodecs: Final = _SubmitLabelsRequestCodecs(
     default='multipart/form-data',
     parts=(('multipart/form-data', 'sheet', None),),
-    extras=(('multipart/form-data', model_bindings.outbound_33),),
+    extras=(('multipart/form-data', model_bindings.outbound_37),),
     requests=('multipart/form-data',),
 )
 
@@ -794,12 +794,12 @@ class _SubmitCoverRequestCodecs(
 SubmitCoverRequestCodecs: Final = _SubmitCoverRequestCodecs(
     default='multipart/form-data',
     parts=(
-        ('multipart/form-data', 'note', model_bindings.outbound_34),
-        ('multipart/form-data', 'size', model_bindings.outbound_35),
-        ('multipart/form-data', 'meta', model_bindings.outbound_36),
+        ('multipart/form-data', 'note', model_bindings.outbound_38),
+        ('multipart/form-data', 'size', model_bindings.outbound_39),
+        ('multipart/form-data', 'meta', model_bindings.outbound_40),
         ('multipart/form-data', 'cover', None),
         ('multipart/form-data', 'scans', None),
-        ('multipart/form-data', 'extra', model_bindings.outbound_37),
+        ('multipart/form-data', 'extra', model_bindings.outbound_41),
     ),
     requests=('multipart/form-data',),
 )
@@ -853,7 +853,7 @@ class _SubmitCardRequestCodecs(
 
 
 SubmitCardRequestCodecs: Final = _SubmitCardRequestCodecs(
-    bodies=(('multipart/form-data', model_bindings.outbound_11),),
+    bodies=(('multipart/form-data', model_bindings.outbound_15),),
     default='multipart/form-data',
     requests=('multipart/form-data',),
 )
