@@ -59,7 +59,15 @@ from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary
 from .native import AsyncHttpx2Transport, Httpx2Transport
 from .operations import DATA_ERRORS, ResponseDecoder
-from .options import ClientOptions, RequestOptions, ServerSelection, Settings, checked_base_url, is_base_url
+from .options import (
+    ClientOptions,
+    HeaderPatch,
+    RequestOptions,
+    ServerSelection,
+    Settings,
+    checked_base_url,
+    is_base_url,
+)
 from .raw import AsyncRawResponse, RawResponse
 from .responses import HeadersView, Response, ResponseInfo
 from .transports import (
@@ -81,6 +89,7 @@ if TYPE_CHECKING:
         Generator,
         Iterable,
         Iterator,
+        Sequence,
     )
 
     from ..model_codecs.parameters import ParameterFragment
@@ -134,6 +143,7 @@ def _layered(settings: Settings, layer: ClientOptions | RequestOptions) -> Setti
         settings.max_error_body_bytes if isinstance(layer.max_error_body_bytes, Unset) else layer.max_error_body_bytes,
         settings.cleanup_timeout if isinstance(layer.cleanup_timeout, Unset) else layer.cleanup_timeout,
         settings.max_stream_bytes if isinstance(layer.max_stream_bytes, Unset) else layer.max_stream_bytes,
+        (*settings.headers, layer.headers) if layer.headers else settings.headers,
     )
 
 
@@ -146,6 +156,79 @@ def _client_settings(options: object) -> Settings:
         case _:
             pass
     raise ConfigurationError(field_path=("options",), condition="invalid_type")
+
+
+def _patched(pairs: list[tuple[str, str]], patch: Sequence[tuple[str, str | None]]) -> list[tuple[str, str]]:
+    """Return headers with one layer applied: the values it gives a name replace that name's at their first position.
+
+    None removes a name's values, and a name the headers lack comes last, in the layer's order.
+    """
+    if not patch:
+        return pairs
+    groups: dict[str, list[tuple[str, str]]] = {}
+    for name, value in patch:
+        group = groups.setdefault(name.lower(), [])
+        if value is not None:
+            group.append((name, value))
+    pending = dict(groups)
+    patched: list[tuple[str, str]] = []
+    for name, value in pairs:
+        if (key := name.lower()) not in groups:
+            patched.append((name, value))
+        elif key in pending:
+            patched.extend(pending.pop(key))
+    patched.extend(pair for group in pending.values() for pair in group)
+    return patched
+
+
+def _headers(
+    generated: list[tuple[str, str]],
+    patches: tuple[Sequence[tuple[str, str | None]], ...],
+    media_type: str | None,
+) -> HeadersView:
+    """Return the headers of a call: the generated ones with each layer applied in order, then the body's media type."""
+    for patch in patches:
+        generated = _patched(generated, patch)
+    if media_type is None:
+        return HeadersView(generated)
+    return HeadersView([
+        *(pair for pair in generated if pair[0].lower() != "content-type"),
+        ("Content-Type", media_type),
+    ])
+
+
+def _unframed(
+    patches: tuple[HeaderPatch, ...], media_type: str | None, accept: str | None, operation_id: str | None
+) -> None:
+    """Refuse header patches that relabel a call's body or its narrowed response media.
+
+    A Content-Type patch must name the body's media type, or remove it from a call without a body, and an Accept patch
+    must repeat the Accept of a call that narrowed its response media type.
+    """
+    for patch in patches:
+        for name, value in patch:
+            if (condition := _conflict(name, value, media_type, accept)) is not None:
+                raise ConfigurationError(field_path=("headers", name), condition=condition, operation_id=operation_id)
+
+
+def _conflict(name: str, value: str | None, media_type: str | None, accept: str | None) -> str | None:
+    match name.lower():
+        case "content-type" if _relabels(value, media_type):
+            return "conflicts_with_body_media"
+        case "accept" if accept is not None and value != accept:
+            return "conflicts_with_response_media"
+        case _:
+            return None
+
+
+def _relabels(value: str | None, media_type: str | None) -> bool:
+    match value, media_type:
+        case None, None:
+            return False
+        case str(), str():
+            return normalized(value) != normalized(media_type)
+        case _:
+            return True
 
 
 def _server_url(operation: OperationPlan[object, object], selection: ServerSelection) -> str:
@@ -469,7 +552,13 @@ class _Core(Generic[AdapterT, HandleT]):
             body = MultipartSource(body, boundary := new_boundary())
             media_type = f"multipart/form-data; boundary={boundary}"
         fixed = self._shared.fixed
-        headers = HeadersView(fixed if media_type is None else (*fixed, ("Content-Type", media_type)))
+        call = () if options is None else options.headers
+        if self._settings.headers or call:
+            if media_type is not None:
+                _unframed((*self._settings.headers, call), media_type, None, None)
+            headers = _headers([*fixed], (*self._settings.headers, call), media_type)
+        else:
+            headers = HeadersView(fixed if media_type is None else (*fixed, ("Content-Type", media_type)))
         attempt, deferred = _encoded(body, None)
         return PreparedRequest(method=verb, url=target, headers=headers, body=attempt), deferred, settings
 
@@ -514,8 +603,13 @@ class _Core(Generic[AdapterT, HandleT]):
         media_type: str | MediaSelector | None,
         options: object,
         accept: str | None,
+        narrowed: bool,
     ) -> tuple[PreparedRequest[EncodedAttempt], object, Settings]:
-        """Return a call's request, its body input when that builds its own attempts or else UNSET, and its settings."""
+        """Return a call's request, its body input when that builds its own attempts or else UNSET, and its settings.
+
+        Header patches apply in layers: the client's and views' over the generated headers, the parameters' over those,
+        and the call's last; the body's media type and a narrowed Accept stay as the call chose them.
+        """
         if options is not None and not isinstance(options, RequestOptions):
             raise ConfigurationError(
                 field_path=("options",), condition="invalid_type", operation_id=operation.operation_id
@@ -545,20 +639,47 @@ class _Core(Generic[AdapterT, HandleT]):
         headers = [*self._shared.fixed]
         if accept is not None:
             headers.append(("Accept", accept))
-        headers.extend(request.headers)
         if request.cookies:
-            headers.append(("Cookie", "; ".join(request.cookies)))
+            request.headers.append(("Cookie", "; ".join(request.cookies)))
         url = f"{base}{route}{'?' if query else ''}{query}"
         attempt: EncodedAttempt | None = None
         deferred: object = UNSET
+        sent = None if encoded is None else encoded.media_type
+        prepared = self._call_headers(
+            headers,
+            request.headers,
+            options,
+            media_type=sent,
+            accept=accept if narrowed else None,
+            operation_id=operation.operation_id,
+        )
         if encoded is not None:
-            headers.append(("Content-Type", encoded.media_type))
             attempt, deferred = _encoded(encoded.content, encoded.media_type)
         return (
-            PreparedRequest(method=operation.method, url=url, headers=HeadersView(headers), body=attempt),
+            PreparedRequest(method=operation.method, url=url, headers=prepared, body=attempt),
             deferred,
             settings,
         )
+
+    def _call_headers(  # noqa: PLR0913
+        self,
+        generated: list[tuple[str, str]],
+        params: list[tuple[str, str]],
+        options: RequestOptions | None,
+        *,
+        media_type: str | None,
+        accept: str | None,
+        operation_id: str | None,
+    ) -> HeadersView:
+        """Return a typed call's headers: the parameters' over the generated ones, patched when a layer patches them."""
+        call = () if options is None else options.headers
+        if not self._settings.headers and not call:
+            generated.extend(params)
+            if media_type is not None:
+                generated.append(("Content-Type", media_type))
+            return HeadersView(generated)
+        _unframed((*self._settings.headers, call), media_type, accept, operation_id)
+        return _headers(generated, (*self._settings.headers, params, call), media_type)
 
 
 def _ownership(http_client: object, ownership: object, transport_adapter: object) -> None:
@@ -771,7 +892,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             decoder = self._decoder(operation, response_media_type)
             request, deferred, settings = self._prepare(
-                operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
+                operation,
+                arguments,
+                body=body,
+                media_type=media_type,
+                options=options,
+                accept=decoder.accept,
+                narrowed=response_media_type is not None,
             )
             started, trace = monotonic(), AttemptTrace()
             response = self._send(request, deferred, trace, operation_id, call_id)
@@ -807,7 +934,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             decoder = self._decoder(operation, response_media_type)
             request, deferred, settings = self._prepare(
-                operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
+                operation,
+                arguments,
+                body=body,
+                media_type=media_type,
+                options=options,
+                accept=decoder.accept,
+                narrowed=response_media_type is not None,
             )
         except BaseException:
             self._scope.release()
@@ -1073,7 +1206,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             decoder = self._decoder(operation, response_media_type)
             request, deferred, settings = self._prepare(
-                operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
+                operation,
+                arguments,
+                body=body,
+                media_type=media_type,
+                options=options,
+                accept=decoder.accept,
+                narrowed=response_media_type is not None,
             )
             started, trace = monotonic(), AttemptTrace()
             response = await self._send(request, deferred, trace, operation_id, call_id)
@@ -1110,7 +1249,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             decoder = self._decoder(operation, response_media_type)
             request, deferred, settings = self._prepare(
-                operation, arguments, body=body, media_type=media_type, options=options, accept=decoder.accept
+                operation,
+                arguments,
+                body=body,
+                media_type=media_type,
+                options=options,
+                accept=decoder.accept,
+                narrowed=response_media_type is not None,
             )
         except BaseException:
             self._scope.release()
