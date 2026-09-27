@@ -21,7 +21,7 @@ from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
 from .errors import RequestEncodingError, add_secondary
-from .media import charset, most_specific, normalized
+from .media import charset, most_specific, normalized, with_charset
 from .responses import HeadersView
 
 if TYPE_CHECKING:
@@ -226,12 +226,15 @@ class PartPlan:
         self.content_types = content_types
 
     def media(self, named: str | None) -> str | None:
-        """Return the media type of a part: the one it names within the encoding's, or the encoding's default."""
+        """Return the media type of a part: the one it names within the encoding's, or the encoding's default.
+
+        A named media type is sent normalized, with the charset of the declared type it falls within when it names none.
+        """
         if named is None:
             return next((media for media in self.content_types if "*" not in media.partition(";")[0]), None)
-        if (wanted := normalized(named)) is None or most_specific(wanted, self.content_types) is None:
+        if (wanted := normalized(named)) is None or (declared := most_specific(wanted, self.content_types)) is None:
             raise ParameterEncodingError(_MEDIA)
-        return named
+        return with_charset(wanted, declared)
 
 
 _ANY: Final = PartPlan("")

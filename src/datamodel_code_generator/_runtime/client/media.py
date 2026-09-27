@@ -41,6 +41,14 @@ def most_specific(received: str, declared: Iterable[str]) -> str | None:
     )
 
 
+def with_charset(media_type: str, declared: str) -> str:
+    """Return a normalized media type with the charset of its normalized declared type when it names none."""
+    if (start := declared.find("; charset=")) < 0 or "; charset=" in media_type:
+        return media_type
+    end = declared.find("; ", start + 2)
+    return media_type + declared[start : None if end < 0 else end]
+
+
 def charset(media_type: str) -> str:
     """Return the Python codec a media type's charset parameter names, UTF-8 when it names none or an unknown one."""
     for parameter in media_type.split(";")[1:]:

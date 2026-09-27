@@ -42,7 +42,7 @@ from .errors import (
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
 )
-from .media import charset, essence, most_specific, normalized
+from .media import charset, essence, most_specific, normalized, with_charset
 from .multipart import (
     DecodedPart,
     MultipartData,
@@ -306,11 +306,9 @@ def _sent(concrete: str, declared: str) -> str:
 
     A boundary the concrete type names is left out, since a multipart body names the boundary of its call.
     """
-    essence, *parameters = concrete.split("; ")
-    kept = [parameter for parameter in parameters if not parameter.startswith("boundary=")]
-    if not any(parameter.startswith("charset=") for parameter in kept):
-        kept.extend(parameter for parameter in declared.split("; ")[1:] if parameter.startswith("charset="))
-    return "; ".join((essence, *kept))
+    bare, *parameters = concrete.split("; ")
+    kept = "; ".join((bare, *(parameter for parameter in parameters if not parameter.startswith("boundary="))))
+    return with_charset(kept, declared)
 
 
 class Branch(Generic[T_co]):

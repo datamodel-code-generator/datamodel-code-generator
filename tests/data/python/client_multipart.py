@@ -372,7 +372,7 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         lines,
         "cover of a note in plain text",
         lambda: api.forms.submit_cover(
-            body=body((field("note", "hi", content_type="text/plain"), file("cover", b"j", content_type="image/jpeg")))
+            body=body((field("note", "hi", content_type="Text/Plain"), file("cover", b"j", content_type="image/jpeg")))
         ),
     )
     for label, parts in (
