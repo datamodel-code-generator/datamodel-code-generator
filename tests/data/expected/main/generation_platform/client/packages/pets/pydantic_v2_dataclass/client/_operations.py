@@ -6,12 +6,14 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan
+from ._runtime.client.codecs import native_value
+from ._runtime.client.multipart import PartPlan, file_part, value_part
 from ._runtime.client.operations import (
     BodyMedia,
     Encoder,
     OperationPlan,
     ParameterSpec,
+    PartsReader,
     RequestBody,
     ResponseDecoder,
     ServerPlan,
@@ -19,6 +21,7 @@ from ._runtime.client.operations import (
     binary_branch,
     empty_branch,
     model_branch,
+    parts_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.pets import (
@@ -40,6 +43,9 @@ from .types.pets import (
     ListPetsErrorData,
     ListPetsHTTPError,
     ListPetsResponse,
+    ReadFilesErrorData,
+    ReadFilesHTTPError,
+    ReadFilesResponse,
 )
 from .types.pets.photos import UploadErrorData, UploadHTTPError, UploadResponse
 
@@ -295,17 +301,62 @@ OPERATION_6: Final[OperationPlan[AttachFilesResponse, AttachFilesErrorData]] = O
                     PartPlan('file', file=True, required=True),
                     PartPlan(
                         'note',
-                        encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+                        encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
                     ),
                     PartPlan(
                         'labels',
                         repeated=True,
-                        encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
+                        encoder=Encoder(model_bindings.codec_22, model_bindings.CONTEXT_22),
                     ),
                 ),
             ),
         ),
         default='multipart/form-data',
         required=True,
+    ),
+)
+
+OPERATION_7: Final[OperationPlan[ReadFilesResponse, ReadFilesErrorData]] = OperationPlan(
+    operation_id='readFiles',
+    method='GET',
+    path='/pets/{petId}/files',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            parts_branch(
+                '200',
+                'multipart/form-data',
+                PartsReader[bytes | str](
+                    (
+                        file_part('file', required=True),
+                        value_part(
+                            'note',
+                            'string',
+                            native_value(model_bindings.codec_23, model_bindings.CONTEXT_23),
+                        ),
+                        value_part(
+                            'labels',
+                            'string',
+                            native_value(model_bindings.codec_24, model_bindings.CONTEXT_24),
+                            repeated=True,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        (),
+        ReadFilesHTTPError,
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='petId',
+                style='simple',
+                required=True,
+                kind='integer',
+            ),
+            encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+        ),
     ),
 )

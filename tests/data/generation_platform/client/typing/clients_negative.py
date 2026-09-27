@@ -14,6 +14,7 @@ from pets.types.pets import (
     DeletePetsByPetIdRequestCodecs,
     GetPetRequestCodecs,
     ListPetsRequestCodecs,
+    ReadFilesRequestCodecs,
     decode_list_pets_header,
 )
 from pets.types.pets.photos import UploadRequestCodecs
@@ -73,7 +74,7 @@ async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO) ->
 
 
 def misuse_multipart(client: Client, file: BinaryIO) -> None:
-    from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody
+    from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
     from pets.model_codecs import WireValue
 
     MultipartBody[str]((FilePart("f", AsyncFileBody(file)),))  # error
@@ -84,6 +85,9 @@ def misuse_multipart(client: Client, file: BinaryIO) -> None:
     pet = AttachFilesRequestCodecs.parameter(location="path", name="petId").from_wire(1)
     client.pets.attach_files(pet_id=pet, body=MultipartBody((FieldPart("note", 1), FilePart("file", b"x"))))  # error
     client.pets.attach_files(pet_id=pet, body=MultipartBody[str](()))  # error
+    files = ReadFilesRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    narrowed: MultipartData[str] = client.pets.read_files(pet_id=files)  # error
+    del narrowed
 
 
 def misuse_multipart_data(data: object) -> None:

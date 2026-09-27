@@ -23,6 +23,7 @@ from ...responses import AsyncRawResponse, Response
 from ...types.forms import (
     ReadPartsResponse,
     ReadProfileResponse,
+    ReadUploadResponse,
     SubmitAnythingResponse,
     SubmitAvatarResponse,
     SubmitFormResponse,
@@ -207,6 +208,20 @@ class AsyncFormsResource:
             options=options,
         )).data
 
+    async def read_upload(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadUploadResponse:
+        """Call GET /uploads."""
+        return (await self._core.execute(
+            _operations.OPERATION_8,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )).data
+
     @overload
     async def submit_avatar(
         self,
@@ -240,7 +255,7 @@ class AsyncFormsResource:
     ) -> SubmitAvatarResponse:
         """Call POST /avatars."""
         return (await self._core.execute(
-            _operations.OPERATION_8,
+            _operations.OPERATION_9,
             (),
             body=body,
             media_type=media_type,
@@ -256,7 +271,7 @@ class AsyncFormsResource:
     ) -> SubmitScansResponse:
         """Call POST /scans."""
         return (await self._core.execute(
-            _operations.OPERATION_9,
+            _operations.OPERATION_10,
             (),
             body=body,
             media_type=media_type,
@@ -272,7 +287,7 @@ class AsyncFormsResource:
     ) -> SubmitPhotosResponse:
         """Call POST /photos."""
         return (await self._core.execute(
-            _operations.OPERATION_10,
+            _operations.OPERATION_11,
             (),
             body=body,
             media_type=media_type,
@@ -288,7 +303,7 @@ class AsyncFormsResource:
     ) -> SubmitLabelsResponse:
         """Call POST /labels."""
         return (await self._core.execute(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             body=body,
             media_type=media_type,
@@ -452,6 +467,20 @@ class AsyncFormsWithResponse:
             options=options,
         )
 
+    async def read_upload(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadUploadResponse]:
+        """Call GET /uploads."""
+        return await self._core.execute(
+            _operations.OPERATION_8,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     @overload
     async def submit_avatar(
         self,
@@ -485,7 +514,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitAvatarResponse]:
         """Call POST /avatars."""
         return await self._core.execute(
-            _operations.OPERATION_8,
+            _operations.OPERATION_9,
             (),
             body=body,
             media_type=media_type,
@@ -501,7 +530,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitScansResponse]:
         """Call POST /scans."""
         return await self._core.execute(
-            _operations.OPERATION_9,
+            _operations.OPERATION_10,
             (),
             body=body,
             media_type=media_type,
@@ -517,7 +546,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitPhotosResponse]:
         """Call POST /photos."""
         return await self._core.execute(
-            _operations.OPERATION_10,
+            _operations.OPERATION_11,
             (),
             body=body,
             media_type=media_type,
@@ -533,7 +562,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitLabelsResponse]:
         """Call POST /labels."""
         return await self._core.execute(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             body=body,
             media_type=media_type,
@@ -676,6 +705,20 @@ class AsyncFormsWithRawResponse:
             options=options,
         )
 
+    async def read_upload(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call GET /uploads."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_8,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     @overload
     async def submit_avatar(
         self,
@@ -709,7 +752,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /avatars."""
         return await self._core.execute_raw(
-            _operations.OPERATION_8,
+            _operations.OPERATION_9,
             (),
             body=body,
             media_type=media_type,
@@ -725,7 +768,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /scans."""
         return await self._core.execute_raw(
-            _operations.OPERATION_9,
+            _operations.OPERATION_10,
             (),
             body=body,
             media_type=media_type,
@@ -741,7 +784,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /photos."""
         return await self._core.execute_raw(
-            _operations.OPERATION_10,
+            _operations.OPERATION_11,
             (),
             body=body,
             media_type=media_type,
@@ -757,7 +800,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /labels."""
         return await self._core.execute_raw(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             body=body,
             media_type=media_type,
@@ -900,6 +943,20 @@ class AsyncFormsWithStreamingResponse:
             options=options,
         )
 
+    def read_upload(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call GET /uploads."""
+        return self._core.stream(
+            _operations.OPERATION_8,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     @overload
     def submit_avatar(
         self,
@@ -933,7 +990,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /avatars."""
         return self._core.stream(
-            _operations.OPERATION_8,
+            _operations.OPERATION_9,
             (),
             body=body,
             media_type=media_type,
@@ -949,7 +1006,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /scans."""
         return self._core.stream(
-            _operations.OPERATION_9,
+            _operations.OPERATION_10,
             (),
             body=body,
             media_type=media_type,
@@ -965,7 +1022,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /photos."""
         return self._core.stream(
-            _operations.OPERATION_10,
+            _operations.OPERATION_11,
             (),
             body=body,
             media_type=media_type,
@@ -981,7 +1038,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /labels."""
         return self._core.stream(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             body=body,
             media_type=media_type,

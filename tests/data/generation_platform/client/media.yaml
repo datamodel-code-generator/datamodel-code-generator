@@ -155,6 +155,57 @@ paths:
       responses:
         '204':
           description: Stored.
+    get:
+      operationId: readUpload
+      tags: [forms]
+      responses:
+        '200':
+          description: The stored upload.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                required: [title, photo, secret]
+                properties:
+                  title: {type: string}
+                  count: {type: integer}
+                  tags:
+                    type: array
+                    items: {type: string}
+                  meta: {$ref: '#/components/schemas/Address'}
+                  draft: {$ref: '#/components/schemas/Draft'}
+                  photo: {type: string, format: binary}
+                  pages:
+                    type: array
+                    items: {type: string, contentMediaType: application/pdf}
+                  secret: {type: string, writeOnly: true}
+                additionalProperties: {type: integer}
+        '201':
+          description: A note with scans of any name.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  note: {type: string}
+                additionalProperties: {type: string, format: binary}
+        '202':
+          description: A photo with parts of any name.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+        '203':
+          description: A photo alone.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+                additionalProperties: false
   /avatars:
     post:
       operationId: submitAvatar

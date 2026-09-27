@@ -1,94 +1,97 @@
-28 marked lines
+29 marked lines
 mypy pets and clients.py: clean
 pyright pets and clients.py: clean
 ty pets and clients.py: clean
-mypy clients_negative.py: 28/28 marked lines with one error, 0 elsewhere, 0 in other files
-  26 call-arg
-  27 arg-type
-  28 call-overload
+mypy clients_negative.py: 29/29 marked lines with one error, 0 elsewhere, 0 in other files
+  27 call-arg
+  28 arg-type
   29 call-overload
-  31 call-overload
-  33 arg-type
-  35 arg-type
-  41 arg-type
+  30 call-overload
+  32 call-overload
+  34 arg-type
+  36 arg-type
   42 arg-type
   43 arg-type
-  49 arg-type
-  50 assignment
-  52 arg-type
-  53 call-arg
-  58 misc
-  60 assignment
-  68 arg-type
+  44 arg-type
+  50 arg-type
+  51 assignment
+  53 arg-type
+  54 call-arg
+  59 misc
+  61 assignment
   69 arg-type
-  70 list-item
-  71 arg-type
+  70 arg-type
+  71 list-item
   72 arg-type
-  79 arg-type
+  73 arg-type
   80 arg-type
   81 arg-type
-  82 assignment
-  85 arg-type
+  82 arg-type
+  83 assignment
   86 arg-type
-  92 assignment
-pyright clients_negative.py: 25/28 marked lines with one error, 0 elsewhere, 0 in other files
-  26 reportCallIssue
-  27 reportArgumentType
+  87 arg-type
+  89 assignment
+  96 assignment
+pyright clients_negative.py: 26/29 marked lines with one error, 0 elsewhere, 0 in other files
+  27 reportCallIssue
   28 reportArgumentType
-  28 reportCallIssue
   29 reportArgumentType
   29 reportCallIssue
-  31 reportArgumentType
-  31 reportCallIssue
-  33 reportArgumentType
-  35 reportArgumentType
-  41 reportArgumentType
+  30 reportArgumentType
+  30 reportCallIssue
+  32 reportArgumentType
+  32 reportCallIssue
+  34 reportArgumentType
+  36 reportArgumentType
   42 reportArgumentType
   43 reportArgumentType
-  49 reportArgumentType
-  50 reportAssignmentType
-  52 reportArgumentType
-  53 reportCallIssue
-  58 reportGeneralTypeIssues
-  60 reportAssignmentType
-  68 reportArgumentType
+  44 reportArgumentType
+  50 reportArgumentType
+  51 reportAssignmentType
+  53 reportArgumentType
+  54 reportCallIssue
+  59 reportGeneralTypeIssues
+  61 reportAssignmentType
   69 reportArgumentType
   70 reportArgumentType
   71 reportArgumentType
   72 reportArgumentType
-  79 reportArgumentType
+  73 reportArgumentType
   80 reportArgumentType
   81 reportArgumentType
-  82 reportAssignmentType
-  85 reportArgumentType
+  82 reportArgumentType
+  83 reportAssignmentType
   86 reportArgumentType
-  92 reportAssignmentType
-ty clients_negative.py: 28/28 marked lines with one error, 0 elsewhere, 0 in other files
-  26 missing-argument
-  27 invalid-argument-type
-  28 no-matching-overload
+  87 reportArgumentType
+  89 reportAssignmentType
+  96 reportAssignmentType
+ty clients_negative.py: 29/29 marked lines with one error, 0 elsewhere, 0 in other files
+  27 missing-argument
+  28 invalid-argument-type
   29 no-matching-overload
-  31 no-matching-overload
-  33 invalid-argument-type
-  35 invalid-argument-type
-  41 invalid-argument-type
+  30 no-matching-overload
+  32 no-matching-overload
+  34 invalid-argument-type
+  36 invalid-argument-type
   42 invalid-argument-type
   43 invalid-argument-type
-  49 invalid-argument-type
-  50 invalid-assignment
-  52 invalid-argument-type
-  53 missing-argument
-  58 invalid-await
-  60 invalid-assignment
-  68 invalid-argument-type
+  44 invalid-argument-type
+  50 invalid-argument-type
+  51 invalid-assignment
+  53 invalid-argument-type
+  54 missing-argument
+  59 invalid-await
+  61 invalid-assignment
   69 invalid-argument-type
   70 invalid-argument-type
   71 invalid-argument-type
   72 invalid-argument-type
-  79 invalid-argument-type
+  73 invalid-argument-type
   80 invalid-argument-type
   81 invalid-argument-type
-  82 invalid-assignment
-  85 invalid-argument-type
+  82 invalid-argument-type
+  83 invalid-assignment
   86 invalid-argument-type
-  92 invalid-assignment
+  87 invalid-argument-type
+  89 invalid-assignment
+  96 invalid-assignment

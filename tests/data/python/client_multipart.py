@@ -152,6 +152,49 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
     ):
         exchange.respond(raw_response(202, _form(*parts), form))
         record(lines, label, api.forms.read_parts)
+    _uploads_read(api, exchange, lines)
+
+
+_JSON: Final = b"\r\nContent-Type: application/json"
+_UPLOAD_PARTS: Final = (
+    (_NAMED % b"title", b"Notes"),
+    (_NAMED % b"count", b"3"),
+    (_NAMED % b"tags", b"a"),
+    (_NAMED % b"tags", b"b"),
+    (_NAMED % b"meta" + _JSON, b'{"city":"Oslo","codes":[7]}'),
+    (_NAMED % b"draft" + _JSON, b'{"id":1,"title":"t"}'),
+    (_NAMED % b"photo" + b'; filename="a.png"\r\nContent-Type: image/png', b"\x89PNG"),
+    (_NAMED % b"pages", b"1"),
+    (_NAMED % b"pages", b"2"),
+    (_NAMED % b"bonus", b"7"),
+)
+
+
+def _uploads_read(api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Read form-data responses with file parts: files as bytes, other parts through their members' codecs."""
+    form = "multipart/form-data; boundary=b1"
+    title, photo = _UPLOAD_PARTS[0], _UPLOAD_PARTS[6]
+    for label, status, parts in (
+        ("upload read", 200, _UPLOAD_PARTS),
+        ("upload read of its required parts", 200, (photo, title)),
+        ("upload read of scans", 201, ((_NAMED % b"note", b"n"), (_NAMED % b"scan-1", b"1"), (_NAMED % b"scan-2", b"2"))),
+        ("upload read of a photo and parts of any name", 202, (photo, (_NAMED % b"x", b"1"), (_NAMED % b"x", b"{}"))),
+        ("upload read of a photo alone", 203, (photo,)),
+    ):
+        exchange.respond(raw_response(status, _form(*parts), form))
+        lines.append(f"  {label} {_parts_of(api.forms.read_upload())}")
+    for label, status, parts in (
+        ("upload read without its photo", 200, (title,)),
+        ("upload read of a title twice", 200, (title, title, photo)),
+        ("upload read of a count that is no integer", 200, (title, photo, (_NAMED % b"count", b"x"))),
+        ("upload read of an extra that is no integer", 200, (title, photo, (_NAMED % b"bonus", b"x"))),
+        ("upload read of broken JSON", 200, (title, photo, (_NAMED % b"meta" + _JSON, b"{"))),
+        ("upload read of an address with other codes", 200, (title, photo, (_NAMED % b"meta" + _JSON, b'{"codes":["a"]}'))),
+        ("upload read of a part without a name", 200, (title, photo, (b"Content-Type: text/plain", b"x"))),
+        ("upload read of a photo and another part", 203, (photo, (_NAMED % b"x", b"1"))),
+    ):
+        exchange.respond(raw_response(status, _form(*parts), form))
+        record(lines, label, api.forms.read_upload)
 
 
 def _profiles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -372,6 +415,8 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         await arecord(lines, "async upload without its photo", lambda: api.forms.submit_upload(body=missing))
         exchange.respond(raw_response(200, _form(*_PROFILE_PARTS), "multipart/form-data; boundary=b1"))
         await arecord(lines, "async profile read", api.forms.read_profile)
+        exchange.respond(raw_response(200, _form(*_UPLOAD_PARTS), "multipart/form-data; boundary=b1"))
+        lines.append(f"  async upload read {_parts_of(await api.forms.read_upload())}")
         exchange.respond(raw_response(200, _form((_NAMED % b"x", b"1")), "multipart/mixed; boundary=b1"))
         lines.append(f"  async parts read {_parts_of(await api.forms.read_parts())}")
     await http.aclose()

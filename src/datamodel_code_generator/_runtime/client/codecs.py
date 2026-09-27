@@ -117,15 +117,15 @@ class _Envelope(Generic[T]):
         return self._codec().decode(wire, self._context)
 
 
-def native_header(codec: Callable[[], InboundModelCodec[T]], context: CodecContext) -> Callable[[WireValue], T]:
-    """Return a header value decoder that constructs the native value."""
+def native_value(codec: Callable[[], InboundModelCodec[T]], context: CodecContext) -> Callable[[WireValue], T]:
+    """Return a decoder of a header or part value that constructs the native value."""
     return _Native(codec, context)
 
 
-def envelope_header(
+def envelope_value(
     codec: Callable[[], InboundEnvelopeCodec[T]], context: CodecContext
 ) -> Callable[[WireValue], DecodedValue[T]]:
-    """Return a header value decoder that constructs a model value or envelope."""
+    """Return a decoder of a header or part value that constructs a model value or envelope."""
     return _Envelope(codec, context)
 
 

@@ -49,6 +49,7 @@ from pets.types.pets import (
     ListPetsHTTPError,
     ListPetsRequestCodecs,
     ListPetsResponse,
+    ReadFilesRequestCodecs,
     decode_list_pets_header,
 )
 
@@ -191,6 +192,10 @@ def file_parts(client: Client, file: BinaryIO) -> None:
     codec = AttachFilesRequestCodecs.part(name="note", media_type="multipart/form-data")
     assert_type(codec, NativeOutboundCodec[str])
     assert_type(AttachFilesRequestCodecs.part(name="file"), NativeOutboundCodec[str] | NativeOutboundCodec[list[str]])
+    files = client.pets.read_files(pet_id=ReadFilesRequestCodecs.parameter(location="path", name="petId").from_wire(1))
+    assert_type(files, MultipartData[str | bytes])
+    for part in files.parts:
+        assert_type(part.value, str | bytes)
 
 
 def multipart_data(data: MultipartData[bytes]) -> None:

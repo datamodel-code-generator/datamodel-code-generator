@@ -26,6 +26,10 @@ from ._operations import (
     ListPetsHTTPError,
     ListPetsRequestCodecs,
     ListPetsResponse,
+    ReadFilesErrorData,
+    ReadFilesHTTPError,
+    ReadFilesRequestCodecs,
+    ReadFilesResponse,
     decode_head_pet_header,
     decode_list_pets_header,
 )
@@ -55,6 +59,10 @@ __all__ = [
     'ListPetsHTTPError',
     'ListPetsRequestCodecs',
     'ListPetsResponse',
+    'ReadFilesErrorData',
+    'ReadFilesHTTPError',
+    'ReadFilesRequestCodecs',
+    'ReadFilesResponse',
     'decode_head_pet_header',
     'decode_list_pets_header',
 ]

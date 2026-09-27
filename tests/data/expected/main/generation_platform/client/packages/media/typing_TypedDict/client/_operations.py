@@ -5,13 +5,18 @@ from __future__ import annotations
 
 from typing import Final
 
+from models import Address as _dcg_type_0
+from models import Draft as _dcg_type_1
+
 from ._generated import model_bindings
-from ._runtime.client.multipart import PartPlan
+from ._runtime.client.codecs import envelope_value, native_value
+from ._runtime.client.multipart import PartPlan, file_part, value_part
 from ._runtime.client.operations import (
     BodyMedia,
     Encoder,
     OperationPlan,
     ParameterSpec,
+    PartsReader,
     RequestBody,
     ResponseDecoder,
     ServerPlan,
@@ -21,11 +26,13 @@ from ._runtime.client.operations import (
     form_branch,
     model_branch,
     multipart_branch,
+    parts_branch,
     text_branch,
     wire_branch,
 )
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
+from .model_codecs import DecodedValue
 from .types.documents import (
     ReadDocumentErrorData,
     ReadDocumentHTTPError,
@@ -47,6 +54,9 @@ from .types.forms import (
     ReadProfileErrorData,
     ReadProfileHTTPError,
     ReadProfileResponse,
+    ReadUploadErrorData,
+    ReadUploadHTTPError,
+    ReadUploadResponse,
     SubmitAnythingErrorData,
     SubmitAnythingHTTPError,
     SubmitAnythingResponse,
@@ -283,7 +293,94 @@ OPERATION_7: Final[OperationPlan[SubmitUploadResponse, SubmitUploadErrorData]] =
     ),
 )
 
-OPERATION_8: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = OperationPlan(
+    operation_id='readUpload',
+    method='GET',
+    path='/uploads',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            parts_branch(
+                '200',
+                'multipart/form-data',
+                PartsReader[str | int | _dcg_type_0 | DecodedValue[_dcg_type_1] | bytes](
+                    (
+                        value_part(
+                            'title',
+                            'string',
+                            native_value(model_bindings.codec_18, model_bindings.CONTEXT_18),
+                            required=True,
+                        ),
+                        value_part(
+                            'count',
+                            'integer',
+                            native_value(model_bindings.codec_19, model_bindings.CONTEXT_19),
+                        ),
+                        value_part(
+                            'tags',
+                            'string',
+                            native_value(model_bindings.codec_20, model_bindings.CONTEXT_20),
+                            repeated=True,
+                        ),
+                        value_part(
+                            'meta',
+                            'json',
+                            native_value(model_bindings.codec_21, model_bindings.CONTEXT_21),
+                        ),
+                        value_part(
+                            'draft',
+                            'json',
+                            envelope_value(model_bindings.codec_22, model_bindings.CONTEXT_22),
+                        ),
+                        file_part('photo', required=True),
+                        file_part('pages', repeated=True),
+                        value_part(
+                            'secret',
+                            'string',
+                            native_value(model_bindings.codec_23, model_bindings.CONTEXT_23),
+                        ),
+                    ),
+                    additional=value_part(
+                        '',
+                        'integer',
+                        native_value(model_bindings.codec_24, model_bindings.CONTEXT_24),
+                    ),
+                ),
+            ),
+            parts_branch(
+                '201',
+                'multipart/form-data',
+                PartsReader[str | bytes](
+                    (
+                        value_part(
+                            'note',
+                            'string',
+                            native_value(model_bindings.codec_25, model_bindings.CONTEXT_25),
+                        ),
+                    ),
+                    additional=file_part(''),
+                ),
+            ),
+            parts_branch(
+                '202',
+                'multipart/form-data',
+                PartsReader[bytes](
+                    (file_part('photo'),),
+                    additional=file_part('', repeated=True),
+                ),
+            ),
+            parts_branch(
+                '203',
+                'multipart/form-data',
+                PartsReader[bytes]((file_part('photo'),)),
+            ),
+        ),
+        (),
+        ReadUploadHTTPError,
+    ),
+)
+
+OPERATION_9: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] = OperationPlan(
     operation_id='submitAvatar',
     method='POST',
     path='/avatars',
@@ -297,7 +394,7 @@ OPERATION_8: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] =
                 parts=(
                     PartPlan(
                         'caption',
-                        encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+                        encoder=Encoder(model_bindings.codec_26, model_bindings.CONTEXT_26),
                     ),
                     PartPlan('avatar', file=True),
                 ),
@@ -312,7 +409,7 @@ OPERATION_8: Final[OperationPlan[SubmitAvatarResponse, SubmitAvatarErrorData]] =
     ),
 )
 
-OPERATION_9: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = OperationPlan(
+OPERATION_10: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = OperationPlan(
     operation_id='submitScans',
     method='POST',
     path='/scans',
@@ -326,7 +423,7 @@ OPERATION_9: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = O
                 parts=(
                     PartPlan(
                         'note',
-                        encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
+                        encoder=Encoder(model_bindings.codec_27, model_bindings.CONTEXT_27),
                     ),
                 ),
                 additional_part=PartPlan('', file=True),
@@ -336,7 +433,7 @@ OPERATION_9: Final[OperationPlan[SubmitScansResponse, SubmitScansErrorData]] = O
     ),
 )
 
-OPERATION_10: Final[OperationPlan[SubmitPhotosResponse, SubmitPhotosErrorData]] = OperationPlan(
+OPERATION_11: Final[OperationPlan[SubmitPhotosResponse, SubmitPhotosErrorData]] = OperationPlan(
     operation_id='submitPhotos',
     method='POST',
     path='/photos',
@@ -355,7 +452,7 @@ OPERATION_10: Final[OperationPlan[SubmitPhotosResponse, SubmitPhotosErrorData]] 
     ),
 )
 
-OPERATION_11: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] = OperationPlan(
+OPERATION_12: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] = OperationPlan(
     operation_id='submitLabels',
     method='POST',
     path='/labels',
@@ -369,7 +466,7 @@ OPERATION_11: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] 
                 parts=(PartPlan('sheet', file=True),),
                 additional_part=PartPlan(
                     '',
-                    encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+                    encoder=Encoder(model_bindings.codec_28, model_bindings.CONTEXT_28),
                 ),
             ),
         ),
@@ -378,7 +475,7 @@ OPERATION_11: Final[OperationPlan[SubmitLabelsResponse, SubmitLabelsErrorData]] 
     ),
 )
 
-OPERATION_12: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
+OPERATION_13: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]] = OperationPlan(
     operation_id='storeDocument',
     method='POST',
     path='/documents',
@@ -414,7 +511,7 @@ OPERATION_12: Final[OperationPlan[StoreDocumentResponse, StoreDocumentErrorData]
     ),
 )
 
-OPERATION_13: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
+OPERATION_14: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] = OperationPlan(
     operation_id='readDocument',
     method='GET',
     path='/documents/{id}',
@@ -458,7 +555,7 @@ OPERATION_13: Final[OperationPlan[ReadDocumentResponse, ReadDocumentErrorData]] 
     ),
 )
 
-OPERATION_14: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
+OPERATION_15: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = OperationPlan(
     operation_id='storeNote',
     method='POST',
     path='/notes',
@@ -473,7 +570,7 @@ OPERATION_14: Final[OperationPlan[StoreNoteResponse, StoreNoteErrorData]] = Oper
     ),
 )
 
-OPERATION_15: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
+OPERATION_16: Final[OperationPlan[ReplaceNoteResponse, ReplaceNoteErrorData]] = OperationPlan(
     operation_id='replaceNote',
     method='PUT',
     path='/notes',

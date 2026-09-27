@@ -73,3 +73,12 @@ class FieldPetsPetIdFilesPostRequest(TypedDict, closed=True):
     note: NotRequired[str]
     labels: NotRequired[list[str]]
     file: bytes
+
+
+FieldPetsPetIdFilesGetPathPetIdParameter: TypeAlias = int
+
+
+class FieldPetsPetIdFilesGetResponse(TypedDict, closed=True):
+    note: NotRequired[str]
+    labels: NotRequired[list[str]]
+    file: bytes

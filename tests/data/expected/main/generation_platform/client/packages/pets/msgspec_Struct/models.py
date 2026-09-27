@@ -73,3 +73,12 @@ class FieldPetsPetIdFilesPostRequest(Struct):
     file: bytes
     note: str | UnsetType = UNSET
     labels: list[str] | UnsetType = UNSET
+
+
+FieldPetsPetIdFilesGetPathPetIdParameter: TypeAlias = int
+
+
+class FieldPetsPetIdFilesGetResponse(Struct):
+    file: bytes
+    note: str | UnsetType = UNSET
+    labels: list[str] | UnsetType = UNSET

@@ -14,7 +14,7 @@ from ..._runtime.client.codecs import (
     HeaderBranch,
     RequestCodecs,
     ResponseHeaders,
-    envelope_header,
+    envelope_value,
     optional_header,
 )
 from ..._runtime.model_codecs.media import FieldPlan
@@ -128,7 +128,7 @@ _READ_DOCUMENT_HEADERS: Final[ResponseHeaders[DecodedValue[_dcg_type_0], Unset]]
                             ),
                             additional=FieldPlan('', 'string'),
                         ),
-                        decode=envelope_header(model_bindings.codec_11, model_bindings.CONTEXT_11),
+                        decode=envelope_value(model_bindings.codec_11, model_bindings.CONTEXT_11),
                         missing=optional_header,
                     ),
                 ),

@@ -151,6 +151,29 @@ paths:
       responses:
         '204':
           description: Attached.
+    get:
+      operationId: readFiles
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        '200':
+          description: The attached files.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                required: [file]
+                properties:
+                  note: {type: string}
+                  labels:
+                    type: array
+                    items: {type: string}
+                  file: {type: string, format: binary}
+                additionalProperties: false
 components:
   schemas:
     Pet:

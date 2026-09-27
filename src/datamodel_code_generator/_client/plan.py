@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.config import ClientGenerationConfig, ClientOperationConfig
     from datamodel_code_generator._generation_contract import (
         FrozenLiteral,
+        ModelFieldFacts,
         OperationContract,
         SourceDocumentId,
         TypeUseId,
@@ -86,8 +87,8 @@ class PartSpec:
 class MediaSpec:
     """One declared media type of a body or response, with its type use when its content has a schema.
 
-    A form-data body whose schema has file parts is sent as parts: `sent` plans each declared member, and
-    `sent_additional` any other part, which no plan allows when the schema allows no other properties.
+    A form-data body or response whose schema has file parts is sent or read as parts: `members` plans each
+    declared member, and `extra` any other part, which no plan allows when the schema allows no other properties.
     """
 
     media_type: str
@@ -97,8 +98,8 @@ class MediaSpec:
     additional: FieldPlan | None = None
     parts: tuple[PartPlan, ...] = ()
     additional_part: PartPlan | None = None
-    sent: tuple[PartSpec, ...] | None = None
-    sent_additional: PartSpec | None = None
+    members: tuple[PartSpec, ...] | None = None
+    extra: PartSpec | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -474,11 +475,13 @@ class Planner:
             )
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoded.use_site))
         fields, additional = self.forms.get(use.id, ((), None)) if kind == "form" and use is not None else ((), None)
-        parts, additional_part = _part_plans(self.wire, use) if kind == "multipart" and not request else ((), None)
-        sent, sent_additional = (
-            _sent(self.wire, self._schemas, use, use.schema)
-            if request and reason is None and essence == _FORM_DATA and use is not None and use.schema is not None
+        members, extra = (
+            (_sent if request else _received)(self.wire, self._schemas, use, use.schema)
+            if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None
             else (None, None)
+        )
+        parts, additional_part = (
+            _part_plans(self.wire, use) if kind == "multipart" and not request and members is None else ((), None)
         )
         return MediaSpec(
             media_type=media_type,
@@ -488,15 +491,15 @@ class Planner:
             additional=additional,
             parts=parts,
             additional_part=additional_part,
-            sent=sent,
-            sent_additional=sent_additional,
+            members=members,
+            extra=extra,
         )
 
     def unsupported(self, kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:
         """Return why a media type cannot be sent or read yet, or None when it can.
 
         Multipart without a schema is sent as form-data parts and read as bytes of any multipart media; with a
-        schema, only form-data maps its parts to the schema's members, and file parts are only sent so far.
+        schema, only form-data maps its parts to the schema's members, which must be an object's.
         """
         if request and "*" in essence:
             return "is not supported yet"
@@ -506,22 +509,10 @@ class Planner:
             return None if essence == _FORM_DATA or not request else "is not supported yet"
         if essence != _FORM_DATA:
             return "is not supported yet"
-        return self.file_parts(use, use.schema, request=request)
-
-    def file_parts(self, use: TypeUseBinding, location: SourceLocation, *, request: bool) -> str | None:
-        """Return why a form-data schema cannot be used yet: a shape other than an object, or read file parts.
-
-        The members of the use are its properties as its model declares them, so allOf branches count too.
-        """
-        _, schema = self.wire.schema(location)
-        if _types(schema) - _NULL not in {frozenset(), _OBJECT}:
-            return "needs an object schema to be sent as parts"
-        files = [
-            member.wire_name or "additional properties"
-            for member in use.members
-            if member.schema is not None and _file(self.wire, member.schema)
-        ]
-        return None if request or not files else f"has file parts, which are not supported yet: {', '.join(files)}"
+        _, schema = self.wire.schema(use.schema)
+        return (
+            None if _types(schema) - _NULL in {frozenset(), _OBJECT} else "needs an object schema to be sent as parts"
+        )
 
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None
@@ -714,6 +705,23 @@ def _file(wire: WirePlan, location: SourceLocation) -> bool:
     return _types(schema) - _NULL == _STRING and binary
 
 
+def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldFacts]]:
+    """Return the members of a form-data use as its model declares them, allOf branches included."""
+    return [
+        (member.wire_name, member.schema, facts)
+        for member in use.members
+        if member.member_kind == "property"
+        and member.wire_name is not None
+        and member.schema is not None
+        and member.exclusion is None
+        and (facts := member.model_facts) is not None
+    ]
+
+
+def _extra(location: SourceLocation) -> SourceLocation:
+    return SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
+
+
 def _sent(
     wire: WirePlan,
     schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
@@ -725,16 +733,8 @@ def _sent(
     A member holding no files takes values of its field's type, which the part's own type use validates.
     """
     location, schema = wire.schema(site)
-    members = [
-        (member.wire_name, member.schema, facts)
-        for member in use.members
-        if member.member_kind == "property"
-        and member.wire_name is not None
-        and member.schema is not None
-        and member.exclusion is None
-        and (facts := member.model_facts) is not None
-    ]
-    extra = SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
+    members = _members(use)
+    extra = _extra(location)
     match schema.get("additionalProperties", True):
         case False:
             additional = None
@@ -764,6 +764,60 @@ def _sent(
         )
         for name, member, facts in members
     ), additional
+
+
+def _received(
+    wire: WirePlan,
+    schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
+    use: TypeUseBinding,
+    site: SourceLocation,
+) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
+    """Return the member plans of a form-data response with file parts, or None when its object is read whole.
+
+    A part holding no file is read by the type use of its schema, or of its items' schema when its member repeats; a
+    part of an untyped extra keeps its bytes, as a file part does.
+    """
+    location, schema = wire.schema(site)
+    members = _members(use)
+    extra = _extra(location)
+    declared = schema.get("additionalProperties", True)
+    typed = isinstance(declared, Mapping) and bool(declared)
+    files = {name for name, member, _ in members if _file(wire, member)}
+    file_extra = typed and _file(wire, extra)
+    if not files and not file_extra:
+        return None, None
+    match declared:
+        case False:
+            additional = None
+        case _ if typed:
+            additional = _read(wire, schemas, use, "", extra, file=file_extra, required=False)
+        case _:
+            additional = PartSpec(plan=PartPlan("", repeated=True, file=True))
+    return tuple(
+        _read(wire, schemas, use, name, member, file=name in files, required=facts.required and not facts.write_only)
+        for name, member, facts in members
+    ), additional
+
+
+def _read(  # noqa: PLR0913
+    wire: WirePlan,
+    schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
+    body: TypeUseBinding,
+    name: str,
+    location: SourceLocation,
+    *,
+    file: bool,
+    required: bool,
+) -> PartSpec:
+    """Return how a member's parts are read: a file's as bytes, any other in its kind by its own or its items' use."""
+    if file:
+        return PartSpec(plan=PartPlan(name, repeated=_array(wire, location), file=True, required=required))
+    plan = _part_plan(wire, name, location, required=required)
+    if plan.repeated:
+        resolved, _ = wire.schema(location)
+        location = SourceLocation(resolved.document, f"{resolved.pointer}/items", "schema")
+    bound = schemas.get((location.document, location.pointer)) or TypeUseBinding(body.id, "not_generated", None, None)
+    return PartSpec(plan=plan, use=_part_use(body, location, name or None, bound))
 
 
 def _part_use(
@@ -805,19 +859,19 @@ def _part_plans(wire: WirePlan, use: TypeUseBinding | None) -> tuple[tuple[PartP
     return parts, PartPlan("")
 
 
-def _part_plan(wire: WirePlan, name: str, location: SourceLocation) -> PartPlan:
+def _part_plan(wire: WirePlan, name: str, location: SourceLocation, *, required: bool = False) -> PartPlan:
     """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
     _, schema = wire.schema(location)
     if repeated := _types(schema) - _NULL == _ARRAY:
         _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
     match sorted(_types(schema) - _NULL):
         case [("string" | "integer" | "number" | "boolean") as scalar]:
-            return PartPlan(name, scalar, repeated=repeated)
+            return PartPlan(name, scalar, repeated=repeated, required=required)
         case ["integer", "number"]:
-            return PartPlan(name, "number", repeated=repeated)
+            return PartPlan(name, "number", repeated=repeated, required=required)
         case _:
             pass
-    return PartPlan(name, "json", repeated=repeated)
+    return PartPlan(name, "json", repeated=repeated, required=required)
 
 
 def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:
@@ -895,16 +949,19 @@ def _declared(url: str, variables: tuple[tuple[str, str, tuple[str, ...]], ...])
     return set(_PLACEHOLDER.findall(url)) <= {name for name, _, _ in variables}
 
 
-def sent_parts(media: MediaSpec) -> tuple[PartSpec, ...]:
-    """Return the plans of a body sent as parts: each declared member, then any other part."""
-    return (*(media.sent or ()), *(() if media.sent_additional is None else (media.sent_additional,)))
+def member_parts(media: MediaSpec) -> tuple[PartSpec, ...]:
+    """Return the plans of a body or response sent or read as parts: each declared member, then any other part."""
+    return (*(media.members or ()), *(() if media.extra is None else (media.extra,)))
 
 
 def part_uses(plan: ClientPlan) -> Iterator[TypeUseBinding]:
-    """Yield the type use of each part holding no files, of every body sent as parts."""
+    """Yield the type use of each part holding no files, of every body or response sent or read as parts."""
     for spec in plan.operations:
-        for media in () if spec.body is None else spec.body.media:
-            yield from (part.use for part in sent_parts(media) if part.use is not None)
+        media = (
+            *(() if spec.body is None else spec.body.media),
+            *(item for response in spec.responses if not response.bodyless for item in response.media),
+        )
+        yield from (part.use for item in media for part in member_parts(item) if part.use is not None)
 
 
 def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
@@ -915,12 +972,14 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
             yield from (
                 media.use.id
                 for media in spec.body.media
-                if media.use is not None and media.kind != "binary" and media.sent is None
+                if media.use is not None and media.kind != "binary" and media.members is None
             )
         for response in spec.responses:
             if not response.bodyless:
                 yield from (
-                    media.use.id for media in response.media if media.use is not None and media.kind != "binary"
+                    media.use.id
+                    for media in response.media
+                    if media.use is not None and media.kind != "binary" and media.members is None
                 )
             yield from (header.use.id for header in response.headers if header.use is not None)
     yield from (use.id for use in part_uses(plan))

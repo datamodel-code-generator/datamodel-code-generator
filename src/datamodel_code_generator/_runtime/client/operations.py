@@ -22,6 +22,7 @@ from ..model_codecs.media import (
     encode_form,
     encode_json,
     form_encode,
+    issue,
     normalize_media_type,
     percent_decode,
     split_form,
@@ -45,6 +46,7 @@ from .multipart import (
     MultipartData,
     MultipartSource,
     PartPlan,
+    PartSyntaxError,
     decode_parts,
     encode_multipart,
     new_boundary,
@@ -59,6 +61,7 @@ if TYPE_CHECKING:
     from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
+    from .multipart import PartDecoder
     from .responses import ResponseInfo
 
 T = TypeVar("T")
@@ -360,6 +363,48 @@ def _multipart_data(body: bytes, info: ResponseInfo) -> MultipartData[bytes]:
     return MultipartData(_multipart(body, info))
 
 
+class PartsReader(Generic[T]):
+    """Read a form-data response with file parts into its parts, each value read by the decoder of its member.
+
+    A part must be declared, or allowed by the schema's other properties, only a repeated member may repeat, and
+    every required member must have a part; text that is not its member's kind is a decode failure, a value its codec
+    refuses a validation failure.
+    """
+
+    __slots__ = ("_additional", "_declared")
+
+    def __init__(self, parts: tuple[PartDecoder[T], ...], additional: PartDecoder[T] | None = None) -> None:
+        """Keep the decoder of each declared member and of any other part."""
+        self._declared = {part.name: part for part in parts}
+        self._additional = additional
+
+    def __call__(self, body: bytes, info: ResponseInfo) -> MultipartData[T]:
+        """Split the body into its parts and read each of them."""
+        parts: list[DecodedPart[T]] = []
+        seen: set[str] = set()
+        for part in _multipart(body, info):
+            if (name := part.name) is None or (plan := self._declared.get(name, self._additional)) is None:
+                raise _InvalidBodyError(issue(code="multipart.undeclared", message="A form-data part is not declared"))
+            if name in seen and not plan.repeated:
+                raise _InvalidBodyError(
+                    issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
+                )
+            seen.add(name)
+            try:
+                value = plan.read(part)
+            except PartSyntaxError as error:
+                raise _InvalidBodyError(error.cause) from None
+            except DATA_ERRORS as error:
+                raise _BodyValueError(error) from None
+            parts.append(DecodedPart(name, value, part.filename, part.content_type, part.headers))
+        for plan in self._declared.values():
+            if plan.required and plan.name not in seen:
+                raise _BodyValueError(
+                    issue(code="multipart.missing", message="A required form-data member has no part")
+                )
+        return MultipartData(tuple(parts))
+
+
 class _Reader:
     __slots__ = ("additional", "additional_part", "fields", "kind", "parts")
 
@@ -481,6 +526,11 @@ def form_branch(status: str, media_type: str) -> Branch[FormData]:
 def multipart_branch(status: str, media_type: str) -> Branch[MultipartData[bytes]]:
     """Return a multipart branch without a schema, keeping each part's bytes, name, filename, and headers."""
     return Branch(status, media_type, _multipart_data)
+
+
+def parts_branch(status: str, media_type: str, reader: PartsReader[T]) -> Branch[MultipartData[T]]:
+    """Return a form-data branch whose schema has file parts, read part by part into their members' values."""
+    return Branch(status, media_type, reader)
 
 
 def binary_branch(status: str, media_type: str) -> Branch[bytes]:
