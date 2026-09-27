@@ -161,6 +161,14 @@ Tests: the CLI dependency cases print requirements for an embedded package and a
 
 Tests: the external-models layout case reports the rendered project's dependencies.
 
+## Review of the merged server (2026-09-27)
+
+An independent review of main `34f144ff` against the plan reported five findings; each fix is its own PR of one native stack. Installing a generated server into a clean environment (the second fix) also showed that responses carrying `ulid.ULID` values failed with 500, so the stack opens with that fix.
+
+### Opaque model leaves
+
+The Pydantic codec reads native values with `mode="python"` and converted any leaf it did not know with the schema-less `to_jsonable_python`, which cannot serialize types that bring their own Pydantic schema, such as the `ulid.ULID` that `format: ulid` generates. Such a leaf is now converted by a cached `TypeAdapter` of its own type in JSON mode; a type without a Pydantic schema still has no JSON representation (`ModelProjectionError`). The test group adds `python-ulid>=3.2.1`, and the `ids` codec fixture decodes, echoes, encodes, and snapshots ULID fields and rejects an invalid one natively.
+
 ## Next action
 
 Open S07-4 as a stacked PR on #4162. S07 is then complete; S08 (the remaining three backend codecs) follows.

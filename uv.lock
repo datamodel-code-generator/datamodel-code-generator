@@ -724,6 +724,7 @@ dev = [
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
     { name = "python-multipart" },
+    { name = "python-ulid" },
     { name = "t-linter" },
     { name = "tdom", marker = "python_full_version >= '3.14'" },
     { name = "time-machine" },
@@ -781,6 +782,7 @@ test = [
     { name = "pytest-mock" },
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
+    { name = "python-ulid" },
     { name = "time-machine" },
     { name = "trustme" },
     { name = "watchfiles" },
@@ -805,6 +807,7 @@ type = [
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
     { name = "python-multipart" },
+    { name = "python-ulid" },
     { name = "time-machine" },
     { name = "trustme" },
     { name = "ty" },
@@ -888,6 +891,7 @@ dev = [
     { name = "pytest-timeout", specifier = ">=2.4" },
     { name = "pytest-xdist", specifier = ">=3.3.1" },
     { name = "python-multipart", specifier = ">=0.0.32,<0.1" },
+    { name = "python-ulid", specifier = ">=3.2.1" },
     { name = "t-linter", specifier = ">=0.8" },
     { name = "tdom", marker = "python_full_version >= '3.14'", specifier = ">=0.1.16" },
     { name = "time-machine", specifier = ">=3.1" },
@@ -937,6 +941,7 @@ test = [
     { name = "pytest-mock", specifier = ">=3.14" },
     { name = "pytest-timeout", specifier = ">=2.4" },
     { name = "pytest-xdist", specifier = ">=3.3.1" },
+    { name = "python-ulid", specifier = ">=3.2.1" },
     { name = "time-machine", specifier = ">=3.1" },
     { name = "trustme", specifier = ">=1.2.1" },
     { name = "watchfiles", specifier = ">=1.1" },
@@ -961,6 +966,7 @@ type = [
     { name = "pytest-timeout", specifier = ">=2.4" },
     { name = "pytest-xdist", specifier = ">=3.3.1" },
     { name = "python-multipart", specifier = ">=0.0.32,<0.1" },
+    { name = "python-ulid", specifier = ">=3.2.1" },
     { name = "time-machine", specifier = ">=3.1" },
     { name = "trustme", specifier = ">=1.2.1" },
     { name = "ty", specifier = ">=0.0.84" },
@@ -2508,6 +2514,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/5b/42/55c32bb9b12693c092ad250a0e82edb5b31ddeda6eb772de5f308b3804ad/python_multipart-0.0.32.tar.gz", hash = "sha256:be54b7f3fa167bb83e4fcd936b887b708f4e57fe75911c02aebf53efaf8d938e", size = 46881, upload-time = "2026-06-04T16:18:58.647Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e1/04/e8135ebd1ad02c56ec633277529b2602ff99ff634be76cdba5744cf554fd/python_multipart-0.0.32-py3-none-any.whl", hash = "sha256:ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23", size = 30042, upload-time = "2026-06-04T16:18:57.319Z" },
+]
+
+[[package]]
+name = "python-ulid"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black23') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-dev') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort5') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort6') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-dev' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d6/41/65079023c81491a21799c0120bce5925366b6913596bf797806f19973290/python_ulid-4.0.1.tar.gz", hash = "sha256:bbeec02556190bb9dc3401faa7268696acbfbe7b6db9908c155dc3548629f20c", size = 101683, upload-time = "2026-07-20T15:21:41.256Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b4/15/8b39b36f55b6618ec4ca9b55134dcfd9c04cecbc72709f5d8e6bdebed9cd/python_ulid-4.0.1-py3-none-any.whl", hash = "sha256:6f1d69ceb97e99fe542df8476ebcd7a668284bf53ee14b3106bcc6a341a95ed9", size = 14609, upload-time = "2026-07-20T15:21:40.214Z" },
 ]
 
 [[package]]

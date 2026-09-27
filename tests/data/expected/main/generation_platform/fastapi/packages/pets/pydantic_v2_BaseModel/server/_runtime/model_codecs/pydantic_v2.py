@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Final, Generic, TypeVar, overload
 
 from pydantic import AliasChoices, BaseModel, RootModel, SecretBytes, SecretStr, TypeAdapter, ValidationError
 from pydantic.dataclasses import is_pydantic_dataclass
+from pydantic.errors import PydanticSchemaGenerationError
 from pydantic_core import PydanticSerializationError, to_jsonable_python
 
 from .bindings import (
@@ -222,6 +223,7 @@ class PydanticModelCodec(Generic[T]):
         "_bundle",
         "_inspect",
         "_keys",
+        "_leaves",
         "_members",
         "_models",
         "_nested",
@@ -294,6 +296,7 @@ class PydanticModelCodec(Generic[T]):
             for model in binding.models
         }
         self._members: dict[str, WireSchemaValidator] = {}
+        self._leaves: dict[type, TypeAdapter[object]] = {}
         self._validator: WireValidator = validator if validator is not None else bundle.validator(binding.schema_id)
         self._adapter: TypeAdapter[T] = TypeAdapter(native_type)
         self._walk = (
@@ -724,12 +727,22 @@ class PydanticModelCodec(Generic[T]):
                     else _scalar(value, pointer)
                 )
             case _:
-                try:
-                    converted = to_jsonable_python(value)
-                except PydanticSerializationError:
-                    msg = f"The value at {pointer or '/'} has no JSON representation"
-                    raise ModelProjectionError(msg) from None
-                return self._leaf(converted, representation, presence, pointer)
+                return self._leaf(self._jsonable(value, pointer), representation, presence, pointer)
+
+    def _jsonable(self, value: object, pointer: str) -> object:
+        """Convert a leaf through Pydantic's own JSON serialization, or through its type's serializer if it has one."""
+        try:
+            return to_jsonable_python(value)
+        except PydanticSerializationError:
+            pass
+        kind = type(value)
+        try:
+            if (adapter := self._leaves.get(kind)) is None:
+                adapter = self._leaves[kind] = TypeAdapter(kind)
+            return adapter.dump_python(value, mode="json")
+        except (PydanticSchemaGenerationError, PydanticSerializationError):
+            msg = f"The value at {pointer or '/'} has no JSON representation"
+            raise ModelProjectionError(msg) from None
 
     def _json_container(
         self,
