@@ -12,7 +12,7 @@ For a generated package named `pkg`, the public entry points are fixed as follow
 
 ```python
 from pkg import Client, AsyncClient
-from pkg.options import ClientOptions, RequestOptions, TimeoutOptions, RetryOptions, UNSET
+from pkg.options import ClientOptions, RequestOptions, ValidationOptions, TimeoutOptions, RetryOptions, UNSET
 from pkg.responses import Response, RawResponse, AsyncRawResponse
 from pkg.bodies import FormData, MultipartData, DecodedPart
 from pkg.errors import SDKError
@@ -45,7 +45,7 @@ The following table is authoritative for public module names. Common type module
 | Public module | Public types / entry points |
 |---|---|
 | `pkg` | lazy `Client`, `AsyncClient` |
-| `pkg.options` | `ClientOptions`, `RequestOptions`, `TimeoutOptions`, `RetryOptions`, `RedirectOptions`, `TransportOptions`, `ServerSelection`, `Deadline`, `CancelToken`, `UNSET`, `Unset`, `SessionOptions`, `ProtocolClientOptions` |
+| `pkg.options` | `ClientOptions`, `RequestOptions`, `ValidationOptions`, `TimeoutOptions`, `RetryOptions`, `RedirectOptions`, `TransportOptions`, `ServerSelection`, `Deadline`, `CancelToken`, `UNSET`, `Unset`, `SessionOptions`, `ProtocolClientOptions` |
 | `pkg.responses` | `Response[T]`, `ResponseInfo`, `HeadersView`, `RawResponse`, `AsyncRawResponse` |
 | `pkg.auth` | Credentials, materials, providers, and flows in §7; `TokenVersion`; OAuthProviderOptions; TokenSet; token persistence callback Protocol; signers and OwnedCredentialProvider |
 | `pkg.bodies` | `BodyInput[PartT]`, `AsyncBodyInput[PartT]`, `SyncBinaryBody`, `AsyncBinaryBody`; files, streams, factories, attempts, and parts; `FormData`, `MultipartData[T]`, `DecodedPart[T]` |
@@ -83,7 +83,7 @@ Untyped upstream trace information is checked at the adapter's object boundary a
 
 All options are frozen; input mappings/lists are copied into immutable values at entry. External provider/client identities are not copied. `UNSET` is one public singleton meaning inheritance; `None` has the explicit meaning defined for each field. Only `options=None` is equivalent to an empty override. Do not accept bool as seconds or counts. Durations are finite nonnegative floats; count/byte limits are finite integers except where explicit `None` is allowed. NaN, Infinity, and negative values raise `ConfigurationError`.
 
-Omitted constructor fields in ClientOptions/RequestOptions and nested TimeoutOptions/RetryOptions/RedirectOptions remain UNSET; the table gives effective defaults after merging. A caller explicitly passing the same number as a default still supplies an explicit value. This resolves stream read-default differences, clearing through None, and generated runtime_defaults overrides without inferring provenance from value equality. UNSET itself is never sent in wire JSON or headers.
+Omitted constructor fields in ClientOptions/RequestOptions and nested TimeoutOptions/RetryOptions/RedirectOptions/ValidationOptions remain UNSET; the table gives effective defaults after merging. A caller explicitly passing the same number as a default still supplies an explicit value. This resolves stream read-default differences, clearing through None, and generated runtime_defaults overrides without inferring provenance from value equality. UNSET itself is never sent in wire JSON or headers.
 
 | Public setting | ClientOptions default | RequestOptions / merge / meaning of None |
 |---|---|---|
@@ -93,6 +93,7 @@ Omitted constructor fields in ClientOptions/RequestOptions and nested TimeoutOpt
 | `timeout: TimeoutOptions` | connect=5s/read=30s/write=30s/pool=5s | Per-nested-field precedence: request > view > client > generated default. timeout=None disables all four phases; field=None disables only that phase. Neither disables the total deadline. Only streaming methods use stream_idle_timeout as the read default; an explicit read value is an additional cap, taking the minimum |
 | `total_timeout: float \| None` | 60s | Relative total budget from call entry. None disables the relative cap inherited through this layer. 0 raises DeadlineExceededError before providers or sending. Cannot disable the parent OperationSession deadline |
 | `deadline: Deadline \| None` | None | Monotonic absolute deadline created with `Deadline.after(seconds)`. UNSET inherits; None clears the client/view absolute deadline. Cannot clear the parent session deadline. Uses the earlier of this and the relative cap |
+| `validation: ValidationOptions` | request=none / response=native / arguments=none, overridden by CLIENT §4.6 generation configuration | Merge each field independently as call > view > client > generated default. UNSET inherits; None is forbidden. Only generation-declared modes are selectable; no runtime dependency discovery. CLIENT §4.5–4.8 owns scope, fixed project policies, strict envelopes/factories, raw responses, exceptions, and costs |
 | `retry: RetryOptions` | Table below | Merge per nested field. None forbidden. `max_retries=0` disables retries |
 | `redirects: RedirectOptions` | enabled=False/max_redirects=5/allow_303_to_get=False/allowed_origins=()/allow_https_downgrade=False | Nested merge. None forbidden. Empty allowed_origins allows only the initial origin. Redirect count accumulates across the logical call |
 | `idempotency_key: IdempotencyKey \| None` | UNSET | UNSET generates automatically under the operation declaration; None suppresses automatic generation. Caller values take precedence. `IdempotencyKey.new()` contains UUIDv4 and first_used_at. Do not reuse one key for distinct logical operations |
