@@ -452,7 +452,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             close, self._close = self._close, None
         if close is None:
             return
-        failed: BaseException | None = None
+        failed: SDKError | None = None
         try:
             close()
         except Exception as failure:  # noqa: BLE001
@@ -460,14 +460,18 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 failed = error = self._failure(failure)
             else:
                 add_secondary(error, failure)
-        except BaseException as interruption:  # noqa: BLE001
-            failed = error = interruption
-        finally:
-            self._scope.release_handle(self)
-        if (events := self._events) is not None:
-            events.streamed(error, early=state == "closed")
+        except BaseException as interruption:
+            self._released(interruption, early=state == "closed")
+            raise
+        self._released(error, early=state == "closed")
         if failed is not None:
             raise failed
+
+    def _released(self, error: BaseException | None, *, early: bool) -> None:
+        """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
+        self._scope.release_handle(self)
+        if (events := self._events) is not None:
+            events.streamed(error, early=early)
 
 
 class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"]):
@@ -656,7 +660,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             close, self._close = self._close, None
         if close is None:
             return
-        failed: BaseException | None = None
+        failed: SDKError | None = None
         try:
             await close()
         except Exception as failure:  # noqa: BLE001
@@ -664,11 +668,15 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 failed = error = self._failure(failure)
             else:
                 add_secondary(error, failure)
-        except BaseException as interruption:  # noqa: BLE001
-            failed = error = interruption
-        finally:
-            self._scope.release_handle(self)
-        if (events := self._events) is not None:
-            await events.astreamed(error, early=state == "closed")
+        except BaseException as interruption:
+            await self._released(interruption, early=state == "closed")
+            raise
+        await self._released(error, early=state == "closed")
         if failed is not None:
             raise failed
+
+    async def _released(self, error: BaseException | None, *, early: bool) -> None:
+        """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
+        self._scope.release_handle(self)
+        if (events := self._events) is not None:
+            await events.astreamed(error, early=early)
