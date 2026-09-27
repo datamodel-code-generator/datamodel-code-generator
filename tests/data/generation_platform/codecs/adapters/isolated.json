@@ -1,0 +1,10 @@
+{
+  "backend": "dataclasses.dataclass",
+  "surface": "client",
+  "scopes": ["schemas", "paths"],
+  "blocked": ["pydantic", "pydantic_core", "msgspec"],
+  "cases": [
+    {"name": "cat-outbound", "use": "/paths/~1cats/post request_body", "op": "outbound", "value": {"kind": "cat"}},
+    {"name": "cat-snapshot", "use": "/paths/~1cats/post request_body", "op": "snapshot", "value": {"model": "Cat", "args": {"kind": "cat"}}}
+  ]
+}

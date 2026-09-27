@@ -1,0 +1,32 @@
+{
+  "backend": "msgspec.Struct",
+  "package": "codec_shapes_msgspec",
+  "strategies": true,
+  "cases": [
+    {"name": "animal-client-cat", "use": "/paths/~1animals/post request_body", "surface": "client", "op": "from_wire",
+     "value": {"id": 3, "meow": true}},
+    {"name": "animal-server-dog", "use": "/paths/~1animals/post request_body", "op": "decode", "value": {"bark": 1, "name": "Rex"}},
+    {"name": "animal-client-decode-cat", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"id": 1, "meow": true, "nick-name": "Tom"}},
+    {"name": "animal-client-decode-dog", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"id": 2, "bark": 3, "x": 1}},
+    {"name": "animal-server-encode-cat", "use": "/paths/~1animals/post response_body 200", "op": "encode",
+     "value": {"result": "animal-client-decode-cat", "attr": "value"}},
+    {"name": "kin-server-encode-cat", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+     "value": {"call": "Cat", "args": {"id": 1, "meow": true}}},
+    {"name": "kin-server-encode-dog", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+     "value": {"call": "Dog", "args": {"id": 2, "bark": 3}}},
+    {"name": "tree-client-decode", "use": "/paths/~1tree/put response_body 200", "surface": "client", "op": "decode",
+     "value": {"value": 1, "children": [{"value": 2, "extra": 1}], "index": {"a": {"value": 3, "deep": true}}, "pair": [1, "a@example.com"]}},
+    {"name": "tree-server-encode", "use": "/paths/~1tree/put response_body 200", "op": "encode",
+     "value": {"result": "tree-client-decode", "attr": "value"}},
+    {"name": "tree-client-decode-bad-child", "use": "/paths/~1tree/put response_body 200", "surface": "client", "op": "decode",
+     "value": {"value": 1, "index": {"a": {"value": 3, "pair": [1, "x"], "children": [{"value": 2, "pair": [1]}]}}}},
+    {"name": "mixed-server-decode", "use": "/paths/~1mixed/post request_body", "op": "decode", "value": {"size": "small", "zz": 1}},
+    {"name": "mixed-server-decode-large", "use": "/paths/~1mixed/post request_body", "op": "decode", "value": {"size": "large"}},
+    {"name": "values-server-decode", "use": "/paths/~1values/post request_body", "op": "decode",
+     "value": {"amount": 1.10, "span": "P1DT1H", "level": 2, "any": {"k": [1]}, "un": 5, "mark": [1, "a"], "x-y": "z"}},
+    {"name": "values-server-response", "use": "/paths/~1values/post response_body 200", "op": "encode",
+     "value": {"result": "values-server-decode", "attr": "value"}}
+  ]
+}

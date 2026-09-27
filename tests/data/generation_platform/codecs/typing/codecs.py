@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from msgspec import Struct
 from pydantic import BaseModel
 from typing_extensions import TypedDict, assert_type
 
@@ -28,6 +29,10 @@ class Tag:
 
 
 class TagRecord(TypedDict):
+    name: str
+
+
+class TagStruct(Struct):
     name: str
 
 
@@ -82,4 +87,14 @@ def exercise_record(
     assert_type(protocol.decode(wire, context), DecodedValue[TagRecord])
     assert_type(codec.snapshot(tag, context), ModelValue[TagRecord])
     assert_type(codec.snapshot({"name": "a"}, context), ModelValue[TagRecord])
+    assert_type(codec.encode(tag, context), WireValue)
+
+
+def exercise_struct(
+    codec: StructuralModelCodec[TagStruct], context: CodecContext, wire: WireValue, tag: TagStruct
+) -> None:
+    protocol: ModelCodec[TagStruct] = codec
+    assert_type(protocol.decode(wire, context), DecodedValue[TagStruct])
+    assert_type(codec.from_wire({"name": "a"}, context).require_model(), TagStruct)
+    assert_type(codec.snapshot(tag, context), ModelValue[TagStruct])
     assert_type(codec.encode(tag, context), WireValue)

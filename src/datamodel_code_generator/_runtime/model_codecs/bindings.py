@@ -97,17 +97,19 @@ class FieldBinding:
 class ModelBinding:
     """Describe one generated model: its fields, unknown-property policy, and root value.
 
-    ``extra_items`` is the type of the extra items a TypedDict declares, which it keeps among its keys.
+    ``extra_items`` is the type of the extra items a TypedDict declares, which it keeps among its keys, and ``tag``
+    the wire name and value of a tagged msgspec Struct's tag, which is no field of the Struct.
     """
 
     symbol: str
-    native_kind: Literal["model", "dataclass", "typed_dict", "root"]
+    native_kind: Literal["model", "dataclass", "typed_dict", "struct", "root"]
     schema_id: str | None
     fields: tuple[FieldBinding, ...] = ()
     root: TypeNode | None = None
     extra: ExtraPolicy = "ignore"
     open: bool = True
     extra_items: TypeNode | None = None
+    tag: tuple[str, str | int] | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

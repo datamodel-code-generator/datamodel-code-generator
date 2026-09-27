@@ -1,0 +1,294 @@
+openapi: 3.1.0
+info:
+  title: msgspec Structs
+  version: "1"
+paths:
+  /holders:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Holder"
+      responses:
+        "200":
+          description: The stored holder.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Holder"
+  /limits:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Limits"
+      responses:
+        "200":
+          description: The stored limits.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Limits"
+  /coded:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Coded"
+      responses:
+        "200":
+          description: The stored codes.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Coded"
+  /batches:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Batch"
+      responses:
+        "204":
+          description: Stored.
+  /small:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Small"
+      responses:
+        "204":
+          description: Stored.
+  /stamps:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Stamped"
+      responses:
+        "204":
+          description: Stored.
+  /rated:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Rated"
+      responses:
+        "204":
+          description: Stored.
+  /moments:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Moment"
+      responses:
+        "204":
+          description: Stored.
+  /worded:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Worded"
+      responses:
+        "204":
+          description: Stored.
+  /wallets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Wallet"
+      responses:
+        "200":
+          description: The stored wallet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+components:
+  schemas:
+    Small:
+      type: object
+      required: [size]
+      properties:
+        size:
+          type: string
+          const: small
+        contact:
+          type: string
+    Large:
+      type: object
+      required: [size]
+      properties:
+        size:
+          type: string
+          const: large
+    Mixed:
+      oneOf:
+        - $ref: "#/components/schemas/Small"
+        - $ref: "#/components/schemas/Large"
+      discriminator:
+        propertyName: size
+    Holder:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/Mixed"
+        address:
+          type: string
+          format: ipv4
+        count:
+          type: integer
+          default: 0
+    Limits:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        low:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 2
+          maxLength: 4
+    Coded:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: "^[a-z]+$"
+        note:
+          type: string
+          pattern: "^.*$"
+        low:
+          type: integer
+          minimum: 1
+        high:
+          type: integer
+          exclusiveMaximum: 10
+        ratio:
+          type: number
+          multipleOf: 0.5
+          exclusiveMinimum: 0
+          maximum: 5
+        name:
+          type: string
+          minLength: 2
+          maxLength: 4
+        tags:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 2
+        scores:
+          type: object
+          additionalProperties:
+            type: integer
+          minProperties: 1
+          maxProperties: 2
+    Entry:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+    Batch:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/Entry"
+        index:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Entry"
+        a.b:
+          type: string
+          format: decimal
+    Stamped:
+      type: object
+      properties:
+        when:
+          type: string
+          format: date-time
+        pair:
+          type: array
+          prefixItems:
+            - type: integer
+            - type: string
+          items: false
+          minItems: 2
+          maxItems: 2
+    Ratio:
+      type: number
+      enum: [0.5, 1.5]
+    Rated:
+      type: object
+      properties:
+        ratio:
+          $ref: "#/components/schemas/Ratio"
+    Moment:
+      type: object
+      properties:
+        at:
+          anyOf:
+            - const: now
+            - type: string
+              format: date-time
+    Worded:
+      type: object
+      properties:
+        word:
+          anyOf:
+            - const: any
+            - type: string
+        level:
+          anyOf:
+            - const: 0
+            - type: integer
+    Penny:
+      type: object
+      required: [value]
+      properties:
+        value:
+          const: 1
+    Dime:
+      type: object
+      required: [value]
+      properties:
+        value:
+          const: 10
+    Coin:
+      oneOf:
+        - $ref: "#/components/schemas/Penny"
+        - $ref: "#/components/schemas/Dime"
+      discriminator:
+        propertyName: value
+    Wallet:
+      type: object
+      properties:
+        coin:
+          $ref: "#/components/schemas/Coin"
+        address:
+          type: string
+          format: ipv4

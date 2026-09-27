@@ -36,6 +36,8 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("media", "media"),
         ("enums", "structural"),
         ("enums", "structural-typeddict"),
+        ("enums", "isolated"),
+        ("enums", "structural-msgspec"),
     ],
 )
 def test_codec_adapters(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -13,7 +13,7 @@ model_codecs/patterns.py: .errors, __future__, dataclasses, functools, importlib
 model_codecs/pydantic_v2.py: .bindings, .codec, .errors, .media, .patterns, .schema, .values, .wire, __future__, collections.abc, dataclasses, decimal, enum, itertools, pydantic, pydantic.dataclasses, pydantic.errors, pydantic.fields, pydantic_core, types, typing, typing_extensions
 model_codecs/registry.py: .schema, .views, .wire, __future__, collections.abc, dataclasses, referencing, referencing.jsonschema, typing, typing_extensions
 model_codecs/schema.py: .context, .errors, .patterns, .wire, __future__, collections.abc, contextvars, dataclasses, datetime, decimal, functools, importlib, jsonschema, jsonschema.exceptions, math, referencing.exceptions, referencing.jsonschema, typing, typing_extensions, urllib.parse
-model_codecs/structural.py: .bindings, .codec, .errors, .media, .patterns, .schema, .values, .wire, __future__, collections, collections.abc, dataclasses, datetime, decimal, enum, math, re, sys, types, typing, typing_extensions
+model_codecs/structural.py: .bindings, .codec, .errors, .media, .patterns, .schema, .values, .wire, __future__, collections, collections.abc, dataclasses, datetime, decimal, enum, functools, math, msgspec, operator, re, sys, types, typing, typing_extensions
 model_codecs/unset.py: __future__, enum, typing
 model_codecs/values.py: .errors, .wire, __future__, collections.abc, dataclasses, typing, typing_extensions
 model_codecs/views.py: .bindings, .capabilities, .context, .parameters, .wire, __future__, collections.abc, dataclasses, referencing, typing
