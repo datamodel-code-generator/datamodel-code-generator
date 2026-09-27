@@ -221,7 +221,7 @@ def _completed(
 class _Core:
     __slots__ = ("_closed", "_fixed", "_owned", "_settings", "_urls")
 
-    def __init__(self, defaults: ClientDefaults, options: object, ownership: object) -> None:
+    def __init__(self, defaults: ClientDefaults, options: object, ownership: object, *, created: bool) -> None:
         if options is not None and not isinstance(options, ClientOptions):
             raise ConfigurationError(field_path=("options",), condition="invalid_type")
         if ownership not in _OWNERSHIPS:
@@ -232,7 +232,7 @@ class _Core:
             (_ACCEPT_ENCODING,) if agent is None else ((b"User-Agent", agent.encode("ascii")), _ACCEPT_ENCODING)
         )
         self._urls: dict[int, tuple[tuple[ServerPlan, ...], str]] = {}
-        self._owned = ownership == "owned"
+        self._owned = created or ownership == "owned"
         self._closed = False
 
     def _base(self, operation: OperationPlan[object, object], settings: _Settings) -> str:
@@ -319,13 +319,12 @@ class ClientCore(_Core):
         http_client_ownership: Literal["borrowed", "owned"] = "borrowed",
     ) -> None:
         """Borrow the given HTTPX2 client unless ownership is transferred, or create and own one."""
-        super().__init__(defaults, options, http_client_ownership)
+        super().__init__(defaults, options, http_client_ownership, created=isinstance(http_client, Unset))
         match http_client:
             case httpx2.Client():
                 self._http = http_client
             case Unset():
                 self._http = httpx2.Client(trust_env=False)
-                self._owned = True
             case _:
                 raise ConfigurationError(field_path=("http_client",), condition="invalid_type")
 
@@ -389,13 +388,12 @@ class AsyncClientCore(_Core):
         http_client_ownership: Literal["borrowed", "owned"] = "borrowed",
     ) -> None:
         """Borrow the given HTTPX2 async client unless ownership is transferred, or create and own one."""
-        super().__init__(defaults, options, http_client_ownership)
+        super().__init__(defaults, options, http_client_ownership, created=isinstance(http_client, Unset))
         match http_client:
             case httpx2.AsyncClient():
                 self._http = http_client
             case Unset():
                 self._http = httpx2.AsyncClient(trust_env=False)
-                self._owned = True
             case _:
                 raise ConfigurationError(field_path=("http_client",), condition="invalid_type")
 
