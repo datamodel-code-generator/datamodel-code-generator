@@ -20,7 +20,7 @@ from tests.data.python.client_runtime import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator, Callable, Iterator
     from types import ModuleType
 
 _PET: Final = {"id": 3, "name": "fox"}
@@ -38,6 +38,27 @@ def _interrupting(request: httpx2.Request) -> httpx2.Response:
 
 def _cancelling(request: httpx2.Request) -> httpx2.Response:
     raise asyncio.CancelledError
+
+
+class _InterruptedClose(httpx2.SyncByteStream, httpx2.AsyncByteStream):
+    """A body whose close is interrupted: by a signal when read synchronously, by a cancellation with asyncio."""
+
+    def __iter__(self) -> Iterator[bytes]:
+        yield b'{"id":3,"name":"fox"}'
+
+    def close(self) -> None:
+        raise KeyboardInterrupt
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield b'{"id":3,"name":"fox"}'
+
+    async def aclose(self) -> None:
+        raise asyncio.CancelledError
+
+
+def _interrupted_close(request: httpx2.Request) -> httpx2.Response:
+    del request
+    return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_InterruptedClose())
 
 
 class Recorder:
@@ -194,6 +215,12 @@ def _streams(api: Any, exchange: Exchange, lines: list[str], options: ModuleType
         lines.append("  stream discarded for an interruption")
     with api.pets.with_streaming_response.get_pet(pet_id=pet) as iterated:
         record(lines, "stream iterated", lambda: b"".join(iterated.iter_bytes()))
+    exchange.respond(_interrupted_close)
+    with api.pets.with_streaming_response.get_pet(pet_id=pet) as interrupting:
+        try:
+            interrupting.close()
+        except KeyboardInterrupt:
+            lines.append("  stream whose close is interrupted: KeyboardInterrupt")
     ending = api.with_options(options.RequestOptions(hooks=(Recorder(lines, "n", ("stream_end",)),)))
     exchange.respond(json_response(200, _PET), json_response(200, _PET), broken)
     with ending.pets.with_streaming_response.get_pet(pet_id=pet) as read:
@@ -275,6 +302,12 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
             await arecord(lines, "async stream whose end fails on reading it", last.read)
         async with ending.pets.with_streaming_response.get_pet(pet_id=pet) as failed:
             await arecord(lines, "async stream failing whose end fails too", failed.read)
+        exchange.respond(_interrupted_close)
+        async with api.pets.with_streaming_response.get_pet(pet_id=pet) as cancelling:
+            try:
+                await cancelling.aclose()
+            except asyncio.CancelledError:
+                lines.append("  async stream whose close is cancelled: CancelledError")
         exchange.respond(json_response(200, _PET))
 
         async def raw_get() -> int:

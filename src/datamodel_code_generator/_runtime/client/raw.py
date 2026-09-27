@@ -452,7 +452,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             close, self._close = self._close, None
         if close is None:
             return
-        failed: SDKError | None = None
+        failed: BaseException | None = None
         try:
             close()
         except Exception as failure:  # noqa: BLE001
@@ -460,6 +460,8 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 failed = error = self._failure(failure)
             else:
                 add_secondary(error, failure)
+        except BaseException as interruption:  # noqa: BLE001
+            failed = error = interruption
         finally:
             self._scope.release_handle(self)
         if (events := self._events) is not None:
@@ -654,7 +656,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             close, self._close = self._close, None
         if close is None:
             return
-        failed: SDKError | None = None
+        failed: BaseException | None = None
         try:
             await close()
         except Exception as failure:  # noqa: BLE001
@@ -662,6 +664,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 failed = error = self._failure(failure)
             else:
                 add_secondary(error, failure)
+        except BaseException as interruption:  # noqa: BLE001
+            failed = error = interruption
         finally:
             self._scope.release_handle(self)
         if (events := self._events) is not None:
