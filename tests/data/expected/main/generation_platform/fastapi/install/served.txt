@@ -1,0 +1,5 @@
+/contacts 201 {"id":"01ARZ3NDEKTSV4RRFFQ69G5FAV","mail":"ann@example.com","born":"2020-02-29","nickname":"ann"}
+/contacts 422
+/contacts 422
+/contacts/search 200 "ann"
+/contacts/search 422

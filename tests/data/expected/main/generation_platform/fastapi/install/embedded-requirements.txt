@@ -1,0 +1,9 @@
+fastapi>=0.141.1
+starlette>=1.0.0
+pydantic>=2.13.5
+jsonschema[format-nongpl]>=4.26
+referencing>=0.37
+typing-extensions>=4.16
+google-re2>=1.1.20251105
+email-validator>=2.3
+python-ulid>=3.2.1

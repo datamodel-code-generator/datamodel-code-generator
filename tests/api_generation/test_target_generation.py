@@ -57,6 +57,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "layout-embedded",
         "layout-standalone",
         "layout-external",
+        "model-dependencies",
         "layout-errors",
         "format-errors",
         "target-grammar-modern",

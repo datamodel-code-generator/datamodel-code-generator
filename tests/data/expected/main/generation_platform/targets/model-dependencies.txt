@@ -1,0 +1,23 @@
+# model-dependencies
+render
+  target=fastapi schema_version=1
+  write model models.py
+  write target server/__init__.py (target)
+  write target server/application.py (target)
+  write target server/routers/__init__.py (target)
+  write target server/routers/untagged.py (target)
+  write target server/_generated/__init__.py (target)
+  write target server/_generated/contract.py (target)
+  write target server/_generated/model_bindings.py (target)
+  write target server/_generated/openapi.py (target)
+  write target server/model_codecs.py (target)
+  write target server/responses.py (target)
+  write target server/errors.py (target)
+  write target server/auth_types.py (target)
+  write target server/services.py (target)
+  write target server/README.md (target)
+  write target server/py.typed (target)
+  write model_inventory server/.dcg-state/model-artifacts.json (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  25 runtime modules ['write']
+dependencies ['fastapi>=0.141.1', 'starlette>=1.0.0', 'pydantic>=2.13.5', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'typing-extensions>=4.16', 'email-validator>=2.3', 'python-ulid>=3.2.1', 'pendulum>=3.2']

@@ -333,6 +333,7 @@ ini_options.assert_helper_direct_assert_exempt_files = [
 [tool.coverage]
 run.omit = [
   "*/_types/*",
+  "tests/api_generation/test_fastapi_install.py",
   "tests/cli_doc/*",
   "tests/data/*",
   "tests/main/payload_validation/*",
