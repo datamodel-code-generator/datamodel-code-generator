@@ -361,6 +361,97 @@ _BUNDLE = r"""{
     },
     "security": []
    }
+  },
+  {
+   "key": "/paths/~1items~1{level}/get",
+   "method": "get",
+   "route_path": "/items/{level}",
+   "slots": [],
+   "fragment": {
+    "parameters": [
+     {
+      "name": "level",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "enum": [
+        1,
+        2
+       ]
+      }
+     },
+     {
+      "name": "mode",
+      "in": "query",
+      "schema": {
+       "type": "integer",
+       "enum": [
+        1,
+        2
+       ]
+      }
+     },
+     {
+      "name": "ratio",
+      "in": "query",
+      "schema": {
+       "type": "number",
+       "enum": [
+        0.5,
+        1.5
+       ]
+      }
+     },
+     {
+      "name": "X-Flag",
+      "in": "header",
+      "schema": {
+       "type": "boolean",
+       "const": true
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Done."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__f2e57eafd422"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__f2e57eafd422"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__f2e57eafd422"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
   }
  ],
  "components": {
@@ -456,6 +547,7 @@ PLAN: Final = OpenAPIPackagePlan(
         '/paths/~1notes~1{note.id}/get',
         '/paths/~1files~1{file.name}/get',
         '/paths/~1menü~1{item}/get',
+        '/paths/~1items~1{level}/get',
     ),
     bundle=_BUNDLE,
 )

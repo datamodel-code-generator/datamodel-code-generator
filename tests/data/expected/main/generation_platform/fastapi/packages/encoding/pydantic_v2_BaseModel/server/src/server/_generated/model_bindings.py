@@ -53,6 +53,17 @@ def _resources() -> tuple[SchemaResource, ...]:
                     '/files/{file.name}': {
                         'get': {'parameters': [{'schema': {'type': 'string', 'pattern': '^[a-z]+\\.txt$'}}]},
                     },
+                    '/items/{level}': {
+                        'get': {
+                            'parameters': [
+                                {'schema': {'type': 'integer', 'enum': [1, 2]}},
+                                {'schema': {'type': 'integer', 'enum': [1, 2]}},
+                                {'schema': {'type': 'number', 'enum': [0.5, 1.5]}},
+                                {'schema': {'type': 'boolean', 'const': True}},
+                                {'schema': {'type': 'string', 'enum': ['a', 'b']}},
+                            ],
+                        },
+                    },
                     '/menü/{item}': {'get': {'parameters': [{'schema': {'type': 'string', 'pattern': '^[a-z]+$'}}]}},
                     '/notes/{note.id}': {'get': {'parameters': [{'schema': {'type': 'integer'}}]}},
                     '/ratios': {'get': {'parameters': [{'schema': {'type': 'array', 'items': {'type': 'number'}}}]}},
@@ -83,6 +94,11 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/components/schemas/Blob',
                 '/components/schemas/Filter',
                 '/paths/~1files~1{file.name}/get/parameters/0/schema',
+                '/paths/~1items~1{level}/get/parameters/0/schema',
+                '/paths/~1items~1{level}/get/parameters/1/schema',
+                '/paths/~1items~1{level}/get/parameters/2/schema',
+                '/paths/~1items~1{level}/get/parameters/3/schema',
+                '/paths/~1items~1{level}/get/parameters/4/schema',
                 '/paths/~1menü~1{item}/get/parameters/0/schema',
                 '/paths/~1notes~1{note.id}/get/parameters/0/schema',
                 '/paths/~1ratios/get/parameters/0/schema',
@@ -243,6 +259,16 @@ def _model_7() -> ModelBinding:
 def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldMenüItemGetPathItemParameter',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_9() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldItemsLevelGetHeaderXFlagParameter',
         native_kind='root',
         schema_id=None,
         root=LeafNode(),
@@ -534,5 +560,133 @@ def codec_8() -> PydanticModelCodec[models.FieldMenüItemGetPathItemParameter]:
         ),
         models.FieldMenüItemGetPathItemParameter,
         {'models:FieldMenüItemGetPathItemParameter': models.FieldMenüItemGetPathItemParameter},
+        request_bundle(),
+    )
+
+
+CONTEXT_9: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/0/schema',
+    operation_id='/paths/~1items~1{level}/get',
+)
+
+
+@cache
+def codec_9() -> PydanticModelCodec[models.FieldItemsLevelGetPathLevelParameter]:
+    """Codec of /paths/~1items~1{level}/get parameter (request path level)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/0/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/0/schema',
+            operation_id='/paths/~1items~1{level}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='enum',
+            native_export='models:FieldItemsLevelGetPathLevelParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        models.FieldItemsLevelGetPathLevelParameter,
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_10: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/1/schema',
+    operation_id='/paths/~1items~1{level}/get',
+)
+
+
+@cache
+def codec_10() -> PydanticModelCodec[models.FieldItemsLevelGetQueryModeParameter]:
+    """Codec of /paths/~1items~1{level}/get parameter (request query mode)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/1/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/1/schema',
+            operation_id='/paths/~1items~1{level}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='enum',
+            native_export='models:FieldItemsLevelGetQueryModeParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        models.FieldItemsLevelGetQueryModeParameter,
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_11: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/2/schema',
+    operation_id='/paths/~1items~1{level}/get',
+)
+
+
+@cache
+def codec_11() -> PydanticModelCodec[models.FieldItemsLevelGetQueryRatioParameter]:
+    """Codec of /paths/~1items~1{level}/get parameter (request query ratio)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/2/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/2/schema',
+            operation_id='/paths/~1items~1{level}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='enum',
+            native_export='models:FieldItemsLevelGetQueryRatioParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        models.FieldItemsLevelGetQueryRatioParameter,
+        {},
+        request_bundle(),
+    )
+
+
+CONTEXT_12: Final = CodecContext(
+    surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/3/schema',
+    operation_id='/paths/~1items~1{level}/get',
+)
+
+
+@cache
+def codec_12() -> PydanticModelCodec[models.FieldItemsLevelGetHeaderXFlagParameter]:
+    """Codec of /paths/~1items~1{level}/get parameter (request header X-Flag)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldItemsLevelGetHeaderXFlagParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/3/schema',
+            operation_id='/paths/~1items~1{level}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldItemsLevelGetHeaderXFlagParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldItemsLevelGetHeaderXFlagParameter'),
+            models=(_model_9(),),
+        ),
+        models.FieldItemsLevelGetHeaderXFlagParameter,
+        {'models:FieldItemsLevelGetHeaderXFlagParameter': models.FieldItemsLevelGetHeaderXFlagParameter},
         request_bundle(),
     )

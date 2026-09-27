@@ -73,7 +73,14 @@ render pydantic_v2.BaseModel
   get_menu: GET /menü/{item} -> /menü/{item} [untagged] status 204 primary 204 None body typed handler sync
     parameter /paths/~1menü~1{item}/get/parameters/0: codec_adapter source_assertion_not_projected at /paths/~1menü~1{item}/get/parameters/0/schema/pattern
     primary_response -: codec_adapter unsupported_wire_shape at /paths/~1menü~1{item}/get/responses/204
-  group untagged -> untagged (6)
+  get_item: GET /items/{level} -> /items/{level} [untagged] status 204 primary 204 None body typed handler sync
+    parameter /paths/~1items~1{level}/get/parameters/0: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/0/schema
+    parameter /paths/~1items~1{level}/get/parameters/1: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/1/schema
+    parameter /paths/~1items~1{level}/get/parameters/2: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/2/schema
+    parameter /paths/~1items~1{level}/get/parameters/3: codec_adapter source_assertion_not_projected at /paths/~1items~1{level}/get/parameters/3/schema
+    parameter /paths/~1items~1{level}/get/parameters/4: fastapi_native native_supported
+    primary_response -: codec_adapter unsupported_wire_shape at /paths/~1items~1{level}/get/responses/204
+  group untagged -> untagged (7)
   file server/README.md
     | # Server parameters
     |
@@ -95,6 +102,7 @@ render pydantic_v2.BaseModel
     | | `UntaggedService` | `get_note` | GET | `/notes/{note.id}` | `/paths/~1notes~1{note.id}/get` |
     | | `UntaggedService` | `get_file` | GET | `/files/{file.name}` | `/paths/~1files~1{file.name}/get` |
     | | `UntaggedService` | `get_menu` | GET | `/menü/{item}` | `/paths/~1menü~1{item}/get` |
+    | | `UntaggedService` | `get_item` | GET | `/items/{level}` | `/paths/~1items~1{level}/get` |
     |
     | `install_openapi` and `operation_dependencies` take the operation keys, the values of `OperationKey`.
     |
@@ -111,7 +119,7 @@ render pydantic_v2.BaseModel
     |
     |
     | class Untagged(UntaggedService):
-    |     """Implement `search`, `get_ratios`, `repeat`, `get_note`, `get_file`, and `get_menu`."""
+    |     """Implement `search`, `get_ratios`, `repeat`, `get_note`, `get_file`, `get_menu`, and `get_item`."""
     |
     |
     | app = create_app(untagged=Untagged())
