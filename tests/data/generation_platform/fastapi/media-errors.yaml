@@ -16,6 +16,81 @@ paths:
               meta: {contentType: application/json}
       responses:
         "204": {description: Done.}
+  /delimited:
+    post:
+      operationId: postDelimited
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: form, explode: false}
+      responses:
+        "204": {description: Done.}
+  /piped:
+    post:
+      operationId: postPiped
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: pipeDelimited}
+      responses:
+        "204": {description: Done.}
+  /reserved:
+    post:
+      operationId: postReserved
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                path: {type: string}
+            encoding:
+              path: {allowReserved: true}
+      responses:
+        "204": {description: Done.}
+  /typed:
+    post:
+      operationId: postTyped
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                meta: {type: object, properties: {name: {type: string}}}
+            encoding:
+              meta: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /parts:
+    post:
+      operationId: postParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: form, explode: false}
+      responses:
+        "204": {description: Done.}
   /schemaless:
     post:
       operationId: postSchemaless
