@@ -589,8 +589,11 @@ def _record_required(native: type) -> set[str]:
     }
 
 
-def _fits_struct(binding: ModelBinding, native: type) -> bool:
-    """Return whether a msgspec Struct declares every bound field under its wire name and binds each required one."""
+def _fits_struct(binding: ModelBinding, native: type, *, converted: bool) -> bool:
+    """Return whether a msgspec Struct declares every bound field and binds each required one.
+
+    msgspec reads the wire value only when it converts it, so only then must each field's encode name be its wire name.
+    """
     import msgspec  # noqa: PLC0415 - Only the msgspec backend loads msgspec.
 
     if not issubclass(native, msgspec.Struct):
@@ -600,7 +603,7 @@ def _fits_struct(binding: ModelBinding, native: type) -> bool:
     return (
         all(
             (item := declared.get(name)) is not None
-            and item.encode_name == member.wire_name
+            and (not converted or item.encode_name == member.wire_name)
             and item.required == member.required
             for name, member in planned.items()
         )
@@ -776,7 +779,15 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         kind = binding.native_kind
         try:
             hints = typing_extensions.get_type_hints(native, include_extras=True)
-            fits = {"typed_dict": _fits_record, "struct": _fits_struct}.get(kind, _fits_dataclass)(binding, native)
+            match kind:
+                case "typed_dict":
+                    fits = _fits_record(binding, native)
+                case "struct":
+                    fits = _fits_struct(
+                        binding, native, converted=self._binding.converter_strategy == "msgspec_convert"
+                    )
+                case _:
+                    fits = _fits_dataclass(binding, native)
             extra_items = _extra_items(native) if fits and binding.extra_items is not None else None
         except (NameError, TypeError):
             raise self._mismatch(symbol) from None
