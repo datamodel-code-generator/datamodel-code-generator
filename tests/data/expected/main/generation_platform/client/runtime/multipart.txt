@@ -115,6 +115,9 @@
   stickers of another member named as a point's extra ! RequestEncodingError: RequestEncodingError(operation_id='submitStickers', location='body') [operation_id='submitStickers', location=('body',), cause=ParameterEncodingError('Two form-data members write parts of the same name')] request_encoding_error
   stickers of a tag holding its delimiter ! RequestEncodingError: RequestEncodingError(operation_id='submitStickers', location='body') [operation_id='submitStickers', location=('body',), cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] request_encoding_error
   > POST https://media.example.com/api/albums
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 309] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\nContent-Type: text/plain; charset=utf-16\r\n\r\n\xff\xfex\x00 \x00y\x00\r\n--<boundary>--\r\n'
+  album of UTF-16 tags = None
+  > POST https://media.example.com/api/albums
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 524] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na b\r\n--<boundary>\r\nContent-Disposition: form-data; name="w"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="h"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nt\r\n--<boundary>--\r\n'
   album = None
   > POST https://media.example.com/api/albums
@@ -124,6 +127,7 @@
   album of another member named as a bound's extra ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=ValueError('Two form-data members write parts of the same name')] request_encoding_error
   album of a bound's extra its disposition pattern refuses ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=WireValidationError('The value does not satisfy pattern at /')] request_encoding_error
   album of a tag holding its delimiter ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] request_encoding_error
+  album of tags their named charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
@@ -386,6 +390,9 @@
   stickers of another member named as a point's extra ! RequestEncodingError: RequestEncodingError(operation_id='submitStickers', location='body') [operation_id='submitStickers', location=('body',), cause=ParameterEncodingError('Two form-data members write parts of the same name')] request_encoding_error
   stickers of a tag holding its delimiter ! RequestEncodingError: RequestEncodingError(operation_id='submitStickers', location='body') [operation_id='submitStickers', location=('body',), cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] request_encoding_error
   > POST https://media.example.com/api/albums
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 309] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\nContent-Type: text/plain; charset=utf-16\r\n\r\n\xff\xfex\x00 \x00y\x00\r\n--<boundary>--\r\n'
+  album of UTF-16 tags = None
+  > POST https://media.example.com/api/albums
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 524] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\np\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na b\r\n--<boundary>\r\nContent-Disposition: form-data; name="w"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="h"\r\n\r\n2\r\n--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nt\r\n--<boundary>--\r\n'
   album = None
   > POST https://media.example.com/api/albums
@@ -395,6 +402,7 @@
   album of another member named as a bound's extra ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=ValueError('Two form-data members write parts of the same name')] request_encoding_error
   album of a bound's extra its disposition pattern refuses ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.bounds') [operation_id='submitAlbum', location=('body', 'bounds'), cause=WireValidationError('The value does not satisfy pattern at /')] request_encoding_error
   album of a tag holding its delimiter ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] request_encoding_error
+  album of tags their named charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='submitAlbum', location='body.tags') [operation_id='submitAlbum', location=('body', 'tags'), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}

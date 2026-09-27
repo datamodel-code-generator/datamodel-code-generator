@@ -426,7 +426,12 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         record(lines, label, lambda value=value: api.forms.submit_stickers(body=stickers.from_wire(value)))
     photo = file("photo", b"p")
     bounds = types.SubmitAlbumRequestCodecs.part(name="bounds")
-    exchange.respond(raw_response(204))
+    exchange.respond(raw_response(204), raw_response(204))
+    record(
+        lines,
+        "album of UTF-16 tags",
+        lambda: api.forms.submit_album(body=body((photo, field("tags", ["x", "y"], content_type="text/plain; charset=utf-16")))),
+    )
     record(
         lines,
         "album",
@@ -451,6 +456,7 @@ def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         ("album of another member named as a bound's extra", (photo, field("title", "t"), clash)),
         ("album of a bound's extra its disposition pattern refuses", (photo, field("bounds", bounds.from_wire({"b2": 1})))),
         ("album of a tag holding its delimiter", (photo, field("tags", ["a b"]))),
+        ("album of tags their named charset cannot represent", (photo, field("tags", ["\xe9"], content_type="text/plain; charset=us-ascii"))),
     ):
         record(lines, label, lambda parts=parts: api.forms.submit_album(body=body(parts)))
 

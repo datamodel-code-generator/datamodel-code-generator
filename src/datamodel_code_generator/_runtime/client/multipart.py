@@ -470,13 +470,19 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names
 def _styled(
     part: FieldPart[object], boundary: str, plan: PartPlan, pairs: tuple[tuple[str, str], ...], names: _Names
 ) -> bytes:
-    """Return the parts a styled member writes, each name claimed for it and its headers checked under that name."""
+    """Return the parts a styled member writes, each name claimed for it and its headers checked under that name.
+
+    Each value is text in the charset of the media type its part names, UTF-8 without one.
+    """
     names.claim(part.name, [key for key, _ in pairs])
     if plan.headers:
         for key, _ in pairs:
             _checked(part, plan, key, None)
+    media_type = part.content_type
     return b"".join([
-        multipart_head(boundary, key, None, part.content_type, part.headers) + text.encode() + b"\r\n"
+        multipart_head(boundary, key, None, media_type, part.headers)
+        + (text.encode() if media_type is None else encode_text(text, media_type))
+        + b"\r\n"
         for key, text in pairs
     ])
 
