@@ -41,8 +41,11 @@ _ERROR_FIELDS: Final = (
     "actual_media_type",
     "expected_media_types",
     "representation",
+    "kind",
+    "unit",
     "limit",
     "observed_bytes",
+    "coding",
     "cause",
 )
 
@@ -142,6 +145,27 @@ def raw_response(
     """Return a responder of raw bytes with an optional Content-Type."""
     fields = {**headers, **({} if content_type is None else {"content-type": content_type})}
     return lambda _: httpx2.Response(status, content=content, headers=fields)
+
+
+class _Chunks(httpx2.SyncByteStream, httpx2.AsyncByteStream):
+    def __init__(self, chunks: tuple[bytes, ...]) -> None:
+        self.chunks = chunks
+
+    def __iter__(self) -> Iterator[bytes]:
+        yield from self.chunks
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        for chunk in self.chunks:
+            yield chunk
+
+
+def chunked_response(
+    status: int, content: bytes, size: int, content_type: str, **headers: str
+) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder that streams raw bytes in chunks of a size."""
+    chunks = tuple(content[start : start + size] for start in range(0, len(content), size))
+    fields = {**headers, "content-type": content_type}
+    return lambda _: httpx2.Response(status, headers=fields, stream=_Chunks(chunks))
 
 
 def failing(error: type[httpx2.TransportError]) -> Callable[[httpx2.Request], httpx2.Response]:
