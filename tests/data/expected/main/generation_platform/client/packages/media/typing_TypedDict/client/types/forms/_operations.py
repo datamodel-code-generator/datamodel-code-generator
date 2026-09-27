@@ -13,6 +13,7 @@ from models import FieldFormsPostRequest as _dcg_type_1
 from models import FieldFormsPostResponse as _dcg_type_0
 from models import FieldProfilesGetResponse as _dcg_type_3
 from models import FieldProfilesPostRequest as _dcg_type_2
+from models import FieldSearchesPostRequest as _dcg_type_8
 from typing_extensions import Never
 
 from ..._generated import model_bindings
@@ -413,15 +414,15 @@ class _SubmitUploadRequestCodecs(
 SubmitUploadRequestCodecs: Final = _SubmitUploadRequestCodecs(
     default='multipart/form-data',
     parts=(
-        ('multipart/form-data', 'id', model_bindings.outbound_15),
-        ('multipart/form-data', 'title', model_bindings.outbound_16),
-        ('multipart/form-data', 'count', model_bindings.outbound_17),
-        ('multipart/form-data', 'tags', model_bindings.outbound_18),
-        ('multipart/form-data', 'meta', model_bindings.outbound_19),
+        ('multipart/form-data', 'id', model_bindings.outbound_16),
+        ('multipart/form-data', 'title', model_bindings.outbound_17),
+        ('multipart/form-data', 'count', model_bindings.outbound_18),
+        ('multipart/form-data', 'tags', model_bindings.outbound_19),
+        ('multipart/form-data', 'meta', model_bindings.outbound_20),
         ('multipart/form-data', 'photo', None),
         ('multipart/form-data', 'pages', None),
     ),
-    extras=(('multipart/form-data', model_bindings.outbound_20),),
+    extras=(('multipart/form-data', model_bindings.outbound_21),),
     requests=('multipart/form-data',),
 )
 
@@ -539,7 +540,7 @@ class _SubmitAvatarRequestCodecs(
 SubmitAvatarRequestCodecs: Final = _SubmitAvatarRequestCodecs(
     bodies=(('application/json', model_bindings.outbound_6),),
     parts=(
-        ('multipart/form-data', 'caption', model_bindings.outbound_29),
+        ('multipart/form-data', 'caption', model_bindings.outbound_30),
         ('multipart/form-data', 'avatar', None),
     ),
     requests=('multipart/form-data', 'application/json'),
@@ -594,7 +595,7 @@ class _SubmitScansRequestCodecs(
 
 SubmitScansRequestCodecs: Final = _SubmitScansRequestCodecs(
     default='multipart/form-data',
-    parts=(('multipart/form-data', 'note', model_bindings.outbound_30),),
+    parts=(('multipart/form-data', 'note', model_bindings.outbound_31),),
     requests=('multipart/form-data',),
 )
 
@@ -662,6 +663,60 @@ class _SubmitLabelsRequestCodecs(
 SubmitLabelsRequestCodecs: Final = _SubmitLabelsRequestCodecs(
     default='multipart/form-data',
     parts=(('multipart/form-data', 'sheet', None),),
-    extras=(('multipart/form-data', model_bindings.outbound_31),),
+    extras=(('multipart/form-data', model_bindings.outbound_32),),
     requests=('multipart/form-data',),
+)
+
+
+SubmitSearchResponse: TypeAlias = None
+SubmitSearchErrorData: TypeAlias = None
+
+
+class SubmitSearchHTTPError(HTTPStatusError[SubmitSearchErrorData]):
+    """An error response of submit_search, with its decoded payload when one is declared."""
+
+
+class _SubmitSearchRequestCodecs(
+    RequestCodecs[NativeOutboundCodec[_dcg_type_8], Never, Never, RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]]],
+):
+    """The outbound codecs of the submit_search request."""
+
+    @overload
+    def body(self) -> NativeOutboundCodec[_dcg_type_8]: ...
+    @overload
+    def body(
+        self,
+        *,
+        media_type: Literal['application/x-www-form-urlencoded'],
+    ) -> NativeOutboundCodec[_dcg_type_8]: ...
+    @overload
+    def body(
+        self,
+        *,
+        media_type: RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]],
+    ) -> NativeOutboundCodec[_dcg_type_8]: ...
+    @overload
+    def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_8]: ...
+    def body(
+        self,
+        *,
+        media_type: str | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_8]:
+        """Return the outbound codec of one declared request media type, or of a selector's."""
+        return self._body(media_type)
+
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/x-www-form-urlencoded'],
+        concrete_media: str,
+    ) -> RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
+
+SubmitSearchRequestCodecs: Final = _SubmitSearchRequestCodecs(
+    bodies=(('application/x-www-form-urlencoded', model_bindings.outbound_10),),
+    default='application/x-www-form-urlencoded',
+    requests=('application/x-www-form-urlencoded',),
 )

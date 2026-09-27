@@ -12,6 +12,7 @@ from models import FieldAnythingPostRequest as _dcg_type_2
 from models import FieldAttachmentsGetResponse as _dcg_type_3
 from models import FieldFormsPostRequest as _dcg_type_0
 from models import FieldProfilesPostRequest as _dcg_type_1
+from models import FieldSearchesPostRequest as _dcg_type_5
 from typing_extensions import Never
 
 from ... import _operations
@@ -33,6 +34,7 @@ from ...types.forms import (
     SubmitPhotosResponse,
     SubmitProfileResponse,
     SubmitScansResponse,
+    SubmitSearchResponse,
     SubmitUploadResponse,
 )
 
@@ -310,6 +312,22 @@ class AsyncFormsResource:
             options=options,
         )).data
 
+    async def submit_search(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitSearchResponse:
+        """Call POST /searches."""
+        return (await self._core.execute(
+            _operations.OPERATION_15,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
 
 class AsyncFormsWithResponse:
     """The forms operations, returning each result with its response metadata."""
@@ -569,6 +587,22 @@ class AsyncFormsWithResponse:
             options=options,
         )
 
+    async def submit_search(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitSearchResponse]:
+        """Call POST /searches."""
+        return await self._core.execute(
+            _operations.OPERATION_15,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithRawResponse:
     """The forms operations, returning each raw response with its body read into memory."""
@@ -807,6 +841,22 @@ class AsyncFormsWithRawResponse:
             options=options,
         )
 
+    async def submit_search(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /searches."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_15,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithStreamingResponse:
     """The forms operations, returning blocks that send each call on entry and stream its response."""
@@ -1039,6 +1089,22 @@ class AsyncFormsWithStreamingResponse:
         """Call POST /labels."""
         return self._core.stream(
             _operations.OPERATION_12,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_search(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/x-www-form-urlencoded'] | RequestMedia[_dcg_type_5 | ModelValue[_dcg_type_5], _dcg_type_5 | ModelValue[_dcg_type_5]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /searches."""
+        return self._core.stream(
+            _operations.OPERATION_15,
             (),
             body=body,
             media_type=media_type,

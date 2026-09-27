@@ -164,5 +164,19 @@ class FieldFilesPostResponse(RootModel[bytes]):
     root: bytes
 
 
+class Filter(BaseModel):
+    name: str | None = None
+    min: int | None = None
+
+
+class FieldSearchesPostRequest(BaseModel):
+    term: str | None = None
+    filter: Filter | None = None
+    tags: list[str] | None = None
+    ids: list[int] | None = None
+    meta: Address | None = None
+    path: str | None = None
+
+
 class FieldDocumentsIdGetPathIdParameter(BaseModel):
     key: str | None = None

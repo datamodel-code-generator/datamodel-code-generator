@@ -394,6 +394,16 @@ def media(package: ModuleType, lines: list[str]) -> None:
         record(lines, "pairs", lambda: api.forms.submit_pairs(body=(("a", "1"), ("a", "2"), ("b", " "))))
         record(lines, "pairs invalid", lambda: api.forms.submit_pairs())
         record(lines, "pairs body", lambda: api.forms.submit_pairs(body=[("a", "1")]))
+        search = forms.SubmitSearchRequestCodecs.body().from_wire({
+            "term": "a b",
+            "filter": {"name": "x y", "min": 2},
+            "tags": ["a", "b"],
+            "ids": [1, 2],
+            "meta": {"city": "Oslo"},
+            "path": "/a?b",
+        })
+        exchange.respond(raw_response(204))
+        record(lines, "search", lambda: api.forms.submit_search(body=search))
         _documents(package, api, exchange, lines, documents)
 
 

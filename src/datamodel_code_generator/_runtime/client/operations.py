@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
 
 from typing_extensions import TypeIs, TypeVar
@@ -27,6 +28,7 @@ from ..model_codecs.media import (
     percent_decode,
     split_form,
 )
+from ..model_codecs.parameters import query_pairs
 from ..model_codecs.selectors import MediaSelector, RequestMedia
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire
@@ -184,6 +186,7 @@ class BodyMedia:
     additional: FieldPlan | None = None
     parts: tuple[PartPlan, ...] | None = None
     additional_part: PartPlan | None = None
+    encoded: tuple[ParameterPlan, ...] = ()
 
     def encode(self, value: object, sent: str) -> object:
         """Encode one body argument for the media type sent, or raise the codec or media failure.
@@ -199,7 +202,8 @@ class BodyMedia:
                     raise ParameterEncodingError(msg)
                 return text.encode(charset(sent))
             case "form" if self.encoder is not None:
-                return encode_form(self.encoder.encode(value), self.fields, self.additional)
+                styled = {plan.name: partial(query_pairs, plan) for plan in self.encoded} if self.encoded else None
+                return encode_form(self.encoder.encode(value), self.fields, self.additional, styled)
             case "form":
                 return _form_data(value)
             case _:

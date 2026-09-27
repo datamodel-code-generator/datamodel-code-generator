@@ -115,5 +115,19 @@ FieldFilesPostRequest2: TypeAlias = str
 FieldFilesPostResponse: TypeAlias = bytes
 
 
+class Filter(TypedDict):
+    name: NotRequired[str]
+    min: NotRequired[int]
+
+
+class FieldSearchesPostRequest(TypedDict):
+    term: NotRequired[str]
+    filter: NotRequired[Filter]
+    tags: NotRequired[list[str]]
+    ids: NotRequired[list[int]]
+    meta: NotRequired[Address]
+    path: NotRequired[str]
+
+
 class FieldDocumentsIdGetPathIdParameter(TypedDict):
     key: NotRequired[str]
