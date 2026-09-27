@@ -237,6 +237,11 @@ def _struct_tag(symbol: FinalModelSymbol) -> tuple[str, str | int] | None:
     return None
 
 
+def _functional(symbol: FinalModelSymbol) -> bool:
+    """Return whether a TypedDict uses the functional syntax, whose keys are the wire names rather than field names."""
+    return symbol.facts is not None and symbol.facts.functional_typeddict
+
+
 def _meta_pattern(facts: ModelFieldFacts) -> bool:
     return any(name == "pattern" for layer in facts.backend.emitted.meta_layers for name, _ in layer.keywords)
 
@@ -533,7 +538,7 @@ class _CodecPlanner:
         planned = [
             (
                 _Member(facts, slot, wire_name, member.schema or source),
-                frozenset({(record and facts.alias) or slot.name})
+                frozenset({wire_name if record and _functional(self.symbols[slot.symbol]) else slot.name})
                 if self.structural
                 else _accepted(facts, slot, wire_name, generated=generated),
             )

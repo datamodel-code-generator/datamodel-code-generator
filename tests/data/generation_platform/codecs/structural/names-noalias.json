@@ -1,0 +1,13 @@
+{
+  "backends": ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict"],
+  "package": "codec_names_noalias",
+  "options": {"snake_case_field": true, "no_alias": true},
+  "cases": [
+    {"name": "camel", "use": "/paths/~1camels/post request_body", "op": "decode", "value": {"petName": "Mimi", "age": 2}},
+    {"name": "camel-echo", "use": "/paths/~1camels/post response_body 200", "surface": "client", "op": "echo", "value": {"petName": "Mimi", "age": 2}},
+    {"name": "camel-required", "use": "/paths/~1camels/post request_body", "op": "decode", "value": {"age": 2}},
+    {"name": "camel-required-echo", "use": "/paths/~1camels/post response_body 200", "surface": "client", "op": "echo", "value": {"age": 2}},
+    {"name": "kebab", "use": "/paths/~1kebabs/post request_body", "op": "decode", "value": {"pet-name": "Mimi", "age": 2}},
+    {"name": "kebab-echo", "use": "/paths/~1kebabs/post response_body 200", "surface": "client", "op": "echo", "value": {"pet-name": "Mimi", "age": 2}}
+  ]
+}
