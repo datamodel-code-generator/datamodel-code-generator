@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar
+from urllib.parse import quote, unquote
 from uuid import uuid4
 
 import httpx2
@@ -62,6 +63,7 @@ from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
     ClientOptions,
     HeaderPatch,
+    QueryPatch,
     RequestOptions,
     ServerSelection,
     Settings,
@@ -144,6 +146,7 @@ def _layered(settings: Settings, layer: ClientOptions | RequestOptions) -> Setti
         settings.cleanup_timeout if isinstance(layer.cleanup_timeout, Unset) else layer.cleanup_timeout,
         settings.max_stream_bytes if isinstance(layer.max_stream_bytes, Unset) else layer.max_stream_bytes,
         (*settings.headers, layer.headers) if layer.headers else settings.headers,
+        (*settings.query, layer.query) if layer.query else settings.query,
     )
 
 
@@ -158,22 +161,25 @@ def _client_settings(options: object) -> Settings:
     raise ConfigurationError(field_path=("options",), condition="invalid_type")
 
 
-def _patched(pairs: list[tuple[str, str]], patch: Sequence[tuple[str, str | None]]) -> list[tuple[str, str]]:
-    """Return headers with one layer applied: the values it gives a name replace that name's at their first position.
+def _patched(
+    pairs: list[tuple[str, str]], patch: Sequence[tuple[str, str | None]], fold: Callable[[str], str] = str.lower
+) -> list[tuple[str, str]]:
+    """Return named values with one layer applied: the values it gives a name replace that name's at their first place.
 
-    None removes a name's values, and a name the headers lack comes last, in the layer's order.
+    None removes a name's values, and a name the values lack comes last, in the layer's order. Header names fold their
+    case; query names do not.
     """
     if not patch:
         return pairs
     groups: dict[str, list[tuple[str, str]]] = {}
     for name, value in patch:
-        group = groups.setdefault(name.lower(), [])
+        group = groups.setdefault(fold(name), [])
         if value is not None:
             group.append((name, value))
     pending = dict(groups)
     patched: list[tuple[str, str]] = []
     for name, value in pairs:
-        if (key := name.lower()) not in groups:
+        if (key := fold(name)) not in groups:
             patched.append((name, value))
         elif key in pending:
             patched.extend(pending.pop(key))
@@ -195,6 +201,24 @@ def _headers(
         *(pair for pair in generated if pair[0].lower() != "content-type"),
         ("Content-Type", media_type),
     ])
+
+
+def _query(lower: tuple[QueryPatch, ...], explicit: list[str], call: QueryPatch) -> str:
+    """Return a query with its layers applied: the client's and views' patches, the explicit pairs, and the call's.
+
+    A patch's names and values are percent-encoded once, and explicit pairs compare by their decoded names.
+    """
+    named: list[tuple[str, str | None]] = [(unquote(pair.partition("=")[0]), pair) for pair in explicit]
+    pairs: list[tuple[str, str]] = []
+    for layer in (*map(_encoded_query, lower), named, _encoded_query(call)):
+        pairs = _patched(pairs, layer, str)
+    return "&".join(pair for _, pair in pairs)
+
+
+def _encoded_query(patch: QueryPatch) -> list[tuple[str, str | None]]:
+    return [
+        (name, None if value is None else f"{quote(name, safe='')}={quote(value, safe='')}") for name, value in patch
+    ]
 
 
 def _unframed(
@@ -547,6 +571,11 @@ class _Core(Generic[AdapterT, HandleT]):
             raise ConfigurationError(field_path=("options",), condition="invalid_type")
         settings = self._settings if options is None else _layered(self._settings, options)
         verb, target = _checked_raw(method, url)
+        if self._settings.query or (options is not None and options.query):
+            base, _, explicit = target.partition("?")
+            call = () if options is None else options.query
+            query = _query(self._settings.query, [pair for pair in explicit.split("&") if pair], call)
+            target = f"{base}?{query}" if query else base
         media_type = body.content_type if isinstance(body, (BodyFactory, AsyncBodyFactory)) else None
         if is_multipart(body):
             body = MultipartSource(body, boundary := new_boundary())
@@ -635,7 +664,7 @@ class _Core(Generic[AdapterT, HandleT]):
         base = self._base(operation, settings)
         path = request.path
         route = _PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
-        query = "&".join(request.query)
+        query = self._call_query(operation, request.query, options)
         headers = [*self._shared.fixed]
         if accept is not None:
             headers.append(("Accept", accept))
@@ -660,6 +689,22 @@ class _Core(Generic[AdapterT, HandleT]):
             deferred,
             settings,
         )
+
+    def _call_query(
+        self, operation: OperationPlan[object, object], pairs: list[str], options: RequestOptions | None
+    ) -> str:
+        """Return a typed call's query: its parameters' pairs, patched when a layer patches them.
+
+        An operation whose querystring parameter carries its whole query takes no query patch.
+        """
+        call = () if options is None else options.query
+        if not self._settings.query and not call:
+            return "&".join(pairs)
+        if any(spec.plan.location == "querystring" for spec in operation.parameters):
+            raise ConfigurationError(
+                field_path=("query",), condition="conflicts_with_querystring", operation_id=operation.operation_id
+            )
+        return _query(self._settings.query, pairs, call)
 
     def _call_headers(  # noqa: PLR0913
         self,

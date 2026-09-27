@@ -12,6 +12,7 @@ import httpx2
 
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_headers import headers
+from tests.data.python.client_query import query
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_raw import raw
 from tests.data.python.client_selectors import selectors
@@ -469,8 +470,8 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
 
 
 def querystring(package: ModuleType, lines: list[str]) -> None:
-    """Send a whole query through one querystring parameter."""
-    (types,) = _modules(package, "types.default")
+    """Send a whole query through one querystring parameter, which no query patch may add to."""
+    types, options = _modules(package, "types.default", "options")
     exchange = Exchange(lines)
     criteria = types.SearchRequestCodecs.parameter(location="querystring", name="criteria").from_wire({
         "term": "a b",
@@ -480,6 +481,8 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
         record(lines, "search all", lambda: api.default.search())
+        patched = options.RequestOptions(query=(("page", "3"),))
+        record(lines, "search with a query patch", lambda: api.default.search(criteria=criteria, options=patched))
 
 
 def servers(package: ModuleType, lines: list[str]) -> None:
@@ -601,6 +604,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
+    "query": ("pets", ("pydantic_v2.BaseModel",), query),
 }
 
 
