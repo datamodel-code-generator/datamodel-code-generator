@@ -1,0 +1,10 @@
+matching: built
+not-typeddict: CodecConfigurationError The native type of models:Sealed does not match its binding
+open-record: CodecConfigurationError The native type of models:Sealed does not match its binding
+required-disagrees: CodecConfigurationError The native type of models:Sealed does not match its binding
+key-missing: CodecConfigurationError The native type of models:Sealed does not match its binding
+extra-items-missing: CodecConfigurationError The native type of models:Counts does not match its binding
+extra-items-disagree: CodecConfigurationError The native type of models:Shelf extra items does not match its binding
+extra-items-unresolved: CodecConfigurationError The native type of models:Shelf does not match its binding
+mixed-totality: built
+relaxed-closed: NativeValidationError native.extra_forbidden@/c['c']

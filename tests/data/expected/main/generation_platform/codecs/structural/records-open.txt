@@ -1,0 +1,11 @@
+use /paths/~1sealed/post request_body: native typed_dict models:Sealed models=[('models:Sealed', 'typed_dict', 'ignore', False)]
+use /paths/~1sealed/post response_body 200: native typed_dict models:Sealed models=[('models:Sealed', 'typed_dict', 'ignore', False)]
+use /paths/~1counts/post request_body: native typed_dict models:Counts models=[('models:Counts', 'typed_dict', 'ignore', True)]
+use /paths/~1counts/post response_body 200: native typed_dict models:Counts models=[('models:Counts', 'typed_dict', 'ignore', True)]
+use /paths/~1shelves/post request_body: native typed_dict models:Shelf models=[('models:Shelf', 'typed_dict', 'ignore', True)]
+use /paths/~1shelves/post response_body 200: native typed_dict models:Shelf models=[('models:Shelf', 'typed_dict', 'ignore', True)]
+use /paths/~1pets/post request_body: native alias models:PetsPostRequest models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
+use /paths/~1pets/post response_body 200: native alias models:PetsPostResponse models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
+use /paths/~1kittens/post request_body: native typed_dict models:Kitten models=[('models:Kitten', 'typed_dict', 'ignore', True)]
+counts-server-decode: model {'total': 1} wire={"total":1,"x":2} presence=['', '/total', '/x'] extras={"/x":2}
+counts-server-response: wire={"total":1}

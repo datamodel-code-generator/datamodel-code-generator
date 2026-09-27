@@ -1,0 +1,26 @@
+use /paths/~1sealed/post request_body: native typed_dict models:Sealed models=[('models:Sealed', 'typed_dict', 'forbid', False)]
+use /paths/~1sealed/post response_body 200: native typed_dict models:Sealed models=[('models:Sealed', 'typed_dict', 'forbid', False)]
+use /paths/~1counts/post request_body: native typed_dict models:Counts models=[('models:Counts', 'typed_dict', 'allow', True)]
+use /paths/~1counts/post response_body 200: native typed_dict models:Counts models=[('models:Counts', 'typed_dict', 'allow', True)]
+use /paths/~1shelves/post request_body: native typed_dict models:Shelf models=[('models:Item', 'typed_dict', 'ignore', True), ('models:Shelf', 'typed_dict', 'allow', True)]
+use /paths/~1shelves/post response_body 200: native typed_dict models:Shelf models=[('models:Item', 'typed_dict', 'ignore', True), ('models:Shelf', 'typed_dict', 'allow', True)]
+use /paths/~1pets/post request_body: native alias models:PetsPostRequest models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
+use /paths/~1pets/post response_body 200: native alias models:PetsPostResponse models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
+use /paths/~1kittens/post request_body: native typed_dict models:Kitten models=[('models:Kitten', 'typed_dict', 'ignore', True)]
+sealed-server-decode: model {'a': 'x', 'b': 1} wire={"a":"x","b":1} presence=['', '/a', '/b'] extras={}
+sealed-server-decode-extra: WireValidationError schema.false@/c
+counts-server-decode: model {'total': 1, 'x': 2, 'y': 3} wire={"total":1,"x":2,"y":3} presence=['', '/total', '/x', '/y'] extras={}
+counts-server-response: wire={"total":1,"x":2,"y":3}
+counts-server-snapshot-presence: model {'total': 1, 'x': 2, 'y': 3} wire={"x":2} presence=['', '/x'] extras={}
+counts-server-response-bad-extra: WireValidationError schema.type@/z
+counts-server-response-key: ModelProjectionError A wire object key must be a string at /
+shelf-client-decode: model {'label': 'l', 'top': {'name': 'n'}, 'low': {'name': 'm'}} wire={"label":"l","top":{"name":"n"},"low":{"name":"m","zz":1}} presence=['', '/label', '/top', '/top/name', '/low', '/low/name', '/low/zz'] extras={"/low/zz":1}
+shelf-server-encode: wire={"label":"l","top":{"name":"n"},"low":{"name":"m"}}
+kitten-server-decode: model {'id': 1, 'meow': True} wire={"id":1,"meow":true} presence=['', '/id', '/meow'] extras={}
+kitten-server-decode-missing: WireValidationError schema.required@/id
+pets-server-decode-dog: model {'bark': 1, 'name': 'Rex'} wire={"bark":1,"name":"Rex"} presence=['', '/bark', '/name'] extras={}
+pets-server-decode-both: WireValidationError schema.oneOf@
+pets-server-encode-dog: wire={"bark":2}
+pets-server-encode-cat: wire={"meow":false,"name":"Tom"}
+pets-server-encode-neither: ModelProjectionError The value at / does not have its bound shape
+pets-server-encode-scalar: ModelProjectionError The value at / does not have its bound shape

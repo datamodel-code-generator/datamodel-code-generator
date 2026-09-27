@@ -22,6 +22,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
     ("source", "cases"),
     [
         ("pydantic/pets", "pets-dataclass"),
+        ("pydantic/pets", "pets-typeddict"),
         ("pydantic/shapes", "shapes-dataclass"),
         ("pydantic/shapes", "shapes-aliases"),
         ("structural/stdlib", "stdlib-dataclass"),
@@ -29,6 +30,10 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
         ("structural/stdlib", "stdlib-generic"),
         ("structural/stdlib", "stdlib-strip"),
         ("structural/unsupported", "unsupported"),
+        ("structural/records", "records-typeddict"),
+        ("structural/records", "records-total"),
+        ("structural/records", "records-open"),
+        ("structural/stdlib", "stdlib-typeddict"),
         ("structural/untyped", "untyped"),
     ],
 )
@@ -40,11 +45,18 @@ def test_structural_codecs(source: str, cases: str, tmp_path: PathType, monkeypa
     )
 
 
-def test_structural_codec_startup(tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Refuse bindings, bundles, and native dataclasses that disagree, and native failures past the wire schema."""
+@pytest.mark.parametrize(
+    ("source", "cases"),
+    [
+        ("structural/stdlib", "stdlib-startup"),
+        ("structural/records", "records-startup"),
+    ],
+)
+def test_structural_codec_startup(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Refuse bindings, bundles, and native types that disagree, and native failures past the wire schema."""
     assert_output(
         builtin_codec_startup_report(
-            CODECS / "structural/stdlib.yaml", CODECS / "structural/stdlib-startup.json", tmp_path, monkeypatch
+            CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path, monkeypatch
         ),
-        EXPECTED / "stdlib-startup.txt",
+        EXPECTED / f"{cases}.txt",
     )

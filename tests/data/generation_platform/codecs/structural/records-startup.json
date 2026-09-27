@@ -1,0 +1,26 @@
+{
+  "backend": "typing.TypedDict",
+  "package": "codec_records_startup",
+  "scopes": ["schemas", "paths"],
+  "startup": [
+    {"name": "matching", "use": "/paths/~1shelves/post request_body"},
+    {"name": "not-typeddict", "use": "/paths/~1sealed/post request_body",
+     "models": {"models:Sealed": "tests.data.python.model_codec_stdlib:InitTicket"}},
+    {"name": "open-record", "use": "/paths/~1sealed/post request_body",
+     "models": {"models:Sealed": "tests.data.python.model_codec_stdlib:OpenSealed"}},
+    {"name": "required-disagrees", "use": "/paths/~1sealed/post request_body",
+     "models": {"models:Sealed": "tests.data.python.model_codec_stdlib:LooseSealed"}},
+    {"name": "key-missing", "use": "/paths/~1sealed/post request_body",
+     "models": {"models:Sealed": "tests.data.python.model_codec_stdlib:ShortSealed"}},
+    {"name": "extra-items-missing", "use": "/paths/~1counts/post request_body",
+     "models": {"models:Counts": "tests.data.python.model_codec_stdlib:PlainCounts"}},
+    {"name": "extra-items-disagree", "use": "/paths/~1shelves/post request_body",
+     "models": {"models:Shelf": "tests.data.python.model_codec_stdlib:NumberShelf"}},
+    {"name": "extra-items-unresolved", "use": "/paths/~1shelves/post request_body",
+     "models": {"models:Shelf": "tests.data.python.model_codec_stdlib:MissingShelf"}},
+    {"name": "mixed-totality", "use": "/paths/~1kittens/post request_body",
+     "models": {"models:Kitten": "tests.data.python.model_codec_stdlib:HandKitten"}},
+    {"name": "relaxed-closed", "use": "/paths/~1sealed/post request_body", "decode": {"a": "x", "c": 1},
+     "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Sealed", "keyword": "additionalProperties", "value": true}}
+  ]
+}

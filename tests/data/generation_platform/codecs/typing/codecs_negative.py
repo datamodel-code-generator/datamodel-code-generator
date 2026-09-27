@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 from datamodel_code_generator._runtime.model_codecs.context import CodecContext
 from datamodel_code_generator._runtime.model_codecs.outbound import EnvelopeOutboundCodec, ModelCodec, NativeOutboundCodec
@@ -38,3 +39,12 @@ def exercise_structural(codec: StructuralModelCodec[Tag], context: CodecContext,
     _widened: ModelCodec[object] = codec
     _bare: Tag = codec.decode(wire, context)
     _value: ModelValue[Owner] = codec.snapshot(Tag("a"), context)
+
+
+class TagRecord(TypedDict):
+    name: str
+
+
+def exercise_record(codec: StructuralModelCodec[TagRecord], context: CodecContext) -> None:
+    codec.snapshot(Tag("a"), context)
+    _tag: Tag = codec.snapshot({"name": "a"}, context).value

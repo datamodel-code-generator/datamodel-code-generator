@@ -42,6 +42,7 @@ CODECS: dict[str, type[BuiltinModelCodec[object]]] = {
     "pydantic_v2.BaseModel": PydanticModelCodec,
     "pydantic_v2.dataclass": PydanticModelCodec,
     "dataclasses.dataclass": StructuralModelCodec,
+    "typing.TypedDict": StructuralModelCodec,
 }
 
 
