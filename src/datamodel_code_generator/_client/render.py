@@ -264,7 +264,8 @@ class _Argument:
             case "unset":
                 return f"{self.name}: {self.annotation} = {module.local('options', 'UNSET')}"
             case _:
-                return f"{self.name}: {self.annotation} = None"
+                pass
+        return f"{self.name}: {self.annotation} = None"
 
     def key(self, module: Module) -> str:
         """Return the argument as a key of a TypedDict, which a call may omit unless the argument is required."""
@@ -280,7 +281,8 @@ class _Argument:
             case "unset":
                 return f"kwargs.get({self.name!r}, {module.local('options', 'UNSET')})"
             case _:
-                return f"kwargs.get({self.name!r})"
+                pass
+        return f"kwargs.get({self.name!r})"
 
 
 @dataclass(frozen=True, slots=True)

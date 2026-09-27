@@ -108,21 +108,36 @@ TypedDict with the keys you forward. The module also holds the list of keywords 
 <!-- fmt: off -->
 
 ```python
-
 class Operation2Arguments(TypedDict):
     """The keyword arguments of one signature of get_pet."""
+
+    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    response_media_type: NotRequired[None]
+    options: NotRequired[RequestOptions | None]
 
 
 class Operation2Arguments1(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
+    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    response_media_type: Literal['application/json'] | ResponseMedia[_dcg_type_7]
+    options: NotRequired[RequestOptions | None]
+
 
 class Operation2Arguments2(TypedDict):
     """The keyword arguments of one signature of get_pet."""
 
+    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    response_media_type: Literal['text/plain'] | ResponseMedia[_dcg_type_8]
+    options: NotRequired[RequestOptions | None]
+
 
 class Operation2Arguments3(TypedDict):
     """The keyword arguments of one signature of get_pet."""
+
+    pet_id: _dcg_type_6 | ModelValue[_dcg_type_6]
+    response_media_type: NotRequired[Literal['application/json', 'text/plain'] | ResponseMedia[_dcg_type_7] | ResponseMedia[_dcg_type_8] | None]
+    options: NotRequired[RequestOptions | None]
 
 
 KEYWORDS_2: Final = Keywords(

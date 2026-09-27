@@ -113,10 +113,13 @@ def render_cli_example(*blocks: MarkdownCodeBlock) -> str:
     return f'\n??? example "Examples"\n\n{indent_markdown(body)}\n'
 
 
-def blocks(path: Path, *needles: str, limit: int | None = None) -> str:
-    """Return the blank-line separated blocks of a generated module that contain any of the needles, in file order."""
-    found = [block for block in read_python_output(path).split("\n\n") if any(needle in block for needle in needles)]
-    return "\n\n".join(found[:limit])
+def blocks(path: Path, *needles: str, limit: int | None = None, separator: str = "\n\n") -> str:
+    """Return the separated blocks of a generated module that contain any of the needles, in file order.
+
+    Methods of a class are separated by one blank line, and top-level definitions by two.
+    """
+    found = [block for block in read_python_output(path).split(separator) if any(needle in block for needle in needles)]
+    return separator.join(found[:limit])
 
 
 def report_lines(path: Path, *prefixes: str) -> str:
@@ -359,6 +362,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                     / "client_arguments.py",
                     "signature of get_pet",
                     "'get_pet'",
+                    separator="\n\n\n",
                 ),
             ),
         ),
