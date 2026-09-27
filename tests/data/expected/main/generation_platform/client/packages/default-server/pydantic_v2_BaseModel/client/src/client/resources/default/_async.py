@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...options import RequestOptions
-from ...responses import Response
+from ...responses import AsyncRawResponse, Response
 from ...types.default import GetStatusResponse
 
 
@@ -24,6 +25,16 @@ class AsyncDefaultResource:
         """The same operations, returning each result with its response metadata."""
         return AsyncDefaultWithResponse(self._core)
 
+    @cached_property
+    def with_raw_response(self) -> AsyncDefaultWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return AsyncDefaultWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncDefaultWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return AsyncDefaultWithStreamingResponse(self._core)
+
     async def get_status(
         self,
         *,
@@ -38,7 +49,7 @@ class AsyncDefaultResource:
 
 
 class AsyncDefaultWithResponse:
-    """The default operations, returning each result with its metadata."""
+    """The default operations, returning each result with its response metadata."""
 
     def __init__(self, core: AsyncClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -51,3 +62,39 @@ class AsyncDefaultWithResponse:
     ) -> Response[GetStatusResponse]:
         """Call GET /status."""
         return await self._core.execute(_operations.OPERATION_0, (), options=options)
+
+
+class AsyncDefaultWithRawResponse:
+    """The default operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    async def get_status(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call GET /status."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_0,
+            (),
+            options=options,
+        )
+
+
+class AsyncDefaultWithStreamingResponse:
+    """The default operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get_status(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call GET /status."""
+        return self._core.stream(_operations.OPERATION_0, (), options=options)

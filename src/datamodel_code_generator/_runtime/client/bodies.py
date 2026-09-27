@@ -57,8 +57,8 @@ class EncodedAttempt:
 
     __slots__ = ("content", "content_type")
 
-    def __init__(self, content: bytes, content_type: str) -> None:
-        """Keep the encoded bytes and their media type."""
+    def __init__(self, content: bytes, content_type: str | None) -> None:
+        """Keep the encoded bytes and their media type, if the request names one."""
         self.content = content
         self.content_type = content_type
 

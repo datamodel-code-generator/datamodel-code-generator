@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 from pets import AsyncClient, Client
+from pets.responses import RawResponse
 from pets.transports import OwnedTransportAdapter
 from pets.types.pets import (
     CreatePetRequestCodecs,
@@ -37,3 +40,20 @@ def misuse_transports(client: Client, adapter: object) -> None:
     AsyncClient(transport_adapter=Adapter())  # error
     client.with_options(None)  # error
     del adapter
+
+
+def misuse_raw(client: Client) -> None:
+    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    client.pets.with_raw_response.get_pet(pet_id=pet, response_media_type="image/png")  # error
+    streamed: RawResponse = client.pets.with_streaming_response.get_pet(pet_id=pet)  # error
+    del streamed
+    client.request_raw("POST", "https://example.com", body="text")  # error
+    client.with_streaming_response.request_raw("GET")  # error
+
+
+async def misuse_raw_async(client: AsyncClient) -> None:
+    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    await client.pets.with_streaming_response.get_pet(pet_id=pet)  # error
+    saved = await client.pets.with_raw_response.get_pet(pet_id=pet)
+    chunks: Iterator[bytes] = saved.iter_bytes()  # error
+    del chunks

@@ -82,6 +82,7 @@ class _Options:
     max_response_bytes: int | Unset | None = UNSET
     max_error_body_bytes: int | Unset = UNSET
     cleanup_timeout: float | Unset = UNSET
+    max_stream_bytes: int | Unset | None = UNSET
 
     def __post_init__(self) -> None:
         if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
@@ -98,6 +99,8 @@ class _Options:
             _count(self.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
         if not isinstance(self.cleanup_timeout, Unset):
             _positive_seconds(self.cleanup_timeout, ("cleanup_timeout",))
+        if self.max_stream_bytes is not None and not isinstance(self.max_stream_bytes, Unset):
+            _count(self.max_stream_bytes, ("max_stream_bytes",))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

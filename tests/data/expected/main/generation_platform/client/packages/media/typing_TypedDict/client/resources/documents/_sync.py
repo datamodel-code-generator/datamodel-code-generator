@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal, overload
 
@@ -13,7 +14,7 @@ from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...model_codecs import DecodedValue, ModelValue, WireValue
 from ...options import UNSET, RequestOptions, Unset
-from ...responses import Response
+from ...responses import RawResponse, Response
 from ...types.documents import (
     ReadDocumentResponse,
     ReplaceNoteResponse,
@@ -33,6 +34,16 @@ class DocumentsResource:
     def with_response(self) -> DocumentsWithResponse:
         """The same operations, returning each result with its response metadata."""
         return DocumentsWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> DocumentsWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return DocumentsWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> DocumentsWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return DocumentsWithStreamingResponse(self._core)
 
     @overload
     def store_document(
@@ -208,7 +219,7 @@ class DocumentsResource:
 
 
 class DocumentsWithResponse:
-    """The documents operations, returning each result with its metadata."""
+    """The documents operations, returning each result with its response metadata."""
 
     def __init__(self, core: ClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -379,6 +390,258 @@ class DocumentsWithResponse:
     ) -> Response[ReplaceNoteResponse]:
         """Call PUT /notes."""
         return self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+
+class DocumentsWithRawResponse:
+    """The documents operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    @overload
+    def store_document(
+        self,
+        *,
+        body: WireValue,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    @overload
+    def store_document(
+        self,
+        *,
+        body: str,
+        media_type: Literal['text/plain; charset=utf-16'],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    @overload
+    def store_document(
+        self,
+        *,
+        body: _dcg_type_0 | DecodedValue[_dcg_type_0],
+        media_type: Literal['application/vnd.api+json'],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    def store_document(
+        self,
+        *,
+        body: WireValue | str | _dcg_type_0 | DecodedValue[_dcg_type_0],
+        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call POST /documents."""
+        return self._core.execute_raw(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def read_document(
+        self,
+        *,
+        id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        filter: WireValue | Unset = UNSET,
+        x_mode: str | Unset = UNSET,
+        response_media_type: Literal['application/vnd.api+json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /documents/{id}."""
+        return self._core.execute_raw(
+            _operations.OPERATION_3,
+            (id, filter, x_mode),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def store_note(
+        self,
+        *,
+        body: WireValue,
+        media_type: Literal['application/json', 'application/vnd.note+json'],
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call POST /notes."""
+        return self._core.execute_raw(
+            _operations.OPERATION_4,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    @overload
+    def replace_note(
+        self,
+        *,
+        body: WireValue,
+        media_type: Literal['application/json'],
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    @overload
+    def replace_note(
+        self,
+        *,
+        body: str,
+        media_type: Literal['text/plain'],
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    @overload
+    def replace_note(
+        self,
+        *,
+        body: Unset = UNSET,
+        media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    def replace_note(
+        self,
+        *,
+        body: WireValue | str | Unset = UNSET,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call PUT /notes."""
+        return self._core.execute_raw(
+            _operations.OPERATION_5,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+
+class DocumentsWithStreamingResponse:
+    """The documents operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    @overload
+    def store_document(
+        self,
+        *,
+        body: WireValue,
+        media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    @overload
+    def store_document(
+        self,
+        *,
+        body: str,
+        media_type: Literal['text/plain; charset=utf-16'],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    @overload
+    def store_document(
+        self,
+        *,
+        body: _dcg_type_0 | DecodedValue[_dcg_type_0],
+        media_type: Literal['application/vnd.api+json'],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    def store_document(
+        self,
+        *,
+        body: WireValue | str | _dcg_type_0 | DecodedValue[_dcg_type_0],
+        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call POST /documents."""
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def read_document(
+        self,
+        *,
+        id: _dcg_type_1 | ModelValue[_dcg_type_1],
+        filter: WireValue | Unset = UNSET,
+        x_mode: str | Unset = UNSET,
+        response_media_type: Literal['application/vnd.api+json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /documents/{id}."""
+        return self._core.stream(
+            _operations.OPERATION_3,
+            (id, filter, x_mode),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def store_note(
+        self,
+        *,
+        body: WireValue,
+        media_type: Literal['application/json', 'application/vnd.note+json'],
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call POST /notes."""
+        return self._core.stream(
+            _operations.OPERATION_4,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    @overload
+    def replace_note(
+        self,
+        *,
+        body: WireValue,
+        media_type: Literal['application/json'],
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    @overload
+    def replace_note(
+        self,
+        *,
+        body: str,
+        media_type: Literal['text/plain'],
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    @overload
+    def replace_note(
+        self,
+        *,
+        body: Unset = UNSET,
+        media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    def replace_note(
+        self,
+        *,
+        body: WireValue | str | Unset = UNSET,
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call PUT /notes."""
+        return self._core.stream(
             _operations.OPERATION_5,
             (),
             body=body,

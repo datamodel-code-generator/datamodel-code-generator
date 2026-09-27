@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...options import RequestOptions
-from ...responses import Response
+from ...responses import RawResponse, Response
 from ...types.u30e6_u30fc_u30b6_u30fc import HttpGetUsersResponse
 
 
@@ -24,6 +25,16 @@ class U30e6U30fcU30b6U30fcResource:
         """The same operations, returning each result with its response metadata."""
         return U30e6U30fcU30b6U30fcWithResponse(self._core)
 
+    @cached_property
+    def with_raw_response(self) -> U30e6U30fcU30b6U30fcWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return U30e6U30fcU30b6U30fcWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> U30e6U30fcU30b6U30fcWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return U30e6U30fcU30b6U30fcWithStreamingResponse(self._core)
+
     def http_get_users(
         self,
         *,
@@ -34,7 +45,7 @@ class U30e6U30fcU30b6U30fcResource:
 
 
 class U30e6U30fcU30b6U30fcWithResponse:
-    """The u30e6_u30fc_u30b6_u30fc operations, returning each result with its metadata."""
+    """The u30e6_u30fc_u30b6_u30fc operations, returning each result with its response metadata."""
 
     def __init__(self, core: ClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -47,3 +58,35 @@ class U30e6U30fcU30b6U30fcWithResponse:
     ) -> Response[HttpGetUsersResponse]:
         """Call GET /users."""
         return self._core.execute(_operations.OPERATION_2, (), options=options)
+
+
+class U30e6U30fcU30b6U30fcWithRawResponse:
+    """The u30e6_u30fc_u30b6_u30fc operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def http_get_users(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /users."""
+        return self._core.execute_raw(_operations.OPERATION_2, (), options=options)
+
+
+class U30e6U30fcU30b6U30fcWithStreamingResponse:
+    """The u30e6_u30fc_u30b6_u30fc operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def http_get_users(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /users."""
+        return self._core.stream(_operations.OPERATION_2, (), options=options)

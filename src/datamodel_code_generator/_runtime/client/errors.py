@@ -86,6 +86,12 @@ class SDKError(Exception):
         return f"{type(self).__name__}({details})"
 
 
+def add_secondary(error: BaseException, failure: Exception) -> None:
+    """Keep a cleanup failure beside the error that is already propagating, never in its place."""
+    if isinstance(error, SDKError):
+        error.secondary_errors = (*error.secondary_errors, failure)
+
+
 def _condition(value: str) -> str:
     if not _CONDITION.fullmatch(value):
         msg = "A condition must be an SDK-defined lowercase symbol"
@@ -690,7 +696,7 @@ class ClientClosedError(SDKError):
 
 
 class CleanupError(SDKError):
-    """A close that ran out of its cleanup time with calls still active; closing again waits for them again."""
+    """A close that ran out of its cleanup time or failed to release something; closing again waits again."""
 
     def __init__(  # noqa: PLR0913
         self,
@@ -721,7 +727,12 @@ class CleanupError(SDKError):
         self.timeout = timeout
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("pending_calls", self.pending_calls), ("timeout", self.timeout))
+        return (
+            *super()._details(),
+            ("pending_calls", self.pending_calls),
+            ("pending_leases", self.pending_leases),
+            ("timeout", self.timeout),
+        )
 
 
 class UnsupportedAsyncBackendError(SDKError):
@@ -755,3 +766,34 @@ class UnsupportedAsyncBackendError(SDKError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("loop_mismatch", self.loop_mismatch))
+
+
+class ResponseConsumedError(SDKError):
+    """A read of a streaming response that its earlier read, iteration, close, or failure already ruled out."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        state: Literal["streaming", "consumed", "closed", "failed"],
+        action: Literal["read", "text", "json", "iter_bytes", "iter_raw_bytes", "stream_to"],
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the state of the response and the action it refused."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.state = state
+        self.action = action
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("state", self.state), ("action", self.action))

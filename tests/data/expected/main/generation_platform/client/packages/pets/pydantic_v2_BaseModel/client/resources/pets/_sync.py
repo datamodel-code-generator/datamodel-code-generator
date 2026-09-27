@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal, overload
 
@@ -20,7 +21,7 @@ from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
-from ...responses import Response
+from ...responses import RawResponse, Response
 from ...types.pets import (
     CreatePetResponse,
     DeletePetsByPetIdResponse,
@@ -42,6 +43,16 @@ class PetsResource:
     def with_response(self) -> PetsWithResponse:
         """The same operations, returning each result with its response metadata."""
         return PetsWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> PetsWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return PetsWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> PetsWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return PetsWithStreamingResponse(self._core)
 
     @cached_property
     def photos(self) -> PetsPhotosResource:
@@ -169,7 +180,7 @@ class PetsResource:
 
 
 class PetsWithResponse:
-    """The pets operations, returning each result with its metadata."""
+    """The pets operations, returning each result with its response metadata."""
 
     def __init__(self, core: ClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -285,3 +296,201 @@ class PetsWithResponse:
     ) -> Response[HeadPetResponse]:
         """Call HEAD /pets/{petId}."""
         return self._core.execute(_operations.OPERATION_4, (pet_id,), options=options)
+
+
+class PetsWithRawResponse:
+    """The pets operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def list_pets(
+        self,
+        *,
+        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """List every pet."""
+        return self._core.execute_raw(
+            _operations.OPERATION_0,
+            (limit, labels, x_trace, session),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    @overload
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    @overload
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse: ...
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Create a pet \"quoted\" \\ escaped."""
+        return self._core.execute_raw(
+            _operations.OPERATION_1,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def get_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Show one pet."""
+        return self._core.execute_raw(
+            _operations.OPERATION_2,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def delete_pets_by_pet_id(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call DELETE /pets/{petId}."""
+        return self._core.execute_raw(
+            _operations.OPERATION_3,
+            (pet_id,),
+            options=options,
+        )
+
+    def head_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call HEAD /pets/{petId}."""
+        return self._core.execute_raw(
+            _operations.OPERATION_4,
+            (pet_id,),
+            options=options,
+        )
+
+
+class PetsWithStreamingResponse:
+    """The pets operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def list_pets(
+        self,
+        *,
+        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """List every pet."""
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (limit, labels, x_trace, session),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    @overload
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    @overload
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]: ...
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Create a pet \"quoted\" \\ escaped."""
+        return self._core.stream(
+            _operations.OPERATION_1,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def get_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Show one pet."""
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def delete_pets_by_pet_id(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call DELETE /pets/{petId}."""
+        return self._core.stream(_operations.OPERATION_3, (pet_id,), options=options)
+
+    def head_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call HEAD /pets/{petId}."""
+        return self._core.stream(_operations.OPERATION_4, (pet_id,), options=options)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
@@ -96,6 +96,7 @@ _ERROR_NAMES: Final = (
     "ProtocolError",
     "ProtocolSizeError",
     "RequestEncodingError",
+    "ResponseConsumedError",
     "ResponseDecodeError",
     "ResponseHeaderDecodeError",
     "ResponseTooLargeError",
@@ -116,11 +117,12 @@ _ERRORS: Final = (
     + "".join(f"    {name!r},\n" for name in _ERROR_NAMES)
     + "]\n"
 )
-_RESPONSES: Final = '''"""Typed results of this package's calls and the metadata of the responses they came from."""
+_RESPONSES: Final = '''"""Typed results of this package's calls, the metadata of their responses, and raw responses."""
 
+from ._runtime.client.raw import AsyncRawResponse, RawResponse
 from ._runtime.client.responses import HeadersView, Response, ResponseInfo
 
-__all__ = ["HeadersView", "Response", "ResponseInfo"]
+__all__ = ["AsyncRawResponse", "HeadersView", "RawResponse", "Response", "ResponseInfo"]
 '''
 _BODIES: Final = '''"""Request bodies and the values of this package's media types that no schema describes."""
 
@@ -256,6 +258,42 @@ def _header_names(spec: OperationSpec) -> _Headers:
     return names
 
 
+View: TypeAlias = Literal["plain", "metadata", "raw", "streaming"]
+_VIEW_CALLS: Final[dict[tuple[View, bool], tuple[str, str, str]]] = {
+    ("plain", False): ("return ", "self._core.execute(", ").data"),
+    ("plain", True): ("return ", "(await self._core.execute(", ")).data"),
+    ("metadata", False): ("return ", "self._core.execute(", ")"),
+    ("metadata", True): ("return await ", "self._core.execute(", ")"),
+    ("raw", False): ("return ", "self._core.execute_raw(", ")"),
+    ("raw", True): ("return await ", "self._core.execute_raw(", ")"),
+    ("streaming", False): ("return ", "self._core.stream(", ")"),
+}
+_VIEWS: Final[tuple[tuple[View, str, str, str], ...]] = (
+    ("metadata", "with_response", "WithResponse", "returning each result with its response metadata"),
+    ("raw", "with_raw_response", "WithRawResponse", "returning each raw response with its body read into memory"),
+    (
+        "streaming",
+        "with_streaming_response",
+        "WithStreamingResponse",
+        "returning blocks that send each call on entry and stream its response",
+    ),
+)
+
+
+def _arguments(module: Module, spec: OperationSpec, *, media: bool) -> tuple[tuple[str, Doc], ...]:
+    """Return the arguments an operation method passes the client core."""
+    call: list[tuple[str, Doc]] = [
+        ("", f"{module.root('_operations')}.OPERATION_{spec.index}"),
+        ("", _tuple(parameter.python_name for parameter in spec.parameters)),
+    ]
+    if spec.body is not None:
+        call.extend((("body=", "body"), ("media_type=", "media_type")))
+    call.append(("options=", "options"))
+    if media:
+        call.append(("response_media_type=", "response_media_type"))
+    return tuple(call)
+
+
 def _signature(name: str, parameters: tuple[str, ...], returns: str, *, asynchronous: bool, stub: bool) -> str:
     head = f"    {'async ' if asynchronous else ''}def {name}("
     return layout(
@@ -289,13 +327,13 @@ def _accessor(module: Module, spec: OperationSpec, results: dict[str, str], retu
 
 
 def _resource_package(resource: ResourceSpec) -> str:
-    names = (f"Async{resource.pascal}Resource", f"Async{resource.pascal}WithResponse")
-    sync = (f"{resource.pascal}Resource", f"{resource.pascal}WithResponse")
+    sync = sorted((f"{resource.pascal}Resource", *(f"{resource.pascal}{suffix}" for _, _, suffix, _ in _VIEWS)))
+    names = [f"Async{name}" for name in sync]
     listing = "".join(f"    {name!r},\n" for name in sorted((*names, *sync)))
     return (
         f'"""The {resource.namespace} resource."""\n\n'
-        f"from ._async import {', '.join(names)}\n"
-        f"from ._sync import {', '.join(sync)}\n\n"
+        f"from ._async import (\n{''.join(f'    {name},{chr(10)}' for name in names)})\n"
+        f"from ._sync import (\n{''.join(f'    {name},{chr(10)}' for name in sync)})\n\n"
         f"__all__ = [\n{listing}]\n"
     )
 
@@ -434,7 +472,8 @@ class _Resources(_Typing):
             (resource, f"{prefix}{resource.pascal}Resource", f".resources.{resource.namespace}._{mode}")
             for resource in self.plan.roots
         ]
-        module = Module({f"{prefix}Client", "_DEFAULTS", *(name for _, name, _ in roots)}, self.symbols, level=1)
+        names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", "_DEFAULTS"}
+        module = Module({*names, *(name for _, name, _ in roots)}, self.symbols, level=1)
         values = {
             "defaults": f"{module.local('_runtime.client.client', 'ClientDefaults')}(user_agent={self.user_agent!r})",
             "options": module.local("options", "ClientOptions"),
@@ -447,6 +486,10 @@ class _Resources(_Typing):
             "owned_adapter": module.local("transports", "OwnedTransportAdapter"),
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
+            "raw": module.local("responses", f"{prefix}RawResponse"),
+            "manager": module.name("contextlib", f"Abstract{prefix}ContextManager"),
+            "coroutine": "async " if asynchronous else "",
+            "wait": "await " if asynchronous else "",
             "lifecycle": (_ASYNC_LIFECYCLE if asynchronous else _SYNC_LIFECYCLE).format(
                 result=module.name("typing_extensions", "Self"), traceback=module.name("types", "TracebackType")
             ),
@@ -469,17 +512,21 @@ class _Resources(_Typing):
         )
 
     def resource(self, resource: ResourceSpec, *, asynchronous: bool) -> str:
-        """Return a resource module: the resource and its with_response view, with every operation method."""
+        """Return a resource module: the resource and its metadata, raw, and streaming views of every operation."""
         prefix = "Async" if asynchronous else ""
-        main, view = f"{prefix}{resource.pascal}Resource", f"{prefix}{resource.pascal}WithResponse"
-        module = Module({main, view}, self.symbols, level=len(resource.parts) + 2)
+        main = f"{prefix}{resource.pascal}Resource"
+        views: list[tuple[View, str, str, str]] = [
+            (view, attribute, f"{prefix}{resource.pascal}{suffix}", doc) for view, attribute, suffix, doc in _VIEWS
+        ]
+        module = Module({main, *(name for _, _, name, _ in views)}, self.symbols, level=len(resource.parts) + 2)
         cached = module.name("functools", "cached_property")
         members = [
             (
-                f"    @{cached}\n    def with_response(self) -> {view}:\n"
-                '        """The same operations, returning each result with its response metadata."""\n'
-                f"        return {view}(self._core)"
+                f"    @{cached}\n    def {attribute}(self) -> {name}:\n"
+                f'        """The same operations, {doc}."""\n'
+                f"        return {name}(self._core)"
             )
+            for _, attribute, name, doc in views
         ]
         for child in resource.children:
             name = child.rpartition(".")[2]
@@ -491,23 +538,26 @@ class _Resources(_Typing):
                 f"        return {alias}(self._core)"
             )
         members.extend(
-            self.method(module, spec, asynchronous=asynchronous, metadata=False) for spec in resource.operations
+            self.method(module, spec, asynchronous=asynchronous, view="plain") for spec in resource.operations
         )
-        methods = [self.method(module, spec, asynchronous=asynchronous, metadata=True) for spec in resource.operations]
+        classes = [{"name": main, "docstring": f"The {resource.namespace} operations.", "members": members}]
+        classes.extend(
+            {
+                "name": name,
+                "docstring": f"The {resource.namespace} operations, {doc}.",
+                "members": [
+                    self.method(module, spec, asynchronous=asynchronous, view=view) for spec in resource.operations
+                ],
+            }
+            for view, _, name, doc in views
+        )
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         kind = "asyncio" if asynchronous else "synchronous"
         return resource_template.render(
             docstring=f"The {kind} operations of the {resource.namespace} resource.",
             imports=module.imports(),
             core=core,
-            views=[
-                {"name": main, "docstring": f"The {resource.namespace} operations.", "members": members},
-                {
-                    "name": view,
-                    "docstring": f"The {resource.namespace} operations, returning each result with its metadata.",
-                    "members": methods,
-                },
-            ],
+            views=classes,
         )
 
     def parameter(self, module: Module, parameter: ParameterSpec) -> str:
@@ -582,17 +632,13 @@ class _Resources(_Typing):
         )
         return variants, _Variant(parameters, named(every))
 
-    def method(self, module: Module, spec: OperationSpec, *, asynchronous: bool, metadata: bool) -> str:
-        """Return one operation method: its overloads by body and response media, then its implementation."""
+    def method(self, module: Module, spec: OperationSpec, *, asynchronous: bool, view: View) -> str:
+        """Return one operation method of a view: its overloads by body and response media, then its implementation."""
         arguments = [self.parameter(module, parameter) for parameter in spec.parameters]
         options = f"options: {module.local('options', 'RequestOptions')} | None = None"
         bodies, body = self.requests(module, spec)
-        results, result = self.responses(module, spec)
-        response = module.local("responses", "Response")
-
-        def returns(value: str) -> str:
-            return f"{response}[{value}]" if metadata else value
-
+        results, result = self.results(module, spec, asynchronous=asynchronous, view=view)
+        coroutine = asynchronous and view != "streaming"
         lines: list[str] = []
         if len(bodies) * len(results) > 1:
             overload = module.name("typing", "overload")
@@ -605,31 +651,55 @@ class _Resources(_Typing):
                     _signature(
                         spec.name,
                         (*arguments, *variant.parameters, *choice.parameters, options),
-                        returns(choice.returns),
-                        asynchronous=asynchronous,
+                        choice.returns,
+                        asynchronous=coroutine,
                         stub=True,
                     ),
                 )
             )
-        parameters = (*arguments, *body, *result.parameters, options)
-        call: list[tuple[str, Doc]] = [
-            ("", f"{module.root('_operations')}.OPERATION_{spec.index}"),
-            ("", _tuple(parameter.python_name for parameter in spec.parameters)),
-        ]
-        if spec.body is not None:
-            call.extend((("body=", "body"), ("media_type=", "media_type")))
-        call.append(("options=", "options"))
-        if result.parameters:
-            call.append(("response_media_type=", "response_media_type"))
-        opening = "(await self._core.execute(" if asynchronous and not metadata else "self._core.execute("
-        closing = ")" if metadata else (")).data" if asynchronous else ").data")
-        head = "return await " if asynchronous and metadata else "return "
+        head, opening, closing = _VIEW_CALLS[view, coroutine]
+        call = Group(opening, _arguments(module, spec, media=bool(result.parameters)), closing)
         lines.extend((
-            _signature(spec.name, parameters, returns(result.returns), asynchronous=asynchronous, stub=False),
+            _signature(
+                spec.name,
+                (*arguments, *body, *result.parameters, options),
+                result.returns,
+                asynchronous=coroutine,
+                stub=False,
+            ),
             f'        """{_summary(spec)}"""',
-            f"        {head}{layout(Group(opening, tuple(call), closing), 8, len(head), WIDTH)}",
+            f"        {head}{layout(call, 8, len(head), WIDTH)}",
         ))
         return "\n".join(lines)
+
+    def results(
+        self, module: Module, spec: OperationSpec, *, asynchronous: bool, view: View
+    ) -> tuple[list[_Variant], _Variant]:
+        """Return the response media signatures of an operation's method in a view, and its implementation's.
+
+        Raw and streaming views return the raw response whatever media answered, so only the body chooses overloads.
+        """
+        results, result = self.responses(module, spec)
+        prefix = "Async" if asynchronous else ""
+        match view:
+            case "metadata":
+                response = module.local("responses", "Response")
+                return (
+                    [_Variant(choice.parameters, f"{response}[{choice.returns}]") for choice in results],
+                    _Variant(result.parameters, f"{response}[{result.returns}]"),
+                )
+            case "raw":
+                raw = _Variant(result.parameters, module.local("responses", f"{prefix}RawResponse"))
+                return [raw], raw
+            case "streaming":
+                manager = module.name("contextlib", f"Abstract{prefix}ContextManager")
+                streaming = _Variant(
+                    result.parameters, f"{manager}[{module.local('responses', f'{prefix}RawResponse')}]"
+                )
+                return [streaming], streaming
+            case _:
+                pass
+        return results, result
 
 
 class _Types(_Typing):
