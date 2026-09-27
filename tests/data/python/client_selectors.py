@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, Any
+import re
+from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
@@ -11,6 +12,8 @@ from tests.data.python.client_runtime import Exchange, arecord, json_response, r
 
 if TYPE_CHECKING:
     from types import ModuleType
+
+_BOUNDARY: Final = re.compile(r"dcg[0-9a-f]{32}")
 
 
 def selectors(package: ModuleType, lines: list[str]) -> None:
@@ -21,15 +24,24 @@ def selectors(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
     with package.Client(http_client=http) as api:
-        _requests(api, exchange, lines, store, files)
+        _requests(api, exchange, lines, package)
         _responses(api, exchange, lines, store)
         _misuse(api, lines, store, files, codecs)
     http.close()
     run(lambda: _async_selectors(package, lines, store))
+    lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
 
 
-def _requests(api: Any, exchange: Exchange, lines: list[str], store: Any, files: ModuleType) -> None:
-    """Send a body of each declared media type through its selector, with the selector's concrete media type."""
+def _requests(api: Any, exchange: Exchange, lines: list[str], package: ModuleType) -> None:
+    """Send a body of each declared media type through its selector, with the selector's concrete media type.
+
+    A text body takes the charset its concrete type names, or else its declared type's, and a multipart body names the
+    boundary of its call.
+    """
+    files, documents, forms, bodies = (
+        importlib.import_module(f"{package.__name__}.{name}") for name in ("types.files", "types.documents", "types.forms", "bodies")
+    )
+    store = files.StoreFileRequestCodecs
     address = store.body(media_type="application/json").from_wire({"city": "Oslo", "codes": [7]})
     csv = store.body(media_type="text/*").from_wire("a,b")
     for label, declared, concrete, body in (
@@ -38,6 +50,7 @@ def _requests(api: Any, exchange: Exchange, lines: list[str], store: Any, files:
         ("pdf", "application/*", "application/pdf", b"%PDF"),
         ("png", "image/*", "image/png", b"\x89PNG"),
         ("csv", "text/*", "text/csv; charset=utf-8", csv),
+        ("csv in UTF-16", "text/*", "text/csv; charset=utf-16", csv),
     ):
         selector = store.select_request_media(declared_media=declared, concrete_media=concrete)
         exchange.respond(raw_response(204))
@@ -45,6 +58,16 @@ def _requests(api: Any, exchange: Exchange, lines: list[str], store: Any, files:
     anything = files.ReplaceFileRequestCodecs.select_request_media(declared_media="*/*", concrete_media="font/woff2")
     exchange.respond(raw_response(204))
     record(lines, "font sent", lambda: api.files.replace_file(body=b"wOF2", media_type=anything))
+    text = documents.StoreDocumentRequestCodecs.select_request_media(
+        declared_media="text/plain; charset=utf-16", concrete_media="text/plain"
+    )
+    exchange.respond(json_response(200, {"stored": True}))
+    record(lines, "text sent with its declared charset", lambda: api.documents.store_document(body="note", media_type=text))
+    bounded = forms.SubmitPartsRequestCodecs.select_request_media(
+        declared_media="multipart/form-data", concrete_media="multipart/form-data; boundary=mine"
+    )
+    exchange.respond(raw_response(204))
+    record(lines, "parts sent with a boundary of their own", lambda: api.forms.submit_parts(body=bodies.MultipartBody((bodies.FieldPart("a", "1"),)), media_type=bounded))
     record(lines, "json codec of its selector", lambda: store.body(media_type=store.select_request_media(declared_media="application/json", concrete_media="application/json")).from_wire({"city": "c"}))
 
 

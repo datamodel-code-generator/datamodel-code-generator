@@ -185,8 +185,11 @@ class BodyMedia:
     parts: tuple[PartPlan, ...] | None = None
     additional_part: PartPlan | None = None
 
-    def encode(self, value: object) -> object:
-        """Encode one body argument, or raise the codec or media failure; a binary body is sent as it is given."""
+    def encode(self, value: object, sent: str) -> object:
+        """Encode one body argument for the media type sent, or raise the codec or media failure.
+
+        Text takes the charset the sent media type names; a binary body is sent as it is given.
+        """
         match self.kind:
             case "json":
                 return encode_json(self.wire(value))
@@ -194,7 +197,7 @@ class BodyMedia:
                 if not isinstance(text := self.wire(value), str):
                     msg = "A text body must be a string"
                     raise ParameterEncodingError(msg)
-                return text.encode(charset(self.media_type))
+                return text.encode(charset(sent))
             case "form" if self.encoder is not None:
                 return encode_form(self.encoder.encode(value), self.fields, self.additional)
             case "form":
@@ -268,14 +271,14 @@ class RequestBody:
             case _:
                 pass
         selected = self.select(operation_id, media_type)
-        sent = concrete or selected.media_type
+        sent = selected.media_type if concrete is None else _sent(concrete, selected.media_type)
         try:
             if selected.kind == "multipart":
                 boundary = new_boundary()
                 return EncodedBody(
                     media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary)
                 )
-            content = selected.encode(value)
+            content = selected.encode(value, sent)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
         return EncodedBody(media_type=sent, content=content)
@@ -288,6 +291,18 @@ class RequestBody:
         if (found := next((media for media in self.media if media.media_type == wanted), None)) is None:
             raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
         return found
+
+
+def _sent(concrete: str, declared: str) -> str:
+    """Return the media type a selector sends: its concrete type, with the declared charset when it names none.
+
+    A boundary the concrete type names is left out, since a multipart body names the boundary of its call.
+    """
+    essence, *parameters = concrete.split("; ")
+    kept = [parameter for parameter in parameters if not parameter.startswith("boundary=")]
+    if not any(parameter.startswith("charset=") for parameter in kept):
+        kept.extend(parameter for parameter in declared.split("; ")[1:] if parameter.startswith("charset="))
+    return "; ".join((essence, *kept))
 
 
 def normalized(media_type: str) -> str | None:

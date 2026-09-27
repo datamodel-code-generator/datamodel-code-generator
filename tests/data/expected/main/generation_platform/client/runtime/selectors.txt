@@ -14,9 +14,18 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-8, content-length: 3] b'a,b'
   csv sent = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
+  csv in UTF-16 sent = None
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: font/woff2, content-length: 4] b'wOF2'
   font sent = None
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
+  text sent with its declared charset = mappingproxy({'stored': True})
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 127] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  parts sent with a boundary of their own = None
   json codec of its selector = ModelValue(value=Address(city='c', codes=None), binding_id="https://dcg.invalid/inputs/root#/components/schemas/Address|ModelNode(symbol='media_pydantic_v2_basemodel_models:Address')", wire=mappingproxy({'city': 'c'}), presence=PresenceTree(pointer='', container='object', members=(('city', PresenceTree(pointer='/city', container='value', members=())),)), extras=mappingproxy({}), kind='model')
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: image/gif, content-length: 1] b'x'
@@ -75,9 +84,18 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-8, content-length: 3] b'a,b'
   csv sent = None
+  > POST https://media.example.com/api/files
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
+  csv in UTF-16 sent = None
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: font/woff2, content-length: 4] b'wOF2'
   font sent = None
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
+  text sent with its declared charset = mappingproxy({'stored': True})
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 127] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
+  parts sent with a boundary of their own = None
   json codec of its selector = ModelValue(value={'city': 'c'}, binding_id="https://dcg.invalid/inputs/root#/components/schemas/Address|ModelNode(symbol='media_typing_typeddict_models:Address')", wire=mappingproxy({'city': 'c'}), presence=PresenceTree(pointer='', container='object', members=(('city', PresenceTree(pointer='/city', container='value', members=())),)), extras=mappingproxy({}), kind='model')
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: image/gif, content-length: 1] b'x'
