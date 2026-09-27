@@ -26,6 +26,10 @@ components:
       anyOf:
         - type: string
         - type: integer
+    Wide:
+      anyOf:
+        - $ref: "#/components/schemas/Word"
+        - type: number
     Maybe:
       anyOf:
         - type: string
@@ -52,3 +56,7 @@ components:
           anyOf:
             - $ref: "#/components/schemas/Word"
             - type: string
+        word_or_wide:
+          anyOf:
+            - $ref: "#/components/schemas/Word"
+            - $ref: "#/components/schemas/Wide"

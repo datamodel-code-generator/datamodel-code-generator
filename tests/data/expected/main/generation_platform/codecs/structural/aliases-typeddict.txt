@@ -6,6 +6,8 @@ choice-server-decode-dated: model {'word_or_list': 5, 'maybe_or_flag': '2020-01-
 choice-server-decode-bad: WireValidationError schema.anyOf@/word_or_list
 choice-server-decode-text: model {'word_or_text': 'x'} wire={"word_or_text":"x"} presence=['', '/word_or_text'] extras={}
 choice-server-decode-number: model {'word_or_text': 2} wire={"word_or_text":2} presence=['', '/word_or_text'] extras={}
+choice-server-decode-wide: model {'word_or_wide': 1.5} wire={"word_or_wide":1.5} presence=['', '/word_or_wide'] extras={}
+choice-server-response-wide: wire={"word_or_wide":1.5}
 choice-server-response-text: wire={"word_or_text":"x"}
 choice-server-response-number: wire={"word_or_text":2}
 choice-server-response: wire={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
