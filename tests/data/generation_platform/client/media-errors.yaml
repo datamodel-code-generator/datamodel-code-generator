@@ -72,6 +72,7 @@ paths:
                 e: {type: string}
                 f: {type: string, format: binary}
                 g: {type: object}
+                h: {type: string, format: binary}
             encoding:
               other: {contentType: text/plain}
               a:
@@ -84,6 +85,7 @@ paths:
               e: {contentType: 'text/*'}
               f: {contentType: 'image/*'}
               g: {contentType: text/plain}
+              h: {style: form}
       responses:
         '204':
           description: Form-data encodings the client does not send yet.

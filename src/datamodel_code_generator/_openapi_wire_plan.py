@@ -137,6 +137,7 @@ class WirePlan:
     version: str = ""
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
+    styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
 
     def schema_id(self, location: SourceLocation) -> str:
         """Return the bundled schema identifier of a planned source location."""
@@ -678,14 +679,17 @@ def plan_wire(  # noqa: PLR0913
     operations: Collection[OperationId] | None = None,
     documents: Mapping[SourceDocumentId, str] | None = None,
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
+    styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
 ) -> WirePlan:
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
     Explicit document pointers, such as a target manifest's `/inputs/documents/<index>`, name the bundled
     resources, so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
-    get their member plans, and each member their encoding names the plan of a query parameter.
+    get their member plans, and each member their encoding names the plan of a query parameter; the form-data uses
+    named in `styles` get the query parameter plan of each member their encodings give a style.
     """
     forms = forms or {}
+    styles = styles or {}
     planner = _WirePlanner(batch, lease, documents)
     requested = None if uses is None else frozenset(uses)
     schema_ids = tuple(
@@ -703,6 +707,11 @@ def plan_wire(  # noqa: PLR0913
     )
     planned_forms = tuple(
         form for use in batch.type_uses if use.id in forms and (form := _form(planner, use, forms[use.id])) is not None
+    )
+    planned_styles = tuple(
+        style
+        for use in batch.type_uses
+        if use.id in styles and (style := _styles(planner, use, styles[use.id])) is not None
     )
     views: list[DirectionalView] = []
     for direction in _FLAGS:
@@ -729,6 +738,7 @@ def plan_wire(  # noqa: PLR0913
         planner.version,
         headers,
         planned_forms,
+        planned_styles,
     )
 
 
@@ -741,27 +751,49 @@ def _form(
         styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
         _, _, fields, additional = _shape(planner, location, form=True, skip=frozenset(styled))
         encoded = tuple(_encoding(planner, location, declaration) for declaration in styled.values())
-        _distinct(location, fields, encoded)
+        _distinct(location, [field.name for field in fields], encoded)
     except _PlanError as error:
-        owner = use.id.owner
-        planner.diagnostics.append(
-            replace(error.diagnostic, operation=owner if isinstance(owner, OperationId) else None, uses=(use.id,))
-        )
+        _refused(planner, use, error)
         return None
     return use.id, fields, additional, encoded
 
 
-def _distinct(location: SourceLocation, fields: tuple[FieldPlan, ...], encoded: tuple[ParameterPlan, ...]) -> None:
-    """Refuse a URL-encoded form whose members, an exploded member's own included, write a name twice."""
+def _styles(
+    planner: _WirePlanner, use: TypeUseBinding, encodings: tuple[WireDeclaration, ...]
+) -> tuple[TypeUseId, tuple[ParameterPlan, ...]] | None:
+    """Return the query parameter plans of the form-data members whose encodings name a style or its options."""
+    try:
+        location = _schema_location(planner, (use.id,), use.id.use_site)
+        encoded = tuple(_encoding(planner, location, declaration) for declaration in encodings)
+        properties = planner.resolved(location)[0].get("properties")
+        styled = {plan.name for plan in encoded}
+        _distinct(
+            location,
+            [name for name in (properties if isinstance(properties, dict) else {}) if name not in styled],
+            encoded,
+        )
+    except _PlanError as error:
+        _refused(planner, use, error)
+        return None
+    return use.id, encoded
+
+
+def _refused(planner: _WirePlanner, use: TypeUseBinding, error: _PlanError) -> None:
+    owner = use.id.owner
+    planner.diagnostics.append(
+        replace(error.diagnostic, operation=owner if isinstance(owner, OperationId) else None, uses=(use.id,))
+    )
+
+
+def _distinct(location: SourceLocation, names: list[str], encoded: tuple[ParameterPlan, ...]) -> None:
+    """Refuse a form whose members, an exploded member's own included, write a name twice."""
     claimed = [
         *(item.name for plan in encoded if _spread(plan) for item in plan.fields),
-        *(field.name for field in fields),
+        *names,
         *(plan.name for plan in encoded if not _spread(plan)),
     ]
     if len(set(claimed)) != len(claimed):
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=location, message="Expanded URL-encoded member names collide"
-        )
+        raise _PlanError(code="MC_PARAMETER_ENCODING", source=location, message="Expanded form member names collide")
 
 
 def _styled(encoding: WireDeclaration) -> bool:

@@ -6,4 +6,5 @@ render pydantic_v2.BaseModel
   MC_PARAMETER_ENCODING binding /paths/~1unnamed-encoding/post/requestBody/content/application~1x-www-form-urlencoded/encoding/other: An encoding names no member of its form
   MC_PARAMETER_ENCODING binding /paths/~1xml-member/post/requestBody/content/application~1x-www-form-urlencoded/encoding/meta: The member content requires an explicit parameter adapter
   MC_PARAMETER_ENCODING binding /paths/~1deep-array/post/requestBody/content/application~1x-www-form-urlencoded/encoding/tags: query parameter style 'deepObject' has no builtin form for array values
-  MC_PARAMETER_ENCODING binding /paths/~1spread-clash/post/requestBody/content/application~1x-www-form-urlencoded/schema: Expanded URL-encoded member names collide
+  MC_PARAMETER_ENCODING binding /paths/~1spread-clash/post/requestBody/content/application~1x-www-form-urlencoded/schema: Expanded form member names collide
+  MC_PARAMETER_ENCODING binding /paths/~1spread-parts/post/requestBody/content/multipart~1form-data/schema: Expanded form member names collide

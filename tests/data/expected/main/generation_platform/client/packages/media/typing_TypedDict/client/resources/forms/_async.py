@@ -9,12 +9,14 @@ from typing import Any as _dcg_type_6
 from typing import Literal, overload
 
 from models import Address as _dcg_type_4
+from models import Bounds as _dcg_type_9
 from models import FieldAnythingPostRequest as _dcg_type_2
 from models import FieldAttachmentsGetResponse as _dcg_type_3
 from models import FieldCardsPostRequest as _dcg_type_7
 from models import FieldFormsPostRequest as _dcg_type_0
 from models import FieldProfilesPostRequest as _dcg_type_1
 from models import FieldSearchesPostRequest as _dcg_type_5
+from models import FieldStickersPostRequest as _dcg_type_8
 from typing_extensions import Never
 
 from ... import _operations
@@ -27,6 +29,7 @@ from ...types.forms import (
     ReadPartsResponse,
     ReadProfileResponse,
     ReadUploadResponse,
+    SubmitAlbumResponse,
     SubmitAnythingResponse,
     SubmitAvatarResponse,
     SubmitCardResponse,
@@ -39,6 +42,7 @@ from ...types.forms import (
     SubmitProfileResponse,
     SubmitScansResponse,
     SubmitSearchResponse,
+    SubmitStickersResponse,
     SubmitUploadResponse,
 )
 
@@ -364,6 +368,38 @@ class AsyncFormsResource:
             options=options,
         )).data
 
+    async def submit_stickers(
+        self,
+        *,
+        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitStickersResponse:
+        """Call POST /stickers."""
+        return (await self._core.execute(
+            _operations.OPERATION_18,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
+    async def submit_album(
+        self,
+        *,
+        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> SubmitAlbumResponse:
+        """Call POST /albums."""
+        return (await self._core.execute(
+            _operations.OPERATION_19,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )).data
+
 
 class AsyncFormsWithResponse:
     """The forms operations, returning each result with its response metadata."""
@@ -671,6 +707,38 @@ class AsyncFormsWithResponse:
             options=options,
         )
 
+    async def submit_stickers(
+        self,
+        *,
+        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitStickersResponse]:
+        """Call POST /stickers."""
+        return await self._core.execute(
+            _operations.OPERATION_18,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_album(
+        self,
+        *,
+        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[SubmitAlbumResponse]:
+        """Call POST /albums."""
+        return await self._core.execute(
+            _operations.OPERATION_19,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithRawResponse:
     """The forms operations, returning each raw response with its body read into memory."""
@@ -957,6 +1025,38 @@ class AsyncFormsWithRawResponse:
             options=options,
         )
 
+    async def submit_stickers(
+        self,
+        *,
+        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /stickers."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_18,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    async def submit_album(
+        self,
+        *,
+        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call POST /albums."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_19,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
 
 class AsyncFormsWithStreamingResponse:
     """The forms operations, returning blocks that send each call on entry and stream its response."""
@@ -1237,6 +1337,38 @@ class AsyncFormsWithStreamingResponse:
         """Call POST /cards."""
         return self._core.stream(
             _operations.OPERATION_17,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_stickers(
+        self,
+        *,
+        body: _dcg_type_8 | ModelValue[_dcg_type_8],
+        media_type: Literal['multipart/form-data'] | RequestMedia[_dcg_type_8 | ModelValue[_dcg_type_8], _dcg_type_8 | ModelValue[_dcg_type_8]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /stickers."""
+        return self._core.stream(
+            _operations.OPERATION_18,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+    def submit_album(
+        self,
+        *,
+        body: AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue],
+        media_type: Literal['multipart/form-data'] | RequestMedia[MultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue], AsyncMultipartBody[list[str] | ModelValue[list[str]] | _dcg_type_9 | ModelValue[_dcg_type_9] | str | ModelValue[str] | WireValue]] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call POST /albums."""
+        return self._core.stream(
+            _operations.OPERATION_19,
             (),
             body=body,
             media_type=media_type,

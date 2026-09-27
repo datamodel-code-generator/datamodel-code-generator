@@ -219,7 +219,10 @@ class BodyMedia:
         if self.encoder is None:
             return MultipartSource(value, boundary, self.parts, self.additional_part)
         return encode_multipart(
-            self.encoder.encode(value), boundary, dict(self.content_types) if self.content_types else None
+            self.encoder.encode(value),
+            boundary,
+            dict(self.content_types) if self.content_types else None,
+            {plan.name: plan for plan in self.encoded} if self.encoded else None,
         )
 
 

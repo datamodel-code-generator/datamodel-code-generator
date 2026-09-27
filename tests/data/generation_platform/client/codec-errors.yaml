@@ -86,3 +86,22 @@ paths:
       responses:
         '204':
           description: An exploded member naming another member.
+  /spread-parts:
+    post:
+      operationId: submitSpreadParts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+                opts:
+                  type: object
+                  properties:
+                    term: {type: string}
+            encoding:
+              opts: {explode: true}
+      responses:
+        '204':
+          description: An exploded form-data member naming another member.
