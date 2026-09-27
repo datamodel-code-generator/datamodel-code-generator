@@ -62,12 +62,14 @@ from .multipart import MultipartSource, is_multipart, new_boundary
 from .native import AsyncHttpx2Transport, Httpx2Transport
 from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
+    DEFAULT_VALIDATION,
     ClientOptions,
     HeaderPatch,
     QueryPatch,
     RequestOptions,
     ServerSelection,
     Settings,
+    ValidationModes,
     awaited,
     checked_base_url,
     context,
@@ -123,19 +125,25 @@ _MAX_STATUS: Final = 599
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientDefaults:
-    """The generated defaults of one client package."""
+    """The generated defaults of one client package, and the validation modes it allows."""
 
     user_agent: str | None = None
+    validation: ValidationModes = DEFAULT_VALIDATION
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
-_DEFAULT_SETTINGS: Final = Settings(
-    None, _DEFAULT_SERVER, MAX_RESPONSE_BYTES, MAX_ERROR_BODY_BYTES, CLEANUP_TIMEOUT, None
-)
 
 
-def _layered(settings: Settings, layer: ClientOptions | RequestOptions) -> Settings:
-    """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit."""
+def _layered(
+    settings: Settings,
+    layer: ClientOptions | RequestOptions,
+    modes: ValidationModes,
+    operation_id: str | None = None,
+) -> Settings:
+    """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit.
+
+    A validation mode the package does not allow is refused.
+    """
     base_url, server = settings.base_url, settings.server
     if not isinstance(layer.base_url, Unset):
         base_url, server = layer.base_url.rstrip("/"), _DEFAULT_SERVER
@@ -153,15 +161,28 @@ def _layered(settings: Settings, layer: ClientOptions | RequestOptions) -> Setti
         settings.hooks if isinstance(layer.hooks, Unset) else layer.hooks,
         settings.context if isinstance(layer.context, Unset) else context({**settings.context, **layer.context}),
         settings.async_hooks if isinstance(layer.hooks, Unset) else awaited(layer.hooks),
+        settings.validation
+        if isinstance(layer.validation, Unset)
+        else modes.layered(settings.validation, layer.validation, operation_id),
     )
 
 
-def _client_settings(options: object) -> Settings:
+def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
+    modes = defaults.validation
+    settings = Settings(
+        None,
+        _DEFAULT_SERVER,
+        MAX_RESPONSE_BYTES,
+        MAX_ERROR_BODY_BYTES,
+        CLEANUP_TIMEOUT,
+        None,
+        validation=modes.default(),
+    )
     match options:
         case None:
-            return _DEFAULT_SETTINGS
+            return settings
         case ClientOptions():
-            return _layered(_DEFAULT_SETTINGS, options)
+            return _layered(settings, options, modes)
         case _:
             pass
     raise ConfigurationError(field_path=("options",), condition="invalid_type")
@@ -482,7 +503,13 @@ def _completed(
         raise problem
     truncated = body.truncated or problem is not None
     try:
-        data = decoder.decode(info, body.content, truncated=truncated, problem=problem)
+        data = decoder.decode(
+            info,
+            body.content,
+            truncated=truncated,
+            problem=problem,
+            native=settings.validation.response == "native",
+        )
     except SDKError as error:
         _attributed(error, operation_id, info.call_id)
         raise
@@ -495,12 +522,13 @@ RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HT
 class _Shared(Generic[AdapterT]):
     """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed."""
 
-    __slots__ = ("adapter", "adapter_closed", "fixed", "loop", "trusted")
+    __slots__ = ("adapter", "adapter_closed", "fixed", "loop", "modes", "trusted")
 
     def __init__(self, defaults: ClientDefaults, adapter: AdapterT, *, trusted: bool) -> None:
         agent = defaults.user_agent
         self.adapter = adapter
         self.trusted = trusted
+        self.modes = defaults.validation
         self.fixed = (_ACCEPT_ENCODING,) if agent is None else (("User-Agent", agent), _ACCEPT_ENCODING)
         self.adapter_closed = False
         self.loop: asyncio.AbstractEventLoop | None = None
@@ -520,7 +548,9 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
         if not isinstance(options, RequestOptions):
             raise ConfigurationError(field_path=("options",), condition="invalid_type")
-        return type(self)(self._shared, _layered(self._settings, options), self._scope.view(), owned=False)
+        return type(self)(
+            self._shared, _layered(self._settings, options, self._shared.modes), self._scope.view(), owned=False
+        )
 
     def _admitted(self, operation_id: str | None, call_id: str) -> None:
         try:
@@ -633,7 +663,7 @@ class _Core(Generic[AdapterT, HandleT]):
             return self._settings
         if not isinstance(options, RequestOptions):
             raise ConfigurationError(field_path=("options",), condition="invalid_type", operation_id=operation_id)
-        return _layered(self._settings, options)
+        return _layered(self._settings, options, self._shared.modes, operation_id)
 
     def _prepare(  # noqa: PLR0913
         self,
@@ -653,6 +683,7 @@ class _Core(Generic[AdapterT, HandleT]):
         and the call's last; the body's media type and a narrowed Accept stay as the call chose them.
         """
         request = _Request()
+        mode = settings.validation.request
         for spec, value in zip(operation.parameters, arguments, strict=True):
             plan = spec.plan
             if isinstance(value, Unset):
@@ -660,14 +691,14 @@ class _Core(Generic[AdapterT, HandleT]):
                     raise _encoding_error(operation, (plan.location, plan.name))
                 continue
             try:
-                contribution = encode_parameter(plan, spec.encode(value))
+                contribution = encode_parameter(plan, spec.encode(value, mode))
             except (*DATA_ERRORS, ValueError, TypeError) as error:
                 raise _encoding_error(operation, (plan.location, plan.name), error) from None
             request.add(contribution, plan.name)
         encoded = (
             None
             if operation.body is None
-            else operation.body.encode(operation.operation_id, body, media_type, operation.codecs)
+            else operation.body.encode(operation.operation_id, body, media_type, operation.codecs, mode=mode)
         )
         base = self._base(operation, settings)
         path = request.path
@@ -919,7 +950,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         transport_adapter: TransportAdapter | OwnedTransportAdapter[TransportAdapter] | Unset = UNSET,
     ) -> Self:
         """Send through the adapter or HTTPX2 client given, borrowing it unless ownership moved, or create one."""
-        settings = _client_settings(options)
+        settings = _client_settings(options, defaults)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter)
         return cls(
             _Shared(defaults, adapter, trusted=isinstance(adapter, Httpx2Transport)), settings, Scope(), owned=owned
@@ -1282,7 +1313,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         A client created inside an event loop belongs to it; one created outside belongs to the loop of its first call.
         """
-        settings = _client_settings(options)
+        settings = _client_settings(options, defaults)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter)
         shared = _Shared(defaults, adapter, trusted=isinstance(adapter, AsyncHttpx2Transport))
         with suppress(RuntimeError):

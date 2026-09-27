@@ -20,6 +20,7 @@ from tests.data.python.client_raw import raw
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_transports import lifecycle, transports
+from tests.data.python.client_validation import validation
 from tests.data.python.client_runtime import (
     Exchange,
     abroken,
@@ -617,18 +618,15 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
-    "evolution": (
-        "evolution",
-        (
-            "pydantic_v2.BaseModel",
-            "pydantic_v2.dataclass",
-            "dataclasses.dataclass",
-            "typing.TypedDict",
-            "msgspec.Struct",
-        ),
+    "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
+    "evolution-schema": (
+        "evolution-schema",
+        ("pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict"),
         evolution,
     ),
     "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),
+    "validation": ("validation", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), validation),
+    "validation-structural": ("validation-structural", ("dataclasses.dataclass", "typing.TypedDict"), validation),
     "evolution-allow": ("evolution-allow", ("pydantic_v2.BaseModel",), evolution),
 }
 

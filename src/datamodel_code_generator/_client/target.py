@@ -22,6 +22,7 @@ from datamodel_code_generator._client.plan import (
     style_uses,
 )
 from datamodel_code_generator._client.render import ClientRenderer
+from datamodel_code_generator._client.validation import admission_problems
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
@@ -99,6 +100,13 @@ class ClientTarget:
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+        if refused := tuple(admission_problems(config.validation, codecs)):
+            raise APIGenerationError(
+                tuple(
+                    replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
+                    for item in refused
+                )
+            )
         renderer = ClientRenderer(
             config=config, package=request.layout.package, plan=plan, batch=batch, wire=wire, codecs=codecs
         )

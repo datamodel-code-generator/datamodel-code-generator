@@ -12,6 +12,7 @@ import httpx2
 from typing_extensions import Self
 
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
+from ._runtime.client.options import ValidationModes
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import AsyncBodyInput
 from .model_codecs import WireValue
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from .resources.files._async import AsyncFilesResource
     from .resources.forms._async import AsyncFormsResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults(user_agent=None, validation=ValidationModes(request=('schema',), response=('schema',)))
 
 
 class AsyncClient:

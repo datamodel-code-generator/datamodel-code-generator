@@ -31,12 +31,13 @@ if TYPE_CHECKING:
 
     from ..model_codecs.wire import JSONValue, WireValue
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, BodyAttemptContext, SyncBinaryBody
+    from .options import RequestValidation
 
     class PartEncoder(Protocol):
         """The encoder of a member's values, as the generated operation registry binds it."""
 
-        def encode(self, value: object) -> WireValue:
-            """Validate a value and return its wire value."""
+        def encode(self, value: object, mode: RequestValidation) -> WireValue:
+            """Return a value's wire value, validated as the call's request mode selects."""
             ...
 
     class HeaderCodec(Protocol):
@@ -54,6 +55,21 @@ PartT_co = TypeVar("PartT_co", covariant=True)
 T_co = TypeVar("T_co", covariant=True)
 PartKind: TypeAlias = Literal["string", "integer", "number", "boolean", "json"]
 ContentT_co = TypeVar("ContentT_co", bound="SyncBinaryBody | AsyncBinaryBody", covariant=True)
+
+if TYPE_CHECKING:
+
+    class ValueDecoder(Protocol[T_co]):
+        """The decoder of a received member's values: by its schema when called, or through its converter alone."""
+
+        def __call__(self, wire: WireValue) -> T_co:
+            """Validate a wire value against its schema and construct its value."""
+            ...
+
+        def convert(self, wire: WireValue) -> T_co:
+            """Construct the value of a wire value through its converter alone."""
+            ...
+
+
 _MULTIPART: Final = "A multipart body must be of the client's mode"
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-zA-Z-]+")
 _BREAK: Final = re.compile(r"[\r\n\x00]")
@@ -61,6 +77,7 @@ _PART_HEADERS: Final = frozenset({"content-type", "content-disposition"})
 _PARAMETERS: Final = r';\s*([^\s;=]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^\s;]*))'
 _PART: Final = "A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode"
 _UNDECLARED: Final = "A form-data part is not declared"
+_EXCLUDED: Final = "A form-data member that its direction excludes takes no part"
 _KIND: Final = "A form-data file member takes FileParts, and any other member FieldParts"
 _REPEATED: Final = "A form-data body repeats a single-valued member"
 _MISSING: Final = "A form-data body lacks a required member"
@@ -211,10 +228,22 @@ class PartPlan:
     A received part is read in its lexical kind, or as JSON. A sent value is validated by the encoder, when the member
     has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts. The media
     types of the member's encoding bound the media type a part names, and the first concrete one is its default. A
-    member whose encoding gives a query style writes a part for each name and value that style gives its value.
+    member whose encoding gives a query style writes a part for each name and value that style gives its value. A
+    member the direction excludes, read-only in a request, takes no part.
     """
 
-    __slots__ = ("content_types", "encoder", "file", "headers", "kind", "name", "repeated", "required", "style")
+    __slots__ = (
+        "content_types",
+        "encoder",
+        "excluded",
+        "file",
+        "headers",
+        "kind",
+        "name",
+        "repeated",
+        "required",
+        "style",
+    )
 
     def __init__(  # noqa: PLR0913
         self,
@@ -224,17 +253,19 @@ class PartPlan:
         repeated: bool = False,
         file: bool = False,
         required: bool = False,
+        excluded: bool = False,
         encoder: PartEncoder | None = None,
         content_types: tuple[str, ...] = (),
         headers: tuple[PartHeader, ...] = (),
         style: ParameterPlan | None = None,
     ) -> None:
-        """Keep the member's name, kind, repeats, files, requiredness, encoder, media types, headers, and style."""
+        """Keep the member's name, kind, repeats, files, requiredness, exclusion, encoder, media, headers, and style."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
         self.file = file
         self.required = required
+        self.excluded = excluded
         self.encoder = encoder
         self.content_types = content_types
         self.headers = headers
@@ -308,10 +339,15 @@ class _Names:
         self.seen: set[str] = set()
         self.owners: dict[str, str] | None = {} if any(plan.style is not None for plan in plans) else None
 
-    def plan(self, name: object, *, file: bool) -> PartPlan:
-        """Return the plan of a part, refusing an undeclared name, the other kind of part, or a repeat."""
+    def plan(self, name: object, *, file: bool, omitted: bool = False) -> PartPlan:
+        """Return the plan of a part, refusing an undeclared name, the other kind of part, or a repeat.
+
+        A member its direction excludes takes only an omitted part.
+        """
         if not isinstance(name, str) or (plan := self.declared.get(name, self.additional)) is None:
             raise _malformed(name, ValueError(_UNDECLARED))
+        if plan.excluded and not omitted:
+            raise _malformed(name, ValueError(_EXCLUDED))
         if plan.file is not file:
             raise _malformed(name, ValueError(_KIND))
         if name in self.seen and not (file and plan.repeated):
@@ -440,7 +476,9 @@ def _refused(part: object) -> NoReturn:
     raise _malformed(getattr(part, "name", None), TypeError(_PART))
 
 
-def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names | None = None) -> bytes | None:
+def _field(
+    part: FieldPart[object], boundary: str, plan: PartPlan, mode: RequestValidation, names: _Names | None = None
+) -> bytes | None:
     """Return a field part's bytes with their heads and tails, one part for each item of a repeated member.
 
     UNSET leaves an optional member out and is refused for a required one. A styled member writes a part for each
@@ -451,7 +489,7 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names
             raise _malformed(part.name, ValueError(_MISSING))
         return None
     try:
-        wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value)
+        wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value, mode)
         if plan.style is not None and names is not None:
             return _styled(part, boundary, plan, part_pairs(plan.style, wire), names)
         if names is not None and names.owners is not None:
@@ -629,7 +667,7 @@ def _is_async(value: object) -> TypeIs[AsyncMultipartBody[object]]:
 
 
 def _layout(
-    parts: tuple[object, ...], boundary: str, names: _Names | None
+    parts: tuple[object, ...], boundary: str, names: _Names | None, mode: RequestValidation
 ) -> list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]]:
     """Return a body's pieces in order: the encoded fields and heads between the file parts, whose inputs are sent.
 
@@ -639,8 +677,8 @@ def _layout(
     encoded: list[bytes] = []
     for part in parts:
         if _is_field(part):
-            plan = _ANY if names is None else names.plan(part.name, file=False)
-            if (field := _field(part, boundary, plan, names)) is not None:
+            plan = _ANY if names is None else names.plan(part.name, file=False, omitted=isinstance(part.value, Unset))
+            if (field := _field(part, boundary, plan, mode, names)) is not None:
                 encoded.append(field)
         elif _is_file(part):
             file = _ANY if names is None else names.plan(part.name, file=True)
@@ -688,13 +726,18 @@ class MultipartSource:
         boundary: str,
         plans: tuple[PartPlan, ...] | None = None,
         additional: PartPlan | None = None,
+        *,
+        mode: RequestValidation = "schema",
     ) -> None:
-        """Encode the body's fields and file heads for every attempt, refusing a body that is no multipart body."""
+        """Encode the body's fields and file heads for every attempt, refusing a body that is no multipart body.
+
+        The member plans' encoders validate the fields as the call's request mode selects.
+        """
         if not is_multipart(body):
             raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
         self.body = body
         self.boundary = boundary
-        self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional))
+        self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional), mode)
 
     def attempt(self, context: BodyAttemptContext) -> BodyAttempt:
         """Begin each file part's attempt around the encoded pieces, refusing parts of the other mode."""
@@ -930,41 +973,70 @@ class PartDecoder(Generic[T_co]):
     A file part keeps its bytes; any other part is read in its member's kind, or as JSON, then decoded by its codec.
     """
 
-    __slots__ = ("_read", "name", "repeated", "required")
+    __slots__ = ("_convert", "_read", "excluded", "name", "repeated", "required")
 
-    def __init__(
-        self, name: str, read: Callable[[DecodedPart[bytes]], T_co], *, repeated: bool = False, required: bool = False
+    def __init__(  # noqa: PLR0913
+        self,
+        name: str,
+        read: Callable[[DecodedPart[bytes]], T_co],
+        *,
+        repeated: bool = False,
+        required: bool = False,
+        excluded: bool = False,
+        convert: Callable[[DecodedPart[bytes]], T_co] | None = None,
     ) -> None:
-        """Keep the member's name, how a part becomes its value, and whether it repeats or is required."""
+        """Keep the member's name, how a part becomes its value, natively too, and whether it repeats or is required.
+
+        A member the direction excludes, write-only in a response, has no part to read.
+        """
         self.name = name
         self._read = read
+        self._convert = read if convert is None else convert
         self.repeated = repeated
         self.required = required
+        self.excluded = excluded
 
-    def read(self, part: DecodedPart[bytes]) -> T_co:
-        """Return the value of one part, raising PartSyntaxError when it is not text of its kind."""
-        return self._read(part)
+    def read(self, part: DecodedPart[bytes], *, native: bool = False) -> T_co:
+        """Return the value of one part, raising PartSyntaxError when it is not text of its kind.
+
+        Native reads the value through its converter alone.
+        """
+        return (self._convert if native else self._read)(part)
 
 
 def _content(part: DecodedPart[bytes]) -> bytes:
     return part.value
 
 
-def file_part(name: str, *, repeated: bool = False, required: bool = False) -> PartDecoder[bytes]:
+def file_part(
+    name: str, *, repeated: bool = False, required: bool = False, excluded: bool = False
+) -> PartDecoder[bytes]:
     """Return how a file member's parts are read, as their bytes; an untyped extra part is read the same way."""
-    return PartDecoder(name, _content, repeated=repeated, required=required)
+    return PartDecoder(name, _content, repeated=repeated, required=required, excluded=excluded)
 
 
-def value_part(
-    name: str, kind: PartKind, decode: Callable[[WireValue], T], *, repeated: bool = False, required: bool = False
+def _wire_part(part: DecodedPart[bytes], kind: PartKind) -> WireValue:
+    try:
+        return _part_value(part, kind)
+    except (CodecError, ValueError) as error:
+        raise PartSyntaxError(error) from None
+
+
+def value_part(  # noqa: PLR0913
+    name: str,
+    kind: PartKind,
+    decode: ValueDecoder[T],
+    *,
+    repeated: bool = False,
+    required: bool = False,
+    excluded: bool = False,
 ) -> PartDecoder[T]:
     """Return how a member's parts are read: in its kind, or as JSON, then decoded by its codec."""
-
-    def read(part: DecodedPart[bytes]) -> T:
-        try:
-            wire = _part_value(part, kind)
-        except (CodecError, ValueError) as error:
-            raise PartSyntaxError(error) from None
-        return decode(wire)
-
-    return PartDecoder(name, read, repeated=repeated, required=required)
+    return PartDecoder(
+        name,
+        lambda part: decode(_wire_part(part, kind)),
+        repeated=repeated,
+        required=required,
+        excluded=excluded,
+        convert=lambda part: decode.convert(_wire_part(part, kind)),
+    )

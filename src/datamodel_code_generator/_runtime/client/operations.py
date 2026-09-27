@@ -64,6 +64,7 @@ if TYPE_CHECKING:
     from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
     from .multipart import PartDecoder
+    from .options import RequestValidation
     from .responses import ResponseInfo
 
 T = TypeVar("T")
@@ -97,6 +98,10 @@ class OutboundModelCodec(Protocol):
         """Validate a native value or a snapshot of it, and return its wire value."""
         ...
 
+    def serialize(self, value: object, context: CodecContext, *, validate: bool = False) -> WireValue:
+        """Return the wire value of a native value without its schema, validated natively when asked."""
+        ...
+
 
 class Projected(Protocol[T_co]):
     """A decoded value that yields its native value, or raises for a known projection gap."""
@@ -111,6 +116,10 @@ class InboundModelCodec(Protocol[T_co]):
 
     def decode(self, wire: WireValue, context: CodecContext) -> Projected[T_co]:
         """Validate a received wire value and construct its native value or envelope."""
+        ...
+
+    def convert(self, wire: WireValue, context: CodecContext) -> T_co:
+        """Construct the native value of a received wire value through the backend's converter alone."""
         ...
 
 
@@ -129,9 +138,14 @@ class Encoder:
     codec: Callable[[], OutboundModelCodec]
     context: CodecContext
 
-    def encode(self, value: object) -> WireValue:
-        """Return the validated wire value of a native value or snapshot."""
-        return self.codec().encode(value, self.context)
+    def encode(self, value: object, mode: RequestValidation) -> WireValue:
+        """Return the wire value of a native value or snapshot, validated as the call's request mode selects.
+
+        A snapshot keeps its strict encoding under every mode.
+        """
+        if mode == "schema":
+            return self.codec().encode(value, self.context)
+        return self.codec().serialize(value, self.context, validate=mode == "native")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -158,9 +172,9 @@ class ParameterSpec:
     plan: ParameterPlan
     encoder: Encoder | None = None
 
-    def encode(self, value: object) -> WireValue:
+    def encode(self, value: object, mode: RequestValidation) -> WireValue:
         """Return the wire value of a present argument."""
-        return checked_wire(value) if self.encoder is None else self.encoder.encode(value)
+        return checked_wire(value) if self.encoder is None else self.encoder.encode(value, mode)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -188,38 +202,38 @@ class BodyMedia:
     encoded: tuple[ParameterPlan, ...] = ()
     content_types: tuple[tuple[str, str], ...] = ()
 
-    def encode(self, value: object, sent: str) -> object:
+    def encode(self, value: object, sent: str, mode: RequestValidation) -> object:
         """Encode one body argument for the media type sent, or raise the codec or media failure.
 
         Text takes the charset the sent media type names; a binary body is sent as it is given.
         """
         match self.kind:
             case "json":
-                return encode_json(self.wire(value))
+                return encode_json(self.wire(value, mode))
             case "text":
-                if not isinstance(text := self.wire(value), str):
+                if not isinstance(text := self.wire(value, mode), str):
                     msg = "A text body must be a string"
                     raise ParameterEncodingError(msg)
                 return encode_text(text, sent)
             case "form" if self.encoder is not None:
                 styled = {plan.name: partial(query_pairs, plan) for plan in self.encoded} if self.encoded else None
-                return encode_form(self.encoder.encode(value), self.fields, self.additional, styled)
+                return encode_form(self.encoder.encode(value, mode), self.fields, self.additional, styled)
             case "form":
                 return _form_data(value)
             case _:
                 pass
         return value
 
-    def wire(self, value: object) -> WireValue:
+    def wire(self, value: object, mode: RequestValidation) -> WireValue:
         """Return the wire value of a JSON or text argument."""
-        return checked_wire(value) if self.encoder is None else self.encoder.encode(value)
+        return checked_wire(value) if self.encoder is None else self.encoder.encode(value, mode)
 
-    def multipart(self, value: object, boundary: str) -> object:
+    def multipart(self, value: object, boundary: str, mode: RequestValidation) -> object:
         """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""
         if self.encoder is None:
-            return MultipartSource(value, boundary, self.parts, self.additional_part)
+            return MultipartSource(value, boundary, self.parts, self.additional_part, mode=mode)
         return encode_multipart(
-            self.encoder.encode(value),
+            self.encoder.encode(value, mode),
             boundary,
             dict(self.content_types) if self.content_types else None,
             {plan.name: plan for plan in self.encoded} if self.encoded else None,
@@ -254,7 +268,13 @@ class RequestBody:
     required: bool = False
 
     def encode(
-        self, operation_id: str | None, value: object, media_type: str | MediaSelector | None, owner: object = None
+        self,
+        operation_id: str | None,
+        value: object,
+        media_type: str | MediaSelector | None,
+        owner: object = None,
+        *,
+        mode: RequestValidation,
     ) -> EncodedBody | None:
         """Select the media and encode the argument; an omitted optional body sends nothing.
 
@@ -285,9 +305,9 @@ class RequestBody:
             if selected.kind == "multipart":
                 boundary = new_boundary()
                 return EncodedBody(
-                    media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary)
+                    media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary, mode)
                 )
-            content = selected.encode(value, sent)
+            content = selected.encode(value, sent, mode)
         except RequestEncodingError as error:
             raise RequestEncodingError(location=error.location, operation_id=operation_id, cause=error.cause) from None
         except (*DATA_ERRORS, ValueError, TypeError) as error:
@@ -317,17 +337,24 @@ def _sent(concrete: str, declared: str) -> str:
 class Branch(Generic[T_co]):
     """Decode one declared response: a status key and one of its media types, or its absence of a body."""
 
-    __slots__ = ("_decode", "media_type", "status")
+    __slots__ = ("_convert", "_decode", "media_type", "status")
 
-    def __init__(self, status: str, media_type: str | None, decode: Callable[[bytes, ResponseInfo], T_co]) -> None:
-        """Bind the status key, the declared media type (None for no body), and the decoder."""
+    def __init__(
+        self,
+        status: str,
+        media_type: str | None,
+        decode: Callable[[bytes, ResponseInfo], T_co],
+        convert: Callable[[bytes, ResponseInfo], T_co] | None = None,
+    ) -> None:
+        """Bind the status key, the declared media type (None for no body), the decoder, and any native converter."""
         self.status = status
         self.media_type = media_type
         self._decode = decode
+        self._convert = decode if convert is None else convert
 
-    def decode(self, body: bytes, info: ResponseInfo) -> T_co:
-        """Decode a complete body of this branch."""
-        return self._decode(body, info)
+    def decode(self, body: bytes, info: ResponseInfo, *, native: bool = False) -> T_co:
+        """Decode a complete body of this branch; native reads a model body through its converter alone."""
+        return (self._convert if native else self._decode)(body, info)
 
 
 class _InvalidBodyError(Exception):
@@ -413,18 +440,29 @@ class PartsReader(Generic[T]):
 
     def __call__(self, body: bytes, info: ResponseInfo) -> MultipartData[T]:
         """Split the body into its parts and read each of them."""
+        return self._parts(body, info, native=False)
+
+    def convert(self, body: bytes, info: ResponseInfo) -> MultipartData[T]:
+        """Split the body into its parts and read each value through its converter alone."""
+        return self._parts(body, info, native=True)
+
+    def _parts(self, body: bytes, info: ResponseInfo, *, native: bool) -> MultipartData[T]:
         parts: list[DecodedPart[T]] = []
         seen: set[str] = set()
         for part in _multipart(body, info):
             if (name := part.name) is None or (plan := self._declared.get(name, self._additional)) is None:
                 raise _InvalidBodyError(issue(code="multipart.undeclared", message="A form-data part is not declared"))
+            if plan.excluded:
+                raise _BodyValueError(
+                    issue(code="multipart.excluded", message="A form-data part carries a member its direction excludes")
+                )
             if name in seen and not plan.repeated:
                 raise _InvalidBodyError(
                     issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
                 )
             seen.add(name)
             try:
-                value = plan.read(part)
+                value = plan.read(part, native=native)
             except PartSyntaxError as error:
                 raise _InvalidBodyError(error.cause) from None
             except DATA_ERRORS as error:
@@ -490,6 +528,13 @@ class _Native(Generic[T_co]):
         except DATA_ERRORS as error:
             raise _BodyValueError(error) from None
 
+    def convert(self, body: bytes, info: ResponseInfo) -> T_co:
+        wire = self._reader.read(body, info)
+        try:
+            return self._codec().convert(wire, self._context)
+        except DATA_ERRORS as error:
+            raise _BodyValueError(error) from None
+
 
 class _Envelope(Generic[T]):
     __slots__ = ("_codec", "_context", "_reader")
@@ -520,8 +565,8 @@ def model_branch(  # noqa: PLR0913
     additional_part: PartPlan | None = None,
 ) -> Branch[T]:
     """Return a branch that decodes its body through a model codec into the native value."""
-    reader = _Reader(kind, fields, additional, parts, additional_part)
-    return Branch(status, media_type, _Native(reader, codec, context))
+    native = _Native(_Reader(kind, fields, additional, parts, additional_part), codec, context)
+    return Branch(status, media_type, native, native.convert)
 
 
 def envelope_branch(  # noqa: PLR0913
@@ -563,7 +608,7 @@ def multipart_branch(status: str, media_type: str) -> Branch[MultipartData[bytes
 
 def parts_branch(status: str, media_type: str, reader: PartsReader[T]) -> Branch[MultipartData[T]]:
     """Return a form-data branch whose schema has file parts, read part by part into their members' values."""
-    return Branch(status, media_type, reader)
+    return Branch(status, media_type, reader, reader.convert)
 
 
 def binary_branch(status: str, media_type: str) -> Branch[bytes]:
@@ -679,22 +724,35 @@ class ResponseDecoder(Generic[T_co, E_co]):
         return _MIN_SUCCESS <= status <= _MAX_SUCCESS or status in self._successes
 
     def decode(
-        self, info: ResponseInfo, body: bytes, *, truncated: bool = False, problem: BaseException | None = None
+        self,
+        info: ResponseInfo,
+        body: bytes,
+        *,
+        truncated: bool = False,
+        problem: BaseException | None = None,
+        native: bool = False,
     ) -> T_co:
         """Return the success value of a complete response, or raise the typed failure of any other response.
 
         A problem that stopped reading an error body, such as a broken content coding, is kept as its decode error.
+        Native reads model bodies through their converters alone, without their schemas.
         """
         if self.success(info.status_code):
-            return self._decoded(info, body, self._branch(info, body))
-        raise self.failure(info, body, truncated=truncated, problem=problem)
+            return self._decoded(info, body, self._branch(info, body), native=native)
+        raise self.failure(info, body, truncated=truncated, problem=problem, native=native)
 
     def failure(
-        self, info: ResponseInfo, body: bytes, *, truncated: bool = False, problem: BaseException | None = None
+        self,
+        info: ResponseInfo,
+        body: bytes,
+        *,
+        truncated: bool = False,
+        problem: BaseException | None = None,
+        native: bool = False,
     ) -> HTTPStatusError[E_co] | UnexpectedStatusError:
         """Return the typed failure of a response that is not a success: its HTTP error, or an unexpected status."""
         if _MIN_ERROR <= info.status_code <= _MAX_ERROR:
-            return self._failure(info, body, truncated=truncated, problem=problem)
+            return self._failure(info, body, truncated=truncated, problem=problem, native=native)
         return UnexpectedStatusError(
             info=info, body_bytes=body, truncated=truncated, call_id=info.call_id, cause=problem
         )
@@ -721,14 +779,14 @@ class ResponseDecoder(Generic[T_co, E_co]):
         return branch
 
     @staticmethod
-    def _decoded(info: ResponseInfo, body: bytes, branch: Branch[T]) -> T:
+    def _decoded(info: ResponseInfo, body: bytes, branch: Branch[T], *, native: bool) -> T:
         try:
-            return branch.decode(body, info)
+            return branch.decode(body, info, native=native)
         except _InvalidBodyError as error:
             raise error.failure(info, body) from None
 
     def _failure(
-        self, info: ResponseInfo, body: bytes, *, truncated: bool, problem: BaseException | None
+        self, info: ResponseInfo, body: bytes, *, truncated: bool, problem: BaseException | None, native: bool
     ) -> HTTPStatusError[E_co]:
         data: E_co | None = None
         decoded = False
@@ -736,7 +794,8 @@ class ResponseDecoder(Generic[T_co, E_co]):
         declared = () if key is None else self._error_groups[key]
         if declared and not truncated:
             try:
-                data = _select(info, body, declared, bodyless=self._bodyless(info.status_code)).decode(body, info)
+                branch = _select(info, body, declared, bodyless=self._bodyless(info.status_code))
+                data = branch.decode(body, info, native=native)
                 decoded = True
             except _InvalidBodyError as error:
                 problem = error.cause

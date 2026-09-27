@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
-from pets.options import RequestOptions
+from pets.options import RequestOptions, ValidationOptions
 from pets.responses import RawResponse
 from pets.transports import OwnedTransportAdapter
 from pets.types.pets import (
@@ -111,3 +111,9 @@ def misuse_hooks() -> None:
     RequestOptions(hooks=("trace",))  # error
     RequestOptions(context={"tags": ["a"]})  # error
 
+
+def misuse_validation() -> None:
+    ValidationOptions(request=None)  # error
+    ValidationOptions(response="none")  # error
+    ValidationOptions(arguments="strict")  # error
+    RequestOptions(validation="schema")  # error

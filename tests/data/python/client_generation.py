@@ -15,6 +15,7 @@ from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, 
 from datamodel_code_generator._client.config import (
     ClientGenerationConfig,
     ClientOperationConfig,
+    ClientValidationConfig,
     ParameterName,
     ResourceName,
     RuntimeOperationMetadata,
@@ -78,6 +79,10 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
                 converted[key] = tuple(declaration(kind, item) for item in value)
             case "formatters":
                 converted[key] = tuple(value)
+            case "validation" if isinstance(value, dict):
+                converted[key] = ClientValidationConfig(**{
+                    name: tuple(item) if isinstance(item, list) else item for name, item in value.items()
+                })
             case _:
                 converted[key] = value
     return ClientGenerationConfig(**converted)
@@ -149,8 +154,8 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
     return lines
 
 
-def _digests(case: dict[str, Any], root: Path) -> dict[str, dict[str, str]]:
-    """Return the contract digests of each operation in the manifest of a rendered case."""
+def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]], bytes]:
+    """Return the contract digests of each operation in the manifest of a rendered case, and its models."""
     root.mkdir(parents=True)
     config = client_config(case.get("config", {}), root)
     project = render_target(
@@ -167,15 +172,16 @@ def _digests(case: dict[str, Any], root: Path) -> dict[str, dict[str, str]]:
         generator=ClientTarget(),
     )
     manifest = next(item for item in project.artifacts if item.path.name == MANIFEST)
+    models = next(item for item in project.artifacts if item.path == root / "models.py")
     operations = json.loads(manifest.content or b"")["target_data"]["client"]["public_api"]
-    return {f"{item['resource']}.{item['method']}": item["contract_digests"] for item in operations}
+    return {f"{item['resource']}.{item['method']}": item["contract_digests"] for item in operations}, models.content or b""
 
 
 def client_digest_report(first: str, second: str, root: Path) -> str:
     """Render two cases and report, for each operation, which of its contract digests they share."""
     cases = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))
-    left, right = (_digests(cases[name], root / name) for name in (first, second))
-    lines = [f"# {first} and {second}"]
+    (left, models), (right, other) = (_digests(cases[name], root / name) for name in (first, second))
+    lines = [f"# {first} and {second}", f"  models same {models == other}"]
     for operation, digests in left.items():
         same = [name for name, value in sorted(digests.items()) if right[operation][name] == value]
         lines.append(f"  {operation} same {same} different {sorted(set(digests) - set(same))}")

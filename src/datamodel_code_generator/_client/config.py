@@ -5,23 +5,30 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import TYPE_CHECKING, ClassVar, Final, Literal, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._client.naming import identifier, namespace_problem
 from datamodel_code_generator._codec_declarations import CodecAdapterRegistration, OperationRef
-from datamodel_code_generator._runtime.client.options import is_base_url
+from datamodel_code_generator._runtime.client.options import (
+    ArgumentValidation,
+    RequestValidation,
+    ResponseValidation,
+    is_base_url,
+)
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
 from datamodel_code_generator._target_config import (
     Converter,
     TargetConfig,
     _array,  # pyright: ignore[reportPrivateUsage]
+    _boolean,  # pyright: ignore[reportPrivateUsage]
     _ConfigValueError,  # pyright: ignore[reportPrivateUsage]
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     _operation,  # pyright: ignore[reportPrivateUsage]
     _records,  # pyright: ignore[reportPrivateUsage]
     _string,  # pyright: ignore[reportPrivateUsage]
+    _strings,  # pyright: ignore[reportPrivateUsage]
     _table,  # pyright: ignore[reportPrivateUsage]
 )
 
@@ -38,6 +45,11 @@ RecordT = TypeVar("RecordT")
 
 _LOCATIONS: Final = frozenset({"path", "query", "querystring", "header", "cookie"})
 _SIGNATURE_STYLES: Final = frozenset({"explicit", "unpack"})
+_VALIDATION_AXES: Final = (
+    ("request", "request_overrides", ("none", "native", "schema")),
+    ("response", "response_overrides", ("native", "schema")),
+    ("arguments", "argument_overrides", ("none", "pydantic")),
+)
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _MIN_REDIRECT: Final = 300
 _MAX_REDIRECT: Final = 399
@@ -83,6 +95,23 @@ class ClientOperationConfig:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class ClientValidationConfig:
+    """How ordinary calls validate what they send, what they receive, and their arguments.
+
+    Each axis's mode is the generated default, and its overrides are the other modes a client, view, or call may select
+    at runtime; empty overrides fix the mode. pydantic_strict keeps Pydantic argument validation from coercing values.
+    """
+
+    request: RequestValidation = "none"
+    response: ResponseValidation = "native"
+    arguments: ArgumentValidation = "none"
+    request_overrides: tuple[RequestValidation, ...] = ()
+    response_overrides: tuple[ResponseValidation, ...] = ()
+    argument_overrides: tuple[ArgumentValidation, ...] = ()
+    pydantic_strict: bool = True
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ClientGenerationConfig(TargetConfig):
     """Settings of one client target; model settings stay in the model configuration."""
 
@@ -91,6 +120,7 @@ class ClientGenerationConfig(TargetConfig):
     resource_names: tuple[ResourceName, ...] = ()
     operations: tuple[ClientOperationConfig, ...] = ()
     signature_style: SignatureStyle = "explicit"
+    validation: ClientValidationConfig = field(default_factory=ClientValidationConfig)
     default_base_url: str | None = None
     server_base_url: str | None = None
     codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
@@ -107,6 +137,7 @@ class ClientGenerationConfig(TargetConfig):
         yield from _operation_problems(self.operations)
         if self.signature_style not in _SIGNATURE_STYLES:
             yield _diagnostic("E_CONFIG_VALUE", "signature_style", "signature_style must be 'explicit' or 'unpack'")
+        yield from _validation_problems(self.validation)
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
                 yield _diagnostic(
@@ -151,6 +182,38 @@ def _tuple_of(value: object, kind: type[RecordT]) -> TypeIs[tuple[RecordT, ...]]
 
 def _text(value: object) -> bool:
     return isinstance(value, str)
+
+
+def _quoted(modes: tuple[str, ...]) -> str:
+    return ", ".join(map(repr, modes[:-1])) + f" or {modes[-1]!r}"
+
+
+def _validation_problems(value: object) -> Iterator[Diagnostic]:
+    if not isinstance(value, ClientValidationConfig):
+        yield _diagnostic("E_CONFIG_VALUE", "validation", "validation must be a ClientValidationConfig record")
+        return
+    for axis, overrides, modes in _VALIDATION_AXES:
+        if getattr(value, axis) not in modes:
+            yield _diagnostic("E_CONFIG_VALUE", f"validation.{axis}", f"validation.{axis} must be {_quoted(modes)}")
+        if not (_is_tuple(listed := getattr(value, overrides)) and all(item in modes for item in listed)):
+            yield _diagnostic(
+                "E_CONFIG_VALUE",
+                f"validation.{overrides}",
+                f"validation.{overrides} must be a tuple whose modes are {_quoted(modes)}",
+            )
+        elif repeated := next((item for index, item in enumerate(listed) if item in listed[:index]), None):
+            yield _diagnostic(
+                "E_CONFIG_VALUE", f"validation.{overrides}", f"validation.{overrides} lists {repeated!r} twice"
+            )
+    arguments = value.argument_overrides
+    if value.arguments == "pydantic" or (_is_tuple(arguments) and "pydantic" in arguments):
+        yield _diagnostic(
+            "E_CLIENT_UNSUPPORTED", "validation.arguments", "Pydantic argument validation is not available yet"
+        )
+    if type(value.pydantic_strict) is not bool:
+        yield _diagnostic(
+            "E_CONFIG_VALUE", "validation.pydantic_strict", "validation.pydantic_strict must be a boolean"
+        )
 
 
 def _resource_name_problems(value: object) -> Iterator[Diagnostic]:
@@ -313,11 +376,31 @@ def _operation_config(value: object, base: Path, option_path: str) -> ClientOper
     )
 
 
+_VALIDATION_CONVERTERS: Final[Mapping[str, Converter]] = MappingProxyType({
+    "request": _string,
+    "response": _string,
+    "arguments": _string,
+    "request_overrides": _strings,
+    "response_overrides": _strings,
+    "argument_overrides": _strings,
+    "pydantic_strict": _boolean,
+})
+
+
+def _validation(value: object, base: Path, option_path: str) -> ClientValidationConfig:
+    table = _table(value, option_path, frozenset(_VALIDATION_CONVERTERS))
+    values: dict[str, Any] = {
+        key: _VALIDATION_CONVERTERS[key](item, base, f"{option_path}.{key}") for key, item in table.items()
+    }
+    return ClientValidationConfig(**values)
+
+
 ClientGenerationConfig.toml_converters = MappingProxyType({
     "transport": _string,
     "resource_names": _resource_names,
     "operations": _records(_operation_config),
     "signature_style": _string,
+    "validation": _validation,
     "default_base_url": _string,
     "server_base_url": _string,
 })

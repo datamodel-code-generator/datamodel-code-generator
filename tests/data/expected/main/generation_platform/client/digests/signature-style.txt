@@ -1,4 +1,5 @@
 # pets and pets-unpack
+  models same True
   pets.list_pets same ['request', 'response', 'security'] different ['signature']
   pets.create_pet same ['request', 'response', 'security'] different ['signature']
   pets.get_pet same ['request', 'response', 'security'] different ['signature']

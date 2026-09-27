@@ -21,6 +21,7 @@ transport='httpx2'
 resource_names=()
 operations=()
 signature_style='explicit'
+validation=ClientValidationConfig(request='none', response='native', arguments='none', request_overrides=(), response_overrides=(), argument_overrides=(), pydantic_strict=True)
 default_base_url=None
 server_base_url=None
 codec_adapters=()

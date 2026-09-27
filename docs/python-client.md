@@ -212,3 +212,159 @@ async list with no keyword ! TypeError when awaited, sent False
 default, which added 0.3–0.9 µs to a 65 µs `list_pets` call over a mock transport, and importing a resource module
 takes about 0.5 ms more for its TypedDicts (CPython 3.13, macOS arm64, Pydantic v2 models). Rendering the package
 takes the same time in both styles.
+
+## Validation
+
+`validation` chooses what ordinary calls check beyond sending and reading their values. It is a
+`ClientValidationConfig` with one mode for each axis, the one every client, view, and call uses unless it selects
+another, and the other modes the package lets them select at runtime.
+
+| Axis | Modes | Default | What the mode adds |
+|---|---|---|---|
+| `request` | `none`, `native`, `schema` | `none` | `none` sends the native value as it serializes; `native` first passes it through its model backend's own validation; `schema` validates the serialized value against its OpenAPI schema |
+| `response` | `native`, `schema` | `native` | `native` constructs the declared type through the backend's converter; `schema` validates the received value against its OpenAPI schema before constructing it |
+| `arguments` | `none` | `none` | Pydantic validation of a call's arguments is not available yet |
+
+What every mode still does:
+
+- **Binding.** A missing required argument, an unknown keyword, or a media type the operation does not declare fails
+  before anything is sent.
+- **Serialization and direction.** Aliases, presence, and the conversion of dates, decimals, enums, and media stay the
+  same in every mode, a read-only member is left out of a request, and a write-only member is refused in a response.
+  A form-data member that its direction excludes takes no part in either.
+- **Native behavior.** `none` does not undo validation a model's constructor already did, and it cannot send what the
+  serializer cannot represent.
+- **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the `RequestCodecs` factories, the header
+  decoders, and a response the package returns as `DecodedValue` keep their strict schema validation in every mode.
+  Read a body without any model with `with_raw_response` or `with_streaming_response` instead.
+
+### Configuration
+
+Python and the flat target file take the same fields:
+
+```python
+ClientGenerationConfig(
+    output=Path("client"),
+    package="client",
+    model_package="models",
+    validation=ClientValidationConfig(request_overrides=("schema",), response_overrides=("schema",)),
+)
+```
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.toml -->
+<!-- fmt: off -->
+
+```toml
+schema_version = 1
+output = "client"
+package = "client"
+model_package = "models"
+
+[validation]
+request = "none"
+response = "native"
+arguments = "none"
+request_overrides = ["schema"]
+response_overrides = ["schema"]
+argument_overrides = []
+pydantic_strict = true
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.toml -->
+
+The default of each axis and its overrides are every mode a package allows on it: empty overrides fix the mode, and
+a package allows no mode it was not generated with. `pydantic_strict` is kept for Pydantic argument validation. The
+generated clients record the allowed modes when they differ from the defaults above:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.defaults -->
+<!-- fmt: off -->
+
+```python
+_DEFAULTS = ClientDefaults(user_agent=None, validation=ValidationModes(request=('schema',), response=('schema',)))
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.defaults -->
+
+### Selecting a mode at runtime
+
+`pkg.options.ValidationOptions` has the three axes, each left `UNSET` to inherit. A call's `RequestOptions`, a
+`with_options` view, the client's `ClientOptions`, and the generated default are layered in that order, axis by axis:
+
+```python
+from pkg.options import ClientOptions, RequestOptions, ValidationOptions
+
+client = Client(options=ClientOptions(validation=ValidationOptions(response="schema")))
+checked = client.with_options(RequestOptions(validation=ValidationOptions(request="schema")))
+client.pets.list_pets(options=RequestOptions(validation=ValidationOptions(response="native")))
+```
+
+A mode the package does not allow raises `ConfigurationError` with condition `not_allowed`: from the client or view
+that selects it, or from a call before any hook, request, or stream, and a value that is no mode raises it with
+`invalid_value`. The tests record, for a stdlib dataclass package that allows `none` and `schema` requests:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.options -->
+<!-- fmt: off -->
+
+```text
+client selecting Pydantic arguments ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='not_allowed') [field_path=('validation', 'arguments'), condition='not_allowed'] configuration_error
+view selecting native requests ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='not_allowed') [field_path=('validation', 'request'), condition='not_allowed'] configuration_error
+request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
+response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
+call selecting native requests ! ConfigurationError: ConfigurationError(operation_id='listPets', field_path='validation.request', condition='not_allowed') [operation_id='listPets', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.options -->
+
+### What each mode checks
+
+The native converters check the declared Python types, which do not carry every constraint of the source schema, and
+coerce as their backend does. The tests send and read these values through each backend, with the models of
+`--output-model-type` and no model options:
+
+| Value | `native` with Pydantic models or dataclasses | `native` with msgspec | `native` with stdlib dataclasses or TypedDict | `schema` |
+|---|---|---|---|---|
+| An `int32` member beyond its range | accepted | accepted | accepted | refused |
+| A string longer than its `maxLength` | refused | accepted | accepted | refused |
+| `"1"` for an integer | converted to `1` | refused | refused | refused |
+| A member `additionalProperties: false` forbids | refused | ignored | ignored (dataclass), refused (TypedDict) | refused |
+| A write-only member in a response | refused | refused | refused | refused |
+| A required member missing | refused | refused | refused | refused |
+
+On requests, `none` sends a model instance changed after construction, and `native` sends it too, since the backends
+trust an instance they built; `native` validates a mapping that stands for the model. `schema` refuses both.
+
+### When a mode is not available
+
+A package must be able to take every mode it allows for every use, or generation fails with `E_CONFIG_VALUE` naming the
+use and the mode to select instead:
+
+- `request = "native"` needs a backend validation entry: Pydantic models and dataclasses and msgspec Structs have one,
+  stdlib dataclasses and TypedDicts do not.
+- `response = "native"` is refused for a union whose members only their schemas tell apart, such as two object models
+  read by a stdlib dataclass or TypedDict converter, unless the union's use returns `DecodedValue`.
+- A use that a registered codec adapter reads or writes allows only `schema` in its direction.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE binding validation.response /paths/~1orders~1{orderId}/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas; select 'schema'
+E_CONFIG_VALUE binding validation.request /paths/~1pets/get/parameters/0: The 'none' request validation cannot take the query parameter limit of GET /pets, which goes through a registered adapter that validates it against its schema; select 'schema'
+E_CONFIG_VALUE binding validation.response /paths/~1pets/post/responses/201: The 'native' response validation cannot take the response body 201 application/json of POST /pets, which goes through a registered adapter that validates it against its schema; select 'schema'
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
+
+### Cost
+
+`none` and `native` never build the package's schema bundle or import `jsonschema`, which the strict factories still
+need, so the package keeps it as a dependency. The first `list_pets` call of a fresh process takes 3.9 ms with the
+default modes and 349 ms with `schema`, most of it importing `jsonschema` with its format checkers. A `create_pet`
+call over a mock transport takes 64 µs with `none` and `native` responses, 66 µs with `native` requests, and 107 µs with
+`schema` for both; listing 20 pets takes 189 µs natively and 388 µs with `schema` (CPython 3.13, macOS arm64, Pydantic
+v2 models). msgspec lists them in 132 µs and stdlib dataclasses in 135 µs natively, and both in about 380 µs with
+`schema`.

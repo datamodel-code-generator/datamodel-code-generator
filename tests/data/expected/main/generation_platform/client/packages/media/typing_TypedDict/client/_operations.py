@@ -314,6 +314,7 @@ OPERATION_7: Final[OperationPlan[SubmitUploadResponse, SubmitUploadErrorData]] =
                 parts=(
                     PartPlan(
                         'id',
+                        excluded=True,
                         encoder=Encoder(model_bindings.codec_23, model_bindings.CONTEXT_23),
                     ),
                     PartPlan(
@@ -394,6 +395,7 @@ OPERATION_8: Final[OperationPlan[ReadUploadResponse, ReadUploadErrorData]] = Ope
                             'secret',
                             'string',
                             native_value(model_bindings.codec_34, model_bindings.CONTEXT_34),
+                            excluded=True,
                         ),
                     ),
                     additional=value_part(

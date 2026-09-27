@@ -8,6 +8,7 @@ structural-tz: NativeValidationError native.tz@/when['when']
 unreadable-pattern: CodecConfigurationError The native type of models:Stamped.when does not match its binding
 constrained-tuple: CodecConfigurationError The native type of models:Stamped.pair does not match its binding
 native-gap: ModelProjectionError The native use has an unplanned projection gap at /id
+native-gap-convert: ModelProjectionError The native use has an unplanned projection gap at /id
 relaxed-tag: NativeValidationError native.tag@/pet/size['pet', 'size']
 relaxed-pattern: NativeValidationError native.pattern@/code['code']
 relaxed-ge: NativeValidationError native.ge@/low['low']
