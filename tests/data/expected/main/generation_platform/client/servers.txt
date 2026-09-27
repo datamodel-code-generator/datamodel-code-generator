@@ -16,6 +16,7 @@ render pydantic_v2.BaseModel
   write client/types/__init__.py
   write client/types/default/__init__.py
   write client/types/default/_operations.py
+  write client/types/default/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py

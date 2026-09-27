@@ -21,6 +21,7 @@ from .transports import AsyncTransportAdapter, OwnedTransportAdapter
 
 if TYPE_CHECKING:
     from .resources.admin._async import AsyncAdminResource
+    from .resources.archive._async import AsyncArchiveResource
     from .resources.default._async import AsyncDefaultResource
     from .resources.store._async import AsyncStoreResource
     from .resources.u30e6_u30fc_u30b6_u30fc._async import AsyncU30e6U30fcU30b6U30fcResource
@@ -93,6 +94,13 @@ class AsyncClient:
         from .resources.u30e6_u30fc_u30b6_u30fc._async import AsyncU30e6U30fcU30b6U30fcResource
 
         return AsyncU30e6U30fcU30b6U30fcResource(self._core)
+
+    @cached_property
+    def archive(self) -> AsyncArchiveResource:
+        """The archive operations."""
+        from .resources.archive._async import AsyncArchiveResource
+
+        return AsyncArchiveResource(self._core)
 
     @cached_property
     def admin(self) -> AsyncAdminResource:

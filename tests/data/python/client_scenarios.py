@@ -134,6 +134,11 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     pets = [{"id": 1, "name": "cat", "tag": None}]
     exchange.respond(json_response(200, pets, **headers))
     record(lines, "list", lambda: api.pets.list_pets(limit=limit, labels=labels, x_trace=trace, session=session))
+    arguments = types.ListPetsArguments(limit=limit, x_trace=trace)
+    exchange.respond(json_response(200, pets, **headers))
+    record(lines, "list with its arguments unpacked", lambda: api.pets.list_pets(**arguments))
+    for name in ("MissingArguments", "Missing"):
+        record(lines, f"types without {name}", lambda name=name: getattr(types, name))
     exchange.respond(json_response(200, pets, **{"X-Rate": "10"}))
     response = record(lines, "list response", lambda: api.pets.with_response.list_pets(x_trace=trace))
     info = response.info

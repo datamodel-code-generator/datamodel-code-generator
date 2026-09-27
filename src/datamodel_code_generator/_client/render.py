@@ -83,6 +83,15 @@ from ._runtime.model_codecs.unset import UNSET, Unset
 
 __all__ = ["UNSET", "ClientOptions", "HeaderPatch", "QueryPatch", "RequestOptions", "ServerSelection", "Unset"]
 '''
+_ARGUMENTS_GETATTR: Final = '''def __getattr__(name: str) -> object:
+    """Import the TypedDicts of the operations' arguments on first use, which no call needs."""
+    if name.endswith("Arguments") and name in __all__:
+        from . import _arguments
+
+        return getattr(_arguments, name)
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
+'''
 _ERROR_NAMES: Final = (
     "AdapterContractError",
     "AdapterExecutionError",
@@ -391,11 +400,21 @@ def _resource_package(resource: ResourceSpec) -> str:
 
 
 def _types_package(resource: ResourceSpec) -> str:
+    """Return the package of a resource's types, which imports its operations' arguments only when one is used."""
     names = sorted(name for spec in resource.operations for name in exports(spec))
-    listing = "".join(f"    {name!r},\n" for name in names)
+    arguments = sorted(f"{spec.pascal}Arguments" for spec in resource.operations)
+    listing = "".join(f"    {name!r},\n" for name in sorted((*names, *arguments)))
+    docstring = f'"""The types of the {resource.namespace} operations."""\n\n'
+    if not names:
+        return f"{docstring}__all__ = [\n{listing}]\n"
     imported = "".join(f"    {name},\n" for name in names)
-    imports = f"from ._operations import (\n{imported})\n\n" if names else ""
-    return f'"""The types of the {resource.namespace} operations."""\n\n{imports}__all__ = [\n{listing}]\n'
+    deferred = "".join(f"        {name},\n" for name in arguments)
+    return (
+        f"{docstring}from typing import TYPE_CHECKING\n\n"
+        f"from ._operations import (\n{imported})\n\n"
+        f"if TYPE_CHECKING:\n    from ._arguments import (\n{deferred}    )\n\n"
+        f"__all__ = [\n{listing}]\n\n\n{_ARGUMENTS_GETATTR}"
+    )
 
 
 class Module:
@@ -479,6 +498,12 @@ class _Typing:
     def values(module: Module, key: _Parts) -> str:
         """Return the union of the value types of a response's parts."""
         return _union(_Typing.spell(module, value) for value in key.values)
+
+    def argument(self, module: Module, parameter: ParameterSpec) -> str:
+        """Return the type of one parameter's keyword argument, with Unset when the parameter is optional."""
+        kind = media_kind(parameter.plan.content_media_type) if parameter.plan.content_media_type else "json"
+        surface = self.surface(module, "json" if kind == "form" else kind, parameter.use, sent=True)
+        return surface if parameter.required else f"{surface} | {module.local('options', 'Unset')}"
 
     def surface(self, module: Module, kind: str, use: TypeUseBinding | None, *, sent: bool) -> str:
         """Return the payload type of one media or parameter: its model type, envelope, or schema-less surface."""
@@ -661,12 +686,8 @@ class _Resources(_Typing):
 
     def parameter(self, module: Module, parameter: ParameterSpec) -> str:
         """Return one argument of an operation method: optional ones default to UNSET."""
-        kind = media_kind(parameter.plan.content_media_type) if parameter.plan.content_media_type else "json"
-        surface = self.surface(module, "json" if kind == "form" else kind, parameter.use, sent=True)
-        if parameter.required:
-            return f"{parameter.python_name}: {surface}"
-        unset, value = module.local("options", "Unset"), module.local("options", "UNSET")
-        return f"{parameter.python_name}: {surface} | {unset} = {value}"
+        argument = f"{parameter.python_name}: {self.argument(module, parameter)}"
+        return argument if parameter.required else f"{argument} = {module.local('options', 'UNSET')}"
 
     def requests(
         self, module: Module, spec: OperationSpec, *, asynchronous: bool
@@ -839,6 +860,18 @@ class _Types(_Typing):
             sections=sections,
         )
 
+    def arguments_module(self, resource: ResourceSpec) -> str:
+        """Return the module of the TypedDicts of one resource's operations' arguments."""
+        module = Module(
+            {f"{spec.pascal}Arguments" for spec in resource.operations}, self.symbols, level=len(resource.parts) + 2
+        )
+        sections = [self.arguments(module, spec) for spec in resource.operations]
+        return types_template.render(
+            docstring=f"The arguments of the {resource.namespace} operations, which calls take unpacked.",
+            imports=module.imports(),
+            sections=sections,
+        )
+
     def sections(self, module: Module, spec: OperationSpec) -> list[str]:
         """Return the definitions of one operation's types."""
         alias = module.name("typing", "TypeAlias")
@@ -856,6 +889,19 @@ class _Types(_Typing):
         if headers := _header_names(spec):
             sections.append(self.header_accessor(module, spec, headers))
         return sections
+
+    def arguments(self, module: Module, spec: OperationSpec) -> str:
+        """Return the TypedDict of an operation's parameters, which a call takes unpacked as its keyword arguments."""
+        fields = "".join(
+            f"\n    {parameter.python_name}: "
+            f"{module.name('typing_extensions', 'Required' if parameter.required else 'NotRequired')}"
+            f"[{self.argument(module, parameter)}]"
+            for parameter in spec.parameters
+        )
+        return (
+            f"class {spec.pascal}Arguments({module.name('typing_extensions', 'TypedDict')}):\n"
+            f'    """The parameters of {spec.name}, which a call takes unpacked as keyword arguments."""\n{fields}'
+        )
 
     def facade(self, module: Module, use: TypeUseBinding) -> str:
         """Return the type of a use's outbound codec facade."""
@@ -1397,6 +1443,8 @@ class ClientRenderer:
                 self.file(directory / "__init__.py", "package", _types_package(resource)),
                 self.file(directory / "_operations.py", "types", types.module(resource)),
             ))
+            if resource.operations:
+                files.append(self.file(directory / "_arguments.py", "types", types.arguments_module(resource)))
         files.extend((
             self.file(
                 PurePosixPath("_generated", "__init__.py"), "package", '"""Generated plans of this package."""\n'

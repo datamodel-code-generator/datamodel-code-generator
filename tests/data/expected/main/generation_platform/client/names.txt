@@ -20,6 +20,12 @@ render pydantic_v2.BaseModel
   write client/resources/u30e6_u30fc_u30b6_u30fc/__init__.py
   write client/resources/u30e6_u30fc_u30b6_u30fc/_sync.py
   write client/resources/u30e6_u30fc_u30b6_u30fc/_async.py
+  write client/resources/archive/__init__.py
+  write client/resources/archive/_sync.py
+  write client/resources/archive/_async.py
+  write client/resources/archive/reports/__init__.py
+  write client/resources/archive/reports/_sync.py
+  write client/resources/archive/reports/_async.py
   write client/resources/admin/__init__.py
   write client/resources/admin/_sync.py
   write client/resources/admin/_async.py
@@ -29,14 +35,24 @@ render pydantic_v2.BaseModel
   write client/types/__init__.py
   write client/types/default/__init__.py
   write client/types/default/_operations.py
+  write client/types/default/_arguments.py
   write client/types/store/__init__.py
   write client/types/store/_operations.py
+  write client/types/store/_arguments.py
   write client/types/u30e6_u30fc_u30b6_u30fc/__init__.py
   write client/types/u30e6_u30fc_u30b6_u30fc/_operations.py
+  write client/types/u30e6_u30fc_u30b6_u30fc/_arguments.py
+  write client/types/archive/__init__.py
+  write client/types/archive/_operations.py
+  write client/types/archive/reports/__init__.py
+  write client/types/archive/reports/_operations.py
+  write client/types/archive/reports/_arguments.py
   write client/types/admin/__init__.py
   write client/types/admin/_operations.py
+  write client/types/admin/_arguments.py
   write client/types/admin/users/__init__.py
   write client/types/admin/users/_operations.py
+  write client/types/admin/users/_arguments.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
@@ -53,10 +69,13 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/2 u30e6_u30fc_u30b6_u30fc.http_get_users()
     exports client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersResponse client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersErrorData client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersHTTPError
     exports client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 admin.users.list_admin_users()
+  /selection/selected_operations/3 archive.reports.get_daily_report()
+    exports client.types.archive.reports.GetDailyReportResponse client.types.archive.reports.GetDailyReportErrorData client.types.archive.reports.GetDailyReportHTTPError
+    exports client.types.archive.reports.GetDailyReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 admin.users.list_admin_users()
     exports client.types.admin.users.ListAdminUsersResponse client.types.admin.users.ListAdminUsersErrorData client.types.admin.users.ListAdminUsersHTTPError
     exports client.types.admin.users.ListAdminUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/4 admin.create_admin_user()
+  /selection/selected_operations/5 admin.create_admin_user()
     exports client.types.admin.CreateAdminUserResponse client.types.admin.CreateAdminUserErrorData client.types.admin.CreateAdminUserHTTPError
     exports client.types.admin.CreateAdminUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

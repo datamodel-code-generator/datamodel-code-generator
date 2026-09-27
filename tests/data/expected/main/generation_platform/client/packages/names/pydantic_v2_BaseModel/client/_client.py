@@ -21,6 +21,7 @@ from .transports import OwnedTransportAdapter, TransportAdapter
 
 if TYPE_CHECKING:
     from .resources.admin._sync import AdminResource
+    from .resources.archive._sync import ArchiveResource
     from .resources.default._sync import DefaultResource
     from .resources.store._sync import StoreResource
     from .resources.u30e6_u30fc_u30b6_u30fc._sync import U30e6U30fcU30b6U30fcResource
@@ -93,6 +94,13 @@ class Client:
         from .resources.u30e6_u30fc_u30b6_u30fc._sync import U30e6U30fcU30b6U30fcResource
 
         return U30e6U30fcU30b6U30fcResource(self._core)
+
+    @cached_property
+    def archive(self) -> ArchiveResource:
+        """The archive operations."""
+        from .resources.archive._sync import ArchiveResource
+
+        return ArchiveResource(self._core)
 
     @cached_property
     def admin(self) -> AdminResource:

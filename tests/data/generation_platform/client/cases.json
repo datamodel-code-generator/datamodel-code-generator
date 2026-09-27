@@ -98,6 +98,10 @@
           "resource": "admin.users"
         },
         {
+          "ref": "/paths/~1reports~1daily/get",
+          "resource": "archive.reports"
+        },
+        {
           "ref": "/paths/~1files~1{fileName}.{ext}/get",
           "parameter_names": [
             {

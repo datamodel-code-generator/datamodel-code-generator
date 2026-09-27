@@ -42,7 +42,7 @@ class AsyncAdminUsersResource:
     ) -> ListAdminUsersResponse:
         """Call GET /admin/users."""
         return (await self._core.execute(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             options=options,
         )).data
@@ -61,7 +61,7 @@ class AsyncAdminUsersWithResponse:
         options: RequestOptions | None = None,
     ) -> Response[ListAdminUsersResponse]:
         """Call GET /admin/users."""
-        return await self._core.execute(_operations.OPERATION_3, (), options=options)
+        return await self._core.execute(_operations.OPERATION_4, (), options=options)
 
 
 class AsyncAdminUsersWithRawResponse:
@@ -78,7 +78,7 @@ class AsyncAdminUsersWithRawResponse:
     ) -> AsyncRawResponse:
         """Call GET /admin/users."""
         return await self._core.execute_raw(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             options=options,
         )
@@ -97,4 +97,4 @@ class AsyncAdminUsersWithStreamingResponse:
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /admin/users."""
-        return self._core.stream(_operations.OPERATION_3, (), options=options)
+        return self._core.stream(_operations.OPERATION_4, (), options=options)

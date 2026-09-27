@@ -42,9 +42,11 @@ from pets.transports import (
 from pets.types.pets.photos import UploadRequestCodecs, UploadResponse
 from pets.types.pets import (
     AttachFilesRequestCodecs,
+    CreatePetArguments,
     CreatePetRequestCodecs,
     CreatePetResponse,
     GetPetRequestCodecs,
+    ListPetsArguments,
     ListPetsErrorData,
     ListPetsHTTPError,
     ListPetsRequestCodecs,
@@ -58,12 +60,17 @@ def call(client: Client) -> None:
     trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
     pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
     assert_type(client.pets.list_pets(x_trace=trace, limit=UNSET), ListPetsResponse)
+    arguments: ListPetsArguments = {"x_trace": trace, "limit": UNSET}
+    assert_type(client.pets.list_pets(**arguments, options=RequestOptions()), ListPetsResponse)
     response = client.pets.with_response.list_pets(x_trace=trace, options=RequestOptions(max_response_bytes=None))
     assert_type(response, Response[ListPetsResponse])
     decode_list_pets_header(response.info, name="X-Next")
     decode_list_pets_header(response.info, name="X-Rate")
     body = CreatePetRequestCodecs.body(media_type="application/json").from_wire({"name": "dog"})
     assert_type(client.pets.create_pet(body=body, media_type="application/json"), CreatePetResponse)
+    assert_type(
+        client.pets.create_pet(**CreatePetArguments(), body=body, media_type="application/json"), CreatePetResponse
+    )
     text = CreatePetRequestCodecs.body(media_type="text/plain").from_wire("dog")
     client.pets.create_pet(body=text, media_type="text/plain")
     client.pets.get_pet(pet_id=pet, response_media_type="text/plain")
@@ -78,6 +85,7 @@ def call(client: Client) -> None:
 async def call_async(client: AsyncClient) -> None:
     trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
     assert_type(await client.pets.list_pets(x_trace=trace), ListPetsResponse)
+    assert_type(await client.pets.list_pets(**ListPetsArguments(x_trace=trace)), ListPetsResponse)
     response = await client.pets.with_response.list_pets(x_trace=trace)
     assert_type(response, Response[ListPetsResponse])
     value: ModelValue[object] | None = None

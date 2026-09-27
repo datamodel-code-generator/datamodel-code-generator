@@ -13,6 +13,7 @@ from pets.types.pets import (
     CreatePetRequestCodecs,
     DeletePetsByPetIdRequestCodecs,
     GetPetRequestCodecs,
+    ListPetsArguments,
     ListPetsRequestCodecs,
     ReadFilesRequestCodecs,
     decode_list_pets_header,
@@ -34,6 +35,15 @@ def misuse(client: Client) -> None:
     client.pets.photos.upload(pet_id=photo, body="text")  # error
     deleted = DeletePetsByPetIdRequestCodecs.parameter(location="path", name="petId").from_wire(1)
     client.pets.delete_pets_by_pet_id(pet_id=deleted, options="fast")  # error
+
+
+def misuse_arguments(client: Client) -> None:
+    trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
+    ListPetsArguments(x_trace=trace, color="red")  # error
+    missing: ListPetsArguments = {}  # error
+    ListPetsArguments(x_trace=trace, limit=None)  # error
+    ListPetsArguments(x_trace=trace, options=None)  # error
+    del client, missing
 
 
 def misuse_transports(client: Client, adapter: object) -> None:

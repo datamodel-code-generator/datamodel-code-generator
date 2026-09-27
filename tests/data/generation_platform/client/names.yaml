@@ -38,6 +38,13 @@ paths:
       responses:
         '204':
           description: Users.
+  /reports/daily:
+    get:
+      operationId: getDailyReport
+      tags: [reports]
+      responses:
+        '204':
+          description: A daily report.
   /admin/users:
     get:
       operationId: listAdminUsers

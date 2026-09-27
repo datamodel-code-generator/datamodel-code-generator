@@ -26,6 +26,11 @@ from .types.admin.users import (
     ListAdminUsersHTTPError,
     ListAdminUsersResponse,
 )
+from .types.archive.reports import (
+    GetDailyReportErrorData,
+    GetDailyReportHTTPError,
+    GetDailyReportResponse,
+)
 from .types.default import GetRootErrorData, GetRootHTTPError, GetRootResponse
 from .types.store import (
     GetFilesByFileNameByExtErrorData,
@@ -103,7 +108,15 @@ OPERATION_2: Final[OperationPlan[HttpGetUsersResponse, HttpGetUsersErrorData]] =
     responses=ResponseDecoder((empty_branch('204'),), (), HttpGetUsersHTTPError),
 )
 
-OPERATION_3: Final[OperationPlan[ListAdminUsersResponse, ListAdminUsersErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[GetDailyReportResponse, GetDailyReportErrorData]] = OperationPlan(
+    operation_id='getDailyReport',
+    method='GET',
+    path='/reports/daily',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), GetDailyReportHTTPError),
+)
+
+OPERATION_4: Final[OperationPlan[ListAdminUsersResponse, ListAdminUsersErrorData]] = OperationPlan(
     operation_id='listAdminUsers',
     method='GET',
     path='/admin/users',
@@ -111,7 +124,7 @@ OPERATION_3: Final[OperationPlan[ListAdminUsersResponse, ListAdminUsersErrorData
     responses=ResponseDecoder((empty_branch('204'),), (), ListAdminUsersHTTPError),
 )
 
-OPERATION_4: Final[OperationPlan[CreateAdminUserResponse, CreateAdminUserErrorData]] = OperationPlan(
+OPERATION_5: Final[OperationPlan[CreateAdminUserResponse, CreateAdminUserErrorData]] = OperationPlan(
     operation_id='createAdminUser',
     method='POST',
     path='/admin/users',
