@@ -69,7 +69,7 @@ This union fallback is safe for **factories that take only a selector**. Do not 
 |Response views|Ordinary T; with_response returns Response[T]; raw returns RawResponse / AsyncRawResponse. An ordinary async method is `async def ... -> T`, without additionally returning Awaitable[T]|
 |Streaming view|Sync returns ContextManager[RawResponse]; async is an **ordinary def** returning AsyncContextManager[AsyncRawResponse]. Do not require an unnecessary await before `async with`|
 |Request/header/part factories|The correct NativeOutboundCodec[T] / EnvelopeOutboundCodec[T] for each Literal combination. A dynamic selector returns a union of codecs themselves. Do not merge header/status/media into one type based only on names|
-|Argument forwarding|A fixed `<Method>Arguments` TypedDict for each operation. Required keys use Required, optional keys use NotRequired, and None/Unset values follow the original signature. Only necessary private wrappers use `**kwargs: Unpack[<Method>Arguments]`. This is not a separate model duplicating model fields|
+|Argument forwarding|A fixed private `<Method>Arguments` TypedDict for each operation (the implementation superset under §4.1 when body/field alternatives exist). Required keys use Required, optional keys use NotRequired, and None/Unset values follow the original signature. Only necessary private wrappers use `**kwargs: Unpack[<Method>Arguments]`. This is not a separate model duplicating model fields|
 |Options forwarding|Do not overlap keys in Unpack with explicit arguments such as `options`. Since the original TypedDict may be a structural subtype with extra keys, do not blindly re-expand the whole dict into another callback; assemble only that destination's fixed keys|
 |Error|`<Method>HTTPError` is a closed non-generic class inheriting `HTTPStatusError[<Method>ErrorData]`. Do not expose `<Method>HTTPError[E]`|
 
@@ -81,13 +81,37 @@ CLIENT's Literal overloads correlate finite concrete media with bodies/returns. 
 |`ResponseMedia[R]`|Likewise factory-only and invariant. R is the union of most-specific branches actually reachable across all success statuses for concrete media within the declared media range. Include more-specific declarations/fallbacks and None for body-less success|
 |`<Method>RequestCodecs.select_request_media(*, declared_media: Literal[declared_media], concrete_media: str)`|An overload for each declaration returns `RequestMedia[its sync OutboundType, its async OutboundType]`. Ordinary JSON has the same type on both axes. Do not mix sync and async BodyInput for binary/multipart|
 |`select_response_media(*, declared_media: Literal[declared_media], concrete_media: str)`|An overload for each declaration returns `ResponseMedia[its success union]`. It belongs on the same RequestCodecs because it selects outgoing Accept/response_media_type|
-|Method overload|Correlate the sync body with the selector's fixed sync type and the async body with its fixed async type. Body is required on selector-specified branches. Put the Unset branch for an optional body in a separate overload that forbids media selection. `response_media_type=ResponseMedia[R]` fixes the result to that R. Do not add a catchall overload inferring a free T from body|
+|Method overload|Correlate the sync body with the selector's fixed sync type and the async body with its fixed async type. A body value or the selected CLIENT §4 field alternative is required on selector-specified branches. Put the Unset branch for an optional body in a separate overload that forbids media selection. `response_media_type=ResponseMedia[R]` fixes the result to that R. Do not add a catchall overload inferring a free T from body|
 
 Factories match declared exact/wildcard media to concrete media under existing media rules and bind owner/use. [CODECS §3](DECISIONS-MODEL-CODECS.md) is authoritative for this predicate; share CLIENT's existing dispatch plan instead of creating another selector evaluator. For requests, the winner key in existing most-specific dispatch for the concrete media must also equal declared_media. With `application/*: B` and `application/json: A`, choosing the wildcard while supplying application/json as concrete media produces CodecSelectionError; a B-typed value cannot reach A's decoder. Response R is the union of winners across every success status; do not force received status/media dispatch to one declaration key. This typing preserves [OAS precedence rules](https://spec.openapis.org/oas/v3.1.1.html#request-body-object).
 
 There is no str fallback for unknown declarations. Generate no select_request_media when there are zero request-body media, and no select_response_media when there are zero success-body media. Preserve existing body() selection-error rules. A single overload branch becomes an ordinary typed method, not a lone @overload. Selectors from another operation, a different direction/use, or an old fingerprint produce CodecSelectionError before I/O. Existing codec/media processing validates bodies; merely creating a selector must not cast a body to T. Media selectors may exist for binary or schema-less media without fabricating model codecs. Private identity uses the top-level media/Accept plan; do not create a fake TypeUseId without a schema. `body(media_type=RequestMedia[...])` returns the corresponding codec only on branches where one exists; other branches retain existing selection errors. Selectors apply only to top-level body/Accept, leaving existing Literal/str → codec-union behavior of `part(name, media_type)` unchanged.
 
 Type names alone cannot fully represent operation identity or valid wire values. Runtime ownership checks also reject misuse of different-operation selectors that share the same body type. Do not generate a nominal body model for every operation just to strengthen types.
+
+### 4.1 Body and field alternatives
+
+CLIENT §4.1–4.4 owns body_arguments configuration, field eligibility/naming, dispatch, and native assembly. The following illustrative signatures assume one required JSON object body with required name and nullable optional tag, a native NewPet use, and a Pet response; imports and overload implementations are omitted here. No model definition is duplicated.
+
+```python
+@overload
+def create_pet(
+    *, body: NewPet | ModelValue[NewPet], name: Unset = UNSET,
+    tag: Unset = UNSET, media_type: Literal["application/json"] = "application/json",
+    options: RequestOptions | None = None,
+) -> Pet: ...
+
+@overload
+def create_pet(
+    *, body: Unset = UNSET, name: str, tag: str | None | Unset = UNSET,
+    media_type: Literal["application/json"] = "application/json",
+    options: RequestOptions | None = None,
+) -> Pet: ...
+```
+
+The actual implementation explicitly accepts each argument's union across branches, with UNSET for dispatch defaults; its return covers all branches and adds no permissive public overload. Body plus a non-UNSET field, no required body/field, unknown field names, and fields from the wrong media are static negative cases. Body plus an explicitly UNSET field is positive. Compose RequestMedia/ResponseMedia correlations and return/view types rather than replacing them with an uncorrelated body union. Optional all-optional objects use CLIENT's linear witness overloads plus a separate omission overload; a media-only call is negative. Avoid a lone @overload when only one signature exists. Keep equivalent inline annotations and optional stubs, and test actual implementations as well as call sites.
+
+The existing private `<Method>Arguments` forwarding record describes the executable keyword superset, not a static proof that a call matches an overload. When alternatives require defaults, use NotRequired keys with their actual union/Unset types, retain a single destination argument check, and never export this record as a second input model. Narrow to one branch and assemble its known keys before forwarding; do not pass an uncorrelated optional-key record directly to an overloaded public method. No public `**kwargs: Any`, cast, or blanket ignore may hide invalid branches. Function decorators are not a substitute for static overloads or the runtime checks in CLIENT §4.3.
 
 ## 5. Server services, authentication, and FastAPI settings
 
@@ -211,7 +235,7 @@ Check the new scope with both mypy strict and Pyright strict. Save exact version
 |TY01|For minimal and nullable/union/alias/custom-field fixtures across all five client and two server backends, model bytes equal ordinary D with the same config/api scope. Zero changes to old CLI/API/model-only dependency/import baselines|
 |TY02|Applicable-package parse/import/hints on Python 3.10/3.11/3.12/3.13/3.14. Explicitly state existing upper/lower limits per capability, such as WebSocket. New type syntax or unavailable stdlib imports must not break 3.10|
 |TY03|Successful hints for recursive JSONValue/WireValue through another module/private alias. object() and non-str-key dicts are static negative cases; finite numbers/size/depth/duplicate keys retain existing runtime oracles. Fixed presence decisions remain correct even for the future-TypedDict required_keys counterexample|
-|TY04|Positive/negative cases for method required/nullable/Unset rules, parameter names, Enum/Literal, and media/body/return correlations. Catchalls must not accept incorrect Literal/body pairs. response_media_type must not remove None branches|
+|TY04|Positive/negative cases for method required/nullable/Unset rules, parameter names, Enum/Literal, and media/body/return correlations. Catchalls must not accept incorrect Literal/body pairs. response_media_type must not remove None branches. Include body/both mode signatures, explicit field aliases, mutual exclusion allowing only UNSET on the other branch, optional all-optional witness branches, source-nonnullable None/native omission-sentinel rejection, field-only wrapper removal, and every view. Run CG13's independent runtime oracles as well|
 |TY05|Positive/negative cases for wildcard/explicit custom-media selectors, most-specific overlap, and sync/async binary distinctions. Wrong-owner/use/stale selectors produce selection errors with zero I/O. Media selectors without codecs succeed; zero fabricated body codecs. A positive case assembles narrow FieldPart/FilePart variables into multipart with the declared union; mixing async files into sync bodies is a negative case|
 |TY06|Codec invariance, Native/Envelope from_wire/snapshot types, dynamic-factory codec unions, every exact/range/default fallback type, and header-name returns. The validation ledger rejects implementations casting JSON to models|
 |TY07|Unpack unknown keys/missing required keys/None misuse/options overlap are negative cases; known-kwargs forwarding is positive. Where transparent wrappers exist, ParamSpec preserves keyword-only parameters/returns; zero unnecessary wrappers added|
