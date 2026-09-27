@@ -16,7 +16,7 @@ New generated distributions explicitly declare the established `typing-extension
 |---|---|
 |`Generic` / `TypeVar` / `Protocol` / `Literal`|Value correlations in §3–7, operation/media/helper names, and public callbacks. Do not emit unparameterized Generics, bare `Callable`, or bare `dict/list/Mapping` in new source|
 |`TypedDict` / `Required` / `NotRequired`|Settings and fixed keyword records. Represent presence and nullability separately. Consistently import these from `typing_extensions` in new targets so generic TypedDicts work on 3.10 too|
-|`Unpack[TypedDict]`|Private wrappers that need to forward existing fixed keyword sets. Do not replace readable public-operation keyword-only signatures with generic kwargs|
+|`Unpack[TypedDict]`|Necessary private forwarding wrappers, plus generated public operations when CLIENT §4.9 explicitly selects signature_style=unpack. The default explicit style renders every named keyword-only parameter. Preserve branch correlations and runtime checks in either style|
 |`ReadOnly`|Fields in TypedDicts used to observe generated metadata/settings. A shallow static write restriction, not a substitute for deep immutability or runtime validation. Do not insert it into existing D TypedDicts|
 |`ParamSpec` / `Concatenate`|Only when preserving all arguments in existing transparent callable wrappers. Use dedicated Protocols for fixed-signature hooks/adapters. Do not add decorators/callback layers just to use a type feature|
 |`TypeGuard` / `TypeIs`|Only existing narrowing points that actually validate input. TypeGuard must justify its positive assertion; TypeIs must justify both positive and negative assertions. Do not use TypeIs to claim a value is not of a Python type merely because it fails a value constraint such as finite-float validation|
@@ -69,7 +69,7 @@ This union fallback is safe for **factories that take only a selector**. Do not 
 |Response views|Ordinary T; with_response returns Response[T]; raw returns RawResponse / AsyncRawResponse. An ordinary async method is `async def ... -> T`, without additionally returning Awaitable[T]|
 |Streaming view|Sync returns ContextManager[RawResponse]; async is an **ordinary def** returning AsyncContextManager[AsyncRawResponse]. Do not require an unnecessary await before `async with`|
 |Request/header/part factories|The correct NativeOutboundCodec[T] / EnvelopeOutboundCodec[T] for each Literal combination. A dynamic selector returns a union of codecs themselves. Do not merge header/status/media into one type based only on names|
-|Argument forwarding|A fixed private `<Method>Arguments` TypedDict for each operation (the implementation superset under §4.1 when body/field alternatives exist). Required keys use Required, optional keys use NotRequired, and None/Unset values follow the original signature. Only necessary private wrappers use `**kwargs: Unpack[<Method>Arguments]`. This is not a separate model duplicating model fields|
+|Argument forwarding|A fixed private `<Method>Arguments` TypedDict for each operation (the implementation superset under §4.1 when body/field alternatives exist). Required keys use Required, optional keys use NotRequired, and None/Unset values follow the original signature. Necessary private wrappers use `**kwargs: Unpack[<Method>Arguments]`; public unpack-style methods also use the branch and implementation records specified in §4.2. This is not a separate schema model duplicating model fields|
 |Options forwarding|Do not overlap keys in Unpack with explicit arguments such as `options`. Since the original TypedDict may be a structural subtype with extra keys, do not blindly re-expand the whole dict into another callback; assemble only that destination's fixed keys|
 |Error|`<Method>HTTPError` is a closed non-generic class inheriting `HTTPStatusError[<Method>ErrorData]`. Do not expose `<Method>HTTPError[E]`|
 
@@ -91,7 +91,7 @@ Type names alone cannot fully represent operation identity or valid wire values.
 
 ### 4.1 Body and field alternatives
 
-CLIENT §4.1–4.4 owns body_arguments configuration, field eligibility/naming, dispatch, and native assembly. The following illustrative signatures assume one required JSON object body with required name and nullable optional tag, a native NewPet use, and a Pet response; imports and overload implementations are omitted here. No model definition is duplicated.
+CLIENT §4.1–4.4 owns body_arguments configuration, field eligibility/naming, dispatch, and native assembly. The following illustrative explicit-style signatures assume one required JSON object body with required name and nullable optional tag, a native NewPet use, and a Pet response; imports and overload implementations are omitted here. No model definition is duplicated.
 
 ```python
 @overload
@@ -116,9 +116,42 @@ def create_pet(
 ) -> Pet: ...
 ```
 
-The actual implementation explicitly accepts each argument's union across branches, with UNSET for dispatch defaults; its return covers all branches and adds no permissive public overload. Body plus a non-UNSET field, no required body/field, unknown field names, and fields from the wrong media are static negative cases. Body plus an explicitly UNSET field is positive. Compose RequestMedia/ResponseMedia correlations and return/view types rather than replacing them with an uncorrelated body union. Optional all-optional objects use CLIENT's linear witness overloads plus a separate omission overload; a media-only call is negative. Avoid a lone @overload when only one signature exists. Keep equivalent inline annotations and optional stubs, and test actual implementations as well as call sites.
+The actual implementation accepts each argument's union across branches, with UNSET for dispatch defaults, rendered as named parameters or an Unpack implementation record under CLIENT §4.9; its return covers all branches and adds no permissive public overload. Body plus a non-UNSET field, no required body/field, unknown field names, and fields from the wrong media are static negative cases. Body plus an explicitly UNSET field is positive. Compose RequestMedia/ResponseMedia correlations and return/view types rather than replacing them with an uncorrelated body union. Optional all-optional objects use CLIENT's linear witness overloads plus a separate omission overload; a media-only call is negative. Avoid a lone @overload when only one signature exists. Keep equivalent inline annotations and optional stubs, and test actual implementations as well as call sites.
 
-The existing private `<Method>Arguments` forwarding record describes the executable keyword superset, not a static proof that a call matches an overload. When alternatives require defaults, use NotRequired keys with their actual union/Unset types, retain a single destination argument check, and never export this record as a second input model. Narrow to one branch and assemble its known keys before forwarding; do not pass an uncorrelated optional-key record directly to an overloaded public method. No public `**kwargs: Any`, cast, or blanket ignore may hide invalid branches. Function decorators are not a substitute for static overloads or the runtime checks in CLIENT §4.3. CLIENT §4.7 permits optional private branch-specific Pydantic validation without changing the public signatures. Add positive/negative cases for ValidationOptions Literal values and UNSET inheritance; None/unknown modes are type errors. Response-native retains a real bound conversion to T, and unchecked responses use the existing JSONValue/raw surface rather than a cast to T.
+The existing private `<Method>Arguments` forwarding record describes the executable keyword superset, not a static proof that a call matches an overload. When alternatives require defaults, use NotRequired keys with their actual union/Unset types, retain a single destination argument check, and never export this record as a second schema model. The opt-in public Unpack annotation may reference its private declaration under §4.2 without adding a public export. Narrow to one branch and assemble its known keys before forwarding; do not pass an uncorrelated optional-key record directly to an overloaded public method. No public `**kwargs: Any`, cast, or blanket ignore may hide invalid branches. Function decorators are not a substitute for static overloads or the runtime checks in CLIENT §4.3. CLIENT §4.7 permits optional private branch-specific Pydantic validation without changing the public signatures. Add positive/negative cases for ValidationOptions Literal values and UNSET inheritance; None/unknown modes are type errors. Response-native retains a real bound conversion to T, and unchecked responses use the existing JSONValue/raw surface rather than a cast to T.
+
+### 4.2 Signature-style equivalence
+
+CLIENT §4.9 owns the independent explicit/unpack generation choice, defaults, private record artifact, runtime binding, and introspection differences. Render both styles from the same finalized argument and overload plan. For example, the two §4.1 overloads can instead use these private records (imports/implementation omitted):
+
+```python
+class _CreatePetBodyArguments(TypedDict):
+    body: NewPet | ModelValue[NewPet]
+    name: NotRequired[Unset]
+    tag: NotRequired[Unset]
+    media_type: NotRequired[Literal["application/json"]]
+    options: NotRequired[RequestOptions | None]
+
+
+class _CreatePetFieldArguments(TypedDict):
+    body: NotRequired[Unset]
+    name: str
+    tag: NotRequired[str | None | Unset]
+    media_type: NotRequired[Literal["application/json"]]
+    options: NotRequired[RequestOptions | None]
+
+
+@overload
+def create_pet(**kwargs: Unpack[_CreatePetBodyArguments]) -> Pet: ...
+
+
+@overload
+def create_pet(**kwargs: Unpack[_CreatePetFieldArguments]) -> Pet: ...
+```
+
+The implementation uses the same union/requiredness/default plan as the explicit implementation, represented by its own TypedDict when needed; it is not an additional public overload. No Unpack[union], untyped **kwargs, Any-valued catchall, or cast may bypass an invalid branch. Required/NotRequired encode key presence only; preserve each value's None/Unset/type relationships. Generic media-selector records retain the same TypeVar identity relationships and bounds in each callable, with Python-3.10-compatible Generic declarations. Do not erase selectors or replace a dependent return with a broad union merely to make Unpack type-check.
+
+Test the actual source implementations and any stubs against the shared direct-call/known-key-mapping positive and negative corpus, including the optional-body witness branches, dynamic response selectors, binary sync/async differences, options, and parameters literally named kwargs. Private type references must resolve under get_type_hints from a different module without importing the generator or doing I/O. Runtime get_type_hints is a verification tool, not a per-call binder. Static acceptance of a structurally compatible mapping never removes the runtime unknown-key guard. Keep additional fixtures for structural extra keys and Callable/Protocol assignability with the exact expected diagnostics for each pinned checker and style; these need not be identical between explicit and Unpack. Do not widen either callable or suppress errors to manufacture universal static equivalence. The setting changes method rendering, not the RequestOptions/ValidationOptions input representation or the selected D model backend.
 
 ## 5. Server services, authentication, and FastAPI settings
 
@@ -242,10 +275,10 @@ Check the new scope with both mypy strict and Pyright strict. Save exact version
 |TY01|For minimal and nullable/union/alias/custom-field fixtures across all five client and two server backends, model bytes equal ordinary D with the same config/api scope. Zero changes to old CLI/API/model-only dependency/import baselines|
 |TY02|Applicable-package parse/import/hints on Python 3.10/3.11/3.12/3.13/3.14. Explicitly state existing upper/lower limits per capability, such as WebSocket. New type syntax or unavailable stdlib imports must not break 3.10|
 |TY03|Successful hints for recursive JSONValue/WireValue through another module/private alias. object() and non-str-key dicts are static negative cases; finite numbers/size/depth/duplicate keys retain existing runtime oracles. Fixed presence decisions remain correct even for the future-TypedDict required_keys counterexample|
-|TY04|Positive/negative cases for method required/nullable/Unset rules, parameter names, Enum/Literal, and media/body/return correlations. Catchalls must not accept incorrect Literal/body pairs. response_media_type must not remove None branches. Include body/both mode signatures, explicit field aliases, mutual exclusion allowing only UNSET on the other branch, optional all-optional witness branches, source-nonnullable None/native omission-sentinel rejection, field-only wrapper removal, and every view. Run CG13's independent runtime oracles as well|
+|TY04|Positive/negative cases for method required/nullable/Unset rules, parameter names, Enum/Literal, and media/body/return correlations. Catchalls must not accept incorrect Literal/body pairs. response_media_type must not remove None branches. Include body/both mode signatures, explicit field aliases, mutual exclusion allowing only UNSET on the other branch, optional all-optional witness branches, source-nonnullable None/native omission-sentinel rejection, field-only wrapper removal, and every view. Run both signature styles and CG13/CG15's independent runtime/introspection oracles as well|
 |TY05|Positive/negative cases for wildcard/explicit custom-media selectors, most-specific overlap, and sync/async binary distinctions. Wrong-owner/use/stale selectors produce selection errors with zero I/O. Media selectors without codecs succeed; zero fabricated body codecs. A positive case assembles narrow FieldPart/FilePart variables into multipart with the declared union; mixing async files into sync bodies is a negative case|
 |TY06|Codec invariance, Native/Envelope from_wire/snapshot types, dynamic-factory codec unions, every exact/range/default fallback type, and header-name returns. The validation ledger rejects implementations casting JSON to models|
-|TY07|Unpack unknown keys/missing required keys/None misuse/options overlap are negative cases; known-kwargs forwarding is positive. Where transparent wrappers exist, ParamSpec preserves keyword-only parameters/returns; zero unnecessary wrappers added|
+|TY07|Unpack unknown keys/missing required keys/None misuse/options overlap/TypedDict unions/non-TypedDict operands are negative cases; known-kwargs forwarding is positive. Cover private branch/superset records, Generic selector/return correlations, and explicit/unpack parity under CG15. Where transparent wrappers exist, ParamSpec preserves keyword-only parameters/returns; zero unnecessary wrappers added|
 |TY08|Service Protocols' method names and operation signatures, sync/async, group keywords, and authorizer SecretT/PrincipalT correlations. Incorrect principals/extractor results/missing or mismatched methods/unknown group keywords are negative cases; a subclass missing an abstract method also fails to instantiate. Do not confuse method names with OperationKey pointers. Check real implementation modules, subclassed and structural, rather than hiding behind .pyi|
 |TY09|All FastAPIOptions key types and assignability to pinned source signatures/defaults. Unknown keys/JSON containing classes/incorrect response classes are negative cases. Ordinary custom-app exception-handler/lifespan paths are positive cases. get_type_hints/routes/OpenAPI/HTTP work for both server backends|
 |TY10|Ordinary await happens once; async streaming/source.open and similar APIs directly use async contexts/iterators. A sync adapter in an async slot is a static negative case or existing startup error; zero hidden double awaits|
