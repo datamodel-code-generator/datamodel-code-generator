@@ -1,6 +1,6 @@
 # S09 implementation record
 
-Status: in progress. S09-1 (client operations, #4193), S09-2 (response content codings, #4195), S09-3 (transport adapters, the client lifecycle, and views, #4196), S09-4 (raw and streaming responses, #4197), S09-5 (file, stream, and factory request bodies, #4198), S09-6 (multipart/form-data request bodies, #4199), S09-7 (multipart responses, #4200), S09-8 (form-data file parts, #4201), S09-9 (form-data responses with file parts, #4202) and S09-10 (media selectors and request media ranges) are implemented and verified. They open a new native stack on #4192, which updates the locked HTTPX2 to 2.13.1 on top of the S08 stack and its review fixes (#4179, top #4191), because that stack is still under review. The rest of S09 follows on this stack. Nothing in it has been merged.
+Status: in progress. S09-1 (client operations, #4193), S09-2 (response content codings, #4195), S09-3 (transport adapters, the client lifecycle, and views, #4196), S09-4 (raw and streaming responses, #4197), S09-5 (file, stream, and factory request bodies, #4198), S09-6 (multipart/form-data request bodies, #4199), S09-7 (multipart responses, #4200), S09-8 (form-data file parts, #4201), S09-9 (form-data responses with file parts, #4202), S09-10 (media selectors and request media ranges, #4203) and S09-11 (multipart fields encoded once per call) are implemented and verified. They open a new native stack on #4192, which updates the locked HTTPX2 to 2.13.1 on top of the S08 stack and its review fixes (#4179, top #4191), because that stack is still under review. The rest of S09 follows on this stack. Nothing in it has been merged.
 
 ## Baseline and review boundaries
 
@@ -204,6 +204,12 @@ Tests: the `media` case gains a JSON, `application/*`, `image/*`, and `text/*` r
 
 Benchmarks (best of 7 × 3000 calls, µs, S09-9 and S09-10 over four runs in each order): GET 101.8–104.4 and 103.4–104.5, POST 119.0–121.0 and 119.5–121.6, DELETE 38.7–40.2 and 38.9–40.9, `request_raw` 30.3–31.5 and 30.6–31.2, within noise. A body without a media type and a call without a response media type skip the selector checks first, so `RequestBody.encode` stays at 2.65–2.70 µs.
 
+## S09-11: multipart fields encoded once per call
+
+RUNTIME's replay table keeps a call's encoded bytes for every attempt and preserves a multipart body's part order, headers, filename encoding, and field values across attempts, while S09-6 encoded the fields as each attempt began. `MultipartSource` now encodes the fields and the heads of the file parts, and checks the member plans, when the call encodes its body: the pieces between file parts are joined once, and each attempt only begins the file parts' own attempts around them, refusing a body or file part of the other mode as before. A part that cannot be encoded, and a body that is no multipart body, now fail with the call's other encoding failures, before the call has an id.
+
+Tests: the `multipart` scenario refuses a body that is no multipart body, and its encoding failures lose the call id they were given when they failed in the attempt. Every call still makes one attempt until S10, so the saving shows only with retries; a form-data body, two fields and a file, takes 44.8–45.5 µs without a schema and 67.4–68.8 under a schema with file parts, against 44.5–46.0 and 66.8–68.8 before, over four alternating runs.
+
 ## Next action
 
-Publish S09-10 on the #4194 stack, then form and form-data encodings.
+Publish S09-11 on the #4194 stack, then form and form-data encodings.

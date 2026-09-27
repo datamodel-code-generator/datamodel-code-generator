@@ -1,9 +1,9 @@
 """Multipart bodies: form-data field and file parts sent with the boundary of their call, and received parts.
 
-A field part carries a value, a file part any binary body of the client's mode. Each send encodes the fields and
-begins each file part's own attempt, so a multipart body can be sent again when all of its file parts can. A body
-whose schema has file parts is checked against the plans of its members: each part's name, kind, and repeats, and
-the presence of every required member.
+A field part carries a value, a file part any binary body of the client's mode. A call encodes the fields and the
+heads of the file parts once, and each send begins each file part's own attempt around them, so a multipart body can
+be sent again when all of its file parts can. A body whose schema has file parts is checked against the plans of its
+members: each part's name, kind, and repeats, and the presence of every required member.
 """
 
 from __future__ import annotations
@@ -477,37 +477,55 @@ def _is_async(value: object) -> TypeIs[AsyncMultipartBody[object]]:
 
 
 def _layout(
-    parts: tuple[object, ...], boundary: str, inputs: tuple[type[InputT], ...], names: _Names | None
-) -> list[bytes | InputT]:
-    """Return a body's pieces in order: the encoded heads and fields, and each file part's binary input.
+    parts: tuple[object, ...], boundary: str, names: _Names | None
+) -> list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]]:
+    """Return a body's pieces in order: the encoded fields and heads between the file parts, whose inputs are sent.
 
     With member plans, each part must be declared for its kind, and every required member must have a part.
     """
-    pieces: list[bytes | InputT] = []
+    pieces: list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]] = []
+    encoded: list[bytes] = []
     for part in parts:
         if _is_field(part):
             plan = _ANY if names is None else names.plan(part.name, file=False)
             if (field := _field(part, boundary, plan)) is not None:
-                pieces.append(field)
-        elif _is_file(part) and isinstance(content := part.content, inputs):
+                encoded.append(field)
+        elif _is_file(part):
             if names is not None:
                 names.plan(part.name, file=True)
-            pieces.extend((_file_head(part, boundary), content, b"\r\n"))
+            encoded.append(_file_head(part, boundary))
+            pieces.extend((b"".join(encoded), part))
+            encoded = [b"\r\n"]
         else:
             _refused(part)
     if names is not None:
         names.check()
-    pieces.append(f"--{boundary}--\r\n".encode())
+    encoded.append(f"--{boundary}--\r\n".encode())
+    pieces.append(b"".join(encoded))
     return pieces
+
+
+def _inputs(
+    pieces: list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]], inputs: tuple[type[InputT], ...]
+) -> Iterator[bytes | InputT]:
+    """Yield a body's encoded pieces and each file part's binary input, refusing an input of the other mode."""
+    for piece in pieces:
+        if isinstance(piece, bytes):
+            yield piece
+        elif isinstance(content := piece.content, inputs):
+            yield content
+        else:
+            _refused(piece)
 
 
 class MultipartSource:
     """A multipart body with the boundary of its call, which builds the attempt of each send in the client's mode.
 
-    The member plans of a schema with file parts check the parts of each attempt; a body without a schema has none.
+    It encodes the fields and the heads of the file parts once, checked by the member plans of a schema with file
+    parts; a body without a schema has none.
     """
 
-    __slots__ = ("additional", "body", "boundary", "plans")
+    __slots__ = ("_pieces", "body", "boundary")
 
     def __init__(
         self,
@@ -516,24 +534,21 @@ class MultipartSource:
         plans: tuple[PartPlan, ...] | None = None,
         additional: PartPlan | None = None,
     ) -> None:
-        """Keep the body as the call gave it, the boundary its Content-Type names, and any member plans."""
+        """Encode the body's fields and file heads for every attempt, refusing a body that is no multipart body."""
+        if not is_multipart(body):
+            raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
         self.body = body
         self.boundary = boundary
-        self.plans = plans
-        self.additional = additional
-
-    def _names(self) -> _Names | None:
-        return None if self.plans is None else _Names(self.plans, self.additional)
+        self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional))
 
     def attempt(self, context: BodyAttemptContext) -> BodyAttempt:
-        """Encode the fields and begin each file part's attempt, refusing parts of the other mode."""
-        if not _is_sync(body := self.body):
+        """Begin each file part's attempt around the encoded pieces, refusing parts of the other mode."""
+        if not _is_sync(self.body):
             raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
         pieces: list[bytes | BodyAttempt] = []
         try:
             pieces.extend(
-                piece if isinstance(piece, bytes) else piece(context)
-                for piece in _layout(body.parts, self.boundary, _SYNC, self._names())
+                piece if isinstance(piece, bytes) else piece(context) for piece in _inputs(self._pieces, _SYNC)
             )
         except BaseException:
             _closed_all([piece.close for piece in pieces if not isinstance(piece, bytes)])
@@ -541,12 +556,12 @@ class MultipartSource:
         return _MultipartAttempt(pieces)
 
     async def aattempt(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
-        """Encode the fields and begin each file part's async attempt, refusing parts of the other mode."""
-        if not _is_async(body := self.body):
+        """Begin each file part's async attempt around the encoded pieces, refusing parts of the other mode."""
+        if not _is_async(self.body):
             raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
         pieces: list[bytes | AsyncBodyAttempt] = []
         try:
-            for piece in _layout(body.parts, self.boundary, _ASYNC, self._names()):
+            for piece in _inputs(self._pieces, _ASYNC):
                 pieces.append(piece if isinstance(piece, bytes) else await piece(context))  # noqa: PERF401 - Begun attempts must stay to be closed.
         except BaseException:
             _raised([
