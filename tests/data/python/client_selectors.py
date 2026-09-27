@@ -55,6 +55,8 @@ def _requests(api: Any, exchange: Exchange, lines: list[str], package: ModuleTyp
         selector = store.select_request_media(declared_media=declared, concrete_media=concrete)
         exchange.respond(raw_response(204))
         record(lines, f"{label} sent", lambda body=body, selector=selector: api.files.store_file(body=body, media_type=selector))
+    ascii_csv = store.select_request_media(declared_media="text/*", concrete_media="text/csv; charset=us-ascii")
+    record(lines, "csv its charset cannot represent", lambda: api.files.store_file(body=store.body(media_type="text/*").from_wire("caf\xe9"), media_type=ascii_csv))
     anything = files.ReplaceFileRequestCodecs.select_request_media(declared_media="*/*", concrete_media="font/woff2")
     exchange.respond(raw_response(204))
     record(lines, "font sent", lambda: api.files.replace_file(body=b"wOF2", media_type=anything))
