@@ -1,0 +1,62 @@
+# evolution-forbid pydantic_v2.BaseModel
+  > GET https://evolution.example.com/orders/1?view=brief
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order = Order(id=1, status=<Status.open: 'open'>, note='n', channel=<Channel.web: 'web'>, payment=Card(kind='card', last4='1234'))
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order without its optional members = Order(id=1, status=<Status.closed: 'closed'>, note=None, channel=None, payment=None)
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order with a member added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","priority":2}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.extra_forbidden) at /priority')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a status added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=WireValidationError('The value does not satisfy enum at /status')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a payment kind added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=WireValidationError('The value does not satisfy oneOf at /payment')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a card with a transfer's members ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=WireValidationError('The value does not satisfy oneOf at /payment')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a status that changed its type ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":3}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /status')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a status added since, read raw = {'id': 1, 'status': 'archived'}
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=WireValidationError('A required property is missing at /code'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
+# evolution-forbid msgspec.Struct
+  > GET https://evolution.example.com/orders/1?view=brief
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order = Order(id=1, status=<Status.open: 'open'>, note='n', channel=<Channel.web: 'web'>, payment=Card(last4='1234'))
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order without its optional members = Order(id=1, status=<Status.closed: 'closed'>, note=UNSET, channel=UNSET, payment=UNSET)
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order with a member added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","priority":2}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a status added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"archived"}', truncated=False, cause=WireValidationError('The value does not satisfy enum at /status')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a payment kind added since ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"crypto"}}', truncated=False, cause=WireValidationError('The value does not satisfy oneOf at /payment')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a card with a transfer's members ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":"open","payment":{"kind":"card","iban":"X"}}', truncated=False, cause=WireValidationError('The value does not satisfy oneOf at /payment')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a status that changed its type ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', body_bytes=b'{"id":1,"status":3}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /status')] response_validation_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  order of a status added since, read raw = {'id': 1, 'status': 'archived'}
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
+  > GET https://evolution.example.com/orders/1
+    [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=WireValidationError('A required property is missing at /code'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error

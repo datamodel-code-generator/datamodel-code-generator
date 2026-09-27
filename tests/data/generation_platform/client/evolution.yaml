@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info:
+  title: Evolution
+  version: 1.0.0
+servers:
+  - url: https://evolution.example.com
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: {type: integer}
+        - name: view
+          in: query
+          schema: {type: string, enum: [full, brief]}
+      responses:
+        '200':
+          description: The order.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Order'}
+        default:
+          description: A problem.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Problem'}
+components:
+  schemas:
+    Status:
+      type: string
+      enum: [open, closed]
+    LegacyOrder:
+      type: object
+      required: [id]
+      properties:
+        id: {type: integer}
+        channel: {type: string, enum: [web, store]}
+    Card:
+      type: object
+      required: [kind, last4]
+      properties:
+        kind: {const: card}
+        last4: {type: string}
+    Transfer:
+      type: object
+      required: [kind, iban]
+      properties:
+        kind: {const: transfer}
+        iban: {type: string}
+    Order:
+      type: object
+      required: [id, status]
+      properties:
+        id: {type: integer}
+        status: {$ref: '#/components/schemas/Status'}
+        note: {type: string}
+        channel: {type: string, enum: [web, store]}
+        payment:
+          oneOf:
+            - $ref: '#/components/schemas/Card'
+            - $ref: '#/components/schemas/Transfer'
+          discriminator:
+            propertyName: kind
+            mapping:
+              card: '#/components/schemas/Card'
+              transfer: '#/components/schemas/Transfer'
+    Problem:
+      type: object
+      required: [code]
+      properties:
+        code: {type: integer}

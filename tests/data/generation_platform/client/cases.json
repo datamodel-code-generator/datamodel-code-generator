@@ -247,6 +247,26 @@
       }
     }
   },
+  "evolution": {
+    "input": "evolution.yaml",
+    "backends": [
+      "msgspec.Struct"
+    ]
+  },
+  "evolution-forbid": {
+    "input": "evolution.yaml",
+    "model": {
+      "extra_fields": "forbid",
+      "use_generic_base_class": true
+    }
+  },
+  "evolution-allow": {
+    "input": "evolution.yaml",
+    "model": {
+      "extra_fields": "allow",
+      "enum_field_as_literal": "all"
+    }
+  },
   "querystring": {
     "input": "querystring.yaml"
   },

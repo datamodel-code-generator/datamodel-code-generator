@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import cached_property
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._codec_declarations import (
@@ -106,6 +107,7 @@ _NATIVE_KINDS: Final[dict[object, Literal["model", "dataclass", "typed_dict", "s
     "msgspec": "struct",
 }
 _MSGSPEC_KINDS: Final = ("str", "int", "array", "object")
+_MSGSPEC_ENUMS: Final = (frozenset({"str"}), frozenset({"int"}))
 _MSGSPEC_STRINGS: Final = frozenset({
     "str",
     "bytes",
@@ -336,6 +338,7 @@ class _CodecPlanner:
             if declaration.backend.value == backend
             for symbol in self.declared(declaration)
         )
+        self.msgspec = _MsgspecTypes(self)
 
     def declared(self, declaration: BuiltinCodecCompatibility) -> Iterable[int]:
         if not declaration.schemas:
@@ -694,9 +697,7 @@ class _CodecPlanner:
 
     def strategy(self, value: FinalPythonType) -> ConverterStrategy:
         """Return the use's converter; a msgspec type that msgspec.convert refuses takes the structural converter."""
-        if (strategy := _STRATEGIES[self.backend]) == "msgspec_convert" and not _MsgspecTypes(self).convertible(
-            value, set()
-        ):
+        if (strategy := _STRATEGIES[self.backend]) == "msgspec_convert" and not self.msgspec.convertible(value, set()):
             return "msgspec_structural"
         return strategy
 
@@ -758,7 +759,7 @@ class _MsgspecTypes:
             case GeneratedSymbolType() if value.symbol in seen:
                 return True
             case GeneratedSymbolType() if symbols[value.symbol].kind == "enum":
-                return self.enum_kinds(value.symbol) in ({"str"}, {"int"})
+                return self.enum_kinds(value.symbol) in _MSGSPEC_ENUMS
             case GeneratedSymbolType():
                 seen.add(value.symbol)
                 return _setting(symbols[value.symbol], "array_like", parameter=True) is not True and all(
@@ -824,15 +825,32 @@ class _MsgspecTypes:
                 pass
         return "str" if _name(value) in _MSGSPEC_STRINGS else None
 
-    def enum_kinds(self, symbol: int) -> set[str]:
-        """Return the JSON kinds of an enum's values, read from the schema every generated enum is observed at."""
+    @cached_property
+    def enums(self) -> dict[int, frozenset[str]]:
+        """Return the JSON kinds of each enum's values, read from the first schema it was generated from the wire holds.
+
+        An enum is generated from every schema it replaces, and a schema the wire never reaches is not held.
+        """
         planner = self.planner
-        values = planner.wire.schema(planner.locations[planner.symbol_schemas[symbol]])[1].get("enum")
-        return {
-            "int" if type(item) is int else "str" if type(item) is str else "other"
-            for item in (values if isinstance(values, tuple) else ())
-            if item is not None
-        }
+        kinds: dict[int, frozenset[str]] = {}
+        for use in planner.batch.type_uses:
+            if (
+                use.id.role == "schema"
+                and isinstance(value := use.type, GeneratedSymbolType)
+                and value.symbol not in kinds
+                and planner.symbols[value.symbol].kind == "enum"
+                and isinstance(values := planner.wire.schema(use.schema or use.id.schema_site)[1].get("enum"), tuple)
+            ):
+                kinds[value.symbol] = frozenset(
+                    "int" if type(item) is int else "str" if type(item) is str else "other"
+                    for item in values
+                    if item is not None
+                )
+        return kinds
+
+    def enum_kinds(self, symbol: int) -> frozenset[str]:
+        """Return the JSON kinds of an enum's values; one that no schema the wire holds declares has none."""
+        return self.enums.get(symbol, frozenset())
 
 
 def plan_model_codecs(  # noqa: PLR0913
