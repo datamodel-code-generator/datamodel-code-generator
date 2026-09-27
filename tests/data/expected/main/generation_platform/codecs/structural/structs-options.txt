@@ -17,4 +17,12 @@ limits-client-decode-unknown: NativeValidationError native.extra_forbidden@/zz['
 holder-server-decode-unknown: NativeValidationError native.extra_forbidden@/zz['zz']
 holder-server-response-defaults: wire={"count":0}
 batch-server-decode: model Batch(entries=[Entry(amount=Decimal('1.5'))], index=UNSET, a_b=Decimal('3')) wire={"entries":[{"amount":"1.5"}],"a.b":"3"} presence=['', '/entries', '/entries/0', '/entries/0/amount', '/a.b'] extras={}
-batch-client-encode: wire={"entries":[{"amount":"1.5"}],"a.b":"3"}
+batch-client-encode: wire={"entries":[{"type":"Entry","amount":"1.5"}],"a.b":"3"}
+stamps-server-decode: model Stamped(when='2020-01-02T03:04:05Z', pair=UNSET) wire={"when":"2020-01-02T03:04:05Z"} presence=['', '/when'] extras={}
+stamps-server-decode-tagged: model Stamped(when='2020-01-02T03:04:05Z', pair=UNSET) wire={"type":"probe","when":"2020-01-02T03:04:05Z"} presence=['', '/type', '/when'] extras={}
+stamps-server-decode-other-tag: NativeValidationError native.tag@/type['type']
+stamps-client-encode: wire={"type":"probe","when":"2020-01-02T03:04:05Z"}
+worded-server-decode: model Worded(word='any', level=UNSET) wire={"kind":"Worded","word":"any"} presence=['', '/kind', '/word'] extras={}
+worded-client-encode: wire={"kind":"Worded","word":"any"}
+rated-server-decode: model Rated(ratio=<Ratio.number_1_5: 1.5>) wire={"ratio":1.5} presence=['', '/ratio'] extras={}
+rated-client-encode: wire={"ratio":1.5}

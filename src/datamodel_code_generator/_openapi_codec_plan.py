@@ -219,6 +219,24 @@ def _literal_kind(value: LiteralType) -> str | None:
     return next(iter(kinds)) if len(kinds) == 1 and kinds <= {"str", "int", "none"} else None
 
 
+def _struct_tag(symbol: FinalModelSymbol) -> tuple[str, str | int] | None:
+    """Return the tag field and value msgspec derives from a Struct's tag parameters, or None for an untagged Struct.
+
+    As in msgspec, ``tag=True`` or a ``tag_field`` alone tags a Struct with its class name, and the field defaults to
+    ``type``; a tag function, whose value only running it tells, is no known tag.
+    """
+    field = _setting(symbol, "tag_field", parameter=True)
+    name = field if isinstance(field, str) else "type"
+    match tag := _setting(symbol, "tag", parameter=True):
+        case True | None if tag is True or isinstance(field, str):
+            return name, symbol.name
+        case str() | int() if not isinstance(tag, bool):
+            return name, tag
+        case _:
+            pass
+    return None
+
+
 def _meta_pattern(facts: ModelFieldFacts) -> bool:
     return any(name == "pattern" for layer in facts.backend.emitted.meta_layers for name, _ in layer.keywords)
 
@@ -553,7 +571,6 @@ class _CodecPlanner:
             if symbol.facts is not None and (items := symbol.facts.extra_items) is not None
             else None
         )
-        tag_field, tag = _setting(symbol, "tag_field", parameter=True), _setting(symbol, "tag", parameter=True)
         self.models[key] = ModelBinding(
             symbol=key,
             native_kind=_NATIVE_KINDS[symbol.backend],
@@ -567,9 +584,7 @@ class _CodecPlanner:
             else _EXTRA_POLICIES.get(_setting(symbol, "extra"), "ignore"),
             open=self.open(schema_id),
             extra_items=extra_items,
-            tag=(tag_field, tag)
-            if isinstance(tag_field, str) and isinstance(tag, (str, int)) and not isinstance(tag, bool)
-            else None,
+            tag=_struct_tag(symbol),
         )
 
     def open(self, schema_id: str | None) -> bool:
@@ -785,8 +800,7 @@ class _MsgspecTypes:
                 kinds = self.enum_kinds(value.symbol)
                 return next(iter(kinds)) if len(kinds) == 1 else None
             case GeneratedSymbolType():
-                tagged = _setting(self.planner.symbols[value.symbol], "tag", parameter=True) is not None
-                return "tagged" if tagged else "object"
+                return "tagged" if _struct_tag(self.planner.symbols[value.symbol]) is not None else "object"
             case GenericType(base=base):
                 return "object" if _name(base) in _MAPPINGS else "array"
             case BuiltinType(name="int"):
