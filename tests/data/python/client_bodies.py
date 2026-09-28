@@ -151,7 +151,9 @@ class Attempt:
 
 def attempt_factory(lines: list[str], *chunks: object, length: int | None = None, **options: bool) -> Callable[[Any], Any]:
     def build(context: Any) -> Attempt:
-        lines.append(f"  factory {context.call_id} {context.attempt_index} {context.hop_index} {context.remaining_timeout}")
+        remaining = context.remaining_timeout
+        bounded = None if remaining is None else 0 < remaining <= 60
+        lines.append(f"  factory {context.call_id} {context.attempt_index} {context.hop_index} {bounded}")
         return Attempt(lines, chunks, length, **options)
 
     return build

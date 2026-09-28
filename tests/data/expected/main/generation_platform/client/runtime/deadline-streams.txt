@@ -1,0 +1,142 @@
+# pets pydantic_v2.BaseModel
+  > GET https://example.com/handoff
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream acquisition released = b'ready'
+  > GET https://example.com/read-cap
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream read cap default TransportError secondary []
+  stream observed read cap [60.0]
+  > GET https://example.com/read-cap
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream read cap disabled TransportError secondary []
+  stream observed read cap [None]
+  > GET https://example.com/idle
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream idle PhaseTimeoutError
+  > GET https://example.com/read
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream read PhaseTimeoutError
+  > GET https://example.com/total
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream total DeadlineExceededError
+  > GET https://example.com/buffered
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  buffered acquisition 200 DeadlineExceededError
+  > GET https://example.com/buffered
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  buffered acquisition 503 DeadlineExceededError
+  > GET https://example.com/saved
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream cancel read ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel released 1
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream cancel iter_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel released 1
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream cancel iter_raw_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel released 1
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream cancel raise_for_status ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  stream cancel released 1
+  > GET https://example.com/release
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream permit failure primary=False CleanupError secondary []
+  stream permit release count 1
+  > GET https://example.com/release
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  stream permit failure primary=True ResponseTooLargeError secondary ['LimiterExecutionError']
+  stream permit release count 1
+  buffered survives cancel and close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  stream interruption read original True released 1
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  stream interruption iter_bytes original True released 1
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  stream interruption raise_for_status original True released 1
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  stream interruption close original True released 1
+  HTTP2 stream acquisition released = b'ready'
+  HTTP2 sync protocols ['h2'] requests 1
+  > GET https://example.com/handoff
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream acquisition released = b'ready'
+  > GET https://example.com/read-cap
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream read cap default TransportError secondary []
+  async stream observed read cap [60.0]
+  > GET https://example.com/read-cap
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream read cap disabled TransportError secondary []
+  async stream observed read cap [None]
+  > GET https://example.com/idle
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream idle PhaseTimeoutError
+  > GET https://example.com/read
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream read PhaseTimeoutError
+  > GET https://example.com/total
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream total DeadlineExceededError
+  > GET https://example.com/buffered
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async buffered acquisition DeadlineExceededError
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream waiting token RequestCancelledError
+  > GET https://example.com/native-cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream native cancellation propagated
+  > GET https://example.com/saved
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream cancel read ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel released 1
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream cancel iter_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel released 1
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream cancel iter_raw_bytes ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel released 1
+  > GET https://example.com/cancel
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream cancel raise_for_status ! RequestCancelledError: RequestCancelledError(call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+  async stream cancel released 1
+  > GET https://example.com/release
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream permit failure primary=False CleanupError secondary []
+  async stream permit release count 1
+  > GET https://example.com/release
+    [host: example.com, accept-encoding: gzip, deflate] b''
+  async stream permit failure primary=True ResponseTooLargeError secondary ['LimiterExecutionError']
+  async stream permit release count 1
+  async buffered survives cancel and close b'{"ready":true}' {'ready': True} [b'{"ready":true}']
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async stream interruption read original True released 1
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async stream interruption iter_bytes original True released 1
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async stream interruption raise_for_status original True released 1
+  > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async stream interruption aclose original True released 1
+  > GET https://example.com/cleanup-cancel [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async stream cleanup cancellation original True
+  async stream retained cleanup released 1
+  HTTP2 async stream acquisition released = b'ready'
+  HTTP2 async protocols ['h2'] requests 1

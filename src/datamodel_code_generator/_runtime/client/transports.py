@@ -6,18 +6,20 @@ The clients send through HTTPX2 unless a transport adapter is given; an adapter 
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Iterator  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Generic, Protocol, get_args
+from typing import Final, Generic, Protocol, get_args
 
 from typing_extensions import TypeIs, TypeVar
 
 from .bodies import AsyncBodyAttempt, BodyAttempt  # noqa: TC001 - Public annotations support get_type_hints().
 from .errors import IOPhase
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
-
-    from .responses import HeadersView
+from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
+from .timing import (
+    CancelToken,
+    Deadline,
+    ResolvedTimeoutOptions,
+)
 
 __all__ = (
     "AsyncTransportAdapter",
@@ -37,16 +39,6 @@ AttemptT_co = TypeVar("AttemptT_co", bound="BodyAttempt | AsyncBodyAttempt", cov
 AdapterT_co = TypeVar("AdapterT_co", bound="TransportAdapter | AsyncTransportAdapter", covariant=True)
 
 PHASES: Final[frozenset[str]] = frozenset(get_args(IOPhase))
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ResolvedTimeoutOptions:
-    """The effective timeout of each I/O phase in seconds; None leaves that phase unlimited."""
-
-    connect: float | None
-    read: float | None
-    write: float | None
-    pool: float | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -91,12 +83,21 @@ class TransportTraceSink(Protocol):
 class AttemptIOContext:
     """What one attempt's adapter may read: the current phase, the phase timeouts, and the trace sink."""
 
-    __slots__ = ("_timeout", "_trace")
+    __slots__ = ("_cancel_token", "_deadline", "_timeout", "_trace")
 
-    def __init__(self, timeout: ResolvedTimeoutOptions, trace: AttemptTrace) -> None:
-        """Bind the resolved timeouts and the attempt's trace."""
+    def __init__(
+        self,
+        timeout: ResolvedTimeoutOptions,
+        trace: AttemptTrace,
+        *,
+        deadline: Deadline | None = None,
+        cancel_token: CancelToken | None = None,
+    ) -> None:
+        """Bind the resolved timeouts, termination signals, and the attempt's trace."""
         self._timeout = timeout
         self._trace = trace
+        self._deadline = deadline
+        self._cancel_token = cancel_token
 
     @property
     def phase(self) -> IOPhase:
@@ -109,9 +110,25 @@ class AttemptIOContext:
         return self._timeout
 
     @property
+    def deadline(self) -> Deadline | None:
+        """Return the deadline that bounds this attempt or its handed-off stream."""
+        return self._deadline
+
+    @property
+    def cancel_token(self) -> CancelToken | None:
+        """Return the caller's explicit cancellation signal, when supplied."""
+        return self._cancel_token
+
+    @property
     def trace(self) -> TransportTraceSink:
         """Return the sink the adapter reports its evidence to."""
         return self._trace
+
+
+def set_io_timing(context: AttemptIOContext, timeout: ResolvedTimeoutOptions, deadline: Deadline | None) -> None:
+    """Update the adapter's live timing view when acquisition hands off a stream."""
+    object.__setattr__(context, "_timeout", timeout)  # noqa: PLC2801 - Update the readonly adapter view.
+    object.__setattr__(context, "_deadline", deadline)  # noqa: PLC2801
 
 
 def _is_phase(value: object) -> TypeIs[IOPhase]:

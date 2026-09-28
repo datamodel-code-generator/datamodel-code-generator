@@ -596,10 +596,25 @@ async def _aentered(manager: Any) -> object:
         return response.info.status_code
 
 
+class _NotifiedCloseResponse(AsyncResponse):
+    """Notify the scenario after its failing close callback runs, including when cleanup continues after its cap."""
+
+    def __init__(self, lines: list[str], headers: object) -> None:
+        super().__init__(lines, 200, headers, (_PET[:5], _PET[5:]), close_error=True)
+        self.finished = asyncio.Event()
+
+    async def aclose(self) -> None:
+        try:
+            await super().aclose()
+        finally:
+            self.finished.set()
+
+
 async def _async_handles(package: ModuleType, lines: list[str]) -> None:
     transports, _, options, responses, _ = _modules(package)
     pet, json = _pet(package), responses.HeadersView([("content-type", _JSON)])
     adapter = AsyncAdapter(transports, lines)
+    forced_response = _NotifiedCloseResponse(lines, json)
     api = package.AsyncClient(transport_adapter=adapter, options=options.ClientOptions(cleanup_timeout=30.0))
     adapter.replies.extend((
         lambda request, context: AsyncResponse(lines, 200, json, (_PET[:5], _PET[5:])),
@@ -611,7 +626,7 @@ async def _async_handles(package: ModuleType, lines: list[str]) -> None:
         lambda request, context: AsyncResponse(lines, 200, json, (b"{", RuntimeError("read bug")), close_error=True),
         lambda request, context: AsyncResponse(lines, 200, json, (_PET[:5], _PET[5:]), close_error=True),
         lambda request, context: AsyncResponse(lines, 200, json, (_PET[:5], _PET[5:])),
-        lambda request, context: AsyncResponse(lines, 200, json, (_PET[:5], _PET[5:]), close_error=True),
+        lambda request, context: forced_response,
     ))
     saved = await api.pets.with_raw_response.get_pet(pet_id=pet)
     async with api.pets.with_streaming_response.get_pet(pet_id=pet) as held:
@@ -636,7 +651,9 @@ async def _async_handles(package: ModuleType, lines: list[str]) -> None:
     async with forced.pets.with_streaming_response.get_pet(pet_id=pet) as held:
         chunks = held.iter_bytes()
         lines.append(f"  async handle first chunk {await anext(chunks)!r}")
-        lines.append(f"  async close with a failing handle {await aoutcome(forced.aclose)}")
+        closed = await aoutcome(forced.aclose)
+        await forced_response.finished.wait()
+        lines.append(f"  async close with a failing handle {closed}")
         await arecord(lines, "async handle after forced close next chunk", lambda: anext(chunks))
         await arecord(lines, "async handle after forced close", held.read)
 

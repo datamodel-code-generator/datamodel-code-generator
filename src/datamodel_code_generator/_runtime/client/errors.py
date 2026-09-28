@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias
+from typing import Final, Generic, Literal, TypeAlias
 
-from typing_extensions import TypeVar
+from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.unset import UNSET, Unset
-
-if TYPE_CHECKING:
-    from .responses import HeadersView, Response, ResponseInfo
+from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 
 E_co = TypeVar("E_co", covariant=True, default=object)
 T_co = TypeVar("T_co", covariant=True, default=object)
@@ -39,6 +37,9 @@ RetryStopReason: TypeAlias = Literal[
     "callback_failure",
 ]
 IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
+DeadlinePhase: TypeAlias = Literal[
+    "encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"
+]
 
 _CONDITION: Final = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _ACRONYM: Final = re.compile(r"([A-Z]+)([A-Z][a-z])")
@@ -56,6 +57,10 @@ class DeliveryState(Enum):
 class SDKError(Exception):
     """Base of every exception the client raises, with the identifiers and metadata of the failed call."""
 
+    __slots__ = ("_counters",)
+
+    _counters: tuple[int, int, int, int, int, int, tuple[str, ...], int, int | None]
+
     def __init__(  # noqa: PLR0913
         self,
         *,
@@ -65,6 +70,15 @@ class SDKError(Exception):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the call identifiers, the response metadata when one arrived, and the original cause."""
         super().__init__()
@@ -74,6 +88,64 @@ class SDKError(Exception):
         self.info = info
         self.cause = cause
         self.secondary_errors = tuple(secondary_errors)
+
+        set_error_counters(
+            self,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+
+    @property
+    def resource_attempt_count(self) -> int:
+        """Return the resource attempts started."""
+        return self._counters[0]
+
+    @property
+    def redirect_count(self) -> int:
+        """Return the redirect hops followed."""
+        return self._counters[1]
+
+    @property
+    def auth_exchange_count(self) -> int:
+        """Return the authentication exchanges sent."""
+        return self._counters[2]
+
+    @property
+    def network_send_count(self) -> int:
+        """Return the transport sends started."""
+        return self._counters[3]
+
+    @property
+    def network_send_budget_used(self) -> int:
+        """Return the network send slots reserved."""
+        return self._counters[4]
+
+    @property
+    def auth_exchange_budget_used(self) -> int:
+        """Return the authentication exchange slots reserved."""
+        return self._counters[5]
+
+    @property
+    def auth_refresh_ids(self) -> tuple[str, ...]:
+        """Return the related authentication refresh identifiers."""
+        return self._counters[6]
+
+    @property
+    def auth_refresh_pending(self) -> int:
+        """Return the related authentication refreshes still pending."""
+        return self._counters[7]
+
+    @property
+    def wire_send_count(self) -> int | None:
+        """Return the wire sends observed, or None without sufficient adapter evidence."""
+        return self._counters[8]
 
     @property
     def reason_code(self) -> str:
@@ -89,10 +161,48 @@ class SDKError(Exception):
         return f"{type(self).__name__}({details})"
 
 
-def add_secondary(error: BaseException, failure: Exception) -> None:
+def add_secondary(error: BaseException, failure: BaseException) -> None:
     """Keep a cleanup failure beside the error that is already propagating, never in its place."""
     if isinstance(error, SDKError):
         error.secondary_errors = (*error.secondary_errors, failure)
+        return
+    note = f"Secondary cleanup failure: {type(failure).__name__}"
+    if _is_notes(notes := error.__dict__.get("__notes__")):
+        notes.append(note)
+    else:
+        error.__dict__["__notes__"] = [note]
+
+
+def _is_notes(value: object) -> TypeIs[list[object]]:
+    return isinstance(value, list)
+
+
+def set_error_counters(  # noqa: PLR0913
+    error: SDKError,
+    *,
+    resource_attempt_count: int = 0,
+    redirect_count: int = 0,
+    auth_exchange_count: int = 0,
+    network_send_count: int = 0,
+    network_send_budget_used: int = 0,
+    auth_exchange_budget_used: int = 0,
+    auth_refresh_ids: tuple[str, ...] = (),
+    auth_refresh_pending: int = 0,
+    wire_send_count: int | None = None,
+) -> None:
+    """Finalize an error's readonly counter snapshot before publishing it."""
+    counters = (
+        _error_count(resource_attempt_count, "resource_attempt_count"),
+        _error_count(redirect_count, "redirect_count"),
+        _error_count(auth_exchange_count, "auth_exchange_count"),
+        _error_count(network_send_count, "network_send_count"),
+        _error_count(network_send_budget_used, "network_send_budget_used"),
+        _error_count(auth_exchange_budget_used, "auth_exchange_budget_used"),
+        _error_ids(auth_refresh_ids),
+        _error_count(auth_refresh_pending, "auth_refresh_pending"),
+        None if wire_send_count is None else _error_count(wire_send_count, "wire_send_count"),
+    )
+    object.__setattr__(error, "_counters", counters)  # noqa: PLC2801 - Finalize the readonly snapshot.
 
 
 def _condition(value: str) -> str:
@@ -100,6 +210,57 @@ def _condition(value: str) -> str:
         msg = "A condition must be an SDK-defined lowercase symbol"
         raise ValueError(msg)
     return value
+
+
+def _error_choice(value: object, choices: tuple[str, ...], field: str) -> None:
+    if not isinstance(value, str) or value not in choices:
+        msg = f"{field} must be one of its declared values"
+        raise ValueError(msg)
+
+
+def _error_time(value: object, field: str, *, nonnegative: bool = True) -> float:
+    match value:
+        case bool():
+            pass
+        case int() | float():
+            try:
+                number = float(value)
+            except OverflowError:
+                pass
+            else:
+                if -float("inf") < number < float("inf") and (not nonnegative or number >= 0):
+                    return number
+        case _:
+            pass
+    msg = f"{field} must be a finite number in its permitted range"
+    raise ValueError(msg)
+
+
+def _error_count(value: object, field: str) -> int:
+    if type(value) is not int or value < 0:
+        msg = f"{field} must be a nonnegative integer"
+        raise ValueError(msg)
+    return value
+
+
+def _error_delivery(value: object) -> DeliveryState:
+    if not isinstance(value, DeliveryState):
+        msg = "delivery_state must be a DeliveryState"
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
+    return value
+
+
+def _is_error_ids(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
+    return isinstance(value, (tuple, list))
+
+
+def _error_ids(value: object) -> tuple[str, ...]:
+    if _is_error_ids(value) and len(identifiers := tuple(item for item in value if isinstance(item, str))) == len(
+        value
+    ):
+        return identifiers
+    msg = "auth_refresh_ids must contain only strings"
+    raise ValueError(msg)
 
 
 class ConfigurationError(SDKError):
@@ -118,6 +279,15 @@ class ConfigurationError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep where the setting lives and which rule it broke."""
         super().__init__(
@@ -127,6 +297,15 @@ class ConfigurationError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.field_path = tuple(field_path)
         self.condition = _condition(condition)
@@ -150,6 +329,15 @@ class RequestEncodingError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the argument path that failed."""
         super().__init__(
@@ -159,6 +347,15 @@ class RequestEncodingError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.location = tuple(location)
 
@@ -183,6 +380,15 @@ class BodyNotReplayableError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the kind of body source and why it cannot be sent."""
         super().__init__(
@@ -192,6 +398,15 @@ class BodyNotReplayableError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.source_kind: BodySourceKind = source_kind
         self.condition = condition
@@ -214,6 +429,15 @@ class BodyChangedError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the kind of body source and the check that found the difference."""
         super().__init__(
@@ -223,6 +447,15 @@ class BodyChangedError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.source_kind: Literal["file", "factory", "multipart"] = source_kind
         self.check = check
@@ -245,6 +478,15 @@ class BodyFactoryError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the attempt and redirect hop whose body failed."""
         super().__init__(
@@ -254,6 +496,15 @@ class BodyFactoryError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.attempt_index = attempt_index
         self.hop_index = hop_index
@@ -277,6 +528,15 @@ class TransportError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the delivery evidence and the I/O phase that failed."""
         super().__init__(
@@ -286,6 +546,15 @@ class TransportError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.delivery_state = delivery_state
         self.phase: IOPhase = phase
@@ -293,6 +562,335 @@ class TransportError(SDKError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("delivery_state", self.delivery_state.value), ("phase", self.phase))
+
+
+class PhaseTimeoutError(TransportError):
+    """An I/O phase exceeded its own timeout before the logical deadline."""
+
+    __slots__ = ("_effective_timeout",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        effective_timeout: float,
+        phase: Literal["connect", "read", "write", "pool"],
+        delivery_state: DeliveryState,
+        retry_stop_reason: RetryStopReason | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the expired phase cap, delivery evidence, and native timeout cause."""
+        _error_choice(phase, ("connect", "read", "write", "pool"), "phase")
+        super().__init__(
+            delivery_state=_error_delivery(delivery_state),
+            phase=phase,
+            retry_stop_reason=retry_stop_reason,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._effective_timeout = _error_time(effective_timeout, "effective_timeout")
+
+    @property
+    def effective_timeout(self) -> float:
+        """Return the configured phase cap that expired, in seconds."""
+        return self._effective_timeout
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("effective_timeout", self.effective_timeout))
+
+
+class DeadlineExceededError(SDKError):
+    """The call or stream exhausted its monotonic total budget."""
+
+    __slots__ = ("_deadline_at", "_delivery_state", "_elapsed", "_phase")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        deadline_at: float,
+        elapsed: float,
+        delivery_state: DeliveryState,
+        phase: DeadlinePhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the absolute expiry, elapsed time, interrupted activity, and delivery evidence."""
+        _error_choice(
+            phase, ("encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"), "phase"
+        )
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._deadline_at = _error_time(deadline_at, "deadline_at", nonnegative=False)
+        self._elapsed = _error_time(elapsed, "elapsed")
+        self._delivery_state = _error_delivery(delivery_state)
+        self._phase: DeadlinePhase = phase
+
+    @property
+    def deadline_at(self) -> float:
+        """Return the absolute monotonic deadline in seconds."""
+        return self._deadline_at
+
+    @property
+    def elapsed(self) -> float:
+        """Return the elapsed duration before the failure in seconds."""
+        return self._elapsed
+
+    @property
+    def delivery_state(self) -> DeliveryState:
+        """Return the request's delivery evidence at termination."""
+        return self._delivery_state
+
+    @property
+    def phase(self) -> DeadlinePhase:
+        """Return the activity interrupted by the deadline."""
+        return self._phase
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (
+            *super()._details(),
+            ("delivery_state", self.delivery_state.value),
+            ("phase", self.phase),
+        )
+
+
+class RequestCancelledError(SDKError):
+    """An explicit cancellation token stopped the call; native cancellation keeps its original type."""
+
+    __slots__ = ("_delivery_state", "_source")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        source: Literal["cancel_token", "parent_cancel_token"],
+        delivery_state: DeliveryState,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the observed token source and request delivery evidence."""
+        _error_choice(source, ("cancel_token", "parent_cancel_token"), "source")
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._source: Literal["cancel_token", "parent_cancel_token"] = source
+        self._delivery_state = _error_delivery(delivery_state)
+
+    @property
+    def source(self) -> Literal["cancel_token", "parent_cancel_token"]:
+        """Return the explicit token source that requested cancellation."""
+        return self._source
+
+    @property
+    def delivery_state(self) -> DeliveryState:
+        """Return the request's delivery evidence at cancellation."""
+        return self._delivery_state
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("source", self.source), ("delivery_state", self.delivery_state.value))
+
+
+class BudgetExceededError(SDKError):
+    """The call could not reserve a network send within its configured budget."""
+
+    __slots__ = ("_budget_kind", "_limit", "_used")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        budget_kind: Literal["network", "parent_network"],
+        limit: int,
+        used: int,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the exhausted budget and how many slots were already consumed."""
+        _error_choice(budget_kind, ("network", "parent_network"), "budget_kind")
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._budget_kind: Literal["network", "parent_network"] = budget_kind
+        self._limit = _error_count(limit, "limit")
+        self._used = _error_count(used, "used")
+
+    @property
+    def budget_kind(self) -> Literal["network", "parent_network"]:
+        """Return the network budget that refused admission."""
+        return self._budget_kind
+
+    @property
+    def limit(self) -> int:
+        """Return the configured number of available sends."""
+        return self._limit
+
+    @property
+    def used(self) -> int:
+        """Return the send slots already reserved before this admission."""
+        return self._used
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("budget_kind", self.budget_kind), ("limit", self.limit), ("used", self.used))
+
+
+class LimiterExecutionError(SDKError):
+    """An application limiter failed while acquiring or releasing a permit."""
+
+    __slots__ = ("_action",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        action: Literal["acquire", "release"],
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the failing callback category without exposing the callback's values."""
+        _error_choice(action, ("acquire", "release"), "action")
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._action: Literal["acquire", "release"] = action
+
+    @property
+    def action(self) -> Literal["acquire", "release"]:
+        """Return whether acquisition or release failed."""
+        return self._action
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("action", self.action))
 
 
 class HTTPStatusError(SDKError, Generic[E_co]):
@@ -315,6 +913,15 @@ class HTTPStatusError(SDKError, Generic[E_co]):
         parent_session_id: str | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the response metadata, the bounded body, and the error payload or why it did not decode."""
         super().__init__(
@@ -324,6 +931,15 @@ class HTTPStatusError(SDKError, Generic[E_co]):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self._error_data = error_data
         self.error_decoded = error_decoded
@@ -372,6 +988,15 @@ class UnexpectedStatusError(SDKError):
         parent_session_id: str | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the response metadata and the bounded body."""
         super().__init__(
@@ -381,6 +1006,15 @@ class UnexpectedStatusError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.body_bytes = body_bytes
         self.truncated = truncated
@@ -415,6 +1049,15 @@ class ResponseDecodeError(SDKError):
         parent_session_id: str | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the response metadata, the bounded body, and why it did not decode."""
         super().__init__(
@@ -424,6 +1067,15 @@ class ResponseDecodeError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.body_bytes = body_bytes
         self.truncated = truncated
@@ -448,6 +1100,15 @@ class UnexpectedMediaTypeError(ResponseDecodeError):
         parent_session_id: str | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the received media type and the declared ones."""
         super().__init__(
@@ -459,6 +1120,15 @@ class UnexpectedMediaTypeError(ResponseDecodeError):
             parent_session_id=parent_session_id,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.actual_media_type = actual_media_type
         self.expected_media_types = tuple(expected_media_types)
@@ -479,6 +1149,15 @@ class BodyProtocolError(ResponseDecodeError):
         parent_session_id: str | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep which structural rule the response broke."""
         super().__init__(
@@ -490,6 +1169,15 @@ class BodyProtocolError(ResponseDecodeError):
             parent_session_id=parent_session_id,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.condition = condition
 
@@ -514,6 +1202,15 @@ class ResponseHeaderDecodeError(ResponseDecodeError):
         parent_session_id: str | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the response metadata and the cause, with an empty body."""
         super().__init__(
@@ -523,6 +1220,15 @@ class ResponseHeaderDecodeError(ResponseDecodeError):
             parent_session_id=parent_session_id,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
 
 
@@ -544,6 +1250,15 @@ class ResponseTooLargeError(SDKError):
         parent_session_id: str | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the limit, how many bytes arrived, and the bounded prefix."""
         super().__init__(
@@ -553,6 +1268,15 @@ class ResponseTooLargeError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.representation = representation
         self.limit = limit
@@ -577,6 +1301,15 @@ class ProtocolDataError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep which rule the received data broke."""
         super().__init__(
@@ -586,6 +1319,15 @@ class ProtocolDataError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.condition = condition
 
@@ -624,6 +1366,15 @@ class ProtocolSizeError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep which record overflowed, its limit, and how much arrived."""
         super().__init__(
@@ -633,6 +1384,15 @@ class ProtocolSizeError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.kind = kind
         self.limit = limit
@@ -656,6 +1416,15 @@ class UnsupportedContentCodingError(ProtocolError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the coding the response named."""
         super().__init__(
@@ -665,6 +1434,15 @@ class UnsupportedContentCodingError(ProtocolError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.coding = coding
 
@@ -686,6 +1464,15 @@ class DecompressionLimitError(ProtocolSizeError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the decoding layer, its encoded bytes so far, and the ratio its limit came from."""
         super().__init__(
@@ -699,6 +1486,15 @@ class DecompressionLimitError(ProtocolSizeError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.layer = layer
         self.encoded_bytes = encoded_bytes
@@ -718,6 +1514,15 @@ class AdapterContractError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep how far the request got."""
         super().__init__(
@@ -727,6 +1532,15 @@ class AdapterContractError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.delivery_state = delivery_state
 
@@ -747,6 +1561,15 @@ class AdapterExecutionError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep how far the request got."""
         super().__init__(
@@ -756,6 +1579,15 @@ class AdapterExecutionError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.delivery_state = delivery_state
 
@@ -777,6 +1609,15 @@ class ClientClosedError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the state of the client or view that refused the call."""
         super().__init__(
@@ -786,6 +1627,15 @@ class ClientClosedError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.state = state
         self.owner = owner
@@ -810,6 +1660,15 @@ class CleanupError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep what is still unfinished and the cleanup time that ran out."""
         super().__init__(
@@ -819,6 +1678,15 @@ class CleanupError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.pending_calls = pending_calls
         self.pending_leases = pending_leases
@@ -849,6 +1717,15 @@ class UnsupportedAsyncBackendError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the backend found, the one required, and whether only the event loop differs."""
         super().__init__(
@@ -858,6 +1735,15 @@ class UnsupportedAsyncBackendError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.detected_backend = detected_backend
         self.expected_backend = expected_backend
@@ -881,6 +1767,15 @@ class ResponseConsumedError(SDKError):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the state of the response and the action it refused."""
         super().__init__(
@@ -890,6 +1785,15 @@ class ResponseConsumedError(SDKError):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.state = state
         self.action = action
@@ -917,6 +1821,15 @@ class HookExecutionError(SDKError, Generic[T_co]):
         info: ResponseInfo | None = None,
         cause: BaseException | None = None,
         secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
     ) -> None:
         """Keep the event whose hook failed, how far the call got, and the success it completed, if any."""
         super().__init__(
@@ -926,6 +1839,15 @@ class HookExecutionError(SDKError, Generic[T_co]):
             info=info,
             cause=cause,
             secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
         )
         self.event_name = event_name
         self.sent = sent

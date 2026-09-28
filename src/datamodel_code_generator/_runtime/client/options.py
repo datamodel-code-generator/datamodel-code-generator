@@ -18,18 +18,22 @@ from ..model_codecs.media import encode_json
 from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
 from .errors import ConfigurationError
-from .hooks import AsyncHook, Hook  # noqa: TC001 - Public annotations support get_type_hints().
+from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
+from .timing import CancelToken, Deadline, ResolvedTimeoutOptions, seconds
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 __all__ = (
     "UNSET",
+    "CancelToken",
     "ClientOptions",
+    "Deadline",
     "HeaderPatch",
     "QueryPatch",
     "RequestOptions",
     "ServerSelection",
+    "TimeoutOptions",
     "Unset",
     "ValidationOptions",
 )
@@ -288,6 +292,27 @@ class ValidationModes:
 
 
 DEFAULT_VALIDATION: Final = ValidationModes()
+DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=30.0, write=30.0, pool=5.0)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TimeoutOptions:
+    """Phase timeout overrides in seconds; UNSET inherits and None disables only that phase."""
+
+    connect: float | Unset | None = UNSET
+    read: float | Unset | None = UNSET
+    write: float | Unset | None = UNSET
+    pool: float | Unset | None = UNSET
+
+    def __post_init__(self) -> None:
+        """Refuse booleans, negative durations, and nonfinite durations."""
+        for name in ("connect", "read", "write", "pool"):
+            if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
+                object.__setattr__(self, name, seconds(value, ("timeout", name)))
+
+
+def _is_limiter(value: object) -> TypeIs[Limiter | AsyncLimiter]:
+    return callable(getattr(value, "acquire", None))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -303,8 +328,29 @@ class _Options:
     hooks: tuple[Hook | AsyncHook, ...] | Unset = UNSET
     context: Mapping[str, JSONScalar] | Unset = UNSET
     validation: ValidationOptions | Unset = UNSET
+    timeout: TimeoutOptions | Unset | None = UNSET
+    total_timeout: float | Unset | None = UNSET
+    deadline: Deadline | Unset | None = UNSET
+    cancel_token: CancelToken | Unset | None = UNSET
+    limiter: Limiter | AsyncLimiter | Unset | None = field(default=UNSET, repr=False)
+    max_network_sends: int | Unset | None = UNSET
+    stream_idle_timeout: float | Unset | None = UNSET
+    stream_total_timeout: float | Unset | None = UNSET
+
+    def _check_timing(self) -> None:
+        _typed(self.timeout, (TimeoutOptions, Unset, type(None)), "timeout")
+        _typed(self.deadline, (Deadline, Unset, type(None)), "deadline")
+        _typed(self.cancel_token, (CancelToken, Unset, type(None)), "cancel_token")
+        if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
+            raise ConfigurationError(field_path=("limiter",), condition="invalid_type")
+        for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
+            if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
+                object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
+        if self.max_network_sends is not None and not isinstance(self.max_network_sends, Unset):
+            _count(self.max_network_sends, ("max_network_sends",))
 
     def __post_init__(self) -> None:
+        self._check_timing()
         _typed(self.validation, (ValidationOptions, Unset), "validation")
         if not isinstance(self.hooks, Unset):
             object.__setattr__(self, "hooks", _hooks(self.hooks))
@@ -367,3 +413,12 @@ class Settings:
     context: Mapping[str, JSONScalar] = field(default_factory=lambda: NO_CONTEXT)
     async_hooks: bool = False
     validation: Validation = field(default_factory=DEFAULT_VALIDATION.default)
+    timeout: ResolvedTimeoutOptions = DEFAULT_TIMEOUT
+    stream_read_timeout: float | None = None
+    total_timeout: float | None = 60.0
+    deadline: Deadline | None = None
+    cancel_token: CancelToken | None = None
+    limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
+    max_network_sends: int | None = 1
+    stream_idle_timeout: float | None = 60.0
+    stream_total_timeout: float | None = None

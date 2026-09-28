@@ -6,7 +6,17 @@ from collections.abc import Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
-from pets.options import RequestOptions, ValidationOptions
+from pets.errors import (
+    BudgetExceededError,
+    DeadlineExceededError,
+    DeliveryState,
+    LimiterExecutionError,
+    PhaseTimeoutError,
+    RequestCancelledError,
+    SDKError,
+)
+from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
+from pets.options import CancelToken, ClientOptions, Deadline, RequestOptions, TimeoutOptions, ValidationOptions
 from pets.responses import RawResponse
 from pets.transports import OwnedTransportAdapter
 from pets.types.pets import (
@@ -117,3 +127,40 @@ def misuse_validation() -> None:
     ValidationOptions(response="none")  # error
     ValidationOptions(arguments="strict")  # error
     RequestOptions(validation="schema")  # error
+
+
+def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions, context: LimiterContext) -> None:
+    Deadline.after("soon")  # error
+    TimeoutOptions(connect="slow")  # error
+    ClientOptions(timeout=30)  # error
+    RequestOptions(total_timeout="soon")  # error
+    RequestOptions(deadline=60)  # error
+    RequestOptions(cancel_token=True)  # error
+    RequestOptions(max_network_sends=0.5)  # error
+    RequestOptions(stream_idle_timeout="forever")  # error
+    RequestOptions(stream_total_timeout="forever")  # error
+    deadline.at = 0  # error
+    token.cancelled = True  # error
+    phase.read = 1  # error
+    context.remaining_timeout = 0  # error
+
+
+def misuse_limiters(sync: Limiter, asynchronous: AsyncLimiter, permit: Permit, async_permit: AsyncPermit) -> None:
+    wrong_sync: Limiter = asynchronous  # error
+    wrong_async: AsyncLimiter = sync  # error
+    wrong_permit: Permit = async_permit  # error
+    wrong_async_permit: AsyncPermit = permit  # error
+    RequestOptions(limiter="queue")  # error
+    del wrong_sync, wrong_async, wrong_permit, wrong_async_permit
+
+
+def misuse_deadline_errors(error: SDKError) -> None:
+    state = DeliveryState.NOT_SENT
+    PhaseTimeoutError(effective_timeout=1, phase="unknown", delivery_state=state)  # error
+    DeadlineExceededError(deadline_at=0, elapsed=1, phase="connect", delivery_state=state)  # error
+    RequestCancelledError(source="asyncio", delivery_state=state)  # error
+    BudgetExceededError(budget_kind="auth", limit=1, used=0)  # error
+    LimiterExecutionError(action="wait")  # error
+    SDKError(network_send_count="one")  # error
+    error.network_send_count = 0  # error
+    error.wire_send_count = 0  # error

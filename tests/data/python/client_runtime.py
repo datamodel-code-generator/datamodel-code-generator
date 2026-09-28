@@ -139,7 +139,8 @@ def describe(value: object) -> str:
                 for name in _ERROR_FIELDS
                 if getattr(value, name, None) not in (None, ())
             )
-            return f"{type(value).__name__}: {value} [{details}] {value.reason_code if hasattr(value, 'reason_code') else ''}"
+            code = f" {value.reason_code}" if hasattr(value, "reason_code") else ""
+            return f"{type(value).__name__}: {value} [{details}]{code}"
         case _ if hasattr(value, "info") and hasattr(value, "data"):
             info = value.info
             headers = list(info.headers)

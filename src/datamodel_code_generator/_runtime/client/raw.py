@@ -19,13 +19,16 @@ from ..model_codecs.media import decode_json
 from ..model_codecs.wire import thaw_wire
 from .coding import CHUNK, ContentDecoder
 from .errors import (
+    CleanupError,
     DecodeError,
+    DeliveryState,
     ProtocolError,
     ResponseConsumedError,
     ResponseTooLargeError,
     SDKError,
     add_secondary,
 )
+from .lifecycle import cleanup_secondary
 from .media import charset
 
 if TYPE_CHECKING:
@@ -35,6 +38,7 @@ if TYPE_CHECKING:
     from ..model_codecs.wire import JSONValue
     from .events import CallEvents
     from .lifecycle import Scope
+    from .logical import LogicalCallContext
     from .operations import ResponseDecoder
     from .options import Settings
     from .responses import ResponseInfo
@@ -138,9 +142,10 @@ class _Raw(Generic[SourceT, HandleT]):
 
     __slots__ = (
         "_body",
+        "_call",
+        "_classify",
         "_decoder",
         "_events",
-        "_failure",
         "_info",
         "_limits",
         "_operation_id",
@@ -156,22 +161,24 @@ class _Raw(Generic[SourceT, HandleT]):
         decoder: ResponseDecoder[object, object],
         limits: Settings,
         operation_id: str | None,
-        failure: Callable[[Exception], SDKError],
+        failure: Callable[[Exception], BaseException],
         *,
         source: SourceT,
         scope: Scope[HandleT],
         events: CallEvents | None,
+        call: LogicalCallContext,
     ) -> None:
         """Keep the response metadata, how its status is classified, its call's limits, its body source, and scope.
 
         A streaming handle of a call with hooks keeps its events, which report the stream's end once it was handed over.
         """
         self._events = events
+        self._call = call
         self._info = info
         self._decoder = decoder
         self._limits = limits
         self._operation_id = operation_id
-        self._failure = failure
+        self._classify = failure
         self._source = source
         self._scope = scope
         self._raw = self._body = b""
@@ -196,7 +203,7 @@ class _Raw(Generic[SourceT, HandleT]):
             raise self._consumed(action="read")
         return self._raw
 
-    def _consumed(self, *, action: Action) -> SDKError:
+    def _consumed(self, *, action: Action) -> BaseException:
         """Return why a body that is not in memory cannot be read: its client closing, or its earlier consumption."""
         if (closed := self._closing()) is not None:
             return closed
@@ -210,24 +217,34 @@ class _Raw(Generic[SourceT, HandleT]):
             state=reported, action=action, operation_id=self._operation_id, call_id=self._info.call_id, info=self._info
         )
 
-    def _enter(self) -> None:
-        """Start reading a streaming body, unless its client started closing."""
+    def _enter(self) -> ContentDecoder:
+        """Check the call before starting to read and interpret its content codings."""
         self._check()
         self._state = "streaming"
+        return ContentDecoder(self._info, self._operation_id)
 
-    def _closing(self) -> SDKError | None:
+    def _closing(self) -> BaseException | None:
         if (closed := self._scope.closing()) is None:
             return None
         closed.info = self._info
         return self._failure(closed)
 
+    def _failure(self, error: Exception) -> BaseException:
+        failure = self._classify(error)
+        if isinstance(failure, SDKError):
+            failure.info = self._info
+        return failure
+
     def _budget(self, limit: int | None, representation: Literal["decoded", "content_coded"]) -> _Budget:
         return _Budget(limit, representation, self._info, self._operation_id)
 
     def _check(self) -> None:
-        """Stop reading a streaming body once its client or view started closing."""
-        if (closed := self._closing()) is not None:
-            raise closed
+        """Observe cancellation, client closing, and the active acquisition or stream deadline."""
+        try:
+            self._call.check("stream" if self._call.streaming else "send", DeliveryState.RESPONSE_STARTED)
+        except SDKError as error:
+            error.info = self._info
+            raise
 
     def _text(self, body: bytes) -> str:
         try:
@@ -250,14 +267,14 @@ class _Raw(Generic[SourceT, HandleT]):
         """Return whether the call reads model bodies through their converters alone."""
         return self._limits.validation.response == "native"
 
-    def _saved_failure(self) -> SDKError:
+    def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
         return self._failure(
             self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit, native=self._native())
         )
 
-    def _unread_failure(self) -> SDKError:
+    def _unread_failure(self) -> BaseException:
         """Return the typed failure of a response whose body was partly or wholly read: no body, truncated."""
         return self._failure(self._decoder.failure(self._info, b"", truncated=True))
 
@@ -269,6 +286,11 @@ class _Raw(Generic[SourceT, HandleT]):
             return True
         parts.append(chunk[: len(chunk) - (size - limit)])
         return False
+
+    def _save(self, raw: list[bytes], decoded: list[bytes]) -> None:
+        self._raw = content = b"".join(raw)
+        self._body = content if decoded is raw else b"".join(decoded)
+        self._check()
 
 
 class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
@@ -282,15 +304,18 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         decoder: ResponseDecoder[object, object],
         limits: Settings,
         operation_id: str | None,
-        failure: Callable[[Exception], SDKError],
+        failure: Callable[[Exception], BaseException],
         *,
         source: Callable[[], Iterator[bytes]],
         close: Callable[[], None],
         scope: Scope[RawResponse],
+        call: LogicalCallContext,
         events: CallEvents | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
-        super().__init__(info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events)
+        super().__init__(
+            info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events, call=call
+        )
         self._close: Callable[[], None] | None = close
 
     def read(self) -> bytes:
@@ -380,28 +405,43 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
 
     def _buffer(self) -> None:
         """Read the body into memory; an identity body is kept once, as it arrived."""
-        self._enter()
-        decoder = ContentDecoder(self._info, self._operation_id)
         limit = self._limits.max_response_bytes
         raw: list[bytes] = []
-        decoded = raw if decoder.identity else []
         budget = self._budget(limit, "decoded")
         try:
-            for chunk in decoder.decoded(self._source() if decoder.identity else self._recorded(raw, limit)):
+            decoder = self._enter()
+            decoded = raw if decoder.identity else []
+            for chunk in decoder.decoded(self._chunks() if decoder.identity else self._recorded(raw, limit)):
                 budget.spend(len(chunk))
                 decoded.append(chunk)
+            self._save(raw, decoded)
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             self._end("failed", failure)
             raise failure from None
-        self._raw = content = b"".join(raw)
-        self._body = content if decoded is raw else b"".join(decoded)
+        except BaseException as error:
+            self._end("failed", error)
+            raise
         self._end("buffered")
+
+    def _chunks(self) -> Iterator[bytes]:
+        """Check both sides of every native read before yielding its bytes to the decoder."""
+        self._check()
+        source = self._source()
+        while True:
+            self._check()
+            try:
+                chunk = next(source)
+            except StopIteration:
+                self._check()
+                return
+            self._check()
+            yield chunk
 
     def _recorded(self, parts: list[bytes], limit: int | None) -> Iterator[bytes]:
         """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
         budget = self._budget(limit, "content_coded")
-        for chunk in self._source():
+        for chunk in self._chunks():
             budget.spend(len(chunk))
             parts.append(chunk)
             yield chunk
@@ -411,7 +451,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             case "buffered":
                 return _pieces(self._body if decoded else self._raw)
             case "open":
-                self._enter()
+                self._state = "streaming"
                 return self._stream(decoded=decoded)
             case _:
                 pass
@@ -420,7 +460,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def _stream(self, *, decoded: bool) -> Iterator[bytes]:
         budget = self._budget(self._limits.max_stream_bytes, "decoded" if decoded else "content_coded")
         try:
-            source = self._source()
+            source = self._chunks()
             for chunk in ContentDecoder(self._info, self._operation_id).decoded(source) if decoded else source:
                 self._check()
                 budget.spend(len(chunk))
@@ -429,16 +469,20 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             failure = self._failure(error)
             self._end("failed", failure)
             raise failure from None
+        except BaseException as error:
+            if not isinstance(error, GeneratorExit):
+                self._end("failed", error)
+            raise
         self._end("consumed")
 
-    def _error_prefix(self) -> SDKError:
+    def _error_prefix(self) -> BaseException:
         """Read the error prefix of a streaming handle and return its typed failure."""
         self._state = "streaming"
         parts: list[bytes] = []
         size = 0
         problem: ProtocolError | None = None
         try:
-            for chunk in ContentDecoder(self._info, self._operation_id).decoded(self._source()):
+            for chunk in ContentDecoder(self._info, self._operation_id).decoded(self._chunks()):
                 size += len(chunk)
                 if not self._prefix(parts, chunk, size):
                     break
@@ -448,6 +492,9 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             failure = self._failure(error)
             self._end("failed", failure)
             return failure
+        except BaseException as error:
+            self._end("failed", error)
+            raise
         truncated = size > self._limits.max_error_body_bytes or problem is not None
         return self._failure(
             self._decoder.failure(
@@ -466,15 +513,22 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             close, self._close = self._close, None
         if close is None:
             return
-        failed: SDKError | None = None
+        failed: BaseException | None = None
         try:
             close()
         except Exception as failure:  # noqa: BLE001
             if error is None:
-                failed = error = self._failure(failure)
+                failed = error = self._call.snapshot_error(
+                    failure if isinstance(failure, CleanupError) else CleanupError(cause=failure)
+                )
+                failed.info = self._info
             else:
-                add_secondary(error, failure)
+                cleanup_secondary(error, failure)
         except BaseException as interruption:
+            if error is not None and not isinstance(error, Exception):
+                add_secondary(error, CleanupError(cause=interruption))
+                self._released(error, early=state == "closed")
+                return
             self._released(interruption, early=state == "closed")
             raise
         self._released(error, early=state == "closed")
@@ -483,9 +537,13 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
 
     def _released(self, error: BaseException | None, *, early: bool) -> None:
         """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
-        self._scope.release_handle(self)
-        if (events := self._events) is not None:
-            events.streamed(error, early=early)
+        try:
+            self._scope.release_handle(self)
+            if (events := self._events) is not None:
+                events.streamed(error, early=early)
+        finally:
+            if self._call.streaming:
+                self._call.finish()
 
 
 class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"]):
@@ -499,15 +557,18 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         decoder: ResponseDecoder[object, object],
         limits: Settings,
         operation_id: str | None,
-        failure: Callable[[Exception], SDKError],
+        failure: Callable[[Exception], BaseException],
         *,
         source: Callable[[], AsyncIterator[bytes]],
         close: Callable[[], Awaitable[None]],
         scope: Scope[AsyncRawResponse],
+        call: LogicalCallContext,
         events: CallEvents | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
-        super().__init__(info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events)
+        super().__init__(
+            info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events, call=call
+        )
         self._close: Callable[[], Awaitable[None]] | None = close
 
     async def read(self) -> bytes:
@@ -597,28 +658,44 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
 
     async def _buffer(self) -> None:
         """Read the body into memory; an identity body is kept once, as it arrived."""
-        self._enter()
-        decoder = ContentDecoder(self._info, self._operation_id)
         limit = self._limits.max_response_bytes
         raw: list[bytes] = []
-        decoded = raw if decoder.identity else []
         budget = self._budget(limit, "decoded")
         try:
-            async for chunk in decoder.adecoded(self._source() if decoder.identity else self._recorded(raw, limit)):
+            decoder = self._enter()
+            decoded = raw if decoder.identity else []
+            async for chunk in decoder.adecoded(self._chunks() if decoder.identity else self._recorded(raw, limit)):
                 budget.spend(len(chunk))
                 decoded.append(chunk)
+            self._save(raw, decoded)
         except Exception as error:  # noqa: BLE001
             failure = self._failure(error)
             await self._end("failed", failure)
             raise failure from None
-        self._raw = content = b"".join(raw)
-        self._body = content if decoded is raw else b"".join(decoded)
+        except BaseException as error:
+            await self._end("failed", error)
+            raise
         await self._end("buffered")
+
+    async def _chunks(self) -> AsyncIterator[bytes]:
+        """Bound each native read by cancellation, closing, and the active call or stream limits."""
+        self._check()
+        source = self._source()
+        while True:
+            try:
+                chunk = await self._call.bounded(
+                    source.__anext__,
+                    phase="stream" if self._call.streaming else "send",
+                    delivery_state=DeliveryState.RESPONSE_STARTED,
+                )
+            except StopAsyncIteration:
+                return
+            yield chunk
 
     async def _recorded(self, parts: list[bytes], limit: int | None) -> AsyncIterator[bytes]:
         """Yield the coded chunks while keeping them, refusing more coded bytes than the buffer holds."""
         budget = self._budget(limit, "content_coded")
-        async for chunk in self._source():
+        async for chunk in self._chunks():
             budget.spend(len(chunk))
             parts.append(chunk)
             yield chunk
@@ -628,7 +705,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             case "buffered":
                 return _SavedPieces(self._body if decoded else self._raw)
             case "open":
-                self._enter()
+                self._state = "streaming"
                 return self._stream(decoded=decoded)
             case _:
                 pass
@@ -637,7 +714,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     async def _stream(self, *, decoded: bool) -> AsyncIterator[bytes]:
         budget = self._budget(self._limits.max_stream_bytes, "decoded" if decoded else "content_coded")
         try:
-            source = self._source()
+            source = self._chunks()
             async for chunk in ContentDecoder(self._info, self._operation_id).adecoded(source) if decoded else source:
                 self._check()
                 budget.spend(len(chunk))
@@ -646,16 +723,20 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             failure = self._failure(error)
             await self._end("failed", failure)
             raise failure from None
+        except BaseException as error:
+            if not isinstance(error, GeneratorExit):
+                await self._end("failed", error)
+            raise
         await self._end("consumed")
 
-    async def _error_prefix(self) -> SDKError:
+    async def _error_prefix(self) -> BaseException:
         """Read the error prefix of a streaming handle and return its typed failure."""
         self._state = "streaming"
         parts: list[bytes] = []
         size = 0
         problem: ProtocolError | None = None
         try:
-            async for chunk in ContentDecoder(self._info, self._operation_id).adecoded(self._source()):
+            async for chunk in ContentDecoder(self._info, self._operation_id).adecoded(self._chunks()):
                 size += len(chunk)
                 if not self._prefix(parts, chunk, size):
                     break
@@ -665,6 +746,9 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             failure = self._failure(error)
             await self._end("failed", failure)
             return failure
+        except BaseException as error:
+            await self._end("failed", error)
+            raise
         truncated = size > self._limits.max_error_body_bytes or problem is not None
         return self._failure(
             self._decoder.failure(
@@ -682,15 +766,16 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             close, self._close = self._close, None
         if close is None:
             return
-        failed: SDKError | None = None
+        failed: BaseException | None = None
         try:
-            await close()
+            await self._call.cleanup(close, error=error)
         except Exception as failure:  # noqa: BLE001
-            if error is None:
-                failed = error = self._failure(failure)
-            else:
-                add_secondary(error, failure)
+            failed = error = self._failure(failure)
         except BaseException as interruption:
+            if error is not None and not isinstance(error, Exception):
+                add_secondary(error, CleanupError(cause=interruption))
+                await self._released(error, early=state == "closed")
+                return
             await self._released(interruption, early=state == "closed")
             raise
         await self._released(error, early=state == "closed")
@@ -699,6 +784,10 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
 
     async def _released(self, error: BaseException | None, *, early: bool) -> None:
         """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
-        self._scope.release_handle(self)
-        if (events := self._events) is not None:
-            await events.astreamed(error, early=early)
+        try:
+            self._scope.release_handle(self)
+            if (events := self._events) is not None:
+                await events.astreamed(error, early=early)
+        finally:
+            if self._call.streaming:
+                self._call.finish()

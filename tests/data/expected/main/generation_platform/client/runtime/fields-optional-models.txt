@@ -1,21 +1,21 @@
 # fields-optional-models pydantic_v2.BaseModel
-  create giving nothing ! TypeError: create_pet() missing required field arguments for application/json: 'name', 'kind' [] 
-  create without its kind ! TypeError: create_pet() missing required field arguments for application/json: 'kind' [] 
-  create an owner giving nothing ! TypeError: create_owner() missing required field arguments for application/json: 'email' [] 
+  create giving nothing ! TypeError: create_pet() missing required field arguments for application/json: 'name', 'kind' []
+  create without its kind ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
+  create an owner giving nothing ! TypeError: create_owner() missing required field arguments for application/json: 'email' []
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create from its required fields = Pet(id=1, name='Mimi', tag=None)
 # fields-optional-models dataclasses.dataclass
-  create giving nothing ! TypeError: create_pet() missing required field arguments for application/json: 'name', 'kind' [] 
-  create without its kind ! TypeError: create_pet() missing required field arguments for application/json: 'kind' [] 
-  create an owner giving nothing ! TypeError: create_owner() missing required field arguments for application/json: 'email' [] 
+  create giving nothing ! TypeError: create_pet() missing required field arguments for application/json: 'name', 'kind' []
+  create without its kind ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
+  create an owner giving nothing ! TypeError: create_owner() missing required field arguments for application/json: 'email' []
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create from its required fields = Pet(id=1, name='Mimi', tag=None)
 # fields-optional-models msgspec.Struct
-  create giving nothing ! TypeError: create_pet() missing required field arguments for application/json: 'name', 'kind' [] 
-  create without its kind ! TypeError: create_pet() missing required field arguments for application/json: 'kind' [] 
-  create an owner giving nothing ! TypeError: create_owner() missing required field arguments for application/json: 'email' [] 
+  create giving nothing ! TypeError: create_pet() missing required field arguments for application/json: 'name', 'kind' []
+  create without its kind ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
+  create an owner giving nothing ! TypeError: create_owner() missing required field arguments for application/json: 'email' []
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create from its required fields = Pet(id=1, name='Mimi', tag=UNSET)

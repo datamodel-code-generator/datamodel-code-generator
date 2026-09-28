@@ -2,22 +2,28 @@
 """Settings of the clients and of each call: UNSET inherits, and each field defines its None."""
 
 from ._runtime.client.options import (
+    CancelToken,
     ClientOptions,
+    Deadline,
     HeaderPatch,
     QueryPatch,
     RequestOptions,
     ServerSelection,
+    TimeoutOptions,
     ValidationOptions,
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
 
 __all__ = [
     "UNSET",
+    "CancelToken",
     "ClientOptions",
+    "Deadline",
     "HeaderPatch",
     "QueryPatch",
     "RequestOptions",
     "ServerSelection",
+    "TimeoutOptions",
     "Unset",
     "ValidationOptions",
 ]
