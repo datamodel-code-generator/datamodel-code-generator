@@ -8,10 +8,13 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias
 
 from typing_extensions import TypeVar
 
+from ..model_codecs.unset import UNSET, Unset
+
 if TYPE_CHECKING:
-    from .responses import HeadersView, ResponseInfo
+    from .responses import HeadersView, Response, ResponseInfo
 
 E_co = TypeVar("E_co", covariant=True, default=object)
+T_co = TypeVar("T_co", covariant=True, default=object)
 
 RetryStopReason: TypeAlias = Literal[
     "status_not_retryable",
@@ -285,7 +288,7 @@ class TransportError(SDKError):
             secondary_errors=secondary_errors,
         )
         self.delivery_state = delivery_state
-        self.phase = phase
+        self.phase: IOPhase = phase
         self.retry_stop_reason = retry_stop_reason
 
     def _details(self) -> tuple[tuple[str, object], ...]:
@@ -893,3 +896,56 @@ class ResponseConsumedError(SDKError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("state", self.state), ("action", self.action))
+
+
+class HookExecutionError(SDKError, Generic[T_co]):
+    """A hook failed on an event, so the call sent nothing more; a success it had decoded stays available.
+
+    `sent` tells whether the call reached its transport at least once.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        event_name: str,
+        sent: bool,
+        delivery_state: DeliveryState,
+        completed_result: Response[T_co] | Unset = UNSET,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the event whose hook failed, how far the call got, and the success it completed, if any."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.event_name = event_name
+        self.sent = sent
+        self.delivery_state = delivery_state
+        self.completed_result = completed_result
+
+    @property
+    def has_completed_result(self) -> bool:
+        """Return whether the call decoded its success before the hook failed."""
+        return not isinstance(self.completed_result, Unset)
+
+    def require_result(self) -> Response[T_co]:
+        """Return the success the call decoded before the hook failed, or raise ResultUnavailableError."""
+        if isinstance(result := self.completed_result, Unset):
+            raise ResultUnavailableError(operation_id=self.operation_id, call_id=self.call_id)
+        return result
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("event_name", self.event_name), ("sent", self.sent))
+
+
+class ResultUnavailableError(SDKError):
+    """No success was decoded before the hook failure, so there is none to require."""

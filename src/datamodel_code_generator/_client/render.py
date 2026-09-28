@@ -76,6 +76,12 @@ def __getattr__(name: str) -> object:
     msg = f"module {__name__!r} has no attribute {name!r}"
     raise AttributeError(msg)
 '''
+_HOOKS: Final = '''"""Hooks that observe each call's events, and the events they receive."""
+
+from ._runtime.client.hooks import AsyncHook, CallEvent, CallOutcome, EventName, Hook, RetryReason
+
+__all__ = ["AsyncHook", "CallEvent", "CallOutcome", "EventName", "Hook", "RetryReason"]
+'''
 _OPTIONS: Final = '''"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""
 
 from ._runtime.client.options import ClientOptions, HeaderPatch, QueryPatch, RequestOptions, ServerSelection
@@ -97,6 +103,7 @@ _ERROR_NAMES: Final = (
     "DecompressionLimitError",
     "DeliveryState",
     "HTTPStatusError",
+    "HookExecutionError",
     "IOPhase",
     "ProtocolDataError",
     "ProtocolError",
@@ -107,6 +114,7 @@ _ERROR_NAMES: Final = (
     "ResponseHeaderDecodeError",
     "ResponseTooLargeError",
     "ResponseValidationError",
+    "ResultUnavailableError",
     "RetryStopReason",
     "SDKError",
     "TransportError",
@@ -1545,6 +1553,7 @@ class ClientRenderer:
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
             self.file(PurePosixPath("_async_client.py"), "client", resources.client(asynchronous=True)),
             self.file(PurePosixPath("options.py"), "options", _OPTIONS),
+            self.file(PurePosixPath("hooks.py"), "hooks", _HOOKS),
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
