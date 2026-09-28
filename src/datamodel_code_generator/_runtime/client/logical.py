@@ -529,6 +529,14 @@ class LogicalCallContext:
         at = monotonic() if self.deadline is None else self.deadline.at
         return self._deadline_error(at, self._phase, delivery, failure)
 
+    def _kept(self, error: BaseException | None) -> BaseException | None:
+        """Return the failure cleanup keeps, the call's stop error in place of the guard's own cancellation."""
+        return (
+            error
+            if error is None or (guard := self._stopper(error)) is None
+            else self._stopped(guard, "unknown", None, None)
+        )
+
     def _interrupts(self, failure: BaseException) -> bool:
         """Return whether a cleanup failure interrupts the call ahead of the failure cleanup kept.
 
@@ -582,13 +590,13 @@ class LogicalCallContext:
         operation: Callable[[], Awaitable[T]],
         phase: DeadlinePhase,
         delivery_state: DeliveryState | None,
+        cleanup: Callable[[T], Awaitable[None]] | None,
     ) -> T:
         try:
             result = await operation()
         except BaseException as error:  # noqa: BLE001
             raise self.failure(error, phase, delivery_state) from None
-        self.check(phase, delivery_state)
-        return result
+        return await self._checked(result, phase, delivery_state, cleanup)
 
     async def bounded(
         self,
@@ -606,7 +614,7 @@ class LogicalCallContext:
         """
         self.check(phase, delivery_state)
         if self._guard is not None and idle_timeout is None and not (self.streaming and phase == "stream"):
-            return await self._nested(operation, phase, delivery_state)
+            return await self._nested(operation, phase, delivery_state, cleanup)
         if self.streaming and phase == "stream" and idle_timeout is None:
             read, idle = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
             idle_timeout = idle if read is None else read if idle is None else min(read, idle)
@@ -653,8 +661,7 @@ class LogicalCallContext:
         """
         import asyncio  # noqa: PLC0415
 
-        if error is not None and (stopper := self._stopper(error)) is not None:
-            error = self._stopped(stopper, "unknown", None, None)
+        error = self._kept(error)
         task = asyncio.create_task(_released(operation))
         self._scope.retain_cleanup(task, error, owner=self)
         try:

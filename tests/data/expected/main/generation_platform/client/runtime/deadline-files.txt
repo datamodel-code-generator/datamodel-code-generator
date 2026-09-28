@@ -208,6 +208,7 @@
   direct attempt cancellation = ('CancelledError', ('direct attempt cancelled',), 0)
   direct attempt after release ! BodyNotReplayableError: BodyNotReplayableError(source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
   direct attempt released = (True, 1, True)
+  direct close cancelled while another open settles = ('CancelledError', 'CancelledError', ((True, 1), (True, 1)))
   > POST https://files.example.com/
     [host: files.example.com, accept-encoding: gzip, deflate, content-length: 6] b'upload'
   native close failure = (True, ('file close interruption',), (), True, 1, True)

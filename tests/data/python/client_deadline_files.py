@@ -931,6 +931,59 @@ async def _direct_cancellation(package: ModuleType, lines: list[str]) -> None:
         body.close()
 
 
+async def _direct_close_cancellation(package: ModuleType, lines: list[str]) -> None:
+    """Cancel a direct attempt's close while it waits for another attempt's slow open; the close still happens."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    context = bodies.BodyAttemptContext(call_id="direct", attempt_index=0, hop_index=0, remaining_timeout=None)
+    gate = _DiskGate()
+    opened: list[_OpenedFile] = []
+    outcomes: dict[str, str] = {}
+
+    async def outcome(name: str, call: Awaitable[object]) -> None:
+        try:
+            await call
+        except BaseException as error:  # noqa: BLE001
+            outcomes[name] = type(error).__name__
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "shared.bin"
+        path.write_bytes(b"upload")
+        body = bodies.AsyncFileBody.from_path(path)
+
+        def open_file(_path: Path, _mode: str) -> _OpenedFile:
+            file = _OpenedFile(path, failure=None, close_failure=None)
+            opened.append(file)
+            if len(opened) == 2:
+                gate.wait()
+            return file
+
+        with patch.object(Path, "open", open_file):
+            try:
+                attempt = await body(context)
+                slow = asyncio.create_task(outcome("slow open", body(context)))
+                await asyncio.wait_for(gate.started.wait(), 5)
+                slow.cancel("slow open cancelled")
+                closer = asyncio.create_task(outcome("close", attempt.aclose()))
+                await asyncio.sleep(0)
+                closer.cancel("close cancelled")
+                await asyncio.wait_for(asyncio.gather(slow, closer), 5)
+                gate.proceed.set()
+                while not all(file.closed for file in opened):  # noqa: ASYNC110
+                    await asyncio.sleep(0)
+                record(
+                    lines,
+                    "direct close cancelled while another open settles",
+                    lambda: (
+                        outcomes["close"],
+                        outcomes["slow open"],
+                        tuple((file.closed, file.closes) for file in opened),
+                    ),
+                )
+            finally:
+                gate.proceed.set()
+                body.close()
+
+
 async def _files(package: ModuleType, lines: list[str]) -> None:
     await _successful_owned(package, lines)
     await _preparation(package, lines, "owned preparation")
@@ -1006,6 +1059,7 @@ async def _files(package: ModuleType, lines: list[str]) -> None:
         (FileNotFoundError("first open failed late"), PermissionError("second open failed late")),
     )
     await _direct_cancellation(package, lines)
+    await _direct_close_cancellation(package, lines)
     await _native_close(package, lines)
 
 
