@@ -326,7 +326,10 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             raise
 
     def raise_for_status(self) -> None:
-        """Return for a success; close and raise the typed failure of any other status from its error prefix."""
+        """Return for a success; close and raise the typed failure of any other status from its error prefix.
+
+        A handed-over stream ends in that failure, which keeps any hook failure of its end as a secondary error.
+        """
         if (state := self._state) != "buffered":
             self._check()
         if self._decoder.success(self._info.status_code):
@@ -338,7 +341,8 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 failure = self._error_prefix()
             case _:
                 failure = self._unread_failure()
-        self.close()
+        if self._state in {"open", "streaming"}:
+            self._end("closed", failure)
         raise failure
 
     def close(self) -> None:
@@ -535,7 +539,10 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise
 
     async def raise_for_status(self) -> None:
-        """Return for a success; close and raise the typed failure of any other status from its error prefix."""
+        """Return for a success; close and raise the typed failure of any other status from its error prefix.
+
+        A handed-over stream ends in that failure, which keeps any hook failure of its end as a secondary error.
+        """
         if (state := self._state) != "buffered":
             self._check()
         if self._decoder.success(self._info.status_code):
@@ -547,7 +554,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 failure = await self._error_prefix()
             case _:
                 failure = self._unread_failure()
-        await self.aclose()
+        if self._state in {"open", "streaming"}:
+            await self._end("closed", failure)
         raise failure
 
     async def aclose(self) -> None:

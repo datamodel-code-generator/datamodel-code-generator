@@ -11,9 +11,11 @@ import httpx2
 from tests.data.python.client_runtime import (
     Exchange,
     abroken,
+    aoutcome,
     arecord,
     broken,
     json_response,
+    outcome,
     raw_response,
     record,
     run,
@@ -229,6 +231,9 @@ def _streams(api: Any, exchange: Exchange, lines: list[str], options: ModuleType
         record(lines, "stream whose end fails on closing it", closing.close)
     with ending.pets.with_streaming_response.get_pet(pet_id=pet) as failed:
         record(lines, "stream failing whose end fails too", failed.read)
+    exchange.respond(raw_response(404))
+    with ending.pets.with_streaming_response.get_pet(pet_id=pet) as missing:
+        lines.append(f"  stream of an error whose end fails: {outcome(missing.raise_for_status)}")
 
 
 def _refused(package: ModuleType, lines: list[str], options: ModuleType) -> None:
@@ -302,6 +307,9 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
             await arecord(lines, "async stream whose end fails on reading it", last.read)
         async with ending.pets.with_streaming_response.get_pet(pet_id=pet) as failed:
             await arecord(lines, "async stream failing whose end fails too", failed.read)
+        exchange.respond(raw_response(404))
+        async with ending.pets.with_streaming_response.get_pet(pet_id=pet) as missing:
+            lines.append(f"  async stream of an error whose end fails: {await aoutcome(missing.raise_for_status)}")
         exchange.respond(_interrupted_close)
         async with api.pets.with_streaming_response.get_pet(pet_id=pet) as cancelling:
             try:
