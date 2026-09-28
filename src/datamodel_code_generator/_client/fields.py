@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, UseBinding
 
 _KINDS: Final = frozenset({"json", "form"})
+_MEMBERS: Final = ("allOf", "anyOf", "oneOf")
 _NATIVE_KINDS: Final = frozenset({"model", "dataclass", "typed_dict", "struct"})
 
 
@@ -58,9 +59,10 @@ def _model(binding: UseBinding) -> ModelBinding | None:
 
 
 def _required(wire: WirePlan, site: SourceLocation, seen: set[SourceLocation]) -> set[str]:
-    """Return the names an object schema requires, with those its allOf members require, following references.
+    """Return the names an object schema requires, following references and its members.
 
-    A schema its own allOf members reach again adds nothing more.
+    A body bound to one model requires what its allOf members require, and what its object alternative to null does;
+    a schema its own members reach again adds nothing more.
     """
     location, schema = wire.schema(site)
     if location in seen:
@@ -68,10 +70,11 @@ def _required(wire: WirePlan, site: SourceLocation, seen: set[SourceLocation]) -
     seen.add(location)
     required = schema.get("required")
     names: set[str] = {name for name in required if isinstance(name, str)} if isinstance(required, tuple) else set()
-    members = schema.get("allOf")
-    for index in range(len(members) if isinstance(members, tuple) else 0):
-        member = SourceLocation(location.document, f"{location.pointer}/allOf/{index}", "schema")
-        names |= _required(wire, member, seen)
+    for keyword in _MEMBERS:
+        members = schema.get(keyword)
+        for index in range(len(members) if isinstance(members, tuple) else 0):
+            member = SourceLocation(location.document, f"{location.pointer}/{keyword}/{index}", "schema")
+            names |= _required(wire, member, seen)
     return names
 
 
@@ -88,33 +91,32 @@ class _Fields:
             self.members.setdefault(member.consumer, []).append(member)
         self.problems: list[Diagnostic] = []
 
-    def model(self, media: MediaSpec) -> tuple[ModelBinding, SymbolId] | None:
-        """Return the object model a media's body binds natively with its symbol, or None for any other body.
+    def model(self, media: MediaSpec) -> tuple[ModelBinding, SymbolId, set[str]] | None:
+        """Return the object model a media's body binds natively, its symbol, and the names its schema requires.
 
-        Every name the body's schema requires must be a field of the model, not a key only extra properties hold.
+        Any other body is None, as is one whose schema requires a name that only extra properties could hold.
         """
         use = media.use
         if media.kind not in _KINDS or media.members is not None or use is None or use.id in self.adapted:
             return None
         binding = self.bindings.get(use.id)
         model = None if binding is None else _model(binding)
-        if (
-            model is None
-            or use.schema is None
-            or not _required(self.wire, use.schema, set()) <= {field.wire_name for field in model.fields}
-        ):
+        if model is None or use.schema is None:
             return None
-        return model, SymbolId(self.symbols[model.symbol])
+        if not (required := _required(self.wire, use.schema, set())) <= {field.wire_name for field in model.fields}:
+            return None
+        return model, SymbolId(self.symbols[model.symbol]), required
 
     def branch(self, media: MediaSpec, names: Mapping[str, str]) -> FieldBranch | None:
         """Return the field branch of one media type, or None when its body cannot be given as fields.
 
         A native projection constructs every field its direction does not exclude, and no required field is excluded,
-        so a call gives every field but the read-only ones.
+        so a call gives every field but the read-only ones, those the body's schema requires first of all, whatever
+        requiredness the model gives them.
         """
         if (found := self.model(media)) is None:
             return None
-        model, symbol = found
+        model, symbol, required = found
         declared = {member.wire_name: member for member in self.members.get(symbol, []) if member.wire_name}
         fields: list[FieldArgument] = []
         for item in model.fields:
@@ -125,7 +127,10 @@ class _Fields:
             python_name = names.get(item.wire_name) or snake(item.wire_name)
             fields.append(
                 FieldArgument(
-                    python_name=python_name, wire_name=item.wire_name, required=facts.required, type=facts.type
+                    python_name=python_name,
+                    wire_name=item.wire_name,
+                    required=item.wire_name in required,
+                    type=facts.type,
                 )
             )
         return FieldBranch(media_type=media.media_type, fields=tuple(fields)) if fields else None

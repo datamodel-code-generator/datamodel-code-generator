@@ -244,6 +244,30 @@ async def _async_fields(context: _Fields, lines: list[str]) -> None:
     await http.aclose()
 
 
+def optional_models(package: ModuleType, lines: list[str]) -> None:
+    """Require the fields a body's schema requires, though models generated to make every field optional omit them."""
+    context = _Fields(package)
+    exchange = Exchange(lines)
+    http = exchange.client()
+    kind = context.kind()
+    with package.Client(http_client=http) as api:
+        pets = api.default
+        for label, call in (
+            ("create giving nothing", lambda: pets.create_pet(media_type=_JSON)),
+            ("create without its kind", lambda: pets.create_pet(name="Mimi", media_type=_JSON)),
+            ("create an owner giving nothing", lambda: pets.create_owner()),
+        ):
+            record(lines, label, call)
+        _exchanged(
+            exchange,
+            lines,
+            "create from its required fields",
+            lambda: pets.create_pet(name="Mimi", kind=kind, media_type=_JSON),
+            json_response(201, _CREATED),
+        )
+    http.close()
+
+
 def field_arguments(package: ModuleType, lines: list[str]) -> None:
     """Validate field arguments with Pydantic when a call asks, as the branch of the fields' media checks them."""
     context = _Fields(package)

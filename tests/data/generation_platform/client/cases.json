@@ -857,5 +857,51 @@
     "config": {
       "body_arguments": "both"
     }
+  },
+  "fields-optional-models": {
+    "input": "fields.yaml",
+    "model": {
+      "force_optional_for_required_fields": true
+    },
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ],
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1search/post"
+        ],
+        "reason": "The fields-structural and fields-arguments cases cover the union body."
+      }
+    }
   }
 }

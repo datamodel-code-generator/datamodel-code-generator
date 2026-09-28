@@ -12,7 +12,7 @@ import httpx2
 
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_evolution import evolution
-from tests.data.python.client_fields import field_arguments, fields
+from tests.data.python.client_fields import field_arguments, fields, optional_models
 from tests.data.python.client_headers import headers
 from tests.data.python.client_hooks import hooks
 from tests.data.python.client_query import query
@@ -636,6 +636,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "fields-structural": ("fields-structural", ("dataclasses.dataclass", "typing.TypedDict"), fields),
     "fields-unpack": ("fields-unpack", ("pydantic_v2.BaseModel",), fields),
     "fields-arguments": ("fields-arguments", ("pydantic_v2.BaseModel", "typing.TypedDict"), field_arguments),
+    "fields-optional-models": (
+        "fields-optional-models",
+        ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"),
+        optional_models,
+    ),
 }
 
 

@@ -45,6 +45,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "fields-arguments",
         "fields-errors",
         "fields-cycle",
+        "fields-optional-models",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
