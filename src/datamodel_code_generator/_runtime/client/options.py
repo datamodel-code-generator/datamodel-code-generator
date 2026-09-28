@@ -7,7 +7,7 @@ import re
 from collections.abc import Mapping  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Final, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias
 from urllib.parse import urlsplit
 
 from typing_extensions import TypeIs
@@ -15,9 +15,13 @@ from typing_extensions import TypeIs
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError
 
-__all__ = ("UNSET", "ClientOptions", "HeaderPatch", "RequestOptions", "ServerSelection", "Unset")
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+__all__ = ("UNSET", "ClientOptions", "HeaderPatch", "QueryPatch", "RequestOptions", "ServerSelection", "Unset")
 
 HeaderPatch: TypeAlias = tuple[tuple[str, str | None], ...]
+QueryPatch: TypeAlias = tuple[tuple[str, str | None], ...]
 
 MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
 _SCHEMES: Final = frozenset({"http", "https"})
@@ -47,9 +51,7 @@ def _positive_seconds(value: object, path: tuple[str, ...]) -> None:
 
 def _header_patch(value: object) -> HeaderPatch:
     """Return a copy of a header patch, refusing reserved or malformed headers and a name both set and removed."""
-    if not _is_sequence(value):
-        raise ConfigurationError(field_path=("headers",), condition="invalid_type")
-    patch = tuple(_header(item) for item in value)
+    patch = _patch(value, "headers")
     for name, text in patch:
         match name.lower(), text:
             case _ if not _NAME.fullmatch(name) or (text is not None and not _VALUE.fullmatch(text)):
@@ -60,24 +62,44 @@ def _header_patch(value: object) -> HeaderPatch:
                 raise ConfigurationError(field_path=("headers", name), condition="unsupported_coding")
             case _:
                 pass
-    removed = {name.lower() for name, text in patch if text is None}
-    if any(name.lower() in removed for name, text in patch if text is not None):
-        raise ConfigurationError(field_path=("headers",), condition="set_and_removed")
+    _settled(patch, "headers", str.lower)
     return patch
+
+
+def _query_patch(value: object) -> QueryPatch:
+    """Return a copy of a query patch, refusing an empty name and a name both set and removed."""
+    patch = _patch(value, "query")
+    if not all(name for name, _ in patch):
+        raise ConfigurationError(field_path=("query",), condition="invalid_value")
+    _settled(patch, "query", str)
+    return patch
+
+
+def _patch(value: object, field: str) -> tuple[tuple[str, str | None], ...]:
+    if not _is_sequence(value):
+        raise ConfigurationError(field_path=(field,), condition="invalid_type")
+    return tuple(_pair(item, field) for item in value)
 
 
 def _is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
     return isinstance(value, (tuple, list))
 
 
-def _header(item: object) -> tuple[str, str | None]:
+def _pair(item: object, field: str) -> tuple[str, str | None]:
     if _is_sequence(item) and len(item) == _PAIR:
         match item[0], item[1]:
             case str() as name, (str() | None) as text:
                 return name, text
             case _:
                 pass
-    raise ConfigurationError(field_path=("headers",), condition="invalid_type")
+    raise ConfigurationError(field_path=(field,), condition="invalid_type")
+
+
+def _settled(patch: tuple[tuple[str, str | None], ...], field: str, fold: Callable[[str], str]) -> None:
+    """Refuse a patch that both sets and removes one name."""
+    removed = {fold(name) for name, text in patch if text is None}
+    if any(fold(name) in removed for name, text in patch if text is not None):
+        raise ConfigurationError(field_path=(field,), condition="set_and_removed")
 
 
 def _accepted(value: str) -> bool:
@@ -139,6 +161,7 @@ class _Options:
     server: ServerSelection | Unset = UNSET
     base_url: str | Unset = UNSET
     headers: HeaderPatch = ()
+    query: QueryPatch = ()
     max_response_bytes: int | Unset | None = UNSET
     max_error_body_bytes: int | Unset = UNSET
     cleanup_timeout: float | Unset = UNSET
@@ -147,6 +170,8 @@ class _Options:
     def __post_init__(self) -> None:
         if self.headers != ():
             object.__setattr__(self, "headers", _header_patch(self.headers))
+        if self.query != ():
+            object.__setattr__(self, "query", _query_patch(self.query))
         if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
             raise ConfigurationError(field_path=("base_url",), condition="conflicts_with_server")
         if not _server(self.server):
@@ -169,7 +194,8 @@ class _Options:
 class ClientOptions(_Options):
     """Settings of one client; every field left UNSET takes the generated default.
 
-    Its headers patch the generated ones: each name it gives replaces their values of that name, and None removes them.
+    Its headers and query patch the generated ones: each name it gives replaces their values of that name, and None
+    removes them.
     """
 
 
@@ -177,7 +203,7 @@ class ClientOptions(_Options):
 class RequestOptions(_Options):
     """Settings of one call; every field left UNSET inherits the client's.
 
-    Its headers patch the lower layers' last: the client's, a view's, and those the call's parameters give.
+    Its headers and query patch the lower layers' last: the client's, a view's, and those the call's parameters give.
     """
 
 
@@ -192,3 +218,4 @@ class Settings:
     cleanup_timeout: float
     max_stream_bytes: int | None
     headers: tuple[HeaderPatch, ...] = ()
+    query: tuple[QueryPatch, ...] = ()

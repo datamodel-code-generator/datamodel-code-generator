@@ -78,10 +78,10 @@ def __getattr__(name: str) -> object:
 '''
 _OPTIONS: Final = '''"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""
 
-from ._runtime.client.options import ClientOptions, HeaderPatch, RequestOptions, ServerSelection
+from ._runtime.client.options import ClientOptions, HeaderPatch, QueryPatch, RequestOptions, ServerSelection
 from ._runtime.model_codecs.unset import UNSET, Unset
 
-__all__ = ["UNSET", "ClientOptions", "HeaderPatch", "RequestOptions", "ServerSelection", "Unset"]
+__all__ = ["UNSET", "ClientOptions", "HeaderPatch", "QueryPatch", "RequestOptions", "ServerSelection", "Unset"]
 '''
 _ERROR_NAMES: Final = (
     "AdapterContractError",

@@ -1,0 +1,23 @@
+# pets pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/pets?api-version=1&limit=5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  client query under the parameters = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets?limit=9&trace%20id=a%20b%2Fc&tags=a&tags=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  view query = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets?limit=7&trace%20id=a%20b%2Fc&x=1&x=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  call query over the parameters = FieldPetsGetResponse(root=[])
+  > GET https://raw.example.com/items?api-version=1&limit=2&trace%20id=new
+    [host: raw.example.com, accept-encoding: gzip, deflate] b''
+  raw query = b'ok'
+  query name that is empty ! ConfigurationError: ConfigurationError(field_path='query', condition='invalid_value') [field_path=('query',), condition='invalid_value'] configuration_error
+  query name set and removed ! ConfigurationError: ConfigurationError(field_path='query', condition='set_and_removed') [field_path=('query',), condition='set_and_removed'] configuration_error
+  query that is no sequence ! ConfigurationError: ConfigurationError(field_path='query', condition='invalid_type') [field_path=('query',), condition='invalid_type'] configuration_error
+  query names by case = (('a', '1'), ('A', None))
+  > GET https://api.example.com/v1/pets?api-version=1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
+  async client query = FieldPetsGetResponse(root=[])
+  > GET https://raw.example.com/items?api-version=1
+    [host: raw.example.com, accept-encoding: gzip, deflate] b''
+  async raw query = b'ok'
