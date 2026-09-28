@@ -9,6 +9,8 @@ import sys
 from dataclasses import dataclass, field
 from typing import Final
 
+from typing_extensions import TypeIs
+
 _DEPTH: Final = 16
 _NODES: Final = 64
 _TRANSIENT: Final = frozenset({
@@ -28,10 +30,18 @@ class CauseGraph:
     leaves: tuple[BaseException, ...] = field(repr=False)
 
 
-def _members(error: BaseException) -> tuple[BaseException, ...] | None:
-    if sys.version_info >= (3, 11) and isinstance(error, BaseExceptionGroup):  # noqa: F821
-        return error.exceptions
-    return None
+if sys.version_info >= (3, 11):
+
+    def _group(error: BaseException) -> TypeIs[BaseExceptionGroup[BaseException]]:  # noqa: F821
+        return isinstance(error, BaseExceptionGroup)  # noqa: F821
+
+    def _members(error: BaseException) -> tuple[BaseException, ...] | None:
+        return error.exceptions if _group(error) else None
+
+else:  # pragma: <3.11 cover
+
+    def _members(error: BaseException) -> tuple[BaseException, ...] | None:  # noqa: ARG001
+        return None
 
 
 def cause_graph(error: BaseException, /) -> CauseGraph | None:
