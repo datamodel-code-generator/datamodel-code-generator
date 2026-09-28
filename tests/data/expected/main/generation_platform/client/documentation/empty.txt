@@ -20,7 +20,7 @@
   write client/.dcg-state/model-artifacts.json
   namespace client helpers [] bindings 0
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1pets/get: GET /pets is excluded by exclude_tags 'pets': No operation is needed yet.
   S_OPERATION_EXCLUDED selection /paths/~1pets/post: POST /pets is excluded by exclude_tags 'pets': No operation is needed yet.
   S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/get: GET /pets/{petId} is excluded by exclude_tags 'pets': No operation is needed yet.

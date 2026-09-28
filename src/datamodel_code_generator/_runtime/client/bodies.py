@@ -883,7 +883,7 @@ class _AsyncOpenFile:
             raise
         try:
             length = await self.worker.run(_remaining, self.file, context)
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:
             if isinstance(error, asyncio.CancelledError):
                 self.worker.defer(_carried(self.release()), release=True)
                 raise
@@ -1230,7 +1230,10 @@ class _AsyncFileCall:
     async def capture(self) -> None:
         try:
             self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:
+            if isinstance(error, asyncio.CancelledError):
+                self._source.worker.defer(_carried(self.aclose()), release=True)
+                raise
             failure = BodyFactoryError(cause=error) if isinstance(error, OSError) else error
             try:
                 await self.aclose()

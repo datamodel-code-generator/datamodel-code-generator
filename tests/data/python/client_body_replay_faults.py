@@ -383,9 +383,10 @@ async def _cancel_partial(
 
             failure = failures[0]
             secondary = getattr(failure, "secondary_errors", ())
+            related = (*secondary, *(() if (cause := getattr(failure, "cause", None)) is None else (cause,)))
             observed = (
-                *secondary,
-                *(item for primary in secondary for item in getattr(primary, "secondary_errors", ())),
+                *related,
+                *(item for primary in related for item in getattr(primary, "secondary_errors", ())),
             )
             retained = (
                 None
@@ -402,6 +403,7 @@ async def _cancel_partial(
                     f" closes={attempt.closes} finished={attempt.finished}"
                     f" args={failure.args}"
                     f" notes={tuple(getattr(failure, '__notes__', ()))}"
+                    f" cause={type(getattr(failure, 'cause', None)).__name__}"
                     f" secondary={[type(item).__name__ for item in getattr(failure, 'secondary_errors', ())]}"
                 ),
             ))

@@ -57,4 +57,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/7 pets.read_files(path:petId=pet_id)
     exports client.types.pets.ReadFilesResponse client.types.pets.ReadFilesErrorData client.types.pets.ReadFilesHTTPError
     exports client.types.pets.ReadFilesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

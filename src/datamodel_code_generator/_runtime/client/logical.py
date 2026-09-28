@@ -382,7 +382,7 @@ class LogicalCallContext:
             self._scope.wait(remaining)
 
     async def asleep_until(self, not_before: float) -> None:
-        """Wait inside the existing monitored task, retaining the call's original deadline and cancellation."""
+        """Wait in the caller's task under the call's guard, keeping its original deadline and cancellation."""
         import asyncio  # noqa: PLC0415
 
         await self.bounded(lambda: asyncio.sleep(max(0.0, not_before - monotonic())), phase="sleep")
@@ -529,6 +529,15 @@ class LogicalCallContext:
         at = monotonic() if self.deadline is None else self.deadline.at
         return self._deadline_error(at, self._phase, delivery, failure)
 
+    def _cleanup_interruption(self, failure: BaseException) -> BaseException:
+        """Return the call's interruption once cleanup raised one, keeping a recorded or native one that came first."""
+        guard = self._guard
+        interruption = self._interrupted = (
+            failure if self._interrupted is None and (guard is None or not guard.external()) else self._native(None)
+        )
+        cleanup_secondary(interruption, failure)
+        return interruption
+
     async def _settle_left(self, failure: BaseException) -> None:
         """Wait within the cleanup cap for the work interrupted callbacks left, retaining what is still running."""
         if left := self._left:
@@ -651,11 +660,7 @@ class LogicalCallContext:
             task_result(task)
         except BaseException as failure:
             if not isinstance(failure, Exception) and (error is None or isinstance(error, Exception)):
-                interruption = self._interrupted
-                if interruption is None:
-                    interruption = self._interrupted = failure
-                cleanup_secondary(interruption, failure)
-                raise interruption from None
+                raise self._cleanup_interruption(failure) from None
             if error is None:
                 if not wrap_errors:
                     raise

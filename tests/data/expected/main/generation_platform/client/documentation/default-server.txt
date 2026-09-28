@@ -28,7 +28,7 @@
   /selection/selected_operations/0 default.get_status()
     exports client.types.default.GetStatusResponse client.types.default.GetStatusErrorData client.types.default.GetStatusHTTPError
     exports client.types.default.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'pydantic>=2.13.5', 'pets-models>=1']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5', 'pets-models>=1']
 
 # artifact client/README.md
 # client
@@ -188,9 +188,9 @@ build-backend = "hatchling.build"
 [project]
 name = "pets-client"
 version = "1.2.3"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
-dependencies = ["httpx2>=2.13.0", "typing-extensions>=4.16", "exceptiongroup>=1.2.2; python_version<'3.11'", "pydantic>=2.13.5", "pets-models>=1"]
+dependencies = ["httpx2>=2.13.0", "typing-extensions>=4.16", "pydantic>=2.13.5", "pets-models>=1"]
 
 [tool.hatch.build.targets.wheel]
 only-include = ["src/client"]

@@ -897,6 +897,40 @@ async def _multipart_close(package: ModuleType, lines: list[str]) -> None:
                 shared.close()
 
 
+async def _direct_cancellation(package: ModuleType, lines: list[str]) -> None:
+    """Cancel a direct attempt while its file is measured; its claim and owned close settle once the disk work ends."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    context = bodies.BodyAttemptContext(call_id="direct", attempt_index=0, hop_index=0, remaining_timeout=None)
+    gate = _DiskGate()
+    file = _BlockedFile(gate)
+    body = bodies.AsyncFileBody(file, ownership="owned")
+    attempt = asyncio.create_task(body(context))
+
+    async def settled() -> object:
+        while True:
+            try:
+                return await body(context)
+            except errors.BodyNotReplayableError as error:
+                if error.condition != "concurrent":
+                    raise
+            await asyncio.sleep(0)
+
+    try:
+        await asyncio.wait_for(gate.started.wait(), 5)
+        attempt.cancel("direct attempt cancelled")
+        try:
+            await attempt
+        except asyncio.CancelledError as error:
+            record(lines, "direct attempt cancellation", lambda: (type(error).__name__, error.args, file.closes))
+        gate.proceed.set()
+        await arecord(lines, "direct attempt after release", lambda: asyncio.wait_for(settled(), 5))
+        record(lines, "direct attempt released", lambda: (file.closed, file.closes, len(set(file.threads)) == 1))
+    finally:
+        gate.proceed.set()
+        body.close()
+
+
 async def _files(package: ModuleType, lines: list[str]) -> None:
     await _successful_owned(package, lines)
     await _preparation(package, lines, "owned preparation")
@@ -971,6 +1005,7 @@ async def _files(package: ModuleType, lines: list[str]) -> None:
         "shared path late failures",
         (FileNotFoundError("first open failed late"), PermissionError("second open failed late")),
     )
+    await _direct_cancellation(package, lines)
     await _native_close(package, lines)
 
 

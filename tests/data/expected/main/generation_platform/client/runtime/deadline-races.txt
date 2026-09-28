@@ -19,7 +19,7 @@
   phase source pool none = ('DeadlineExceededError', 1, 1, 1, 'send', None, 'PoolTimeout', (), None, None)
   phase source pool unlimited = ('TransportError', 1, 1, 1, 'pool', None, 'PoolTimeout', (), None, None)
   phase source pool absolute = ('DeadlineExceededError', 1, 1, 1, 'send', None, 'PoolTimeout', (), None, None)
-  native timeout unknown phase = ('TransportError', 1, 1, 1, 'unknown', None, 'TimeoutException', (), None, None)
+  native timeout unknown phase = ('AdapterExecutionError', 1, 1, 1, None, None, 'TimeoutException', (), None, None)
   closing during admission = ('ClientClosedError', 0, 0, 0, None, None, 'NoneType', (), None, None)
   closing during admission sends = 0
   sync native/token/deadline None = ('RequestCancelledError', 1, 1, 1, None, 'cancel_token', 'NoneType', (), None, None)
@@ -45,6 +45,8 @@
   idle stop of another task's read leaves a native close cancellation = ('CancelledError', None, None, None, None, None, 'NoneType', (), None, None)
   idle stop of another task's read = ('PhaseTimeoutError', 1, 1, 1, 'read', None, 'NoneType', (), None, None)
   idle stop of another task's read resources = (1, 1)
+  deadline after buffered read = ('DeadlineExceededError', 1, 1, 1, 'send', None, 'NoneType', (), None, None)
+  deadline after buffered read resources = (1, 1)
   nested hook deadline = ('DeadlineExceededError', 0, 0, 0, 'encode', None, 'NoneType', (), None, None)
   nested hook deadline sends = 0
   nested hook token = ('RequestCancelledError', 0, 0, 0, None, 'cancel_token', 'NoneType', (), None, None)
@@ -105,6 +107,8 @@
   deadline stops body release after _Interrupted permit = (1, False)
   deadline stops body release after _Interrupted resources = (1, 1, True, ())
   startup cancellation rejected cleanup = ('DeadlineExceededError', 0, 0, 0, 'unknown', None, 'NoneType', (), None, None)
+  deadline stops body release after _Interrupted resources = (1, 1, True)
+  startup cancellation rejected cleanup = ('CancelledError', None, None, None, None, None, 'NoneType', (), None, None)
   startup cancellation rejected cleanup resources = (1, 0, 0)
   startup cancellation client close = ('CancelledError', None, None, None, None, None, 'NoneType', (), None, None)
   startup cancellation client close resources = (1, 0, 0)

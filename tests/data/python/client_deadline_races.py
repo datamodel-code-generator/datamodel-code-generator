@@ -123,6 +123,16 @@ class _UnwindingStream(_AsyncResponse):
         await self.proceed.wait()
 
 
+class _ExpiringResponse(_AsyncResponse):
+    def __init__(self, responses: ModuleType, clock: _Clock) -> None:
+        super().__init__(responses)
+        self.clock = clock
+
+    async def aclose(self) -> None:
+        self.close()
+        self.clock.value = 102.0
+
+
 class _Fault:
     def __init__(self, transports: ModuleType, responses: ModuleType, action: Callable[[], None]) -> None:
         self.capabilities = transports.TransportCapabilities(
@@ -395,6 +405,28 @@ async def _early_timer(
                 "deadline timer ahead of the clock",
                 lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/early")),
             )
+
+
+async def _expired_read(
+    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
+    clock = _Clock()
+
+    async def sent() -> None:
+        pass
+
+    adapter = _AsyncFault(transports, responses, sent)
+    adapter.response = _ExpiringResponse(responses, clock)
+    with _clock(package, clock):
+        async with package.AsyncClient(
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=1.0)
+        ) as api:
+            await arecord(
+                lines,
+                "deadline after buffered read",
+                lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/expired")),
+            )
+    record(lines, "deadline after buffered read resources", lambda: (adapter.sent, adapter.response.closed))
 
 
 class _LatePermit:
@@ -786,6 +818,7 @@ async def _async(
     await _early_timer(package, options, transports, responses, lines)
     await _capped_timeout(package, options, transports, responses, lines)
     await _foreign_cancellation(package, options, transports, responses, lines)
+    await _expired_read(package, options, transports, responses, lines)
     await _nested_waits(package, options, transports, responses, lines)
     await _late_permits(package, options, transports, responses, lines)
     await _retained_responses(package, options, transports, responses, lines)

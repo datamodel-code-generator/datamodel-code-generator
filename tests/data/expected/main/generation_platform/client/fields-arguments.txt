@@ -55,7 +55,7 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/8 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports client.types.default.ReplacePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -112,4 +112,4 @@ render typing.TypedDict
   /selection/selected_operations/8 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports client.types.default.ReplacePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
