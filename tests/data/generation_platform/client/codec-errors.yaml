@@ -20,3 +20,69 @@ paths:
       responses:
         '204':
           description: Unplannable wire forms.
+  /unnamed-encoding:
+    post:
+      operationId: submitUnnamedEncoding
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+            encoding:
+              other: {style: form}
+      responses:
+        '204':
+          description: An encoding of no member.
+  /xml-member:
+    post:
+      operationId: submitXmlMember
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                meta: {type: object}
+            encoding:
+              meta: {contentType: application/xml}
+      responses:
+        '204':
+          description: A member content no builtin codec writes.
+  /deep-array:
+    post:
+      operationId: submitDeepArray
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items: {type: string}
+            encoding:
+              tags: {style: deepObject}
+      responses:
+        '204':
+          description: A style its member's shape has no form for.
+  /spread-clash:
+    post:
+      operationId: submitSpreadClash
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+                opts:
+                  type: object
+                  properties:
+                    term: {type: string}
+            encoding:
+              opts: {style: form, explode: true}
+      responses:
+        '204':
+          description: An exploded member naming another member.

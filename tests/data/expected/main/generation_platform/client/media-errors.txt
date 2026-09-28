@@ -1,7 +1,7 @@
 # media-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CLIENT_UNSUPPORTED target /paths/~1upload/post/requestBody/content/application~1x-www-form-urlencoded/encoding/filter: The filter encoding of the application/x-www-form-urlencoded media of POST /upload is not supported yet
+  E_CLIENT_UNSUPPORTED target /paths/~1upload/post/requestBody/content/multipart~1form-data/encoding/file: The file encoding of the multipart/form-data media of POST /upload is not supported yet
   E_CLIENT_UNSUPPORTED target /paths/~1upload/post/responses/200/content/multipart~1mixed: The multipart/mixed media of POST /upload is not supported yet
   E_CLIENT_UNSUPPORTED target /paths/~1text-parts/post/requestBody/content/multipart~1form-data: The multipart/form-data media of POST /text-parts needs an object schema to be sent as parts
   E_METADATA_REQUIRED target /paths/~1invalid/post/requestBody/content/not a media type: The media type 'not a media type' of POST /invalid is not a media type

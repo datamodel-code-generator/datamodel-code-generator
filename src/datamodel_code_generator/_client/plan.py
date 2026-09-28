@@ -97,6 +97,7 @@ class MediaSpec:
     use: TypeUseBinding | None
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
+    encoded: tuple[ParameterPlan, ...] = ()
     parts: tuple[PartPlan, ...] = ()
     additional_part: PartPlan | None = None
     members: tuple[PartSpec, ...] | None = None
@@ -289,7 +290,7 @@ class Planner:
             operation: {(plan.location, plan.name): plan for plan in plans} for operation, plans in wire.parameters
         }
         self.header_plans = dict(wire.headers)
-        self.forms = {use: (fields, additional) for use, fields, additional in wire.forms}
+        self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
         self.documents = {document.id: document.uri for document in request.batch.documents}
         self.resource_names = {item.tag: item.namespace for item in config.resource_names}
         self.problems: list[Diagnostic] = []
@@ -470,12 +471,14 @@ class Planner:
         if (reason := self.unsupported(kind, essence, use, request=request)) is not None:
             message = f"The {media_type} media of {_label(operation)} {reason}"
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
-        if kind in {"form", "multipart"} and (encoded := _encoded(declaration)) is not None:
+        if kind == "multipart" and (encoding := _encoded(declaration)) is not None:
             message = (
-                f"The {encoded.name} encoding of the {media_type} media of {_label(operation)} is not supported yet"
+                f"The {encoding.name} encoding of the {media_type} media of {_label(operation)} is not supported yet"
             )
-            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoded.use_site))
-        fields, additional = self.forms.get(use.id, ((), None)) if kind == "form" and use is not None else ((), None)
+            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
+        fields, additional, encoded = (
+            self.forms.get(use.id, ((), None, ())) if kind == "form" and use is not None else ((), None, ())
+        )
         members, extra = (
             (_sent if request else _received)(self.wire, self._schemas, use, use.schema)
             if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None
@@ -490,6 +493,7 @@ class Planner:
             use=use,
             fields=fields,
             additional=additional,
+            encoded=encoded,
             parts=parts,
             additional_part=additional_part,
             members=members,
@@ -911,7 +915,7 @@ def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:
 
 
 def _encoded(media: WireDeclaration) -> WireDeclaration | None:
-    """Return the first form encoding the builtin URL-encoded writer does not read."""
+    """Return the first form-data encoding the builtin multipart writer does not read."""
     return next(
         (
             child
@@ -1009,14 +1013,22 @@ def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
     yield from (use.id for use in part_uses(plan))
 
 
-def form_uses(request: TargetRequest) -> Iterator[TypeUseId]:
-    """Yield the uses of the URL-encoded bodies and responses of the selected operations, which need member plans."""
+def form_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:
+    """Yield the uses of the URL-encoded bodies and responses of the selected operations, which need member plans.
+
+    Each use comes with the encodings of its request body media; a response's encodings do not apply.
+    """
     for operation in request.operations:
         declarations = (*(() if operation.request_body is None else (operation.request_body,)), *operation.responses)
         for declaration in declarations:
             for child in declaration.children:
                 if child.kind == "media" and _form(child.name or ""):
-                    yield from child.schemas
+                    encodings = tuple(
+                        item
+                        for item in child.children
+                        if item.kind == "encoding" and declaration.kind == "request_body"
+                    )
+                    yield from ((use, encodings) for use in child.schemas)
 
 
 def _form(media_type: str) -> bool:

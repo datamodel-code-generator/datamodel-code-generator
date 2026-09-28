@@ -12,6 +12,7 @@ from .._runtime.model_codecs.bindings import (
     ArrayNode,
     FieldBinding,
     LeafNode,
+    MapNode,
     ModelBinding,
     ModelNode,
     UnionNode,
@@ -309,6 +310,36 @@ def _resources() -> tuple[SchemaResource, ...]:
                             },
                         },
                     },
+                    '/searches': {
+                        'post': {
+                            'requestBody': {
+                                'content': {
+                                    'application/x-www-form-urlencoded': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'properties': {
+                                                'term': {'type': 'string'},
+                                                'filter': {
+                                                    'type': 'object',
+                                                    'properties': {
+                                                        'name': {'type': 'string'},
+                                                        'min': {'type': 'integer'},
+                                                    },
+                                                },
+                                                'tags': {'type': 'array', 'items': {'type': 'string'}},
+                                                'ids': {'type': 'array', 'items': {'type': 'integer'}},
+                                                'meta': {
+                                                    '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Address',
+                                                },
+                                                'path': {'type': 'string'},
+                                                'extra': {'type': 'object', 'additionalProperties': {'type': 'string'}},
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     '/uploads': {
                         'get': {
                             'responses': {
@@ -434,6 +465,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1profiles/get/responses/200/content/multipart~1form-data/schema',
                 '/paths/~1profiles/post/requestBody/content/multipart~1form-data/schema',
                 '/paths/~1scans/post/requestBody/content/multipart~1form-data/schema',
+                '/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema',
                 '/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema',
                 '/paths/~1uploads/get/responses/201/content/multipart~1form-data/schema',
                 '/paths/~1uploads/get/responses/202/content/multipart~1form-data/schema',
@@ -842,6 +874,136 @@ def _model_7() -> ModelBinding:
 @cache
 def _model_8() -> ModelBinding:
     return ModelBinding(
+        symbol='models:FieldSearchesPostRequest',
+        native_kind='model',
+        schema_id=None,
+        fields=(
+            FieldBinding(
+                field_id='models:FieldSearchesPostRequest.term',
+                native_name='term',
+                wire_name='term',
+                validation_key='term',
+                validation_keys=('term',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+            FieldBinding(
+                field_id='models:FieldSearchesPostRequest.filter',
+                native_name='filter',
+                wire_name='filter',
+                validation_key='filter',
+                validation_keys=('filter',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=ModelNode(symbol='models:Filter'),
+            ),
+            FieldBinding(
+                field_id='models:FieldSearchesPostRequest.tags',
+                native_name='tags',
+                wire_name='tags',
+                validation_key='tags',
+                validation_keys=('tags',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=ArrayNode(item=LeafNode()),
+            ),
+            FieldBinding(
+                field_id='models:FieldSearchesPostRequest.ids',
+                native_name='ids',
+                wire_name='ids',
+                validation_key='ids',
+                validation_keys=('ids',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=ArrayNode(item=LeafNode()),
+            ),
+            FieldBinding(
+                field_id='models:FieldSearchesPostRequest.meta',
+                native_name='meta',
+                wire_name='meta',
+                validation_key='meta',
+                validation_keys=('meta',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=ModelNode(symbol='models:Address'),
+            ),
+            FieldBinding(
+                field_id='models:FieldSearchesPostRequest.path',
+                native_name='path',
+                wire_name='path',
+                validation_key='path',
+                validation_keys=('path',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+            FieldBinding(
+                field_id='models:FieldSearchesPostRequest.extra',
+                native_name='extra',
+                wire_name='extra',
+                validation_key='extra',
+                validation_keys=('extra',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=MapNode(value=LeafNode()),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_9() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Filter',
+        native_kind='model',
+        schema_id=None,
+        fields=(
+            FieldBinding(
+                field_id='models:Filter.name',
+                native_name='name',
+                wire_name='name',
+                validation_key='name',
+                validation_keys=('name',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+            FieldBinding(
+                field_id='models:Filter.min',
+                native_name='min',
+                wire_name='min',
+                validation_key='min',
+                validation_keys=('min',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_10() -> ModelBinding:
+    return ModelBinding(
         symbol='models:Draft',
         native_kind='model',
         schema_id=None,
@@ -887,7 +1049,7 @@ def _model_8() -> ModelBinding:
 
 
 @cache
-def _model_9() -> ModelBinding:
+def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldDocumentsIdGetPathIdParameter',
         native_kind='model',
@@ -1272,6 +1434,48 @@ def codec_9() -> PydanticModelCodec[models.Address]:
 CONTEXT_10: Final = CodecContext(
     surface='client',
     direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema',
+    operation_id='/paths/~1searches/post',
+    media_type='application/x-www-form-urlencoded',
+)
+
+
+@cache
+def codec_10() -> PydanticModelCodec[models.FieldSearchesPostRequest]:
+    """Codec of /paths/~1searches/post request_body (request application/x-www-form-urlencoded)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema|ModelNode(symbol='models:FieldSearchesPostRequest')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema',
+            operation_id='/paths/~1searches/post',
+            media_type='application/x-www-form-urlencoded',
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:FieldSearchesPostRequest',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldSearchesPostRequest'),
+            models=(_model_2(), _model_8(), _model_9()),
+        ),
+        models.FieldSearchesPostRequest,
+        {
+            'models:Address': models.Address,
+            'models:FieldSearchesPostRequest': models.FieldSearchesPostRequest,
+            'models:Filter': models.Filter,
+        },
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_10() -> NativeOutboundCodec[models.FieldSearchesPostRequest]:
+    return NativeOutboundCodec(codec_10(), CONTEXT_10)
+
+
+CONTEXT_11: Final = CodecContext(
+    surface='client',
+    direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents/post/requestBody/content/application~1vnd.api+json/schema',
     operation_id='/paths/~1documents/post',
     media_type='application/vnd.api+json',
@@ -1279,7 +1483,7 @@ CONTEXT_10: Final = CodecContext(
 
 
 @cache
-def codec_10() -> PydanticModelCodec[models.Draft]:
+def codec_11() -> PydanticModelCodec[models.Draft]:
     """Codec of /paths/~1documents/post request_body (request application/vnd.api+json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1294,7 +1498,7 @@ def codec_10() -> PydanticModelCodec[models.Draft]:
             projection_mode='envelope',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
-            models=(_model_8(),),
+            models=(_model_10(),),
         ),
         models.Draft,
         {'models:Draft': models.Draft},
@@ -1303,11 +1507,11 @@ def codec_10() -> PydanticModelCodec[models.Draft]:
 
 
 @cache
-def outbound_10() -> EnvelopeOutboundCodec[models.Draft]:
-    return EnvelopeOutboundCodec(codec_10(), CONTEXT_10)
+def outbound_11() -> EnvelopeOutboundCodec[models.Draft]:
+    return EnvelopeOutboundCodec(codec_11(), CONTEXT_11)
 
 
-CONTEXT_11: Final = CodecContext(
+CONTEXT_12: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents/post/responses/3XX/content/application~1json/schema',
@@ -1317,7 +1521,7 @@ CONTEXT_11: Final = CodecContext(
 
 
 @cache
-def codec_11() -> PydanticModelCodec[models.Draft]:
+def codec_12() -> PydanticModelCodec[models.Draft]:
     """Codec of /paths/~1documents/post response_body (response 3XX application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1332,7 +1536,7 @@ def codec_11() -> PydanticModelCodec[models.Draft]:
             projection_mode='envelope',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
-            models=(_model_8(),),
+            models=(_model_10(),),
         ),
         models.Draft,
         {'models:Draft': models.Draft},
@@ -1340,7 +1544,7 @@ def codec_11() -> PydanticModelCodec[models.Draft]:
     )
 
 
-CONTEXT_12: Final = CodecContext(
+CONTEXT_13: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/parameters/0/content/application~1json/schema',
@@ -1350,7 +1554,7 @@ CONTEXT_12: Final = CodecContext(
 
 
 @cache
-def codec_12() -> PydanticModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
+def codec_13() -> PydanticModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
     """Codec of /paths/~1documents~1{id}/get parameter (request path id application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1365,7 +1569,7 @@ def codec_12() -> PydanticModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:FieldDocumentsIdGetPathIdParameter'),
-            models=(_model_9(),),
+            models=(_model_11(),),
         ),
         models.FieldDocumentsIdGetPathIdParameter,
         {'models:FieldDocumentsIdGetPathIdParameter': models.FieldDocumentsIdGetPathIdParameter},
@@ -1374,11 +1578,11 @@ def codec_12() -> PydanticModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
 
 
 @cache
-def outbound_12() -> NativeOutboundCodec[models.FieldDocumentsIdGetPathIdParameter]:
-    return NativeOutboundCodec(codec_12(), CONTEXT_12)
+def outbound_13() -> NativeOutboundCodec[models.FieldDocumentsIdGetPathIdParameter]:
+    return NativeOutboundCodec(codec_13(), CONTEXT_13)
 
 
-CONTEXT_13: Final = CodecContext(
+CONTEXT_14: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/responses/200/content/application~1vnd.api+json/schema',
@@ -1388,7 +1592,7 @@ CONTEXT_13: Final = CodecContext(
 
 
 @cache
-def codec_13() -> PydanticModelCodec[models.Draft]:
+def codec_14() -> PydanticModelCodec[models.Draft]:
     """Codec of /paths/~1documents~1{id}/get response_body (response 200 application/vnd.api+json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1403,7 +1607,7 @@ def codec_13() -> PydanticModelCodec[models.Draft]:
             projection_mode='envelope',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
-            models=(_model_8(),),
+            models=(_model_10(),),
         ),
         models.Draft,
         {'models:Draft': models.Draft},
@@ -1411,7 +1615,7 @@ def codec_13() -> PydanticModelCodec[models.Draft]:
     )
 
 
-CONTEXT_14: Final = CodecContext(
+CONTEXT_15: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/responses/200/headers/X-Draft/schema',
@@ -1420,7 +1624,7 @@ CONTEXT_14: Final = CodecContext(
 
 
 @cache
-def codec_14() -> PydanticModelCodec[models.Draft]:
+def codec_15() -> PydanticModelCodec[models.Draft]:
     """Codec of /paths/~1documents~1{id}/get response_header (response X-Draft 200)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1435,7 +1639,7 @@ def codec_14() -> PydanticModelCodec[models.Draft]:
             projection_mode='envelope',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
-            models=(_model_8(),),
+            models=(_model_10(),),
         ),
         models.Draft,
         {'models:Draft': models.Draft},
@@ -1443,7 +1647,7 @@ def codec_14() -> PydanticModelCodec[models.Draft]:
     )
 
 
-CONTEXT_15: Final = CodecContext(
+CONTEXT_16: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/id',
@@ -1453,7 +1657,7 @@ CONTEXT_15: Final = CodecContext(
 
 
 @cache
-def codec_15() -> PydanticModelCodec[int]:
+def codec_16() -> PydanticModelCodec[int]:
     """Codec of /paths/~1uploads/post request_body (request id multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1477,11 +1681,11 @@ def codec_15() -> PydanticModelCodec[int]:
 
 
 @cache
-def outbound_15() -> NativeOutboundCodec[int]:
-    return NativeOutboundCodec(codec_15(), CONTEXT_15)
+def outbound_16() -> NativeOutboundCodec[int]:
+    return NativeOutboundCodec(codec_16(), CONTEXT_16)
 
 
-CONTEXT_16: Final = CodecContext(
+CONTEXT_17: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/title',
@@ -1491,7 +1695,7 @@ CONTEXT_16: Final = CodecContext(
 
 
 @cache
-def codec_16() -> PydanticModelCodec[str]:
+def codec_17() -> PydanticModelCodec[str]:
     """Codec of /paths/~1uploads/post request_body (request title multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1515,11 +1719,11 @@ def codec_16() -> PydanticModelCodec[str]:
 
 
 @cache
-def outbound_16() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_16(), CONTEXT_16)
+def outbound_17() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_17(), CONTEXT_17)
 
 
-CONTEXT_17: Final = CodecContext(
+CONTEXT_18: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/count',
@@ -1529,7 +1733,7 @@ CONTEXT_17: Final = CodecContext(
 
 
 @cache
-def codec_17() -> PydanticModelCodec[int]:
+def codec_18() -> PydanticModelCodec[int]:
     """Codec of /paths/~1uploads/post request_body (request count multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1553,11 +1757,11 @@ def codec_17() -> PydanticModelCodec[int]:
 
 
 @cache
-def outbound_17() -> NativeOutboundCodec[int]:
-    return NativeOutboundCodec(codec_17(), CONTEXT_17)
+def outbound_18() -> NativeOutboundCodec[int]:
+    return NativeOutboundCodec(codec_18(), CONTEXT_18)
 
 
-CONTEXT_18: Final = CodecContext(
+CONTEXT_19: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/tags',
@@ -1567,7 +1771,7 @@ CONTEXT_18: Final = CodecContext(
 
 
 @cache
-def codec_18() -> PydanticModelCodec[list[str]]:
+def codec_19() -> PydanticModelCodec[list[str]]:
     """Codec of /paths/~1uploads/post request_body (request tags multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1591,11 +1795,11 @@ def codec_18() -> PydanticModelCodec[list[str]]:
 
 
 @cache
-def outbound_18() -> NativeOutboundCodec[list[str]]:
-    return NativeOutboundCodec(codec_18(), CONTEXT_18)
+def outbound_19() -> NativeOutboundCodec[list[str]]:
+    return NativeOutboundCodec(codec_19(), CONTEXT_19)
 
 
-CONTEXT_19: Final = CodecContext(
+CONTEXT_20: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/properties/meta',
@@ -1605,7 +1809,7 @@ CONTEXT_19: Final = CodecContext(
 
 
 @cache
-def codec_19() -> PydanticModelCodec[models.Address]:
+def codec_20() -> PydanticModelCodec[models.Address]:
     """Codec of /paths/~1uploads/post request_body (request meta multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1629,11 +1833,11 @@ def codec_19() -> PydanticModelCodec[models.Address]:
 
 
 @cache
-def outbound_19() -> NativeOutboundCodec[models.Address]:
-    return NativeOutboundCodec(codec_19(), CONTEXT_19)
+def outbound_20() -> NativeOutboundCodec[models.Address]:
+    return NativeOutboundCodec(codec_20(), CONTEXT_20)
 
 
-CONTEXT_20: Final = CodecContext(
+CONTEXT_21: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/post/requestBody/content/multipart~1form-data/schema/additionalProperties',
@@ -1643,7 +1847,7 @@ CONTEXT_20: Final = CodecContext(
 
 
 @cache
-def codec_20() -> PydanticModelCodec[int]:
+def codec_21() -> PydanticModelCodec[int]:
     """Codec of /paths/~1uploads/post request_body (request multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1667,11 +1871,11 @@ def codec_20() -> PydanticModelCodec[int]:
 
 
 @cache
-def outbound_20() -> NativeOutboundCodec[int]:
-    return NativeOutboundCodec(codec_20(), CONTEXT_20)
+def outbound_21() -> NativeOutboundCodec[int]:
+    return NativeOutboundCodec(codec_21(), CONTEXT_21)
 
 
-CONTEXT_21: Final = CodecContext(
+CONTEXT_22: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema/properties/title',
@@ -1681,7 +1885,7 @@ CONTEXT_21: Final = CodecContext(
 
 
 @cache
-def codec_21() -> PydanticModelCodec[str]:
+def codec_22() -> PydanticModelCodec[str]:
     """Codec of /paths/~1uploads/get response_body (response title 200 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1704,7 +1908,7 @@ def codec_21() -> PydanticModelCodec[str]:
     )
 
 
-CONTEXT_22: Final = CodecContext(
+CONTEXT_23: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema/properties/count',
@@ -1714,7 +1918,7 @@ CONTEXT_22: Final = CodecContext(
 
 
 @cache
-def codec_22() -> PydanticModelCodec[int]:
+def codec_23() -> PydanticModelCodec[int]:
     """Codec of /paths/~1uploads/get response_body (response count 200 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1737,7 +1941,7 @@ def codec_22() -> PydanticModelCodec[int]:
     )
 
 
-CONTEXT_23: Final = CodecContext(
+CONTEXT_24: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema/properties/tags/items',
@@ -1747,7 +1951,7 @@ CONTEXT_23: Final = CodecContext(
 
 
 @cache
-def codec_23() -> PydanticModelCodec[str]:
+def codec_24() -> PydanticModelCodec[str]:
     """Codec of /paths/~1uploads/get response_body (response tags 200 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1770,7 +1974,7 @@ def codec_23() -> PydanticModelCodec[str]:
     )
 
 
-CONTEXT_24: Final = CodecContext(
+CONTEXT_25: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema/properties/meta',
@@ -1780,7 +1984,7 @@ CONTEXT_24: Final = CodecContext(
 
 
 @cache
-def codec_24() -> PydanticModelCodec[models.Address]:
+def codec_25() -> PydanticModelCodec[models.Address]:
     """Codec of /paths/~1uploads/get response_body (response meta 200 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1803,7 +2007,7 @@ def codec_24() -> PydanticModelCodec[models.Address]:
     )
 
 
-CONTEXT_25: Final = CodecContext(
+CONTEXT_26: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema/properties/draft',
@@ -1813,7 +2017,7 @@ CONTEXT_25: Final = CodecContext(
 
 
 @cache
-def codec_25() -> PydanticModelCodec[models.Draft]:
+def codec_26() -> PydanticModelCodec[models.Draft]:
     """Codec of /paths/~1uploads/get response_body (response draft 200 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1828,7 +2032,7 @@ def codec_25() -> PydanticModelCodec[models.Draft]:
             projection_mode='envelope',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Draft'),
-            models=(_model_8(),),
+            models=(_model_10(),),
         ),
         models.Draft,
         {'models:Draft': models.Draft},
@@ -1836,7 +2040,7 @@ def codec_25() -> PydanticModelCodec[models.Draft]:
     )
 
 
-CONTEXT_26: Final = CodecContext(
+CONTEXT_27: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema/properties/secret',
@@ -1846,7 +2050,7 @@ CONTEXT_26: Final = CodecContext(
 
 
 @cache
-def codec_26() -> PydanticModelCodec[str]:
+def codec_27() -> PydanticModelCodec[str]:
     """Codec of /paths/~1uploads/get response_body (response secret 200 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1869,7 +2073,7 @@ def codec_26() -> PydanticModelCodec[str]:
     )
 
 
-CONTEXT_27: Final = CodecContext(
+CONTEXT_28: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/200/content/multipart~1form-data/schema/additionalProperties',
@@ -1879,7 +2083,7 @@ CONTEXT_27: Final = CodecContext(
 
 
 @cache
-def codec_27() -> PydanticModelCodec[int]:
+def codec_28() -> PydanticModelCodec[int]:
     """Codec of /paths/~1uploads/get response_body (response 200 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1902,7 +2106,7 @@ def codec_27() -> PydanticModelCodec[int]:
     )
 
 
-CONTEXT_28: Final = CodecContext(
+CONTEXT_29: Final = CodecContext(
     surface='client',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1uploads/get/responses/201/content/multipart~1form-data/schema/properties/note',
@@ -1912,7 +2116,7 @@ CONTEXT_28: Final = CodecContext(
 
 
 @cache
-def codec_28() -> PydanticModelCodec[str]:
+def codec_29() -> PydanticModelCodec[str]:
     """Codec of /paths/~1uploads/get response_body (response note 201 multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1935,7 +2139,7 @@ def codec_28() -> PydanticModelCodec[str]:
     )
 
 
-CONTEXT_29: Final = CodecContext(
+CONTEXT_30: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1avatars/post/requestBody/content/multipart~1form-data/schema/properties/caption',
@@ -1945,7 +2149,7 @@ CONTEXT_29: Final = CodecContext(
 
 
 @cache
-def codec_29() -> PydanticModelCodec[str]:
+def codec_30() -> PydanticModelCodec[str]:
     """Codec of /paths/~1avatars/post request_body (request caption multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1969,11 +2173,11 @@ def codec_29() -> PydanticModelCodec[str]:
 
 
 @cache
-def outbound_29() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_29(), CONTEXT_29)
+def outbound_30() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_30(), CONTEXT_30)
 
 
-CONTEXT_30: Final = CodecContext(
+CONTEXT_31: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1scans/post/requestBody/content/multipart~1form-data/schema/properties/note',
@@ -1983,7 +2187,7 @@ CONTEXT_30: Final = CodecContext(
 
 
 @cache
-def codec_30() -> PydanticModelCodec[str]:
+def codec_31() -> PydanticModelCodec[str]:
     """Codec of /paths/~1scans/post request_body (request note multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -2007,11 +2211,11 @@ def codec_30() -> PydanticModelCodec[str]:
 
 
 @cache
-def outbound_30() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_30(), CONTEXT_30)
+def outbound_31() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_31(), CONTEXT_31)
 
 
-CONTEXT_31: Final = CodecContext(
+CONTEXT_32: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1labels/post/requestBody/content/multipart~1form-data/schema/additionalProperties',
@@ -2021,7 +2225,7 @@ CONTEXT_31: Final = CodecContext(
 
 
 @cache
-def codec_31() -> PydanticModelCodec[str]:
+def codec_32() -> PydanticModelCodec[str]:
     """Codec of /paths/~1labels/post request_body (request multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -2045,5 +2249,5 @@ def codec_31() -> PydanticModelCodec[str]:
 
 
 @cache
-def outbound_31() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_31(), CONTEXT_31)
+def outbound_32() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_32(), CONTEXT_32)

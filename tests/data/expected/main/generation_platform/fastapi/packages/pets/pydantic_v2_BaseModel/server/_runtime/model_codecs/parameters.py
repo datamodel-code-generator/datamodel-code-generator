@@ -336,13 +336,22 @@ def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterC
     value = freeze_wire(value)
     if plan.location == "querystring":
         return QueryStringContribution(raw_query=_encode_querystring(plan, value))
-    pairs = (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, value)
+    pairs = _pairs(plan, value)
     return FragmentContribution(
         location=plan.location,
         ordered_fragments=tuple(
             ParameterFragment(None if key is None else key.encode("ascii"), text.encode()) for key, text in pairs
         ),
     )
+
+
+def query_pairs(plan: ParameterPlan, value: WireValue) -> tuple[str, ...]:
+    """Return a query parameter's ordered name=value pairs as a query or URL-encoded form carries them."""
+    return tuple(f"{key}={text}" for key, text in _pairs(plan, freeze_wire(value)))
+
+
+def _pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
+    return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, value)
 
 
 def encode_parameters(

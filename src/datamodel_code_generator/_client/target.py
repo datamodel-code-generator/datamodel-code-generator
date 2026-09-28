@@ -117,7 +117,7 @@ def _wire(
         [*(use for operation in request.operations for use in operation_uses(operation)), *(part.id for part in parts)],
         operations=frozenset(operation.id for operation in request.operations),
         documents=request.documents.pointers,
-        forms=frozenset(form_uses(request)),
+        forms=dict(form_uses(request)),
     )
 
 
@@ -251,7 +251,7 @@ class _TargetData:
             "body": None
             if body is None
             else [
-                (item.media_type, item.fields, item.additional, self.contract(item.use))
+                (item.media_type, item.fields, item.additional, self.contract(item.use), *item.encoded)
                 if item.members is None
                 else (item.media_type, self.contract(item.use), self.members(item, self.contract))
                 for item in body.media

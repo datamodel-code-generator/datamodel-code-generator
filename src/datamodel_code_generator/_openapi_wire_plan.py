@@ -136,7 +136,7 @@ class WirePlan:
     documents: tuple[tuple[SourceDocumentId, str], ...] = ()
     version: str = ""
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
-    forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None], ...] = ()
+    forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
 
     def schema_id(self, location: SourceLocation) -> str:
         """Return the bundled schema identifier of a planned source location."""
@@ -677,14 +677,15 @@ def plan_wire(  # noqa: PLR0913
     *,
     operations: Collection[OperationId] | None = None,
     documents: Mapping[SourceDocumentId, str] | None = None,
-    forms: Collection[TypeUseId] = (),
+    forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
 ) -> WirePlan:
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
     Explicit document pointers, such as a target manifest's `/inputs/documents/<index>`, name the bundled
     resources, so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
-    get their member plans.
+    get their member plans, and each member their encoding names the plan of a query parameter.
     """
+    forms = forms or {}
     planner = _WirePlanner(batch, lease, documents)
     requested = None if uses is None else frozenset(uses)
     schema_ids = tuple(
@@ -703,7 +704,7 @@ def plan_wire(  # noqa: PLR0913
         for use, plan in _response_header(planner, operation.id, header)
     )
     planned_forms = tuple(
-        form for use in batch.type_uses if use.id in forms and (form := _form(planner, use)) is not None
+        form for use in batch.type_uses if use.id in forms and (form := _form(planner, use, forms[use.id])) is not None
     )
     views: list[DirectionalView] = []
     for direction in _FLAGS:
@@ -734,17 +735,81 @@ def plan_wire(  # noqa: PLR0913
 
 
 def _form(
-    planner: _WirePlanner, use: TypeUseBinding
-) -> tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None] | None:
+    planner: _WirePlanner, use: TypeUseBinding, encodings: tuple[WireDeclaration, ...]
+) -> tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]] | None:
+    """Return the member plans of a URL-encoded use: each member's field, or the parameter plan its encoding gives."""
     try:
-        _, _, fields, additional = _shape(planner, _schema_location(planner, (use.id,), use.id.use_site), form=True)
+        location = _schema_location(planner, (use.id,), use.id.use_site)
+        styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
+        _, _, fields, additional = _shape(planner, location, form=True, skip=frozenset(styled))
+        encoded = tuple(_encoding(planner, location, declaration) for declaration in styled.values())
+        _distinct(location, fields, encoded)
     except _PlanError as error:
         owner = use.id.owner
         planner.diagnostics.append(
             replace(error.diagnostic, operation=owner if isinstance(owner, OperationId) else None, uses=(use.id,))
         )
         return None
-    return use.id, fields, additional
+    return use.id, fields, additional, encoded
+
+
+def _distinct(location: SourceLocation, fields: tuple[FieldPlan, ...], encoded: tuple[ParameterPlan, ...]) -> None:
+    """Refuse a URL-encoded form whose members, an exploded member's own included, write a name twice."""
+    claimed = [
+        *(item.name for plan in encoded if _spread(plan) for item in plan.fields),
+        *(field.name for field in fields),
+        *(plan.name for plan in encoded if not _spread(plan)),
+    ]
+    if len(set(claimed)) != len(claimed):
+        raise _PlanError(
+            code="MC_PARAMETER_ENCODING", source=location, message="Expanded URL-encoded member names collide"
+        )
+
+
+def _styled(encoding: WireDeclaration) -> bool:
+    """Return whether an encoding gives its member a query parameter's style or content."""
+    return any(_fact(encoding, key) is not None for key in ("style", "explode", "allowReserved", "contentType"))
+
+
+def _encoding(planner: _WirePlanner, location: SourceLocation, encoding: WireDeclaration) -> ParameterPlan:
+    """Return the query parameter plan of a URL-encoded member: its style, or its content when only that is named.
+
+    A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes.
+    """
+    name, source = encoding.name or "", encoding.use_site
+    value, resolved = planner.resolved(location)
+    properties = value.get("properties")
+    if not isinstance(properties, dict) or name not in properties:
+        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message="An encoding names no member of its form")
+    style, explode, reserved, content = (
+        _fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
+    )
+    try:
+        if style is None and explode is None and reserved is None:
+            media = normalize_media_type(str(content))
+            if not builtin_content("query", media):
+                raise _PlanError(
+                    code="MC_PARAMETER_ENCODING",
+                    source=source,
+                    message="The member content requires an explicit parameter adapter",
+                )
+            return ParameterPlan(location="query", name=name, content_media_type=media)
+        shape, kind, fields, additional = _shape(planner, _at(resolved, "properties", name), form=False)
+        chosen = str(style or "form")
+        return ParameterPlan(
+            location="query",
+            name=name,
+            style=chosen,
+            explode=explode if isinstance(explode, bool) else chosen == "form",
+            allow_reserved=reserved is True,
+            shape=shape,
+            kind=kind,
+            fields=fields,
+            additional=additional,
+            reserved_names=tuple(sorted(str(other) for other in properties if other != name)),
+        )
+    except ValueError as error:
+        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=str(error)) from None
 
 
 @dataclass(frozen=True, slots=True)
@@ -1027,7 +1092,7 @@ def _kind(planner: _WirePlanner, location: SourceLocation) -> LexicalKind:
 
 
 def _shape(
-    planner: _WirePlanner, location: SourceLocation, *, form: bool
+    planner: _WirePlanner, location: SourceLocation, *, form: bool, skip: frozenset[str] = frozenset()
 ) -> tuple[ValueShape, LexicalKind, tuple[FieldPlan, ...], FieldPlan | None]:
     value, location = planner.resolved(location)
     kinds = (_kinds(planner, location) or frozenset()) - _NULL
@@ -1049,6 +1114,7 @@ def _shape(
     fields = tuple(
         _field(planner, _at(location, "properties", name), name, form=form)
         for name in (properties if isinstance(properties, dict) else {})
+        if name not in skip
     )
     return (
         "object",

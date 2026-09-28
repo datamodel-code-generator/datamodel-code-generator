@@ -312,6 +312,48 @@ paths:
       responses:
         '204':
           description: Replaced.
+  /searches:
+    post:
+      operationId: submitSearch
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+                filter:
+                  type: object
+                  properties:
+                    name: {type: string}
+                    min: {type: integer}
+                tags:
+                  type: array
+                  items: {type: string}
+                ids:
+                  type: array
+                  items: {type: integer}
+                meta: {$ref: '#/components/schemas/Address'}
+                path: {type: string}
+                extra:
+                  type: object
+                  additionalProperties: {type: string}
+            encoding:
+              extra: {style: form, explode: true}
+              filter: {style: deepObject, explode: true}
+              tags: {style: pipeDelimited, explode: false}
+              ids: {style: form, explode: false}
+              meta: {contentType: application/json}
+              path: {allowReserved: true}
+              term:
+                headers:
+                  X-Ignored:
+                    schema: {type: string}
+      responses:
+        '204':
+          description: Searched.
   /documents:
     post:
       operationId: storeDocument

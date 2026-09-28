@@ -1228,6 +1228,8 @@ class _Registry(_Typing):
             entries.append(("fields=", _tuple(field_plan(module.local, item) for item in media.fields)))
         if media.additional is not None:
             entries.append(("additional=", field_plan(module.local, media.additional)))
+        if media.encoded:
+            entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
         if media.parts:
             entries.append(("parts=", _tuple(_part_plan(module, item) for item in media.parts)))
         if media.additional_part is not None:
