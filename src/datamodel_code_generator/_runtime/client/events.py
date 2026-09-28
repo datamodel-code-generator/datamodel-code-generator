@@ -35,6 +35,24 @@ if TYPE_CHECKING:
     from .responses import Response, ResponseInfo
 
 
+def _interrupted(primary: BaseException | None, interruption: BaseException) -> BaseException:
+    """Return the error a terminal hook's interruption leaves.
+
+    An interruption such as KeyboardInterrupt replaces an ordinary failure and keeps it beside itself; a cancellation
+    the hook raised itself stays beside the failure already propagating.
+    """
+    import asyncio  # noqa: PLC0415
+
+    if primary is None:
+        return interruption
+    if isinstance(primary, Exception) and not isinstance(interruption, asyncio.CancelledError):
+        add_secondary(interruption, primary)
+        return interruption
+    if primary is not interruption:
+        add_secondary(primary, interruption)
+    return primary
+
+
 class CallEvents:
     """The hooks of one call and the facts its events share: its identifiers, path template, origin, and counters."""
 
@@ -381,10 +399,8 @@ class CallEvents:
             try:
                 self._notified(event, failures, terminal=True)
             except BaseException as interrupted:  # noqa: BLE001
-                if primary is None:
-                    primary = interrupted
-                elif primary is not interrupted:
-                    add_secondary(primary, interrupted)
+                self.call.retry_blocked = True
+                primary = _interrupted(primary, interrupted)
             if failures:
                 if failed is None:
                     failed = (event.name, failures)
@@ -435,10 +451,8 @@ class CallEvents:
                 try:
                     await self._anotified(event, failures, terminal=True)
                 except BaseException as interrupted:  # noqa: BLE001
-                    if primary is None:
-                        primary = interrupted
-                    elif primary is not interrupted:
-                        add_secondary(primary, interrupted)
+                    self.call.retry_blocked = True
+                    primary = _interrupted(primary, interrupted)
                 if failures:
                     self.call.retry_blocked = True
                     if failed is None:

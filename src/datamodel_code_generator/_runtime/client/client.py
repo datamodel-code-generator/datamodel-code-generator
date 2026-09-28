@@ -738,6 +738,7 @@ class _Call(LogicalCallContext):
         """Apply the ordered pure gates and retain one absolute delay before response disposal."""
         self.check("send")
         if self.retry_blocked:
+            self.stop_reason = "callback_failure"
             return None
         retry = self.settings.retry
         headers = None if info is None else info.headers
@@ -806,6 +807,7 @@ class _Call(LogicalCallContext):
         """Recheck termination and key retention before waiting or opening another body."""
         self.check("sleep")
         if self.retry_blocked:
+            self.stop_reason = "callback_failure"
             raise self.stopped(error)
         if self.key_expires_at is not None and monotonic() >= self.key_expires_at:
             self.stop_reason = "unsafe_operation"

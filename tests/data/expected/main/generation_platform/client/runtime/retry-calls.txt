@@ -26,11 +26,11 @@
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'cancel')] one-call=True queued=0
   stop hook response_headers = ('HookExecutionError', None, 1, 1, None, ())
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  stop hook attempt_end = ('GetSafeHTTPError', None, 1, 1, None, ('RuntimeError',))
+  stop hook attempt_end = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
   stop hook retry_scheduled = ('HookExecutionError', None, 1, 1, None, ())
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  failed cleanup stops status retry = ('GetSafeHTTPError', None, 1, 1, None, ('RuntimeError',))
+  failed cleanup stops status retry = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
   failed cleanup count = 1
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
   native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note']), 1)
@@ -321,14 +321,14 @@
   async stream status reason partial = ('GetSafeHTTPError', 'max_retries_exhausted', 3, 3, None, ())
   async repeated status reason partial = ('GetSafeHTTPError', 'max_retries_exhausted', 3, 3, None, ())
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('attempt_start', 1, None, False, 1, 1, None, None), ('response_headers', 1, 503, True, 2, 2, None, None), ('attempt_end', 1, 503, True, 2, 2, None, None), ('retry_scheduled', 1, None, True, 2, 2, 'status', None), ('attempt_start', 2, None, False, 2, 2, None, None), ('response_headers', 2, 503, True, 3, 3, None, None), ('attempt_end', 2, 503, True, 3, 3, None, None), ('call_end', 2, 503, True, 3, 3, None, 'handed_off'), ('stream_end', 2, 503, True, 3, 3, None, 'error')] one-call=True queued=0
-  async stop hook attempt_end = ('GetSafeHTTPError', None, 1, 1, None, ('RuntimeError',))
+  async stop hook attempt_end = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
   async stop hook retry_scheduled = ('HookExecutionError', None, 1, 1, None, ())
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('retry_scheduled', 0, None, True, 1, 1, 'status', None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  async failed cleanup stops retry = ('GetSafeHTTPError', None, 1, 1, None, ('RuntimeError',))
+  async failed cleanup stops retry = ('GetSafeHTTPError', 'callback_failure', 1, 1, None, ('RuntimeError',))
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
-  async native retry close CancelledError = (('CancelledError', True, ('native retry close',), ['original close note']), 1)
-    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
+  async native retry close CancelledError = (('GetSafeHTTPError', False, (), ()), 1)
+    events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'error')] one-call=True queued=1
   async native retry close _Stop = (('_Stop', True, ('native retry close',), ['original close note']), 1)
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 503, True, 1, 1, None, None), ('attempt_end', 0, 503, True, 1, 1, None, None), ('call_end', 0, 503, True, 1, 1, None, 'cancel')] one-call=True queued=1
   async native retry close KeyboardInterrupt = (('KeyboardInterrupt', True, ('native retry close',), ['original close note']), 1)

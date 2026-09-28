@@ -62,10 +62,10 @@
   async changed parts failed BodyNotReplayableError secondary=['OSError']
     closes=(1, 1, 1) sends=0
   async native final attempt cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: BodyFactoryError',)
-  async native partial attempt cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: BodyFactoryError',)
+  async native partial attempt cleanup identity=False closes=(1, 1, 1) sends=0 notes=()
   async native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
   async native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
-  async native metadata cleanup identity=True closes=1 sends=0
+  async native metadata cleanup identity=False closes=1 sends=0
   async file replay length changed ! BodyChangedError: BodyChangedError(call_id='<call>', source_kind='file', check='length') [] body_changed_error
     sends=1 borrowed_open=True
   async file replay seek changed ! BodyFactoryError: BodyFactoryError(call_id='<call>', attempt_index=1, hop_index=0) [cause=OSError('replay seek failed')] body_factory_error
@@ -93,15 +93,15 @@
   deadline length cleanup before release closes=1 finished=0 sends=1 failure=DeadlineExceededError
   deadline length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
     retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=BodyChangedError secondary=[]
+    released closes=1 finished=1 args=() notes=() cause=BodyChangedError secondary=['BodyFactoryError']
   deadline metadata cleanup before release closes=1 finished=0 sends=0 failure=DeadlineExceededError
   deadline metadata cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
     retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=[]
+    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=['OSError']
   deadline multipart cleanup before release closes=1 finished=0 sends=0 failure=DeadlineExceededError
   deadline multipart cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
     retained_late=True no_cause_cycle=True
-    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=[]
+    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=['BodyFactoryError']
   cancel_token length cleanup before release closes=1 finished=0 sends=1 failure=RequestCancelledError
   cancel_token length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.005) [] cleanup_error
     retained_late=True no_cause_cycle=True

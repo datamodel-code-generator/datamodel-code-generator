@@ -529,12 +529,30 @@ class LogicalCallContext:
         at = monotonic() if self.deadline is None else self.deadline.at
         return self._deadline_error(at, self._phase, delivery, failure)
 
-    def _cleanup_interruption(self, failure: BaseException) -> BaseException:
-        """Return the call's interruption once cleanup raised one, keeping a recorded or native one that came first."""
-        guard = self._guard
-        interruption = self._interrupted = (
-            failure if self._interrupted is None and (guard is None or not guard.external()) else self._native(None)
+    def _interrupts(self, failure: BaseException) -> bool:
+        """Return whether a cleanup failure interrupts the call ahead of the failure cleanup kept.
+
+        A cancellation the cleanup work raised itself replaces no failure unless the call's task is being cancelled.
+        """
+        import asyncio  # noqa: PLC0415
+
+        return not isinstance(failure, Exception) and (
+            not isinstance(failure, asyncio.CancelledError) or self._pending_native()
         )
+
+    def _pending_native(self) -> bool:
+        return self._owning() and (guard := self._guard) is not None and guard.external()
+
+    def _cleanup_interruption(self, failure: BaseException) -> BaseException:
+        """Return the call's interruption once cleanup raised one, keeping a recorded or native one that came first.
+
+        Only the task running the call records it for the call.
+        """
+        owning = self._owning()
+        interruption = (
+            self._native(None) if owning and (self._interrupted is not None or self._pending_native()) else failure
+        )
+        self._interrupted = interruption if owning else self._interrupted
         cleanup_secondary(interruption, failure)
         return interruption
 
@@ -628,9 +646,15 @@ class LogicalCallContext:
         error: BaseException | None = None,
         wrap_errors: bool = True,
     ) -> bool:
-        """Release owned work within the cleanup cap, retaining late work and preserving any primary failure."""
+        """Release owned work within the cleanup cap, retaining late work and preserving any primary failure.
+
+        A primary failure that is the guard's own cancellation becomes the call's stop error first, so late failures
+        stay on the error the caller receives.
+        """
         import asyncio  # noqa: PLC0415
 
+        if error is not None and (stopper := self._stopper(error)) is not None:
+            error = self._stopped(stopper, "unknown", None, None)
         task = asyncio.create_task(_released(operation))
         self._scope.retain_cleanup(task, error, owner=self)
         try:
@@ -659,10 +683,10 @@ class LogicalCallContext:
         try:
             task_result(task)
         except BaseException as failure:
-            if not isinstance(failure, Exception) and (error is None or isinstance(error, Exception)):
+            if self._interrupts(failure) and (error is None or isinstance(error, Exception)):
                 raise self._cleanup_interruption(failure) from None
             if error is None:
-                if not wrap_errors:
+                if not wrap_errors or not isinstance(failure, Exception):
                     raise
                 cleanup_error = failure if isinstance(failure, CleanupError) else CleanupError(cause=failure)
                 raise self.snapshot_error(cleanup_error) from None

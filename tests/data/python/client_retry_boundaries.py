@@ -118,7 +118,52 @@ def retry_boundaries(package: ModuleType, lines: list[str]) -> None:
     _uncapped(package, options, errors, transports, lines)
     _closing_wait(package, options, errors, lines)
     _terminal(package, options, lines)
+    _hook_interruption(package, options, lines)
     run(lambda: _async(package, options, bodies, errors, transports, lines))
+
+
+def _hook_interruption(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    primary = _Stop("intermediate attempt hook interruption")
+    hook = _TerminalHook({"attempt_end": primary})
+    exchange = Exchange([])
+    exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"done", "text/plain"))
+    with (
+        exchange.client() as native,
+        package.Client(
+            http_client=native,
+            options=options.ClientOptions(hooks=(hook,), retry=options.RetryOptions(initial_delay=0)),
+        ) as api,
+    ):
+        try:
+            api.retry.get_safe()
+        except BaseException as error:  # noqa: BLE001
+            observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())
+        else:
+            observed = ("returned",)
+    record(lines, "intermediate hook interruption", lambda: observed)
+    record(lines, "intermediate hook interruption events", lambda: hook.events)
+
+
+async def _ahook_interruption(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    primary = _Stop("intermediate attempt hook interruption")
+    hook = _TerminalHook({"attempt_end": primary})
+    exchange = Exchange([])
+    exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"done", "text/plain"))
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(
+            http_client=native,
+            options=options.ClientOptions(hooks=(hook,), retry=options.RetryOptions(initial_delay=0)),
+        ) as api,
+    ):
+        try:
+            await api.retry.get_safe()
+        except BaseException as error:  # noqa: BLE001
+            observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())
+        else:
+            observed = ("returned",)
+    record(lines, "async intermediate hook interruption", lambda: observed)
+    record(lines, "async intermediate hook interruption events", lambda: hook.events)
 
 
 def _configuration(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -288,6 +333,7 @@ async def _async(
     await _async_presend(package, options, errors, lines)
     await _late_native(package, options, bodies, transports, lines)
     await _async_terminal(package, options, lines)
+    await _ahook_interruption(package, options, lines)
     exchange = Exchange([])
     exchange.respond(raw_response(200, b"bounded stream", "text/plain"))
     async with (
