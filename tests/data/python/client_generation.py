@@ -149,6 +149,39 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
     return lines
 
 
+def _digests(case: dict[str, Any], root: Path) -> dict[str, dict[str, str]]:
+    """Return the contract digests of each operation in the manifest of a rendered case."""
+    root.mkdir(parents=True)
+    config = client_config(case.get("config", {}), root)
+    project = render_target(
+        shutil.copy2(SOURCE / case["input"], root / case["input"]),
+        model_config=GenerateConfig(
+            output=root / "models.py",
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            disable_timestamp=True,
+            formatters=[Formatter.BUILTIN],
+        ),
+        config=config,
+        generator=ClientTarget(),
+    )
+    manifest = next(item for item in project.artifacts if item.path.name == MANIFEST)
+    operations = json.loads(manifest.content or b"")["target_data"]["client"]["public_api"]
+    return {f"{item['resource']}.{item['method']}": item["contract_digests"] for item in operations}
+
+
+def client_digest_report(first: str, second: str, root: Path) -> str:
+    """Render two cases and report, for each operation, which of its contract digests they share."""
+    cases = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))
+    left, right = (_digests(cases[name], root / name) for name in (first, second))
+    lines = [f"# {first} and {second}"]
+    for operation, digests in left.items():
+        same = [name for name, value in sorted(digests.items()) if right[operation][name] == value]
+        lines.append(f"  {operation} same {same} different {sorted(set(digests) - set(same))}")
+    return "\n".join(lines) + "\n"
+
+
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
     """Render one fixture for each of its backends, returning a report and every backend's Python modules."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]

@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Keywords
+  version: 1.0.0
+servers:
+  - url: https://keywords.example.com
+paths:
+  /search:
+    get:
+      operationId: search
+      tags: [search]
+      parameters:
+        - name: kwargs
+          in: query
+          required: true
+          schema: {type: string}
+        - name: args
+          in: query
+          schema: {type: integer}
+      responses:
+        '200':
+          description: The matches.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Operation0Arguments'}
+components:
+  schemas:
+    Operation0Arguments:
+      type: object
+      properties:
+        kwargs: {type: string}

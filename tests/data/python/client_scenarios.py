@@ -16,6 +16,7 @@ from tests.data.python.client_query import query
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_raw import raw
 from tests.data.python.client_selectors import selectors
+from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_runtime import (
     Exchange,
@@ -590,6 +591,13 @@ async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[st
         await arecord(lines, "async coding truncated", lambda: api.pets.get_pet(pet_id=pet))
 
 
+BACKENDS: Final = (
+    "pydantic_v2.BaseModel",
+    "pydantic_v2.dataclass",
+    "dataclasses.dataclass",
+    "typing.TypedDict",
+    "msgspec.Struct",
+)
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "media": ("media", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), media),
@@ -605,6 +613,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
+    "signatures": ("pets", BACKENDS, signatures),
+    "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
+    "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
 }
 
 

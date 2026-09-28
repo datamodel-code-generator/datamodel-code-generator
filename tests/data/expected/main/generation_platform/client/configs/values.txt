@@ -20,6 +20,7 @@ schema_version=1
 transport='httpx2'
 resource_names=(ResourceName(tag='pets', namespace='store.pets'),)
 operations=(ClientOperationConfig(ref=OperationRef(pointer='/paths/~1pets/get', document=None), resource='store', name='list_all', parameter_names=(ParameterName(in_='query', name='limit', python_name='page_size'),), request_media_type='application/json', response_media_type='application/json', runtime=RuntimeOperationMetadata(request_id_header='X-Request-Id', success_statuses=(302, 304)), description='List them.'),)
+signature_style='unpack'
 default_base_url='https://api.example.com/v1'
 server_base_url='http://localhost:8080'
 codec_adapters=()

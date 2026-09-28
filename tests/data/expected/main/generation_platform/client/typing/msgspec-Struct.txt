@@ -1,7 +1,7 @@
-31 marked lines
-mypy pets and clients.py: clean
-pyright pets and clients.py: clean
-ty pets and clients.py: clean
+mypy pets and clients.py and signatures.py: clean
+pyright pets and clients.py and signatures.py: clean
+ty pets and clients.py and signatures.py: clean
+clients_negative.py 31 marked lines
 mypy clients_negative.py: 31/31 marked lines with one error, 0 elsewhere, 0 in other files
   27 call-arg
   28 arg-type
@@ -102,3 +102,13 @@ ty clients_negative.py: 31/31 marked lines with one error, 0 elsewhere, 0 in oth
   96 invalid-argument-type
   98 invalid-assignment
   105 invalid-assignment
+signatures_negative.py 2 marked lines
+mypy signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  42 misc
+  43 assignment
+pyright signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  42 reportCallIssue
+  43 reportAssignmentType
+ty signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  42 unknown-argument
+  43 invalid-assignment

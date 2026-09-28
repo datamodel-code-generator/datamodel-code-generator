@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import assert_generated_modules_output, assert_output
-from tests.data.python.client_generation import client_config_report, client_render
+from tests.data.python.client_generation import client_config_report, client_digest_report, client_render
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"
 
@@ -16,6 +16,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
     "case",
     [
         "pets",
+        "pets-unpack",
         "media",
         "servers",
         "default-server",
@@ -39,6 +40,11 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
+
+
+def test_client_signature_style_digests(tmp_path: Path) -> None:
+    """Change only each operation's signature digest when the same API renders with the other signature style."""
+    assert_output(client_digest_report("pets", "pets-unpack", tmp_path), EXPECTED / "digests" / "signature-style.txt")
 
 
 @pytest.mark.parametrize(

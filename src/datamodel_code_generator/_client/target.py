@@ -228,6 +228,7 @@ class _TargetData:
         """Return the operation's public signature, request, response, and security contracts."""
         body = spec.body
         signature = {
+            "style": self.config.signature_style,
             "resource": spec.resource,
             "method": spec.name,
             "parameters": [(item.python_name, item.required, self.type(item.use)) for item in spec.parameters],

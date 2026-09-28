@@ -20,6 +20,7 @@ schema_version=1
 transport='httpx2'
 resource_names=()
 operations=()
+signature_style='explicit'
 default_base_url=None
 server_base_url=None
 codec_adapters=()

@@ -1,0 +1,8 @@
+# keywords pydantic_v2.BaseModel
+  > GET https://keywords.example.com/search?kwargs=a&args=2
+    [host: keywords.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search = Operation0Arguments(kwargs='found')
+  > GET https://keywords.example.com/search?kwargs=b
+    [host: keywords.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search without args = Operation0Arguments(kwargs=None)
+  search keywords kwargs!, args, response_media_type, options
