@@ -17,7 +17,12 @@ from ._runtime.client.operations import (
 )
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
-from .types.default import SearchErrorData, SearchHTTPError, SearchResponse
+from .types.default import (
+    SearchErrorData,
+    SearchHTTPError,
+    SearchRequestCodecs,
+    SearchResponse,
+)
 
 _SERVERS_0: Final = (ServerPlan(url='https://search.example.com'),)
 
@@ -50,4 +55,5 @@ OPERATION_0: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
             encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
         ),
     ),
+    codecs=SearchRequestCodecs,
 )

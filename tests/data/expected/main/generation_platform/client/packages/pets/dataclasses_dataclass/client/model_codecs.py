@@ -46,6 +46,7 @@ from ._runtime.model_codecs.parameters import (
     QueryStringContribution,
     RawParameter,
 )
+from ._runtime.model_codecs.selectors import RequestMedia, ResponseMedia
 from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.model_codecs.values import (
     DecodedValue,
@@ -121,6 +122,8 @@ __all__ = [
     'ProjectionIssue',
     'QueryStringContribution',
     'RawParameter',
+    'RequestMedia',
+    'ResponseMedia',
     'RuntimeModelBindingView',
     'SchemaCodecAdapterV1',
     'SchemaCodecCapabilities',

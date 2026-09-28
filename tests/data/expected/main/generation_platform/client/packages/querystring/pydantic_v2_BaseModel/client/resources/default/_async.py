@@ -11,7 +11,7 @@ from models import FieldSearchGetQuerystringCriteriaParameter as _dcg_type_0
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import ModelValue
+from ...model_codecs import ModelValue, ResponseMedia
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.default import SearchResponse
@@ -43,7 +43,7 @@ class AsyncDefaultResource:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchResponse:
         """Call GET /search."""
@@ -66,7 +66,7 @@ class AsyncDefaultWithResponse:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
         """Call GET /search."""
@@ -89,7 +89,7 @@ class AsyncDefaultWithRawResponse:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Call GET /search."""
@@ -112,7 +112,7 @@ class AsyncDefaultWithStreamingResponse:
         self,
         *,
         criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
-        response_media_type: Literal['application/json'] | None = None,
+        response_media_type: Literal['application/json'] | ResponseMedia[SearchResponse] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call GET /search."""

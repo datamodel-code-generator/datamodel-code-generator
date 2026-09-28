@@ -21,6 +21,7 @@ from .transports import AsyncTransportAdapter, OwnedTransportAdapter
 
 if TYPE_CHECKING:
     from .resources.documents._async import AsyncDocumentsResource
+    from .resources.files._async import AsyncFilesResource
     from .resources.forms._async import AsyncFormsResource
 
 _DEFAULTS = ClientDefaults(user_agent=None)
@@ -77,6 +78,13 @@ class AsyncClient:
         from .resources.forms._async import AsyncFormsResource
 
         return AsyncFormsResource(self._core)
+
+    @cached_property
+    def files(self) -> AsyncFilesResource:
+        """The files operations."""
+        from .resources.files._async import AsyncFilesResource
+
+        return AsyncFilesResource(self._core)
 
     @cached_property
     def documents(self) -> AsyncDocumentsResource:

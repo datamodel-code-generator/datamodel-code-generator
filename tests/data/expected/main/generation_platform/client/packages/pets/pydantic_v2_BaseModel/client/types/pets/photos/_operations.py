@@ -10,8 +10,9 @@ from typing_extensions import Never
 
 from ...._generated import model_bindings
 from ...._runtime.client.codecs import RequestCodecs
+from ....bodies import AsyncBinaryBody, SyncBinaryBody
 from ....errors import HTTPStatusError
-from ....model_codecs import NativeOutboundCodec
+from ....model_codecs import NativeOutboundCodec, RequestMedia, ResponseMedia
 
 UploadResponse: TypeAlias = bytes
 UploadErrorData: TypeAlias = None
@@ -21,7 +22,9 @@ class UploadHTTPError(HTTPStatusError[UploadErrorData]):
     """An error response of upload, with its decoded payload when one is declared."""
 
 
-class _UploadRequestCodecs(RequestCodecs[Never, NativeOutboundCodec[_dcg_type_0]]):
+class _UploadRequestCodecs(
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_0], Never, RequestMedia[SyncBinaryBody, AsyncBinaryBody], ResponseMedia[UploadResponse]],
+):
     """The outbound codecs of the upload request."""
 
     @overload
@@ -47,7 +50,27 @@ class _UploadRequestCodecs(RequestCodecs[Never, NativeOutboundCodec[_dcg_type_0]
         """Return the outbound codec of one declared parameter."""
         return self._parameter(location, name)
 
+    def select_request_media(
+        self,
+        *,
+        declared_media: Literal['application/octet-stream'],
+        concrete_media: str,
+    ) -> RequestMedia[SyncBinaryBody, AsyncBinaryBody]:
+        """Return the selector of a declared request media type for a concrete one."""
+        return self._request_media(declared_media, concrete_media)
+
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['image/*'],
+        concrete_media: str,
+    ) -> ResponseMedia[UploadResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
+
 
 UploadRequestCodecs: Final = _UploadRequestCodecs(
     parameters=(('path', 'petId', model_bindings.outbound_18),),
+    requests=('application/octet-stream',),
+    responses=('image/*',),
 )

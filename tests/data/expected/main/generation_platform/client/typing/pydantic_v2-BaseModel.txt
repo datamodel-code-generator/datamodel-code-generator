@@ -1,8 +1,8 @@
-29 marked lines
+31 marked lines
 mypy pets and clients.py: clean
 pyright pets and clients.py: clean
 ty pets and clients.py: clean
-mypy clients_negative.py: 29/29 marked lines with one error, 0 elsewhere, 0 in other files
+mypy clients_negative.py: 31/31 marked lines with one error, 0 elsewhere, 0 in other files
   27 call-arg
   28 arg-type
   29 call-overload
@@ -24,15 +24,17 @@ mypy clients_negative.py: 29/29 marked lines with one error, 0 elsewhere, 0 in o
   71 list-item
   72 arg-type
   73 arg-type
-  80 arg-type
   81 arg-type
   82 arg-type
-  83 assignment
-  86 arg-type
-  87 arg-type
-  89 assignment
-  96 assignment
-pyright clients_negative.py: 26/29 marked lines with one error, 0 elsewhere, 0 in other files
+  89 arg-type
+  90 arg-type
+  91 arg-type
+  92 assignment
+  95 arg-type
+  96 arg-type
+  98 assignment
+  105 assignment
+pyright clients_negative.py: 27/31 marked lines with one error, 0 elsewhere, 0 in other files
   27 reportCallIssue
   28 reportArgumentType
   29 reportArgumentType
@@ -57,15 +59,18 @@ pyright clients_negative.py: 26/29 marked lines with one error, 0 elsewhere, 0 i
   71 reportArgumentType
   72 reportArgumentType
   73 reportArgumentType
-  80 reportArgumentType
   81 reportArgumentType
   82 reportArgumentType
-  83 reportAssignmentType
-  86 reportArgumentType
-  87 reportArgumentType
-  89 reportAssignmentType
-  96 reportAssignmentType
-ty clients_negative.py: 29/29 marked lines with one error, 0 elsewhere, 0 in other files
+  82 reportCallIssue
+  89 reportArgumentType
+  90 reportArgumentType
+  91 reportArgumentType
+  92 reportAssignmentType
+  95 reportArgumentType
+  96 reportArgumentType
+  98 reportAssignmentType
+  105 reportAssignmentType
+ty clients_negative.py: 31/31 marked lines with one error, 0 elsewhere, 0 in other files
   27 missing-argument
   28 invalid-argument-type
   29 no-matching-overload
@@ -87,11 +92,13 @@ ty clients_negative.py: 29/29 marked lines with one error, 0 elsewhere, 0 in oth
   71 invalid-argument-type
   72 invalid-argument-type
   73 invalid-argument-type
-  80 invalid-argument-type
   81 invalid-argument-type
-  82 invalid-argument-type
-  83 invalid-assignment
-  86 invalid-argument-type
-  87 invalid-argument-type
-  89 invalid-assignment
-  96 invalid-assignment
+  82 no-matching-overload
+  89 invalid-argument-type
+  90 invalid-argument-type
+  91 invalid-argument-type
+  92 invalid-assignment
+  95 invalid-argument-type
+  96 invalid-argument-type
+  98 invalid-assignment
+  105 invalid-assignment

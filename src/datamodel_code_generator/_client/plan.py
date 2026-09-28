@@ -31,6 +31,7 @@ from datamodel_code_generator._generation_contract import (
     TypeUseBinding,
 )
 from datamodel_code_generator._runtime.client.multipart import PartPlan
+from datamodel_code_generator._runtime.client.operations import most_specific
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 
 if TYPE_CHECKING:
@@ -501,8 +502,6 @@ class Planner:
         Multipart without a schema is sent as form-data parts and read as bytes of any multipart media; with a
         schema, only form-data maps its parts to the schema's members, which must be an object's.
         """
-        if request and "*" in essence:
-            return "is not supported yet"
         if kind != "multipart":
             return None
         if use is None or use.schema is None:
@@ -517,14 +516,14 @@ class Planner:
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None
     ) -> BodySpec:
-        """Plan a request body: its media and the media a call without media_type sends."""
+        """Plan a request body: its media and the media a call without media_type sends, never a media range."""
         media = self.media_list(operation, declaration, request=True)
         declared = [item.media_type for item in media]
-        default = None if len(declared) != 1 else declared[0]
+        default = None if len(declared) != 1 or media_range(declared[0]) else declared[0]
         if setting is not None and setting.request_media_type is not None:
             default = normalize_media_type(setting.request_media_type)
-            if default not in declared:
-                message = f"The request media type {default!r} of {_label(operation)} is not declared"
+            if default not in declared or media_range(default):
+                message = f"The request media type {default!r} of {_label(operation)} is not a declared concrete type"
                 self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site, "operations"))
         return BodySpec(required=fact(declaration, "required") is True, media=media, default=default)
 
@@ -683,17 +682,42 @@ def _error(status: str) -> bool:
     return status in {"default", "4XX", "5XX"} or (status.isdigit() and _MIN_ERROR <= int(status) <= _MAX_ERROR)
 
 
-def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:
-    """Return the concrete media types of every success body, in response and media order without repeats."""
+def success_media(responses: tuple[ResponseSpec, ...], *, ranges: bool = False) -> tuple[str, ...]:
+    """Return the media types of every success body, in response and media order without repeats.
+
+    Media ranges such as image/* are left out unless `ranges` asks for them, as selectors do.
+    """
     return tuple(
         dict.fromkeys(
             media.media_type
             for response in responses
             if response.success and not response.bodyless
             for media in response.media
-            if "*" not in media.media_type.partition(";")[0]
+            if ranges or not media_range(media.media_type)
         )
     )
+
+
+def reachable(declared: str, media: tuple[str, ...]) -> tuple[str, ...]:
+    """Return the media types of one response that a concrete type within a declared one dispatches to.
+
+    A concrete type dispatches to its most specific declaration: itself, then type/*, then */*, so */* is left out
+    within type/* when the response declares type/* itself.
+    """
+    if not media_range(declared):
+        return tuple(found for found in (most_specific(declared, media),) if found is not None)
+    kind = declared.partition("/")[0]
+    if kind == "*":
+        return media
+    ranged = any(item.partition(";")[0] == f"{kind}/*" for item in media)
+    return tuple(
+        item for item in media if item.partition("/")[0] == kind or (not ranged and item.partition(";")[0] == "*/*")
+    )
+
+
+def media_range(media_type: str) -> bool:
+    """Return whether a media type is a range such as image/* or */*."""
+    return "*" in media_type.partition(";")[0]
 
 
 def _file(wire: WirePlan, location: SourceLocation) -> bool:

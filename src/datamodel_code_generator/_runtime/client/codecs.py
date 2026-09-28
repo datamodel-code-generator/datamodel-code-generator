@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, NoReturn
+from typing import TYPE_CHECKING, Generic, NoReturn, cast
 
 from typing_extensions import Never, TypeVar
 
 from ..model_codecs.errors import CodecSelectionError
 from ..model_codecs.parameters import ParameterFragment, RawParameter, decode_parameter
+from ..model_codecs.selectors import MediaSelector, RequestMedia, ResponseMedia, select_media
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ResponseHeaderDecodeError
-from .operations import DATA_ERRORS, normalized, status_key
+from .operations import DATA_ERRORS, most_specific, normalized, status_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -29,14 +30,20 @@ M_co = TypeVar("M_co", covariant=True)
 BodyT_co = TypeVar("BodyT_co", covariant=True)
 ParameterT_co = TypeVar("ParameterT_co", covariant=True)
 PartT_co = TypeVar("PartT_co", covariant=True, default=Never)
+RequestMediaT_co = TypeVar("RequestMediaT_co", covariant=True, default=Never)
+ResponseMediaT_co = TypeVar("ResponseMediaT_co", covariant=True, default=Never)
 
 
-class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co]):
-    """The outbound codecs of one operation's request body media, parameters, and parts, selected by declaration."""
+class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co, RequestMediaT_co, ResponseMediaT_co]):
+    """The outbound codecs and media selectors of one operation's request, selected by declaration.
 
-    __slots__ = ("_bodies", "_default", "_extras", "_parameters", "_parts")
+    It codes the body media, parameters, and parts, and selects the concrete media type of a declared request or
+    success response media type; only this operation's calls take its selectors.
+    """
 
-    def __init__(
+    __slots__ = ("_bodies", "_default", "_extras", "_parameters", "_parts", "_requests", "_responses")
+
+    def __init__(  # noqa: PLR0913
         self,
         *,
         bodies: tuple[tuple[str, Callable[[], BodyT_co]], ...] = (),
@@ -44,19 +51,29 @@ class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co]):
         parameters: tuple[tuple[str, str, Callable[[], ParameterT_co]], ...] = (),
         parts: tuple[tuple[str, str, Callable[[], PartT_co] | None], ...] = (),
         extras: tuple[tuple[str, Callable[[], PartT_co]], ...] = (),
+        requests: tuple[str, ...] = (),
+        responses: tuple[str, ...] = (),
     ) -> None:
         """Keep the accessors of each declared media type, parameter, part, and media's extra parts, and the default.
 
         A part without an accessor is a file member, which has no codec and takes no extra part's codec either.
+        `requests` and `responses` are the declared request and success response media types selectors choose among.
         """
         self._bodies = dict(bodies)
         self._default = default
         self._parameters = {(location, name): accessor for location, name, accessor in parameters}
         self._parts = {(media_type, name): accessor for media_type, name, accessor in parts}
         self._extras = dict(extras)
+        self._requests = requests
+        self._responses = responses
 
-    def _body(self, media_type: str | None) -> BodyT_co:
-        wanted = self._default if media_type is None else normalized(media_type)
+    def _body(self, media_type: str | MediaSelector | None) -> BodyT_co:
+        wanted: str | None
+        match media_type:
+            case MediaSelector():
+                wanted, _ = RequestMedia.chosen(media_type, self)
+            case _:
+                wanted = self._default if media_type is None else normalized(media_type)
         if (accessor := self._bodies.get(wanted or "")) is None:
             msg = "The operation declares no codec-bearing request body for that media type"
             raise CodecSelectionError(msg)
@@ -74,6 +91,34 @@ class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co]):
             msg = f"The operation declares no codec-bearing part {name!r} for that media type"
             raise CodecSelectionError(msg)
         return accessor()
+
+    def _request_media(self, declared_media: str, concrete_media: str) -> RequestMediaT_co:
+        declared, concrete = _chosen(self._requests, declared_media, concrete_media, winner=True)
+        return cast("RequestMediaT_co", select_media(RequestMedia, declared, concrete, self))
+
+    def _response_media(self, declared_media: str, concrete_media: str) -> ResponseMediaT_co:
+        declared, concrete = _chosen(self._responses, declared_media, concrete_media, winner=False)
+        return cast("ResponseMediaT_co", select_media(ResponseMedia, declared, concrete, self))
+
+
+def _chosen(
+    declarations: tuple[str, ...], declared_media: str, concrete_media: str, *, winner: bool
+) -> tuple[str, str]:
+    """Return a declared media type and a concrete type it stands for, or raise CodecSelectionError.
+
+    A request's concrete type must dispatch to the declared type among all of them; a response's must be in its range.
+    """
+    declared, concrete = normalized(declared_media), normalized(concrete_media)
+    if (
+        declared is None
+        or concrete is None
+        or declared not in declarations
+        or "*" in concrete.partition(";")[0]
+        or most_specific(concrete, declarations if winner else (declared,)) != declared
+    ):
+        msg = f"The declared media type {declared_media!r} does not stand for {concrete_media!r}"
+        raise CodecSelectionError(msg)
+    return declared, concrete
 
 
 def required_header(info: ResponseInfo, operation_id: str | None) -> NoReturn:

@@ -73,6 +73,15 @@ async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO) ->
     BodyFactory(lambda: b"")  # error
 
 
+def misuse_selectors(client: Client) -> None:
+    body = CreatePetRequestCodecs.body(media_type="application/json").from_wire({"name": "dog"})
+    sent = UploadRequestCodecs.select_request_media(
+        declared_media="application/octet-stream", concrete_media="application/octet-stream"
+    )
+    UploadRequestCodecs.select_request_media(declared_media="image/png", concrete_media="image/png")  # error
+    client.pets.create_pet(body=body, media_type=sent)  # error
+
+
 def misuse_multipart(client: Client, file: BinaryIO) -> None:
     from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
     from pets.model_codecs import WireValue
