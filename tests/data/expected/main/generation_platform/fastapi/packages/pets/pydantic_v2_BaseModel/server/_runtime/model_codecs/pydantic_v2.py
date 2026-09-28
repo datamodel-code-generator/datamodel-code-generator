@@ -36,6 +36,7 @@ from .codec import (
     at,
     child_value,
     directional_gap,
+    directs,
     has_models,
     is_mapping,
     is_sequence,
@@ -47,9 +48,11 @@ from .codec import (
     selected,
     shape_error,
     sorted_items,
+    walks,
 )
 from .errors import CodecConfigurationError, ModelProjectionError, NativeIssue, NativeValidationError
 from .media import encode_json
+from .patterns import MatchBudget
 from .values import DecodedValue, ModelInput, ModelValue
 from .wire import (
     JSONValue,
@@ -64,10 +67,11 @@ from .wire import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from pydantic.fields import FieldInfo
     from typing_extensions import TypeIs
 
-    from .patterns import MatchBudget
     from .schema import SchemaBundle, WireValidator
 
 T = TypeVar("T")
@@ -124,7 +128,7 @@ def _native_type(binding: ModelBinding, models: Mapping[str, type]) -> tuple[typ
 class PydanticModelCodec(BuiltinModelCodec[T]):
     """Validate, construct, snapshot, and encode one bound use of a Pydantic v2 model type."""
 
-    __slots__ = ("_adapter", "_inspect", "_keys", "_leaves", "_nested", "_reserved", "_unstored", "_walk")
+    __slots__ = ("_adapter", "_directed", "_inspect", "_keys", "_leaves", "_nested", "_reserved", "_unstored", "_walk")
 
     @overload
     def __init__(
@@ -132,7 +136,7 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: type[T],
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None: ...
@@ -142,7 +146,7 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: object,
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None: ...
@@ -151,11 +155,11 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: object,
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None:
-        """Check the binding against the native types and bundle once, before any value is processed.
+        """Check the binding against the native types once, before any value is processed.
 
         A schema adapter's validator replaces the bundle's builtin validator of the use's schema.
         """
@@ -183,11 +187,8 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         }
         self._leaves: dict[type, TypeAdapter[object]] = {}
         self._adapter: TypeAdapter[T] = TypeAdapter(native_type)
-        self._walk = (
-            binding.projection_mode == "envelope"
-            or bool(self._reserved)
-            or any(field.validation_key != field.wire_name for model in binding.models for field in model.fields)
-        )
+        self._walk = walks(binding) or bool(self._reserved)
+        self._directed = self._walk or directs(binding)
         self._unstored = frozenset(
             model.symbol
             for model in binding.models
@@ -231,20 +232,51 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
             issues=tuple(walk.issues),
         )
 
-    def _native(self, keyed: JSONValue | WireValue, wire: WireValue, budget: MatchBudget) -> T:
+    def _native(self, keyed: JSONValue | WireValue, wire: WireValue, budget: MatchBudget, *, schema: bool = True) -> T:
         try:
             return self._adapter.validate_json(encode_json(keyed), by_alias=True, by_name=False)
         except ValidationError as error:
-            raise NativeValidationError(
-                tuple(
-                    NativeIssue(
-                        code=f"native.{item['type']}",
-                        pointer=self._native_pointer(tuple(item["loc"]), wire, budget),
-                        native_path=tuple(item["loc"]),
-                    )
-                    for item in error.errors(include_url=False, include_context=False, include_input=False)
+            raise self._invalid(error, wire, budget, schema=schema) from None
+
+    def _invalid(
+        self, error: ValidationError, wire: WireValue, budget: MatchBudget, *, schema: bool
+    ) -> NativeValidationError:
+        """Return the native issues of a validation error located in the wire; without schemas, a union ends a path."""
+        return NativeValidationError(
+            tuple(
+                NativeIssue(
+                    code=f"native.{item['type']}",
+                    pointer=self._native_pointer(tuple(item["loc"]), wire, budget, schema=schema),
+                    native_path=tuple(item["loc"]),
                 )
-            ) from None
+                for item in error.errors(include_url=False, include_context=False, include_input=False)
+            )
+        )
+
+    def _constructed(self, model: ModelBinding, fields: Mapping[str, object], *, validate: bool) -> object:
+        """Construct the model through its validation entry, which is also how its constructor builds it."""
+        del validate
+        keys = self._wire_fields[model.symbol]
+        try:
+            return self._adapter.validate_python({keys[name].validation_key: value for name, value in fields.items()})
+        except ValidationError as error:
+            raise self._invalid(error, None, MatchBudget(), schema=False) from None
+
+    def _validated(self, value: object) -> object:
+        try:
+            return self._adapter.validate_python(value)
+        except ValidationError as error:
+            raise self._invalid(error, None, MatchBudget(), schema=False) from None
+
+    def _converted(self, wire: WireValue, budget: MatchBudget) -> T:
+        walk = Walk(budget, converting=True)
+        keyed = self._keyed(wire, self._binding.type, "", (), walk) if self._directed else wire
+        if walk.native:
+            raise NativeValidationError(tuple(walk.native))
+        if walk.issues:
+            msg = f"The native use has an unplanned projection gap at {walk.issues[0].pointer or '/'}"
+            raise ModelProjectionError(msg)
+        return self._native(keyed, wire, budget, schema=False)
 
     def _keyed(
         self, wire: WireValue, node: TypeNode | None, pointer: str, path: tuple[str | int, ...], walk: Walk
@@ -281,7 +313,9 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         reserved = self._reserved.get(model.symbol, _NO_KEYS)
         keyed: dict[str, JSONValue] = {}
         for name, entry in wire.items():
-            if (field := fields.get(name)) is not None:
+            if (field := fields.get(name)) is not None and walk.converting and self._excluded(field):
+                walk.native.append(self._carried(at(pointer, name), (*path, field.validation_key)))
+            elif field is not None:
                 keyed[field.validation_key] = self._keyed(
                     entry, field.type, at(pointer, name), (*path, field.validation_key), walk
                 )
@@ -302,11 +336,13 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         )
         return keyed
 
-    def _native_pointer(self, loc: tuple[str | int, ...], wire: WireValue, budget: MatchBudget) -> str:
+    def _native_pointer(
+        self, loc: tuple[str | int, ...], wire: WireValue, budget: MatchBudget, *, schema: bool = True
+    ) -> str:
         node: TypeNode | None = self._binding.type
         tokens: list[str | int] = []
         for element in loc:
-            if (node := self._unwrapped(node)) is None:
+            if (node := self._unwrapped(node)) is None or (not schema and isinstance(node, UnionNode)):
                 break
             node, token = self._pointer_step(node, element, wire, budget)
             if token is not None:
@@ -446,7 +482,11 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         members: dict[str, JSONValue] = {}
         for field in model.fields:
             child = None if presence is None else presence.child(field.wire_name)
-            if not self._present(field, native, presence, child, fields_set) or field.native_name not in fields:
+            if (
+                self._excluded(field)
+                or not self._present(field, native, presence, child, fields_set)
+                or field.native_name not in fields
+            ):
                 continue
             members[field.wire_name] = self._wire(
                 fields[field.native_name],

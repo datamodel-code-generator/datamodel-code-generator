@@ -15,7 +15,6 @@ if TYPE_CHECKING:
         GeneratedTypeContractBatch,
         OperationContract,
         SourceLocation,
-        TypeUseId,
     )
 
 
@@ -81,19 +80,6 @@ class CallbackIndex:
                     )
                 )
         return tuple(nodes)
-
-
-def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
-    """Return the type uses of an operation's parameters, responses, and body, without encoding headers."""
-    pending = [*operation.parameters, *operation.responses]
-    if operation.request_body is not None:
-        pending.append(operation.request_body)
-    found: list[TypeUseId] = []
-    while pending:
-        declaration = pending.pop(0)
-        found.extend(declaration.schemas)
-        pending.extend(child for child in declaration.children if child.kind != "encoding")
-    return tuple(found)
 
 
 def flattened(nodes: tuple[CallbackNode, ...]) -> Iterator[CallbackNode]:

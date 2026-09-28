@@ -95,6 +95,7 @@ _SUPPORTED_GETATTR_ROOT_NAMES = frozenset({
     "operation",
     "pattern_property",
     "protocol",
+    "resource",
     "route",
     "rule",
     "scheme",
@@ -102,6 +103,7 @@ _SUPPORTED_GETATTR_ROOT_NAMES = frozenset({
     "schema_validator_state",
     "service",
     "v",
+    "view",
 })
 # ``prepared_validators`` is built as dictionaries in pydantic_v2/base_model.py.
 # The template intentionally uses Jinja's mapping-dot fallback for these keys.

@@ -1,0 +1,10 @@
+# servers pydantic_v2.BaseModel
+  > GET https://api.example.com/v2/status
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  status = None
+  > GET https://east.example.com/regional
+    [host: east.example.com, accept-encoding: gzip, deflate] b''
+  regional = None
+  > GET https://backup.example.com:8443/base/regional
+    [host: backup.example.com:8443, accept-encoding: gzip, deflate] b''
+  regional backup = None

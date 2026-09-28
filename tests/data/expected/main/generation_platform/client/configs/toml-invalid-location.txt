@@ -1,0 +1,2 @@
+APIGenerationError
+  E_CONFIG_VALUE config operations[0].parameter_names[0].in: in must be path, query, querystring, header, or cookie

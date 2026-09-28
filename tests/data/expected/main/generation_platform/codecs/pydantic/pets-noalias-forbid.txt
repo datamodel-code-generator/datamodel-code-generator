@@ -15,3 +15,4 @@ created-client-decode-shadow: NativeValidationError native.extra_forbidden@/nick
 list-client-decode-shadow: NativeValidationError native.extra_forbidden@/1/co_owner[1, 'co_owner']
 created-client-decode-extra: NativeValidationError native.extra_forbidden@/zz['zz']
 create-server-decode-shadow: input issues=DIRECTIONAL_REQUIRED@/id:models:Pet.id wire={"name":"Mimi","status":"new","nick_name":"x"} extras={}
+created-client-convert-shadow: NativeValidationError native.extra_forbidden@/nick_name['nick_name']

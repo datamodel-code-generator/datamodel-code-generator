@@ -230,6 +230,10 @@ jobs:
             name: FastAPI server e2e
             os: ubuntu-24.04
             coverage: true
+          - tox_env: client-e2e
+            name: Client e2e
+            os: ubuntu-24.04
+            coverage: true
     runs-on: ${{ matrix.os }}
     env: &test-http-backends-env
       OS: ${{ matrix.os }}
@@ -307,7 +311,7 @@ jobs:
             os: ubuntu-24.04
             coverage: false
           - tox_env: typing-nocov-e2e
-            name: FastAPI server and model codec typing e2e
+            name: FastAPI server, client, and model codec typing e2e
             os: ubuntu-24.04
             coverage: false
     runs-on: ${{ matrix.os }}

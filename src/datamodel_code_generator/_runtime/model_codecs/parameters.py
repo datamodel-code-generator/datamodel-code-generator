@@ -231,8 +231,13 @@ def _encode_path(plan: ParameterPlan, entries: list[_Entry]) -> str:
     return text
 
 
-def _encode_query(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
-    encoded = _encoded(entries, encode := _percent(plan, _QUERY_KEPT))
+def _verbatim(text: str) -> str:
+    return text
+
+
+def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = False) -> list[_Entry]:
+    encode = _verbatim if raw else _percent(plan, _QUERY_KEPT)
+    encoded = entries if raw else _encoded(entries, encode)
     name = encode(plan.name)
     match plan.style, plan.shape, plan.explode:
         case "form", "scalar", _:
@@ -240,11 +245,12 @@ def _encode_query(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
         case "form", _, True:
             return [(name if key is None else key, text) for key, text in encoded]
         case ("spaceDelimited" | "pipeDelimited") as style, _, _:
-            _, delimiter, raw = _DELIMITERS[style]
-            if any(raw in part for entry in entries for part in entry if part is not None):
+            _, delimiter, character = _DELIMITERS[style]
+            if any(character in part for entry in entries for part in entry if part is not None):
                 msg = "A delimited query value cannot contain its own delimiter"
                 raise ParameterEncodingError(msg)
-            return [(name, _joined(encoded, separator=delimiter, pair=delimiter))]
+            separator = character if raw else delimiter
+            return [(name, _joined(encoded, separator=separator, pair=separator))]
         case "deepObject", _, _:
             return [(encode(f"{plan.name}[{key}]"), text) for (key, _), (_, text) in zip(entries, encoded, strict=True)]
         case _:
@@ -335,13 +341,30 @@ def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterC
     value = freeze_wire(value)
     if plan.location == "querystring":
         return QueryStringContribution(raw_query=_encode_querystring(plan, value))
-    pairs = (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, value)
+    pairs = _pairs(plan, value)
     return FragmentContribution(
         location=plan.location,
         ordered_fragments=tuple(
             ParameterFragment(None if key is None else key.encode("ascii"), text.encode()) for key, text in pairs
         ),
     )
+
+
+def query_pairs(plan: ParameterPlan, value: WireValue) -> tuple[str, ...]:
+    """Return a query parameter's ordered name=value pairs as a query or URL-encoded form carries them."""
+    return tuple(f"{key}={text}" for key, text in _pairs(plan, freeze_wire(value)))
+
+
+def part_pairs(plan: ParameterPlan, value: WireValue) -> tuple[tuple[str, str], ...]:
+    """Return a query parameter's ordered names and values as form-data parts carry them, without percent-encoding."""
+    return tuple(
+        (plan.name if key is None else key, text)
+        for key, text in _encode_query(plan, _entries(plan, freeze_wire(value)), raw=True)
+    )
+
+
+def _pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
+    return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, value)
 
 
 def encode_parameters(

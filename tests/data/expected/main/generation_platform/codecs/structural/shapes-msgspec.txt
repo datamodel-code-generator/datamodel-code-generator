@@ -20,3 +20,6 @@ mixed-server-decode: model Small(contact=UNSET) wire={"size":"small","zz":1} pre
 mixed-server-decode-large: model Large() wire={"size":"large"} presence=['', '/size'] extras={}
 values-server-decode: model Values(amount=Decimal('1.10'), day=UNSET, clock=UNSET, span=datetime.timedelta(days=1, seconds=3600), uid=UNSET, secret=UNSET, blob=UNSET, level=<Level.integer_2: 2>, link=UNSET, any={'k': [1]}, list=UNSET, codes=UNSET, un=5, mark=(1, 'a')) wire={"amount":1.10,"span":"P1DT1H","level":2,"any":{"k":[1]},"un":5,"mark":[1,"a"],"x-y":"z"} presence=['', '/amount', '/span', '/level', '/any', '/any/k', '/any/k/0', '/un', '/mark', '/mark/0', '/mark/1', '/x-y'] extras={"/x-y":"z"}
 values-server-response: wire={"amount":1.10,"span":"P1DT1H","level":2,"any":{"k":[1]},"un":5,"mark":[1,"a"]}
+animals-client-needs-schema: needs schema True ambiguous True
+animals-client-convert: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it
+tree-client-needs-schema: needs schema False ambiguous False

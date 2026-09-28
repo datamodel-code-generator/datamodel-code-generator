@@ -1,0 +1,83 @@
+openapi: 3.1.0
+info:
+  title: Server errors
+  version: 1.0.0
+servers:
+  - url: /relative
+paths:
+  /relative:
+    get:
+      operationId: getRelative
+      responses:
+        '204':
+          description: A relative server without a base.
+  /undeclared:
+    servers:
+      - url: https://{zone}.example.com
+    get:
+      operationId: getUndeclared
+      responses:
+        '204':
+          description: A server variable without a declaration.
+  /malformed:
+    servers: 5
+    get:
+      operationId: getMalformed
+      responses:
+        '204':
+          description: Servers that are not server objects.
+  /query:
+    servers:
+      - url: https://example.com/?key=value
+    get:
+      operationId: getQuery
+      responses:
+        '204':
+          description: A server URL with a query.
+  /entry:
+    servers:
+      - 5
+    get:
+      operationId: getEntry
+      responses:
+        '204':
+          description: A server that is not an object.
+  /variables:
+    servers:
+      - url: https://example.com
+        variables: 5
+    get:
+      operationId: getVariables
+      responses:
+        '204':
+          description: Variables that are not an object.
+  /variable:
+    servers:
+      - url: https://{zone}.example.com
+        variables:
+          zone: 5
+    get:
+      operationId: getVariable
+      responses:
+        '204':
+          description: A variable that is not an object.
+  /enum:
+    servers:
+      - url: https://{zone}.example.com
+        variables:
+          zone:
+            default: east
+            enum: [1]
+    get:
+      operationId: getEnum
+      responses:
+        '204':
+          description: A variable enum that is not strings.
+  /port:
+    servers:
+      - url: https://example.com:port/
+    get:
+      operationId: getPort
+      responses:
+        '204':
+          description: A server URL with an invalid port.

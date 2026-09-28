@@ -1,0 +1,31 @@
+# default-server
+render pydantic_v2.BaseModel
+  write client/src/client/__init__.py
+  write client/src/client/_client.py
+  write client/src/client/_async_client.py
+  write client/src/client/options.py
+  write client/src/client/hooks.py
+  write client/src/client/errors.py
+  write client/src/client/responses.py
+  write client/src/client/bodies.py
+  write client/src/client/model_codecs.py
+  write client/src/client/transports.py
+  write client/src/client/resources/__init__.py
+  write client/src/client/resources/default/__init__.py
+  write client/src/client/resources/default/_sync.py
+  write client/src/client/resources/default/_async.py
+  write client/src/client/types/__init__.py
+  write client/src/client/types/default/__init__.py
+  write client/src/client/types/default/_operations.py
+  write client/src/client/_generated/__init__.py
+  write client/src/client/_generated/model_bindings.py
+  write client/src/client/_operations.py
+  write client/src/client/py.typed
+  write client/pyproject.toml
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 0
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 default.get_status()
+    exports client.types.default.GetStatusResponse client.types.default.GetStatusErrorData client.types.default.GetStatusHTTPError
+    exports client.types.default.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5', 'pets-models>=1']

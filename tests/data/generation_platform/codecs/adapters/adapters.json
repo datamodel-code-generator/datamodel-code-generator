@@ -488,6 +488,34 @@
    }
   },
   {
+   "name": "pet-serialize",
+   "use": "/paths/~1pets/post response_body 201",
+   "op": "serialize",
+   "value": {
+    "model": "Pet",
+    "args": {
+     "id": 3,
+     "name": "Rex"
+    }
+   }
+  },
+  {
+   "name": "pet-convert",
+   "use": "/paths/~1pets/post request_body",
+   "op": "convert",
+   "value": {
+    "name": "Rex"
+   }
+  },
+  {
+   "name": "pet-assemble",
+   "use": "/paths/~1pets/post request_body",
+   "op": "assemble",
+   "value": {
+    "name": "Rex"
+   }
+  },
+  {
    "name": "pet-encode-object",
    "use": "/paths/~1pets/post response_body 201",
    "op": "encode",

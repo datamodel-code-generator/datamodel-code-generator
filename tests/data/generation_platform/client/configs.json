@@ -1,0 +1,256 @@
+{
+  "defaults": {},
+  "values": {
+    "transport": "httpx2",
+    "resource_names": [
+      {
+        "tag": "pets",
+        "namespace": "store.pets"
+      }
+    ],
+    "operations": [
+      {
+        "ref": {
+          "pointer": "/paths/~1pets/get"
+        },
+        "resource": "store",
+        "name": "list_all",
+        "parameter_names": [
+          {
+            "in_": "query",
+            "name": "limit",
+            "python_name": "page_size"
+          }
+        ],
+        "request_media_type": "application/json",
+        "response_media_type": "application/json",
+        "runtime": {
+          "request_id_header": "X-Request-Id",
+          "success_statuses": [
+            302,
+            304
+          ]
+        },
+        "description": "List them."
+      }
+    ],
+    "default_base_url": "https://api.example.com/v1",
+    "server_base_url": "http://localhost:8080",
+    "signature_style": "unpack"
+  },
+  "invalid-values": {
+    "schema_version": 2,
+    "transport": "httpx",
+    "resource_names": [
+      {
+        "tag": 1,
+        "namespace": "pets"
+      },
+      {
+        "tag": "pets",
+        "namespace": "Pets"
+      },
+      {
+        "tag": "pets",
+        "namespace": "store.close"
+      }
+    ],
+    "operations": [
+      {
+        "ref": 5,
+        "resource": "store.",
+        "name": "List",
+        "parameter_names": [
+          {
+            "in_": "body",
+            "name": "limit",
+            "python_name": "limit"
+          },
+          {
+            "in_": "query",
+            "name": "limit",
+            "python_name": "a"
+          },
+          {
+            "in_": "query",
+            "name": "limit",
+            "python_name": "b"
+          }
+        ],
+        "request_media_type": "json",
+        "response_media_type": 5,
+        "runtime": {
+          "request_id_header": "X Request",
+          "success_statuses": [
+            200,
+            true,
+            301,
+            301
+          ]
+        },
+        "description": 5
+      },
+      {
+        "ref": "/paths/~1pets/get",
+        "runtime": "fast"
+      }
+    ],
+    "default_base_url": "ftp://example.com",
+    "server_base_url": "https://user@example.com:0/",
+    "signature_style": "Unpack"
+  },
+  "invalid-urls": {
+    "default_base_url": "https://example.com/v1?key=1",
+    "server_base_url": "https://example.com/v1#top"
+  },
+  "invalid-shapes": {
+    "resource_names": "pets",
+    "operations": "all",
+    "codec_adapters": "none",
+    "default_base_url": "https://[invalid",
+    "server_base_url": 5
+  },
+  "invalid-parameter-names": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/get",
+        "parameter_names": "limit"
+      }
+    ]
+  },
+  "toml-values": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\ntransport = \"httpx2\"\ndefault_base_url = \"https://api.example.com\"\nserver_base_url = \"https://api.example.com/base/\"\nsignature_style = \"unpack\"\n\n[[resource_names]]\ntag = \"pets\"\nnamespace = \"animals\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nresource = \"animals\"\nname = \"list_pets\"\nrequest_media_type = \"application/json\"\nresponse_media_type = \"application/json\"\ndescription = \"List them.\"\nparameter_names = [{ in = \"query\", name = \"limit\", python_name = \"page_size\" }]\nruntime = { request_id_header = \"X-Request-Id\", success_statuses = [302] }\n\n[[operations]]\nref = { pointer = \"/paths/~1pets/post\" }\n"
+  },
+  "toml-invalid-location": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nparameter_names = [{ in = \"body\", name = \"limit\", python_name = \"limit\" }]\n"
+  },
+  "toml-invalid-statuses": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nruntime = { success_statuses = [\"302\"] }\n"
+  },
+  "toml-unknown-keys": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[resource_names]]\ntag = \"pets\"\nnamespace = \"pets\"\nextra = 1\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nruntime = { security = [] }\n"
+  },
+  "validation-values": {
+    "validation": {
+      "request": "native",
+      "response": "schema",
+      "arguments": "none",
+      "request_overrides": [
+        "none",
+        "schema",
+        "native"
+      ],
+      "response_overrides": [
+        "native"
+      ],
+      "argument_overrides": [],
+      "pydantic_strict": false
+    }
+  },
+  "validation-invalid": {
+    "validation": {
+      "request": "strict",
+      "response": "none",
+      "arguments": "all",
+      "request_overrides": [
+        "schema",
+        "schema"
+      ],
+      "response_overrides": "native",
+      "argument_overrides": [
+        5
+      ],
+      "pydantic_strict": "yes"
+    }
+  },
+  "validation-shape": {
+    "validation": 5
+  },
+  "validation-pydantic": {
+    "validation": {
+      "argument_overrides": [
+        "pydantic"
+      ]
+    }
+  },
+  "toml-validation": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[validation]\nrequest = \"none\"\nresponse = \"native\"\narguments = \"none\"\nrequest_overrides = [\"schema\"]\nresponse_overrides = [\"schema\"]\nargument_overrides = []\npydantic_strict = true\n"
+  },
+  "toml-validation-unknown": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[validation]\nrequest = \"none\"\nstrict = true\n"
+  },
+  "toml-validation-types": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[validation]\nrequest_overrides = \"schema\"\n"
+  },
+  "body-fields": {
+    "body_arguments": "both",
+    "operations": [
+      {
+        "ref": "/paths/~1pets~1{petId}/put",
+        "body_arguments": "body"
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "body_field_names": [
+          {
+            "media_type": "application/json",
+            "name": "tag",
+            "python_name": "pet_tag"
+          }
+        ]
+      }
+    ]
+  },
+  "body-fields-invalid": {
+    "body_arguments": "all",
+    "operations": [
+      {
+        "ref": "/paths/~1pets/get",
+        "body_arguments": "fields",
+        "body_field_names": "tag"
+      }
+    ]
+  },
+  "body-field-names-invalid": {
+    "body_arguments": "both",
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "body_arguments": "body",
+        "body_field_names": [
+          {
+            "media_type": "application/json",
+            "name": "tag",
+            "python_name": "pet_tag"
+          }
+        ]
+      },
+      {
+        "ref": "/paths/~1pets/put",
+        "body_field_names": [
+          {
+            "media_type": "json",
+            "name": "",
+            "python_name": "Tag"
+          },
+          {
+            "media_type": "application/json",
+            "name": "tag",
+            "python_name": "pet_tag"
+          },
+          {
+            "media_type": "Application/JSON",
+            "name": "tag",
+            "python_name": "label"
+          }
+        ]
+      }
+    ]
+  },
+  "toml-body-fields": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nbody_arguments = \"both\"\n\n[[operations]]\nref = \"/paths/~1pets~1{petId}/put\"\nbody_arguments = \"body\"\n\n[[operations]]\nref = \"/paths/~1pets/post\"\nbody_field_names = [{ media_type = \"application/json\", name = \"tag\", python_name = \"pet_tag\" }]\n"
+  },
+  "toml-body-field-names-unknown": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nbody_arguments = \"both\"\n\n[[operations]]\nref = \"/paths/~1pets/post\"\nbody_field_names = [{ media_type = \"application/json\", name = \"tag\", python = \"pet_tag\" }]\n"
+  }
+}

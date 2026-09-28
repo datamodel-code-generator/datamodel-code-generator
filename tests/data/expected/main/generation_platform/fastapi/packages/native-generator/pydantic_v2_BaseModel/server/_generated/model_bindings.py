@@ -113,5 +113,5 @@ def codec_0() -> PydanticModelCodec[models.Thing]:
         ),
         models.Thing,
         {'models:Thing': models.Thing},
-        request_bundle(),
+        request_bundle,
     )

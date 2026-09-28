@@ -69,6 +69,8 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 _EMPTY: Final[Mapping[str, WireValue]] = MappingProxyType({})
+_SCHEMA_ONLY: Final = "A registered model adapter reads and writes only wire values validated against their schema"
+_NO_FIELDS: Final = "A registered model adapter constructs no value from field arguments"
 _PROHIBITED: Final = {
     "request": ("schema.readOnly", "The value is read-only and cannot appear in a request"),
     "response": ("schema.writeOnly", "The value is write-only and cannot appear in a response"),
@@ -399,6 +401,23 @@ class AdapterModelCodec(Generic[T]):
             case _:
                 pass
         return self._outbound(self._native_wire(value, context, None), context)
+
+    def serialize(self, value: object, context: CodecContext, *, validate: bool = False) -> WireValue:  # noqa: PLR6301
+        """Refuse to send a value without its schema, which only the schema validation policy admits here."""
+        del value, context, validate
+        raise CodecConfigurationError(_SCHEMA_ONLY)
+
+    def convert(self, wire: WireValue, context: CodecContext) -> T:  # noqa: PLR6301
+        """Refuse to read a value without its schema, which only the schema validation policy admits here."""
+        del wire, context
+        raise CodecConfigurationError(_SCHEMA_ONLY)
+
+    def assemble(  # noqa: PLR6301
+        self, fields: Mapping[str, object], context: CodecContext, *, validate: bool = False, strict: bool = False
+    ) -> WireValue:
+        """Refuse to construct a value from fields: a registered model adapter gives no fields to call with."""
+        del fields, context, validate, strict
+        raise CodecConfigurationError(_NO_FIELDS)
 
     def _require(self, context: CodecContext, *, inbound: bool) -> None:
         key = (context.direction, context.schema_id, context.operation_id, context.media_type)

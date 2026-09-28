@@ -1,0 +1,10 @@
+# validation and validation-structural
+  models same True
+  default.list_pets same ['request', 'response', 'security', 'signature'] different []
+  default.create_pet same ['request', 'response', 'security', 'signature'] different []
+  default.get_card same ['request', 'response', 'security', 'signature'] different []
+  default.put_card same ['request', 'response', 'security', 'signature'] different []
+  default.get_health same ['request', 'response', 'security', 'signature'] different []
+  default.post_note same ['request', 'response', 'security', 'signature'] different []
+  default.put_photo same ['request', 'response', 'security', 'signature'] different []
+  default.get_account same ['request', 'response', 'security', 'signature'] different []

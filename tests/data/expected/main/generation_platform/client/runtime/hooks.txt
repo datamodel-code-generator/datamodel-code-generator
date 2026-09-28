@@ -1,0 +1,412 @@
+# pets pydantic_v2.BaseModel
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  get = Pet(id=3, name='fox', tag=None)
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 1, 'user': None} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 1, 'user': None}
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets origin=https://api.example.com counts=1/1 request_id=req-7 timed=False context={'tenant': 't1', 'retry': 1, 'user': None}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets origin=https://api.example.com counts=1/1 request_id=req-7 timed=True context={'tenant': 't1', 'retry': 1, 'user': None}
+    a: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets origin=https://api.example.com counts=1/1 request_id=req-7 timed=True context={'tenant': 't1', 'retry': 1, 'user': None}
+  list with its request ID and a call context = FieldPetsGetResponse(root=[])
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=404 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  get missing ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=404, error_decoded=False, error_decode_error=BodyProtocolError(), body_bytes=b'{"code":7,"message":"gone"}', truncated=False] get_pet_http_error
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  list of a trace its codec refuses ! RequestEncodingError: RequestEncodingError(operation_id='listPets', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: transport_failure attempt=0 sent=True status=None outcome=None phase=connect path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  get of a refused connection ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('refused')] transport_error
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: attempt_end attempt=0 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=None outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  get interrupted: KeyboardInterrupt
+    b: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    c: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    b: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    c: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  hook failing to start: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='call_start', sent=False) event=call_start sent=False delivery=NOT_SENT completed=False cause=b failed on call_start secondary=['RuntimeError'] required nothing: ResultUnavailableError
+    b: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    c: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    b: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    c: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    b: attempt_end attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    c: attempt_end attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    b: call_end attempt=0 sent=False status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    c: call_end attempt=0 sent=False status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  hook failing before sending: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='attempt_start', sent=False) event=attempt_start sent=False delivery=NOT_SENT completed=False cause=b failed on attempt_start secondary=['RuntimeError'] required nothing: ResultUnavailableError
+    b: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    c: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    b: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    c: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    b: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    c: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    b: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    c: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    b: call_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    c: call_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  hooks failing on headers and every end: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='response_headers', sent=True) event=response_headers sent=True delivery=RESPONSE_STARTED completed=False cause=b failed on response_headers secondary=['RuntimeError', 'RuntimeError', 'RuntimeError', 'RuntimeError', 'RuntimeError'] required nothing: ResultUnavailableError
+    d: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    d: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    d: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    d: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    d: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  success ending in a failing hook: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='call_end', sent=True) event=call_end sent=True delivery=RESPONSE_STARTED completed=True cause=d failed on call_end secondary=[] required Pet(id=3, name='fox', tag=None)
+    l: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    l: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    l: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    l: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    l: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  success whose every end fails: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='attempt_end', sent=True) event=attempt_end sent=True delivery=RESPONSE_STARTED completed=True cause=l failed on attempt_end secondary=['RuntimeError'] required Pet(id=3, name='fox', tag=None)
+    e: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    e: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    e: attempt_end attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    e: call_end attempt=0 sent=False status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  failure before sending: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='attempt_start', sent=False) event=attempt_start sent=False delivery=NOT_SENT completed=False cause=e failed on attempt_start secondary=[] required nothing: ResultUnavailableError
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  hooks replaced by none = Pet(id=3, name='fox', tag=None)
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  raw get = 200
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=None origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=None origin=https://raw.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://raw.example.com/items?a=1
+    [host: raw.example.com, accept-encoding: gzip, deflate] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=success phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  raw request = b'ok'
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: stream_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  streamed get = b'{"id":3,"name":"fox"}'
+    f: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    f: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    f: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    f: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    f: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  streamed get whose hook fails ! HookExecutionError: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='call_end', sent=True) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('f failed on call_end')] hook_execution_error
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  raw get after it = 200
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream closed early: 200
+    a: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream discarded for an interruption
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: stream_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream iterated = b'{"id":3,"name":"fox"}'
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream whose close is interrupted: KeyboardInterrupt
+    n: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    n: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    n: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    n: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: stream_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream whose end fails on reading it ! HookExecutionError: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='stream_end', sent=True) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('n failed on stream_end')] hook_execution_error
+    n: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    n: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    n: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    n: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream whose end fails on closing it ! HookExecutionError: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='stream_end', sent=True) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('n failed on stream_end')] hook_execution_error
+    n: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    n: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    n: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    n: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: stream_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream failing whose end fails too ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+    n: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    n: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    n: response_headers attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    n: attempt_end attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: call_end attempt=0 sent=True status=404 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    n: stream_end attempt=0 sent=True status=404 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  stream of an error whose end fails: GetPetHTTPError secondary ['RuntimeError']
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  raw list of a trace its codec refuses ! RequestEncodingError: RequestEncodingError(operation_id='listPets', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=None origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: call_end attempt=None sent=False status=None outcome=error phase=None path=None origin=None counts=0/0 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  raw request to no URL ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+    a: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    a: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    a: transport_failure attempt=0 sent=True status=None outcome=None phase=connect path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={'tenant': 't1', 'retry': 0}
+    a: attempt_end attempt=0 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+    a: call_end attempt=0 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={'tenant': 't1', 'retry': 0}
+  raw get of a refused connection ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('refused')] transport_error
+  hooks that are no sequence ! ConfigurationError: ConfigurationError(field_path='hooks', condition='invalid_type') [field_path=('hooks',), condition='invalid_type'] configuration_error
+  hook without on_event ! ConfigurationError: ConfigurationError(field_path='hooks', condition='invalid_type') [field_path=('hooks',), condition='invalid_type'] configuration_error
+  context that is no mapping ! ConfigurationError: ConfigurationError(field_path='context', condition='invalid_type') [field_path=('context',), condition='invalid_type'] configuration_error
+  context of a value that is no scalar ! ConfigurationError: ConfigurationError(field_path='context', condition='invalid_type') [field_path=('context',), condition='invalid_type'] configuration_error
+  context of a name that is no string ! ConfigurationError: ConfigurationError(field_path='context', condition='invalid_type') [field_path=('context',), condition='invalid_type'] configuration_error
+  context of an infinite number ! ConfigurationError: ConfigurationError(field_path='context', condition='invalid_type') [field_path=('context',), condition='invalid_type'] configuration_error
+  context over 8 KiB ! ConfigurationError: ConfigurationError(field_path='context', condition='out_of_range') [field_path=('context',), condition='out_of_range'] configuration_error
+  context merged over 8 KiB ! ConfigurationError: ConfigurationError(field_path='context', condition='out_of_range') [field_path=('context',), condition='out_of_range'] configuration_error
+  async hook on a sync client ! ConfigurationError: ConfigurationError(call_id='<call>', field_path='hooks', condition='async_hook') [field_path=('hooks',), condition='async_hook'] configuration_error
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    g: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    h: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    g: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async get = Pet(id=3, name='fox', tag=None)
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=None origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=None origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=None origin=https://raw.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=None origin=https://raw.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://raw.example.com/items?a=1
+    [host: raw.example.com, accept-encoding: gzip, deflate] b''
+    g: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=False context={}
+    h: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=False context={}
+    g: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=200 outcome=success phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=200 outcome=success phase=None path=None origin=https://raw.example.com counts=1/1 request_id=None timed=True context={}
+  async raw request = b'ok'
+    i: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    i: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    i: attempt_end attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={}
+    i: call_end attempt=0 sent=False status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=True context={}
+  async hook failing before sending ! HookExecutionError: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='attempt_start', sent=False) [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=RuntimeError('i failed on attempt_start')] hook_execution_error
+    m: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    m: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    m: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    m: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    m: call_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async hook failing on headers and every end ! HookExecutionError: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='response_headers', sent=True) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('m failed on response_headers')] hook_execution_error
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
+    h: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
+  async raw list of a trace its codec refuses ! RequestEncodingError: RequestEncodingError(operation_id='listPets', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=None origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=None origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: call_end attempt=None sent=False status=None outcome=error phase=None path=None origin=None counts=0/0 request_id=None timed=True context={}
+    h: call_end attempt=None sent=False status=None outcome=error phase=None path=None origin=None counts=0/0 request_id=None timed=True context={}
+  async raw request to no URL ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    g: transport_failure attempt=0 sent=True status=None outcome=None phase=connect path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    h: transport_failure attempt=0 sent=True status=None outcome=None phase=connect path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    g: attempt_end attempt=0 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=None outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async raw get of a refused connection ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('refused')] transport_error
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    g: attempt_end attempt=0 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=None outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=None outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async get cancelled: CancelledError
+    j: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    j: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    j: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    j: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    j: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async success ending in a failing hook: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='call_end', sent=True) [] Pet(id=3, name='fox', tag=None)
+    j: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    j: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    j: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    j: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    j: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async success ending in every end failing: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='attempt_end', sent=True) ['RuntimeError'] Pet(id=3, name='fox', tag=None)
+    k: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    k: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    k: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    k: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    k: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async raw get whose hook fails ! HookExecutionError: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='call_end', sent=True) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('k failed on call_end')] hook_execution_error
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    g: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    h: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    g: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async stream closed early: 200
+    g: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    g: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    h: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    g: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: stream_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: stream_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async stream read = b'{"id":3,"name":"fox"}'
+    o: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    o: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    o: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    o: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    o: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    o: stream_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async stream whose end fails on reading it ! HookExecutionError: HookExecutionError(operation_id='getPet', call_id='<call>', event_name='stream_end', sent=True) [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('o failed on stream_end')] hook_execution_error
+    o: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    o: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    o: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    o: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    o: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    o: stream_end attempt=0 sent=True status=200 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async stream failing whose end fails too ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+    o: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    o: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    o: response_headers attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    o: attempt_end attempt=0 sent=True status=404 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    o: call_end attempt=0 sent=True status=404 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    o: stream_end attempt=0 sent=True status=404 outcome=error phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async stream of an error whose end fails: GetPetHTTPError secondary ['RuntimeError']
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    g: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    h: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    g: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=200 outcome=handed_off phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: stream_end attempt=0 sent=True status=200 outcome=cancel phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async stream whose close is cancelled: CancelledError
+    g: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    h: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId} origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0}
+    g: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+    h: attempt_start attempt=0 sent=False status=None outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/0 request_id=None timed=False context={}
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    g: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    h: response_headers attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=False context={}
+    g: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: attempt_end attempt=0 sent=True status=200 outcome=None phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    g: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+    h: call_end attempt=0 sent=True status=200 outcome=success phase=None path=/pets/{petId} origin=https://api.example.com counts=1/1 request_id=None timed=True context={}
+  async raw get after it = 200

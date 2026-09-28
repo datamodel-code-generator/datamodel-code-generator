@@ -1,0 +1,8 @@
+# querystring pydantic_v2.BaseModel
+  > GET https://search.example.com/search?term=a+b&page=2
+    [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search = FieldSearchGetResponse(root=['a'])
+  > GET https://search.example.com/search
+    [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  search all = FieldSearchGetResponse(root=[])
+  search with a query patch ! ConfigurationError: ConfigurationError(operation_id='search', field_path='query', condition='conflicts_with_querystring') [operation_id='search', field_path=('query',), condition='conflicts_with_querystring'] configuration_error

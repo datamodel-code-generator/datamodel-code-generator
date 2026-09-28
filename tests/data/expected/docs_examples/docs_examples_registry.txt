@@ -10,4 +10,17 @@ model-reuse.use-type-alias.output: model-reuse.md
 cli-reference.base-options.input-model.example: base-options.md
 cli-reference.model-customization.base-class-map.example: model-customization.md
 cli-reference.template-customization.custom-template-dir.example: template-customization.md
+python-client.signature-style.explicit: python-client.md
+python-client.signature-style.unpack: python-client.md
+python-client.signature-style.records: python-client.md
+python-client.signature-style.binding: python-client.md
+python-client.body-fields.toml: python-client.md
+python-client.body-fields.diagnostics: python-client.md
+python-client.body-fields.overloads: python-client.md
+python-client.body-fields.refusals: python-client.md
+python-client.validation.toml: python-client.md
+python-client.validation.defaults: python-client.md
+python-client.validation.arguments: python-client.md
+python-client.validation.options: python-client.md
+python-client.validation.diagnostics: python-client.md
 cli-reference.typing-customization.use-closed-typed-dict.example: typing-customization.md

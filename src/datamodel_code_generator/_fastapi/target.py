@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-from collections.abc import Mapping
 from dataclasses import replace
 from typing import TYPE_CHECKING, Final
 
@@ -11,7 +9,7 @@ from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._codec_declarations import CodecDeclarations, OperationRef
-from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened, operation_uses
+from datamodel_code_generator._fastapi.callbacks import CallbackIndex, flattened
 from datamodel_code_generator._fastapi.config import FastAPIConfig
 from datamodel_code_generator._fastapi.fingerprints import Fingerprints
 from datamodel_code_generator._fastapi.hooks import Extensions, HookRunner, extended
@@ -24,8 +22,9 @@ from datamodel_code_generator._fastapi.views import ContextBuilder
 from datamodel_code_generator._generation_contract import GeneratedSymbolType
 from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
-from datamodel_code_generator._openapi_wire_plan import plan_wire
+from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
+from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
@@ -54,24 +53,10 @@ DEPENDENCIES: Final = (
     "typing-extensions>=4.16",
 )
 FORMS: Final = "python-multipart>=0.0.32"
-PATTERNS: Final = "google-re2>=1.1.20251105"
-MODEL_DEPENDENCIES: Final = (
-    ("pydantic.EmailStr", "email-validator>=2.3"),
-    ("pydantic.NameEmail", "email-validator>=2.3"),
-    ("pydantic.networks.EmailStr", "email-validator>=2.3"),
-    ("pydantic.networks.NameEmail", "email-validator>=2.3"),
-    ("ulid", "python-ulid>=3.2.1"),
-    ("pendulum", "pendulum>=3.2"),
-)
 _BACKENDS: Final[dict[DataModelType, PydanticBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
 }
-_PATTERN_KEYWORDS: Final = frozenset({"pattern", "patternProperties"})
-_IMPORT: Final = re.compile(
-    r"^(?:from[ \t]+([\w.]+)[ \t]+import[ \t]+(\([^)]*\)|[^\n]*)|import[ \t]+([^\n]*))", re.MULTILINE
-)
-_COMMENT: Final = re.compile(r"#[^\n]*")
 
 
 class FastAPITarget:
@@ -282,42 +267,16 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
 
 def _dependencies(plan: ServerPlan, wire: WirePlan, models: tuple[ModelArtifact, ...]) -> tuple[str, ...]:
     forms = any(spec.body is not None and spec.body.fields for spec in plan.operations)
-    patterns = any(_patterned(resource.contents) for resource in wire.resources)
-    imported = _imported(models)
     return (
         *DEPENDENCIES,
         *((FORMS,) if forms else ()),
-        *((PATTERNS,) if patterns else ()),
-        *dict.fromkeys(
-            requirement
-            for name, requirement in MODEL_DEPENDENCIES
-            if any(item == name or item.startswith(f"{name}.") for item in imported)
-        ),
+        *((PATTERNS,) if patterned(wire) else ()),
+        *model_dependencies(models),
     )
-
-
-def _imported(models: tuple[ModelArtifact, ...]) -> frozenset[str]:
-    """Return every module and imported name that the top-level import statements of the models name."""
-    names: set[str] = set()
-    for artifact in models:
-        for module, members, plain in _IMPORT.findall(artifact.content.decode(artifact.encoding)):
-            items = [
-                item.split()[0] for item in _COMMENT.sub("", members or plain).strip("() \n").split(",") if item.split()
-            ]
-            names.update((module, *(f"{module}.{item}" for item in items)) if module else items)
-    return frozenset(names)
 
 
 def _json_info(info: tuple[tuple[str, WireValue], ...]) -> JSONValue:
     return {option: thaw_wire(checked_wire(value)) for option, value in info}
-
-
-def _patterned(value: WireValue) -> bool:
-    if isinstance(value, tuple):
-        return any(_patterned(item) for item in value)
-    if isinstance(value, Mapping):
-        return any(key in _PATTERN_KEYWORDS or _patterned(item) for key, item in value.items())
-    return False
 
 
 def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:

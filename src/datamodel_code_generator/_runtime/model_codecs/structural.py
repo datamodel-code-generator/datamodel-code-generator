@@ -37,8 +37,8 @@ from .codec import (
     EMPTY,
     BuiltinModelCodec,
     Walk,
-    child_value,
     directional_gap,
+    directs,
     is_mapping,
     is_sequence,
     is_set,
@@ -127,6 +127,7 @@ _ENUM: Final = _Failure("native.enum")
 _LITERAL: Final = _Failure("native.literal_error")
 _UNHASHABLE: Final = _Failure("native.set_item_not_hashable")
 _CONSTRUCTOR: Final = _Failure("native.constructor")
+_MISSING: Final = _Failure("native.missing")
 _EXTRA_FORBIDDEN: Final = _Failure("native.extra_forbidden")
 _TAG: Final = _Failure("native.tag")
 _KIND_FAILURES: Final = {
@@ -633,7 +634,7 @@ def _fits_record(binding: ModelBinding, native: type) -> bool:
 class StructuralModelCodec(BuiltinModelCodec[T]):
     """Validate, construct, snapshot, and encode one bound use of a standard dataclass or TypedDict model type."""
 
-    __slots__ = ("_convert", "_invalid", "_plan", "_plans", "_scan")
+    __slots__ = ("_convert", "_directed", "_invalid", "_plan", "_plans", "_scan")
 
     @overload
     def __init__(
@@ -641,7 +642,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: type[T],
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None: ...
@@ -651,7 +652,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: object,
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None: ...
@@ -660,7 +661,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: object,
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None:
@@ -683,12 +684,13 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         self._plans: dict[str, _Model] = {}
         self._plan = self._build(binding.type, native_type, binding.native_export or binding.schema_id)
         self._scan = binding.projection_mode == "envelope"
-        self._convert: Callable[[JSONValue], object] | None = None
+        self._convert: Callable[[object], object] | None = None
         self._invalid: type[Exception] = ModelProjectionError
         if binding.converter_strategy == "msgspec_convert":
             self._convert, self._invalid = self._converter(native_type)
+        self._directed = directs(binding)
 
-    def _converter(self, native_type: object) -> tuple[Callable[[JSONValue], object], type[Exception]]:
+    def _converter(self, native_type: object) -> tuple[Callable[[object], object], type[Exception]]:
         """Return msgspec's strict converter of the use's type, which msgspec must describe at startup.
 
         Describing the type walks all of it, so a union msgspec refuses or a type it cannot read from JSON stops here.
@@ -809,6 +811,41 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             plan.extras = self._build(binding.extra_items, extra_items, f"{symbol} extra items")
         return plan
 
+    def _constructed(self, model: ModelBinding, fields: Mapping[str, object], *, validate: bool) -> object:
+        """Construct the model through its constructor, or through msgspec's converter of the wire names to validate."""
+        if validate:
+            return self._validated(dict(fields))
+        plan = self._plans[model.symbol]
+        arguments = {plan.wire[name].binding.native_name: value for name, value in fields.items()}
+        return arguments if plan.record else plan.native(**arguments)
+
+    def _validated(self, value: object) -> object:
+        if (convert := self._convert) is None:
+            msg = "A standard dataclass, TypedDict, or structurally read Struct has no native validation entry"
+            raise CodecConfigurationError(msg)
+        try:
+            return convert(value)
+        except self._invalid as error:
+            raise NativeValidationError((_msgspec_issue(str(error), value),)) from None
+
+    def _converted(self, wire: WireValue, budget: MatchBudget) -> T:
+        """Construct the native value by the structural walk, or by msgspec once a walk found no excluded member."""
+        convert = self._convert
+        if convert is None or self._directed:
+            state = Walk(budget, construct=convert is None, converting=True)
+            value = self._decode(wire, self._plan, None, state)
+            if state.issues:
+                msg = f"The native use has an unplanned projection gap at {state.issues[0].pointer or '/'}"
+                raise ModelProjectionError(msg)
+            if state.native:
+                raise NativeValidationError(tuple(state.native))
+            if convert is None:
+                return typing.cast("T", value)
+        try:
+            return typing.cast("T", convert(_thawed(wire)))
+        except self._invalid as error:
+            raise NativeValidationError((_msgspec_issue(str(error), wire),)) from None
+
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
         presence = snapshot_presence(wire)
         binding_id = self._binding.binding_id
@@ -914,17 +951,15 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 self._unbound(name, entry, plan, (route, name, name), state, arguments)
             elif not (binding := member.binding).constructible:
                 state.issues.append(self._gap("FIELD_NOT_CONSTRUCTIBLE", plan, binding, route))
+            elif state.converting and self._excluded(binding):
+                state.native.append(self._carried(*_located((route, name, binding.native_name))))
             else:
                 arguments[binding.native_name] = self._decode(
                     entry, member.plan, (route, name, binding.native_name), state
                 )
-        state.issues.extend(
-            directional_gap(plan.binding, member.binding, _located(route)[0])
-            if self._excluded(member.binding)
-            else self._gap("MODEL_PROJECTION_GAP", plan, member.binding, route)
-            for member in plan.required
-            if member.binding.wire_name not in wire
-        )
+        for member in plan.required:
+            if member.binding.wire_name not in wire:
+                self._absent(member.binding, plan, route, state)
         if len(state.issues) > gaps and state.construct:
             msg = f"The native use has an unplanned projection gap at {state.issues[gaps].pointer or '/'}"
             raise ModelProjectionError(msg)
@@ -936,6 +971,15 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             return plan.native(**arguments)
         except Exception:  # noqa: BLE001
             return self._refuse(state, _CONSTRUCTOR, route)
+
+    def _absent(self, binding: FieldBinding, plan: _Model, route: _Route, state: Walk) -> None:
+        """Take a required member the wire value lacks: a directional gap, or a native issue when converting."""
+        if self._excluded(binding):
+            state.issues.append(directional_gap(plan.binding, binding, _located(route)[0]))
+        elif state.converting:
+            self._refuse(state, _MISSING, (route, binding.wire_name, binding.native_name))
+        else:
+            state.issues.append(self._gap("MODEL_PROJECTION_GAP", plan, binding, route))
 
     def _unbound(  # noqa: PLR0913, PLR0917
         self, name: str, entry: WireValue, plan: _Model, route: _Route, state: Walk, arguments: dict[str, object]
@@ -969,9 +1013,12 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         )
 
     def _member(self, wire: WireValue, plan: _Union, budget: MatchBudget) -> _Plan | None:
+        """Return a wire value's member: by its JSON kind when no other member shares that kind, else by schema."""
         for member, shared in zip(plan.members, plan.shared, strict=True):
             match member:
-                case _Model(binding=binding) if self._matches(binding.symbol, wire, budget):
+                case _Model(binding=binding) if (
+                    self._matches(binding.symbol, wire, budget) if shared else isinstance(wire, Mapping)
+                ):
                     return member
                 case _Sequence() | _Tuple() if isinstance(wire, tuple) and (
                     not shared or self._within(wire, member, budget)
@@ -1073,7 +1120,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 if items is None
                 else items.get(binding.native_name, _ABSENT)
             )
-            if value is _ABSENT or value is plan.unset:
+            if value is _ABSENT or value is plan.unset or self._excluded(binding):
                 continue
             child = None if presence is None else presence.child(binding.wire_name)
             if (presence is not None and child is None) or (presence is None and binding.omit_none and value is None):
@@ -1132,8 +1179,8 @@ def _fits(plan: _Model, native: object) -> bool:
     )
 
 
-def _msgspec_issue(message: str, wire: WireValue) -> NativeIssue:
-    """Locate the issue msgspec reports by walking its ``$`` path through the wire value it read.
+def _msgspec_issue(message: str, read: object) -> NativeIssue:
+    """Locate the issue msgspec reports by walking its ``$`` path through the wire or native value it read.
 
     A member name may itself hold dots, so the longest name of the object the path continues with is taken; a map
     entry, which msgspec writes as ``[...]``, ends the walk at its map.
@@ -1144,20 +1191,22 @@ def _msgspec_issue(message: str, wire: WireValue) -> NativeIssue:
     while rest:
         if (index := _MSGSPEC_PATH.match(rest)) is not None and index[1] != "...":
             tokens.append(position := int(index[1]))
-            wire, rest = child_value(wire, position), rest[index.end() :]
-        elif isinstance(wire, Mapping) and (
+            read, rest = read[position] if is_sequence(read) else None, rest[index.end() :]
+        elif is_mapping(read) and (
             name := max(
                 (
                     key
-                    for key in wire
-                    if rest.startswith(f".{key}") and rest[len(key) + 1 : len(key) + 2] in {"", ".", "["}
+                    for key in read
+                    if isinstance(key, str)
+                    and rest.startswith(f".{key}")
+                    and rest[len(key) + 1 : len(key) + 2] in {"", ".", "["}
                 ),
                 key=len,
                 default=None,
             )
         ):
             tokens.append(name)
-            wire, rest = wire[name], rest[len(name) + 1 :]
+            read, rest = read[name], rest[len(name) + 1 :]
         else:
             break
     pointer = "".join(f"/{escape_pointer_token(token)}" for token in tokens)
@@ -1215,15 +1264,16 @@ def _holds(native: object, plan: _Plan) -> bool:
 
 
 def _shared(members: tuple[_Plan, ...]) -> tuple[bool, ...]:
-    """Return which container members share their JSON kind with another member, so their shape cannot choose."""
+    """Return which model and container members another member may take a value of, so their kind cannot choose.
+
+    Another member of the same JSON kind may, and so may a member of any type, which takes every value.
+    """
     kinds = [
         "array" if isinstance(member, (_Sequence, _Tuple)) else "object" if isinstance(member, (_Map, _Model)) else None
         for member in members
     ]
-    return tuple(
-        not isinstance(member, _Model) and kind is not None and kinds.count(kind) > 1
-        for member, kind in zip(members, kinds, strict=True)
-    )
+    catch_all = any(member is _ANY for member in members)
+    return tuple(kind is not None and (catch_all or kinds.count(kind) > 1) for kind in kinds)
 
 
 def _json(value: object, representation: Representation, presence: PresenceTree | None, route: _Route) -> WireValue:  # noqa: PLR0911

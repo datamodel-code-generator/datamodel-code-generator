@@ -122,6 +122,7 @@ type = [
   "types-pyyaml",
   "types-setuptools>=67.6.0.5,<84",
   "types-toml",
+  { include-group = "client" },
   { include-group = "fastapi" },
   { include-group = "test" },
 ]
@@ -135,6 +136,9 @@ benchmark = [
 black22 = [ "black==22.1" ]
 black24 = [ "black==24.1" ]
 blacklatest = [ "black" ]
+client = [
+  "httpx2>=2.13,<3",
+]
 coverage = [
   "covdefaults>=2.3",
   "coverage[toml]>=7.6.1",
@@ -218,8 +222,14 @@ lint.per-file-ignores."scripts/*.py" = [
   "S",       # subprocess security is fine for build scripts
   "T201",    # print is fine for CLI scripts
 ]
+lint.per-file-ignores."src/datamodel_code_generator/_client/_compiled_templates/*.py" = [
+  "ALL", # Generated sources are checked by compile_builtin_templates.py.
+]
 lint.per-file-ignores."src/datamodel_code_generator/_fastapi/_compiled_templates/*.py" = [
   "ALL", # Generated sources are checked by compile_builtin_templates.py.
+]
+lint.per-file-ignores."src/datamodel_code_generator/_runtime/client/*.py" = [
+  "TID252", # Generated packages copy the runtime, so the client runtime imports its sibling runtime relatively.
 ]
 lint.per-file-ignores."src/datamodel_code_generator/_runtime/server/*.py" = [
   "TID252", # Generated packages copy the runtime, so the server runtime imports its sibling runtime relatively.
@@ -333,6 +343,7 @@ ini_options.assert_helper_direct_assert_exempt_files = [
 [tool.coverage]
 run.omit = [
   "*/_types/*",
+  "tests/api_generation/test_client_typing.py",
   "tests/api_generation/test_fastapi_install.py",
   "tests/api_generation/test_fastapi_typing.py",
   "tests/cli_doc/*",

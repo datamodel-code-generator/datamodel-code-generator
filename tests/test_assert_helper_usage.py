@@ -45,6 +45,12 @@ PRIVATE_TARGET_MODULES = (
     "datamodel_code_generator._fastapi",
     "datamodel_code_generator._target_config",
 )
+# The client target has no public entry point yet, so its report helpers reach the coordinator directly.
+PRIVATE_TARGET_HELPERS = frozenset({
+    Path("data/python/client_generation.py"),
+    Path("data/python/client_runtime.py"),
+    Path("data/python/client_typing.py"),
+})
 PRIVATE_TARGET_FAILURE_MESSAGE = (
     "Generation target tests and their report helpers reach a target through its public entry points, the command "
     "line or datamodel_code_generator.fastapi, as the model tests reach model generation.\n"
@@ -319,7 +325,11 @@ def _is_private_target(module: str) -> bool:
 def _collect_private_target_imports(tests_root: Path) -> list[str]:
     paths = [
         *(path for path in sorted(tests_root.rglob("*.py")) if _is_test_file(path, tests_root)),
-        *sorted(tests_root.joinpath(HELPER_ROOT).rglob("*.py")),
+        *(
+            path
+            for path in sorted(tests_root.joinpath(HELPER_ROOT).rglob("*.py"))
+            if path.relative_to(tests_root) not in PRIVATE_TARGET_HELPERS
+        ),
     ]
     return [
         f"  tests/{path.relative_to(tests_root).as_posix()}:{node.lineno}: {module}"

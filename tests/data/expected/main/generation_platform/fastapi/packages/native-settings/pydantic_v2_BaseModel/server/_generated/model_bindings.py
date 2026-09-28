@@ -324,7 +324,7 @@ def codec_0() -> PydanticModelCodec[models.Named]:
         ),
         models.Named,
         {'models:Named': models.Named},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -357,7 +357,7 @@ def codec_1() -> PydanticModelCodec[models.Titled]:
         ),
         models.Titled,
         {'models:Titled': models.Titled},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -390,7 +390,7 @@ def codec_2() -> PydanticModelCodec[models.Strict]:
         ),
         models.Strict,
         {'models:Strict': models.Strict},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -423,7 +423,7 @@ def codec_3() -> PydanticModelCodec[models.Holder]:
         ),
         models.Holder,
         {'models:Amount': models.Amount, 'models:Holder': models.Holder},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -456,7 +456,7 @@ def codec_4() -> PydanticModelCodec[models.Loose]:
         ),
         models.Loose,
         {'models:Loose': models.Loose},
-        response_bundle(),
+        response_bundle,
     )
 
 

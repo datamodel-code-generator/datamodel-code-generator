@@ -1,0 +1,219 @@
+# media
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/resources/__init__.py
+  write client/resources/forms/__init__.py
+  write client/resources/forms/_sync.py
+  write client/resources/forms/_async.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/resources/documents/__init__.py
+  write client/resources/documents/_sync.py
+  write client/resources/documents/_async.py
+  write client/types/__init__.py
+  write client/types/forms/__init__.py
+  write client/types/forms/_operations.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/types/documents/__init__.py
+  write client/types/documents/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 47
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 forms.submit_form()
+    exports client.types.forms.SubmitFormResponse client.types.forms.SubmitFormErrorData client.types.forms.SubmitFormHTTPError
+    exports client.types.forms.SubmitFormRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 forms.submit_profile()
+    exports client.types.forms.SubmitProfileResponse client.types.forms.SubmitProfileErrorData client.types.forms.SubmitProfileHTTPError
+    exports client.types.forms.SubmitProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 forms.read_profile()
+    exports client.types.forms.ReadProfileResponse client.types.forms.ReadProfileErrorData client.types.forms.ReadProfileHTTPError
+    exports client.types.forms.ReadProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 forms.submit_anything()
+    exports client.types.forms.SubmitAnythingResponse client.types.forms.SubmitAnythingErrorData client.types.forms.SubmitAnythingHTTPError
+    exports client.types.forms.SubmitAnythingRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 forms.submit_parts()
+    exports client.types.forms.SubmitPartsResponse client.types.forms.SubmitPartsErrorData client.types.forms.SubmitPartsHTTPError
+    exports client.types.forms.SubmitPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 forms.read_parts()
+    exports client.types.forms.ReadPartsResponse client.types.forms.ReadPartsErrorData client.types.forms.ReadPartsHTTPError
+    exports client.types.forms.ReadPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 forms.submit_pairs()
+    exports client.types.forms.SubmitPairsResponse client.types.forms.SubmitPairsErrorData client.types.forms.SubmitPairsHTTPError
+    exports client.types.forms.SubmitPairsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 forms.submit_upload()
+    exports client.types.forms.SubmitUploadResponse client.types.forms.SubmitUploadErrorData client.types.forms.SubmitUploadHTTPError
+    exports client.types.forms.SubmitUploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 forms.read_upload()
+    exports client.types.forms.ReadUploadResponse client.types.forms.ReadUploadErrorData client.types.forms.ReadUploadHTTPError
+    exports client.types.forms.ReadUploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 forms.submit_avatar()
+    exports client.types.forms.SubmitAvatarResponse client.types.forms.SubmitAvatarErrorData client.types.forms.SubmitAvatarHTTPError
+    exports client.types.forms.SubmitAvatarRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 forms.submit_scans()
+    exports client.types.forms.SubmitScansResponse client.types.forms.SubmitScansErrorData client.types.forms.SubmitScansHTTPError
+    exports client.types.forms.SubmitScansRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/11 forms.submit_photos()
+    exports client.types.forms.SubmitPhotosResponse client.types.forms.SubmitPhotosErrorData client.types.forms.SubmitPhotosHTTPError
+    exports client.types.forms.SubmitPhotosRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/12 forms.submit_labels()
+    exports client.types.forms.SubmitLabelsResponse client.types.forms.SubmitLabelsErrorData client.types.forms.SubmitLabelsHTTPError
+    exports client.types.forms.SubmitLabelsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/13 files.store_file()
+    exports client.types.files.StoreFileResponse client.types.files.StoreFileErrorData client.types.files.StoreFileHTTPError
+    exports client.types.files.StoreFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/14 files.replace_file()
+    exports client.types.files.ReplaceFileResponse client.types.files.ReplaceFileErrorData client.types.files.ReplaceFileHTTPError
+    exports client.types.files.ReplaceFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/15 forms.submit_search()
+    exports client.types.forms.SubmitSearchResponse client.types.forms.SubmitSearchErrorData client.types.forms.SubmitSearchHTTPError
+    exports client.types.forms.SubmitSearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/16 forms.submit_cover()
+    exports client.types.forms.SubmitCoverResponse client.types.forms.SubmitCoverErrorData client.types.forms.SubmitCoverHTTPError
+    exports client.types.forms.SubmitCoverRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/17 forms.submit_card()
+    exports client.types.forms.SubmitCardResponse client.types.forms.SubmitCardErrorData client.types.forms.SubmitCardHTTPError
+    exports client.types.forms.SubmitCardRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/18 forms.submit_stickers()
+    exports client.types.forms.SubmitStickersResponse client.types.forms.SubmitStickersErrorData client.types.forms.SubmitStickersHTTPError
+    exports client.types.forms.SubmitStickersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/19 forms.submit_album()
+    exports client.types.forms.SubmitAlbumResponse client.types.forms.SubmitAlbumErrorData client.types.forms.SubmitAlbumHTTPError
+    exports client.types.forms.SubmitAlbumRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/20 documents.store_document()
+    exports client.types.documents.StoreDocumentResponse client.types.documents.StoreDocumentErrorData client.types.documents.StoreDocumentHTTPError
+    exports client.types.documents.StoreDocumentRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/21 documents.read_document(path:id=id, query:filter=filter, header:X-Mode=x_mode)
+    exports client.types.documents.ReadDocumentResponse client.types.documents.ReadDocumentErrorData client.types.documents.ReadDocumentHTTPError
+    exports client.types.documents.ReadDocumentRequestCodecs client.types.documents.decode_read_document_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/22 documents.store_note()
+    exports client.types.documents.StoreNoteResponse client.types.documents.StoreNoteErrorData client.types.documents.StoreNoteHTTPError
+    exports client.types.documents.StoreNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/23 documents.replace_note()
+    exports client.types.documents.ReplaceNoteResponse client.types.documents.ReplaceNoteErrorData client.types.documents.ReplaceNoteHTTPError
+    exports client.types.documents.ReplaceNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'google-re2>=1.1.20251105']
+render typing.TypedDict
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/resources/__init__.py
+  write client/resources/forms/__init__.py
+  write client/resources/forms/_sync.py
+  write client/resources/forms/_async.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/resources/documents/__init__.py
+  write client/resources/documents/_sync.py
+  write client/resources/documents/_async.py
+  write client/types/__init__.py
+  write client/types/forms/__init__.py
+  write client/types/forms/_operations.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/types/documents/__init__.py
+  write client/types/documents/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 47
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 forms.submit_form()
+    exports client.types.forms.SubmitFormResponse client.types.forms.SubmitFormErrorData client.types.forms.SubmitFormHTTPError
+    exports client.types.forms.SubmitFormRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 forms.submit_profile()
+    exports client.types.forms.SubmitProfileResponse client.types.forms.SubmitProfileErrorData client.types.forms.SubmitProfileHTTPError
+    exports client.types.forms.SubmitProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 forms.read_profile()
+    exports client.types.forms.ReadProfileResponse client.types.forms.ReadProfileErrorData client.types.forms.ReadProfileHTTPError
+    exports client.types.forms.ReadProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 forms.submit_anything()
+    exports client.types.forms.SubmitAnythingResponse client.types.forms.SubmitAnythingErrorData client.types.forms.SubmitAnythingHTTPError
+    exports client.types.forms.SubmitAnythingRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 forms.submit_parts()
+    exports client.types.forms.SubmitPartsResponse client.types.forms.SubmitPartsErrorData client.types.forms.SubmitPartsHTTPError
+    exports client.types.forms.SubmitPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 forms.read_parts()
+    exports client.types.forms.ReadPartsResponse client.types.forms.ReadPartsErrorData client.types.forms.ReadPartsHTTPError
+    exports client.types.forms.ReadPartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 forms.submit_pairs()
+    exports client.types.forms.SubmitPairsResponse client.types.forms.SubmitPairsErrorData client.types.forms.SubmitPairsHTTPError
+    exports client.types.forms.SubmitPairsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 forms.submit_upload()
+    exports client.types.forms.SubmitUploadResponse client.types.forms.SubmitUploadErrorData client.types.forms.SubmitUploadHTTPError
+    exports client.types.forms.SubmitUploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 forms.read_upload()
+    exports client.types.forms.ReadUploadResponse client.types.forms.ReadUploadErrorData client.types.forms.ReadUploadHTTPError
+    exports client.types.forms.ReadUploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 forms.submit_avatar()
+    exports client.types.forms.SubmitAvatarResponse client.types.forms.SubmitAvatarErrorData client.types.forms.SubmitAvatarHTTPError
+    exports client.types.forms.SubmitAvatarRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 forms.submit_scans()
+    exports client.types.forms.SubmitScansResponse client.types.forms.SubmitScansErrorData client.types.forms.SubmitScansHTTPError
+    exports client.types.forms.SubmitScansRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/11 forms.submit_photos()
+    exports client.types.forms.SubmitPhotosResponse client.types.forms.SubmitPhotosErrorData client.types.forms.SubmitPhotosHTTPError
+    exports client.types.forms.SubmitPhotosRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/12 forms.submit_labels()
+    exports client.types.forms.SubmitLabelsResponse client.types.forms.SubmitLabelsErrorData client.types.forms.SubmitLabelsHTTPError
+    exports client.types.forms.SubmitLabelsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/13 files.store_file()
+    exports client.types.files.StoreFileResponse client.types.files.StoreFileErrorData client.types.files.StoreFileHTTPError
+    exports client.types.files.StoreFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/14 files.replace_file()
+    exports client.types.files.ReplaceFileResponse client.types.files.ReplaceFileErrorData client.types.files.ReplaceFileHTTPError
+    exports client.types.files.ReplaceFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/15 forms.submit_search()
+    exports client.types.forms.SubmitSearchResponse client.types.forms.SubmitSearchErrorData client.types.forms.SubmitSearchHTTPError
+    exports client.types.forms.SubmitSearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/16 forms.submit_cover()
+    exports client.types.forms.SubmitCoverResponse client.types.forms.SubmitCoverErrorData client.types.forms.SubmitCoverHTTPError
+    exports client.types.forms.SubmitCoverRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/17 forms.submit_card()
+    exports client.types.forms.SubmitCardResponse client.types.forms.SubmitCardErrorData client.types.forms.SubmitCardHTTPError
+    exports client.types.forms.SubmitCardRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/18 forms.submit_stickers()
+    exports client.types.forms.SubmitStickersResponse client.types.forms.SubmitStickersErrorData client.types.forms.SubmitStickersHTTPError
+    exports client.types.forms.SubmitStickersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/19 forms.submit_album()
+    exports client.types.forms.SubmitAlbumResponse client.types.forms.SubmitAlbumErrorData client.types.forms.SubmitAlbumHTTPError
+    exports client.types.forms.SubmitAlbumRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/20 documents.store_document()
+    exports client.types.documents.StoreDocumentResponse client.types.documents.StoreDocumentErrorData client.types.documents.StoreDocumentHTTPError
+    exports client.types.documents.StoreDocumentRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/21 documents.read_document(path:id=id, query:filter=filter, header:X-Mode=x_mode)
+    exports client.types.documents.ReadDocumentResponse client.types.documents.ReadDocumentErrorData client.types.documents.ReadDocumentHTTPError
+    exports client.types.documents.ReadDocumentRequestCodecs client.types.documents.decode_read_document_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/22 documents.store_note()
+    exports client.types.documents.StoreNoteResponse client.types.documents.StoreNoteErrorData client.types.documents.StoreNoteHTTPError
+    exports client.types.documents.StoreNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/23 documents.replace_note()
+    exports client.types.documents.ReplaceNoteResponse client.types.documents.ReplaceNoteErrorData client.types.documents.ReplaceNoteHTTPError
+    exports client.types.documents.ReplaceNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'google-re2>=1.1.20251105']

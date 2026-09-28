@@ -377,7 +377,7 @@ def codec_0() -> PydanticModelCodec[models.FieldItemsItemIdPartsPartGetQueryLeve
         {
             'models:FieldItemsItemIdPartsPartGetQueryLevelParameter': models.FieldItemsItemIdPartsPartGetQueryLevelParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -410,7 +410,7 @@ def codec_1() -> PydanticModelCodec[models.FieldItemsItemIdPartsPartGetResponse]
         ),
         models.FieldItemsItemIdPartsPartGetResponse,
         {'models:FieldItemsItemIdPartsPartGetResponse': models.FieldItemsItemIdPartsPartGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -447,7 +447,7 @@ def codec_2() -> PydanticModelCodec[models.FieldAdaptersGetCookieSessionParamete
         ),
         models.FieldAdaptersGetCookieSessionParameter,
         {'models:FieldAdaptersGetCookieSessionParameter': models.FieldAdaptersGetCookieSessionParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -479,7 +479,7 @@ def codec_3() -> PydanticModelCodec[models.Filter]:
         ),
         models.Filter,
         {'models:Filter': models.Filter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -511,7 +511,7 @@ def codec_4() -> PydanticModelCodec[models.FieldAdaptersGetQueryIdsParameter]:
         ),
         models.FieldAdaptersGetQueryIdsParameter,
         {'models:FieldAdaptersGetQueryIdsParameter': models.FieldAdaptersGetQueryIdsParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -543,7 +543,7 @@ def codec_5() -> PydanticModelCodec[models.FieldAdaptersGetHeaderXIdsParameter]:
         ),
         models.FieldAdaptersGetHeaderXIdsParameter,
         {'models:FieldAdaptersGetHeaderXIdsParameter': models.FieldAdaptersGetHeaderXIdsParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -576,7 +576,7 @@ def codec_6() -> PydanticModelCodec[models.FieldAdaptersGetQueryBlobParameter]:
         ),
         models.FieldAdaptersGetQueryBlobParameter,
         {'models:FieldAdaptersGetQueryBlobParameter': models.FieldAdaptersGetQueryBlobParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -608,7 +608,7 @@ def codec_7() -> PydanticModelCodec[models.FieldAdaptersGetQueryCodeParameter]:
         ),
         models.FieldAdaptersGetQueryCodeParameter,
         {'models:FieldAdaptersGetQueryCodeParameter': models.FieldAdaptersGetQueryCodeParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -640,7 +640,7 @@ def codec_8() -> PydanticModelCodec[models.FieldAdaptersGetQueryMailParameter]:
         ),
         models.FieldAdaptersGetQueryMailParameter,
         {'models:FieldAdaptersGetQueryMailParameter': models.FieldAdaptersGetQueryMailParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -672,7 +672,7 @@ def codec_9() -> PydanticModelCodec[models.FieldAdaptersGetQueryOtherParameter]:
         ),
         models.FieldAdaptersGetQueryOtherParameter,
         {'models:FieldAdaptersGetQueryOtherParameter': models.FieldAdaptersGetQueryOtherParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -704,7 +704,7 @@ def codec_10() -> PydanticModelCodec[models.FieldAdaptersGetQueryNoneParameter]:
         ),
         models.FieldAdaptersGetQueryNoneParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -736,7 +736,7 @@ def codec_11() -> PydanticModelCodec[models.FieldAdaptersGetQueryCountParameter]
         ),
         models.FieldAdaptersGetQueryCountParameter,
         {'models:FieldAdaptersGetQueryCountParameter': models.FieldAdaptersGetQueryCountParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -768,7 +768,7 @@ def codec_12() -> PydanticModelCodec[models.Point]:
         ),
         models.Point,
         {'models:Point': models.Point},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -800,5 +800,5 @@ def codec_13() -> PydanticModelCodec[models.FieldRepeatIdAgainIdGetPathIdParamet
         ),
         models.FieldRepeatIdAgainIdGetPathIdParameter,
         {'models:FieldRepeatIdAgainIdGetPathIdParameter': models.FieldRepeatIdAgainIdGetPathIdParameter},
-        request_bundle(),
+        request_bundle,
     )

@@ -27,6 +27,9 @@
     {"name": "values-server-decode", "use": "/paths/~1values/post request_body", "op": "decode",
      "value": {"amount": 1.10, "span": "P1DT1H", "level": 2, "any": {"k": [1]}, "un": 5, "mark": [1, "a"], "x-y": "z"}},
     {"name": "values-server-response", "use": "/paths/~1values/post response_body 200", "op": "encode",
-     "value": {"result": "values-server-decode", "attr": "value"}}
+     "value": {"result": "values-server-decode", "attr": "value"}},
+    {"name": "animals-client-needs-schema", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "needs-schema"},
+    {"name": "animals-client-convert", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "convert", "value": {"id": 1, "name": "Tom", "meow": true}},
+    {"name": "tree-client-needs-schema", "use": "/paths/~1tree/put response_body 200", "surface": "client", "op": "needs-schema"}
   ]
 }

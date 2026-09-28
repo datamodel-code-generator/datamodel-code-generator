@@ -1,0 +1,232 @@
+"""Render client targets from OpenAPI fixtures and report their files, public operations, and failures."""
+
+from __future__ import annotations
+
+import json
+import re
+import shutil
+from dataclasses import fields
+from pathlib import Path, PurePosixPath
+from typing import Any, TypeAlias
+
+from datamodel_code_generator import DataModelType, GenerateConfig
+from datamodel_code_generator._api_generation import render_target
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationSelection
+from datamodel_code_generator._client.config import (
+    BodyFieldName,
+    ClientGenerationConfig,
+    ClientOperationConfig,
+    ClientValidationConfig,
+    ParameterName,
+    ResourceName,
+    RuntimeOperationMetadata,
+)
+from datamodel_code_generator._client.target import ClientTarget
+from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._target_config import load_target_config
+from datamodel_code_generator.enums import OpenAPIScope
+from datamodel_code_generator.format import Formatter
+from tests.data.python.model_codec_adapters import declaration
+
+SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
+PACKAGE = "client"
+MANIFEST = ".dcg-target-manifest.json"
+_DIGEST = re.compile(r"[0-9a-f]{64}")
+Modules: TypeAlias = dict[tuple[str, ...], str]
+
+
+def _selector(value: object) -> object:
+    return OperationRef(**value) if isinstance(value, dict) else value
+
+
+def _operation(value: object) -> object:
+    if not isinstance(value, dict):
+        return value
+    converted: dict[str, Any] = {**value, "ref": _selector(value.get("ref"))}
+    if isinstance(names := value.get("parameter_names"), list):
+        converted["parameter_names"] = tuple(
+            ParameterName(**item) if isinstance(item, dict) else item for item in names
+        )
+    if isinstance(fields := value.get("body_field_names"), list):
+        converted["body_field_names"] = tuple(
+            BodyFieldName(**item) if isinstance(item, dict) else item for item in fields
+        )
+    if isinstance(runtime := value.get("runtime"), dict):
+        statuses = runtime.get("success_statuses", ())
+        converted["runtime"] = RuntimeOperationMetadata(**{
+            **runtime,
+            "success_statuses": tuple(statuses) if isinstance(statuses, list) else statuses,
+        })
+    return ClientOperationConfig(**converted)
+
+
+def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
+    """Build a client configuration from JSON fixture values."""
+    values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", "formatter_settings": ".", **values}
+    converted: dict[str, Any] = {}
+    for key, value in values.items():
+        match key:
+            case "output" | "formatter_settings":
+                converted[key] = root / value
+            case "selection":
+                converted[key] = OperationSelection(**{
+                    name: tuple(_selector(item) for item in item_value) if isinstance(item_value, list) else item_value
+                    for name, item_value in value.items()
+                })
+            case "resource_names" if isinstance(value, list):
+                converted[key] = tuple(ResourceName(**item) if isinstance(item, dict) else item for item in value)
+            case "operations" if isinstance(value, list):
+                converted[key] = tuple(_operation(item) for item in value)
+            case "codec_adapters" | "builtin_codec_compatibility" | "export_bindings" if isinstance(value, list):
+                kind = {"codec_adapters": "adapters", "builtin_codec_compatibility": "compatibility"}.get(
+                    key, "exports"
+                )
+                converted[key] = tuple(declaration(kind, item) for item in value)
+            case "formatters":
+                converted[key] = tuple(value)
+            case "validation" if isinstance(value, dict):
+                converted[key] = ClientValidationConfig(**{
+                    name: tuple(item) if isinstance(item, list) else item for name, item in value.items()
+                })
+            case _:
+                converted[key] = value
+    return ClientGenerationConfig(**converted)
+
+
+def _diagnostic(item: Diagnostic) -> str:
+    location = " ".join(str(part) for part in (item.stage, item.option_path, item.source_pointer) if part is not None)
+    return f"  {item.code} {location}: {item.message}"
+
+
+def _public_api(content: bytes) -> list[str]:
+    data = json.loads(content)["target_data"]["client"]
+    lines = [
+        f"  namespace {data['namespace']} helpers {data['protocol_helpers']} bindings {len(data['binding_refs'])}",
+        f"  refs {data['runtime_defaults_ref']} {data['selection_ref']} {data['extension_refs']}",
+    ]
+    for operation in data["public_api"]:
+        parameters = ", ".join(
+            f"{item['location']}:{item['wire_name']}={item['python_name']}" for item in operation["parameters"]
+        )
+        exports = operation["exports"]
+        digests = operation["contract_digests"]
+        valid = all(_DIGEST.fullmatch(value) for value in digests.values())
+        lines.extend((
+            f"  {operation['operation_ref']} {operation['resource']}.{operation['method']}({parameters})",
+            f"    exports {exports['response']} {exports['error_data']} {exports['http_error']}",
+            f"    exports {exports['request_codecs']} {exports['header_decoder']} digests {sorted(digests)} {valid}",
+        ))
+    return lines
+
+
+def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) -> list[str]:
+    model = {
+        "output": root / "models.py",
+        "input_file_type": "openapi",
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType(backend),
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+        **case.get("model", {}),
+    }
+    root.mkdir(parents=True, exist_ok=True)
+    source = shutil.copy2(SOURCE / case["input"], root / case["input"])
+    try:
+        project = render_target(
+            source,
+            model_config=GenerateConfig(**model),
+            config=client_config(case.get("config", {}), root),
+            generator=ClientTarget(),
+        )
+    except APIGenerationError as error:
+        return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
+    lines: list[str] = []
+    for artifact in project.artifacts:
+        path, content = artifact.path.relative_to(root), artifact.content or b""
+        match path.suffix, path.parts:
+            case _, parts if "_runtime" in parts:
+                continue
+            case ".py", parts:
+                modules[parts] = content.decode(case.get("config", {}).get("encoding", "utf-8"))
+            case _, parts if path.name == MANIFEST:
+                lines.extend(_public_api(content))
+                continue
+            case _:
+                pass
+        lines.append(f"  {artifact.action} {path.as_posix()}")
+    lines.append(f"  dependencies {list(project.dependencies)}")
+    lines.extend(_diagnostic(item) for item in project.diagnostics)
+    return lines
+
+
+def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]], bytes]:
+    """Return the contract digests of each operation in the manifest of a rendered case, and its models."""
+    root.mkdir(parents=True)
+    config = client_config(case.get("config", {}), root)
+    project = render_target(
+        shutil.copy2(SOURCE / case["input"], root / case["input"]),
+        model_config=GenerateConfig(
+            output=root / "models.py",
+            input_file_type="openapi",
+            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            disable_timestamp=True,
+            formatters=[Formatter.BUILTIN],
+        ),
+        config=config,
+        generator=ClientTarget(),
+    )
+    manifest = next(item for item in project.artifacts if item.path.name == MANIFEST)
+    models = next(item for item in project.artifacts if item.path == root / "models.py")
+    operations = json.loads(manifest.content or b"")["target_data"]["client"]["public_api"]
+    return {f"{item['resource']}.{item['method']}": item["contract_digests"] for item in operations}, models.content or b""
+
+
+def client_digest_report(first: str, second: str, root: Path) -> str:
+    """Render two cases and report, for each operation, which of its contract digests they share."""
+    cases = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))
+    (left, models), (right, other) = (_digests(cases[name], root / name) for name in (first, second))
+    lines = [f"# {first} and {second}", f"  models same {models == other}"]
+    for operation, digests in left.items():
+        same = [name for name, value in sorted(digests.items()) if right[operation][name] == value]
+        lines.append(f"  {operation} same {same} different {sorted(set(digests) - set(same))}")
+    return "\n".join(lines) + "\n"
+
+
+def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
+    """Render one fixture for each of its backends, returning a report and every backend's Python modules."""
+    case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
+    lines = [f"# {case_name}"]
+    rendered: dict[str, Modules] = {}
+    for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
+        lines.append(f"render {backend}")
+        lines.extend(_render(case, backend, root / (name := backend.replace(".", "_")), modules := {}))
+        if modules and case.get("modules", True):
+            rendered[name] = modules
+    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
+
+
+def _setting(value: object, root: Path) -> str:
+    match value:
+        case tuple():
+            items = [_setting(item, root) for item in value]
+            return f"({', '.join(items)}{',' if len(items) == 1 else ''})"
+        case Path():
+            return repr(PurePosixPath(value.relative_to(root).as_posix()))
+        case _:
+            return repr(value)
+
+
+def client_config_report(case_name: str, root: Path) -> str:
+    """Construct one client configuration from Python values or a TOML file and report it or its diagnostics."""
+    case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
+    try:
+        if (toml := case.get("toml")) is not None:
+            path = root / "client.toml"
+            path.write_text(toml, encoding="utf-8")
+            config = load_target_config(path, ClientGenerationConfig)
+        else:
+            config = client_config(case, root)
+    except APIGenerationError as error:
+        return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
+    return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))

@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: Cycle
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /things:
+    post:
+      operationId: createThing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Thing"
+      responses:
+        "204":
+          description: Created.
+components:
+  schemas:
+    Thing:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            name:
+              type: string
+    Base:
+      allOf:
+        - $ref: "#/components/schemas/Thing"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: integer

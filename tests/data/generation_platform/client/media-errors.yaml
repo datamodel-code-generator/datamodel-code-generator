@@ -1,0 +1,126 @@
+openapi: 3.2.0
+info:
+  title: Media errors
+  version: 1.0.0
+servers:
+  - url: https://media.example.com
+paths:
+  /upload:
+    post:
+      operationId: upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+            encoding:
+              file: {contentType: image/png}
+          '*/*': {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter:
+                  type: object
+                  properties:
+                    name: {type: string}
+            encoding:
+              filter:
+                style: deepObject
+                explode: true
+      responses:
+        '200':
+          description: A multipart response with a schema but no names.
+          content:
+            multipart/mixed:
+              schema: {type: object}
+        '201':
+          description: A form-data response with a file part and an encoding.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, contentMediaType: image/png}
+              encoding:
+                photo: {contentType: image/png}
+  /text-parts:
+    post:
+      operationId: postTextParts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: {type: string}
+      responses:
+        '204':
+          description: A form-data body that is no object.
+  /form-data-encodings:
+    post:
+      operationId: postFormDataEncodings
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                a: {type: string}
+                b: {type: string}
+                c: {type: string}
+                d: {type: object}
+                e: {type: string}
+                f: {type: string, format: binary}
+                g: {type: object}
+                h: {type: string, format: binary}
+            encoding:
+              other: {contentType: text/plain}
+              a:
+                headers:
+                  X-Trace:
+                    schema: {type: string}
+              b: {style: form}
+              c: {contentType: not a media type}
+              d: {contentType: application/xml}
+              e: {contentType: 'text/*'}
+              f: {contentType: 'image/*'}
+              g: {contentType: text/plain}
+              h: {style: form}
+      responses:
+        '204':
+          description: Form-data encodings the client does not send yet.
+  /required-part-header:
+    post:
+      operationId: postRequiredPartHeader
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                a: {type: string}
+                b: {type: string}
+            encoding:
+              a:
+                headers:
+                  X-Trace:
+                    required: true
+                    schema: {type: string}
+              b:
+                headers:
+                  Content-Disposition:
+                    required: true
+                    schema: {type: string}
+      responses:
+        '204':
+          description: A required part header on an object sent whole.
+  /invalid:
+    post:
+      operationId: postInvalid
+      requestBody:
+        content:
+          not a media type:
+            schema: {type: string}
+      responses:
+        '204':
+          description: An invalid media type.

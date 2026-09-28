@@ -1,0 +1,612 @@
+openapi: 3.1.0
+info:
+  title: Media
+  version: 1.0.0
+servers:
+  - url: https://media.example.com/api/
+paths:
+  /forms:
+    post:
+      operationId: submitForm
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                count: {type: integer}
+                labels:
+                  type: array
+                  items: {type: string}
+      responses:
+        '200':
+          description: The echoed form.
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  name: {type: string}
+                  count: {type: integer}
+  /profiles:
+    post:
+      operationId: submitProfile
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                age: {type: integer}
+                active: {type: boolean}
+                tags:
+                  type: array
+                  items: {type: string}
+                address: {$ref: '#/components/schemas/Address'}
+                nickname: {type: [string, 'null']}
+      responses:
+        '204':
+          description: Stored.
+    get:
+      operationId: readProfile
+      tags: [forms]
+      responses:
+        '200':
+          description: The profile as form-data parts.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                required: [name]
+                properties:
+                  name: {type: string}
+                  age: {type: integer}
+                  score: {type: number}
+                  ratio: {type: [integer, number]}
+                  active: {type: boolean}
+                  tags:
+                    type: array
+                    items: {type: string}
+                  address: {$ref: '#/components/schemas/Address'}
+                additionalProperties: {type: integer}
+  /anything:
+    post:
+      operationId: submitAnything
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {}
+      responses:
+        '204':
+          description: Stored.
+  /attachments:
+    post:
+      operationId: submitParts
+      tags: [forms]
+      requestBody:
+        content:
+          multipart/form-data: {}
+      responses:
+        '204':
+          description: Stored.
+    get:
+      operationId: readParts
+      tags: [forms]
+      responses:
+        '200':
+          description: The parts as they arrived.
+          content:
+            multipart/mixed: {}
+        '202':
+          description: The id of parts still stored.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  id: {type: integer}
+                additionalProperties: false
+  /pairs:
+    post:
+      operationId: submitPairs
+      tags: [forms]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded: {}
+      responses:
+        '200':
+          description: The echoed pairs.
+          content:
+            application/x-www-form-urlencoded: {}
+  /uploads:
+    post:
+      operationId: submitUpload
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [id, title, photo]
+              properties:
+                id: {type: integer, readOnly: true}
+                title: {type: string}
+                count: {type: integer}
+                tags:
+                  type: array
+                  items: {type: string}
+                meta: {$ref: '#/components/schemas/Address'}
+                photo: {type: string, format: binary}
+                pages:
+                  type: array
+                  items: {type: string, contentMediaType: application/pdf}
+              additionalProperties: {type: integer}
+      responses:
+        '204':
+          description: Stored.
+    get:
+      operationId: readUpload
+      tags: [forms]
+      responses:
+        '200':
+          description: The stored upload.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                required: [title, photo, secret]
+                properties:
+                  title: {type: string}
+                  count: {type: integer}
+                  tags:
+                    type: array
+                    items: {type: string}
+                  meta: {$ref: '#/components/schemas/Address'}
+                  draft: {$ref: '#/components/schemas/Draft'}
+                  photo: {type: string, format: binary}
+                  pages:
+                    type: array
+                    items: {type: string, contentMediaType: application/pdf}
+                  secret: {type: string, writeOnly: true}
+                additionalProperties: {type: integer}
+        '201':
+          description: A note with scans of any name.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  note: {type: string}
+                additionalProperties: {type: string, format: binary}
+        '202':
+          description: A photo with parts of any name.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+        '203':
+          description: A photo alone.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, format: binary}
+                additionalProperties: false
+  /avatars:
+    post:
+      operationId: submitAvatar
+      tags: [forms]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                caption: {type: string}
+                avatar: {type: string, format: binary}
+          application/json:
+            schema: {$ref: '#/components/schemas/Address'}
+      responses:
+        '204':
+          description: Stored.
+  /scans:
+    post:
+      operationId: submitScans
+      tags: [forms]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note: {type: string}
+              additionalProperties: {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /photos:
+    post:
+      operationId: submitPhotos
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: {type: string, format: binary}
+              additionalProperties: false
+      responses:
+        '204':
+          description: Stored.
+  /labels:
+    post:
+      operationId: submitLabels
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                sheet: {type: string, format: binary}
+              additionalProperties: {type: string}
+      responses:
+        '204':
+          description: Stored.
+  /files:
+    post:
+      operationId: storeFile
+      tags: [files]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Address'}
+          application/*:
+            schema: {type: string, format: binary}
+          image/*:
+            schema: {type: string, format: binary}
+          text/*:
+            schema: {type: string}
+      responses:
+        '200':
+          description: The stored file.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Address'}
+            image/*:
+              schema: {type: string, format: binary}
+            '*/*':
+              schema: {type: string, format: binary}
+        '201':
+          description: A copy.
+          content:
+            image/png:
+              schema: {type: string, format: binary}
+        '204':
+          description: Stored without a body.
+    put:
+      operationId: replaceFile
+      tags: [files]
+      requestBody:
+        content:
+          '*/*': {}
+      responses:
+        '204':
+          description: Replaced.
+  /searches:
+    post:
+      operationId: submitSearch
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+                filter:
+                  type: object
+                  properties:
+                    name: {type: string}
+                    min: {type: integer}
+                tags:
+                  type: array
+                  items: {type: string}
+                ids:
+                  type: array
+                  items: {type: integer}
+                meta: {$ref: '#/components/schemas/Address'}
+                path: {type: string}
+                extra:
+                  type: object
+                  additionalProperties: {type: string}
+            encoding:
+              extra: {style: form, explode: true}
+              filter: {style: deepObject, explode: true}
+              tags: {style: pipeDelimited, explode: false}
+              ids: {style: form, explode: false}
+              meta: {contentType: application/json}
+              path: {allowReserved: true}
+              term:
+                headers:
+                  X-Ignored:
+                    schema: {type: string}
+      responses:
+        '204':
+          description: Searched.
+  /covers:
+    post:
+      operationId: submitCover
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [cover]
+              properties:
+                note: {type: string}
+                size: {type: integer}
+                meta: {$ref: '#/components/schemas/Address'}
+                cover: {type: string, format: binary}
+                scans:
+                  type: array
+                  items: {type: string, format: binary}
+                extra: {}
+            encoding:
+              note:
+                contentType: text/plain; charset=utf-16
+                headers:
+                  X-Trace:
+                    schema: {type: string, pattern: '^t'}
+                  Content-Type:
+                    required: true
+                    schema: {type: string, pattern: '^never'}
+              extra: {contentType: text/plain}
+              size: {contentType: application/json}
+              meta:
+                contentType: application/vnd.meta+json
+                headers:
+                  X-Meta:
+                    content:
+                      application/json:
+                        schema: {type: integer}
+              cover:
+                contentType: 'image/png, image/jpeg'
+                headers:
+                  X-Rate-Limit: {$ref: '#/components/headers/RateLimit'}
+              scans:
+                contentType: 'image/*'
+                headers:
+                  Content-Disposition:
+                    required: true
+                    schema: {type: string, pattern: 'filename='}
+      responses:
+        '204':
+          description: Stored.
+  /cards:
+    post:
+      operationId: submitCard
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+                count: {type: integer}
+                tags:
+                  type: array
+                  items: {type: string}
+            encoding:
+              title: {contentType: text/plain; charset=utf-16}
+              count: {contentType: application/json}
+              tags: {contentType: text/plain; charset=us-ascii}
+      responses:
+        '204':
+          description: Stored.
+  /stickers:
+    post:
+      operationId: submitStickers
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items: {type: string}
+                words:
+                  type: array
+                  items: {type: string}
+                sizes:
+                  type: array
+                  items: {type: integer}
+                filter:
+                  type: object
+                  properties:
+                    name: {type: string}
+                    min: {type: integer}
+                point:
+                  type: object
+                  properties:
+                    x: {type: integer}
+                  additionalProperties: {type: integer}
+                label: {type: string}
+                y: {type: integer}
+            encoding:
+              tags: {style: pipeDelimited}
+              words: {style: spaceDelimited}
+              sizes: {style: form, explode: false}
+              filter: {style: deepObject, explode: true}
+              point: {explode: true}
+              label: {allowReserved: true, contentType: application/json}
+      responses:
+        '204':
+          description: Stored.
+  /albums:
+    post:
+      operationId: submitAlbum
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - type: object
+                  required: [photo]
+                  properties:
+                    photo: {type: string, format: binary}
+                    bounds:
+                      type: object
+                      properties:
+                        w: {type: integer}
+                      additionalProperties: {type: integer}
+                    title: {type: string}
+                - type: object
+                  properties:
+                    tags:
+                      type: array
+                      items: {type: string}
+            encoding:
+              tags: {style: spaceDelimited}
+              bounds:
+                explode: true
+                headers:
+                  Content-Disposition:
+                    schema: {type: string, pattern: 'name="[^b]'}
+      responses:
+        '204':
+          description: Stored.
+  /documents:
+    post:
+      operationId: storeDocument
+      tags: [documents]
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+          text/plain; charset=utf-16: {}
+          application/vnd.api+json:
+            schema: {$ref: '#/components/schemas/Draft'}
+      responses:
+        '200':
+          description: The stored document.
+          content:
+            application/json: {}
+            text/plain: {}
+        '202':
+          description: Accepted without a body.
+        '3XX':
+          description: Moved.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Draft'}
+        '5XX':
+          description: A failure.
+          content:
+            text/plain: {}
+  /documents/{id}:
+    get:
+      operationId: readDocument
+      tags: [documents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key: {type: string}
+        - name: filter
+          in: query
+          content:
+            application/json: {}
+        - name: X-Mode
+          in: header
+          content:
+            text/plain: {}
+      responses:
+        '200':
+          description: The document.
+          headers:
+            X-Draft:
+              schema: {$ref: '#/components/schemas/Draft'}
+          content:
+            application/vnd.api+json:
+              schema: {$ref: '#/components/schemas/Draft'}
+  /notes:
+    post:
+      operationId: storeNote
+      tags: [documents]
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+          application/vnd.note+json: {}
+      responses:
+        '204':
+          description: Stored.
+    put:
+      operationId: replaceNote
+      tags: [documents]
+      requestBody:
+        content:
+          application/json: {}
+          text/plain: {}
+      responses:
+        '204':
+          description: Replaced.
+components:
+  headers:
+    RateLimit:
+      required: true
+      schema: {type: integer}
+  schemas:
+    Address:
+      type: object
+      properties:
+        city: {type: string}
+        codes:
+          type: array
+          items: {type: integer}
+    Draft:
+      type: object
+      required: [id, title, secret]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title: {type: string}
+        secret:
+          type: string
+          writeOnly: true

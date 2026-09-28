@@ -579,7 +579,7 @@ def codec_0() -> PydanticModelCodec[models.Item]:
         ),
         models.Item,
         {'models:Item': models.Item},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -612,7 +612,7 @@ def codec_1() -> PydanticModelCodec[models.FieldJsonNullablePostRequest]:
         ),
         models.FieldJsonNullablePostRequest,
         {'models:FieldJsonNullablePostRequest': models.FieldJsonNullablePostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -645,7 +645,7 @@ def codec_2() -> PydanticModelCodec[models.Account]:
         ),
         models.Account,
         {'models:Account': models.Account},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -678,7 +678,7 @@ def codec_3() -> PydanticModelCodec[models.Item]:
         ),
         models.Item,
         {'models:Item': models.Item},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -711,7 +711,7 @@ def codec_4() -> PydanticModelCodec[models.Item]:
         ),
         models.Item,
         {'models:Item': models.Item},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -744,7 +744,7 @@ def codec_5() -> PydanticModelCodec[models.FieldTextPostRequest]:
         ),
         models.FieldTextPostRequest,
         {'models:FieldTextPostRequest': models.FieldTextPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -777,7 +777,7 @@ def codec_6() -> PydanticModelCodec[models.FieldFormOptionalPostRequest]:
         ),
         models.FieldFormOptionalPostRequest,
         {'models:FieldFormOptionalPostRequest': models.FieldFormOptionalPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -810,7 +810,7 @@ def codec_7() -> PydanticModelCodec[models.FieldFormEitherPostRequest]:
         ),
         models.FieldFormEitherPostRequest,
         {'models:FieldFormEitherPostRequest': models.FieldFormEitherPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -843,7 +843,7 @@ def codec_8() -> PydanticModelCodec[models.FieldFormNestedPostRequest]:
         ),
         models.FieldFormNestedPostRequest,
         {'models:FieldFormNestedPostRequest': models.FieldFormNestedPostRequest, 'models:Point': models.Point},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -876,7 +876,7 @@ def codec_9() -> PydanticModelCodec[models.FieldFormClosedPostRequest]:
         ),
         models.FieldFormClosedPostRequest,
         {'models:FieldFormClosedPostRequest': models.FieldFormClosedPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -909,5 +909,5 @@ def codec_10() -> PydanticModelCodec[models.FieldFormChoicePostRequest]:
         ),
         models.FieldFormChoicePostRequest,
         {'models:FieldFormChoicePostRequest': models.FieldFormChoicePostRequest},
-        request_bundle(),
+        request_bundle,
     )

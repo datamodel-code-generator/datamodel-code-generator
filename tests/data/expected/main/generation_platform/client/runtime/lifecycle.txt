@@ -1,0 +1,61 @@
+# pets pydantic_v2.BaseModel
+  > GET https://view.example.com/v2/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  view call = Pet(id=3, name='fox', tag=None)
+  closed view call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSED', owner='view') [operation_id='getPet'] client_closed_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  other view call = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  owner call = Pet(id=3, name='fox', tag=None)
+  view options ! ConfigurationError: ConfigurationError(field_path='options', condition='invalid_type') [field_path=('options',), condition='invalid_type'] configuration_error
+  closed owner call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSED', owner='client') [operation_id='getPet'] client_closed_error
+  view of closed owner call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSED', owner='client') [operation_id='getPet'] client_closed_error
+  borrowed adapter closes False
+  options cleanup bool ! ConfigurationError: ConfigurationError(field_path='cleanup_timeout', condition='out_of_range') [field_path=('cleanup_timeout',), condition='out_of_range'] configuration_error
+  options cleanup zero ! ConfigurationError: ConfigurationError(field_path='cleanup_timeout', condition='out_of_range') [field_path=('cleanup_timeout',), condition='out_of_range'] configuration_error
+  options cleanup infinite ! ConfigurationError: ConfigurationError(field_path='cleanup_timeout', condition='out_of_range') [field_path=('cleanup_timeout',), condition='out_of_range'] configuration_error
+  options cleanup text ! ConfigurationError: ConfigurationError(field_path='cleanup_timeout', condition='out_of_range') [field_path=('cleanup_timeout',), condition='out_of_range'] configuration_error
+  < closed
+  closing stops the call
+  call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  close = None
+  probe ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  closing stops the call close again = None
+  < closed
+  closing outlasts the cleanup time
+  call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  close ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.05) [] cleanup_error
+  probe ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  closing outlasts the cleanup time close again = None
+  < closed
+  closing interrupts the read
+  call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet', cause=TransportError()] client_closed_error
+  close = None
+  probe ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  closing interrupts the read close again = None
+  < closed
+  async closing stops the call
+  call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  close = None
+  probe ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  refused ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  async closing stops the call close again = None
+  < closed
+  async closing outlasts the cleanup time
+  call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  close ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.05) [] cleanup_error
+  probe ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  refused ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  async closing outlasts the cleanup time close again = None
+  no event loop ! UnsupportedAsyncBackendError: UnsupportedAsyncBackendError(operation_id='getPet', call_id='<call>', loop_mismatch=False) [operation_id='getPet'] unsupported_async_backend_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  first loop = Pet(id=3, name='fox', tag=None)
+  second loop ! UnsupportedAsyncBackendError: UnsupportedAsyncBackendError(operation_id='getPet', call_id='<call>', loop_mismatch=True) [operation_id='getPet'] unsupported_async_backend_error
+  client created in a loop closes in it

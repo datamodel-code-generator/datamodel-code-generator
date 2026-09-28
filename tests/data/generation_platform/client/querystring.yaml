@@ -1,0 +1,28 @@
+openapi: 3.2.0
+info:
+  title: Querystring
+  version: 1.0.0
+servers:
+  - url: https://search.example.com
+paths:
+  /search:
+    get:
+      operationId: search
+      parameters:
+        - name: criteria
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  term: {type: string}
+                  page: {type: integer}
+      responses:
+        '200':
+          description: The matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string}

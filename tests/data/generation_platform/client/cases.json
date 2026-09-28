@@ -1,0 +1,907 @@
+{
+  "pets": {
+    "input": "pets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ]
+    }
+  },
+  "pets-unpack": {
+    "input": "pets.yaml",
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ],
+      "signature_style": "unpack"
+    }
+  },
+  "media": {
+    "input": "media.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "typing.TypedDict"
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1documents/post",
+          "request_media_type": "application/json",
+          "runtime": {
+            "success_statuses": [
+              302
+            ]
+          }
+        }
+      ],
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    }
+  },
+  "servers": {
+    "input": "servers.yaml",
+    "config": {
+      "server_base_url": "https://api.example.com/root/"
+    }
+  },
+  "default-server": {
+    "input": "default-server.yaml",
+    "config": {
+      "default_base_url": "https://default.example.com/base",
+      "package_mode": "standalone",
+      "distribution_name": "pets-client",
+      "package_version": "1.2.3",
+      "model_dependency": "pets-models>=1"
+    }
+  },
+  "implicit-server": {
+    "input": "default-server.yaml",
+    "config": {
+      "server_base_url": "https://implicit.example.com/api/"
+    }
+  },
+  "names": {
+    "input": "names.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1files~1{fileName}.{ext}/get",
+          "parameter_names": [
+            {
+              "in_": "header",
+              "name": "2fa",
+              "python_name": "two_factor"
+            }
+          ]
+        }
+      ],
+      "resource_names": [
+        {
+          "tag": "Pet Store",
+          "namespace": "store"
+        }
+      ]
+    }
+  },
+  "name-errors": {
+    "input": "name-errors.yaml"
+  },
+  "child-collision": {
+    "input": "names.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1admin~1users/get",
+          "resource": "admin.users"
+        },
+        {
+          "ref": "/paths/~1admin~1users/post",
+          "name": "users"
+        }
+      ]
+    }
+  },
+  "media-errors": {
+    "input": "media-errors.yaml"
+  },
+  "server-errors": {
+    "input": "server-errors.yaml"
+  },
+  "codec-errors": {
+    "input": "codec-errors.yaml"
+  },
+  "setting-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "absent",
+              "python_name": "absent"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets/post",
+          "request_media_type": "application/xml"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "image/png",
+          "runtime": {
+            "success_statuses": [
+              301
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "method-collisions": {
+    "input": "method-collisions.yaml"
+  },
+  "reference-errors": {
+    "input": "pets.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1missing/get"
+        },
+        {
+          "ref": "/paths/~1pets/get"
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/get"
+          }
+        }
+      ]
+    }
+  },
+  "empty": {
+    "input": "pets.yaml",
+    "config": {
+      "selection": {
+        "exclude_tags": [
+          "pets"
+        ],
+        "reason": "No operation is needed yet."
+      }
+    }
+  },
+  "evolution": {
+    "input": "evolution.yaml",
+    "backends": [
+      "msgspec.Struct"
+    ]
+  },
+  "evolution-schema": {
+    "input": "evolution.yaml",
+    "config": {
+      "validation": {
+        "response": "schema"
+      }
+    }
+  },
+  "evolution-forbid": {
+    "input": "evolution.yaml",
+    "model": {
+      "extra_fields": "forbid",
+      "use_generic_base_class": true
+    }
+  },
+  "evolution-allow": {
+    "input": "evolution.yaml",
+    "model": {
+      "extra_fields": "allow",
+      "enum_field_as_literal": "all"
+    }
+  },
+  "querystring": {
+    "input": "querystring.yaml"
+  },
+  "keywords": {
+    "input": "keywords.yaml",
+    "config": {
+      "signature_style": "unpack"
+    }
+  },
+  "validation": {
+    "input": "validation.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "validation": {
+        "request_overrides": [
+          "native",
+          "schema"
+        ],
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "validation-structural": {
+    "input": "validation.yaml",
+    "config": {
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ],
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "validation-native-structural": {
+    "input": "validation.yaml",
+    "backends": [
+      "dataclasses.dataclass",
+      "typing.TypedDict"
+    ],
+    "config": {
+      "validation": {
+        "request_overrides": [
+          "native"
+        ],
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "validation-ambiguous": {
+    "input": "evolution.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ]
+  },
+  "validation-adapters": {
+    "input": "validation.yaml",
+    "config": {
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "limit",
+          "import_ref": "app.codecs:limit",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "integer"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "limit"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "pets",
+          "import_ref": "app.codecs:pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/post",
+              "role": "response_body",
+              "status": "201",
+              "media_type": "application/json"
+            }
+          ]
+        }
+      ],
+      "validation": {
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "validation-adapters-schema": {
+    "input": "validation.yaml",
+    "config": {
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "limit",
+          "import_ref": "app.codecs:limit",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "integer"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "limit"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "pets",
+          "import_ref": "app.codecs:pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/post",
+              "role": "response_body",
+              "status": "201",
+              "media_type": "application/json"
+            }
+          ]
+        }
+      ],
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    },
+    "modules": false
+  },
+  "validation-arguments": {
+    "input": "validation.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "typing.TypedDict"
+    ],
+    "config": {
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ],
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "validation-arguments-lax": {
+    "input": "validation.yaml",
+    "modules": false,
+    "config": {
+      "validation": {
+        "arguments": "pydantic",
+        "pydantic_strict": false
+      }
+    }
+  },
+  "validation-arguments-msgspec": {
+    "input": "validation.yaml",
+    "backends": [
+      "msgspec.Struct"
+    ],
+    "config": {
+      "validation": {
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "pets-arguments": {
+    "input": "pets.yaml",
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ],
+      "validation": {
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    },
+    "modules": false
+  },
+  "fields": {
+    "input": "fields.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ],
+      "validation": {
+        "request_overrides": [
+          "native",
+          "schema"
+        ]
+      },
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1search/post"
+        ],
+        "reason": "msgspec validates its union only against the schema."
+      }
+    }
+  },
+  "fields-structural": {
+    "input": "fields.yaml",
+    "backends": [
+      "dataclasses.dataclass",
+      "typing.TypedDict"
+    ],
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ],
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "fields-unpack": {
+    "input": "fields.yaml",
+    "config": {
+      "body_arguments": "both",
+      "signature_style": "unpack",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ],
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1search/post"
+        ],
+        "reason": "The fields-structural and fields-arguments cases cover the union body."
+      }
+    }
+  },
+  "fields-arguments": {
+    "input": "fields.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "typing.TypedDict"
+    ],
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ],
+      "validation": {
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "fields-errors": {
+    "input": "fields.yaml",
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "id",
+              "python_name": "pet_id"
+            },
+            {
+              "media_type": "application/xml",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "Application/JSON",
+              "name": "absent",
+              "python_name": "absent"
+            },
+            {
+              "media_type": "application/json",
+              "name": "birthDate",
+              "python_name": "kind"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1search/post",
+          "body_field_names": [
+            {
+              "media_type": "text/plain",
+              "name": "q",
+              "python_name": "query"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1records/put",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "name",
+              "python_name": "pet_name"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "fields-body": {
+    "input": "fields.yaml",
+    "modules": false,
+    "config": {
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1search/post"
+        ],
+        "reason": "The fields-structural and fields-arguments cases cover the union body."
+      }
+    }
+  },
+  "fields-both": {
+    "input": "fields.yaml",
+    "modules": false,
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ],
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1search/post"
+        ],
+        "reason": "The fields-structural and fields-arguments cases cover the union body."
+      }
+    }
+  },
+  "fields-cycle": {
+    "input": "fields-cycle.yaml",
+    "modules": false,
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "fields-optional-models": {
+    "input": "fields.yaml",
+    "model": {
+      "force_optional_for_required_fields": true
+    },
+    "config": {
+      "body_arguments": "both",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "tag",
+              "python_name": "pet_tag"
+            },
+            {
+              "media_type": "application/x-www-form-urlencoded",
+              "name": "tag",
+              "python_name": "pet_tag"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1visits/post",
+          "body_field_names": [
+            {
+              "media_type": "application/json",
+              "name": "options",
+              "python_name": "visit_options"
+            }
+          ]
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1owner/put",
+          "body_arguments": "body"
+        }
+      ],
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1search/post"
+        ],
+        "reason": "The fields-structural and fields-arguments cases cover the union body."
+      }
+    }
+  }
+}

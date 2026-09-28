@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from json.encoder import encode_basestring, encode_basestring_ascii
@@ -269,20 +269,39 @@ def form_encode(text: str) -> str:
     return quote(text, safe=_FORM_SAFE + " ").replace(" ", "+").replace("~", "%7E")
 
 
-def encode_form(value: WireValue, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> bytes:
-    """Serialize a flat object as ordered URL-encoded pairs, repeating array members."""
+def encode_form(
+    value: WireValue,
+    fields: tuple[FieldPlan, ...],
+    additional: FieldPlan | None,
+    styled: Mapping[str, Callable[[WireValue], Iterable[str]]] | None = None,
+) -> bytes:
+    """Serialize a flat object as ordered URL-encoded pairs, repeating array members.
+
+    A member in `styled` writes its own pairs, as its encoding's query parameter style or content does, and no two
+    members may then write the same name.
+    """
     if not isinstance(value, Mapping):
         msg = "A URL-encoded form value must be an object"
         raise ParameterEncodingError(msg)
     declared = {field.name: field for field in fields}
     pairs: list[str] = []
+    owners: dict[str, str] = {}
     for name, item in value.items():
-        if (field := declared.get(name, additional)) is None:
+        if styled and (style := styled.get(name)) is not None:
+            written = list(style(item))
+            keys = [percent_decode(pair.partition("=")[0].encode("ascii"), plus=True) for pair in written]
+        elif (field := declared.get(name, additional)) is None:
             msg = "A URL-encoded form member is not declared"
             raise ParameterEncodingError(msg)
-        pairs.extend(
-            f"{form_encode(name)}={form_encode(lexical(member, field.kind))}" for member in _members(item, field)
-        )
+        else:
+            written = [
+                f"{form_encode(name)}={form_encode(lexical(member, field.kind))}" for member in _members(item, field)
+            ]
+            keys = [name]
+        if styled and any(owners.setdefault(key, name) != name for key in keys):
+            msg = "Two URL-encoded form members write the same name"
+            raise ParameterEncodingError(msg)
+        pairs.extend(written)
     return "&".join(pairs).encode("ascii")
 
 

@@ -1,0 +1,10 @@
+# pets and pets-unpack
+  models same True
+  pets.list_pets same ['request', 'response', 'security'] different ['signature']
+  pets.create_pet same ['request', 'response', 'security'] different ['signature']
+  pets.get_pet same ['request', 'response', 'security'] different ['signature']
+  pets.delete_pets_by_pet_id same ['request', 'response', 'security'] different ['signature']
+  pets.head_pet same ['request', 'response', 'security'] different ['signature']
+  pets.photos.upload same ['request', 'response', 'security'] different ['signature']
+  pets.attach_files same ['request', 'response', 'security'] different ['signature']
+  pets.read_files same ['request', 'response', 'security'] different ['signature']

@@ -14,7 +14,8 @@ from fastapi.responses import Response
 from starlette.datastructures import UploadFile as ParsedFile
 
 from tests.data.python.fastapi_generation import SOURCE
-from tests.data.python.fastapi_server import _forget, _generate, _import
+from tests.data.python.fastapi_server import _generate, _import
+from tests.data.python.generated_packages import forget_generated
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -139,5 +140,5 @@ def fastapi_upstream_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
         parsed = _observe(monkeypatch)
         lines.extend(f"{name}: {_outcome(app, uploads, parsed, length, scenario)}" for name, scenario in failures)
     finally:
-        _forget(package)
+        forget_generated(package)
     return "\n".join(lines) + "\n"

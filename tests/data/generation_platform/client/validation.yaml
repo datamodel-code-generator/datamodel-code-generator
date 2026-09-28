@@ -1,0 +1,186 @@
+openapi: 3.1.0
+info:
+  title: Validation policies
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            format: int32
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+        4XX:
+          description: A problem.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "201":
+          description: The pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /pets/{petId}/card:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      operationId: getCard
+      responses:
+        "200":
+          description: The card.
+          content:
+            multipart/form-data:
+              schema:
+                $ref: "#/components/schemas/Card"
+    put:
+      operationId: putCard
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/Card"
+            encoding:
+              token:
+                headers:
+                  X-Count:
+                    required: true
+                    schema:
+                      type: integer
+                      minimum: 1
+                  X-Trace:
+                    schema:
+                      type: string
+                      pattern: "^t"
+      responses:
+        "204":
+          description: Stored.
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "204":
+          description: Healthy.
+  /notes:
+    post:
+      operationId: postNote
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: string
+      requestBody:
+        content:
+          text/plain: {}
+      responses:
+        "204":
+          description: Stored.
+  /photos:
+    put:
+      operationId: putPhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+          image/png: {}
+      responses:
+        "204":
+          description: Stored.
+  /accounts/{accountId}:
+    get:
+      operationId: getAccount
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 8
+        age:
+          type: integer
+          format: int32
+        secret:
+          type: string
+          writeOnly: true
+    Problem:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: integer
+          minimum: 400
+    Card:
+      type: object
+      required: [photo]
+      properties:
+        caption:
+          type: string
+          maxLength: 5
+        photo:
+          type: string
+          format: binary
+        stamp:
+          type: string
+          readOnly: true
+        token:
+          type: string
+          writeOnly: true
+    Account:
+      type: object
+      required: [id, password]
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+        password:
+          type: string
+          writeOnly: true

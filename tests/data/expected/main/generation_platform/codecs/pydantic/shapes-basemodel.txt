@@ -43,3 +43,8 @@ mixed-server-decode: model Mixed(root=Small(size='small', contact=None)) set=['r
 mixed-server-decode-native: NativeValidationError native.value_error@/contact['small', 'contact']
 kin-server-encode-cat: wire={"id":1,"meow":true}
 kin-server-encode-dog: wire={"id":2}
+animals-client-needs-schema: needs schema False ambiguous True
+animals-client-convert: converted FieldAnimalsPostResponse(root=Cat(id=1, name='Tom', nick_name=None, meow=True))
+tree-client-needs-schema: needs schema False ambiguous False
+values-client-serialize-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
+values-client-convert-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit

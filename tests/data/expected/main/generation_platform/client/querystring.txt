@@ -1,0 +1,31 @@
+# querystring
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/resources/__init__.py
+  write client/resources/default/__init__.py
+  write client/resources/default/_sync.py
+  write client/resources/default/_async.py
+  write client/types/__init__.py
+  write client/types/default/__init__.py
+  write client/types/default/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 2
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 default.search(querystring:criteria=criteria)
+    exports client.types.default.SearchResponse client.types.default.SearchErrorData client.types.default.SearchHTTPError
+    exports client.types.default.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

@@ -304,7 +304,7 @@ def codec_0() -> PydanticModelCodec[parameters_basemodel_models.FieldSearchGetCo
         {
             'parameters_basemodel_models:FieldSearchGetCookieSessionParameter': parameters_basemodel_models.FieldSearchGetCookieSessionParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -338,7 +338,7 @@ def codec_1() -> PydanticModelCodec[parameters_basemodel_models.FieldSearchGetQu
         {
             'parameters_basemodel_models:FieldSearchGetQueryCodeParameter': parameters_basemodel_models.FieldSearchGetQueryCodeParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -370,7 +370,7 @@ def codec_2() -> PydanticModelCodec[parameters_basemodel_models.Filter]:
         ),
         parameters_basemodel_models.Filter,
         {'parameters_basemodel_models:Filter': parameters_basemodel_models.Filter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -404,7 +404,7 @@ def codec_3() -> PydanticModelCodec[parameters_basemodel_models.FieldSearchGetQu
         {
             'parameters_basemodel_models:FieldSearchGetQueryIdsParameter': parameters_basemodel_models.FieldSearchGetQueryIdsParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -438,7 +438,7 @@ def codec_4() -> PydanticModelCodec[parameters_basemodel_models.FieldSearchGetHe
         {
             'parameters_basemodel_models:FieldSearchGetHeaderXIdsParameter': parameters_basemodel_models.FieldSearchGetHeaderXIdsParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -471,7 +471,7 @@ def codec_5() -> PydanticModelCodec[parameters_basemodel_models.Blob]:
         ),
         parameters_basemodel_models.Blob,
         {'parameters_basemodel_models:Blob': parameters_basemodel_models.Blob},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -505,7 +505,7 @@ def codec_6() -> PydanticModelCodec[parameters_basemodel_models.FieldRepeatIdAga
         {
             'parameters_basemodel_models:FieldRepeatIdAgainIdGetPathIdParameter': parameters_basemodel_models.FieldRepeatIdAgainIdGetPathIdParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -539,7 +539,7 @@ def codec_7() -> PydanticModelCodec[parameters_basemodel_models.FieldFilesFileNa
         {
             'parameters_basemodel_models:FieldFilesFileNameGetPathFileNameParameter': parameters_basemodel_models.FieldFilesFileNameGetPathFileNameParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -573,7 +573,7 @@ def codec_8() -> PydanticModelCodec[parameters_basemodel_models.FieldMenüItemGe
         {
             'parameters_basemodel_models:FieldMenüItemGetPathItemParameter': parameters_basemodel_models.FieldMenüItemGetPathItemParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -605,7 +605,7 @@ def codec_9() -> PydanticModelCodec[parameters_basemodel_models.FieldItemsLevelG
         ),
         parameters_basemodel_models.FieldItemsLevelGetPathLevelParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -637,7 +637,7 @@ def codec_10() -> PydanticModelCodec[parameters_basemodel_models.FieldItemsLevel
         ),
         parameters_basemodel_models.FieldItemsLevelGetQueryModeParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -669,7 +669,7 @@ def codec_11() -> PydanticModelCodec[parameters_basemodel_models.FieldItemsLevel
         ),
         parameters_basemodel_models.FieldItemsLevelGetQueryRatioParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -703,5 +703,5 @@ def codec_12() -> PydanticModelCodec[parameters_basemodel_models.FieldItemsLevel
         {
             'parameters_basemodel_models:FieldItemsLevelGetHeaderXFlagParameter': parameters_basemodel_models.FieldItemsLevelGetHeaderXFlagParameter,
         },
-        request_bundle(),
+        request_bundle,
     )

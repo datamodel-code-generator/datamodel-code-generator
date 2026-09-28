@@ -118,7 +118,7 @@ def codec_0() -> PydanticModelCodec[customized_basemodel_models.FieldPetsGetResp
         ),
         customized_basemodel_models.FieldPetsGetResponse,
         {'customized_basemodel_models:FieldPetsGetResponse': customized_basemodel_models.FieldPetsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -157,7 +157,7 @@ def codec_1() -> PydanticModelCodec[customized_basemodel_models.FieldPetsPetIdMo
         {
             'customized_basemodel_models:FieldPetsPetIdMovesPostResponse201LocationHeader': customized_basemodel_models.FieldPetsPetIdMovesPostResponse201LocationHeader,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 

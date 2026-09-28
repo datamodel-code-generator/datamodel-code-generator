@@ -1,0 +1,46 @@
+# pets pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, x-trace: t1] b''
+  client headers = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-view: v1, x-view: v2, x-trace: t1, cookie: session=s1] b''
+  view headers under the parameters = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-trace: call] b''
+  call headers over the parameters = FieldPetsGetResponse(root=[])
+  > POST https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-type: application/json, content-length: 14] b'{"name":"fox"}'
+  body media type repeated = Pet(id=1, name='fox', tag=None)
+  body relabeled ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='headers.Content-Type', condition='conflicts_with_body_media') [operation_id='createPet', field_path=('headers', 'Content-Type'), condition='conflicts_with_body_media'] configuration_error
+  body media type removed ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='headers.content-type', condition='conflicts_with_body_media') [operation_id='createPet', field_path=('headers', 'content-type'), condition='conflicts_with_body_media'] configuration_error
+  media type of no body ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='headers.Content-Type', condition='conflicts_with_body_media') [operation_id='getPet', field_path=('headers', 'Content-Type'), condition='conflicts_with_body_media'] configuration_error
+  narrowed Accept replaced ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='headers.Accept', condition='conflicts_with_response_media') [operation_id='getPet', field_path=('headers', 'Accept'), condition='conflicts_with_response_media'] configuration_error
+  narrowed Accept removed ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='headers.Accept', condition='conflicts_with_response_media') [operation_id='getPet', field_path=('headers', 'Accept'), condition='conflicts_with_response_media'] configuration_error
+  raw parts relabeled ! ConfigurationError: ConfigurationError(field_path='headers.Content-Type', condition='conflicts_with_body_media') [field_path=('headers', 'Content-Type'), condition='conflicts_with_body_media'] configuration_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: Application/JSON, user-agent: custom/1, x-client: c] b''
+  no body without a media type, narrowed Accept repeated = Pet(id=3, name='fox', tag=None)
+  > POST https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, content-type: application/xml, content-length: 4] b'<a/>'
+  raw bytes labeled = b'ok'
+  > POST https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip;q=0.5, identity, user-agent: custom/1, x-client: c, x-raw: 1, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
+  raw parts with their media type repeated = b'ok'
+  reserved header ! ConfigurationError: ConfigurationError(field_path='headers.Host', condition='reserved') [field_path=('headers', 'Host'), condition='reserved'] configuration_error
+  header name that is no token ! ConfigurationError: ConfigurationError(field_path='headers.Bad Name', condition='invalid_value') [field_path=('headers', 'Bad Name'), condition='invalid_value'] configuration_error
+  header value on two lines ! ConfigurationError: ConfigurationError(field_path='headers.X-A', condition='invalid_value') [field_path=('headers', 'X-A'), condition='invalid_value'] configuration_error
+  header set and removed ! ConfigurationError: ConfigurationError(field_path='headers', condition='set_and_removed') [field_path=('headers',), condition='set_and_removed'] configuration_error
+  header that is no pair ! ConfigurationError: ConfigurationError(field_path='headers', condition='invalid_type') [field_path=('headers',), condition='invalid_type'] configuration_error
+  header value that is no text ! ConfigurationError: ConfigurationError(field_path='headers', condition='invalid_type') [field_path=('headers',), condition='invalid_type'] configuration_error
+  headers that are no sequence ! ConfigurationError: ConfigurationError(field_path='headers', condition='invalid_type') [field_path=('headers',), condition='invalid_type'] configuration_error
+  coding without a decoder ! ConfigurationError: ConfigurationError(field_path='headers.Accept-Encoding', condition='unsupported_coding') [field_path=('headers', 'Accept-Encoding'), condition='unsupported_coding'] configuration_error
+  coding named twice ! ConfigurationError: ConfigurationError(field_path='headers.Accept-Encoding', condition='unsupported_coding') [field_path=('headers', 'Accept-Encoding'), condition='unsupported_coding'] configuration_error
+  coding of a weight out of range ! ConfigurationError: ConfigurationError(field_path='headers.Accept-Encoding', condition='unsupported_coding') [field_path=('headers', 'Accept-Encoding'), condition='unsupported_coding'] configuration_error
+  coding of two weights ! ConfigurationError: ConfigurationError(field_path='headers.Accept-Encoding', condition='unsupported_coding') [field_path=('headers', 'Accept-Encoding'), condition='unsupported_coding'] configuration_error
+  headers listed = (('X-A', 'a'), ('X-B', None))
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-client: c, x-call: 1] b''
+  async call headers = Pet(id=3, name='fox', tag=None)
+  > GET https://raw.example.com/items
+    [host: raw.example.com, accept-encoding: gzip, deflate, x-client: c, x-raw: 1] b''
+  async raw headers = b'ok'

@@ -1,0 +1,83 @@
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+
+_DEFAULTS = {{ defaults }}
+
+
+class {{ name }}:
+    """{{ class_docstring }}"""
+
+    def __init__(
+        self,
+        *,
+        options: {{ options }} | None = None,
+        http_client: {{ http_client }} | {{ unset }} = {{ unset_value }},
+        http_client_ownership: {{ literal }}["borrowed", "owned"] = "borrowed",
+        transport_adapter: {{ adapter }} | {{ owned_adapter }}[{{ adapter }}] | {{ unset }} = {{ unset_value }},
+    ) -> None:
+        """Send through the transport adapter or HTTPX2 client given, borrowed unless its ownership moves.
+
+        Without either, the client creates an HTTPX2 client that closing it closes.
+        """
+        self._core = {{ core }}.create(
+            _DEFAULTS,
+            options=options,
+            http_client=http_client,
+            http_client_ownership=http_client_ownership,
+            transport_adapter=transport_adapter,
+        )
+
+    def with_options(self, options: {{ request_options }}) -> {{ name }}:
+        """Return a view whose calls layer these options on the client's; it shares the client's transport."""
+        view = {{ name }}.__new__({{ name }})
+        view._core = self._core.view(options)
+        return view
+
+    {{ coroutine }}def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: {{ binary }} | {{ unset }} = {{ unset_value }},
+        options: {{ request_options }} | None = None,
+    ) -> {{ raw }}:
+        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
+        return {{ wait }}self._core.request_raw(method, url, body=body, options=options)
+
+    @{{ cached_property }}
+    def with_streaming_response(self) -> {{ name }}WithStreamingResponse:
+        """Raw requests that send on entering a block that streams the response."""
+        return {{ name }}WithStreamingResponse(self._core)
+{%- for resource in resources %}
+
+    @{{ cached_property }}
+    def {{ resource.name }}(self) -> {{ resource.class_name }}:
+        """The {{ resource.namespace }} operations."""
+        from {{ resource.module }} import {{ resource.class_name }}
+
+        return {{ resource.class_name }}(self._core)
+{%- endfor %}
+
+{{ lifecycle }}
+
+
+class {{ name }}WithStreamingResponse:
+    """Raw requests to any absolute URL that send on entering a block that streams the response."""
+
+    def __init__(self, core: {{ core }}) -> None:
+        """Keep the client core the requests send through."""
+        self._core = core
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: {{ binary }} | {{ unset }} = {{ unset_value }},
+        options: {{ request_options }} | None = None,
+    ) -> {{ manager }}[{{ raw }}]:
+        """Return a block that sends the request on entry and yields its streaming response until exit."""
+        return self._core.stream_raw(method, url, body=body, options=options)

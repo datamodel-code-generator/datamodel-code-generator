@@ -152,7 +152,7 @@ def codec_0() -> StructuralModelCodec[tuple[str, str]]:
         ),
         tuple[str, str],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -190,7 +190,7 @@ def codec_1() -> StructuralModelCodec[adapted_models.Cat]:
         ),
         adapted_models.Cat,
         {'adapted.models:Cat': adapted_models.Cat},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -241,6 +241,7 @@ from ._runtime.model_codecs.parameters import (
     QueryStringContribution,
     RawParameter,
 )
+from ._runtime.model_codecs.selectors import RequestMedia, ResponseMedia
 from ._runtime.model_codecs.unset import UNSET, Unset
 from ._runtime.model_codecs.values import DecodedValue, ModelInput, ModelValue, ProjectionIssue
 from ._runtime.model_codecs.views import (
@@ -304,6 +305,8 @@ __all__ = [
     'ProjectionIssue',
     'QueryStringContribution',
     'RawParameter',
+    'RequestMedia',
+    'ResponseMedia',
     'RuntimeModelBindingView',
     'SchemaCodecAdapterV1',
     'SchemaCodecCapabilities',

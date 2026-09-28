@@ -211,6 +211,12 @@ class _Runner:
                     result = getattr(self.bindings, names.codec)().from_wire(value, context)
                 case "encode":
                     result = getattr(self.bindings, names.codec)().encode(self.native(value), context)
+                case "serialize":
+                    result = getattr(self.bindings, names.codec)().serialize(self.native(value), context)
+                case "convert":
+                    result = getattr(self.bindings, names.codec)().convert(value, context)
+                case "assemble":
+                    result = getattr(self.bindings, names.codec)().assemble(self.native(value), context)
                 case "outbound":
                     result = getattr(self.bindings, names.outbound)().from_wire(value)
                 case "snapshot":

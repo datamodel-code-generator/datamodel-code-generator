@@ -10,6 +10,8 @@
     {"name": "created-client-decode-extra", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "decode",
      "value": {"id": 1, "name": "Mimi", "status": "new", "zz": 1}},
     {"name": "create-server-decode-shadow", "use": "/paths/~1pets/post request_body", "op": "decode",
-     "value": {"name": "Mimi", "status": "new", "nick_name": "x"}}
+     "value": {"name": "Mimi", "status": "new", "nick_name": "x"}},
+    {"name": "created-client-convert-shadow", "use": "/paths/~1pets/post response_body 201", "surface": "client", "op": "convert",
+     "value": {"id": 1, "name": "Mimi", "status": "new", "nick-name": "Mi", "nick_name": "x"}}
   ]
 }

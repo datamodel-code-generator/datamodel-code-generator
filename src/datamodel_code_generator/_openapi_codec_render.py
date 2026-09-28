@@ -153,7 +153,11 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
     ("wire", ("JSONValue", "PresenceTree", "WireValue", "freeze_wire", "presence_of", "thaw_wire")),
 )
 _SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
-    "client": (("capabilities", "ClientMediaCodecCapabilities"),),
+    "client": (
+        ("capabilities", "ClientMediaCodecCapabilities"),
+        ("selectors", "RequestMedia"),
+        ("selectors", "ResponseMedia"),
+    ),
     "server": (("adapters", "ServerMediaCodecAdapterV1"), ("capabilities", "ServerMediaCodecCapabilities")),
 }
 
@@ -360,7 +364,7 @@ class _Renderer:
                     ("", self.use_binding(binding)),
                     ("", runtime),
                     ("", Group("{", models, "}")),
-                    ("", f"{binding.direction}_bundle()"),
+                    ("", f"{binding.direction}_bundle"),
                     *((("validator=", validator),) if validator else ()),
                 ),
                 ")",
@@ -575,7 +579,7 @@ def render_model_codecs(surface: Surface) -> str:
     """Render the public `model_codecs` module that re-exports one surface's codec types and protocols."""
     names: dict[str, list[str]] = {module: list(items) for module, items in _PUBLIC}
     for module, name in _SURFACE_PUBLIC[surface]:
-        names[module].append(name)
+        names.setdefault(module, []).append(name)
     lines = [
         '"""Public model codec values, errors, views, and adapter protocols of this generated package."""',
         "",

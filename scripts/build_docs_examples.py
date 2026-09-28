@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -20,6 +21,10 @@ EXPECTED_INPUT_MODEL = EXPECTED_MAIN / "input_model"
 EXPECTED_JSON_SCHEMA = EXPECTED_MAIN / "jsonschema"
 EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
+EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
+CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
+CLIENT_PACKAGES = EXPECTED_CLIENT / "packages"
+BINDING_LINES = ("plain", "async plain", "async list with")
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
 OPENAPI_DATA = TEST_DATA / "openapi"
 
@@ -108,6 +113,30 @@ def render_cli_example(*blocks: MarkdownCodeBlock) -> str:
         return ""
     body = "\n\n".join(render_labeled_code_block(block).strip() for block in blocks)
     return f'\n??? example "Examples"\n\n{indent_markdown(body)}\n'
+
+
+def blocks(path: Path, *needles: str, limit: int | None = None, separator: str = "\n\n") -> str:
+    """Return the separated blocks of a generated module that contain any of the needles, in file order.
+
+    Methods of a class are separated by one blank line, and top-level definitions by two.
+    """
+    found = [block for block in read_python_output(path).split(separator) if any(needle in block for needle in needles)]
+    return separator.join(found[:limit])
+
+
+def report_lines(path: Path, *prefixes: str) -> str:
+    """Return the lines of a test report's first section that start with any of the prefixes, with their details."""
+    selected: list[str] = []
+    depth: int | None = None
+    for line in read_text(path).split("\n# ", 1)[0].splitlines():
+        indent = len(line) - len(line.lstrip())
+        if line.lstrip().startswith(prefixes):
+            depth = indent
+        elif depth is None or indent <= depth:
+            depth = None
+            continue
+        selected.append(line[2:])
+    return "\n".join(selected)
 
 
 def directory_files(path: Path) -> list[Path]:
@@ -288,6 +317,181 @@ def docs_examples() -> tuple[DocsExample, ...]:
                     "python",
                     path=EXPECTED_OPENAPI / "custom_template_dir.py",
                     strip_python_header=True,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.signature-style.explicit",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "pets" / "pydantic_v2_BaseModel" / "client" / "resources" / "pets" / "_sync.py",
+                    "def get_pet(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.signature-style.unpack",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "pets-unpack"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "resources"
+                    / "pets"
+                    / "_sync.py",
+                    "def get_pet(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.signature-style.records",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "pets-unpack"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "_generated"
+                    / "client_arguments.py",
+                    "signature of get_pet",
+                    "'get_pet'",
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.signature-style.binding",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    f"# {style}\n{report_lines(EXPECTED_CLIENT / 'runtime' / name, *BINDING_LINES)}"
+                    for style, name in (("explicit", "signatures.txt"), ("unpack", "signatures-unpack.txt"))
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.body-fields.toml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-body-fields"]["toml"]
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.body-fields.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "fields-errors.txt").splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.body-fields.overloads",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "fields"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "resources"
+                    / "default"
+                    / "_sync.py",
+                    "def update_pet(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.body-fields.refusals",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.rstrip()
+                    for line in report_lines(
+                        EXPECTED_CLIENT / "runtime" / "fields.txt",
+                        "a body and fields",
+                        "fields missing a required one",
+                        "a field of another media",
+                        "fields for text",
+                        "fields without a media type",
+                        "update naming only a media type",
+                    ).splitlines()
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.toml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-validation"]["toml"]
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.defaults",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(CLIENT_PACKAGES / "media" / "pydantic_v2_BaseModel" / "client" / "_client.py", "_DEFAULTS = "),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.arguments",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "validation-arguments"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "_generated"
+                    / "client_checks.py",
+                    "_operation_1_0",
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.options",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                report_lines(
+                    EXPECTED_CLIENT / "runtime" / "validation-structural.txt",
+                    "client selecting",
+                    "view selecting",
+                    "call selecting",
+                    "request mode None",
+                    "response mode none",
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for name in ("validation-ambiguous.txt", "validation-adapters.txt")
+                    for line in read_text(EXPECTED_CLIENT / name).splitlines()
+                    if "E_CONFIG_VALUE" in line
                 ),
             ),
         ),

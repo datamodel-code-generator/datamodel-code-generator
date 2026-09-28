@@ -340,7 +340,7 @@ def codec_0() -> PydanticModelCodec[pets_dataclass_models.FieldPetsGetCookieSess
         ),
         pets_dataclass_models.FieldPetsGetCookieSessionParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -373,7 +373,7 @@ def codec_1() -> PydanticModelCodec[pets_dataclass_models.FieldPetsGetResponse]:
         ),
         pets_dataclass_models.FieldPetsGetResponse,
         {'pets_dataclass_models:Pet': pets_dataclass_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -411,7 +411,7 @@ def codec_2() -> PydanticModelCodec[pets_dataclass_models.Error]:
         ),
         pets_dataclass_models.Error,
         {'pets_dataclass_models:Error': pets_dataclass_models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -449,7 +449,7 @@ def codec_3() -> PydanticModelCodec[pets_dataclass_models.Pet]:
         ),
         pets_dataclass_models.Pet,
         {'pets_dataclass_models:Pet': pets_dataclass_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -487,7 +487,7 @@ def codec_4() -> PydanticModelCodec[pets_dataclass_models.FieldPetsMineGetRespon
         ),
         pets_dataclass_models.FieldPetsMineGetResponse,
         {'pets_dataclass_models:Pet': pets_dataclass_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -525,7 +525,7 @@ def codec_5() -> PydanticModelCodec[pets_dataclass_models.Pet]:
         ),
         pets_dataclass_models.Pet,
         {'pets_dataclass_models:Pet': pets_dataclass_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -563,7 +563,7 @@ def codec_6() -> PydanticModelCodec[pets_dataclass_models.Error]:
         ),
         pets_dataclass_models.Error,
         {'pets_dataclass_models:Error': pets_dataclass_models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -601,7 +601,7 @@ def codec_7() -> PydanticModelCodec[pets_dataclass_models.FieldStoreInventoryGet
         ),
         pets_dataclass_models.FieldStoreInventoryGetResponse,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 

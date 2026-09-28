@@ -325,7 +325,7 @@ def codec_0() -> PydanticModelCodec[variants_request_response_dataclass_models.P
             'variants_request_response_dataclass_models:Owner': variants_request_response_dataclass_models.Owner,
             'variants_request_response_dataclass_models:PetRequest': variants_request_response_dataclass_models.PetRequest,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -361,7 +361,7 @@ def codec_1() -> PydanticModelCodec[variants_request_response_dataclass_models.P
             'variants_request_response_dataclass_models:Owner': variants_request_response_dataclass_models.Owner,
             'variants_request_response_dataclass_models:PetResponse': variants_request_response_dataclass_models.PetResponse,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -402,7 +402,7 @@ def codec_2() -> PydanticModelCodec[variants_request_response_dataclass_models.P
             'variants_request_response_dataclass_models:Owner': variants_request_response_dataclass_models.Owner,
             'variants_request_response_dataclass_models:PetResponse': variants_request_response_dataclass_models.PetResponse,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -440,7 +440,7 @@ def codec_3() -> PydanticModelCodec[variants_request_response_dataclass_models.F
         ),
         variants_request_response_dataclass_models.FieldOwnersGetResponse,
         {'variants_request_response_dataclass_models:Owner': variants_request_response_dataclass_models.Owner},
-        response_bundle(),
+        response_bundle,
     )
 
 

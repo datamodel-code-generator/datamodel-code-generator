@@ -1,0 +1,273 @@
+# validation-arguments pydantic_v2.BaseModel
+  checks built before a call selects them: 0
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  create a pet = Pet(id=1, name='Mimi', age=None, secret=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  create a pet mutated to a string age = Pet(id=1, name='Mimi', age=None, secret=None)
+  create a mapping with an undeclared key ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body.extra') [operation_id='createPet', location=('body', 'extra'), cause=1 validation error for _operation_1_0
+body.extra
+  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+    For further information visit <pydantic errors>/v/extra_forbidden] request_encoding_error
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'{"name":"Mimi"}'
+  create a snapshot = Pet(id=1, name='Mimi', age=None, secret=None)
+  > GET https://api.example.com/pets?limit=5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with a limit = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/pets?limit=5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with a string limit = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with no limit = FieldPetsGetResponse(root=[])
+  > GET https://api.example.com/accounts/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  account = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Account|ModelNode(symbol='validation_arguments_pydantic_v2_basemodel_models:Account')", wire=mappingproxy({'id': 1}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/password', schema_location='', field_id='validation_arguments_pydantic_v2_basemodel_models:Account.password', message='The native type requires a property that this direction excludes'),), kind='input')
+  > GET https://api.example.com/accounts/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  account by a string id = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Account|ModelNode(symbol='validation_arguments_pydantic_v2_basemodel_models:Account')", wire=mappingproxy({'id': 1}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/password', schema_location='', field_id='validation_arguments_pydantic_v2_basemodel_models:Account.password', message='The native type requires a property that this direction excludes'),), kind='input')
+  > PUT https://api.example.com/pets/3/card
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 174] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  put a card = None
+  > PUT https://api.example.com/pets/3/card
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 174] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  put a card of a string id = None
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  create a pet mutated to a string age by default = Pet(id=1, name='Mimi', age=None, secret=None)
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  health, which takes no argument = None
+  > POST https://api.example.com/notes?tag=t
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
+  a note = None
+  a note of a numeric tag ! RequestEncodingError: RequestEncodingError(operation_id='postNote', location='query.tag') [operation_id='postNote', location=('query', 'tag'), cause=1 validation error for _operation_5_0
+tag
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit <pydantic errors>/v/string_type] request_encoding_error
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 27] b'"https://example.com/p.png"'
+  put a photo link = None
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: image/png, content-length: 4] b'\x89PNG'
+  put photo bytes, whose branch takes no argument = None
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  select no argument validation = FieldPetsGetResponse(root=[])
+  checks built once: 1
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  async create a pet = Pet(id=1, name='Mimi', age=None, secret=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  async create a pet mutated to a string age = Pet(id=1, name='Mimi', age=None, secret=None)
+# validation-arguments pydantic_v2.dataclass
+  checks built before a call selects them: 0
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  create a pet = Pet(id=1, name='Mimi', age=None, secret=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  create a pet mutated to a string age = Pet(id=1, name='Mimi', age=None, secret=None)
+  create a mapping with an undeclared key ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body.extra') [operation_id='createPet', location=('body', 'extra'), cause=1 validation error for _operation_1_0
+body.extra
+  Unexpected keyword argument [type=unexpected_keyword_argument, input_value=1, input_type=int]
+    For further information visit <pydantic errors>/v/unexpected_keyword_argument] request_encoding_error
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'{"name":"Mimi"}'
+  create a snapshot = Pet(id=1, name='Mimi', age=None, secret=None)
+  > GET https://api.example.com/pets?limit=5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with a limit = []
+  list with a string limit ! RequestEncodingError: RequestEncodingError(operation_id='listPets', location='query.limit') [operation_id='listPets', location=('query', 'limit'), cause=1 validation error for _operation_0
+limit
+  Input should be a valid integer [type=int_type, input_value='5', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with no limit = []
+  > GET https://api.example.com/accounts/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  account = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Account|ModelNode(symbol='validation_arguments_pydantic_v2_dataclass_models:Account')", wire=mappingproxy({'id': 1}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/password', schema_location='', field_id='validation_arguments_pydantic_v2_dataclass_models:Account.password', message='The native type requires a property that this direction excludes'),), kind='input')
+  account by a string id ! RequestEncodingError: RequestEncodingError(operation_id='getAccount', location='path.accountId') [operation_id='getAccount', location=('path', 'accountId'), cause=1 validation error for _operation_7
+account_id
+  Input should be a valid integer [type=int_type, input_value='1', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > PUT https://api.example.com/pets/3/card
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 174] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  put a card = None
+  put a card of a string id ! RequestEncodingError: RequestEncodingError(operation_id='putCard', location='path.petId') [operation_id='putCard', location=('path', 'petId'), cause=1 validation error for _operation_3_0
+pet_id
+  Input should be a valid integer [type=int_type, input_value='3', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  create a pet mutated to a string age by default = Pet(id=1, name='Mimi', age=None, secret=None)
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  health, which takes no argument = None
+  > POST https://api.example.com/notes?tag=t
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
+  a note = None
+  a note of a numeric tag ! RequestEncodingError: RequestEncodingError(operation_id='postNote', location='query.tag') [operation_id='postNote', location=('query', 'tag'), cause=1 validation error for _operation_5_0
+tag
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit <pydantic errors>/v/string_type] request_encoding_error
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 27] b'"https://example.com/p.png"'
+  put a photo link = None
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: image/png, content-length: 4] b'\x89PNG'
+  put photo bytes, whose branch takes no argument = None
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  select no argument validation = []
+  checks built once: 1
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  async create a pet = Pet(id=1, name='Mimi', age=None, secret=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  async create a pet mutated to a string age = Pet(id=1, name='Mimi', age=None, secret=None)
+# validation-arguments dataclasses.dataclass
+  checks built before a call selects them: 0
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  create a pet = Pet(id=1, name='Mimi', age=None, secret=None)
+  create a pet mutated to a string age ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body.age') [operation_id='createPet', location=('body', 'age'), cause=1 validation error for _operation_1_0
+body.age
+  Input should be a valid integer [type=int_type, input_value='3', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  create a mapping with an undeclared key ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body') [operation_id='createPet', location=('body',), cause=1 validation error for _operation_1_0
+body
+  Input should be an instance of Pet [type=dataclass_exact_type, input_value={'id': 1, 'name': 'Mimi', 'extra': 1}, input_type=dict]
+    For further information visit <pydantic errors>/v/dataclass_exact_type] request_encoding_error
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'{"name":"Mimi"}'
+  create a snapshot = Pet(id=1, name='Mimi', age=None, secret=None)
+  > GET https://api.example.com/pets?limit=5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with a limit = []
+  list with a string limit ! RequestEncodingError: RequestEncodingError(operation_id='listPets', location='query.limit') [operation_id='listPets', location=('query', 'limit'), cause=1 validation error for _operation_0
+limit
+  Input should be a valid integer [type=int_type, input_value='5', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with no limit = []
+  > GET https://api.example.com/accounts/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  account = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Account|ModelNode(symbol='validation_arguments_dataclasses_dataclass_models:Account')", wire=mappingproxy({'id': 1}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/password', schema_location='', field_id='validation_arguments_dataclasses_dataclass_models:Account.password', message='The native type requires a property that this direction excludes'),), kind='input')
+  account by a string id ! RequestEncodingError: RequestEncodingError(operation_id='getAccount', location='path.accountId') [operation_id='getAccount', location=('path', 'accountId'), cause=1 validation error for _operation_7
+account_id
+  Input should be a valid integer [type=int_type, input_value='1', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > PUT https://api.example.com/pets/3/card
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 174] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  put a card = None
+  put a card of a string id ! RequestEncodingError: RequestEncodingError(operation_id='putCard', location='path.petId') [operation_id='putCard', location=('path', 'petId'), cause=1 validation error for _operation_3_0
+pet_id
+  Input should be a valid integer [type=int_type, input_value='3', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  create a pet mutated to a string age by default = Pet(id=1, name='Mimi', age=None, secret=None)
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  health, which takes no argument = None
+  > POST https://api.example.com/notes?tag=t
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
+  a note = None
+  a note of a numeric tag ! RequestEncodingError: RequestEncodingError(operation_id='postNote', location='query.tag') [operation_id='postNote', location=('query', 'tag'), cause=1 validation error for _operation_5_0
+tag
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit <pydantic errors>/v/string_type] request_encoding_error
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 27] b'"https://example.com/p.png"'
+  put a photo link = None
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: image/png, content-length: 4] b'\x89PNG'
+  put photo bytes, whose branch takes no argument = None
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  select no argument validation = []
+  checks built once: 1
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  async create a pet = Pet(id=1, name='Mimi', age=None, secret=None)
+  async create a pet mutated to a string age ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body.age') [operation_id='createPet', location=('body', 'age'), cause=1 validation error for _operation_1_0
+body.age
+  Input should be a valid integer [type=int_type, input_value='3', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+# validation-arguments typing.TypedDict
+  checks built before a call selects them: 0
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  create a pet = {'id': 1, 'name': 'Mimi'}
+  create a pet mutated to a string age ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body.age') [operation_id='createPet', location=('body', 'age'), cause=1 validation error for _operation_1_0
+body.age
+  Input should be a valid integer [type=int_type, input_value='3', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  create a mapping with an undeclared key ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body.extra') [operation_id='createPet', location=('body', 'extra'), cause=1 validation error for _operation_1_0
+body.extra
+  Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+    For further information visit <pydantic errors>/v/extra_forbidden] request_encoding_error
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'{"name":"Mimi"}'
+  create a snapshot = {'id': 1, 'name': 'Mimi'}
+  > GET https://api.example.com/pets?limit=5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with a limit = []
+  list with a string limit ! RequestEncodingError: RequestEncodingError(operation_id='listPets', location='query.limit') [operation_id='listPets', location=('query', 'limit'), cause=1 validation error for _operation_0
+limit
+  Input should be a valid integer [type=int_type, input_value='5', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  list with no limit = []
+  > GET https://api.example.com/accounts/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  account = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Account|ModelNode(symbol='validation_arguments_typing_typeddict_models:Account')", wire=mappingproxy({'id': 1}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())),)), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/password', schema_location='', field_id='validation_arguments_typing_typeddict_models:Account.password', message='The native type requires a property that this direction excludes'),), kind='input')
+  account by a string id ! RequestEncodingError: RequestEncodingError(operation_id='getAccount', location='path.accountId') [operation_id='getAccount', location=('path', 'accountId'), cause=1 validation error for _operation_7
+account_id
+  Input should be a valid integer [type=int_type, input_value='1', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > PUT https://api.example.com/pets/3/card
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 174] b'--<boundary>\r\nContent-Disposition: form-data; name="photo"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  put a card = None
+  put a card of a string id ! RequestEncodingError: RequestEncodingError(operation_id='putCard', location='path.petId') [operation_id='putCard', location=('path', 'petId'), cause=1 validation error for _operation_3_0
+pet_id
+  Input should be a valid integer [type=int_type, input_value='3', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"Mimi","age":"3"}'
+  create a pet mutated to a string age by default = {'id': 1, 'name': 'Mimi'}
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  health, which takes no argument = None
+  > POST https://api.example.com/notes?tag=t
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
+  a note = None
+  a note of a numeric tag ! RequestEncodingError: RequestEncodingError(operation_id='postNote', location='query.tag') [operation_id='postNote', location=('query', 'tag'), cause=1 validation error for _operation_5_0
+tag
+  Input should be a valid string [type=string_type, input_value=5, input_type=int]
+    For further information visit <pydantic errors>/v/string_type] request_encoding_error
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 27] b'"https://example.com/p.png"'
+  put a photo link = None
+  > PUT https://api.example.com/photos
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: image/png, content-length: 4] b'\x89PNG'
+  put photo bytes, whose branch takes no argument = None
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  select no argument validation = []
+  checks built once: 1
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":"Mimi","age":3}'
+  async create a pet = {'id': 1, 'name': 'Mimi'}
+  async create a pet mutated to a string age ! RequestEncodingError: RequestEncodingError(operation_id='createPet', location='body.age') [operation_id='createPet', location=('body', 'age'), cause=1 validation error for _operation_1_0
+body.age
+  Input should be a valid integer [type=int_type, input_value='3', input_type=str]
+    For further information visit <pydantic errors>/v/int_type] request_encoding_error
