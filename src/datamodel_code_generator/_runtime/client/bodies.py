@@ -241,13 +241,27 @@ def _remaining(file: BinaryIO) -> int | None:
     return end - offset
 
 
+def _unchanged(file: BinaryIO, identity: _Identity) -> None:
+    if _identity(os.fstat(file.fileno())) != identity:
+        raise BodyChangedError(source_kind="file", check="stat")
+
+
 def _opened(path: Path, identity: _Identity) -> BinaryIO:
     """Open a path's file, refusing one that is not the file first found there."""
     file = path.open("rb")
-    if _identity(os.fstat(file.fileno())) != identity:
-        file.close()
-        raise BodyChangedError(source_kind="file", check="stat")
+    try:
+        _unchanged(file, identity)
+    except BaseException as error:
+        try:
+            file.close()
+        except BaseException as failure:  # noqa: BLE001
+            add_secondary(error, failure)
+        raise
     return file
+
+
+def _close_file(file: BinaryIO) -> None:
+    file.close()
 
 
 def _declared(length: int | None, attempt_length: int | None) -> int | None:
@@ -530,29 +544,81 @@ class BodyFactory:
 class _Worker:
     """The one thread an async file body reads on, started by its first read and stopped by closing."""
 
-    __slots__ = ("closed", "lock", "pool")
+    __slots__ = ("closed", "lock", "pool", "uses")
 
     def __init__(self) -> None:
         self.pool: ThreadPoolExecutor | None = None
         self.lock = threading.Lock()
         self.closed = False
+        self.uses = 0
 
-    async def run(self, function: Callable[..., T], *arguments: object) -> T:
-        """Run one disk operation on the worker thread and return its result."""
+    def acquire(self) -> None:
+        """Keep the worker available until an admitted file attempt finishes its cleanup."""
         with self.lock:
             if self.closed:
+                raise BodyNotReplayableError(source_kind="file", condition="consumed")
+            self.uses += 1
+
+    def release(self) -> None:
+        """Release one file attempt's use after all its disk work has settled."""
+        with self.lock:
+            self.uses -= 1
+        self._stop()
+
+    async def run(
+        self,
+        function: Callable[..., T],
+        *arguments: object,
+        discard: Callable[[T], None] | None = None,
+        cleanup: bool = False,
+    ) -> T:
+        """Run one disk operation, settling it before an interrupted owner releases its file."""
+        with self.lock:
+            if self.closed and not cleanup:
                 raise BodyNotReplayableError(source_kind="file", condition="consumed")
             if (pool := self.pool) is None:
                 from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only async file bodies start one.
 
                 pool = self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="AsyncFileBody")
-        return await asyncio.get_running_loop().run_in_executor(pool, function, *arguments)
+        future = asyncio.get_running_loop().run_in_executor(pool, function, *arguments)
+        try:
+            await asyncio.wait((future,))
+        except asyncio.CancelledError as error:
+            await self._settle(future, error, discard)
+            raise
+        return future.result()
+
+    async def _settle(
+        self, future: asyncio.Future[T], error: BaseException, discard: Callable[[T], None] | None
+    ) -> None:
+        """Retain interrupted disk work and dispose a late file on this same worker."""
+        while not future.done():
+            try:
+                await asyncio.wait((future,))
+            except asyncio.CancelledError:  # noqa: PERF203 - Repeated cancellation must not abandon disk work.
+                continue
+        try:
+            result = future.result()
+        except BaseException as failure:  # noqa: BLE001
+            add_secondary(error, failure)
+        else:
+            if discard is not None:
+                try:
+                    await self.run(discard, result, cleanup=True)
+                except BaseException as failure:  # noqa: BLE001
+                    add_secondary(error, failure)
 
     def close(self) -> None:
-        """Stop the thread once its current read ends; later reads are refused."""
+        """Refuse new reads and stop after admitted attempts finish their owned cleanup."""
         with self.lock:
             self.closed = True
-            pool, self.pool = self.pool, None
+        self._stop()
+
+    def _stop(self) -> None:
+        with self.lock:
+            pool = None
+            if self.closed and not self.uses:
+                pool, self.pool = self.pool, None
         if pool is not None:
             pool.shutdown(wait=False)
 
@@ -615,12 +681,19 @@ class _AsyncOpenFile:
         """Begin reading the file, refusing one another call reads, one that is closed, or one read once."""
         self.claim.take("file")
         try:
-            length = await self.worker.run(_remaining, self.file)
-        except OSError as error:
-            self.claim.lock.release()
-            raise _failed(context, error) from None
+            self.worker.acquire()
         except BaseException:
             self.claim.lock.release()
+            raise
+        try:
+            length = await self.worker.run(_remaining, self.file)
+        except BaseException as error:
+            try:
+                await self.release()
+            except BaseException as failure:  # noqa: BLE001
+                add_secondary(error, failure)
+            if isinstance(error, OSError):
+                raise _failed(context, error) from None
             raise
         self.claim.used = length is None
         return _AsyncFileAttempt(self.file, context, length, self.worker, self.release)
@@ -629,9 +702,11 @@ class _AsyncOpenFile:
         """End a call's read: close an owned file on the worker, then let the next call read."""
         try:
             if self.ownership == "owned":
-                await self.worker.run(self.file.close)
+                self.claim.used = True
+                await self.worker.run(self.file.close, cleanup=True)
         finally:
             self.claim.lock.release()
+            self.worker.release()
 
 
 class _AsyncPathFile:
@@ -646,11 +721,22 @@ class _AsyncPathFile:
 
     async def attempt(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
         """Open the file on the worker, refusing one that changed since it was first found."""
+        self.worker.acquire()
         try:
-            file = await self.worker.run(_opened, self.path, self.identity)
-        except OSError as error:
-            raise _failed(context, error) from None
-        return _AsyncFileAttempt(file, context, self.identity[2], self.worker, lambda: self.worker.run(file.close))
+            file = await self.worker.run(_opened, self.path, self.identity, discard=_close_file)
+        except BaseException as error:
+            self.worker.release()
+            if isinstance(error, OSError):
+                raise _failed(context, error) from None
+            raise
+        return _AsyncFileAttempt(file, context, self.identity[2], self.worker, lambda: self.release(file))
+
+    async def release(self, file: BinaryIO) -> None:
+        """Close the attempt's file before a stopped worker can shut down."""
+        try:
+            await self.worker.run(file.close, cleanup=True)
+        finally:
+            self.worker.release()
 
 
 class AsyncFileBody:

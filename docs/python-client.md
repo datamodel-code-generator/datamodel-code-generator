@@ -823,8 +823,10 @@ response retains its permit until the handle closes; buffered responses release 
 deadline expiry, hook failure, and an abandoned stream all release acquired permits, including a permit an async
 callback returns after cancellation. The SDK releases permits but does not own the limiter itself.
 
-Hooks observe `limiter_wait` followed by `limiter_acquired` when acquisition succeeds. A limiter callback failure
-raises `LimiterExecutionError` with `action="acquire"` or `"release"` and the original callback exception as `cause`.
+Hooks observe `limiter_wait` followed by `limiter_acquired` when acquisition succeeds. Acquisition failure raises
+`LimiterExecutionError(action="acquire")` with the callback exception as `cause`. Release failure is recorded as
+`LimiterExecutionError(action="release")`: it is the `cause` of a `CleanupError` when no earlier error exists,
+or a secondary error on the error already propagating.
 
 ### Counters and cleanup
 

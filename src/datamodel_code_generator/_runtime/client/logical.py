@@ -20,6 +20,7 @@ from .errors import (
     TransportError,
     add_secondary,
     set_error_counters,
+    transfer_secondary,
 )
 from .lifecycle import TaskInterruptionError, cleanup_secondary, task_failure, task_result
 from .timing import absolute_deadline
@@ -101,10 +102,8 @@ async def _late_result(
             failure = failure.cause
         if failure is error:
             return
-        if (
-            isinstance(failure, SDKError)
-            and isinstance(error, (RequestCancelledError, ClientClosedError, DeadlineExceededError))
-            and isinstance(failure, type(error))
+        if isinstance(failure, (RequestCancelledError, ClientClosedError, DeadlineExceededError)) and isinstance(
+            error, (RequestCancelledError, ClientClosedError, DeadlineExceededError)
         ):
             for secondary in failure.secondary_errors:
                 cleanup_secondary(error, secondary)
@@ -414,6 +413,7 @@ class LogicalCallContext:
 
             task, failure = self._owned_cancellation
             if isinstance(error, asyncio.CancelledError) and task is asyncio.current_task():
+                transfer_secondary(error, failure)
                 return failure
         return error
 

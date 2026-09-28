@@ -12,6 +12,7 @@ import httpx2
 
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
+from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options
 from tests.data.python.client_deadline_races import deadline_races
 from tests.data.python.client_deadline_streams import deadline_streams
@@ -611,6 +612,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
+    "deadline-files": ("pets", ("pydantic_v2.BaseModel",), deadline_files),
     "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),
     "deadline-streams": ("pets", ("pydantic_v2.BaseModel",), deadline_streams),
     "media": ("media", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), media),
