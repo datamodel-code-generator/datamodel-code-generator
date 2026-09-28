@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ..model_codecs.wire import JSONValue
+    from .events import CallEvents
     from .lifecycle import Scope
     from .operations import ResponseDecoder
     from .options import Settings
@@ -138,6 +139,7 @@ class _Raw(Generic[SourceT, HandleT]):
     __slots__ = (
         "_body",
         "_decoder",
+        "_events",
         "_failure",
         "_info",
         "_limits",
@@ -158,8 +160,13 @@ class _Raw(Generic[SourceT, HandleT]):
         *,
         source: SourceT,
         scope: Scope[HandleT],
+        events: CallEvents | None,
     ) -> None:
-        """Keep the response metadata, how its status is classified, its call's limits, its body source, and scope."""
+        """Keep the response metadata, how its status is classified, its call's limits, its body source, and scope.
+
+        A streaming handle of a call with hooks keeps its events, which report the stream's end once it was handed over.
+        """
+        self._events = events
         self._info = info
         self._decoder = decoder
         self._limits = limits
@@ -274,9 +281,10 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         source: Callable[[], Iterator[bytes]],
         close: Callable[[], None],
         scope: Scope[RawResponse],
+        events: CallEvents | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
-        super().__init__(info, decoder, limits, operation_id, failure, source=source, scope=scope)
+        super().__init__(info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events)
         self._close: Callable[[], None] | None = close
 
     def read(self) -> bytes:
@@ -318,7 +326,10 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             raise
 
     def raise_for_status(self) -> None:
-        """Return for a success; close and raise the typed failure of any other status from its error prefix."""
+        """Return for a success; close and raise the typed failure of any other status from its error prefix.
+
+        A handed-over stream ends in that failure, which keeps any hook failure of its end as a secondary error.
+        """
         if (state := self._state) != "buffered":
             self._check()
         if self._decoder.success(self._info.status_code):
@@ -330,7 +341,8 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 failure = self._error_prefix()
             case _:
                 failure = self._unread_failure()
-        self.close()
+        if self._state in {"open", "streaming"}:
+            self._end("closed", failure)
         raise failure
 
     def close(self) -> None:
@@ -436,21 +448,34 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def _end(self, state: State, error: BaseException | None = None) -> None:
         """Enter a final state, releasing the connection and the handle's place in its scope once.
 
-        The close is taken under the scope's lock, as closing the client may end the handle while its reader does.
+        The close is taken under the scope's lock, as closing the client may end the handle while its reader does. A
+        handed-over stream then reports its end to its call's hooks.
         """
         self._state = state
         with self._scope.lock:
             close, self._close = self._close, None
         if close is None:
             return
+        failed: SDKError | None = None
         try:
             close()
         except Exception as failure:  # noqa: BLE001
             if error is None:
-                raise self._failure(failure) from None
-            add_secondary(error, failure)
-        finally:
-            self._scope.release_handle(self)
+                failed = error = self._failure(failure)
+            else:
+                add_secondary(error, failure)
+        except BaseException as interruption:
+            self._released(interruption, early=state == "closed")
+            raise
+        self._released(error, early=state == "closed")
+        if failed is not None:
+            raise failed
+
+    def _released(self, error: BaseException | None, *, early: bool) -> None:
+        """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
+        self._scope.release_handle(self)
+        if (events := self._events) is not None:
+            events.streamed(error, early=early)
 
 
 class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"]):
@@ -469,9 +494,10 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         source: Callable[[], AsyncIterator[bytes]],
         close: Callable[[], Awaitable[None]],
         scope: Scope[AsyncRawResponse],
+        events: CallEvents | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
-        super().__init__(info, decoder, limits, operation_id, failure, source=source, scope=scope)
+        super().__init__(info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events)
         self._close: Callable[[], Awaitable[None]] | None = close
 
     async def read(self) -> bytes:
@@ -513,7 +539,10 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             raise
 
     async def raise_for_status(self) -> None:
-        """Return for a success; close and raise the typed failure of any other status from its error prefix."""
+        """Return for a success; close and raise the typed failure of any other status from its error prefix.
+
+        A handed-over stream ends in that failure, which keeps any hook failure of its end as a secondary error.
+        """
         if (state := self._state) != "buffered":
             self._check()
         if self._decoder.success(self._info.status_code):
@@ -525,7 +554,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 failure = await self._error_prefix()
             case _:
                 failure = self._unread_failure()
-        await self.aclose()
+        if self._state in {"open", "streaming"}:
+            await self._end("closed", failure)
         raise failure
 
     async def aclose(self) -> None:
@@ -629,17 +659,32 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         return self._failure(self._decoder.failure(self._info, b"".join(parts), truncated=truncated, problem=problem))
 
     async def _end(self, state: State, error: BaseException | None = None) -> None:
-        """Enter a final state, releasing the connection and the handle's place in its scope once."""
+        """Enter a final state, releasing the connection and the handle's place in its scope once.
+
+        A handed-over stream then reports its end to its call's hooks.
+        """
         self._state = state
         with self._scope.lock:
             close, self._close = self._close, None
         if close is None:
             return
+        failed: SDKError | None = None
         try:
             await close()
         except Exception as failure:  # noqa: BLE001
             if error is None:
-                raise self._failure(failure) from None
-            add_secondary(error, failure)
-        finally:
-            self._scope.release_handle(self)
+                failed = error = self._failure(failure)
+            else:
+                add_secondary(error, failure)
+        except BaseException as interruption:
+            await self._released(interruption, early=state == "closed")
+            raise
+        await self._released(error, early=state == "closed")
+        if failed is not None:
+            raise failed
+
+    async def _released(self, error: BaseException | None, *, early: bool) -> None:
+        """Give up the handle's place in its scope, then report a handed-over stream's end to its call's hooks."""
+        self._scope.release_handle(self)
+        if (events := self._events) is not None:
+            await events.astreamed(error, early=early)

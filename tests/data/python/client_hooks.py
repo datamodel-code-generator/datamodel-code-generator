@@ -8,10 +8,21 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
+from tests.data.python.client_runtime import (
+    Exchange,
+    abroken,
+    aoutcome,
+    arecord,
+    broken,
+    json_response,
+    outcome,
+    raw_response,
+    record,
+    run,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator, Callable, Iterator
     from types import ModuleType
 
 _PET: Final = {"id": 3, "name": "fox"}
@@ -29,6 +40,27 @@ def _interrupting(request: httpx2.Request) -> httpx2.Response:
 
 def _cancelling(request: httpx2.Request) -> httpx2.Response:
     raise asyncio.CancelledError
+
+
+class _InterruptedClose(httpx2.SyncByteStream, httpx2.AsyncByteStream):
+    """A body whose close is interrupted: by a signal when read synchronously, by a cancellation with asyncio."""
+
+    def __iter__(self) -> Iterator[bytes]:
+        yield b'{"id":3,"name":"fox"}'
+
+    def close(self) -> None:
+        raise KeyboardInterrupt
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield b'{"id":3,"name":"fox"}'
+
+    async def aclose(self) -> None:
+        raise asyncio.CancelledError
+
+
+def _interrupted_close(request: httpx2.Request) -> httpx2.Response:
+    del request
+    return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_InterruptedClose())
 
 
 class Recorder:
@@ -167,11 +199,41 @@ def _raw(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, pe
     record(lines, "streamed get whose hook fails", lambda: kept.pets.with_streaming_response.get_pet(pet_id=pet).__enter__())
     exchange.respond(json_response(200, _PET))
     record(lines, "raw get after it", lambda: api.pets.with_raw_response.get_pet(pet_id=pet).info.status_code)
+    _streams(api, exchange, lines, options, pet)
     trace = object()
     record(lines, "raw list of a trace its codec refuses", lambda: api.pets.with_raw_response.list_pets(x_trace=trace))
     record(lines, "raw request to no URL", lambda: api.request_raw("GET", "not a url"))
     exchange.respond(_refusing)
     record(lines, "raw get of a refused connection", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
+
+
+def _streams(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, pet: object) -> None:
+    """End each handed-over stream once: read to its end, iterated, closed early, or failed, whichever hook fails."""
+    exchange.respond(json_response(200, _PET), json_response(200, _PET), json_response(200, _PET))
+    with api.pets.with_streaming_response.get_pet(pet_id=pet) as early:
+        lines.append(f"  stream closed early: {early.info.status_code}")
+    with api.pets.with_streaming_response.get_pet(pet_id=pet) as interrupted:
+        interrupted.discard(KeyboardInterrupt())
+        lines.append("  stream discarded for an interruption")
+    with api.pets.with_streaming_response.get_pet(pet_id=pet) as iterated:
+        record(lines, "stream iterated", lambda: b"".join(iterated.iter_bytes()))
+    exchange.respond(_interrupted_close)
+    with api.pets.with_streaming_response.get_pet(pet_id=pet) as interrupting:
+        try:
+            interrupting.close()
+        except KeyboardInterrupt:
+            lines.append("  stream whose close is interrupted: KeyboardInterrupt")
+    ending = api.with_options(options.RequestOptions(hooks=(Recorder(lines, "n", ("stream_end",)),)))
+    exchange.respond(json_response(200, _PET), json_response(200, _PET), broken)
+    with ending.pets.with_streaming_response.get_pet(pet_id=pet) as read:
+        record(lines, "stream whose end fails on reading it", read.read)
+    with ending.pets.with_streaming_response.get_pet(pet_id=pet) as closing:
+        record(lines, "stream whose end fails on closing it", closing.close)
+    with ending.pets.with_streaming_response.get_pet(pet_id=pet) as failed:
+        record(lines, "stream failing whose end fails too", failed.read)
+    exchange.respond(raw_response(404))
+    with ending.pets.with_streaming_response.get_pet(pet_id=pet) as missing:
+        lines.append(f"  stream of an error whose end fails: {outcome(missing.raise_for_status)}")
 
 
 def _refused(package: ModuleType, lines: list[str], options: ModuleType) -> None:
@@ -235,6 +297,25 @@ async def _async_hooks(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(json_response(200, _PET))
         kept = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "k", ("call_end",)),)))
         await arecord(lines, "async raw get whose hook fails", lambda: kept.pets.with_raw_response.get_pet(pet_id=pet))
+        exchange.respond(json_response(200, _PET), json_response(200, _PET), json_response(200, _PET), abroken)
+        async with api.pets.with_streaming_response.get_pet(pet_id=pet) as early:
+            lines.append(f"  async stream closed early: {early.info.status_code}")
+        async with api.pets.with_streaming_response.get_pet(pet_id=pet) as read:
+            await arecord(lines, "async stream read", read.read)
+        ending = api.with_options(options.RequestOptions(hooks=(AsyncRecorder(lines, "o", ("stream_end",)),)))
+        async with ending.pets.with_streaming_response.get_pet(pet_id=pet) as last:
+            await arecord(lines, "async stream whose end fails on reading it", last.read)
+        async with ending.pets.with_streaming_response.get_pet(pet_id=pet) as failed:
+            await arecord(lines, "async stream failing whose end fails too", failed.read)
+        exchange.respond(raw_response(404))
+        async with ending.pets.with_streaming_response.get_pet(pet_id=pet) as missing:
+            lines.append(f"  async stream of an error whose end fails: {await aoutcome(missing.raise_for_status)}")
+        exchange.respond(_interrupted_close)
+        async with api.pets.with_streaming_response.get_pet(pet_id=pet) as cancelling:
+            try:
+                await cancelling.aclose()
+            except asyncio.CancelledError:
+                lines.append("  async stream whose close is cancelled: CancelledError")
         exchange.respond(json_response(200, _PET))
 
         async def raw_get() -> int:
