@@ -9,7 +9,6 @@ from ._runtime.client.operations import (
     OperationPlan,
     ResponseDecoder,
     ServerPlan,
-    ServerVariable,
     empty_branch,
 )
 from .types.default import GetStatusErrorData, GetStatusHTTPError, GetStatusResponse

@@ -508,6 +508,14 @@
    }
   },
   {
+   "name": "pet-assemble",
+   "use": "/paths/~1pets/post request_body",
+   "op": "assemble",
+   "value": {
+    "name": "Rex"
+   }
+  },
+  {
    "name": "pet-encode-object",
    "use": "/paths/~1pets/post response_body 201",
    "op": "encode",

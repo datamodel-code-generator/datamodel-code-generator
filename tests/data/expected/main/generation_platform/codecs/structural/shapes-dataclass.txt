@@ -56,3 +56,4 @@ animals-client-convert: CodecConfigurationError The use chooses a union member b
 tree-client-needs-schema: needs schema False ambiguous False
 values-client-serialize-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
 values-client-convert-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
+values-client-assemble-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit

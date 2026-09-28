@@ -12,7 +12,6 @@ from ._runtime.client.operations import (
     ParameterSpec,
     ResponseDecoder,
     ServerPlan,
-    ServerVariable,
     empty_branch,
 )
 from ._runtime.model_codecs.parameters import ParameterPlan

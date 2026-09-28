@@ -14,6 +14,10 @@ python-client.signature-style.explicit: python-client.md
 python-client.signature-style.unpack: python-client.md
 python-client.signature-style.records: python-client.md
 python-client.signature-style.binding: python-client.md
+python-client.body-fields.toml: python-client.md
+python-client.body-fields.diagnostics: python-client.md
+python-client.body-fields.overloads: python-client.md
+python-client.body-fields.refusals: python-client.md
 python-client.validation.toml: python-client.md
 python-client.validation.defaults: python-client.md
 python-client.validation.arguments: python-client.md

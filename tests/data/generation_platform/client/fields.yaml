@@ -1,0 +1,275 @@
+openapi: 3.1.0
+info:
+  title: Body field arguments
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPet"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/PetForm"
+      responses:
+        "201":
+          description: The pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /pets/{petId}:
+    patch:
+      operationId: updatePet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PetPatch"
+      responses:
+        "204":
+          description: Updated.
+  /pets/{petId}/visits:
+    post:
+      operationId: logVisit
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Visit"
+          text/plain: {}
+      responses:
+        "204":
+          description: Logged.
+  /pets/{petId}/owner:
+    put:
+      operationId: setOwner
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Owner"
+      responses:
+        "204":
+          description: Stored.
+  /owners:
+    post:
+      operationId: createOwner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/Owner"
+                - type: "null"
+      responses:
+        "204":
+          description: Created.
+  /pets/{petId}/labels:
+    put:
+      operationId: putLabels
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Labels"
+      responses:
+        "204":
+          description: Stored.
+  /search:
+    post:
+      operationId: searchPets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/ByName"
+                - $ref: "#/components/schemas/ByKind"
+          text/plain: {}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+  /pets/{petId}/photo:
+    put:
+      operationId: putPhoto
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                caption:
+                  type: string
+      responses:
+        "204":
+          description: Stored.
+  /pets/{petId}/records:
+    put:
+      operationId: replacePet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "204":
+          description: Stored.
+components:
+  schemas:
+    Kind:
+      type: string
+      enum: [cat, dog]
+    NewPet:
+      type: object
+      required: [name, kind]
+      properties:
+        name:
+          type: string
+          maxLength: 8
+        kind:
+          $ref: "#/components/schemas/Kind"
+        tag:
+          type: [string, "null"]
+        birthDate:
+          type: string
+          format: date
+        owner:
+          $ref: "#/components/schemas/Owner"
+        id:
+          type: integer
+          readOnly: true
+        secret:
+          type: string
+          writeOnly: true
+    Named:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    PetForm:
+      allOf:
+        - $ref: "#/components/schemas/Named"
+        - type: object
+          properties:
+            tag:
+              type: string
+    PetPatch:
+      type: object
+      properties:
+        name:
+          type: string
+        tag:
+          type: [string, "null"]
+    Visit:
+      type: object
+      properties:
+        note:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+    Owner:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+        nickName:
+          type: string
+    Labels:
+      type: object
+      required: [color]
+      properties:
+        size:
+          type: string
+      additionalProperties:
+        type: string
+    ByName:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    ByKind:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          $ref: "#/components/schemas/Kind"
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        tag:
+          type: [string, "null"]

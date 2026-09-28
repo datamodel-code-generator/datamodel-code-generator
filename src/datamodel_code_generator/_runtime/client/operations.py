@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
 
@@ -56,7 +56,7 @@ from .multipart import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Sequence
+    from collections.abc import Callable, Container, Iterable, Mapping, Sequence
 
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
@@ -101,6 +101,12 @@ class OutboundModelCodec(Protocol):
 
     def serialize(self, value: object, context: CodecContext, *, validate: bool = False) -> WireValue:
         """Return the wire value of a native value without its schema, validated natively when asked."""
+        ...
+
+    def assemble(
+        self, fields: Mapping[str, object], context: CodecContext, *, validate: bool = False, strict: bool = False
+    ) -> WireValue:
+        """Construct a model from fields given by wire name and return its wire value with only those fields."""
         ...
 
 
@@ -148,6 +154,10 @@ class Encoder:
             return self.codec().encode(value, self.context)
         return self.codec().serialize(value, self.context, validate=mode == "native")
 
+    def assemble(self, fields: Mapping[str, object], mode: RequestValidation) -> WireValue:
+        """Return the wire value of the model the fields construct, validated natively or against its schema."""
+        return self.codec().assemble(fields, self.context, validate=mode == "native", strict=mode == "schema")
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerVariable:
@@ -187,6 +197,60 @@ class EncodedBody:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class BodyFields:
+    """The field arguments that stand for one media type's body: their positions, wire names, and requiredness.
+
+    A package generated with Pydantic argument validation checks them with the operation's parameters.
+    """
+
+    media_type: str
+    fields: tuple[tuple[int, str, bool], ...]
+    check: Callable[[], ArgumentCheck] | None = None
+    positions: tuple[int, ...] = field(init=False)
+    taken: frozenset[int] = field(init=False)
+    required: tuple[int, ...] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Keep the argument positions of the fields in order, as a set, and those of the required ones."""
+        positions = tuple(position for position, _, _ in self.fields)
+        object.__setattr__(self, "positions", positions)
+        object.__setattr__(self, "taken", frozenset(positions))
+        object.__setattr__(self, "required", tuple(position for position, _, required in self.fields if required))
+
+
+@dataclass(frozen=True, slots=True)
+class FieldBody:
+    """A body a call gives as fields: every field argument of its media in order, and the media selected to send."""
+
+    branch: BodyFields
+    values: tuple[object, ...]
+    media: BodyMedia
+    sent: str
+
+    def fields(self) -> dict[str, object]:
+        """Return each given field's value by its wire name."""
+        return {
+            wire_name: value
+            for (_, wire_name, _), value in zip(self.branch.fields, self.values, strict=True)
+            if not isinstance(value, Unset)
+        }
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FieldArguments:
+    """The field arguments of an operation's method, which binding errors quote by name, and each media's fields."""
+
+    method: str
+    names: tuple[str, ...]
+    media: tuple[BodyFields, ...]
+    branches: Mapping[str, BodyFields] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Keep each media's fields by its media type."""
+        object.__setattr__(self, "branches", {item.media_type: item for item in self.media})
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class BodyMedia:
     """One declared request media type and how an argument becomes its bytes.
 
@@ -218,7 +282,7 @@ class BodyMedia:
                 return encode_text(text, sent)
             case "form" if self.encoder is not None:
                 styled = {plan.name: partial(query_pairs, plan) for plan in self.encoded} if self.encoded else None
-                return encode_form(self.encoder.encode(value, mode), self.fields, self.additional, styled)
+                return encode_form(self.wire(value, mode), self.fields, self.additional, styled)
             case "form":
                 return _form_data(value)
             case _:
@@ -226,8 +290,12 @@ class BodyMedia:
         return value
 
     def wire(self, value: object, mode: RequestValidation) -> WireValue:
-        """Return the wire value of a JSON or text argument."""
-        return checked_wire(value) if self.encoder is None else self.encoder.encode(value, mode)
+        """Return the wire value of a JSON or text argument, or of the fields a call gives instead."""
+        if self.encoder is None:
+            return checked_wire(value)
+        if isinstance(value, FieldBody):
+            return self.encoder.assemble(value.fields(), mode)
+        return self.encoder.encode(value, mode)
 
     def multipart(self, value: object, boundary: str, mode: RequestValidation) -> object:
         """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""
@@ -290,7 +358,11 @@ class RequestBody:
             if self.required:
                 raise RequestEncodingError(location=("body",), operation_id=operation_id)
             return None
-        selected, sent = self.selected(operation_id, media_type, owner)
+        selected, sent = (
+            (value.media, value.sent)
+            if isinstance(value, FieldBody)
+            else self.selected(operation_id, media_type, owner)
+        )
         try:
             if selected.kind == "multipart":
                 boundary = new_boundary()
@@ -329,6 +401,10 @@ class RequestBody:
         if (found := next((media for media in self.media if media.media_type == wanted), None)) is None:
             raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
         return found
+
+
+def _quoted(names: tuple[str, ...], positions: Iterable[int]) -> str:
+    return ", ".join(repr(names[position]) for position in positions)
 
 
 def _sent(concrete: str, declared: str) -> str:
@@ -853,15 +929,52 @@ class OperationPlan(Generic[T_co, E_co]):
     response_media_type: str | None = None
     codecs: object = None
     checks: tuple[tuple[str | None, Callable[[], ArgumentCheck]], ...] = ()
+    fields: FieldArguments | None = None
+
+    def bound(self, body: object, values: tuple[object, ...], media_type: str | MediaSelector | None) -> object:
+        """Return the body a call gives, or the fields it gives of the selected media instead.
+
+        A call gives a body or the fields of its media, not both, and every required field when it gives any; a
+        required body whose media's fields are all optional is an empty object when the call gives neither. Any other
+        binding the call's method cannot take raises TypeError, as Python refuses arguments.
+        """
+        given = [index for index, value in enumerate(values) if not isinstance(value, Unset)]
+        request, fields = self.body, self.fields
+        assert request is not None
+        assert fields is not None
+        if not given and (not isinstance(body, Unset) or not request.required):
+            return body
+        method = fields.method
+        if given and not isinstance(body, Unset):
+            msg = f"{method}() takes a body or its field arguments, not both: {_quoted(fields.names, given)}"
+            raise TypeError(msg)
+        selected, sent = request.selected(self.operation_id, media_type, self.codecs)
+        wanted = selected.media_type
+        if (branch := fields.branches.get(wanted)) is None:
+            if given:
+                msg = f"{method}() takes no field arguments for {wanted}: {_quoted(fields.names, given)}"
+                raise TypeError(msg)
+            return body
+        if unexpected := [index for index in given if index not in branch.taken]:
+            msg = f"{method}() takes no such field arguments for {wanted}: {_quoted(fields.names, unexpected)}"
+            raise TypeError(msg)
+        if missing := [position for position in branch.required if isinstance(values[position], Unset)]:
+            msg = f"{method}() missing required field arguments for {wanted}: {_quoted(fields.names, missing)}"
+            raise TypeError(msg)
+        return FieldBody(branch, tuple(values[position] for position in branch.positions), selected, sent)
 
     def checked(
         self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
     ) -> tuple[tuple[object, ...], object]:
         """Return a call's arguments and body with Pydantic validating each supplied value of its branch.
 
-        The branch is the declared media the body is sent as; a call without a body takes any branch's parameters. A
-        branch that takes no argument has no check.
+        The branch is the declared media the body is sent as, or the fields a call gives instead; a call without a
+        body takes any branch's parameters. A branch that takes no argument has no check.
         """
+        if isinstance(body, FieldBody) and (fielded := body.branch.check) is not None:
+            count = len(arguments)
+            validated = fielded()((*arguments, *body.values), self.operation_id)
+            return validated[:count], FieldBody(body.branch, validated[count:], body.media, body.sent)
         if not (checks := self.checks):
             return arguments, body
         accessor = checks[0][1]

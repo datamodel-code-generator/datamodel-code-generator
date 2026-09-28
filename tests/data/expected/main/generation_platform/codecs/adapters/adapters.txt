@@ -1432,6 +1432,7 @@ pet-encode-limit: CodecResourceLimitError The value exceeds the adapter's budget
 pet-encode-dict: ModelProjectionError The value is not a Pet value
 pet-serialize: CodecConfigurationError A registered model adapter reads and writes only wire values validated against their schema
 pet-convert: CodecConfigurationError A registered model adapter reads and writes only wire values validated against their schema
+pet-assemble: CodecConfigurationError A registered model adapter constructs no value from field arguments
 pet-encode-object: CodecAdapterError The model adapter returned a value outside the wire domain (from TypeError)
 pet-encode-presence: CodecAdapterError The model adapter returned presence outside its declared capability
 pet-encode-invalid: WireValidationError schema.required@/id

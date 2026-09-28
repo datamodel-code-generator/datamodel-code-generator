@@ -15,17 +15,19 @@ from datamodel_code_generator._client.naming import pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
+from datamodel_code_generator._generation_contract import UnionType
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_render import field_plan, items, parameter_plan, runtime_sources
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator._client.config import ClientGenerationConfig, ClientValidationConfig
     from datamodel_code_generator._client.plan import (
         ClientPlan,
+        FieldBranch,
         HeaderSpec,
         MediaSpec,
         OperationSpec,
@@ -333,6 +335,15 @@ def _union(parts: Iterable[str]) -> str:
     return " | ".join(dict.fromkeys(parts))
 
 
+def _merged(module: Module, types: Iterable[FinalPythonType]) -> str:
+    """Return the union of final types as type checkers read them, each member once in the order first seen."""
+    return _union(
+        module.types.static(member)
+        for value in types
+        for member in (value.members if isinstance(value, UnionType) else (value,))
+    )
+
+
 def _literal(literal: str, values: Iterable[str]) -> str:
     return f"{literal}[{', '.join(repr(value) for value in values)}]"
 
@@ -415,7 +426,10 @@ def _arguments(
         ("", _tuple(value(parameter.python_name) for parameter in spec.parameters)),
     ]
     if spec.body is not None:
-        call.extend((("body=", value("body")), ("media_type=", value("media_type"))))
+        call.append(("body=", value("body")))
+        if names := spec.field_names:
+            call.append(("fields=", _tuple(value(name) for name in names)))
+        call.append(("media_type=", value("media_type")))
     call.append(("options=", value("options")))
     if media:
         call.append(("response_media_type=", value("response_media_type")))
@@ -803,7 +817,15 @@ class _Resources(_Typing):
             concrete = [media for media, _ in entries if not media_range(media)]
             return _union((*((_literal(literal, concrete),) if concrete else ()), *(kind for _, kind in entries)))
 
+        def selecting(entries: list[tuple[str, str]]) -> _Argument:
+            if body.default in dict(entries):
+                return _Argument("media_type", f"{choices(entries)} | None", "none")
+            return _Argument("media_type", choices(entries))
+
         surfaces = _union(groups)
+        if spec.fields:
+            every = choices([entry for entries in groups.values() for entry in entries])
+            return self.field_requests(module, spec, groups, selecting, every)
         implementation = (
             _Argument("body", surfaces) if body.required else _Argument("body", f"{surfaces} | {unset}", "unset"),
             _Argument(
@@ -816,18 +838,82 @@ class _Resources(_Typing):
                 single = (_Argument("body", surface), _Argument("media_type", choices(declared)))
                 return [_Variant(single)], single
             return [_Variant(implementation)], implementation
-        variants = [
-            _Variant((
-                _Argument("body", surface),
-                _Argument("media_type", f"{choices(media)} | None", "none")
-                if body.default in dict(media)
-                else _Argument("media_type", choices(media)),
-            ))
-            for surface, media in groups.items()
-        ]
+        variants = [_Variant((_Argument("body", surface), selecting(media))) for surface, media in groups.items()]
         if not body.required:
             variants.append(_Variant((_Argument("body", unset, "unset"), _Argument("media_type", "None", "none"))))
         return variants, implementation
+
+    def field_requests(
+        self,
+        module: Module,
+        spec: OperationSpec,
+        groups: dict[str, list[tuple[str, str]]],
+        selecting: Callable[[list[tuple[str, str]]], _Argument],
+        every: str,
+    ) -> tuple[list[_Variant], tuple[_Argument, ...]]:
+        """Return the body signatures of an operation whose calls may give fields, and its implementation's keywords.
+
+        A body signature takes each field argument as UNSET, a field signature takes the body as UNSET and its media's
+        fields, and an optional body's signature taking nothing sends nothing. An optional body whose fields are all
+        optional has one field signature for each of its fields, which that signature requires.
+        """
+        body = spec.body
+        assert body is not None
+        unset = module.local("options", "Unset")
+        omitted = tuple(_Argument(name, unset, "unset") for name in spec.field_names)
+        variants = [
+            _Variant((_Argument("body", surface), *omitted, selecting(media))) for surface, media in groups.items()
+        ]
+        selectors = {media.media_type: self.request_selector(module, media) for media in body.media}
+        shapes: dict[tuple[_Argument, ...], list[tuple[str, str]]] = {}
+        types: dict[str, list[FinalPythonType]] = {}
+        for branch in spec.fields:
+            for field in branch.fields:
+                types.setdefault(field.python_name, []).append(field.type)
+            for arguments in self.field_signatures(module, spec, branch, witnessed=not body.required):
+                shapes.setdefault(arguments, []).append((branch.media_type, selectors[branch.media_type]))
+        unset_body = _Argument("body", unset, "unset")
+        variants.extend(_Variant((unset_body, *arguments, selecting(media))) for arguments, media in shapes.items())
+        if not body.required:
+            variants.append(_Variant((unset_body, *omitted, _Argument("media_type", "None", "none"))))
+        implementation = (
+            _Argument("body", f"{_union(groups)} | {unset}", "unset"),
+            *(_Argument(name, f"{_merged(module, types[name])} | {unset}", "unset") for name in spec.field_names),
+            _Argument("media_type", f"{every} | None", "none"),
+        )
+        return variants, implementation
+
+    @staticmethod
+    def field_signatures(
+        module: Module, spec: OperationSpec, branch: FieldBranch, *, witnessed: bool
+    ) -> list[tuple[_Argument, ...]]:
+        """Return the field arguments of one media's field signatures, one for each field when witnessed ones must be.
+
+        A field of another media takes only UNSET.
+        """
+        unset = module.local("options", "Unset")
+        present = {field.python_name: field for field in branch.fields}
+
+        def argument(name: str) -> _Argument:
+            if (field := present.get(name)) is None:
+                return _Argument(name, unset, "unset")
+            annotation = module.types.static(field.type)
+            return (
+                _Argument(name, annotation) if field.required else _Argument(name, f"{annotation} | {unset}", "unset")
+            )
+
+        arguments = tuple(argument(name) for name in spec.field_names)
+        if not witnessed or branch.required:
+            return [arguments]
+        return [
+            tuple(
+                _Argument(argument.name, module.types.static(field.type))
+                if argument.name == field.python_name
+                else argument
+                for argument in arguments
+            )
+            for field in branch.fields
+        ]
 
     def named(self, module: Module, spec: OperationSpec, keys: tuple[_Key, ...]) -> str:
         """Return a union of success types, spelled by the operation's Response alias when it is every one of them."""
@@ -1047,6 +1133,7 @@ class _Checks(_Typing):
         self.module = Module((), self.symbols, level=2)
         self.sections: list[str] = []
         self.branches: dict[int, tuple[tuple[str | None, str], ...]] = {}
+        self.fields: dict[tuple[int, str], str] = {}
         for spec in plan.operations:
             media = spec.body.media if spec.body is not None else (None,)
             branches = tuple(
@@ -1054,6 +1141,10 @@ class _Checks(_Typing):
             )
             if branches:
                 self.branches[spec.index] = branches
+            fields = {field.media_type: field for field in spec.fields}
+            for position, item in enumerate(media):
+                if item is not None and (field := fields.get(item.media_type)) is not None:
+                    self.fields[spec.index, item.media_type] = self.field_branch(spec, field, position)
 
     def native(self, use: TypeUseBinding | None) -> str | None:
         """Return the final type of a use a call takes as a native value, or None when it has none."""
@@ -1075,12 +1166,30 @@ class _Checks(_Typing):
         if not arguments:
             return None
         name = f"operation_{spec.index}" if media is None else f"operation_{spec.index}_{position}"
+        self.section(name, arguments, f"{spec.name}{'' if media is None else f' sending {media.media_type}'}")
+        return None if media is None else media.media_type, name
+
+    def field_branch(self, spec: OperationSpec, branch: FieldBranch, position: int) -> str:
+        """Return the accessor of the check of a call giving one media's fields with the operation's parameters."""
+        arguments: list[tuple[str, tuple[str, ...], str]] = [
+            (parameter.python_name, (parameter.location, parameter.wire_name), self.native(parameter.use) or "object")
+            for parameter in spec.parameters
+        ]
+        arguments.extend(
+            (field.python_name, ("body", field.wire_name), self.module.types.static(field.type))
+            for field in branch.fields
+        )
+        name = f"operation_{spec.index}_{position}_fields"
+        self.section(name, arguments, f"{spec.name} giving the fields of {branch.media_type}")
+        return name
+
+    def section(self, name: str, arguments: Sequence[tuple[str, tuple[str, ...], str]], called: str) -> None:
+        """Add a branch's function, whose parameters take its arguments' types, and its cached check."""
         module = self.module
         omitted = module.local("_runtime.client.checks", "OMITTED")
         parameters = "".join(f"    {argument}: {annotation} = {omitted},\n" for argument, _, annotation in arguments)
         returned = ", ".join(argument for argument, _, _ in arguments)
         returned = f"({returned},)" if len(arguments) == 1 else returned
-        sent = "" if media is None else f" sending {media.media_type}"
         check = module.local("_runtime.client.checks", "ArgumentCheck")
         head = "    return "
         call = _call(
@@ -1095,11 +1204,10 @@ class _Checks(_Typing):
             f"def _{name}(\n    *,\n{parameters}) -> tuple[object, ...]:\n    return {returned}",
             (
                 f"@{module.name('functools', 'cache')}\ndef {name}() -> {check}:\n"
-                f'    """Return the validation of the arguments of {spec.name}{sent}."""\n'
+                f'    """Return the validation of the arguments of {called}."""\n'
                 f"{head}{layout(call, 4, len(head), WIDTH)}"
             ),
         ))
-        return None if media is None else media.media_type, name
 
     def source(self) -> str:
         """Return the private module of the argument checks."""
@@ -1424,11 +1532,11 @@ class _Registry(_Typing):
     @staticmethod
     def servers(module: Module, specs: tuple[ServerSpec, ...]) -> Doc:
         """Return the tuple of one operation's servers."""
-        variable = module.local(_RUNTIME, "ServerVariable")
         servers: list[Doc] = []
         for server in specs:
             entries: list[tuple[str, Doc]] = [("url=", repr(server.url))]
             if server.variables:
+                variable = module.local(_RUNTIME, "ServerVariable")
                 entries.append((
                     "variables=",
                     _tuple(
@@ -1473,7 +1581,34 @@ class _Registry(_Typing):
         if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
             checks = module.local("_generated", "client_checks")
             entries.append(("checks=", _tuple(_tuple((repr(media), f"{checks}.{name}")) for media, name in branches)))
+        if spec.fields:
+            entries.append(("fields=", self.field_arguments(module, spec)))
         return _call(module.local(_RUNTIME, "OperationPlan"), entries)
+
+    def field_arguments(self, module: Module, spec: OperationSpec) -> Group:
+        """Return the FieldArguments constructor of an operation: each media's fields by their argument positions."""
+        names = spec.field_names
+        positions = {name: index for index, name in enumerate(names)}
+        checks = {} if self.checks is None else self.checks.fields
+        media: list[Doc] = []
+        for branch in spec.fields:
+            entries: list[tuple[str, Doc]] = [
+                ("media_type=", repr(branch.media_type)),
+                (
+                    "fields=",
+                    _tuple(
+                        _tuple((str(positions[field.python_name]), repr(field.wire_name), repr(field.required)))
+                        for field in branch.fields
+                    ),
+                ),
+            ]
+            if (check := checks.get((spec.index, branch.media_type))) is not None:
+                entries.append(("check=", f"{module.local('_generated', 'client_checks')}.{check}"))
+            media.append(_call(module.local(_RUNTIME, "BodyFields"), entries))
+        return _call(
+            module.local(_RUNTIME, "FieldArguments"),
+            (("method=", repr(spec.name)), ("names=", _tuple(map(repr, names))), ("media=", _tuple(media))),
+        )
 
     def encoder(self, module: Module, use: TypeUseBinding) -> str:
         """Return the Encoder of a sent use."""

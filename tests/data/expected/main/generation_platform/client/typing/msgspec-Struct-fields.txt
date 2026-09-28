@@ -1,0 +1,45 @@
+mypy pets and fields.py: clean
+pyright pets and fields.py: clean
+ty pets and fields.py: clean
+fields_negative.py 11 marked lines
+mypy fields_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
+  24 call-overload
+  25 call-overload
+  26 call-overload
+  27 call-overload
+  28 call-overload
+  29 call-overload
+  30 call-overload
+  31 call-overload
+  32 call-arg
+  33 call-overload
+  37 call-overload
+pyright fields_negative.py: 6/11 marked lines with one error, 0 elsewhere, 0 in other files
+  24 reportArgumentType
+  24 reportCallIssue
+  25 reportArgumentType
+  26 reportArgumentType
+  26 reportCallIssue
+  27 reportArgumentType
+  27 reportCallIssue
+  28 reportArgumentType
+  29 reportArgumentType
+  30 reportArgumentType
+  30 reportCallIssue
+  31 reportArgumentType
+  32 reportCallIssue
+  33 reportCallIssue
+  37 reportArgumentType
+  37 reportCallIssue
+ty fields_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
+  24 no-matching-overload
+  25 invalid-argument-type
+  26 no-matching-overload
+  27 no-matching-overload
+  28 invalid-argument-type
+  29 invalid-argument-type
+  30 no-matching-overload
+  31 invalid-argument-type
+  32 unknown-argument
+  33 no-matching-overload
+  37 no-matching-overload

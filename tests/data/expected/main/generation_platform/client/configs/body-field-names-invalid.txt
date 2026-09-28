@@ -1,0 +1,4 @@
+APIGenerationError
+  E_CONFIG_VALUE config operations[0].body_field_names: body_field_names need body_arguments 'both' for the operation
+  E_CONFIG_VALUE config operations[1].body_field_names[0]: A body field name needs a media type, a wire property, and an identifier
+  E_CONFIG_VALUE config operations[1].body_field_names[2]: The Application/JSON body field 'tag' is named twice

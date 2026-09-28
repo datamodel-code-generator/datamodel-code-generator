@@ -811,6 +811,14 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             plan.extras = self._build(binding.extra_items, extra_items, f"{symbol} extra items")
         return plan
 
+    def _constructed(self, model: ModelBinding, fields: Mapping[str, object], *, validate: bool) -> object:
+        """Construct the model through its constructor, or through msgspec's converter of the wire names to validate."""
+        if validate:
+            return self._validated(dict(fields))
+        plan = self._plans[model.symbol]
+        arguments = {plan.wire[name].binding.native_name: value for name, value in fields.items()}
+        return arguments if plan.record else plan.native(**arguments)
+
     def _validated(self, value: object) -> object:
         if (convert := self._convert) is None:
             msg = "A standard dataclass, TypedDict, or structurally read Struct has no native validation entry"

@@ -39,8 +39,14 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._client.config import ClientGenerationConfig, ClientOperationConfig
+    from datamodel_code_generator._client.config import (
+        BodyArguments,
+        BodyFieldName,
+        ClientGenerationConfig,
+        ClientOperationConfig,
+    )
     from datamodel_code_generator._generation_contract import (
+        FinalPythonType,
         FrozenLiteral,
         ModelFieldFacts,
         OperationContract,
@@ -171,6 +177,29 @@ class ServerSpec:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class FieldArgument:
+    """One field of a body that a call may give as its own keyword argument, typed as its final field type."""
+
+    python_name: str
+    wire_name: str
+    required: bool
+    type: FinalPythonType
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FieldBranch:
+    """The fields of one request media type's body that a call may give instead of the body."""
+
+    media_type: str
+    fields: tuple[FieldArgument, ...]
+
+    @property
+    def required(self) -> bool:
+        """Return whether a call giving these fields must give some of them."""
+        return any(field.required for field in self.fields)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class OperationSpec:
     """Everything the renderer needs for one selected operation."""
 
@@ -188,11 +217,19 @@ class OperationSpec:
     request_id_header: str | None
     response_media_type: str | None
     description: str | None
+    body_arguments: BodyArguments = "body"
+    body_field_names: tuple[BodyFieldName, ...] = ()
+    fields: tuple[FieldBranch, ...] = ()
 
     @property
     def head(self) -> bool:
         """Return whether the operation is a HEAD operation, whose responses have no body."""
         return self.contract.method == "head"
+
+    @property
+    def field_names(self) -> tuple[str, ...]:
+        """Return the field arguments of the operation's method: every media's field names, first seen first."""
+        return tuple(dict.fromkeys(field.python_name for branch in self.fields for field in branch.fields))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -385,6 +422,8 @@ class Planner:
             request_id_header=None if runtime is None else runtime.request_id_header,
             response_media_type=self.response_media(operation, responses, setting),
             description=None if setting is None else setting.description,
+            body_arguments=(None if setting is None else setting.body_arguments) or self.config.body_arguments,
+            body_field_names=() if setting is None else setting.body_field_names,
         )
 
     def resource(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
