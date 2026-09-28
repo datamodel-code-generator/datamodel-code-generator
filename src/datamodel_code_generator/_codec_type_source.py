@@ -21,7 +21,7 @@ from datamodel_code_generator._generation_contract import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator._generation_contract import (
         FinalPythonType,
@@ -105,14 +105,23 @@ class Namespace:
 
 
 class TypeSource:
-    """Spell final types through a namespace, keeping generated symbols at their import locations."""
+    """Spell final types through a namespace, keeping generated symbols at their import locations.
 
-    __slots__ = ("_namespace", "_symbols")
+    A leaf callback spells each imported type name, such as a model class, instead of its module attribute.
+    """
 
-    def __init__(self, namespace: Namespace, symbols: Mapping[int, str]) -> None:
-        """Keep the namespace and each generated symbol's `module:Name` import location."""
+    __slots__ = ("_leaf", "_namespace", "_symbols")
+
+    def __init__(
+        self, namespace: Namespace, symbols: Mapping[int, str], leaf: Callable[[str, str], str] | None = None
+    ) -> None:
+        """Keep the namespace, each generated symbol's `module:Name` import location, and the leaf callback."""
         self._namespace = namespace
         self._symbols = symbols
+        self._leaf = self._attribute if leaf is None else leaf
+
+    def _attribute(self, module: str, name: str) -> str:
+        return f"{self._namespace.module(module)}.{name}"
 
     def runtime(self, value: FinalPythonType) -> str:
         """Return the expression that evaluates to the native type."""
@@ -128,7 +137,7 @@ class TypeSource:
         match value:
             case GeneratedSymbolType() if value.symbol in self._symbols:
                 module, _, name = self._symbols[value.symbol].partition(":")
-                return f"{self._namespace.module(module)}.{name}"
+                return self._leaf(module, name)
             case BuiltinType():
                 return value.name
             case NoneType():
@@ -136,11 +145,7 @@ class TypeSource:
             case ImportedType() if value.import_.from_ and not (
                 value.import_.from_.startswith(".") or "." in value.import_.import_
             ):
-                return ".".join((
-                    self._namespace.module(value.import_.from_),
-                    value.import_.import_,
-                    *value.qualified_suffix,
-                ))
+                return ".".join((self._leaf(value.import_.from_, value.import_.import_), *value.qualified_suffix))
             case GenericType():
                 items = ", ".join(self._spell(item, static=static) for item in value.arguments)
                 base = self._spell(value.base, static=static)
@@ -152,7 +157,7 @@ class TypeSource:
                 return f"{self._namespace.module('typing')}.Literal[{literals}]"
             case GeneratedEnumMember() if value.symbol in self._symbols:
                 module, _, name = self._symbols[value.symbol].partition(":")
-                return f"{self._namespace.module(module)}.{name}.{value.name}"
+                return f"{self._leaf(module, name)}.{value.name}"
             case LiteralScalar(kind="decimal"):
                 return f"{self._namespace.module('decimal')}.Decimal({str(value.value)!r})"
             case LiteralScalar():
@@ -160,7 +165,7 @@ class TypeSource:
             case ConstructorType() if static and (
                 target := _STATIC_CONSTRUCTORS.get((value.callable.import_.from_, value.callable.import_.import_))
             ):
-                return target[1] if target[0] is None else f"{self._namespace.module(target[0])}.{target[1]}"
+                return target[1] if target[0] is None else self._leaf(target[0], target[1])
             case ConstructorType() if not static:
                 return f"{self._spell(value.callable, static=False)}({self._keywords(value.keywords)})"
             case AnnotatedType() if static:

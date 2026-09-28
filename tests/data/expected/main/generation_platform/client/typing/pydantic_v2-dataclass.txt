@@ -1,0 +1,31 @@
+7 marked lines
+mypy pets and clients.py: clean
+pyright pets and clients.py: clean
+ty pets and clients.py: clean
+mypy clients_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
+  20 call-arg
+  21 arg-type
+  22 call-overload
+  23 call-overload
+  25 call-overload
+  27 arg-type
+  29 arg-type
+pyright clients_negative.py: 4/7 marked lines with one error, 0 elsewhere, 0 in other files
+  20 reportCallIssue
+  21 reportArgumentType
+  22 reportArgumentType
+  22 reportCallIssue
+  23 reportArgumentType
+  23 reportCallIssue
+  25 reportArgumentType
+  25 reportCallIssue
+  27 reportArgumentType
+  29 reportArgumentType
+ty clients_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
+  20 missing-argument
+  21 invalid-argument-type
+  22 no-matching-overload
+  23 no-matching-overload
+  25 no-matching-overload
+  27 invalid-argument-type
+  29 invalid-argument-type

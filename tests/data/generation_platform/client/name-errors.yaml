@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: Name errors
+  version: 1.0.0
+servers:
+  - url: https://names.example.com
+paths:
+  /close:
+    get:
+      operationId: close
+      responses:
+        '204':
+          description: Reserved.
+  /blank:
+    get:
+      operationId: '---'
+      tags: ['!!!']
+      responses:
+        '204':
+          description: Blank.
+  /view:
+    get:
+      tags: [with_response]
+      parameters:
+        - name: body
+          in: query
+          schema: {type: string}
+        - name: user-id
+          in: query
+          schema: {type: string}
+        - name: user_id
+          in: header
+          schema: {type: string}
+      responses:
+        '204':
+          description: Reserved names.
+  /pets/{petId}/{missing}:
+    get:
+      operationId: getPet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Duplicate headers and media.
+          headers:
+            X-A:
+              schema: {type: string}
+            x-a:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {type: string}
+            Application/JSON:
+              schema: {type: string}

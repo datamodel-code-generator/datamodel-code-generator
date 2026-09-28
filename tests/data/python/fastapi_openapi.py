@@ -14,7 +14,8 @@ from fastapi import APIRouter, FastAPI, Query, Security
 from fastapi.responses import PlainTextResponse
 from fastapi.security import APIKeyHeader
 
-from tests.data.python.fastapi_server import _forget, _generate, _import
+from tests.data.python.fastapi_server import _generate, _import
+from tests.data.python.generated_packages import forget_generated
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -461,5 +462,5 @@ def fastapi_openapi_report(case_name: str, root: Path, monkeypatch: pytest.Monke
         lines.extend(scenario(imported))
     finally:
         for name in names:
-            _forget(f"docs_{name}")
+            forget_generated(f"docs_{name}")
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"

@@ -1,0 +1,4 @@
+# child-collision
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_NAME_COLLISION target: The resource 'admin' takes the name 'users' twice

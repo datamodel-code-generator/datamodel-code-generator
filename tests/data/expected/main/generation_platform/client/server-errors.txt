@@ -1,0 +1,12 @@
+# server-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_BASE_URL target /paths/~1relative/get: A server of GET /relative does not resolve to an absolute http or https URL
+  E_BASE_URL target /paths/~1undeclared/get: A server of GET /undeclared does not resolve to an absolute http or https URL
+  E_BASE_URL target /paths/~1malformed/get: The servers of GET /malformed are not server objects
+  E_BASE_URL target /paths/~1query/get: A server of GET /query does not resolve to an absolute http or https URL
+  E_BASE_URL target /paths/~1entry/get: The servers of GET /entry are not server objects
+  E_BASE_URL target /paths/~1variables/get: The servers of GET /variables are not server objects
+  E_BASE_URL target /paths/~1variable/get: The servers of GET /variable are not server objects
+  E_BASE_URL target /paths/~1enum/get: The servers of GET /enum are not server objects
+  E_BASE_URL target /paths/~1port/get: A server of GET /port does not resolve to an absolute http or https URL

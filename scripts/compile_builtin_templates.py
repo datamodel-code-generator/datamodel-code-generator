@@ -33,6 +33,8 @@ TEMPLATE_DIR = ROOT / "src/datamodel_code_generator/model/template"
 OUTPUT_DIR = ROOT / "src/datamodel_code_generator/model/_compiled_templates"
 FASTAPI_TEMPLATE_DIR = ROOT / "src/datamodel_code_generator/_fastapi/templates"
 FASTAPI_OUTPUT_DIR = ROOT / "src/datamodel_code_generator/_fastapi/_compiled_templates"
+CLIENT_TEMPLATE_DIR = ROOT / "src/datamodel_code_generator/_client/templates"
+CLIENT_OUTPUT_DIR = ROOT / "src/datamodel_code_generator/_client/_compiled_templates"
 _RESERVED_MODULE_NAMES = frozenset({"__init__", "registry"})
 _PACKAGE_FILES = frozenset({"__init__.py", "registry.py"})
 
@@ -86,8 +88,8 @@ def _render_init(docstring: str, *, registry: bool) -> str:
 def template_sets() -> tuple[tuple[Path, Path, str, bool], ...]:
     """Return each template directory, its renderer directory, package docstring, and whether paths look up renderers.
 
-    Model templates resolve by path because custom template directories overlay them; the FastAPI target imports its
-    renderers directly until custom server templates exist.
+    Model templates resolve by path because custom template directories overlay them; the FastAPI and client targets
+    import their renderers directly.
     """
     return (
         (TEMPLATE_DIR, OUTPUT_DIR, "Generated standalone renderers for built-in model templates.", True),
@@ -95,6 +97,12 @@ def template_sets() -> tuple[tuple[Path, Path, str, bool], ...]:
             FASTAPI_TEMPLATE_DIR,
             FASTAPI_OUTPUT_DIR,
             "Generated standalone renderers for built-in FastAPI templates.",
+            False,
+        ),
+        (
+            CLIENT_TEMPLATE_DIR,
+            CLIENT_OUTPUT_DIR,
+            "Generated standalone renderers for built-in client templates.",
             False,
         ),
     )

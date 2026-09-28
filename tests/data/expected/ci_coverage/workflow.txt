@@ -13,6 +13,7 @@
     "group": "test-${{ github.ref }}"
   },
   "configurations": [
+    "client-e2e:ubuntu-24.04:/:",
     "fastapi-e2e:ubuntu-24.04:/:",
     "fastapi-install-nocov-e2e:ubuntu-24.04:/:",
     "httpx-both-nocov-e2e:macos-latest:/:",
@@ -79,9 +80,9 @@
     "pydantic25:ubuntu-24.04:/:",
     "typing-nocov-e2e:ubuntu-24.04:/:"
   ],
-  "coverage_count": 30,
+  "coverage_count": 31,
   "coverage_needs_only_producers": true,
-  "coverage_unique": 30,
+  "coverage_unique": 31,
   "exclude_only_without_coverage": true,
   "exclude_tests": [
     "tests/main/test_payload_validation.py"
@@ -98,7 +99,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 69,
+  "job_count": 70,
   "permissions": {
     "contents": "read"
   },

@@ -1,0 +1,5 @@
+# codec-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  MC_PARAMETER_ENCODING binding /paths/~1forms/post/parameters/0: query parameter style 'spaceDelimited' has no builtin form for scalar values
+  MC_PARAMETER_ENCODING binding /paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object

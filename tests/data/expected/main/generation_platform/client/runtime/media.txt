@@ -1,0 +1,110 @@
+# media pydantic_v2.BaseModel
+  > POST https://media.example.com/api/forms
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
+  form = FieldFormsPostResponse(name='a b', count=2)
+  > POST https://media.example.com/api/forms
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
+  form invalid ! DecodeError: DecodeError(status_code=200, call_id='<call>') [body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] decode_error
+  > POST https://media.example.com/api/pairs
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
+  pairs = (('a', '1'), ('a', '2'), ('b', ' '))
+  > POST https://media.example.com/api/pairs
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  pairs invalid ! DecodeError: DecodeError(status_code=200, call_id='<call>') [body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] decode_error
+  pairs body ! RequestEncodingError: RequestEncodingError(operation_id='submitPairs', location='body') [operation_id='submitPairs', location=('body',), cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] request_encoding_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 11] b'{"x":[1,2]}'
+  store = mappingproxy({'stored': True})
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
+  store text = 'café'
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/vnd.api+json, content-length: 26] b'{"title":"t","secret":"s"}'
+  store draft = None
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store moved = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Draft|ModelNode(symbol='media_pydantic_v2_basemodel_models:Draft')", wire=mappingproxy({'id': 1, 'title': 't'}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())), ('title', PresenceTree(pointer='/title', container='value', members=())))), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/secret', schema_location='', field_id='media_pydantic_v2_basemodel_models:Draft.secret', message='The native type requires a property that this direction excludes'),), kind='input')
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, call_id='<call>') [body_bytes=b'{"title":5}', truncated=False, cause=WireValidationError('A required property is missing at /id')] response_validation_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store failed ! StoreDocumentHTTPError: StoreDocumentHTTPError(status_code=500, call_id='<call>') [status_code=500, error_decoded=True, error_data='down', body_bytes=b'down', truncated=False] store_document_http_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store syntax ! DecodeError: DecodeError(status_code=200, call_id='<call>') [body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
+  store narrowed ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=302, call_id='<call>') [body_bytes=b'{"id":1,"title":"t"}', truncated=False, actual_media_type='application/json'] unexpected_media_type_error
+  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('set is not a JSON value')] request_encoding_error
+  store codec ! CodecSelectionError: The operation declares no codec-bearing request body for that media type [] 
+  store codec media ! CodecSelectionError: The operation declares no codec-bearing request body for that media type [] 
+  > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
+  read = Response(ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Draft|ModelNode(symbol='media_pydantic_v2_basemodel_models:Draft')", wire=mappingproxy({'id': 1, 'title': 't'}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())), ('title', PresenceTree(pointer='/title', container='value', members=())))), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/secret', schema_location='', field_id='media_pydantic_v2_basemodel_models:Draft.secret', message='The native type requires a property that this direction excludes'),), kind='input'), 200, 'application/vnd.api+json', None, [('x-draft', 'id,1,title,h'), ('content-type', 'application/vnd.api+json'), ('content-length', '20')])
+  read header = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Draft|ModelNode(symbol='media_pydantic_v2_basemodel_models:Draft')", wire=mappingproxy({'id': 1, 'title': 'h'}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())), ('title', PresenceTree(pointer='/title', container='value', members=())))), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/secret', schema_location='', field_id='media_pydantic_v2_basemodel_models:Draft.secret', message='The native type requires a property that this direction excludes'),), kind='input')
+  > POST https://media.example.com/api/notes
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
+  note = None
+  > PUT https://media.example.com/api/notes
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  note replace = None
+  > PUT https://media.example.com/api/notes
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
+  note replace text = None
+  note replace value ! RequestEncodingError: RequestEncodingError(operation_id='replaceNote', location='body') [operation_id='replaceNote', location=('body',), cause=ParameterEncodingError('A text body must be a string')] request_encoding_error
+# media dataclasses.dataclass
+  > POST https://media.example.com/api/forms
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
+  form = FieldFormsPostResponse(name='a b', count=2)
+  > POST https://media.example.com/api/forms
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 34] b'name=a+b&count=2&labels=x&labels=y'
+  form invalid ! DecodeError: DecodeError(status_code=200, call_id='<call>') [body_bytes=b'count=many', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] decode_error
+  > POST https://media.example.com/api/pairs
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, content-type: application/x-www-form-urlencoded, content-length: 11] b'a=1&a=2&b=+'
+  pairs = (('a', '1'), ('a', '2'), ('b', ' '))
+  > POST https://media.example.com/api/pairs
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded] b''
+  pairs invalid ! DecodeError: DecodeError(status_code=200, call_id='<call>') [body_bytes=b'a=%zz', truncated=False, cause=WireValidationError('A percent sign must start a percent-encoded octet at /')] decode_error
+  pairs body ! RequestEncodingError: RequestEncodingError(operation_id='submitPairs', location='body') [operation_id='submitPairs', location=('body',), cause=ParameterEncodingError('Form data must be a tuple of name and value string pairs')] request_encoding_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 11] b'{"x":[1,2]}'
+  store = mappingproxy({'stored': True})
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
+  store text = 'café'
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/vnd.api+json, content-length: 26] b'{"title":"t","secret":"s"}'
+  store draft = None
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store moved = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Draft|ModelNode(symbol='media_dataclasses_dataclass_models:Draft')", wire=mappingproxy({'id': 1, 'title': 't'}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())), ('title', PresenceTree(pointer='/title', container='value', members=())))), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/secret', schema_location='', field_id='media_dataclasses_dataclass_models:Draft.secret', message='The native type requires a property that this direction excludes'),), kind='input')
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store moved invalid ! ResponseValidationError: ResponseValidationError(status_code=302, call_id='<call>') [body_bytes=b'{"title":5}', truncated=False, cause=WireValidationError('A required property is missing at /id')] response_validation_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store failed ! StoreDocumentHTTPError: StoreDocumentHTTPError(status_code=500, call_id='<call>') [status_code=500, error_decoded=True, error_data='down', body_bytes=b'down', truncated=False] store_document_http_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/json, content-length: 1] b'1'
+  store syntax ! DecodeError: DecodeError(status_code=200, call_id='<call>') [body_bytes=b'\xff', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
+  store narrowed ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=302, call_id='<call>') [body_bytes=b'{"id":1,"title":"t"}', truncated=False, actual_media_type='application/json'] unexpected_media_type_error
+  store value ! RequestEncodingError: RequestEncodingError(operation_id='storeDocument', location='body') [operation_id='storeDocument', location=('body',), cause=TypeError('set is not a JSON value')] request_encoding_error
+  store codec ! CodecSelectionError: The operation declares no codec-bearing request body for that media type [] 
+  store codec media ! CodecSelectionError: The operation declares no codec-bearing request body for that media type [] 
+  > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
+  read = Response(ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Draft|ModelNode(symbol='media_dataclasses_dataclass_models:Draft')", wire=mappingproxy({'id': 1, 'title': 't'}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())), ('title', PresenceTree(pointer='/title', container='value', members=())))), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/secret', schema_location='', field_id='media_dataclasses_dataclass_models:Draft.secret', message='The native type requires a property that this direction excludes'),), kind='input'), 200, 'application/vnd.api+json', None, [('x-draft', 'id,1,title,h'), ('content-type', 'application/vnd.api+json'), ('content-length', '20')])
+  read header = ModelInput(binding_id="https://dcg.invalid/inputs/root#/components/schemas/Draft|ModelNode(symbol='media_dataclasses_dataclass_models:Draft')", wire=mappingproxy({'id': 1, 'title': 'h'}), presence=PresenceTree(pointer='', container='object', members=(('id', PresenceTree(pointer='/id', container='value', members=())), ('title', PresenceTree(pointer='/title', container='value', members=())))), extras=mappingproxy({}), issues=(ProjectionIssue(code='DIRECTIONAL_REQUIRED', pointer='/secret', schema_location='', field_id='media_dataclasses_dataclass_models:Draft.secret', message='The native type requires a property that this direction excludes'),), kind='input')
+  > POST https://media.example.com/api/notes
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 3] b'[1]'
+  note = None
+  > PUT https://media.example.com/api/notes
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  note replace = None
+  > PUT https://media.example.com/api/notes
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: text/plain, content-length: 1] b'n'
+  note replace text = None
+  note replace value ! RequestEncodingError: RequestEncodingError(operation_id='replaceNote', location='body') [operation_id='replaceNote', location=('body',), cause=ParameterEncodingError('A text body must be a string')] request_encoding_error

@@ -1,0 +1,27 @@
+# empty
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/errors.py
+  write client/responses.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/resources/__init__.py
+  write client/types/__init__.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 0
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  S_OPERATION_EXCLUDED selection /paths/~1pets/get: GET /pets is excluded by exclude_tags 'pets': No operation is needed yet.
+  S_OPERATION_EXCLUDED selection /paths/~1pets/post: POST /pets is excluded by exclude_tags 'pets': No operation is needed yet.
+  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/get: GET /pets/{petId} is excluded by exclude_tags 'pets': No operation is needed yet.
+  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/delete: DELETE /pets/{petId} is excluded by exclude_tags 'pets': No operation is needed yet.
+  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}/head: HEAD /pets/{petId} is excluded by exclude_tags 'pets': No operation is needed yet.
+  S_OPERATION_EXCLUDED selection /paths/~1pets~1{petId}~1photo/put: PUT /pets/{petId}/photo is excluded by exclude_tags 'pets': No operation is needed yet.

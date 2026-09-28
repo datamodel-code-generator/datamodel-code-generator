@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: Media
+  version: 1.0.0
+servers:
+  - url: https://media.example.com/api/
+paths:
+  /forms:
+    post:
+      operationId: submitForm
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                count: {type: integer}
+                labels:
+                  type: array
+                  items: {type: string}
+      responses:
+        '200':
+          description: The echoed form.
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  name: {type: string}
+                  count: {type: integer}
+  /pairs:
+    post:
+      operationId: submitPairs
+      tags: [forms]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded: {}
+      responses:
+        '200':
+          description: The echoed pairs.
+          content:
+            application/x-www-form-urlencoded: {}
+  /documents:
+    post:
+      operationId: storeDocument
+      tags: [documents]
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+          text/plain; charset=utf-16: {}
+          application/vnd.api+json:
+            schema: {$ref: '#/components/schemas/Draft'}
+      responses:
+        '200':
+          description: The stored document.
+          content:
+            application/json: {}
+            text/plain: {}
+        '202':
+          description: Accepted without a body.
+        '3XX':
+          description: Moved.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Draft'}
+        '5XX':
+          description: A failure.
+          content:
+            text/plain: {}
+  /documents/{id}:
+    get:
+      operationId: readDocument
+      tags: [documents]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key: {type: string}
+        - name: filter
+          in: query
+          content:
+            application/json: {}
+        - name: X-Mode
+          in: header
+          content:
+            text/plain: {}
+      responses:
+        '200':
+          description: The document.
+          headers:
+            X-Draft:
+              schema: {$ref: '#/components/schemas/Draft'}
+          content:
+            application/vnd.api+json:
+              schema: {$ref: '#/components/schemas/Draft'}
+  /notes:
+    post:
+      operationId: storeNote
+      tags: [documents]
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+          application/vnd.note+json: {}
+      responses:
+        '204':
+          description: Stored.
+    put:
+      operationId: replaceNote
+      tags: [documents]
+      requestBody:
+        content:
+          application/json: {}
+          text/plain: {}
+      responses:
+        '204':
+          description: Replaced.
+components:
+  schemas:
+    Draft:
+      type: object
+      required: [id, title, secret]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title: {type: string}
+        secret:
+          type: string
+          writeOnly: true

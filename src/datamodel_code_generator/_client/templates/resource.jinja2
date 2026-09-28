@@ -1,0 +1,19 @@
+"""{{ docstring }}"""
+
+from __future__ import annotations
+
+{{ imports }}
+{%- for view in views %}
+
+
+class {{ view.name }}:
+    """{{ view.docstring }}"""
+
+    def __init__(self, core: {{ core }}) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+{%- for member in view.members %}
+
+{{ member }}
+{%- endfor %}
+{%- endfor %}

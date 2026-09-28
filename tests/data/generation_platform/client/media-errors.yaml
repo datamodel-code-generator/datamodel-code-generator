@@ -1,0 +1,45 @@
+openapi: 3.1.0
+info:
+  title: Media errors
+  version: 1.0.0
+servers:
+  - url: https://media.example.com
+paths:
+  /upload:
+    post:
+      operationId: upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+          '*/*': {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter:
+                  type: object
+                  properties:
+                    name: {type: string}
+            encoding:
+              filter:
+                style: deepObject
+                explode: true
+      responses:
+        '200':
+          description: A multipart response.
+          content:
+            multipart/mixed: {}
+  /invalid:
+    post:
+      operationId: postInvalid
+      requestBody:
+        content:
+          not a media type:
+            schema: {type: string}
+      responses:
+        '204':
+          description: An invalid media type.

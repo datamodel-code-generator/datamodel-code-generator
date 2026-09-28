@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import importlib
-import importlib.util
 import inspect
 import json
 import shutil
-import sys
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -16,11 +14,12 @@ from fastapi import FastAPI
 from fastapi.exceptions import ResponseValidationError
 from fastapi.testclient import TestClient
 
-from datamodel_code_generator import DataModelType, GenerateConfig, _runtime
+from datamodel_code_generator import DataModelType, GenerateConfig
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.fastapi import generate_fastapi
 from datamodel_code_generator.format import Formatter
 from tests.data.python.fastapi_generation import SOURCE, fastapi_config
+from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -61,22 +60,8 @@ def _generated(root: Path, package: str) -> dict[tuple[str, ...], str]:
 
 
 def _import(package: str) -> tuple[ModuleType, ModuleType]:
-    """Import a generated package whose private runtime resolves to this checkout's runtime sources."""
-    runtime = Path(_runtime.__file__).parent
-    spec = importlib.util.spec_from_file_location(
-        f"{package}._runtime", runtime / "__init__.py", submodule_search_locations=[str(runtime)]
-    )
-    if spec is None or spec.loader is None:
-        raise ImportError(package)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return importlib.import_module(package), importlib.import_module(f"{package}_models")
-
-
-def _forget(package: str) -> None:
-    for name in [name for name in sys.modules if name.startswith((f"{package}.", f"{package}_models")) or name == package]:
-        del sys.modules[name]
+    """Import a generated package and its models."""
+    return import_generated(package), importlib.import_module(f"{package}_models")
 
 
 class _WithoutRawPath:
@@ -233,5 +218,5 @@ def fastapi_server_report(
             for selector in case.get("codecs", ()):
                 _codec(server, selector, lines)
         finally:
-            _forget(package)
+            forget_generated(package)
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", packages
