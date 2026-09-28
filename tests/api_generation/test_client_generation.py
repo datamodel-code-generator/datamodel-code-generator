@@ -32,6 +32,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "setting-errors",
         "empty",
         "querystring",
+        "evolution",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

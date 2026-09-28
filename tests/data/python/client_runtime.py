@@ -60,6 +60,7 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
             output_model_type=DataModelType(backend),
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
+            **case.get("model", {}),
         ),
         config=client_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **case.get("config", {})},

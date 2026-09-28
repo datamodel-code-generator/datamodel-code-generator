@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 
 from tests.data.python.client_bodies import bodies
+from tests.data.python.client_evolution import evolution
 from tests.data.python.client_headers import headers
 from tests.data.python.client_hooks import hooks
 from tests.data.python.client_query import query
@@ -618,6 +619,19 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
+    "evolution": (
+        "evolution",
+        (
+            "pydantic_v2.BaseModel",
+            "pydantic_v2.dataclass",
+            "dataclasses.dataclass",
+            "typing.TypedDict",
+            "msgspec.Struct",
+        ),
+        evolution,
+    ),
+    "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),
+    "evolution-allow": ("evolution-allow", ("pydantic_v2.BaseModel",), evolution),
 }
 
 
