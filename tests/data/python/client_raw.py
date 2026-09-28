@@ -3,17 +3,20 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import gzip
 import importlib
 import io
+import os
 import stat
 import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, NoReturn
 
 import httpx2
+import pytest
 
 from tests.data.python.client_runtime import Exchange, arecord, failing, record, run
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
@@ -65,6 +68,12 @@ async def _aoutcome(call: Callable[[], Any]) -> str:
 
 def _files(directory: Path) -> list[str]:
     return sorted(path.name for path in directory.iterdir())
+
+
+def _broken_link(source: object, target: object) -> NoReturn:
+    """Fail to give a completed download its name, as a full disk or a lost volume would."""
+    del source, target
+    raise OSError(errno.EIO, "The link failed")
 
 
 class _Stream(httpx2.SyncByteStream, httpx2.AsyncByteStream):
@@ -283,6 +292,14 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     with streaming.get_pet(pet_id=pet) as response:
         lines.append(f"  raced {_outcome(lambda: response.stream_to(raced))}")
     lines.append(f"  raced kept {raced.read_bytes()!r} {_files(directory)}")
+    failed = directory / "failed.json"
+    exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
+    with streaming.get_pet(pet_id=pet) as response, pytest.MonkeyPatch.context() as fault:
+        fault.setattr(os, "link", _broken_link)
+        lines.append(f"  move failed {_outcome(lambda: response.stream_to(failed))} {_files(directory)}")
+    with streaming.get_pet(pet_id=pet) as response:
+        response.stream_to(failed)
+    lines.append(f"  moved again {failed.read_bytes()!r} {_files(directory)}")
 
 
 def _requests(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -552,6 +569,15 @@ async def _async_download(streaming: Any, pet: object, exchange: Exchange, lines
     async with streaming.get_pet(pet_id=pet) as response:
         lines.append(f"  async raced {await _aoutcome(lambda: response.stream_to(raced))}")
     lines.append(f"  async downloaded {sink.getvalue()!r} {target.read_bytes()!r} {raced.read_bytes()!r} {_files(directory)}")
+    failed = directory / "failed.json"
+    exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
+    async with streaming.get_pet(pet_id=pet) as response:
+        with pytest.MonkeyPatch.context() as fault:
+            fault.setattr(os, "link", _broken_link)
+            lines.append(f"  async move failed {await _aoutcome(lambda: response.stream_to(failed))} {_files(directory)}")
+    async with streaming.get_pet(pet_id=pet) as response:
+        await response.stream_to(failed)
+    lines.append(f"  async moved again {failed.read_bytes()!r} {_files(directory)}")
 
 
 async def _async_requests(api: Any, exchange: Exchange, lines: list[str], options: ModuleType) -> None:

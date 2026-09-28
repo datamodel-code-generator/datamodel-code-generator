@@ -139,6 +139,12 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   raced FileExistsError secondary []
   raced kept b'first' ['pet.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  move failed OSError secondary [] ['pet.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  moved again b'{}' ['failed.json', 'pet.json', 'raced.json']
   > POST https://hooks.example.com/ping?x=1
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 4] b'ping'
   request 200 'text/plain' b'pong' b'pong' shared True
@@ -307,6 +313,12 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async raced FileExistsError secondary []
   async downloaded b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' b'first' ['pet.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async move failed OSError secondary [] ['pet.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async moved again b'{}' ['failed.json', 'pet.json', 'raced.json']
   > POST https://hooks.example.com/ping
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 4] b'ping'
   async request status ! HTTPStatusError: HTTPStatusError(status_code=503, call_id='<call>') [status_code=503, error_decoded=False, body_bytes=b'down', truncated=False] http_status_error

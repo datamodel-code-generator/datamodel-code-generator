@@ -75,10 +75,16 @@ def _temporary(path: Path) -> tuple[int, Path]:
 
 
 def _commit(temporary: Path, path: Path, *, overwrite: bool) -> None:
-    """Move a completed download into place, never over a file that appeared meanwhile unless overwriting."""
-    if not overwrite:
-        os.close(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL))
-    temporary.replace(path)
+    """Give a completed download its name at once, never over a file that appeared meanwhile unless overwriting.
+
+    Without overwriting, a new link gives the complete file its name, refusing a name that exists, before the temporary
+    name goes, so a failed move leaves no file under the target's name.
+    """
+    if overwrite:
+        temporary.replace(path)
+        return
+    os.link(temporary, path)
+    temporary.unlink()
 
 
 class _Budget:
