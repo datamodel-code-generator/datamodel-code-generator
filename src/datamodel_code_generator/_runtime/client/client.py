@@ -64,7 +64,7 @@ from .lifecycle import Scope, TaskInterruptionError, cleanup_secondary, task_res
 from .logical import LogicalCallContext
 from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary, quiet_aclose, quiet_close
-from .native import AsyncHttpx2Transport, Httpx2Transport, transport_retry_reason
+from .native import AsyncHttpx2Response, AsyncHttpx2Transport, Httpx2Transport, transport_retry_reason
 from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
     DEFAULT_TRANSPORT,
@@ -2539,7 +2539,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 if planned is None:
                     result = await receive(response, info)
                     closing, response = response, None
-                    if not call.response_transferred:
+                    if not (call.response_transferred or (isinstance(closing, AsyncHttpx2Response) and closing.closed)):
                         await call.cleanup(closing.aclose)
                     return result
                 failure: BaseException = call.decoder.failure(info, b"", truncated=True)
