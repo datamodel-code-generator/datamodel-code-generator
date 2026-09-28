@@ -16,7 +16,12 @@ from .bodies import (
     bind_factory,
     bind_input,
     body_secondary,
+    declared_attempt_digest,
+    require_primitive_digest,
+    update_async_file_digest,
+    update_file_digest,
 )
+from .coding import CHUNK
 from .errors import RequestEncodingError
 from .multipart import (
     AsyncMultipartAttempt,
@@ -32,9 +37,9 @@ from .multipart import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
-    from .bodies import AsyncBodyAttempt, AsyncBodyCleanup, BodyAttempt, BodyAttemptContext
+    from .bodies import AsyncBodyAttempt, AsyncBodyCleanup, BodyAttempt, BodyAttemptContext, EncodedAttempt
 
 
 class BodySource(Protocol):
@@ -241,6 +246,12 @@ class _BoundBody:
     def close(self) -> None:
         self._bindings.close()
 
+    def require_digest(self) -> None:
+        """Validate the complete composition before any candidate factory or path is opened."""
+        for piece in self._pieces:
+            if not isinstance(piece, bytes):
+                _require_digest_source(piece, multipart=self._multipart)
+
 
 class _AsyncBoundBody:
     """The encoded async layout and all claims retained by its adopted call pipeline."""
@@ -271,6 +282,12 @@ class _AsyncBoundBody:
     async def aclose(self) -> None:
         await self._bindings.aclose()
 
+    def require_digest(self) -> None:
+        """Check only retained capabilities; asynchronous file preparation already captured their offsets."""
+        for piece in self._pieces:
+            if not isinstance(piece, bytes):
+                _require_digest_source(piece, multipart=self._multipart)
+
 
 def bind_body(content: object, *, entry: BodyBindings | None = None) -> BodySource:
     """Bind once-encoded deferred content, transferring every entry claim to the resulting source."""
@@ -299,3 +316,86 @@ async def bind_async_body(
     except BaseException as error:
         await cleanup(bindings.aclose, error=error)
         raise
+
+
+def _require_digest_source(source: BodySource | AsyncBodySource, *, multipart: bool) -> None:
+    if isinstance(source, (_BoundBody, _AsyncBoundBody)):
+        source.require_digest()
+    else:
+        require_primitive_digest(source, multipart=multipart)
+
+
+def require_digest_source(source: BodySource | AsyncBodySource) -> None:
+    """Reject unsupported digest sources before an attempt opens or a factory callback runs."""
+    _require_digest_source(source, multipart=False)
+
+
+def _digest_bytes(content: bytes, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
+    for offset in range(0, len(content), CHUNK):
+        check()
+        update(content[offset : offset + CHUNK])
+        check()
+
+
+async def _adigest_bytes(content: bytes, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
+    import asyncio  # noqa: PLC0415
+
+    for offset in range(0, len(content), CHUNK):
+        check()
+        update(content[offset : offset + CHUNK])
+        check()
+        await asyncio.sleep(0)
+
+
+def _feed_digest(attempt: BodyAttempt, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
+    """Hash a prevalidated SDK attempt; non-resource fallback is the retained immutable encoding."""
+    if isinstance(attempt, MultipartAttempt):
+        for piece in attempt.digest_pieces():
+            if isinstance(piece, bytes):
+                _digest_bytes(piece, update, check)
+            else:
+                _feed_digest(piece, update, check)
+    elif not update_file_digest(attempt, update, check):
+        for chunk in attempt.iter_bytes():
+            _digest_bytes(chunk, update, check)
+
+
+async def _afeed_digest(attempt: AsyncBodyAttempt, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
+    """Feed retained multipart framing and restored files, with cooperative byte checkpoints."""
+    if isinstance(attempt, AsyncMultipartAttempt):
+        for piece in attempt.digest_pieces():
+            if isinstance(piece, bytes):
+                await _adigest_bytes(piece, update, check)
+            else:
+                await _afeed_digest(piece, update, check)
+    elif not await update_async_file_digest(attempt, update, check):
+        async for chunk in attempt.aiter_bytes():
+            await _adigest_bytes(chunk, update, check)
+
+
+def digest_body(attempt: BodyAttempt, source: BodySource | None, *, check: Callable[[], None]) -> bytes:
+    """Return an opened, capability-checked body's exact wire digest without buffering resources."""
+    check()
+    if source is not None and (declared := declared_attempt_digest(attempt)) is not None:
+        return declared
+    from hashlib import sha256  # noqa: PLC0415
+
+    digest = sha256()
+    _feed_digest(attempt, digest.update, check)
+    check()
+    return digest.digest()
+
+
+async def adigest_body(
+    attempt: AsyncBodyAttempt | EncodedAttempt, source: AsyncBodySource | None, *, check: Callable[[], None]
+) -> bytes:
+    """Hash an opened body within its existing async owner, retaining disk work through cancellation."""
+    check()
+    if source is not None and (declared := declared_attempt_digest(attempt)) is not None:
+        return declared
+    from hashlib import sha256  # noqa: PLC0415
+
+    digest = sha256()
+    await _afeed_digest(attempt, digest.update, check)
+    check()
+    return digest.digest()

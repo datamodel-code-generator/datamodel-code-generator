@@ -19,7 +19,7 @@ from contextlib import (
 from dataclasses import dataclass
 from functools import partial
 from time import monotonic, time
-from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
 import httpx2
@@ -58,9 +58,9 @@ from .errors import (
     UnsupportedAsyncBackendError,
     add_secondary,
 )
-from .events import CallEvents, call_events
+from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
-from .lifecycle import Scope, TaskInterruptionError, cleanup_secondary, task_result
+from .lifecycle import AsyncOwnedProviders, OwnedProviders, Scope, TaskInterruptionError, cleanup_secondary, task_result
 from .logical import LogicalCallContext
 from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary, quiet_aclose, quiet_close
@@ -124,6 +124,22 @@ if TYPE_CHECKING:
 
     from ..model_codecs.parameters import ParameterFragment
     from ..model_codecs.wire import WireValue
+    from .auth import (
+        AsyncCloseableCredentialProvider,
+        AuthConfig,
+        CloseableCredentialProvider,
+        CredentialContext,
+        TokenVersion,
+    )
+    from .auth_policy import (
+        AcquiredCredential,
+        AsyncBoundAuth,
+        AsyncBoundCredential,
+        AsyncHopCredentials,
+        BoundAuth,
+        BoundCredential,
+        HopCredentials,
+    )
     from .bodies import AsyncBodyAttempt, BodyAttempt
     from .body_sources import AsyncBodyBindings, AsyncBodySource, BodyBindings, BodySource
     from .errors import RetryStopReason
@@ -132,6 +148,7 @@ if TYPE_CHECKING:
     from .operations import OperationPlan, ServerPlan
     from .options import RequestValidation, ResolvedTransportOptions
     from .retry import RetryDelay
+    from .security import SecuritySchemeEntry
     from .transports import AsyncTransportAdapter, AsyncTransportResponse, TransportAdapter, TransportResponse
     from .urls import Origin
 
@@ -150,6 +167,7 @@ _BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart 
 _MIN_STATUS: Final = 200
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
+_UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
 
@@ -159,6 +177,7 @@ class ClientDefaults:
 
     user_agent: str | None = None
     validation: ValidationModes = DEFAULT_VALIDATION
+    security_schemes: tuple[SecuritySchemeEntry, ...] = ()
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
@@ -197,6 +216,7 @@ def _layered(
         retry=layered_retry(settings.retry, layer.retry, operation_id),
         redirects=layered_redirects(settings.redirects, layer.redirects),
         idempotency_key=settings.idempotency_key if isinstance(layer.idempotency_key, Unset) else layer.idempotency_key,
+        auth=settings.auth if isinstance(layer.auth, Unset) else layer.auth,
         timeout=_timeouts(settings.timeout, layer.timeout),
         stream_read_timeout=(
             None
@@ -510,11 +530,9 @@ def _checked_raw(method: object, url: object) -> tuple[str, str]:
     return method.upper(), target.url
 
 
-def _delivery(trace: AttemptTrace) -> DeliveryState:
-    """Return how far an attempt provably got from the evidence its adapter reported."""
-    if trace.response_started:
-        return DeliveryState.RESPONSE_STARTED
-    return DeliveryState.MAYBE_SENT
+def _delivery(call: _Call) -> DeliveryState:
+    """Return how far a call provably got: a started response, else whether a send was admitted."""
+    return DeliveryState.RESPONSE_STARTED if call.trace.response_started else call.delivery_state
 
 
 def _head(status: object, headers: object, trace: AttemptTrace) -> tuple[int, HeadersView]:
@@ -598,12 +616,126 @@ _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
 _CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
 
+class _Authentication:
+    """The active call's fixed selection, current material, and single admitted recovery."""
+
+    __slots__ = ("bound", "credentials", "pending", "recovery_used", "rejected", "secondary_errors")
+
+    def __init__(self, bound: BoundAuth | AsyncBoundAuth) -> None:
+        self.bound = bound
+        self.credentials: HopCredentials | AsyncHopCredentials | None = None
+        self.pending: tuple[int, TokenVersion] | None = None
+        self.rejected: tuple[int, TokenVersion] | None = None
+        self.recovery_used = False
+        self.secondary_errors: tuple[Exception, ...] = ()
+
+    def candidate(self, headers: HeadersView, *, challenge_less: bool) -> bool:
+        """Retain the refreshable provider/version actually used by a qualifying resource rejection."""
+        from .auth import BearerCredential  # noqa: PLC0415
+        from .auth_policy import invalid_token  # noqa: PLC0415
+
+        credentials = self.credentials
+        if credentials is not None:
+            for index, acquired in enumerate(credentials.values):
+                if isinstance(acquired.material, BearerCredential) and invalid_token(
+                    headers, challenge_less=challenge_less
+                ):
+                    if self.bound.credentials[index].refreshable is not None:
+                        self.rejected = index, acquired.material.version
+                    return True
+        return False
+
+
+def _parameter_names(operation: OperationPlan[object, object], location: str) -> Iterator[str]:
+    for parameter in operation.parameters:
+        plan = parameter.plan
+        if plan.location == location:
+            if plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}:
+                yield from (field.name for field in plan.fields)
+            else:
+                yield plan.name
+
+
+@contextmanager
+def _auth_work(call: _Call) -> Generator[None, None, None]:
+    call.check("auth")
+    events = call.events
+    started = monotonic() if events is not None else 0.0
+    try:
+        if events is not None:
+            events.emit(events.event("auth_start", sent=events.sent))
+        yield
+        call.check("auth")
+    except BaseException as error:  # noqa: BLE001
+        failure = call.failure(error)
+        if events is not None:
+            auth_ended(events, started, failure)
+        raise failure from None
+    if events is not None:
+        auth_ended(events, started)
+
+
+@asynccontextmanager
+async def _aauth_work(call: _Call) -> AsyncGenerator[None, None]:
+    call.check("auth")
+    events = call.events
+    started = monotonic() if events is not None else 0.0
+    try:
+        if events is not None:
+            await events.aemit(events.event("auth_start", sent=events.sent))
+        yield
+        call.check("auth")
+    except BaseException as error:  # noqa: BLE001
+        failure = call.failure(error)
+        if events is not None:
+            await aauth_ended(events, started, failure)
+        raise failure from None
+    if events is not None:
+        await aauth_ended(events, started)
+
+
+def _credential_context(binding: BoundCredential | AsyncBoundCredential, call: _Call) -> CredentialContext:
+    from .auth import CredentialContext  # noqa: PLC0415
+    from .urls import origin_text  # noqa: PLC0415
+
+    assert call.current_origin is not None
+    return CredentialContext(
+        scheme=binding.scheme.name,
+        required_scopes=binding.required_scopes,
+        audience=None,
+        origin=origin_text(call.current_origin),
+        deadline=call.deadline,
+        cancel_token=call.settings.cancel_token,
+    )
+
+
+def _expired_credentials(call: _Call) -> bool:
+    from .auth_policy import credentials_expired  # noqa: PLC0415
+
+    assert call.auth is not None
+    credentials = call.auth.credentials
+    return credentials is not None and credentials_expired(credentials, now=monotonic())
+
+
+def _reauthorizing(call: _Call) -> bool:
+    """Return whether the call's credentials expired while it waited for a permit."""
+    return call.auth is not None and _expired_credentials(call)
+
+
+def _usable_credentials(call: _Call) -> None:
+    if call.auth is not None and _expired_credentials(call):
+        from .errors import TokenExpiredError  # noqa: PLC0415
+
+        raise TokenExpiredError(condition="expired", delivery_state=DeliveryState.NOT_SENT)
+
+
 class _Call(LogicalCallContext):
     """Bind operation policy once while retaining the logical call's single ownership record."""
 
     __slots__ = (
         "allowed_origins",
         "attempt_index",
+        "auth",
         "body_enabled",
         "current_origin",
         "decoder",
@@ -632,6 +764,7 @@ class _Call(LogicalCallContext):
         self, settings: Settings, scope: Scope[HandleT], operation: OperationPlan[object, object] | None = None
     ) -> None:
         super().__init__(settings, scope, None if operation is None else operation.operation_id)
+        self.auth: _Authentication | None = None
         self.operation = operation
         self.decoder: ResponseDecoder[object, object] = RAW_DECODER
         self.events: CallEvents | None = None
@@ -700,7 +833,7 @@ class _Call(LogicalCallContext):
     def prepared(self, request: PreparedRequest[EncodedAttempt]) -> PreparedRequest[EncodedAttempt]:
         """Retain the original method and attach the call's sole declared idempotency key."""
         self.method = request.method
-        if self.settings.redirects.enabled:
+        if self.settings.redirects.enabled or self.auth is not None:
             target = absolute_target(request.url)
             self.initial_origin = self.current_origin = target.origin
             request = PreparedRequest(method=request.method, url=target.url, headers=request.headers, body=request.body)
@@ -749,11 +882,25 @@ class _Call(LogicalCallContext):
             if info is not None
             else None
         )
+        auth = self.auth
+        auth_candidate = (
+            error is None
+            and info is not None
+            and info.status_code == _UNAUTHORIZED
+            and auth is not None
+            and auth.candidate(
+                info.headers,
+                challenge_less=self.operation is not None and self.operation.auth_challenge_less_401,
+            )
+        )
+        if auth_candidate:
+            assert auth is not None
+            reason = "auth_invalid_token" if auth.rejected is not None else None
         self.trace.connect_failure = None
         now = monotonic()
         self.stop_reason = retry_stop(
             RetryState(
-                failure_kind="transport" if error is not None else "status",
+                failure_kind="auth" if auth_candidate else "transport" if error is not None else "status",
                 reason=reason,
                 method=self.method,
                 retry_safety=self.retry_safety,
@@ -769,6 +916,7 @@ class _Call(LogicalCallContext):
             retry,
             retry_owner=retry_owner,
             now=now,
+            auth_recovery_used=auth is not None and auth.recovery_used,
         )
         if self.stop_reason is not None:
             return None
@@ -800,6 +948,10 @@ class _Call(LogicalCallContext):
         failure = self.failure(error)
         if _retry_error(failure):
             failure.retry_stop_reason = self.stop_reason
+            if self.auth is not None:
+                for secondary in self.auth.secondary_errors:
+                    if all(existing is not secondary for existing in failure.secondary_errors):
+                        add_secondary(failure, secondary)
         return failure
 
     def resending(self, error: BaseException) -> None:
@@ -885,18 +1037,34 @@ class _Call(LogicalCallContext):
         self.current_origin = target.origin
         if target.drop_body:
             self.body_enabled = False
-        return PreparedRequest(
+        redirected = PreparedRequest(
             method=target.method,
             url=target.url,
             headers=HeadersView(headers),
             body=None if target.drop_body else request.body,
         )
+        if self.auth is not None:
+            from .auth_policy import strip_managed  # noqa: PLC0415
+
+            return strip_managed(redirected, self.auth.bound)
+        return redirected
 
 
 class _Shared(Generic[AdapterT]):
     """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed."""
 
-    __slots__ = ("adapter", "adapter_closed", "closing_tasks", "fixed", "loop", "modes", "transport", "trusted")
+    __slots__ = (
+        "adapter",
+        "adapter_closed",
+        "closing_tasks",
+        "fixed",
+        "loop",
+        "modes",
+        "providers",
+        "security_schemes",
+        "transport",
+        "trusted",
+    )
 
     def __init__(
         self, defaults: ClientDefaults, adapter: AdapterT, transport: ResolvedTransportOptions, *, trusted: bool
@@ -906,6 +1074,8 @@ class _Shared(Generic[AdapterT]):
         self.adapter = adapter
         self.trusted = trusted
         self.modes = defaults.validation
+        self.security_schemes = defaults.security_schemes
+        self.providers: OwnedProviders | AsyncOwnedProviders | None = None
         self.fixed = (_ACCEPT_ENCODING,) if agent is None else (("User-Agent", agent), _ACCEPT_ENCODING)
         self.adapter_closed = False
         self.closing_tasks: dict[Scope[AsyncRawResponse], asyncio.Task[list[Exception]]] | None = None
@@ -914,6 +1084,7 @@ class _Shared(Generic[AdapterT]):
 
 class _Core(Generic[AdapterT, HandleT]):
     __slots__ = ("_owned", "_scope", "_settings", "_shared", "_urls")
+    _asynchronous: ClassVar[bool] = False
 
     def __init__(self, shared: _Shared[AdapterT], settings: Settings, scope: Scope[HandleT], *, owned: bool) -> None:
         self._shared = shared
@@ -926,14 +1097,46 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
         if not isinstance(options, RequestOptions):
             raise ConfigurationError(field_path=("options",), condition="invalid_type")
-        return type(self)(
-            self._shared, _layered(self._settings, options, self._shared.modes), self._scope.view(), owned=False
-        )
+        settings = self._call_settings(options, None)
+        view = type(self)(self._shared, settings, self._scope.view(), owned=False)
+        if not isinstance(options.auth, Unset) and options.auth is not None:
+            self._adopt_auth(options.auth)
+        return view
 
-    def _admitted(self, call: LogicalCallContext) -> None:
+    def _adopt_auth(self, config: AuthConfig) -> None:
+        from .auth import owned_providers  # noqa: PLC0415
+
+        if providers := owned_providers(config):
+            self._scope.adopt(partial(self._accept_providers, providers))
+
+    def _accept_providers(
+        self, providers: tuple[CloseableCredentialProvider | AsyncCloseableCredentialProvider, ...]
+    ) -> None:
+        """Register mode-validated provider identities inside the existing root admission lock."""
+        registry = self._shared.providers
+        if self._asynchronous:
+            if registry is None:
+                registry = self._shared.providers = AsyncOwnedProviders()
+            assert isinstance(registry, AsyncOwnedProviders)
+            for provider in providers:
+                registry.adopt(provider)
+        else:
+            if registry is None:
+                registry = self._shared.providers = OwnedProviders()
+            assert isinstance(registry, OwnedProviders)
+            for provider in providers:
+                registry.adopt(provider)
+
+    def _admitted(self, call: LogicalCallContext, options: RequestOptions | None) -> None:
         call.check()
         try:
-            self._scope.admit()
+            if options is not None and not isinstance(options.auth, Unset) and options.auth is not None:
+                from .auth import owned_providers  # noqa: PLC0415
+
+                providers = owned_providers(options.auth)
+                self._scope.admit(partial(self._accept_providers, providers) if providers else None)
+            else:
+                self._scope.admit()
         except SDKError as error:
             raise call.failure(error) from None
 
@@ -1043,7 +1246,63 @@ class _Core(Generic[AdapterT, HandleT]):
             if (closed := self._scope.closing()) is not None:
                 raise closed
             raise ConfigurationError(field_path=("options",), condition="invalid_type", operation_id=operation_id)
+        if not isinstance(options.auth, Unset) and options.auth is not None:
+            from .auth_policy import validate_auth_mode  # noqa: PLC0415
+
+            validate_auth_mode(options.auth, asynchronous=self._asynchronous)
         return _layered(self._settings, options, self._shared.modes, operation_id)
+
+    def _bind_auth(self, call: _Call) -> None:
+        """Bind effective security once, leaving anonymous calls without authentication state."""
+        operation = call.operation
+        security = None if operation is None else operation.security
+        config = call.settings.auth
+        if config is None:
+            if security is not None and security.alternatives and all(security.alternatives):
+                from .errors import AuthConfigurationError  # noqa: PLC0415
+
+                raise AuthConfigurationError(field_path=("auth",), condition="missing_credentials")
+            return
+        from .auth_policy import bind_async_auth, bind_auth, validate_ownership, validate_patches  # noqa: PLC0415
+
+        bound = (
+            bind_async_auth(config, security, self._shared.security_schemes)
+            if self._asynchronous
+            else bind_auth(config, security, self._shared.security_schemes)
+        )
+        if bound is None:
+            return
+        call.auth = _Authentication(bound)
+        for headers in call.settings.headers:
+            validate_patches(bound, headers, ())
+        for query in call.settings.query:
+            validate_patches(bound, (), query)
+        if operation is not None:
+            validate_ownership(
+                bound,
+                headers=_parameter_names(operation, "header"),
+                query=_parameter_names(operation, "query"),
+                cookies=_parameter_names(operation, "cookie"),
+            )
+            if operation.idempotency is not None:
+                validate_ownership(bound, headers=(operation.idempotency.header_name,))
+
+    @staticmethod
+    def _auth_prepared(request: PreparedRequest[EncodedAttempt], call: _Call) -> None:
+        from .auth_policy import validate_ownership  # noqa: PLC0415
+
+        assert call.auth is not None
+        validate_ownership(
+            call.auth.bound,
+            headers=(name for name, _ in request.headers),
+            query=(unquote_plus(pair.partition("=")[0]) for pair in urlsplit(request.url).query.split("&") if pair),
+            cookies=(
+                pair.partition("=")[0].strip()
+                for value in request.headers.get_all("cookie")
+                for pair in value.split(";")
+                if pair.strip()
+            ),
+        )
 
     def _prepare(  # noqa: PLR0913
         self,
@@ -1357,24 +1616,32 @@ async def _aclose_scope(
     """Own draining and resource release until completion independently of close callers."""
     try:
         remaining = await scope.adrain(timeout)
+        providers = shared.providers if scope.owner is None else None
+        if isinstance(providers, AsyncOwnedProviders):
+            providers.start_aclose()
         failures = [failure for handle in remaining if (failure := await quiet_aclose(handle.aclose)) is not None]
         if owned and not shared.adapter_closed:
             shared.adapter_closed = True
             if (failure := await quiet_aclose(shared.adapter.aclose)) is not None:
                 failures.append(failure)
+        if isinstance(providers, AsyncOwnedProviders):
+            failures.extend(await providers.drain())
         return _finished_closes(failures)
     except BaseException as interrupted:  # noqa: BLE001
         raise TaskInterruptionError(interrupted) from None
 
 
-def _cleanup(pending: int, remaining: int, timeout: float, failures: list[Exception]) -> CleanupError | None:
+def _cleanup(
+    pending: int, remaining: int, timeout: float, failures: list[Exception], *, providers: int = 0
+) -> CleanupError | None:
     """Return the error of a close that left calls or handles past its cleanup time or failed to release something."""
-    if not (pending or remaining or failures):
+    if not (pending or remaining or providers or failures):
         return None
     return CleanupError(
         pending_calls=pending,
         pending_leases=remaining,
-        timeout=timeout if pending or remaining else None,
+        pending_providers=providers,
+        timeout=timeout if pending or remaining or providers else None,
         cause=failures[0] if failures else None,
         secondary_errors=tuple(failures[1:]),
     )
@@ -1597,11 +1864,11 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     __slots__ = ()
 
-    def _started(self, call: LogicalCallContext, path: str | None) -> CallEvents | None:
+    def _started(self, call: LogicalCallContext, path: str | None, options: RequestOptions | None) -> CallEvents | None:
         """Admit a call, reporting both boundary events when it is already stopped."""
         events = call_events(call.settings, call=call, path=path, asynchronous=False)
         try:
-            self._admitted(call)
+            self._admitted(call, options)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             try:
@@ -1624,14 +1891,21 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     ) -> Self:
         """Send through the adapter or HTTPX2 client given, borrowing it unless ownership moved, or create one."""
         settings = _client_settings(options, defaults)
+        if settings.auth is not None:
+            from .auth_policy import validate_auth_mode  # noqa: PLC0415
+
+            validate_auth_mode(settings.auth, asynchronous=False)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
-        return cls(
+        result = cls(
             _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport)),
             settings,
             Scope(),
             owned=owned,
         )
+        if settings.auth is not None:
+            result._adopt_auth(settings.auth)
+        return result
 
     def execute(  # noqa: PLR0913
         self,
@@ -1646,7 +1920,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy."""
         call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
-        events = call.events = self._started(call, operation.path)
+        events = call.events = self._started(call, operation.path, options)
         decoder = operation.responses
 
         def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
@@ -1704,7 +1978,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     ) -> RawResponse:
         """Execute one encoded logical call through its retry and redirect policy."""
         call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
-        events = call.events = self._started(call, operation.path)
+        events = call.events = self._started(call, operation.path, options)
         decoder = operation.responses
         result: RawResponse | None = None
         handed = False
@@ -1795,7 +2069,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     ) -> RawResponse:
         """Execute an unbound raw call with the same resource and retry ownership."""
         call = _Call(self._call_settings(options, None), self._scope)
-        events = call.events = self._started(call, None)
+        events = call.events = self._started(call, None, options)
         result: RawResponse | None = None
         handed = False
 
@@ -1861,11 +2135,15 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             )
             call.check("encode")
             call.bind(self._shared.adapter.capabilities, options)
+            if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
+                self._bind_auth(call)
             if (events := call.events) is not None:
                 events.emit(events.starting(call.settings))
             call.check("encode")
             request, deferred = prepare()
             request = call.prepared(request)
+            if call.auth is not None:
+                self._auth_prepared(request, call)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
@@ -1933,16 +2211,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                     call.trace = AttemptTrace()
                     call.phase_caps = ()
                     continue
-                planned = (
-                    call.retry(
-                        info,
-                        None,
-                        replayable=source is None or source.replayable,
-                        retry_owner=self._shared.transport.retry_owner,
-                    )
-                    if info.status_code >= _ERROR_STATUS
-                    else None
-                )
+                planned = self._status_plan(info, source, call)
                 if planned is None:
                     result = receive(response, info)
                     closing, response = response, None
@@ -1967,6 +2236,25 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             self._wait_retry(planned, failure, call)
             request = original
             visited = call.restart(original)
+
+    def _status_plan(self, info: ResponseInfo, source: BodySource | None, call: _Call) -> RetryDelay | None:
+        """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
+        planned = (
+            call.retry(
+                info,
+                None,
+                replayable=source is None or source.replayable,
+                retry_owner=self._shared.transport.retry_owner,
+            )
+            if info.status_code >= _ERROR_STATUS
+            else None
+        )
+        if planned is not None and planned.reason == "auth_invalid_token":
+            self._invalidate(call, recovering=True)
+            return None if call.retry_blocked else planned
+        if planned is None and call.auth is not None and call.auth.rejected is not None:
+            self._invalidate(call, recovering=False)
+        return planned
 
     def _exchange_failure(
         self,
@@ -2037,11 +2325,109 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             events=call.events if stream else None,
             call=call,
             retry_stop_reason=call.stop_reason,
+            status_secondary_errors=() if call.auth is None else call.auth.secondary_errors,
         )
         call.response_transferred = True
         if not stream:
             handle.read()
         return handle
+
+    @staticmethod
+    def _authenticate(call: _Call) -> None:
+        from .auth import BearerCredential  # noqa: PLC0415
+        from .auth_policy import BoundAuth, HopCredentials, authorize_hop, get_credential, refresh_credential  # noqa: PLC0415
+
+        auth = call.auth
+        assert auth is not None
+        bound = auth.bound
+        assert isinstance(bound, BoundAuth)
+        assert call.current_origin is not None
+        authorize_hop(bound, origin=call.current_origin, server_origin=call.initial_origin, raw=call.operation is None)
+        auth.rejected = None
+        if not bound.credentials:
+            return
+        with _auth_work(call):
+            values: list[AcquiredCredential] = []
+            for index, binding in enumerate(bound.credentials):
+                call.check("auth")
+                context = _credential_context(binding, call)
+                acquired = get_credential(binding, context)
+                call.check("auth")
+                if auth.pending is not None and auth.pending[0] == index:
+                    assert isinstance(acquired.material, BearerCredential)
+                    if acquired.material.version is auth.pending[1]:
+                        acquired = refresh_credential(binding, context)
+                        call.check("auth")
+                values.append(acquired)
+            auth.credentials = HopCredentials(tuple(values))
+            auth.pending = None
+
+    @staticmethod
+    def _authenticated_request(
+        request: PreparedRequest[BodyAttempt], attempt: BodyAttempt | None, source: BodySource | None, call: _Call
+    ) -> PreparedRequest[BodyAttempt]:
+        from .auth import SigningInput  # noqa: PLC0415
+        from .auth_policy import BoundAuth, apply_signature, place_credentials, sign_request  # noqa: PLC0415
+        from .native import finalize_unsigned  # noqa: PLC0415
+        from .urls import origin_text, signing_query  # noqa: PLC0415
+
+        auth = call.auth
+        assert auth is not None
+        bound = auth.bound
+        assert isinstance(bound, BoundAuth)
+        if attempt is not request.body:
+            request = PreparedRequest(method=request.method, url=request.url, headers=request.headers, body=attempt)
+        if auth.credentials is not None:
+            request = place_credentials(request, bound, auth.credentials)
+        if not bound.signers:
+            return request
+        request = finalize_unsigned(request)
+        digest = None
+        if bound.requires_body_digest and attempt is not None:
+            from .body_sources import digest_body  # noqa: PLC0415
+
+            digest = digest_body(attempt, source, check=partial(call.check, "auth"))
+        assert call.current_origin is not None
+        for signer in bound.signers:
+            call.check("auth")
+            signing = SigningInput(
+                method=request.method,
+                url=request.url,
+                origin=origin_text(call.current_origin),
+                query=signing_query(request.url),
+                headers=request.headers,
+                body_digest=digest,
+                attempt_index=call.attempt_index,
+                hop_index=call.hop_index,
+            )
+            fields = sign_request(signer.signer, signing, signer_index=signer.index)
+            call.check("auth")
+            request = apply_signature(request, fields, signer.capabilities)
+        return request
+
+    @staticmethod
+    def _invalidate(call: _Call, *, recovering: bool) -> None:
+        from .auth_policy import BoundAuth, invalidate_credential  # noqa: PLC0415
+
+        auth = call.auth
+        assert auth is not None
+        rejected, auth.rejected = auth.rejected, None
+        assert rejected is not None
+        bound = auth.bound
+        assert isinstance(bound, BoundAuth)
+        if recovering:
+            auth.recovery_used = True
+        try:
+            with _auth_work(call):
+                invalidate_credential(bound.credentials[rejected[0]], rejected[1])
+        except Exception as error:  # noqa: BLE001
+            call.check("auth")
+            call.retry_blocked = True
+            auth.secondary_errors = (*auth.secondary_errors, error)
+            call.stop_reason = call.stop_reason or "callback_failure"
+        else:
+            if recovering:
+                auth.pending = rejected
 
     def _send(
         self,
@@ -2056,24 +2442,29 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             call.check("encode")
             call.retained()
-            if (limiter := call.settings.limiter) is not None:
-                permit = _acquire(limiter, call, request.url, events)
-                call.check("limiter")
-                if events is not None:
-                    events.emit(events.event("limiter_acquired"))
+            self._authorize(source, call)
+            while True:
+                if (limiter := call.settings.limiter) is not None:
+                    permit = _acquire(limiter, call, request.url, events)
+                    call.check("limiter")
+                    if events is not None:
+                        events.emit(events.event("limiter_acquired"))
+                if permit is None or not _reauthorizing(call):
+                    break
+                releasing, permit = permit, None
+                _released(partial(_release_permit, releasing), call.operation_id, call.call_id)
+                self._authenticate(call)
             call.check("encode")
             call.retained()
             if source is not None and call.body_enabled:
                 attempt = source.open(_context(call))
             call.check("encode")
             call.retained()
-            if attempt is not None:
-                request = PreparedRequest(
-                    method=request.method, url=request.url, headers=request.headers, body=_CheckedBody(attempt, call)
-                )
+            request = self._outgoing(request, attempt, source, call)
             if events is not None and call.hop_index == 0:
                 events.emit(events.attempting())
             call.retained()
+            _usable_credentials(call)
             io = call.io_context(trace)
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
@@ -2085,6 +2476,39 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         except BaseException as error:  # noqa: BLE001
             failure = self._send_failure(error, attempt, permit, call)
             raise failure from None
+        return self._sent(response, attempt, permit, call)
+
+    def _authorize(self, source: BodySource | None, call: _Call) -> None:
+        """Take the call's credentials before any permit, first refusing a body a signer cannot digest."""
+        if (auth := call.auth) is None:
+            return
+        if source is not None and call.body_enabled and auth.bound.requires_body_digest:
+            from .body_sources import require_digest_source  # noqa: PLC0415
+
+            require_digest_source(source)
+        self._authenticate(call)
+
+    def _outgoing(
+        self,
+        request: PreparedRequest[BodyAttempt],
+        attempt: BodyAttempt | None,
+        source: BodySource | None,
+        call: _Call,
+    ) -> PreparedRequest[BodyAttempt]:
+        """Place credentials and signatures, then check the body at each chunk as it is sent."""
+        if call.auth is not None:
+            request = self._authenticated_request(request, attempt, source, call)
+        if attempt is None:
+            return request
+        return PreparedRequest(
+            method=request.method, url=request.url, headers=request.headers, body=_CheckedBody(attempt, call)
+        )
+
+    @staticmethod
+    def _sent(
+        response: TransportResponse, attempt: BodyAttempt | None, permit: Permit | None, call: _Call
+    ) -> TransportResponse:
+        """Hand the response over with its permit once the attempt's body is released."""
         if permit is not None:
             response = _LimitedResponse(response, permit)
         if attempt is not None:
@@ -2104,8 +2528,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         call: _Call,
     ) -> BaseException:
         """Release all pre-response resources while preserving the original primary failure."""
-        events, trace = call.events, call.trace
-        failure = self._failure(error, call, _delivery(trace))
+        events = call.events
+        failure = self._failure(error, call, _delivery(call))
         if isinstance(failure, TransportError):
             call.delivery_state = failure.delivery_state
             if events is not None:
@@ -2152,6 +2576,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             shared.adapter_closed = True
             if (failure := quiet_close(shared.adapter.close)) is not None:
                 failures.append(failure)
+        if scope.owner is None and isinstance(shared.providers, OwnedProviders):
+            failures.extend(shared.providers.close())
         pending, _ = scope.pending()
         if (error := _cleanup(pending, len(remaining), timeout, _finished_closes(failures))) is not None:
             raise error
@@ -2170,12 +2596,15 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
     """Run the calls of an asyncio client and its views through one async transport adapter on one event loop."""
 
     __slots__ = ()
+    _asynchronous: ClassVar[bool] = True
 
-    async def _started(self, call: LogicalCallContext, path: str | None) -> CallEvents | None:
+    async def _started(
+        self, call: LogicalCallContext, path: str | None, options: RequestOptions | None
+    ) -> CallEvents | None:
         """Admit a call, reporting both boundary events when it is already stopped."""
         events = call_events(call.settings, call=call, path=path, asynchronous=True)
         try:
-            self._admitted(call)
+            self._admitted(call, options)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             try:
@@ -2201,12 +2630,19 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         A client created inside an event loop belongs to it; one created outside belongs to the loop of its first call.
         """
         settings = _client_settings(options, defaults)
+        if settings.auth is not None:
+            from .auth_policy import validate_auth_mode  # noqa: PLC0415
+
+            validate_auth_mode(settings.auth, asynchronous=True)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
         with suppress(RuntimeError):
             shared.loop = asyncio.get_running_loop()
-        return cls(shared, settings, Scope(), owned=owned)
+        result = cls(shared, settings, Scope(), owned=owned)
+        if settings.auth is not None:
+            result._adopt_auth(settings.auth)
+        return result
 
     def _running(self, operation_id: str | None = None, call_id: str | None = None) -> None:
         """Raise unless the caller runs on asyncio and on the loop this client belongs to."""
@@ -2234,7 +2670,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Execute one encoded logical call through its retry and redirect policy."""
         call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
         self._running(call.operation_id, call.call_id)
-        events = call.events = await self._started(call, operation.path)
+        events = call.events = await self._started(call, operation.path, options)
         decoder = operation.responses
 
         def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
@@ -2293,7 +2729,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Execute one encoded logical call through its retry and redirect policy."""
         call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
         self._running(call.operation_id, call.call_id)
-        events = call.events = await self._started(call, operation.path)
+        events = call.events = await self._started(call, operation.path, options)
         decoder = operation.responses
         result: AsyncRawResponse | None = None
         handed = False
@@ -2387,7 +2823,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Execute an unbound raw call with the same resource and retry ownership."""
         call = _Call(self._call_settings(options, None), self._scope)
         self._running(call.operation_id, call.call_id)
-        events = call.events = await self._started(call, None)
+        events = call.events = await self._started(call, None, options)
         result: AsyncRawResponse | None = None
         handed = False
 
@@ -2455,11 +2891,15 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             )
             call.check("encode")
             call.bind(self._shared.adapter.capabilities, options)
+            if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
+                self._bind_auth(call)
             if (events := call.events) is not None:
                 await events.aemit(events.starting(call.settings))
             call.check("encode")
             request, deferred = prepare()
             request = call.prepared(request)
+            if call.auth is not None:
+                self._auth_prepared(request, call)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = await bind_async_body(deferred, entry=entry, cleanup=call.cleanup)
@@ -2527,16 +2967,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                     call.trace = AttemptTrace()
                     call.phase_caps = ()
                     continue
-                planned = (
-                    call.retry(
-                        info,
-                        None,
-                        replayable=source is None or source.replayable,
-                        retry_owner=self._shared.transport.retry_owner,
-                    )
-                    if info.status_code >= _ERROR_STATUS
-                    else None
-                )
+                planned = await self._status_plan(info, source, call)
                 if planned is None:
                     result = await receive(response, info)
                     closing, response = response, None
@@ -2561,6 +2992,25 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             await self._wait_retry(planned, failure, call)
             request = original
             visited = call.restart(original)
+
+    async def _status_plan(self, info: ResponseInfo, source: AsyncBodySource | None, call: _Call) -> RetryDelay | None:
+        """Plan a status retry, invalidating a rejected credential first and keeping the response when that fails."""
+        planned = (
+            call.retry(
+                info,
+                None,
+                replayable=source is None or source.replayable,
+                retry_owner=self._shared.transport.retry_owner,
+            )
+            if info.status_code >= _ERROR_STATUS
+            else None
+        )
+        if planned is not None and planned.reason == "auth_invalid_token":
+            await self._invalidate(call, recovering=True)
+            return None if call.retry_blocked else planned
+        if planned is None and call.auth is not None and call.auth.rejected is not None:
+            await self._invalidate(call, recovering=False)
+        return planned
 
     async def _exchange_failure(
         self,
@@ -2631,11 +3081,118 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             events=call.events if stream else None,
             call=call,
             retry_stop_reason=call.stop_reason,
+            status_secondary_errors=() if call.auth is None else call.auth.secondary_errors,
         )
         call.response_transferred = True
         if not stream:
             await handle.read()
         return handle
+
+    @staticmethod
+    async def _authenticate(call: _Call) -> None:
+        from .auth import BearerCredential  # noqa: PLC0415
+        from .auth_policy import (  # noqa: PLC0415
+            AsyncBoundAuth,
+            AsyncHopCredentials,
+            aget_credential,
+            arefresh_credential,
+            authorize_hop,
+        )
+
+        auth = call.auth
+        assert auth is not None
+        bound = auth.bound
+        assert isinstance(bound, AsyncBoundAuth)
+        assert call.current_origin is not None
+        authorize_hop(bound, origin=call.current_origin, server_origin=call.initial_origin, raw=call.operation is None)
+        auth.rejected = None
+        if not bound.credentials:
+            return
+        async with _aauth_work(call):
+            values: list[AcquiredCredential] = []
+            for index, binding in enumerate(bound.credentials):
+                call.check("auth")
+                context = _credential_context(binding, call)
+                acquired = await aget_credential(binding, context)
+                call.check("auth")
+                if auth.pending is not None and auth.pending[0] == index:
+                    assert isinstance(acquired.material, BearerCredential)
+                    if acquired.material.version is auth.pending[1]:
+                        acquired = await arefresh_credential(binding, context)
+                        call.check("auth")
+                values.append(acquired)
+            auth.credentials = AsyncHopCredentials(tuple(values))
+            auth.pending = None
+
+    @staticmethod
+    async def _authenticated_request(
+        request: PreparedRequest[AsyncBodyAttempt],
+        attempt: AsyncBodyAttempt | None,
+        source: AsyncBodySource | None,
+        call: _Call,
+    ) -> PreparedRequest[AsyncBodyAttempt]:
+        from .auth import SigningInput  # noqa: PLC0415
+        from .auth_policy import AsyncBoundAuth, apply_signature, asign_request, place_credentials  # noqa: PLC0415
+        from .native import finalize_unsigned  # noqa: PLC0415
+        from .urls import origin_text, signing_query  # noqa: PLC0415
+
+        auth = call.auth
+        assert auth is not None
+        bound = auth.bound
+        assert isinstance(bound, AsyncBoundAuth)
+        if attempt is not request.body:
+            request = PreparedRequest(method=request.method, url=request.url, headers=request.headers, body=attempt)
+        if auth.credentials is not None:
+            request = place_credentials(request, bound, auth.credentials)
+        if not bound.signers:
+            return request
+        request = finalize_unsigned(request)
+        digest = None
+        if bound.requires_body_digest and attempt is not None:
+            from .body_sources import adigest_body  # noqa: PLC0415
+
+            digest = await adigest_body(attempt, source, check=partial(call.check, "auth"))
+        assert call.current_origin is not None
+        for signer in bound.signers:
+            call.check("auth")
+            signing = SigningInput(
+                method=request.method,
+                url=request.url,
+                origin=origin_text(call.current_origin),
+                query=signing_query(request.url),
+                headers=request.headers,
+                body_digest=digest,
+                attempt_index=call.attempt_index,
+                hop_index=call.hop_index,
+            )
+            fields = await asign_request(signer.signer, signing, signer_index=signer.index)
+            call.check("auth")
+            request = apply_signature(request, fields, signer.capabilities)
+        return request
+
+    @staticmethod
+    async def _invalidate(call: _Call, *, recovering: bool) -> None:
+        from .auth_policy import AsyncBoundAuth, ainvalidate_credential  # noqa: PLC0415
+
+        auth = call.auth
+        assert auth is not None
+        rejected, auth.rejected = auth.rejected, None
+        assert rejected is not None
+        bound = auth.bound
+        assert isinstance(bound, AsyncBoundAuth)
+        if recovering:
+            auth.recovery_used = True
+        try:
+            async with _aauth_work(call):
+                await ainvalidate_credential(bound.credentials[rejected[0]], rejected[1])
+        except Exception as error:  # noqa: BLE001
+            call.check("auth")
+            call.retry_blocked = True
+            auth.secondary_errors = (*auth.secondary_errors, error)
+            call.stop_reason = call.stop_reason or "callback_failure"
+        else:
+            if recovering:
+                auth.pending = rejected
 
     async def _send(
         self,
@@ -2650,27 +3207,29 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             call.check("encode")
             call.retained()
-            if (limiter := call.settings.limiter) is not None:
-                permit = await _aacquire(limiter, call, request.url, events)
-                call.check("limiter")
-                if events is not None:
-                    await events.aemit(events.event("limiter_acquired"))
+            await self._authorize(source, call)
+            while True:
+                if (limiter := call.settings.limiter) is not None:
+                    permit = await _aacquire(limiter, call, request.url, events)
+                    call.check("limiter")
+                    if events is not None:
+                        await events.aemit(events.event("limiter_acquired"))
+                if permit is None or not _reauthorizing(call):
+                    break
+                releasing, permit = permit, None
+                await call.cleanup(partial(_arelease_permit, releasing))
+                await self._authenticate(call)
             call.check("encode")
             call.retained()
             if source is not None and call.body_enabled:
                 attempt = await source.aopen(_context(call))
             call.check("encode")
             call.retained()
-            if attempt is not None:
-                request = PreparedRequest(
-                    method=request.method,
-                    url=request.url,
-                    headers=request.headers,
-                    body=_AsyncCheckedBody(attempt, call),
-                )
+            request = await self._outgoing(request, attempt, source, call)
             if events is not None and call.hop_index == 0:
                 await events.aemit(events.attempting())
             call.retained()
+            _usable_credentials(call)
             io = call.io_context(trace)
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
@@ -2682,6 +3241,39 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         except BaseException as error:  # noqa: BLE001
             failure = await self._send_failure(error, attempt, permit, call)
             raise failure from None
+        return await self._sent(response, attempt, permit, call)
+
+    async def _authorize(self, source: AsyncBodySource | None, call: _Call) -> None:
+        """Take the call's credentials before any permit, first refusing a body a signer cannot digest."""
+        if (auth := call.auth) is None:
+            return
+        if source is not None and call.body_enabled and auth.bound.requires_body_digest:
+            from .body_sources import require_digest_source  # noqa: PLC0415
+
+            require_digest_source(source)
+        await self._authenticate(call)
+
+    async def _outgoing(
+        self,
+        request: PreparedRequest[AsyncBodyAttempt],
+        attempt: AsyncBodyAttempt | None,
+        source: AsyncBodySource | None,
+        call: _Call,
+    ) -> PreparedRequest[AsyncBodyAttempt]:
+        """Place credentials and signatures, then check the body at each chunk as it is sent."""
+        if call.auth is not None:
+            request = await self._authenticated_request(request, attempt, source, call)
+        if attempt is None:
+            return request
+        return PreparedRequest(
+            method=request.method, url=request.url, headers=request.headers, body=_AsyncCheckedBody(attempt, call)
+        )
+
+    @staticmethod
+    async def _sent(
+        response: AsyncTransportResponse, attempt: AsyncBodyAttempt | None, permit: AsyncPermit | None, call: _Call
+    ) -> AsyncTransportResponse:
+        """Hand the response over with its permit once the attempt's body is released."""
         if permit is not None:
             response = _AsyncLimitedResponse(response, permit)
         if attempt is not None and not isinstance(attempt, EncodedAttempt):
@@ -2701,8 +3293,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         call: _Call,
     ) -> BaseException:
         """Release all pre-response resources while preserving the original primary failure."""
-        events, trace = call.events, call.trace
-        failure = self._failure(error, call, _delivery(trace))
+        events = call.events
+        failure = self._failure(error, call, _delivery(call))
         if isinstance(failure, TransportError):
             call.delivery_state = failure.delivery_state
             if events is not None:
@@ -2758,8 +3350,16 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         await asyncio.wait({task}, timeout=timeout)
         if not task.done():
             pending, remaining = scope.pending()
+            providers = (
+                shared.providers.pending()
+                if scope.owner is None and isinstance(shared.providers, AsyncOwnedProviders)
+                else 0
+            )
             raise CleanupError(
-                pending_calls=pending if pending or remaining else 1, pending_leases=remaining, timeout=timeout
+                pending_calls=pending if pending or remaining or providers else 1,
+                pending_leases=remaining,
+                pending_providers=providers,
+                timeout=timeout,
             )
         await scope.adrain(max(0.0, deadline - monotonic()))
         pending, remaining = scope.pending()

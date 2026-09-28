@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Final
 
 import httpx2
@@ -31,6 +32,7 @@ def _origin(url: httpx2.URL) -> Origin:
     return url.scheme, url.raw_host.decode("ascii"), port if port is not None else 443 if url.scheme == "https" else 80
 
 
+@lru_cache(maxsize=256)
 def canonical_origin(value: str) -> Origin:
     """Canonicalize a structurally validated configured origin using native URL semantics."""
     return _origin(httpx2.URL(value))
@@ -41,6 +43,18 @@ def absolute_target(url: str) -> URLTarget:
     parsed = httpx2.URL(url)
     origin = _origin(parsed)
     return URLTarget(str(parsed.copy_with(fragment=None)) if "#" in url else str(parsed), origin)
+
+
+@lru_cache(maxsize=256)
+def origin_text(origin: Origin) -> str:
+    """Serialize a canonical HTTP origin, including native IPv6 and default-port formatting."""
+    scheme, host, port = origin
+    return str(httpx2.URL(scheme=scheme, host=host, port=port))
+
+
+def signing_query(url: str) -> bytes:
+    """Read the finalized native URL's raw query without decoding or rebuilding its fields."""
+    return httpx2.URL(url).query
 
 
 def redirect_target(current_url: str, location: str) -> URLTarget:

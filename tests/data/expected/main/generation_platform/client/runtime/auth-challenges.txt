@@ -1,0 +1,305 @@
+# auth pydantic_v2.BaseModel
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge quoted = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge token = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge mixed case = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge multiple fields = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge quoted comma = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge escaped quote = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge escaped error = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge token68 = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge bare scheme = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge empty members = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge wrong error case ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge quoted padding ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge description only ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge scope ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge scope veto ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge scope field veto ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge duplicate parameter ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge unclosed quote ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge unclosed escape ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge missing scheme ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge invalid scheme ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge invalid parameter ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge token68 continuation ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge independent valid field = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge empty field ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  challenge absent ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/challenge-less
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/challenge-less
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  auth gate challenge-less permitted = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/challenge-less
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  auth gate challenge-less empty forbidden ! ChallengeLessHTTPError: ChallengeLessHTTPError(status_code=401, operation_id='challenge_less', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='challenge_less', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] challenge_less_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  auth gate 403 no recovery ! BearerHTTPError: BearerHTTPError(status_code=403, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=403, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  auth gate 407 no recovery ! BearerHTTPError: BearerHTTPError(status_code=407, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=407, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, authorization: Bearer first-material, content-length: 7] b'request'
+  auth gate disabled before unsafe ! UnsafeAuthHTTPError: UnsafeAuthHTTPError(status_code=401, operation_id='unsafe_auth', call_id='<call>', retry_stop_reason='disabled') [operation_id='unsafe_auth', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] unsafe_auth_http_error
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, authorization: Bearer first-material, content-length: 7] b'request'
+  auth gate unsafe no recovery ! UnsafeAuthHTTPError: UnsafeAuthHTTPError(status_code=401, operation_id='unsafe_auth', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='unsafe_auth', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] unsafe_auth_http_error
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
+  > POST https://api.example.com/idempotent
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, content-type: application/octet-stream, authorization: Bearer first-material, transfer-encoding: chunked] b'request'
+  auth gate body before safety ! IdempotentAuthHTTPError: IdempotentAuthHTTPError(status_code=401, operation_id='idempotent_auth', call_id='<call>', retry_stop_reason='body_not_replayable') [operation_id='idempotent_auth', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] idempotent_auth_http_error
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
+  > GET https://api.example.com/never
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  auth gate never before disabled ! NeverAuthHTTPError: NeverAuthHTTPError(status_code=401, operation_id='never_auth', call_id='<call>', retry_stop_reason='operation_never') [operation_id='never_auth', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] never_auth_http_error
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  auth gate server false before disabled ! VendorAuthHTTPError: VendorAuthHTTPError(status_code=401, operation_id='vendor_auth', call_id='<call>', retry_stop_reason='server_forbids_retry') [operation_id='vendor_auth', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] vendor_auth_http_error
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  auth gate network unavailable ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='network_budget_exhausted') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  auth gate server delay capped ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='server_delay_exceeds_limit') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True)] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  newer publication skips refresh = Response(b'adopted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '7')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, False), ('get', 'bearer', ())] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge quoted = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge token = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge mixed case = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge multiple fields = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge quoted comma = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge escaped quote = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge escaped error = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge token68 = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge bare scheme = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge empty members = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge wrong error case ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge quoted padding ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge description only ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge scope ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge scope veto ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge scope field veto ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge duplicate parameter ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge unclosed quote ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge unclosed escape ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge missing scheme ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge invalid scheme ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge invalid parameter ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge token68 continuation ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge independent valid field = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge empty field ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  async challenge absent ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
+    callbacks=[('get', 'bearer', ())] unused=1

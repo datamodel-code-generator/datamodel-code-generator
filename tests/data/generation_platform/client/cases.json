@@ -1208,5 +1208,208 @@
         }
       ]
     }
+  },
+  "auth": {
+    "input": "auth.yaml",
+    "references": [
+      "auth-unobserved.yaml"
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1challenge-less/get",
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
+        },
+        {
+          "ref": "/paths/~1idempotent/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        },
+        {
+          "ref": "/paths/~1never/get",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1vendor/get",
+          "runtime": {
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        {
+          "ref": "/paths/~1signed-multipart/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "model": {
+      "input_filename": "auth.yaml"
+    }
+  },
+  "auth-no-root": {
+    "input": "auth-no-root.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1absent/get",
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
+        }
+      ]
+    }
+  },
+  "auth-errors": {
+    "input": "auth-errors.yaml"
+  },
+  "auth-wire-conflicts": {
+    "input": "auth-wire-conflicts.yaml"
+  },
+  "auth-context": {
+    "input": "auth-context.yaml",
+    "references": [
+      "retry-security-context-external.yaml"
+    ]
+  },
+  "auth-changed": {
+    "input": "auth-changed.yaml",
+    "references": [
+      "auth-unobserved.yaml"
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1challenge-less/get",
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
+        },
+        {
+          "ref": "/paths/~1idempotent/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        },
+        {
+          "ref": "/paths/~1never/get",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1vendor/get",
+          "runtime": {
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        {
+          "ref": "/paths/~1signed-multipart/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "modules": false,
+    "model": {
+      "input_filename": "auth.yaml"
+    }
+  },
+  "auth-cosmetic": {
+    "input": "auth-cosmetic.yaml",
+    "references": [
+      "auth-unobserved.yaml"
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1challenge-less/get",
+          "runtime": {
+            "auth_challenge_less_401": true
+          }
+        },
+        {
+          "ref": "/paths/~1idempotent/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        },
+        {
+          "ref": "/paths/~1never/get",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1vendor/get",
+          "runtime": {
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        {
+          "ref": "/paths/~1signed-multipart/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "modules": false,
+    "model": {
+      "input_filename": "auth.yaml"
+    }
+  },
+  "auth-no-challenge": {
+    "input": "auth.yaml",
+    "references": [
+      "auth-unobserved.yaml"
+    ],
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1challenge-less/get",
+          "runtime": {
+            "auth_challenge_less_401": false
+          }
+        },
+        {
+          "ref": "/paths/~1idempotent/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        },
+        {
+          "ref": "/paths/~1never/get",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1vendor/get",
+          "runtime": {
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        {
+          "ref": "/paths/~1signed-multipart/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "model": {
+      "input_filename": "auth.yaml"
+    }
   }
 }

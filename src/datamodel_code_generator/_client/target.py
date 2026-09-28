@@ -23,6 +23,7 @@ from datamodel_code_generator._client.plan import (
     style_uses,
 )
 from datamodel_code_generator._client.render import ClientRenderer
+from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
@@ -337,7 +338,9 @@ class _TargetData:
                 for item in spec.responses
             ],
         }
-        security = next((value for key, value in spec.contract.facts if key == "security"), None)
+        security = security_contract(
+            self.request.batch, spec.contract, spec.security, challenge_less=spec.auth_challenge_less_401
+        )
         return (("signature", signature), ("request", request), ("response", response), ("security", security))
 
     @staticmethod

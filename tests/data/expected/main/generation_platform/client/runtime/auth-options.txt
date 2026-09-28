@@ -1,0 +1,89 @@
+# auth pydantic_v2.BaseModel
+  sync h1 root selection = b'ready'
+  inherited view = b'ready'
+  inherited request = b'ready'
+  replacement resets selection and signer = b'ready'
+  request replaces credentials = b'ready'
+  request does not merge credentials ! AuthConfigurationError: AuthConfigurationError(operation_id='bearer', call_id='<call>', condition='missing_credentials') [operation_id='bearer', field_path=('auth', 'credentials'), condition='missing_credentials'] auth_configuration_error
+  request clears on anonymous = b'ready'
+  request clear rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='or_auth', call_id='<call>', condition='missing_credentials') [operation_id='or_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  view clear selects anonymity = b'ready'
+  cleared view inherits None = b'ready'
+  cleared view rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='inherited_auth', call_id='<call>', condition='missing_credentials') [operation_id='inherited_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  sync h1 before root close=(0, 0, 0, 0, 0, 0)
+  sync h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  sync h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  sync h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  sync h1 wire path=b'/or' body=b'' auth=((b'x-api-key', b'view-key'),)
+  sync h1 wire path=b'/or' body=b'' auth=((b'x-api-key', b'call-key'),)
+  sync h1 wire path=b'/anonymous' body=b'' auth=()
+  sync h1 wire path=b'/optional-token-first' body=b'' auth=()
+  sync h1 wire path=b'/empty' body=b'' auth=()
+  sync h1 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  sync h1 total sends=8
+  sync h2 root selection = b'ready'
+  inherited view = b'ready'
+  inherited request = b'ready'
+  replacement resets selection and signer = b'ready'
+  request replaces credentials = b'ready'
+  request does not merge credentials ! AuthConfigurationError: AuthConfigurationError(operation_id='bearer', call_id='<call>', condition='missing_credentials') [operation_id='bearer', field_path=('auth', 'credentials'), condition='missing_credentials'] auth_configuration_error
+  request clears on anonymous = b'ready'
+  request clear rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='or_auth', call_id='<call>', condition='missing_credentials') [operation_id='or_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  view clear selects anonymity = b'ready'
+  cleared view inherits None = b'ready'
+  cleared view rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='inherited_auth', call_id='<call>', condition='missing_credentials') [operation_id='inherited_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  sync h2 before root close=(0, 0, 0, 0, 0, 0)
+  sync h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  sync h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  sync h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  sync h2 wire path=b'/or' body=b'' auth=((b'x-api-key', b'view-key'),)
+  sync h2 wire path=b'/or' body=b'' auth=((b'x-api-key', b'call-key'),)
+  sync h2 wire path=b'/anonymous' body=b'' auth=()
+  sync h2 wire path=b'/optional-token-first' body=b'' auth=()
+  sync h2 wire path=b'/empty' body=b'' auth=()
+  sync h2 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  sync h2 total sends=8
+  async h1 root selection = b'ready'
+  inherited view = b'ready'
+  inherited request = b'ready'
+  replacement resets selection and signer = b'ready'
+  request replaces credentials = b'ready'
+  request does not merge credentials ! AuthConfigurationError: AuthConfigurationError(operation_id='bearer', call_id='<call>', condition='missing_credentials') [operation_id='bearer', field_path=('auth', 'credentials'), condition='missing_credentials'] auth_configuration_error
+  request clears on anonymous = b'ready'
+  request clear rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='or_auth', call_id='<call>', condition='missing_credentials') [operation_id='or_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  view clear selects anonymity = b'ready'
+  cleared view inherits None = b'ready'
+  cleared view rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='inherited_auth', call_id='<call>', condition='missing_credentials') [operation_id='inherited_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  async h1 before root close=(0, 0, 0, 0, 0, 0)
+  async h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  async h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  async h1 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  async h1 wire path=b'/or' body=b'' auth=((b'x-api-key', b'view-key'),)
+  async h1 wire path=b'/or' body=b'' auth=((b'x-api-key', b'call-key'),)
+  async h1 wire path=b'/anonymous' body=b'' auth=()
+  async h1 wire path=b'/optional-token-first' body=b'' auth=()
+  async h1 wire path=b'/empty' body=b'' auth=()
+  async h1 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  async h1 total sends=8
+  async h2 root selection = b'ready'
+  inherited view = b'ready'
+  inherited request = b'ready'
+  replacement resets selection and signer = b'ready'
+  request replaces credentials = b'ready'
+  request does not merge credentials ! AuthConfigurationError: AuthConfigurationError(operation_id='bearer', call_id='<call>', condition='missing_credentials') [operation_id='bearer', field_path=('auth', 'credentials'), condition='missing_credentials'] auth_configuration_error
+  request clears on anonymous = b'ready'
+  request clear rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='or_auth', call_id='<call>', condition='missing_credentials') [operation_id='or_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  view clear selects anonymity = b'ready'
+  cleared view inherits None = b'ready'
+  cleared view rejects required ! AuthConfigurationError: AuthConfigurationError(operation_id='inherited_auth', call_id='<call>', condition='missing_credentials') [operation_id='inherited_auth', field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  async h2 before root close=(0, 0, 0, 0, 0, 0)
+  async h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  async h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  async h2 wire path=b'/or' body=b'' auth=((b'authorization', b'Bearer root-token'), (b'x-layer-signature', b'root-signature'))
+  async h2 wire path=b'/or' body=b'' auth=((b'x-api-key', b'view-key'),)
+  async h2 wire path=b'/or' body=b'' auth=((b'x-api-key', b'call-key'),)
+  async h2 wire path=b'/anonymous' body=b'' auth=()
+  async h2 wire path=b'/optional-token-first' body=b'' auth=()
+  async h2 wire path=b'/empty' body=b'' auth=()
+  async h2 calls=(3, 0, 1, 0, 1, 0) signer calls=3 closes=(1, 0, 1, 0, 1, 1)
+  async h2 total sends=8

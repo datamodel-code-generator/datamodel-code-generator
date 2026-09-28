@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Authentication generation
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /header:
+    get:
+      operationId: header
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - header: []
+      parameters:
+        - name: x-key
+          in: header
+          schema:
+            type: string
+  /query:
+    get:
+      operationId: query
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - query: []
+      parameters:
+        - name: key
+          in: query
+          schema:
+            type: string
+  /cookie:
+    get:
+      operationId: cookie
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - cookie: []
+      parameters:
+        - name: session
+          in: cookie
+          schema:
+            type: string
+  /expanded:
+    get:
+      operationId: expanded
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - query: []
+      parameters:
+        - name: filters
+          in: query
+          explode: true
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+components:
+  securitySchemes:
+    header:
+      type: apiKey
+      in: header
+      name: X-Key
+    query:
+      type: apiKey
+      in: query
+      name: key
+    cookie:
+      type: apiKey
+      in: cookie
+      name: session

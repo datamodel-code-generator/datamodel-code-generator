@@ -1,0 +1,176 @@
+# auth pydantic_v2.BaseModel
+  bodyless = b'ok'
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 0, None)] pending=0
+  empty = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 0, True)] pending=0
+  abc = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 3, True)] pending=0
+  large bytes = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 131089, True)] pending=0
+  bodyless hop then original replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('GET', 0, 1, None, True, True), ('PUT', 1, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 3, True), ('GET', b'/hop-0', 0, None), ('PUT', b'/signed', 3, True)] pending=0
+  borrowed file digest replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 65549, True), ('PUT', b'/signed', 65549, True), ('PUT', b'/hop-1', 65549, True)] pending=0
+    closed=False closes=0 reads=[65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536]
+  owned file digest replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 65549, True), ('PUT', b'/signed', 65549, True), ('PUT', b'/hop-1', 65549, True)] pending=0
+    closed=True closes=1 reads=[65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536]
+  past EOF digest = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 0, True)] pending=0
+    final offset=2 borrowed_open=True
+  path digest replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 72000, True), ('PUT', b'/signed', 72000, True)] pending=0
+  declared factory digest = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 7, True), ('PUT', b'/signed', 7, True), ('PUT', b'/hop-1', 7, True)] pending=0
+    contexts=[(0, 0), (1, 0), (1, 1)] attempts=[(1, 1), (1, 1), (1, 1)]
+  fingerprint is not a digest ! SigningConfigurationError: SigningConfigurationError(operation_id='signed_body', call_id='<call>', condition='digest_unavailable') [operation_id='signed_body', field_path=('body', 'sha256'), condition='digest_unavailable'] signing_configuration_error
+    signed=[]
+    wire=[] pending=1
+    factories=0
+  invalid digest bytes 0 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  invalid digest bytes 31 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  invalid digest bytes 33 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  invalid digest str 32 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  invalid digest bytearray 32 ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  factory without required digest = b'ok'
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 7, None)] pending=0
+    attempts=[(1, 1)]
+  multipart bytes exact wire = b'ok'
+    signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
+    wire=[('POST', b'/signed-multipart', 302, True), ('POST', b'/signed-multipart', 302, True), ('POST', b'/hop-1', 302, True)] pending=0
+    stable_body=True stable_type=True
+  multipart file exact wire = b'ok'
+    signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
+    wire=[('POST', b'/signed-multipart', 302, True), ('POST', b'/signed-multipart', 302, True), ('POST', b'/hop-1', 302, True)] pending=0
+    stable_body=True stable_type=True
+  multipart path exact wire = b'ok'
+    signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
+    wire=[('POST', b'/signed-multipart', 72298, True), ('POST', b'/signed-multipart', 72298, True), ('POST', b'/hop-1', 72298, True)] pending=0
+    stable_body=True stable_type=True
+  part digest is not multipart digest ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    factories=0
+  multipart factory without required digest = b'ok'
+    signed=[('POST', 0, 0, None, True, True)]
+    wire=[('POST', b'/signed-multipart', 176, None)] pending=0
+  unsupported body stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='stream', condition='digest_unavailable') [operation_id='signed_body', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=1 file_reads=[] file_closes=0
+  unsupported body file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='file', condition='not_seekable') [operation_id='signed_body', condition='not_seekable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=0 file_reads=[] file_closes=1
+  unsupported multipart stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=1 file_reads=[] file_closes=0
+  unsupported multipart file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=0 file_reads=[] file_closes=1
+  no hash anonymous = b'ok'
+    signed=[]
+    wire=[('PUT', b'/signed', 3, None)] pending=0
+    reads=[65536, 65536] borrowed_open=True
+  no hash signer = b'ok'
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 3, None)] pending=0
+    reads=[65536, 65536] borrowed_open=True
+  async bodyless = b'ok'
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 0, None)] pending=0
+  async empty = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 0, True)] pending=0
+  async abc = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 3, True)] pending=0
+  async large bytes = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 131089, True)] pending=0
+  async bodyless hop then original replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('GET', 0, 1, None, True, True), ('PUT', 1, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 3, True), ('GET', b'/hop-0', 0, None), ('PUT', b'/signed', 3, True)] pending=0
+  async borrowed file digest replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 65549, True), ('PUT', b'/signed', 65549, True), ('PUT', b'/hop-1', 65549, True)] pending=0
+    closed=False closes=0 reads=[65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536]
+  async owned file digest replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 65549, True), ('PUT', b'/signed', 65549, True), ('PUT', b'/hop-1', 65549, True)] pending=0
+    closed=True closes=1 reads=[65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536, 65536]
+  async past EOF digest = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 0, True)] pending=0
+    final offset=2 borrowed_open=True
+  async path digest replay = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 72000, True), ('PUT', b'/signed', 72000, True)] pending=0
+  async declared factory digest = b'ok'
+    signed=[('PUT', 0, 0, 'digest0', True, True), ('PUT', 1, 0, 'digest0', True, True), ('PUT', 1, 1, 'digest0', True, True)]
+    wire=[('PUT', b'/signed', 7, True), ('PUT', b'/signed', 7, True), ('PUT', b'/hop-1', 7, True)] pending=0
+    contexts=[(0, 0), (1, 0), (1, 1)] attempts=[(1, 1), (1, 1), (1, 1)]
+  async missing factory digest ! SigningConfigurationError: SigningConfigurationError(operation_id='signed_body', call_id='<call>', condition='digest_unavailable') [operation_id='signed_body', field_path=('body', 'sha256'), condition='digest_unavailable'] signing_configuration_error
+    signed=[]
+    wire=[] pending=1
+    factories=0
+  async invalid digest ! ConfigurationError: ConfigurationError(field_path='sha256', condition='invalid_value') [field_path=('sha256',), condition='invalid_value'] configuration_error
+  async factory without required digest = b'ok'
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 7, None)] pending=0
+  async multipart bytes exact wire = b'ok'
+    signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
+    wire=[('POST', b'/signed-multipart', 302, True), ('POST', b'/signed-multipart', 302, True), ('POST', b'/hop-1', 302, True)] pending=0
+    stable_body=True stable_type=True
+  async multipart file exact wire = b'ok'
+    signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
+    wire=[('POST', b'/signed-multipart', 302, True), ('POST', b'/signed-multipart', 302, True), ('POST', b'/hop-1', 302, True)] pending=0
+    stable_body=True stable_type=True
+  async multipart path exact wire = b'ok'
+    signed=[('POST', 0, 0, 'digest0', True, True), ('POST', 1, 0, 'digest0', True, True), ('POST', 1, 1, 'digest0', True, True)]
+    wire=[('POST', b'/signed-multipart', 72298, True), ('POST', b'/signed-multipart', 72298, True), ('POST', b'/hop-1', 72298, True)] pending=0
+    stable_body=True stable_type=True
+  async part digest is not multipart digest ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    factories=0
+  async multipart factory without required digest = b'ok'
+    signed=[('POST', 0, 0, None, True, True)]
+    wire=[('POST', b'/signed-multipart', 176, None)] pending=0
+  async unsupported body stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='stream', condition='digest_unavailable') [operation_id='signed_body', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=1 file_reads=[] file_closes=0
+  async unsupported body file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_body', call_id='<call>', source_kind='file', condition='not_seekable') [operation_id='signed_body', condition='not_seekable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=0 file_reads=[] file_closes=1
+  async unsupported multipart stream ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=1 file_reads=[] file_closes=0
+  async unsupported multipart file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='signed_multipart', call_id='<call>', source_kind='multipart', condition='digest_unavailable') [operation_id='signed_multipart', condition='digest_unavailable'] body_not_replayable_error
+    signed=[]
+    wire=[] pending=1
+    begins=0 stream_closes=0 file_reads=[] file_closes=1
+  async no hash anonymous = b'ok'
+    signed=[]
+    wire=[('PUT', b'/signed', 3, None)] pending=0
+    reads=[65536, 65536] borrowed_open=True
+  async no hash signer = b'ok'
+    signed=[('PUT', 0, 0, None, True, True)]
+    wire=[('PUT', b'/signed', 3, None)] pending=0
+    reads=[65536, 65536] borrowed_open=True

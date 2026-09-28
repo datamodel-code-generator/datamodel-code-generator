@@ -183,6 +183,7 @@ def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]
             output_model_type=DataModelType.PydanticV2BaseModel,
             disable_timestamp=True,
             formatters=[Formatter.BUILTIN],
+            **case.get("model", {}),
         ),
         config=config,
         generator=ClientTarget(),
@@ -225,10 +226,13 @@ def client_documentation_report(case_name: str, root: Path) -> str:
     documents: dict[str, str] = {}
     lines = _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents)
     return (
-        "\n".join((
+        "\n"
+        .join((
             *lines,
             *(f"\n# artifact {path}\n{content}" for path, content in documents.items()),
-        )).replace(root.resolve().as_posix(), "<root>").rstrip("\n")
+        ))
+        .replace(root.resolve().as_posix(), "<root>")
+        .rstrip("\n")
         + "\n"
     )
 

@@ -1,0 +1,107 @@
+# auth
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/resources/__init__.py
+  write client/resources/auth/__init__.py
+  write client/resources/auth/_sync.py
+  write client/resources/auth/_async.py
+  write client/types/__init__.py
+  write client/types/auth/__init__.py
+  write client/types/auth/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 1
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 auth.inherited_auth()
+    exports client.types.auth.InheritedAuthResponse client.types.auth.InheritedAuthErrorData client.types.auth.InheritedAuthHTTPError
+    exports client.types.auth.InheritedAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 auth.anonymous()
+    exports client.types.auth.AnonymousResponse client.types.auth.AnonymousErrorData client.types.auth.AnonymousHTTPError
+    exports client.types.auth.AnonymousRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 auth.empty_security()
+    exports client.types.auth.EmptySecurityResponse client.types.auth.EmptySecurityErrorData client.types.auth.EmptySecurityHTTPError
+    exports client.types.auth.EmptySecurityRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 auth.optional_auth()
+    exports client.types.auth.OptionalAuthResponse client.types.auth.OptionalAuthErrorData client.types.auth.OptionalAuthHTTPError
+    exports client.types.auth.OptionalAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 auth.optional_token_first()
+    exports client.types.auth.OptionalTokenFirstResponse client.types.auth.OptionalTokenFirstErrorData client.types.auth.OptionalTokenFirstHTTPError
+    exports client.types.auth.OptionalTokenFirstRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 auth.and_auth()
+    exports client.types.auth.AndAuthResponse client.types.auth.AndAuthErrorData client.types.auth.AndAuthHTTPError
+    exports client.types.auth.AndAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 auth.or_auth()
+    exports client.types.auth.OrAuthResponse client.types.auth.OrAuthErrorData client.types.auth.OrAuthHTTPError
+    exports client.types.auth.OrAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 auth.authorization_or()
+    exports client.types.auth.AuthorizationOrResponse client.types.auth.AuthorizationOrErrorData client.types.auth.AuthorizationOrHTTPError
+    exports client.types.auth.AuthorizationOrRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 auth.api_key_header()
+    exports client.types.auth.ApiKeyHeaderResponse client.types.auth.ApiKeyHeaderErrorData client.types.auth.ApiKeyHeaderHTTPError
+    exports client.types.auth.ApiKeyHeaderRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 auth.api_key_query()
+    exports client.types.auth.ApiKeyQueryResponse client.types.auth.ApiKeyQueryErrorData client.types.auth.ApiKeyQueryHTTPError
+    exports client.types.auth.ApiKeyQueryRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 auth.api_key_cookie()
+    exports client.types.auth.ApiKeyCookieResponse client.types.auth.ApiKeyCookieErrorData client.types.auth.ApiKeyCookieHTTPError
+    exports client.types.auth.ApiKeyCookieRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/11 auth.basic()
+    exports client.types.auth.BasicResponse client.types.auth.BasicErrorData client.types.auth.BasicHTTPError
+    exports client.types.auth.BasicRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/12 auth.bearer()
+    exports client.types.auth.BearerResponse client.types.auth.BearerErrorData client.types.auth.BearerHTTPError
+    exports client.types.auth.BearerRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/13 auth.alias_auth()
+    exports client.types.auth.AliasAuthResponse client.types.auth.AliasAuthErrorData client.types.auth.AliasAuthHTTPError
+    exports client.types.auth.AliasAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/14 auth.oauth_read()
+    exports client.types.auth.OauthReadResponse client.types.auth.OauthReadErrorData client.types.auth.OauthReadHTTPError
+    exports client.types.auth.OauthReadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/15 auth.oauth_scopes()
+    exports client.types.auth.OauthScopesResponse client.types.auth.OauthScopesErrorData client.types.auth.OauthScopesHTTPError
+    exports client.types.auth.OauthScopesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/16 auth.oauth_empty()
+    exports client.types.auth.OauthEmptyResponse client.types.auth.OauthEmptyErrorData client.types.auth.OauthEmptyHTTPError
+    exports client.types.auth.OauthEmptyRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/17 auth.openid_read()
+    exports client.types.auth.OpenidReadResponse client.types.auth.OpenidReadErrorData client.types.auth.OpenidReadHTTPError
+    exports client.types.auth.OpenidReadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/18 auth.challenge_less()
+    exports client.types.auth.ChallengeLessResponse client.types.auth.ChallengeLessErrorData client.types.auth.ChallengeLessHTTPError
+    exports client.types.auth.ChallengeLessRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/19 auth.unsafe_auth()
+    exports client.types.auth.UnsafeAuthResponse client.types.auth.UnsafeAuthErrorData client.types.auth.UnsafeAuthHTTPError
+    exports client.types.auth.UnsafeAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/20 auth.idempotent_auth()
+    exports client.types.auth.IdempotentAuthResponse client.types.auth.IdempotentAuthErrorData client.types.auth.IdempotentAuthHTTPError
+    exports client.types.auth.IdempotentAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/21 auth.never_auth()
+    exports client.types.auth.NeverAuthResponse client.types.auth.NeverAuthErrorData client.types.auth.NeverAuthHTTPError
+    exports client.types.auth.NeverAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/22 auth.vendor_auth()
+    exports client.types.auth.VendorAuthResponse client.types.auth.VendorAuthErrorData client.types.auth.VendorAuthHTTPError
+    exports client.types.auth.VendorAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/23 auth.signed_body()
+    exports client.types.auth.SignedBodyResponse client.types.auth.SignedBodyErrorData client.types.auth.SignedBodyHTTPError
+    exports client.types.auth.SignedBodyRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/24 auth.signed_multipart()
+    exports client.types.auth.SignedMultipartResponse client.types.auth.SignedMultipartErrorData client.types.auth.SignedMultipartHTTPError
+    exports client.types.auth.SignedMultipartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

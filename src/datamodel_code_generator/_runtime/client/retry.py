@@ -114,7 +114,7 @@ def status_retry_reason(status: int, retry: ResolvedRetryOptions, *, hint: bool 
 class RetryState:
     """Immutable facts at one retry decision boundary."""
 
-    failure_kind: Literal["status", "transport"]
+    failure_kind: Literal["status", "transport", "auth"]
     reason: RetryReason | None
     method: str
     retry_safety: Literal["method_default", "idempotent", "never"]
@@ -146,13 +146,20 @@ def replay_safe(
     )
 
 
+_NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
+    "auth": "auth_unrefreshable",
+    "status": "status_not_retryable",
+    "transport": "transport_not_retryable",
+}
+
+
 def _policy_stop(
     state: RetryState,
     retry: ResolvedRetryOptions,
     retry_owner: Literal["sdk", "transport"],
 ) -> RetryStopReason | None:
     if state.reason is None or (state.reason == "pool_timeout" and not retry.retry_on_pool_timeout):
-        return "status_not_retryable" if state.failure_kind == "status" else "transport_not_retryable"
+        return _NOT_RETRYABLE[state.failure_kind]
     if retry_owner == "transport":
         return "retry_owned_by_transport"
     if state.retry_safety == "never":
@@ -170,12 +177,20 @@ def retry_stop(
     *,
     retry_owner: Literal["sdk", "transport"],
     now: float,
+    auth_recovery_used: bool = False,
 ) -> RetryStopReason | None:
     """Return the first failed retry gate, after termination precedence has been checked."""
     if (stop := _policy_stop(state, retry, retry_owner)) is not None:
         return stop
     if state.resource_attempt_count >= 1 + retry.max_retries:
         return "max_retries_exhausted"
+    if state.reason == "auth_invalid_token" and auth_recovery_used:
+        return "auth_recovery_exhausted"
+    return _replay_stop(state, now=now)
+
+
+def _replay_stop(state: RetryState, *, now: float) -> RetryStopReason | None:
+    """Return why the request cannot be sent again: its body, its safety, or the network budget."""
     if not state.body_replayable:
         return "body_not_replayable"
     safe = replay_safe(

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Literal
 import httpx2
 from typing_extensions import Self
 
+from ._generated import security
 from ._runtime.client.client import ClientCore, ClientDefaults
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import BodyInput
@@ -22,7 +23,7 @@ from .transports import OwnedTransportAdapter, TransportAdapter
 if TYPE_CHECKING:
     from .resources.headers._sync import HeadersResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults(user_agent=None, security_schemes=security.ROOT_SCHEMES)
 
 
 class Client:

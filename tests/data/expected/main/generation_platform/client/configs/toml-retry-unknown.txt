@@ -1,2 +1,2 @@
 APIGenerationError
-  E_CONFIG_UNKNOWN config operations[0].runtime.auth_challenge_less_401: operations[0].runtime has no key 'auth_challenge_less_401'
+  E_CONFIG_UNKNOWN config operations[0].runtime.unknown_runtime_setting: operations[0].runtime has no key 'unknown_runtime_setting'

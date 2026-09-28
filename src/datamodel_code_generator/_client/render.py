@@ -19,6 +19,7 @@ from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._generation_contract import UnionType
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
+from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._target_render import field_plan, items, parameter_plan, runtime_sources
 
@@ -138,9 +139,50 @@ __all__ = [
     "ValidationOptions",
 ]
 '''
+_AUTH_NAMES: Final = (
+    "AccessToken",
+    "ApiKeyCredential",
+    "AsyncCloseableCredentialProvider",
+    "AsyncCredentialProvider",
+    "AsyncEnvironmentCredentialProvider",
+    "AsyncRefreshableTokenProvider",
+    "AsyncRequestSigner",
+    "AsyncStaticCredentialProvider",
+    "AsyncStaticTokenProvider",
+    "AuthConfig",
+    "BasicCredential",
+    "BearerCredential",
+    "CloseableCredentialProvider",
+    "CredentialContext",
+    "CredentialMaterial",
+    "CredentialProvider",
+    "CredentialProviderInput",
+    "EnvironmentCredentialProvider",
+    "OwnedCredentialProvider",
+    "RefreshableTokenProvider",
+    "RequestSigner",
+    "SignatureFields",
+    "SignerCapabilities",
+    "SigningInput",
+    "StaticCredentialProvider",
+    "StaticTokenProvider",
+    "TokenVersion",
+)
+_AUTH: Final = (
+    '"""Explicit credential providers and request signers for this package."""\n\n'
+    "from ._runtime.client.auth import (\n"
+    + "".join(f"    {name},\n" for name in _AUTH_NAMES)
+    + ")\n\n__all__ = [\n"
+    + "".join(f"    {name!r},\n" for name in _AUTH_NAMES)
+    + "]\n"
+)
 _ERROR_NAMES: Final = (
     "AdapterContractError",
     "AdapterExecutionError",
+    "AuthConfigurationError",
+    "AuthProviderClosedError",
+    "AuthProviderExecutionError",
+    "AuthRefreshError",
     "BodyChangedError",
     "BodyFactoryError",
     "BodyNotReplayableError",
@@ -156,6 +198,7 @@ _ERROR_NAMES: Final = (
     "HTTPStatusError",
     "HookExecutionError",
     "IOPhase",
+    "InsufficientScopeError",
     "LimiterExecutionError",
     "PhaseTimeoutError",
     "ProtocolDataError",
@@ -172,6 +215,9 @@ _ERROR_NAMES: Final = (
     "ResultUnavailableError",
     "RetryStopReason",
     "SDKError",
+    "SigningConfigurationError",
+    "SigningExecutionError",
+    "TokenExpiredError",
     "TransportError",
     "UnexpectedMediaTypeError",
     "UnexpectedStatusError",
@@ -726,9 +772,11 @@ class _Resources(_Typing):
         )
         arguments = ", ".join(f"{axis}={selected!r}" for axis, selected, runtime in modes if selected != runtime)
         defaults = f"{module.local('_runtime.client.client', 'ClientDefaults')}(user_agent={self.user_agent!r}"
-        if not arguments:
-            return f"{defaults})"
-        return f"{defaults}, validation={module.local('_runtime.client.options', 'ValidationModes')}({arguments}))"
+        if self.plan.security_schemes:
+            defaults += f", security_schemes={module.local('_generated', 'security')}.ROOT_SCHEMES"
+        if arguments:
+            defaults += f", validation={module.local('_runtime.client.options', 'ValidationModes')}({arguments})"
+        return f"{defaults})"
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -1535,6 +1583,70 @@ class _Types(_Typing):
         )
 
 
+class _Security:
+    """Render immutable security declarations without importing codecs or models."""
+
+    def __init__(self, plan: ClientPlan) -> None:
+        """Share structurally equal schemes across root and operation catalogues."""
+        self.plan = plan
+        self.schemes = dict.fromkeys((
+            *plan.security_schemes,
+            *(scheme for spec in plan.operations if spec.security is not None for scheme in spec.security.schemes),
+        ))
+        self.names = {scheme: f"_SCHEME_{index}" for index, scheme in enumerate(self.schemes)}
+
+    def source(self) -> str:
+        """Return the typed root catalogue and each declared operation binding."""
+        module = Module({"ROOT_SCHEMES", *self.names.values()}, {}, level=2)
+        runtime = "_runtime.client.security"
+        final = module.name("typing", "Final")
+        sections: list[str] = []
+        for scheme, name in self.names.items():
+            entries: list[tuple[str, Doc]] = [("name=", repr(scheme.name))]
+            kind = "UnavailableSecurityScheme"
+            if isinstance(scheme, SecurityScheme):
+                kind = "SecurityScheme"
+                entries.extend((
+                    ("kind=", repr(scheme.kind)),
+                    ("location=", repr(scheme.location)),
+                    ("wire_name=", repr(scheme.wire_name)),
+                ))
+            head = f"{name}: {final} = "
+            sections.append(head + layout(_call(module.local(runtime, kind), entries), 0, len(head), WIDTH))
+        catalogue = _tuple(self.names[scheme] for scheme in self.plan.security_schemes)
+        entry = module.local(runtime, "SecuritySchemeEntry")
+        head = f"ROOT_SCHEMES: {final}[tuple[{entry}, ...]] = "
+        sections.append(head + layout(catalogue, 0, len(head), WIDTH))
+        for spec in self.plan.operations:
+            if (binding := spec.security) is None:
+                continue
+            requirement = module.local(runtime, "SecurityRequirement")
+            alternatives = _tuple(
+                _tuple(
+                    _call(
+                        requirement,
+                        (("scheme=", self.names[item.scheme]), ("required_scopes=", repr(item.required_scopes))),
+                    )
+                    for item in alternative
+                )
+                for alternative in binding.alternatives
+            )
+            value = _call(
+                module.local(runtime, "SecurityBinding"),
+                (
+                    ("schemes=", _tuple(self.names[scheme] for scheme in binding.schemes)),
+                    ("alternatives=", alternatives),
+                ),
+            )
+            head = f"OPERATION_{spec.index}: {final} = "
+            sections.append(head + layout(value, 0, len(head), WIDTH))
+        return types_template.render(
+            docstring="Immutable security catalogues and ordered operation requirements.",
+            imports=module.imports(),
+            sections=sections,
+        )
+
+
 class _Registry(_Typing):
     """Render the operation registry: each operation's servers, parameters, body, response decoder, and checks."""
 
@@ -1613,6 +1725,10 @@ class _Registry(_Typing):
         if spec.response_media_type is not None:
             entries.append(("response_media_type=", repr(spec.response_media_type)))
         entries.extend(self.retry_metadata(module, spec))
+        if spec.security is not None:
+            entries.append(("security=", f"{module.local('_generated', 'security')}.OPERATION_{spec.index}"))
+        if spec.auth_challenge_less_401:
+            entries.append(("auth_challenge_less_401=", "True"))
         if (spec.body is not None and spec.body.media) or success_media(spec.responses, ranges=True):
             entries.append(("codecs=", module.local(f"types.{spec.resource}", f"{spec.pascal}RequestCodecs")))
         if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
@@ -1883,6 +1999,13 @@ class ClientRenderer:
                 },
                 "retry_after_ms_header": spec.retry_after_ms_header,
                 "should_retry_header": spec.should_retry_header,
+                "security": None
+                if spec.security is None
+                else [
+                    {item.scheme.name: list(item.required_scopes) for item in alternative}
+                    for alternative in spec.security.alternatives
+                ],
+                "auth_challenge_less_401": spec.auth_challenge_less_401,
             }
             for spec in self.plan.operations
         ]
@@ -1913,7 +2036,10 @@ See the [runtime reference]({reference}) for defaults, ownership, cancellation, 
 
 These declarations come from the finalized operation selection and generation configuration. A key contract does
 not guarantee exactly-once execution. A null idempotency declaration or a false replay guarantee cannot make an
-unsafe method replay-safe. No vendor retry-header name is inferred.
+unsafe method replay-safe. No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{{}}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
 
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
@@ -1957,9 +2083,10 @@ Native cancellation remains the original exception. No work starts after an obse
 
 ## Retry decisions and delays
 
-GET, HEAD, OPTIONS, PUT, and DELETE are safe by default; POST/PATCH require an explicit idempotent declaration or a
-valid key contract. Proven unsent failures from the SDK-owned native transport may permit an otherwise unsafe retry;
-`retry_safety="never"` forbids every resend. All candidates still need replayable input and available budgets.
+GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
+declaration or a valid key contract. Proven unsent failures from the SDK-owned native transport may permit an
+otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input and
+available budgets.
 Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
 decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
 
@@ -2012,6 +2139,60 @@ are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` 
 `retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
 contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
 
+## Explicit authentication and signing
+
+Import `AuthConfig`, credential values, providers, and signers from `{self.config.package}.auth`.
+`auth=UNSET` inherits, an `AuthConfig` replaces the inherited configuration as a whole, and `auth=None` disables it.
+Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
+alternative unless `selection` chooses its index. That choice stays fixed through a call and its retries.
+
+```python
+from {self.config.package}.auth import AccessToken, AuthConfig, StaticTokenProvider
+from {self.config.package}.options import RequestOptions
+
+
+def bearer_options(token: str) -> RequestOptions:
+    return RequestOptions(auth=AuthConfig({{"bearer": StaticTokenProvider(AccessToken(token, scopes=None))}}))
+```
+
+Use the API's declared scheme name in place of `bearer`, and pass the options to an operation requiring it.
+Async clients use `AsyncStaticTokenProvider` or another async provider. API keys use `ApiKeyCredential`; Basic uses
+`BasicCredential` with UTF-8. OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery
+or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called;
+its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
+
+Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
+Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
+Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
+Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
+cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
+
+Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
+explicit `anonymous_schemes`; signer-only calls also need the opt-in. Raw destinations require explicit auth origins.
+Authentication, redirect, and signer origin permissions are independent. Every hop reconstructs credentials and
+signatures for its current origin. Generic patches cannot change managed credential/signature names.
+
+Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
+the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
+Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
+retry counts, send slots, and the original deadline still apply. Zero retries prevents recovery resends, while first
+acquisition remains allowed. These callbacks start no builtin token exchange.
+
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
+They receive final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing,
+before attempt hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop.
+`SigningExecutionError` preserves callback failures without transport retry. No effective auth means no provider,
+signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
+seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
+without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is
+never implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+
+Credential/signature values do not appear in repr or automatic hooks/logs; causes are retained without automatically
+formatting their potentially sensitive messages. Builtin OAuth flows, token persistence, shared refresh, Basic
+charset overrides, resource audience metadata, and generated OAuth factories are not available yet.
+Providers are explicit.
+
 ## Counters and cleanup
 
 `ResponseInfo`, terminal events, and SDK errors expose logical resource attempts, redirect count, adapter invocations,
@@ -2024,7 +2205,7 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-"""
+"""  # noqa: S608
 
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered client file in the fixed artifact order."""
@@ -2053,6 +2234,7 @@ wait for retained cleanup; it does not authorize another send or restore an expi
             self.file(PurePosixPath("hooks.py"), "hooks", _HOOKS),
             self.file(PurePosixPath("errors.py"), "errors", _ERRORS),
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
+            self.file(PurePosixPath("auth.py"), "auth", _AUTH),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("client")),
             self.file(PurePosixPath("transports.py"), "transports", _TRANSPORTS),
@@ -2082,6 +2264,10 @@ wait for retained cleanup; it does not authorize another send or restore an expi
             files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
         if (checks := registry.checks) is not None:
             files.append(self.file(PurePosixPath("_generated", "client_checks.py"), "checks", checks.source()))
+        if self.plan.security_schemes or any(spec.security is not None for spec in self.plan.operations):
+            files.append(
+                self.file(PurePosixPath("_generated", "security.py"), "security", _Security(self.plan).source())
+            )
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         runtime = runtime_sources(file.text for file in files)
         documentation = PurePosixPath() if config.package_mode == "standalone" else PurePosixPath("_generated_docs")

@@ -7,6 +7,7 @@ render pydantic_v2.BaseModel
   write client/hooks.py
   write client/errors.py
   write client/responses.py
+  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
   write client/transports.py
@@ -19,6 +20,7 @@ render pydantic_v2.BaseModel
   write client/types/default/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
+  write client/_generated/security.py
   write client/_operations.py
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md

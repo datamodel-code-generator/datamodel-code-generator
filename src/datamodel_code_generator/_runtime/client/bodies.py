@@ -12,11 +12,21 @@ import os
 import threading
 from io import UnsupportedOperation
 from pathlib import Path
-from typing import TYPE_CHECKING, BinaryIO, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, BinaryIO, Final, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
-from .errors import BodyChangedError, BodyFactoryError, BodyNotReplayableError, SDKError, add_secondary
+from .errors import (
+    BodyChangedError,
+    BodyFactoryError,
+    BodyNotReplayableError,
+    ConfigurationError,
+    SDKError,
+    SigningConfigurationError,
+    add_secondary,
+)
 from .lifecycle import LEFT_WORK, TaskInterruptionError, task_failure
+
+_SHA256_BYTES: Final = 32
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Coroutine, Iterable, Iterator
@@ -314,6 +324,49 @@ def _close_file(file: BinaryIO) -> None:
     file.close()
 
 
+def _digest_declaration(value: bytes | None) -> bytes | None:
+    if value is None:
+        return None
+    if not isinstance(value, bytes) or len(value) != _SHA256_BYTES:
+        raise ConfigurationError(field_path=("sha256",), condition="invalid_value")
+    return bytes(value)
+
+
+def _required_digest(value: bytes | None) -> bytes:
+    if value is None:
+        raise SigningConfigurationError(field_path=("body", "sha256"), condition="digest_unavailable")
+    return value
+
+
+def _digest_position(file: BinaryIO, context: BodyAttemptContext) -> tuple[int, _Identity | None]:
+    try:
+        offset = file.tell()
+        try:
+            descriptor = file.fileno()
+        except (AttributeError, UnsupportedOperation):
+            identity = None
+        else:
+            identity = _identity(os.fstat(descriptor))
+    except Exception as error:  # noqa: BLE001
+        raise _failed(context, error) from None
+    return offset, identity
+
+
+def _digest_finished(file: BinaryIO, identity: _Identity | None, context: BodyAttemptContext) -> None:
+    if identity is not None:
+        try:
+            _unchanged(file, identity)
+        except OSError as error:
+            raise _failed(context, error) from None
+
+
+def _digest_restored(file: BinaryIO, offset: int, context: BodyAttemptContext) -> None:
+    try:
+        file.seek(offset)
+    except Exception as error:  # noqa: BLE001
+        raise _failed(context, error) from None
+
+
 def _declared(length: int | None, attempt_length: int | None) -> int | None:
     """Return the length a factory's attempt is sent with, refusing one that contradicts its factory."""
     if length is None:
@@ -377,6 +430,29 @@ class _FileAttempt:
         if self._consume is not None:
             self._consume()
         return _file_chunks(self._file)
+
+    def update_digest(self, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
+        """Hash this descriptor's payload without consuming its replay state or changing its position."""
+        check()
+        offset, identity = _digest_position(self._file, self._context)
+        primary: BaseException | None = None
+        try:
+            for chunk in _read(lambda: _file_chunks(self._file), _Counter(self._context, "file", self._length)):
+                check()
+                update(chunk)
+                check()
+            _digest_finished(self._file, identity, self._context)
+        except BaseException as error:
+            primary = error
+            raise
+        finally:
+            try:
+                _digest_restored(self._file, offset, self._context)
+            except BaseException as failure:
+                if primary is None:
+                    raise
+                body_secondary(primary, failure)
+        check()
 
     def close(self) -> None:
         """Release the file once."""
@@ -539,13 +615,20 @@ class StreamBody:
 class _FactoryAttempt:
     """A factory's attempt, read within the length it or its factory declared."""
 
-    __slots__ = ("_attempt", "_closed", "_context", "_length")
+    __slots__ = ("_attempt", "_closed", "_context", "_length", "_sha256")
 
-    def __init__(self, attempt: BodyAttempt, context: BodyAttemptContext, length: int | None) -> None:
+    def __init__(
+        self, attempt: BodyAttempt, context: BodyAttemptContext, length: int | None, sha256: bytes | None
+    ) -> None:
         self._attempt = attempt
         self._context = context
         self._length = length
         self._closed = False
+        self._sha256 = sha256
+
+    def declared_digest(self) -> bytes:
+        """Return the enclosing factory's whole-payload declaration without reading the attempt."""
+        return _required_digest(self._sha256)
 
     @property
     def content_length(self) -> int | None:
@@ -580,7 +663,7 @@ class _FactoryAttempt:
 class BodyFactory:
     """A factory building a new attempt of the same bytes for each send, with what it declares about them."""
 
-    __slots__ = ("_content_length", "_content_type", "_factory", "_fingerprint", "_last")
+    __slots__ = ("_content_length", "_content_type", "_factory", "_fingerprint", "_last", "_sha256")
 
     def __init__(
         self,
@@ -589,13 +672,15 @@ class BodyFactory:
         content_length: int | None = None,
         content_type: str | None = None,
         fingerprint: bytes | None = None,
+        sha256: bytes | None = None,
     ) -> None:
-        """Keep the factory and the length, media type, and fingerprint its attempts share."""
+        """Keep shared metadata; sha256 declares each whole payload's digest without pre-reading it."""
         self._factory = factory
         self._content_length = content_length
         self._content_type = content_type
         self._fingerprint = fingerprint
         self._last: BodyAttempt | None = None
+        self._sha256 = _digest_declaration(sha256)
 
     @property
     def content_length(self) -> int | None:
@@ -635,7 +720,7 @@ class BodyFactory:
             except BaseException as secondary:  # noqa: BLE001
                 body_secondary(failure, secondary)
             raise failure from None
-        return _FactoryAttempt(attempt, context, length)
+        return _FactoryAttempt(attempt, context, length, self._sha256)
 
     def _bind(self, history: dict[int, BodyAttempt]) -> _FactoryCall:
         return _FactoryCall(self, self._open, history)
@@ -855,6 +940,30 @@ class _AsyncFileAttempt:
         while chunk := await self._worker.run(self._file.read, CHUNK):
             yield chunk
 
+    async def update_digest(self, update: Callable[[bytes], None], check: Callable[[], None]) -> None:
+        """Hash on the retained disk worker, restoring the descriptor even after cancellation."""
+        check()
+        offset, identity = await self._worker.run(_digest_position, self._file, self._context)
+        primary: BaseException | None = None
+        try:
+            async for chunk in _aread(self._chunks, _Counter(self._context, "file", self._length)):
+                check()
+                update(chunk)
+                check()
+                await asyncio.sleep(0)
+            await self._worker.run(_digest_finished, self._file, identity, self._context)
+        except BaseException as error:
+            primary = error
+            raise
+        finally:
+            try:
+                await self._worker.run(_digest_restored, self._file, offset, self._context, cleanup=True)
+            except BaseException as failure:
+                if primary is None:
+                    raise
+                body_secondary(primary, failure)
+        check()
+
     async def aclose(self) -> None:
         """Release the file once."""
         if (release := self._release) is not None:
@@ -1064,13 +1173,20 @@ class AsyncStreamBody:
 class _AsyncFactoryAttempt:
     """An async factory's attempt, read within the length it or its factory declared."""
 
-    __slots__ = ("_attempt", "_closed", "_context", "_length")
+    __slots__ = ("_attempt", "_closed", "_context", "_length", "_sha256")
 
-    def __init__(self, attempt: AsyncBodyAttempt, context: BodyAttemptContext, length: int | None) -> None:
+    def __init__(
+        self, attempt: AsyncBodyAttempt, context: BodyAttemptContext, length: int | None, sha256: bytes | None
+    ) -> None:
         self._attempt = attempt
         self._context = context
         self._length = length
         self._closed = False
+        self._sha256 = sha256
+
+    def declared_digest(self) -> bytes:
+        """Return the enclosing factory's declaration without starting its asynchronous iterator."""
+        return _required_digest(self._sha256)
 
     @property
     def content_length(self) -> int | None:
@@ -1105,7 +1221,7 @@ class _AsyncFactoryAttempt:
 class AsyncBodyFactory:
     """An async factory building a new attempt of the same bytes for each send, with what it declares about them."""
 
-    __slots__ = ("_content_length", "_content_type", "_factory", "_fingerprint", "_last")
+    __slots__ = ("_content_length", "_content_type", "_factory", "_fingerprint", "_last", "_sha256")
 
     def __init__(
         self,
@@ -1114,13 +1230,15 @@ class AsyncBodyFactory:
         content_length: int | None = None,
         content_type: str | None = None,
         fingerprint: bytes | None = None,
+        sha256: bytes | None = None,
     ) -> None:
-        """Keep the factory and the length, media type, and fingerprint its attempts share."""
+        """Keep shared metadata; sha256 declares each whole payload's digest without pre-reading it."""
         self._factory = factory
         self._content_length = content_length
         self._content_type = content_type
         self._fingerprint = fingerprint
         self._last: AsyncBodyAttempt | None = None
+        self._sha256 = _digest_declaration(sha256)
 
     @property
     def content_length(self) -> int | None:
@@ -1168,7 +1286,7 @@ class AsyncBodyFactory:
             else:
                 await cleanup(attempt.aclose, error=failure)
             raise failure from None
-        return _AsyncFactoryAttempt(attempt, context, length)
+        return _AsyncFactoryAttempt(attempt, context, length, self._sha256)
 
     def _bind(self, history: dict[int, AsyncBodyAttempt], cleanup: AsyncBodyCleanup) -> _AsyncFactoryCall:
         return _AsyncFactoryCall(self, self._open, history, cleanup)
@@ -1498,6 +1616,47 @@ def bind_async_factory(
 ) -> _AsyncFactoryCall:
     """Bind an async factory to the call's raw-attempt identity ledger."""
     return body._bind(history, cleanup)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+def require_primitive_digest(source: object, *, multipart: bool) -> None:
+    """Check a bound primitive without opening factories, reading streams, or allocating a hasher."""
+    if isinstance(source, (_FileCall, _AsyncFileCall)):
+        if source._offset is None:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            raise BodyNotReplayableError(
+                source_kind="multipart" if multipart else "file",
+                condition="digest_unavailable" if multipart else "not_seekable",
+            )
+    elif isinstance(source, (_FactoryCall, _AsyncFactoryCall)):
+        if multipart:
+            raise BodyNotReplayableError(source_kind="multipart", condition="digest_unavailable")
+        _required_digest(source._body._sha256)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    elif not isinstance(source, (_PathCall, _AsyncPathCall)):
+        raise BodyNotReplayableError(source_kind="multipart" if multipart else "stream", condition="digest_unavailable")
+
+
+def declared_attempt_digest(attempt: BodyAttempt | AsyncBodyAttempt) -> bytes | None:
+    """Use a factory's declaration; concrete file and immutable attempts are hashed by their owner."""
+    if isinstance(attempt, (_FactoryAttempt, _AsyncFactoryAttempt)):
+        return attempt.declared_digest()
+    return None
+
+
+def update_file_digest(attempt: BodyAttempt, update: Callable[[bytes], None], check: Callable[[], None]) -> bool:
+    """Hash an SDK file descriptor, leaving immutable attempts to their byte owner."""
+    if isinstance(attempt, _FileAttempt):
+        attempt.update_digest(update, check)
+        return True
+    return False
+
+
+async def update_async_file_digest(
+    attempt: AsyncBodyAttempt, update: Callable[[bytes], None], check: Callable[[], None]
+) -> bool:
+    """Hash an SDK async descriptor while preserving its retained worker and cleanup ownership."""
+    if isinstance(attempt, _AsyncFileAttempt):
+        await attempt.update_digest(update, check)
+        return True
+    return False
 
 
 SyncBinaryBody: TypeAlias = bytes | FileBody | StreamBody | BodyFactory

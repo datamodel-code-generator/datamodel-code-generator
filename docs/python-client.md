@@ -1106,3 +1106,203 @@ rejected. Borrowed clients and adapters are not closed; `OwnedTransportAdapter` 
 The default native transport has no internal retries. `retry_owner="transport"` requires an explicitly injected
 adapter with the internal retry-count, deadline, and body-safety contract and disables SDK retry decisions.
 `network_send_count` still counts adapter invocations; only trusted evidence permits a non-None `wire_send_count`.
+
+## Explicit authentication and request signing
+
+Generated clients compile root security inheritance and operation overrides from OpenAPI. An AND requirement needs
+all its schemes; an OR list selects its first fully available alternative, or the index given by `AuthConfig.selection`.
+Selection stays fixed for the logical call, including retries and 401 recovery. Required credentials that are missing,
+unknown, unavailable, or of the wrong material kind fail before a provider callback or send. Unused unsupported or
+unresolved scheme declarations do not prevent generation, but configuring one does not make it usable.
+
+The generated `auth` module exports `AuthConfig`, credential values, provider Protocols, static/environment providers,
+and signer Protocols. `ClientOptions.auth` and `RequestOptions.auth` default to `UNSET`; an `AuthConfig` replaces the
+inherited configuration as a whole and preserves provider identity. `auth=None` disables inherited credentials and
+signers; it cannot make a required operation anonymous. No environment variables or credentials are discovered by default.
+
+These examples assume a generated API with a `bearer` scheme, a `header_key` scheme, and an `auth` resource containing
+`bearer`, `api_key_header`, and `signed_body` operations. The calling application supplies tokens, keys, and clients.
+
+```python
+from pets import Client
+from pets.auth import AccessToken, AuthConfig, StaticTokenProvider
+from pets.options import RequestOptions
+
+
+def authenticated_get(client: Client, token: str) -> bytes:
+    provider = StaticTokenProvider(AccessToken(token, scopes=None))
+    with client.with_options(RequestOptions(auth=AuthConfig({"bearer": provider}))) as view:
+        return view.auth.bearer()
+```
+
+`AccessToken.scopes=None` means that grants are unknown. It skips local containment checking and leaves the decision
+to the server; it does not claim unrestricted permission. `scopes=()` is known empty and rejects a nonempty requirement.
+Known grants and required scopes are deduplicated and ASCII-sorted. An insufficient known grant raises
+`InsufficientScopeError` with readonly required, granted, and missing tuples before sending. The SDK never broadens
+scopes automatically after a 403. Expired material raises `TokenExpiredError` and cannot justify an endless refresh.
+`BearerCredential` pairs a token with an opaque `TokenVersion()` whose identity belongs to that provider's publication.
+
+Async clients require async providers. Matching static and environment variants are available; a custom provider's
+async `get` is awaited once. There is no implicit thread offload or sync/async conversion.
+
+```python
+from pets import AsyncClient
+from pets.auth import AccessToken, AsyncStaticTokenProvider, AuthConfig
+from pets.options import RequestOptions
+
+
+def async_credentials(token: str) -> AuthConfig:
+    return AuthConfig({"bearer": AsyncStaticTokenProvider(AccessToken(token))})
+
+
+async def authenticated_get_async(client: AsyncClient, token: str) -> bytes:
+    async with client.with_options(RequestOptions(auth=async_credentials(token))) as view:
+        return await view.auth.bearer()
+```
+
+`ApiKeyCredential(value)` uses its declared header, query, or cookie name. `BasicCredential(username, password)` uses
+UTF-8 Basic encoding. HTTP bearer, OAuth2, and OpenID Connect declarations accept explicitly supplied bearer material;
+this layer neither discovers endpoints nor starts an OAuth flow. `CredentialContext` carries the selected scheme,
+canonical requirements, current resource origin, deadline, and cancellation token. Its audience is currently `None`.
+
+An environment provider reads only when selected and called. It rereads its named variable for each `get`; construction
+and package imports do not read the environment. Choose `kind="bearer"` for an environment token.
+
+```python
+from pets import Client
+from pets.auth import AuthConfig, EnvironmentCredentialProvider
+from pets.options import RequestOptions
+
+
+def environment_get(client: Client, variable_name: str) -> bytes:
+    provider = EnvironmentCredentialProvider(variable_name, kind="api_key")
+    with client.with_options(RequestOptions(auth=AuthConfig({"header_key": provider}))) as view:
+        return view.auth.api_key_header()
+```
+
+Custom providers implement the public structural Protocol. Callback failures retain their cause in
+`AuthProviderExecutionError` and are not transport-retried. The callback must cooperate with its supplied deadline
+and cancellation signal; a synchronous callback cannot be forcibly terminated at the deadline.
+
+```python
+from collections.abc import Callable
+
+from pets.auth import ApiKeyCredential, CredentialContext
+
+
+class ApplicationKeyProvider:
+    def __init__(self, resolve: Callable[[], str]) -> None:
+        self._resolve = resolve
+
+    def get(self, context: CredentialContext) -> ApiKeyCredential:
+        return ApiKeyCredential(self._resolve())
+```
+
+Providers are borrowed by default. `OwnedCredentialProvider(provider)` explicitly transfers a closeable provider to
+the root client's scope; the generic wrapper preserves the concrete provider type. Root close drains active calls and
+closes each owned identity once, independently of transport ownership. Closing a `with_options` view does not close
+shared providers. Retained asynchronous cleanup can outlive a cleanup timeout and is drained by a later close.
+Never wrap the same stateful provider in independent roots unless its own lifecycle supports that arrangement.
+
+### Anonymous calls, origins, and recovery
+
+Absent security, explicit `[]`, and an empty AND alternative are anonymous choices. Configuring credentials alone does
+not send them on those operations or on `request_raw`. Sending selected credentials requires both
+`send_on_anonymous=True` and explicit `anonymous_schemes=("bearer",)` (or the applicable declared names). Signer-only
+anonymous calls also require `send_on_anonymous=True`. A true opt-in with neither a selected credential nor a signer
+is invalid. Ordered mixed anonymous/authenticated alternatives retain their declared selection indices.
+
+An empty authentication `allowed_origins` permits only the selected server's origin. An origin includes scheme, host,
+and effective port. Arbitrary `request_raw` destinations require explicit allowed origins as well as anonymous opt-in.
+Authentication and redirect allowlists are independent: permitting a redirect does not permit sending credentials
+there. Each hop rebuilds credentials and signatures for its current destination; managed fields from an earlier hop
+are never carried across origins. Generic header/query patches cannot override or delete credential/signature owners.
+
+A static provider does not refresh. A custom refresh provider explicitly implements `get`, `invalidate(version)`, and
+`refresh(context)`; the async Protocol makes all three methods async. At most one eligible 401 recovery invalidates the
+exact used token version and refreshes without switching the selected OR alternative. It requires an appropriate
+Bearer invalid-token challenge, or the explicit operation declaration below, and still obeys retry safety, body
+replayability, retry count, send slots, and the original deadline. `max_retries=0` prevents that resend, while initial
+credential acquisition is still allowed. These callbacks add no implicit token HTTP traffic.
+
+Use the existing internal generation API to declare an API-specific challenge-less 401 contract. It is false unless
+explicitly set, is recorded under `operations[].runtime.auth_challenge_less_401` in generated documentation, and affects
+only the security contract digest. It is not a client option or an inferred response behavior.
+
+```python
+from datamodel_code_generator._client.config import ClientOperationConfig, RuntimeOperationMetadata
+
+operation = ClientOperationConfig(
+    ref="/paths/~1challenge-less/get",
+    runtime=RuntimeOperationMetadata(auth_challenge_less_401=True),
+)
+```
+
+The equivalent field in an existing target TOML file is:
+
+```toml
+[[operations]]
+ref = "/paths/~1challenge-less/get"
+
+[operations.runtime]
+auth_challenge_less_401 = true
+```
+
+### Sign the finalized request
+
+Signers declare their allowed origins, managed header/query names, and whether they require a SHA-256 body digest.
+They run in tuple order after credential placement and final body framing/content type, before the readonly attempt
+hook and send. `SigningInput.query` is the exact raw query bytes; its headers and body digest describe that hop's
+unsigned request. A signer returns only `SignatureFields` for names it declared. Overlapping owners fail before
+callbacks or sends; arbitrary signer exceptions raise `SigningExecutionError` and do not retry.
+
+```python
+import hmac
+
+from pets import Client
+from pets.auth import AuthConfig, SignatureFields, SignerCapabilities, SigningInput
+from pets.options import RequestOptions
+
+
+class PayloadSigner:
+    def __init__(self, key: bytes, origin: str) -> None:
+        self._key = key
+        self._capabilities = SignerCapabilities(
+            allowed_origins=(origin,), managed_headers=("X-Payload-Signature",), managed_query=(),
+            requires_body_digest=True,
+        )
+
+    @property
+    def capabilities(self) -> SignerCapabilities:
+        return self._capabilities
+
+    def sign(self, request: SigningInput) -> SignatureFields:
+        assert request.body_digest is not None
+        message = request.method.encode("ascii") + b"\n" + request.url.encode("utf-8") + b"\n" + request.body_digest
+        signature = hmac.digest(self._key, message, "sha256").hex()
+        return SignatureFields(headers=(("X-Payload-Signature", signature),), query=())
+
+
+def signed_upload(client: Client, origin: str, key: bytes, payload: bytes) -> bytes:
+    auth = AuthConfig({}, allowed_origins=(origin,), send_on_anonymous=True, signers=(PayloadSigner(key, origin),))
+    with client.with_options(RequestOptions(auth=auth)) as view:
+        return view.auth.signed_body(body=payload)
+```
+
+This example defines its own canonical input; a service's signature protocol must define the same bytes. Signatures
+are rebuilt for every attempt and redirect hop. Unsigned calls do not hash bodies or invoke signer/provider callbacks.
+Hashing bytes, files, or complete seekable multipart input costs time proportional to payload size and consumes the
+call deadline. Seekable sources are restored to their original position after hashing, and reads remain chunked.
+
+`BodyFactory(..., sha256=digest)` and `AsyncBodyFactory(..., sha256=digest)` accept an optional 32-byte declaration for
+the exact whole payload. A digest-declaring factory is not read to compute the digest; its declaration and replay
+identity remain the application's obligations. A one-shot stream or digest-less factory cannot satisfy a signer
+that requires a digest and fails before sending, without implicit spooling. A file-part factory's digest is not the
+multipart payload's digest: factory-containing multipart is rejected for digest-required signing, while it remains
+supported without such a signer. No multipart digest field is added.
+
+Credential values, signing inputs, and returned signature values are omitted from their representations and automatic
+hooks/logs. Errors retain safe metadata, common send/attempt counters, and causes without automatically formatting
+secret-bearing callback messages. Applications must apply their own policy before explicitly inspecting those causes.
+Builtin OAuth flows, token HTTP clients, token persistence, shared refresh, Basic charset overrides, resource audience
+metadata, and generated OAuth provider factories are not available yet; applications construct providers explicitly.

@@ -1,0 +1,222 @@
+openapi: 3.1.0
+info:
+  title: Authentication generation
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /unsupported:
+    get:
+      operationId: unsupported
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - digest: []
+  /unknown:
+    get:
+      operationId: unknown
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - missing: []
+  /unobserved:
+    get:
+      operationId: unobserved
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - external: []
+  /missing-pointer:
+    get:
+      operationId: missing_pointer
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - missing_pointer: []
+  /invalid-pointer:
+    get:
+      operationId: invalid_pointer
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - invalid_pointer: []
+  /invalid-target:
+    get:
+      operationId: invalid_target
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - invalid_target: []
+  /cycle:
+    get:
+      operationId: cycle
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - cycle_a: []
+  /invalid-key-location:
+    get:
+      operationId: invalid_key_location
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bad_location: []
+  /invalid-key-name:
+    get:
+      operationId: invalid_key_name
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bad_name: []
+  /empty-key-name:
+    get:
+      operationId: empty_key_name
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - empty_name: []
+  /invalid-key-token:
+    get:
+      operationId: invalid_key_token
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bad_token: []
+  /scheme-type:
+    get:
+      operationId: scheme_type
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bad_scheme: []
+  /invalid-scopes:
+    get:
+      operationId: invalid_scopes
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bearer: [not a scope]
+  /scope-shape:
+    get:
+      operationId: scope_shape
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bearer: 42
+  /scope-item:
+    get:
+      operationId: scope_item
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - bearer:
+            - {}
+  /overlap:
+    get:
+      operationId: overlap
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - basic: []
+          bearer: []
+  /mapping:
+    get:
+      operationId: mapping
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        bearer: []
+  /alternative:
+    get:
+      operationId: alternative
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security: [42]
+  /key:
+    get:
+      operationId: key
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - 1: []
+components:
+  securitySchemes:
+    digest:
+      type: http
+      scheme: digest
+    external:
+      $ref: auth-unobserved.yaml#/components/securitySchemes/unobserved
+    missing_pointer:
+      $ref: '#/components/securitySchemes/absent'
+    invalid_pointer:
+      $ref: '#/components/securitySchemes/~2bad'
+    invalid_target:
+      $ref: '#/components/securitySchemes/scalar'
+    scalar: 42
+    cycle_a:
+      $ref: '#/components/securitySchemes/cycle_b'
+    cycle_b:
+      $ref: '#/components/securitySchemes/cycle_a'
+    bad_location:
+      type: apiKey
+      in: path
+      name: key
+    bad_name:
+      type: apiKey
+      in: query
+      name: 42
+    empty_name:
+      type: apiKey
+      in: query
+      name: ''
+    bad_token:
+      type: apiKey
+      in: cookie
+      name: not token
+    bad_scheme:
+      type: http
+      scheme: 42
+    basic:
+      type: http
+      scheme: basic
+    bearer:
+      type: http
+      scheme: bearer

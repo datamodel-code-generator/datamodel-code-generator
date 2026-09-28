@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: Authentication declaration context
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+security:
+  - auth: []
+paths:
+  /inherited:
+    post:
+      operationId: inherited
+      responses:
+        '204':
+          description: Accepted
+      parameters:
+        - in: header
+          name: X-Idempotency
+          schema:
+            type: string
+  /explicit:
+    post:
+      operationId: explicit
+      security:
+        - auth: []
+      responses:
+        '204':
+          description: Accepted
+      parameters:
+        - in: header
+          name: X-Idempotency
+          schema:
+            type: string
+  /aliased-query:
+    post:
+      operationId: aliased_query
+      security:
+        - remoteQuery: []
+      responses:
+        '204':
+          description: Accepted
+  /actual-header:
+    post:
+      operationId: actual_header
+      security:
+        - actualHeader: []
+      responses:
+        '204':
+          description: Accepted
+  /aliased-header:
+    post:
+      operationId: aliased_header
+      security:
+        - remoteHeader: []
+      responses:
+        '204':
+          description: Accepted
+  /external-inherited:
+    $ref: retry-security-context-external.yaml#/components/pathItems/inherited
+  /external-explicit:
+    $ref: retry-security-context-external.yaml#/components/pathItems/explicit
+  /external-query:
+    $ref: retry-security-context-external.yaml#/components/pathItems/query
+components:
+  securitySchemes:
+    auth:
+      type: apiKey
+      in: query
+      name: access_token
+    actualHeader:
+      type: apiKey
+      in: header
+      name: X-Idempotency
+    remoteHeader:
+      $ref: retry-security-context-external.yaml#/components/securitySchemes/auth
+    remoteQuery:
+      $ref: retry-security-context-external.yaml#/components/securitySchemes/actualHeader
