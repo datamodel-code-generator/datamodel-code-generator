@@ -82,7 +82,10 @@ __all__ = ["UNSET", "ClientOptions", "RequestOptions", "ServerSelection", "Unset
 '''
 _ERROR_NAMES: Final = (
     "AdapterContractError",
+    "AdapterExecutionError",
     "BodyProtocolError",
+    "CleanupError",
+    "ClientClosedError",
     "ConfigurationError",
     "DecodeError",
     "DecompressionLimitError",
@@ -102,6 +105,7 @@ _ERROR_NAMES: Final = (
     "TransportError",
     "UnexpectedMediaTypeError",
     "UnexpectedStatusError",
+    "UnsupportedAsyncBackendError",
     "UnsupportedContentCodingError",
 )
 _ERRORS: Final = (
@@ -118,14 +122,36 @@ from ._runtime.client.responses import HeadersView, Response, ResponseInfo
 
 __all__ = ["HeadersView", "Response", "ResponseInfo"]
 '''
-_BODIES: Final = '''"""Values of this package's media types that no schema describes."""
+_BODIES: Final = '''"""Request bodies and the values of this package's media types that no schema describes."""
 
+from ._runtime.client.bodies import AsyncBodyAttempt, BodyAttempt
 from ._runtime.client.operations import FormData
 
-__all__ = ["FormData"]
+__all__ = ["AsyncBodyAttempt", "BodyAttempt", "FormData"]
 '''
+_TRANSPORT_NAMES: Final = (
+    "AsyncTransportAdapter",
+    "AsyncTransportResponse",
+    "AttemptIOContext",
+    "IOPhase",
+    "OwnedTransportAdapter",
+    "PreparedRequest",
+    "ResolvedTimeoutOptions",
+    "TransportAdapter",
+    "TransportCapabilities",
+    "TransportResponse",
+    "TransportTraceSink",
+)
+_TRANSPORTS: Final = (
+    '"""Transport adapters: how the clients hand each request to an HTTP implementation."""\n\n'
+    "from ._runtime.client.transports import (\n"
+    + "".join(f"    {name},\n" for name in _TRANSPORT_NAMES)
+    + ")\n\n__all__ = [\n"
+    + "".join(f"    {name!r},\n" for name in _TRANSPORT_NAMES)
+    + "]\n"
+)
 _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
-        """Close the HTTPX2 client when this client owns it."""
+        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
         self._core.close()
 
     def __enter__(self) -> {result}:
@@ -141,7 +167,7 @@ _SYNC_LIFECYCLE: Final = '''    def close(self) -> None:
         """Close this client."""
         self.close()'''
 _ASYNC_LIFECYCLE: Final = '''    async def aclose(self) -> None:
-        """Close the HTTPX2 async client when this client owns it."""
+        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
         await self._core.aclose()
 
     async def __aenter__(self) -> {result}:
@@ -417,6 +443,9 @@ class _Resources(_Typing):
             "unset_value": module.local("_runtime.model_codecs.unset", "UNSET"),
             "literal": module.name("typing", "Literal"),
             "core": module.local("_runtime.client.client", f"{prefix}ClientCore"),
+            "adapter": module.local("transports", f"{prefix}TransportAdapter"),
+            "owned_adapter": module.local("transports", "OwnedTransportAdapter"),
+            "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "lifecycle": (_ASYNC_LIFECYCLE if asynchronous else _SYNC_LIFECYCLE).format(
                 result=module.name("typing_extensions", "Self"), traceback=module.name("types", "TracebackType")
@@ -972,6 +1001,7 @@ class ClientRenderer:
             self.file(PurePosixPath("responses.py"), "responses", _RESPONSES),
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("client")),
+            self.file(PurePosixPath("transports.py"), "transports", _TRANSPORTS),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),
         ]
         for resource in self.plan.resources:

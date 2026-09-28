@@ -5,9 +5,18 @@ from __future__ import annotations
 from typing_extensions import assert_type
 
 from pets import AsyncClient, Client
+from pets.bodies import AsyncBodyAttempt, BodyAttempt
 from pets.model_codecs import ModelValue
 from pets.options import UNSET, RequestOptions
 from pets.responses import Response
+from pets.transports import (
+    AsyncTransportResponse,
+    AttemptIOContext,
+    OwnedTransportAdapter,
+    PreparedRequest,
+    TransportCapabilities,
+    TransportResponse,
+)
 from pets.types.pets.photos import UploadRequestCodecs
 from pets.types.pets import (
     CreatePetRequestCodecs,
@@ -50,3 +59,40 @@ async def call_async(client: AsyncClient) -> None:
     value: ModelValue[object] | None = None
     del value
     await client.aclose()
+
+
+class Adapter:
+    """A synchronous transport adapter, structurally."""
+
+    @property
+    def capabilities(self) -> TransportCapabilities:
+        return TransportCapabilities(internal_retry_limit=0, delivery_evidence=False, http_versions=("HTTP/1.1",))
+
+    def send(self, request: PreparedRequest[BodyAttempt], context: AttemptIOContext) -> TransportResponse:
+        raise NotImplementedError
+
+    def close(self) -> None:
+        pass
+
+
+class AsyncAdapter:
+    """An async transport adapter, structurally."""
+
+    @property
+    def capabilities(self) -> TransportCapabilities:
+        return TransportCapabilities(internal_retry_limit=None, delivery_evidence=True, http_versions=("HTTP/2",))
+
+    async def send(self, request: PreparedRequest[AsyncBodyAttempt], context: AttemptIOContext) -> AsyncTransportResponse:
+        raise NotImplementedError
+
+    async def aclose(self) -> None:
+        pass
+
+
+def transports() -> None:
+    borrowed = Client(transport_adapter=Adapter())
+    assert_type(borrowed.with_options(RequestOptions(cleanup_timeout=1.0)), Client)
+    owned = OwnedTransportAdapter(Adapter())
+    assert_type(owned, OwnedTransportAdapter[Adapter])
+    Client(transport_adapter=owned)
+    assert_type(AsyncClient(transport_adapter=OwnedTransportAdapter(AsyncAdapter())).with_options(RequestOptions()), AsyncClient)

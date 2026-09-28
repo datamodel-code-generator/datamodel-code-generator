@@ -83,6 +83,7 @@ class Exchange:
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
         """Record a request and answer it with the next queued responder."""
+        request.read()
         headers = ", ".join(f"{name}: {value}" for name, value in request.headers.multi_items())
         self.lines.extend((f"  > {request.method} {request.url}", f"    [{headers}] {request.content!r}"))
         return self.responders.pop(0)(request)

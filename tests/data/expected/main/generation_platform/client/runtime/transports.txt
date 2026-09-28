@@ -1,0 +1,141 @@
+# pets pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter ok = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+    traced read
+  < closed
+  adapter traced = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  adapter transport error ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  adapter bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, cause=ValueError('adapter bug')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter status type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter status range ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter headers type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter phase ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter chunk type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter read bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('read bug')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter close bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('close failed')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter read and close bugs = "AdapterExecutionError secondary ['RuntimeError']"
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  adapter bug after headers ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=ValueError('adapter bug after headers')] adapter_execution_error
+  > POST https://api.example.com/v1/pets [Accept-Encoding: gzip, deflate, Accept: application/json, Content-Type: application/json] b'{"name":"cat"}' 14 application/json
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter body = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  adapter stop propagated
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter stop while reading propagated
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter stop propagated over a close failure
+  borrowed adapter left open
+  adapter closed
+  adapter closed
+  owned adapter close bug ! CleanupError: CleanupError(pending_calls=0) [cause=RuntimeError('adapter close failed')] cleanup_error
+  adapter and http_client ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='conflicts_with_http_client') [field_path=('transport_adapter',), condition='conflicts_with_http_client'] configuration_error
+  adapter owned by ownership ! ConfigurationError: ConfigurationError(field_path='http_client_ownership', condition='conflicts_with_transport_adapter') [field_path=('http_client_ownership',), condition='conflicts_with_transport_adapter'] configuration_error
+  adapter type ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='invalid_type') [field_path=('transport_adapter',), condition='invalid_type'] configuration_error
+  async adapter to sync client ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='invalid_type') [field_path=('transport_adapter',), condition='invalid_type'] configuration_error
+  adapter capabilities ! AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error
+  sync adapter to async client ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='invalid_type') [field_path=('transport_adapter',), condition='invalid_type'] configuration_error
+  async ownership ! ConfigurationError: ConfigurationError(field_path='http_client_ownership', condition='invalid_value') [field_path=('http_client_ownership',), condition='invalid_value'] configuration_error
+  async http_client ! ConfigurationError: ConfigurationError(field_path='http_client', condition='invalid_type') [field_path=('http_client',), condition='invalid_type'] configuration_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter ok = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+    traced read
+  < closed
+  async adapter traced = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async adapter transport error ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async adapter bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='getPet', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=ValueError('adapter bug')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter status type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter status range ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter headers type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter phase ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter chunk type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter read bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('read bug')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter close bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('close failed')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter read and close bugs = "AdapterExecutionError secondary ['RuntimeError']"
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async adapter bug after headers ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=ValueError('adapter bug after headers')] adapter_execution_error
+  > POST https://api.example.com/v1/pets [Accept-Encoding: gzip, deflate, Accept: application/json, Content-Type: application/json] b'{"name":"cat"}' 14 application/json
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter body = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter stop while reading propagated
+  adapter closed
+  async owned adapter close bug ! CleanupError: CleanupError(pending_calls=0) [cause=RuntimeError('adapter close failed')] cleanup_error
+  unicode header = 200
+  unicode header bytes [b'caf\xc3\xa9']
+  async pre-read response ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error

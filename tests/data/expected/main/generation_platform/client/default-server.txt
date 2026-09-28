@@ -8,6 +8,7 @@ render pydantic_v2.BaseModel
   write client/src/client/responses.py
   write client/src/client/bodies.py
   write client/src/client/model_codecs.py
+  write client/src/client/transports.py
   write client/src/client/resources/__init__.py
   write client/src/client/resources/default/__init__.py
   write client/src/client/resources/default/_sync.py

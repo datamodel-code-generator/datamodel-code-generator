@@ -12,7 +12,8 @@ from typing_extensions import Self
 
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.model_codecs.unset import UNSET, Unset
-from .options import ClientOptions
+from .options import ClientOptions, RequestOptions
+from .transports import AsyncTransportAdapter, OwnedTransportAdapter
 
 if TYPE_CHECKING:
     from .resources.documents._async import AsyncDocumentsResource
@@ -30,11 +31,25 @@ class AsyncClient:
         options: ClientOptions | None = None,
         http_client: httpx2.AsyncClient | Unset = UNSET,
         http_client_ownership: Literal["borrowed", "owned"] = "borrowed",
+        transport_adapter: AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter] | Unset = UNSET,
     ) -> None:
-        """Keep the options; without an HTTPX2 client, create one that closing this client closes."""
-        self._core = AsyncClientCore(
-            _DEFAULTS, options=options, http_client=http_client, http_client_ownership=http_client_ownership
+        """Send through the transport adapter or HTTPX2 client given, borrowed unless its ownership moves.
+
+        Without either, the client creates an HTTPX2 client that closing it closes.
+        """
+        self._core = AsyncClientCore.create(
+            _DEFAULTS,
+            options=options,
+            http_client=http_client,
+            http_client_ownership=http_client_ownership,
+            transport_adapter=transport_adapter,
         )
+
+    def with_options(self, options: RequestOptions) -> AsyncClient:
+        """Return a view whose calls layer these options on the client's; it shares the client's transport."""
+        view = AsyncClient.__new__(AsyncClient)
+        view._core = self._core.view(options)
+        return view
 
     @cached_property
     def forms(self) -> AsyncFormsResource:
@@ -51,7 +66,7 @@ class AsyncClient:
         return AsyncDocumentsResource(self._core)
 
     async def aclose(self) -> None:
-        """Close the HTTPX2 async client when this client owns it."""
+        """Stop new calls, wait for the active ones, and close the owned transport; a view stops only its calls."""
         await self._core.aclose()
 
     async def __aenter__(self) -> Self:

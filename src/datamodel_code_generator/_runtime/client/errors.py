@@ -627,3 +627,131 @@ class AdapterContractError(SDKError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("delivery_state", self.delivery_state.value))
+
+
+class AdapterExecutionError(SDKError):
+    """A transport adapter that failed outside its classified I/O errors, such as a programming error; no retry."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep how far the request got."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.delivery_state = delivery_state
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("delivery_state", self.delivery_state.value))
+
+
+class ClientClosedError(SDKError):
+    """A call to a client or view that is closing or closed, including one it stopped while running."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        state: Literal["CLOSING", "CLOSED"],
+        owner: Literal["client", "view"] = "client",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the state of the client or view that refused the call."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.state = state
+        self.owner = owner
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("state", self.state), ("owner", self.owner))
+
+
+class CleanupError(SDKError):
+    """A close that ran out of its cleanup time with calls still active; closing again waits for them again."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        pending_calls: int = 0,
+        pending_leases: int = 0,
+        pending_providers: int = 0,
+        timeout: float | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep what is still unfinished and the cleanup time that ran out."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.pending_calls = pending_calls
+        self.pending_leases = pending_leases
+        self.pending_providers = pending_providers
+        self.timeout = timeout
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("pending_calls", self.pending_calls), ("timeout", self.timeout))
+
+
+class UnsupportedAsyncBackendError(SDKError):
+    """An async client awaited outside asyncio, or on another event loop than its first call's; nothing is sent."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        detected_backend: str | None = None,
+        expected_backend: Literal["asyncio"] = "asyncio",
+        loop_mismatch: bool = False,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the backend found, the one required, and whether only the event loop differs."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.detected_backend = detected_backend
+        self.expected_backend = expected_backend
+        self.loop_mismatch = loop_mismatch
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("loop_mismatch", self.loop_mismatch))
