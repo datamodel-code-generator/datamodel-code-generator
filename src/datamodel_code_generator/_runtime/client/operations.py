@@ -279,6 +279,8 @@ class RequestBody:
                     media_type=f"{sent}; boundary={boundary}", content=selected.multipart(value, boundary)
                 )
             content = selected.encode(value, sent)
+        except RequestEncodingError as error:
+            raise RequestEncodingError(location=error.location, operation_id=operation_id, cause=error.cause) from None
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
         return EncodedBody(media_type=sent, content=content)

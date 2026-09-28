@@ -253,6 +253,7 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
         ("field of an object", body((field("a", object()),))),
         ("file of the other mode", body((file("f", bodies.AsyncFileBody(io.BytesIO(b"x"))),))),
         ("body of the other mode", bodies.AsyncMultipartBody((field("a", "1"),))),
+        ("body that is no multipart body", b"a=1"),
     ):
         record(lines, label, lambda value=value: api.forms.submit_parts(body=value))
     spent = bodies.StreamBody([b"once"])
