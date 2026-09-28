@@ -117,6 +117,7 @@ class Struct(DataModel):
     """DataModel implementation for msgspec.Struct."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "msgspec.jinja2"
+    SUPPORTS_FIELD_RENAMING: ClassVar[bool] = True
     BASE_CLASS: ClassVar[str] = "msgspec.Struct"
     BASE_CLASS_NAME: ClassVar[str] = "Struct"
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"

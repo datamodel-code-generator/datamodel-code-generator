@@ -1,0 +1,1 @@
+{"title":"Bar","type":"object","properties":{"x":{"type":"integer"}},"required":["x"]}
