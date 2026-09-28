@@ -107,8 +107,7 @@ from .transports import (
     TransportCapabilities,
     response_head,
 )
-from .urls import URLValidationError, canonical_origin
-from .urls import redirect_target as resolve_url
+from .urls import URLValidationError, absolute_target, canonical_origin
 
 if TYPE_CHECKING:
     from collections.abc import (
@@ -505,7 +504,7 @@ def _checked_raw(method: object, url: object) -> tuple[str, str]:
     if not isinstance(url, str):
         raise ConfigurationError(field_path=("url",), condition="invalid_url")
     try:
-        target = resolve_url(url, "")
+        target = absolute_target(url)
     except URLValidationError as error:
         raise ConfigurationError(field_path=("url",), condition="invalid_url", cause=error) from None
     return method.upper(), target.url
@@ -702,7 +701,7 @@ class _Call(LogicalCallContext):
         """Retain the original method and attach the call's sole declared idempotency key."""
         self.method = request.method
         if self.settings.redirects.enabled:
-            target = resolve_url(request.url, "")
+            target = absolute_target(request.url)
             self.initial_origin = self.current_origin = target.origin
             request = PreparedRequest(method=request.method, url=target.url, headers=request.headers, body=request.body)
         if self.idempotency is None:

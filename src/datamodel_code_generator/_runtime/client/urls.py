@@ -36,6 +36,13 @@ def canonical_origin(value: str) -> Origin:
     return _origin(httpx2.URL(value))
 
 
+def absolute_target(url: str) -> URLTarget:
+    """Interpret an absolute request URL natively, dropping the fragment it never sends."""
+    parsed = httpx2.URL(url)
+    origin = _origin(parsed)
+    return URLTarget(str(parsed.copy_with(fragment=None)) if "#" in url else str(parsed), origin)
+
+
 def redirect_target(current_url: str, location: str) -> URLTarget:
     """Resolve a Location once, preserving encoded path/query and removing non-request fragments."""
     url = httpx2.URL(current_url).join(location)
