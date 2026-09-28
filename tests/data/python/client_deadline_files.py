@@ -511,11 +511,13 @@ async def _queued(
     original = ThreadPoolExecutor.submit
 
     def submit(executor: ThreadPoolExecutor, function: Callable[..., object], *arguments: object) -> Future[object]:
+        task = asyncio.current_task()
+        if task is None:
+            msg = "queued file fixture must submit from an asyncio task"
+            raise RuntimeError(msg)
         if len(submitted) + 1 == blocked_index:
             blockers.append(original(executor, blocker.wait))
         future = original(executor, function, *arguments)
-        task = asyncio.current_task()
-        assert task is not None
         submitted.append((future, task))
         signals[len(submitted) - 1].set()
         return future
@@ -612,16 +614,30 @@ async def _completed_job(
     submitted: list[Future[object]] = []
     opened: list[_OpenedFile] = []
     original = ThreadPoolExecutor.submit
+    original_wrap = asyncio.wrap_future
+    delivery_delayed = False
 
     def submit(executor: ThreadPoolExecutor, function: Callable[..., object], *arguments: object) -> Future[object]:
         future = original(executor, function, *arguments)
         if not submitted:
             future.exception(timeout=5)
-            task = asyncio.current_task()
-            assert task is not None
-            task.cancel("completed file cancellation")
         submitted.append(future)
         return future
+
+    def wrap_future(future: Future[object], *, loop: asyncio.AbstractEventLoop | None = None) -> asyncio.Future[object]:
+        """Suspend initial delivery even when Python wraps the completed job without yielding."""
+        nonlocal delivery_delayed
+        if submitted and future is submitted[0] and not delivery_delayed:
+            task = asyncio.current_task()
+            if task is None:
+                msg = "completed file fixture must wrap from an asyncio task"
+                raise RuntimeError(msg)
+            delivery_delayed = True
+            loop = asyncio.get_running_loop() if loop is None else loop
+            delivery = loop.create_future()
+            loop.call_soon(task.cancel, "completed file cancellation")
+            return delivery
+        return original_wrap(future, loop=loop)
 
     with TemporaryDirectory() as directory:
         path = Path(directory) / "completed.bin"
@@ -636,7 +652,11 @@ async def _completed_job(
         async with package.AsyncClient(
             transport_adapter=adapter, options=options.ClientOptions(total_timeout=None)
         ) as api:
-            with patch.object(ThreadPoolExecutor, "submit", submit), patch.object(Path, "open", open_file):
+            with (
+                patch.object(ThreadPoolExecutor, "submit", submit),
+                patch.object(Path, "open", open_file),
+                patch.object(asyncio, "wrap_future", wrap_future),
+            ):
                 try:
                     await api.request_raw("POST", "https://files.example.com/", body=body)
                 except BaseException as error:  # noqa: BLE001
