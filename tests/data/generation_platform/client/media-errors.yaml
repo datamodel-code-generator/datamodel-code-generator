@@ -33,6 +33,16 @@ paths:
           description: A multipart response.
           content:
             multipart/mixed: {}
+  /text-parts:
+    post:
+      operationId: postTextParts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: {type: string}
+      responses:
+        '204':
+          description: A form-data body that is no object.
   /invalid:
     post:
       operationId: postInvalid

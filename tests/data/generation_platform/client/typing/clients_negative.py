@@ -69,3 +69,14 @@ async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO) ->
     StreamBody(["text"])  # error
     FileBody(file, ownership="shared")  # error
     BodyFactory(lambda: b"")  # error
+
+
+def misuse_multipart(client: Client, file: BinaryIO) -> None:
+    from pets.bodies import AsyncFileBody, AsyncMultipartBody, FieldPart, FilePart, MultipartBody
+    from pets.model_codecs import WireValue
+
+    MultipartBody[str]((FilePart("f", AsyncFileBody(file)),))  # error
+    client.request_raw("POST", "https://example.com/forms", body=AsyncMultipartBody[WireValue](()))  # error
+    FieldPart[str]("a", 1)  # error
+    parts: MultipartBody[str] = MultipartBody[int](())  # error
+    del parts

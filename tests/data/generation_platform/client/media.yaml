@@ -32,6 +32,51 @@ paths:
                 properties:
                   name: {type: string}
                   count: {type: integer}
+  /profiles:
+    post:
+      operationId: submitProfile
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: {type: string}
+                age: {type: integer}
+                active: {type: boolean}
+                tags:
+                  type: array
+                  items: {type: string}
+                address: {$ref: '#/components/schemas/Address'}
+                nickname: {type: [string, 'null']}
+      responses:
+        '204':
+          description: Stored.
+  /anything:
+    post:
+      operationId: submitAnything
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {}
+      responses:
+        '204':
+          description: Stored.
+  /attachments:
+    post:
+      operationId: submitParts
+      tags: [forms]
+      requestBody:
+        content:
+          multipart/form-data: {}
+      responses:
+        '204':
+          description: Stored.
   /pairs:
     post:
       operationId: submitPairs
@@ -127,6 +172,13 @@ paths:
           description: Replaced.
 components:
   schemas:
+    Address:
+      type: object
+      properties:
+        city: {type: string}
+        codes:
+          type: array
+          items: {type: integer}
     Draft:
       type: object
       required: [id, title, secret]

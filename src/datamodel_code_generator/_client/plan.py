@@ -22,18 +22,17 @@ from datamodel_code_generator._client.naming import (
     snake,
 )
 from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence
+from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence, SourceLocation
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._client.config import ClientGenerationConfig, ClientOperationConfig
     from datamodel_code_generator._generation_contract import (
         FrozenLiteral,
         OperationContract,
-        SourceLocation,
         TypeUseBinding,
         TypeUseId,
         WireDeclaration,
@@ -41,6 +40,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
+    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 Role: TypeAlias = Literal["success", "error"]
 
@@ -54,6 +54,11 @@ _LOCATIONS: Final[dict[object, ParameterLocation]] = {
 }
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SCHEMES: Final = frozenset({"http", "https"})
+_FORM_DATA: Final = "multipart/form-data"
+_NULL: Final = frozenset({"null"})
+_OBJECT: Final = frozenset({"object"})
+_ARRAY: Final = frozenset({"array"})
+_STRING: Final = frozenset({"string"})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
@@ -426,16 +431,45 @@ class Planner:
             media_type = declaration.name or ""
         kind = media_kind(media_type)
         use = self.use(declaration.schemas)
-        if kind == "multipart" or (request and "*" in media_type.partition(";")[0]):
+        form_data = request and media_type.partition(";")[0] == _FORM_DATA
+        if (kind == "multipart" and not form_data) or (request and "*" in media_type.partition(";")[0]):
             message = f"The {media_type} media of {_label(operation)} is not supported yet"
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
-        if kind == "form" and (encoded := _encoded(declaration)) is not None:
+        elif form_data and (reason := self.file_parts(use)) is not None:
+            message = f"The {media_type} media of {_label(operation)} {reason}"
+            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
+        if kind in {"form", "multipart"} and (encoded := _encoded(declaration)) is not None:
             message = (
                 f"The {encoded.name} encoding of the {media_type} media of {_label(operation)} is not supported yet"
             )
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoded.use_site))
         fields, additional = self.forms.get(use.id, ((), None)) if kind == "form" and use is not None else ((), None)
         return MediaSpec(media_type=media_type, kind=kind, use=use, fields=fields, additional=additional)
+
+    def file_parts(self, use: TypeUseBinding | None) -> str | None:
+        """Return why a form-data schema cannot be sent yet: file parts or a shape other than an object; else None.
+
+        The members of the use are its properties as its model declares them, so allOf branches count too.
+        """
+        if use is None or use.schema is None:
+            return None
+        _, schema = self.wire.schema(use.schema)
+        if _types(schema) - _NULL not in {frozenset(), _OBJECT}:
+            return "needs an object schema to be sent as parts"
+        files = [
+            member.wire_name or "additional properties"
+            for member in use.members
+            if member.schema is not None and self.file(member.schema)
+        ]
+        return None if not files else f"has file parts, which are not supported yet: {', '.join(files)}"
+
+    def file(self, location: SourceLocation) -> bool:
+        """Return whether a property holds binary files: a binary string, or an array of them."""
+        _, schema = self.wire.schema(location)
+        if _types(schema) - _NULL == _ARRAY:
+            _, schema = self.wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
+        binary = schema.get("format") == "binary" or ("contentMediaType" in schema and "contentEncoding" not in schema)
+        return _types(schema) - _NULL == _STRING and binary
 
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None
@@ -617,6 +651,18 @@ def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:
             if "*" not in media.media_type.partition(";")[0]
         )
     )
+
+
+def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:
+    """Return the JSON types a schema declares, none when it declares none."""
+    match declared := schema.get("type"):
+        case str():
+            return frozenset({declared})
+        case tuple():
+            return frozenset(str(item) for item in declared)
+        case _:
+            pass
+    return frozenset()
 
 
 def _encoded(media: WireDeclaration) -> WireDeclaration | None:

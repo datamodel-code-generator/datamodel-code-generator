@@ -5,8 +5,10 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias, overload
 
+from models import FieldAnythingPostRequest as _dcg_type_3
 from models import FieldFormsPostRequest as _dcg_type_1
 from models import FieldFormsPostResponse as _dcg_type_0
+from models import FieldProfilesPostRequest as _dcg_type_2
 from typing_extensions import Never
 
 from ..._generated import model_bindings
@@ -49,6 +51,97 @@ SubmitFormRequestCodecs: Final = _SubmitFormRequestCodecs(
     bodies=(('application/x-www-form-urlencoded', model_bindings.outbound_0),),
     default='application/x-www-form-urlencoded',
 )
+
+
+SubmitProfileResponse: TypeAlias = None
+SubmitProfileErrorData: TypeAlias = None
+
+
+class SubmitProfileHTTPError(HTTPStatusError[SubmitProfileErrorData]):
+    """An error response of submit_profile, with its decoded payload when one is declared."""
+
+
+class _SubmitProfileRequestCodecs(
+    RequestCodecs[NativeOutboundCodec[_dcg_type_2], Never],
+):
+    """The outbound codecs of the submit_profile request."""
+
+    @overload
+    def body(self) -> NativeOutboundCodec[_dcg_type_2]: ...
+    @overload
+    def body(
+        self,
+        *,
+        media_type: Literal['multipart/form-data'],
+    ) -> NativeOutboundCodec[_dcg_type_2]: ...
+    @overload
+    def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_2]: ...
+    def body(
+        self,
+        *,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_2]:
+        """Return the outbound codec of one declared request media type."""
+        return self._body(media_type)
+
+
+SubmitProfileRequestCodecs: Final = _SubmitProfileRequestCodecs(
+    bodies=(('multipart/form-data', model_bindings.outbound_2),),
+    default='multipart/form-data',
+)
+
+
+SubmitAnythingResponse: TypeAlias = None
+SubmitAnythingErrorData: TypeAlias = None
+
+
+class SubmitAnythingHTTPError(HTTPStatusError[SubmitAnythingErrorData]):
+    """An error response of submit_anything, with its decoded payload when one is declared."""
+
+
+class _SubmitAnythingRequestCodecs(
+    RequestCodecs[NativeOutboundCodec[_dcg_type_3], Never],
+):
+    """The outbound codecs of the submit_anything request."""
+
+    @overload
+    def body(self) -> NativeOutboundCodec[_dcg_type_3]: ...
+    @overload
+    def body(
+        self,
+        *,
+        media_type: Literal['multipart/form-data'],
+    ) -> NativeOutboundCodec[_dcg_type_3]: ...
+    @overload
+    def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_3]: ...
+    def body(
+        self,
+        *,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[_dcg_type_3]:
+        """Return the outbound codec of one declared request media type."""
+        return self._body(media_type)
+
+
+SubmitAnythingRequestCodecs: Final = _SubmitAnythingRequestCodecs(
+    bodies=(('multipart/form-data', model_bindings.outbound_3),),
+    default='multipart/form-data',
+)
+
+
+SubmitPartsResponse: TypeAlias = None
+SubmitPartsErrorData: TypeAlias = None
+
+
+class SubmitPartsHTTPError(HTTPStatusError[SubmitPartsErrorData]):
+    """An error response of submit_parts, with its decoded payload when one is declared."""
+
+
+class _SubmitPartsRequestCodecs(RequestCodecs[Never, Never]):
+    """The outbound codecs of the submit_parts request."""
+
+
+SubmitPartsRequestCodecs: Final = _SubmitPartsRequestCodecs()
 
 
 SubmitPairsResponse: TypeAlias = FormData

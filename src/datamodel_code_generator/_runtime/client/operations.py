@@ -40,6 +40,7 @@ from .errors import (
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
 )
+from .multipart import MultipartSource, encode_multipart, new_boundary
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Sequence
@@ -56,7 +57,7 @@ T_co = TypeVar("T_co", covariant=True)
 E_co = TypeVar("E_co", covariant=True)
 
 FormData: TypeAlias = tuple[tuple[str, str], ...]
-BodyKind: TypeAlias = Literal["json", "text", "form", "binary"]
+BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
 ReadKind: TypeAlias = Literal["json", "text", "form"]
 
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
@@ -188,6 +189,12 @@ class BodyMedia:
         """Return the wire value of a JSON or text argument."""
         return checked_wire(value) if self.encoder is None else self.encoder.encode(value)
 
+    def multipart(self, value: object, boundary: str) -> object:
+        """Return a form-data body: an object's members as parts, or the parts a body without a schema gives."""
+        if self.encoder is None:
+            return MultipartSource(value, boundary)
+        return encode_multipart(self.encoder.encode(value), boundary)
+
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
     return isinstance(value, tuple)
@@ -227,11 +234,17 @@ class RequestBody:
                 raise RequestEncodingError(location=("body",), operation_id=operation_id)
             return None
         selected = self.select(operation_id, media_type)
+        declared = selected.media_type
         try:
+            if selected.kind == "multipart":
+                boundary = new_boundary()
+                return EncodedBody(
+                    media_type=f"{declared}; boundary={boundary}", content=selected.multipart(value, boundary)
+                )
             content = selected.encode(value)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
-        return EncodedBody(media_type=selected.media_type, content=content)
+        return EncodedBody(media_type=declared, content=content)
 
     def select(self, operation_id: str | None, media_type: str | None) -> BodyMedia:
         """Return the declared media a call names, or the default media when it names none."""

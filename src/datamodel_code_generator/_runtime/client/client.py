@@ -54,6 +54,7 @@ from .errors import (
     add_secondary,
 )
 from .lifecycle import Scope
+from .multipart import MultipartSource, is_multipart, new_boundary
 from .native import AsyncHttpx2Transport, Httpx2Transport
 from .operations import DATA_ERRORS, ResponseDecoder, normalized
 from .options import ClientOptions, RequestOptions, ServerSelection, Settings, checked_base_url, is_base_url
@@ -81,7 +82,9 @@ if TYPE_CHECKING:
     )
 
     from ..model_codecs.parameters import ParameterFragment
-    from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
+    from ..model_codecs.wire import WireValue
+    from .bodies import AsyncBodyAttempt, BodyAttempt
+    from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ServerPlan
     from .transports import AsyncTransportAdapter, AsyncTransportResponse, TransportAdapter, TransportResponse
 
@@ -97,7 +100,7 @@ _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
-_BINARY: Final = "A binary body must be bytes or a file, stream, or factory body of the client's mode"
+_BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
 _MAX_STATUS: Final = 599
 
@@ -264,20 +267,24 @@ def _context(call_id: str) -> BodyAttemptContext:
 
 
 def _attempt(content: object, call_id: str) -> BodyAttempt:
-    """Return what a synchronous file, stream, or factory body builds for an attempt, refusing any other input."""
+    """Return what a synchronous file, stream, factory, or multipart body builds for an attempt; refuse the rest."""
     match content:
         case FileBody() | StreamBody() | BodyFactory():
             return content(_context(call_id))
+        case MultipartSource():
+            return content.attempt(_context(call_id))
         case _:
             pass
     raise RequestEncodingError(location=("body",), cause=TypeError(_BINARY))
 
 
 async def _aattempt(content: object, call_id: str) -> AsyncBodyAttempt:
-    """Return what an async file, stream, or factory body builds for an attempt, refusing any other input."""
+    """Return what an async file, stream, factory, or multipart body builds for an attempt; refuse the rest."""
     match content:
         case AsyncFileBody() | AsyncStreamBody() | AsyncBodyFactory():
             return await content(_context(call_id))
+        case MultipartSource():
+            return await content.aattempt(_context(call_id))
         case _:
             pass
     raise RequestEncodingError(location=("body",), cause=TypeError(_BINARY))
@@ -456,6 +463,9 @@ class _Core(Generic[AdapterT, HandleT]):
         settings = self._settings if options is None else _layered(self._settings, options)
         verb, target = _checked_raw(method, url)
         media_type = body.content_type if isinstance(body, (BodyFactory, AsyncBodyFactory)) else None
+        if is_multipart(body):
+            body = MultipartSource(body, boundary := new_boundary())
+            media_type = f"multipart/form-data; boundary={boundary}"
         fixed = self._shared.fixed
         headers = HeadersView(fixed if media_type is None else (*fixed, ("Content-Type", media_type)))
         attempt, deferred = _encoded(body, None)
@@ -824,7 +834,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         method: str,
         url: str,
         *,
-        body: SyncBinaryBody | Unset = UNSET,
+        body: BodyInput[WireValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> RawResponse:
@@ -848,7 +858,12 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         )
 
     def stream_raw(
-        self, method: str, url: str, *, body: SyncBinaryBody | Unset = UNSET, options: RequestOptions | None = None
+        self,
+        method: str,
+        url: str,
+        *,
+        body: BodyInput[WireValue] | Unset = UNSET,
+        options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
@@ -1122,7 +1137,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         method: str,
         url: str,
         *,
-        body: AsyncBinaryBody | Unset = UNSET,
+        body: AsyncBodyInput[WireValue] | Unset = UNSET,
         options: RequestOptions | None = None,
         stream: bool = False,
     ) -> AsyncRawResponse:
@@ -1147,7 +1162,12 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         )
 
     def stream_raw(
-        self, method: str, url: str, *, body: AsyncBinaryBody | Unset = UNSET, options: RequestOptions | None = None
+        self,
+        method: str,
+        url: str,
+        *,
+        body: AsyncBodyInput[WireValue] | Unset = UNSET,
+        options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))

@@ -1,0 +1,134 @@
+# media pydantic_v2.BaseModel
+  > POST https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 743] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--<boundary>\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--<boundary>\r\nContent-Disposition: form-data; name="active"\r\n\r\ntrue\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\n{"city":"London","codes":[1,2]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="nickname"\r\n\r\nnull\r\n--<boundary>--\r\n'
+  profile = None
+  > POST https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 131] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nBo\r\n--<boundary>--\r\n'
+  profile with its name only = None
+  profile with no tags ! RequestEncodingError: RequestEncodingError(operation_id='submitProfile', location='body') [operation_id='submitProfile', location=('body',), cause=ParameterEncodingError('An empty array cannot be represented by repeated parts')] request_encoding_error
+  profile without a name ! RequestEncodingError: RequestEncodingError(operation_id='submitProfile', location='body') [operation_id='submitProfile', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  > POST https://media.example.com/api/anything
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 127] b'--<boundary>\r\nContent-Disposition: form-data; name="k"\r\n\r\n1\r\n--<boundary>--\r\n'
+  free-form object = None
+  free-form value that is no object ! RequestEncodingError: RequestEncodingError(operation_id='submitAnything', location='body') [operation_id='submitAnything', location=('body',), cause=ParameterEncodingError('A multipart form value must be an object')] request_encoding_error
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="summary"\r\nContent-Type: text/markdown\r\nX-Trace: t\r\n\r\n# Hi\r\n--<boundary>\r\nContent-Disposition: form-data; name="image"; filename="a%22b%0D%0A.png"\r\nContent-Type: image/png\r\n\r\n\x00\x01\r\n--<boundary>\r\nContent-Disposition: form-data; name="doc"; filename="doc.txt"\r\nContent-Type: application/octet-stream\r\n\r\ndoc\r\n--<boundary>\r\nContent-Disposition: form-data; name="stream"\r\nContent-Type: application/octet-stream\r\n\r\ns1s2\r\n--<boundary>--\r\n'
+  streamed parts = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 253] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>--\r\n'
+  sized parts = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
+  no parts = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  no body = None
+  part header on two lines ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] request_encoding_error
+  part header naming the media type ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] request_encoding_error
+  part media type that is none ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=ParameterEncodingError('A part media type must be a media type')] request_encoding_error
+  file part header that is no token ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.f') [operation_id='submitParts', location=('body', 'f'), cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] request_encoding_error
+  part that is no part ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.?') [operation_id='submitParts', location=('body', '?'), cause=TypeError("A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode")] request_encoding_error
+  field of an object ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=TypeError('object is not a JSON value')] request_encoding_error
+  file of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.f') [operation_id='submitParts', location=('body', 'f'), cause=TypeError("A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode")] request_encoding_error
+  body of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body') [operation_id='submitParts', location=('body',), cause=TypeError("A multipart body must be of the client's mode")] request_encoding_error
+  factory <call> 0 0 None
+  attempt closed
+  file part refused after another began ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='submitParts', condition='consumed'] body_not_replayable_error
+  factory <call> 0 0 None
+  factory <call> 0 0 None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
+  attempt closed
+  attempt closed
+  file parts failing to close: BodyFactoryError secondary ['BodyFactoryError']
+  > POST https://forms.example.com/raw
+    [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
+  raw parts = b'ok'
+  > POST https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 743] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--<boundary>\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--<boundary>\r\nContent-Disposition: form-data; name="active"\r\n\r\ntrue\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\n{"city":"London","codes":[1,2]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="nickname"\r\n\r\nnull\r\n--<boundary>--\r\n'
+  async profile = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="doc"; filename="doc.txt"\r\nContent-Type: application/octet-stream\r\n\r\ndoc\r\n--<boundary>\r\nContent-Disposition: form-data; name="stream"\r\nContent-Type: application/octet-stream\r\n\r\ns1s2\r\n--<boundary>\r\nContent-Disposition: form-data; name="image"\r\nContent-Type: image/png\r\n\r\n\x00\r\n--<boundary>--\r\n'
+  async parts = None
+  async body of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body') [operation_id='submitParts', location=('body',), cause=TypeError("A multipart body must be of the client's mode")] request_encoding_error
+  async file of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.f') [operation_id='submitParts', location=('body', 'f'), cause=TypeError("A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode")] request_encoding_error
+  factory <call> 0 0 None
+  attempt closed
+  async file part refused after another began ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='submitParts', condition='consumed'] body_not_replayable_error
+  factory <call> 0 0 None
+  factory <call> 0 0 None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
+  attempt closed
+  attempt closed
+  async file parts failing to close: BodyFactoryError secondary ['BodyFactoryError']
+  > POST https://forms.example.com/raw
+    [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
+  async raw parts = b'ok'
+# media typing.TypedDict
+  > POST https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 743] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--<boundary>\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--<boundary>\r\nContent-Disposition: form-data; name="active"\r\n\r\ntrue\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\n{"city":"London","codes":[1,2]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="nickname"\r\n\r\nnull\r\n--<boundary>--\r\n'
+  profile = None
+  > POST https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 131] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nBo\r\n--<boundary>--\r\n'
+  profile with its name only = None
+  profile with no tags ! RequestEncodingError: RequestEncodingError(operation_id='submitProfile', location='body') [operation_id='submitProfile', location=('body',), cause=ParameterEncodingError('An empty array cannot be represented by repeated parts')] request_encoding_error
+  profile without a name ! RequestEncodingError: RequestEncodingError(operation_id='submitProfile', location='body') [operation_id='submitProfile', location=('body',), cause=WireValidationError('A required property is missing at /name')] request_encoding_error
+  > POST https://media.example.com/api/anything
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 127] b'--<boundary>\r\nContent-Disposition: form-data; name="k"\r\n\r\n1\r\n--<boundary>--\r\n'
+  free-form object = None
+  free-form value that is no object ! RequestEncodingError: RequestEncodingError(operation_id='submitAnything', location='body') [operation_id='submitAnything', location=('body',), cause=ParameterEncodingError('A multipart form value must be an object')] request_encoding_error
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="summary"\r\nContent-Type: text/markdown\r\nX-Trace: t\r\n\r\n# Hi\r\n--<boundary>\r\nContent-Disposition: form-data; name="image"; filename="a%22b%0D%0A.png"\r\nContent-Type: image/png\r\n\r\n\x00\x01\r\n--<boundary>\r\nContent-Disposition: form-data; name="doc"; filename="doc.txt"\r\nContent-Type: application/octet-stream\r\n\r\ndoc\r\n--<boundary>\r\nContent-Disposition: form-data; name="stream"\r\nContent-Type: application/octet-stream\r\n\r\ns1s2\r\n--<boundary>--\r\n'
+  streamed parts = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 253] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>--\r\n'
+  sized parts = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 41] b'--<boundary>--\r\n'
+  no parts = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  no body = None
+  part header on two lines ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] request_encoding_error
+  part header naming the media type ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] request_encoding_error
+  part media type that is none ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=ParameterEncodingError('A part media type must be a media type')] request_encoding_error
+  file part header that is no token ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.f') [operation_id='submitParts', location=('body', 'f'), cause=ParameterEncodingError('A part header must be a token other than Content-Type and Content-Disposition, on one line')] request_encoding_error
+  part that is no part ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.?') [operation_id='submitParts', location=('body', '?'), cause=TypeError("A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode")] request_encoding_error
+  field of an object ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.a') [operation_id='submitParts', location=('body', 'a'), cause=TypeError('object is not a JSON value')] request_encoding_error
+  file of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.f') [operation_id='submitParts', location=('body', 'f'), cause=TypeError("A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode")] request_encoding_error
+  body of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body') [operation_id='submitParts', location=('body',), cause=TypeError("A multipart body must be of the client's mode")] request_encoding_error
+  factory <call> 0 0 None
+  attempt closed
+  file part refused after another began ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='submitParts', condition='consumed'] body_not_replayable_error
+  factory <call> 0 0 None
+  factory <call> 0 0 None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
+  attempt closed
+  attempt closed
+  file parts failing to close: BodyFactoryError secondary ['BodyFactoryError']
+  > POST https://forms.example.com/raw
+    [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
+  raw parts = b'ok'
+  > POST https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 743] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--<boundary>\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--<boundary>\r\nContent-Disposition: form-data; name="active"\r\n\r\ntrue\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\n{"city":"London","codes":[1,2]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="nickname"\r\n\r\nnull\r\n--<boundary>--\r\n'
+  async profile = None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="title"\r\n\r\nNotes\r\n--<boundary>\r\nContent-Disposition: form-data; name="doc"; filename="doc.txt"\r\nContent-Type: application/octet-stream\r\n\r\ndoc\r\n--<boundary>\r\nContent-Disposition: form-data; name="stream"\r\nContent-Type: application/octet-stream\r\n\r\ns1s2\r\n--<boundary>\r\nContent-Disposition: form-data; name="image"\r\nContent-Type: image/png\r\n\r\n\x00\r\n--<boundary>--\r\n'
+  async parts = None
+  async body of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body') [operation_id='submitParts', location=('body',), cause=TypeError("A multipart body must be of the client's mode")] request_encoding_error
+  async file of the other mode ! RequestEncodingError: RequestEncodingError(operation_id='submitParts', call_id='<call>', location='body.f') [operation_id='submitParts', location=('body', 'f'), cause=TypeError("A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode")] request_encoding_error
+  factory <call> 0 0 None
+  attempt closed
+  async file part refused after another began ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='stream', condition='consumed') [operation_id='submitParts', condition='consumed'] body_not_replayable_error
+  factory <call> 0 0 None
+  factory <call> 0 0 None
+  > POST https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, transfer-encoding: chunked] b'--<boundary>\r\nContent-Disposition: form-data; name="first"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="second"\r\nContent-Type: application/octet-stream\r\n\r\ny\r\n--<boundary>--\r\n'
+  attempt closed
+  attempt closed
+  async file parts failing to close: BodyFactoryError secondary ['BodyFactoryError']
+  > POST https://forms.example.com/raw
+    [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
+  async raw parts = b'ok'

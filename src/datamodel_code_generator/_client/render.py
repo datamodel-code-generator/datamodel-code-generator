@@ -142,12 +142,22 @@ _BODY_NAMES: Final = (
     "StreamBody",
     "SyncBinaryBody",
 )
+_MULTIPART_NAMES: Final = (
+    "AsyncBodyInput",
+    "AsyncMultipartBody",
+    "BodyInput",
+    "FieldPart",
+    "FilePart",
+    "MultipartBody",
+)
 _BODIES: Final = (
     '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n'
     "from ._runtime.client.bodies import (\n"
     + "".join(f"    {name},\n" for name in _BODY_NAMES)
+    + ")\nfrom ._runtime.client.multipart import (\n"
+    + "".join(f"    {name},\n" for name in _MULTIPART_NAMES)
     + ")\nfrom ._runtime.client.operations import FormData\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, "FormData")))
+    + "".join(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, *_MULTIPART_NAMES, "FormData")))
     + "]\n"
 )
 _TRANSPORT_NAMES: Final = (
@@ -506,7 +516,7 @@ class _Resources(_Typing):
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
-            "binary": module.local("bodies", f"{prefix or 'Sync'}BinaryBody"),
+            "binary": f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'WireValue')}]",
             "manager": module.name("contextlib", f"Abstract{prefix}ContextManager"),
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",
@@ -601,12 +611,15 @@ class _Resources(_Typing):
         literal = module.name("typing", "Literal")
         omitted = f"{module.local('options', 'Unset')} = {module.local('options', 'UNSET')}"
         groups: dict[str, list[str]] = {}
+        prefix = "Async" if asynchronous else ""
         for media in body.media:
-            surface = (
-                module.local("bodies", "AsyncBinaryBody" if asynchronous else "SyncBinaryBody")
-                if media.kind == "binary"
-                else self.surface(module, media.kind, media.use, sent=True)
-            )
+            match media.kind, media.use:
+                case "binary", _:
+                    surface = module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
+                case "multipart", None:
+                    surface = f"{module.local('bodies', f'{prefix}MultipartBody')}[str]"
+                case _:
+                    surface = self.surface(module, media.kind, media.use, sent=True)
             groups.setdefault(surface, []).append(media.media_type)
         choices = f"{_literal(literal, (media.media_type for media in body.media))} | None = None"
         surfaces = _union(groups)
@@ -990,7 +1003,7 @@ class _Registry(_Typing):
 
     def media(self, module: Module, media: MediaSpec) -> Group:
         """Return the BodyMedia constructor of one request media type."""
-        kind = media.kind if media.kind in {"json", "text", "form"} else "binary"
+        kind = media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
         entries: list[tuple[str, Doc]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
         if kind != "binary" and media.use is not None and media.use.id in self.accessors:
             entries.append(("encoder=", self.encoder(module, media.use)))
