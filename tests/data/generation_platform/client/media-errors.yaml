@@ -30,9 +30,18 @@ paths:
                 explode: true
       responses:
         '200':
-          description: A multipart response.
+          description: A multipart response with a schema but no names.
           content:
-            multipart/mixed: {}
+            multipart/mixed:
+              schema: {type: object}
+        '201':
+          description: A form-data response with a file part.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  photo: {type: string, contentMediaType: image/png}
   /text-parts:
     post:
       operationId: postTextParts

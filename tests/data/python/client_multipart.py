@@ -35,15 +35,122 @@ def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
 
 
 def multipart(package: ModuleType, lines: list[str]) -> None:
-    """Send form-data bodies synchronously and with asyncio, and refuse parts that cannot be sent."""
+    """Send form-data bodies and read multipart responses, synchronously and with asyncio, refusing broken ones."""
     exchange = Exchange(lines)
     http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
     with package.Client(http_client=http) as api:
         _profiles(package, api, exchange, lines)
         _parts(package, api, exchange, lines)
+        _responses(api, exchange, lines)
     http.close()
     run(lambda: _async_multipart(package, lines))
     lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
+
+
+def _form(*parts: tuple[str, bytes], boundary: str = "b1") -> bytes:
+    """Return a multipart body of raw part heads and contents."""
+    return b"".join(b"--%s\r\n%s\r\n\r\n%s\r\n" % (boundary.encode(), head, content) for head, content in parts) + (
+        b"--%s--\r\n" % boundary.encode()
+    )
+
+
+_NAMED: Final = b'Content-Disposition: form-data; name="%s"'
+_PROFILE_PARTS: Final = (
+    (_NAMED % b"name", b"Ada"),
+    (_NAMED % b"age", b"36"),
+    (_NAMED % b"score", b"1.5"),
+    (_NAMED % b"ratio", b"2"),
+    (_NAMED % b"active", b"true"),
+    (_NAMED % b"tags", b"a"),
+    (_NAMED % b"tags", b"b"),
+    (_NAMED % b"address" + b"\r\nContent-Type: application/json", b'{"city":"Oslo","codes":[7]}'),
+    (_NAMED % b"bonus", b"7"),
+)
+
+
+def _parts_of(data: Any) -> str:
+    """Describe multipart data: each part's name, filename, media type, headers, and value."""
+    return f"{data!r} " + "; ".join(
+        f"{part!r} {part.name!r} {part.filename!r} {part.content_type!r} {list(part.headers)} {part.value!r}"
+        for part in data.parts
+    )
+
+
+def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Read form-data parts into a schema's object and any multipart parts as they arrived."""
+    form = "multipart/form-data; boundary=b1"
+    for label, content, media in (
+        ("profile read", _form(*_PROFILE_PARTS), form),
+        (
+            "profile read with a quoted boundary",
+            _form(*_PROFILE_PARTS[:1], boundary="q 1"),
+            'multipart/form-data; boundary="q 1"',
+        ),
+        ("profile read without a boundary", _form(*_PROFILE_PARTS[:1]), "multipart/form-data"),
+        ("profile read of another boundary", _form(*_PROFILE_PARTS[:1]), "multipart/form-data; boundary=b2"),
+        (
+            "profile read with a preamble, padding, and an epilogue",
+            b"preamble\r\n" + _form(*_PROFILE_PARTS[:1]).replace(b"--b1\r\n", b"--b1 \t\r\n", 1) + b"epilogue",
+            form,
+        ),
+        ("profile read of a boundary mid-line", b"x--b1\r\n" + _form(*_PROFILE_PARTS[:1]), form),
+        ("profile read of a part off its line", b"--b1 x\r\n\r\n--b1--\r\n", form),
+        ("profile read that ends at its boundary", b"--b1", form),
+        ("profile read of an unterminated part", b"--b1\r\n" + _NAMED % b"name" + b"\r\n\r\nAda", form),
+        ("profile read of a header without a colon", _form((b"Broken", b"x")), form),
+        ("profile read of a part without a name", _form((b"Content-Type: text/plain", b"x")), form),
+        ("profile read of a name twice", _form(*_PROFILE_PARTS[:1], *_PROFILE_PARTS[:1]), form),
+        (
+            "profile read of a null address twice",
+            _form(
+                *_PROFILE_PARTS[:1], *(((_NAMED % b"address" + b"\r\nContent-Type: application/json", b"null"),) * 2)
+            ),
+            form,
+        ),
+        ("profile read of an extra that is no integer", _form(*_PROFILE_PARTS[:1], (_NAMED % b"bonus", b"x")), form),
+        ("profile read of broken JSON", _form(*_PROFILE_PARTS[:1], (_NAMED % b"address", b"{")), form),
+        ("profile read of text that is not UTF-8", _form((_NAMED % b"name", b"\xff")), form),
+        (
+            "profile read of Latin-1 text",
+            _form((_NAMED % b"name" + b"\r\nContent-Type: text/plain; charset=iso-8859-1", "café".encode("latin-1"))),
+            form,
+        ),
+        (
+            "profile read of UTF-16 text",
+            _form((_NAMED % b"name" + b"\r\nContent-Type: text/plain; charset=utf-16", "café".encode("utf-16"))),
+            form,
+        ),
+        ("profile read without its name", _form(*_PROFILE_PARTS[1:2]), form),
+    ):
+        exchange.respond(raw_response(200, content, media))
+        record(lines, label, api.forms.read_profile)
+    mixed = (
+        b'--b1\r\nContent-Disposition: attachment; filename="a\\"b.txt"\r\nContent-Type: text/plain\r\nX-Trace: t\r\n\r\none'
+        b"\r\n--b1\r\n\r\n\x00two\r\n\r\n"
+        b'\r\n--b1\r\nContent-Disposition: form-data; filename="x; name=y"; name=third; filename=plain.bin\r\n\r\n3'
+        b"\r\n--b1\r\nX-Only: 1\r\n"
+        b'\r\n--b1\r\nContent-Disposition: attachment; filename="caf\xe9.txt"\r\n\r\n4'
+        b"\r\n--b1\r\nX-Bare: 2"
+        b"\r\n--b1\r\n"
+        b"\r\n--b1--"
+    )
+    for _ in range(2):
+        exchange.respond(raw_response(200, mixed, "multipart/mixed; boundary=b1"))
+    data, again = api.forms.read_parts(), api.forms.read_parts()
+    lines.append(f"  parts read {_parts_of(data)}")
+    first, second = data.parts[:2]
+    lines.append(
+        f"  parts read again: {data == again} {hash(data) == hash(again)} {first == again.parts[0]} {hash(first) == hash(again.parts[0])} "
+        f"{first == second} {data == data.parts} {first == data}"
+    )
+    exchange.respond(raw_response(200, b"not multipart", "multipart/mixed; boundary=b1"))
+    record(lines, "parts read of a body without its boundary", api.forms.read_parts)
+    for label, parts in (
+        ("stored id read", ((_NAMED % b"id", b"4"),)),
+        ("stored id read of an extra part", ((_NAMED % b"id", b"4"), (_NAMED % b"x", b"1"))),
+    ):
+        exchange.respond(raw_response(202, _form(*parts), form))
+        record(lines, label, api.forms.read_parts)
 
 
 def _profiles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -58,11 +165,21 @@ def _profiles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     ):
         if label in {"profile", "profile with its name only"}:
             exchange.respond(raw_response(204))
-        record(lines, label, lambda value=value: api.forms.submit_profile(body=codec.from_wire(value)) if "name" in value else api.forms.submit_profile(body=value))
+        record(
+            lines,
+            label,
+            lambda value=value: (
+                api.forms.submit_profile(body=codec.from_wire(value))
+                if "name" in value
+                else api.forms.submit_profile(body=value)
+            ),
+        )
     anything = types.SubmitAnythingRequestCodecs.body()
     exchange.respond(raw_response(204))
     record(lines, "free-form object", lambda: api.forms.submit_anything(body=anything.from_wire({"k": [1]})))
-    record(lines, "free-form value that is no object", lambda: api.forms.submit_anything(body=anything.from_wire("text")))
+    record(
+        lines, "free-form value that is no object", lambda: api.forms.submit_anything(body=anything.from_wire("text"))
+    )
 
 
 def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -99,7 +216,10 @@ def _parts(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) 
     begun = body((file("first", bodies.BodyFactory(attempt_factory(lines, b"x"))), file("second", spent)))
     record(lines, "file part refused after another began", lambda: api.forms.submit_parts(body=begun))
     failing = bodies.BodyFactory(attempt_factory(lines, b"x", close_error=True))
-    closing = body((file("first", failing), file("second", bodies.BodyFactory(attempt_factory(lines, b"y", close_error=True)))))
+    closing = body((
+        file("first", failing),
+        file("second", bodies.BodyFactory(attempt_factory(lines, b"y", close_error=True))),
+    ))
     exchange.respond(raw_response(204))
     lines.append(f"  file parts failing to close: {outcome(lambda: api.forms.submit_parts(body=closing))}")
     exchange.respond(raw_response(200, b"ok", "text/plain"))
@@ -124,7 +244,11 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
 
     async with package.AsyncClient(http_client=http) as api:
         exchange.respond(raw_response(204))
-        await arecord(lines, "async profile", lambda: api.forms.submit_profile(body=types.SubmitProfileRequestCodecs.body().from_wire(_PROFILE)))
+        await arecord(
+            lines,
+            "async profile",
+            lambda: api.forms.submit_profile(body=types.SubmitProfileRequestCodecs.body().from_wire(_PROFILE)),
+        )
         file_body = bodies.AsyncFileBody(io.BytesIO(b"doc"))
         parts = body((
             field("title", "Notes"),
@@ -142,14 +266,19 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
             await arecord(lines, label, lambda value=value: api.forms.submit_parts(body=value))
         spent = bodies.AsyncStreamBody(Chunks(lines, (b"once",)))
         await spent(bodies.BodyAttemptContext(call_id="spent", attempt_index=0, hop_index=0, remaining_timeout=None))
-        begun = body((file("first", bodies.AsyncBodyFactory(async_attempt_factory(lines, b"x"))), file("second", spent)))
+        begun = body((
+            file("first", bodies.AsyncBodyFactory(async_attempt_factory(lines, b"x"))),
+            file("second", spent),
+        ))
         await arecord(lines, "async file part refused after another began", lambda: api.forms.submit_parts(body=begun))
         closing = body((
             file("first", bodies.AsyncBodyFactory(async_attempt_factory(lines, b"x", close_error=True))),
             file("second", bodies.AsyncBodyFactory(async_attempt_factory(lines, b"y", close_error=True))),
         ))
         exchange.respond(raw_response(204))
-        lines.append(f"  async file parts failing to close: {await aoutcome(lambda: api.forms.submit_parts(body=closing))}")
+        lines.append(
+            f"  async file parts failing to close: {await aoutcome(lambda: api.forms.submit_parts(body=closing))}"
+        )
         exchange.respond(raw_response(200, b"ok", "text/plain"))
         raw = body((field("meta", {"k": 1}), file("f", b"raw")))
 
@@ -157,4 +286,8 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
             return (await api.request_raw("POST", "https://forms.example.com/raw", body=raw)).body_bytes
 
         await arecord(lines, "async raw parts", raw_call)
+        exchange.respond(raw_response(200, _form(*_PROFILE_PARTS), "multipart/form-data; boundary=b1"))
+        await arecord(lines, "async profile read", api.forms.read_profile)
+        exchange.respond(raw_response(200, _form((_NAMED % b"x", b"1")), "multipart/mixed; boundary=b1"))
+        lines.append(f"  async parts read {_parts_of(await api.forms.read_parts())}")
     await http.aclose()

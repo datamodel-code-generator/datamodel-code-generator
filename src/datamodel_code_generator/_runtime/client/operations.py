@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import codecs
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
 
@@ -40,7 +39,17 @@ from .errors import (
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
 )
-from .multipart import MultipartSource, encode_multipart, new_boundary
+from .media import charset
+from .multipart import (
+    DecodedPart,
+    MultipartData,
+    MultipartSource,
+    PartPlan,
+    decode_parts,
+    encode_multipart,
+    new_boundary,
+    parse_multipart,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Sequence
@@ -58,7 +67,7 @@ E_co = TypeVar("E_co", covariant=True)
 
 FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
-ReadKind: TypeAlias = Literal["json", "text", "form"]
+ReadKind: TypeAlias = Literal["json", "text", "form", "multipart"]
 
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 _MIN_SUCCESS: Final = 200
@@ -264,18 +273,6 @@ def normalized(media_type: str) -> str | None:
         return None
 
 
-def charset(media_type: str) -> str:
-    """Return the Python codec a media type's charset parameter names, UTF-8 when it names none or an unknown one."""
-    for parameter in media_type.split(";")[1:]:
-        name, _, value = parameter.strip().partition("=")
-        if name == "charset":
-            try:
-                return codecs.lookup(value.strip('"')).name
-            except LookupError:
-                break
-    return "utf-8"
-
-
 class Branch(Generic[T_co]):
     """Decode one declared response: a status key and one of its media types, or its absence of a body."""
 
@@ -293,33 +290,41 @@ class Branch(Generic[T_co]):
 
 
 class _InvalidBodyError(Exception):
-    failure: type[ResponseDecodeError]
+    """A body that failed to decode, published as the error of its kind of failure."""
 
     def __init__(self, cause: BaseException) -> None:
         super().__init__()
         self.cause = cause
 
-
-class _BodySyntaxError(_InvalidBodyError):
-    failure = DecodeError
+    def failure(self, info: ResponseInfo, body: bytes) -> ResponseDecodeError:
+        """Return the syntax failure of a body that does not parse."""
+        return DecodeError(info=info, body_bytes=body, call_id=info.call_id, cause=self.cause)
 
 
 class _BodyValueError(_InvalidBodyError):
-    failure = ResponseValidationError
+    def failure(self, info: ResponseInfo, body: bytes) -> ResponseDecodeError:
+        return ResponseValidationError(info=info, body_bytes=body, call_id=info.call_id, cause=self.cause)
+
+
+class _BodyFramingError(_InvalidBodyError):
+    def failure(self, info: ResponseInfo, body: bytes) -> ResponseDecodeError:
+        return BodyProtocolError(
+            info=info, condition="invalid_framing", body_bytes=body, call_id=info.call_id, cause=self.cause
+        )
 
 
 def _json(body: bytes, _: ResponseInfo) -> WireValue:
     try:
         return decode_json(body)
     except CodecError as error:
-        raise _BodySyntaxError(error) from None
+        raise _InvalidBodyError(error) from None
 
 
 def _text(body: bytes, info: ResponseInfo) -> str:
     try:
         return body.decode(charset(info.content_type or ""))
     except UnicodeDecodeError as error:
-        raise _BodySyntaxError(error) from None
+        raise _InvalidBodyError(error) from None
 
 
 def _pairs(body: bytes, _: ResponseInfo) -> FormData:
@@ -328,7 +333,7 @@ def _pairs(body: bytes, _: ResponseInfo) -> FormData:
             (percent_decode(name, plus=True), percent_decode(value, plus=True)) for name, value in split_form(body)
         )
     except CodecError as error:
-        raise _BodySyntaxError(error) from None
+        raise _InvalidBodyError(error) from None
 
 
 def _bytes(body: bytes, _: ResponseInfo) -> bytes:
@@ -339,13 +344,33 @@ def _none(_body: bytes, _info: ResponseInfo) -> None:
     return None
 
 
-class _Reader:
-    __slots__ = ("additional", "fields", "kind")
+def _multipart(body: bytes, info: ResponseInfo) -> tuple[DecodedPart[bytes], ...]:
+    try:
+        return parse_multipart(body, info.content_type)
+    except ValueError as error:
+        raise _BodyFramingError(error) from None
 
-    def __init__(self, kind: ReadKind, fields: tuple[FieldPlan, ...], additional: FieldPlan | None) -> None:
+
+def _multipart_data(body: bytes, info: ResponseInfo) -> MultipartData[bytes]:
+    return MultipartData(_multipart(body, info))
+
+
+class _Reader:
+    __slots__ = ("additional", "additional_part", "fields", "kind", "parts")
+
+    def __init__(
+        self,
+        kind: ReadKind,
+        fields: tuple[FieldPlan, ...],
+        additional: FieldPlan | None,
+        parts: tuple[PartPlan, ...],
+        additional_part: PartPlan | None,
+    ) -> None:
         self.kind = kind
         self.fields = fields
         self.additional = additional
+        self.parts = parts
+        self.additional_part = additional_part
 
     def read(self, body: bytes, info: ResponseInfo) -> WireValue:
         match self.kind:
@@ -353,12 +378,18 @@ class _Reader:
                 return _json(body, info)
             case "text":
                 return _text(body, info)
+            case "multipart":
+                parts = _multipart(body, info)
+                try:
+                    return decode_parts(parts, self.parts, self.additional_part)
+                except (CodecError, ValueError) as error:
+                    raise _InvalidBodyError(error) from None
             case _:
                 pass
         try:
             return decode_form(body, self.fields, self.additional)
         except CodecError as error:
-            raise _BodySyntaxError(error) from None
+            raise _InvalidBodyError(error) from None
 
 
 class _Native(Generic[T_co]):
@@ -402,9 +433,12 @@ def model_branch(  # noqa: PLR0913
     *,
     fields: tuple[FieldPlan, ...] = (),
     additional: FieldPlan | None = None,
+    parts: tuple[PartPlan, ...] = (),
+    additional_part: PartPlan | None = None,
 ) -> Branch[T]:
     """Return a branch that decodes its body through a model codec into the native value."""
-    return Branch(status, media_type, _Native(_Reader(kind, fields, additional), codec, context))
+    reader = _Reader(kind, fields, additional, parts, additional_part)
+    return Branch(status, media_type, _Native(reader, codec, context))
 
 
 def envelope_branch(  # noqa: PLR0913
@@ -416,9 +450,12 @@ def envelope_branch(  # noqa: PLR0913
     *,
     fields: tuple[FieldPlan, ...] = (),
     additional: FieldPlan | None = None,
+    parts: tuple[PartPlan, ...] = (),
+    additional_part: PartPlan | None = None,
 ) -> Branch[DecodedValue[T]]:
     """Return a branch that decodes its body through a model codec into a model value or envelope."""
-    return Branch(status, media_type, _Envelope(_Reader(kind, fields, additional), codec, context))
+    reader = _Reader(kind, fields, additional, parts, additional_part)
+    return Branch(status, media_type, _Envelope(reader, codec, context))
 
 
 def wire_branch(status: str, media_type: str) -> Branch[WireValue]:
@@ -434,6 +471,11 @@ def text_branch(status: str, media_type: str) -> Branch[str]:
 def form_branch(status: str, media_type: str) -> Branch[FormData]:
     """Return a URL-encoded branch without a schema, keeping pair order and repeated names."""
     return Branch(status, media_type, _pairs)
+
+
+def multipart_branch(status: str, media_type: str) -> Branch[MultipartData[bytes]]:
+    """Return a multipart branch without a schema, keeping each part's bytes, name, filename, and headers."""
+    return Branch(status, media_type, _multipart_data)
 
 
 def binary_branch(status: str, media_type: str) -> Branch[bytes]:
@@ -576,7 +618,7 @@ class ResponseDecoder(Generic[T_co, E_co]):
         try:
             return branch.decode(body, info)
         except _InvalidBodyError as error:
-            raise error.failure(info=info, body_bytes=body, call_id=info.call_id, cause=error.cause) from None
+            raise error.failure(info, body) from None
 
     def _failure(
         self, info: ResponseInfo, body: bytes, *, truncated: bool, problem: BaseException | None

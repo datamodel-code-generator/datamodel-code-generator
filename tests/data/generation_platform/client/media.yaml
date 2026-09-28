@@ -55,6 +55,28 @@ paths:
       responses:
         '204':
           description: Stored.
+    get:
+      operationId: readProfile
+      tags: [forms]
+      responses:
+        '200':
+          description: The profile as form-data parts.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                required: [name]
+                properties:
+                  name: {type: string}
+                  age: {type: integer}
+                  score: {type: number}
+                  ratio: {type: [integer, number]}
+                  active: {type: boolean}
+                  tags:
+                    type: array
+                    items: {type: string}
+                  address: {$ref: '#/components/schemas/Address'}
+                additionalProperties: {type: integer}
   /anything:
     post:
       operationId: submitAnything
@@ -77,6 +99,23 @@ paths:
       responses:
         '204':
           description: Stored.
+    get:
+      operationId: readParts
+      tags: [forms]
+      responses:
+        '200':
+          description: The parts as they arrived.
+          content:
+            multipart/mixed: {}
+        '202':
+          description: The id of parts still stored.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                properties:
+                  id: {type: integer}
+                additionalProperties: false
   /pairs:
     post:
       operationId: submitPairs

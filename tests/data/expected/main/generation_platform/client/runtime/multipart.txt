@@ -44,6 +44,78 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read with a quoted boundary = FieldProfilesGetResponse(name='Ada', age=None, score=None, ratio=None, active=None, tags=None, address=None)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read without a boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1--\r\n', truncated=False, cause=ValueError('A multipart response must name its boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of another boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1--\r\n', truncated=False, cause=ValueError('A multipart body must hold its boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read with a preamble, padding, and an epilogue = FieldProfilesGetResponse(name='Ada', age=None, score=None, ratio=None, active=None, tags=None, address=None)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a boundary mid-line = FieldProfilesGetResponse(name='Ada', age=None, score=None, ratio=None, active=None, tags=None, address=None)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a part off its line ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1 x\r\n\r\n--b1--\r\n', truncated=False, cause=ValueError('A multipart part must start on its own line and end at the next boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read that ends at its boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1', truncated=False, cause=ValueError('A multipart part must start on its own line and end at the next boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of an unterminated part ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda', truncated=False, cause=ValueError('A multipart part must start on its own line and end at the next boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a header without a colon ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nBroken\r\n\r\nx\r\n--b1--\r\n', truncated=False, cause=ValueError('A part header must be a token, a colon, and a value')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a part without a name ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Type: text/plain\r\n\r\nx\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data part is not declared at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a name twice ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data body repeats a single-valued member at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a null address twice ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\nnull\r\n--b1\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\nnull\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data body repeats a single-valued member at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of an extra that is no integer ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="bonus"\r\n\r\nx\r\n--b1--\r\n', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of broken JSON ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="address"\r\n\r\n{\r\n--b1--\r\n', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of text that is not UTF-8 ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\n\xff\r\n--b1--\r\n', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of Latin-1 text = FieldProfilesGetResponse(name='café', age=None, score=None, ratio=None, active=None, tags=None, address=None)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of UTF-16 text = FieldProfilesGetResponse(name='café', age=None, score=None, ratio=None, active=None, tags=None, address=None)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read without its name ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A required property is missing at /name')] response_validation_error
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  parts read MultipartData(<7 parts>) DecodedPart(name=None, content_type='text/plain') None 'a"b.txt' 'text/plain' [('Content-Disposition', 'attachment; filename="a\\"b.txt"'), ('Content-Type', 'text/plain'), ('X-Trace', 't')] b'one'; DecodedPart(name=None, content_type=None) None None None [] b'\x00two\r\n\r\n'; DecodedPart(name='third', content_type=None) 'third' 'x; name=y' None [('Content-Disposition', 'form-data; filename="x; name=y"; name=third; filename=plain.bin')] b'3'; DecodedPart(name=None, content_type=None) None None None [('X-Only', '1')] b''; DecodedPart(name=None, content_type=None) None 'café.txt' None [('Content-Disposition', 'attachment; filename="café.txt"')] b'4'; DecodedPart(name=None, content_type=None) None None None [('X-Bare', '2')] b''; DecodedPart(name=None, content_type=None) None None None [] b''
+  parts read again: True True True True False False False
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  parts read of a body without its boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readParts', call_id='<call>') [operation_id='readParts', condition='invalid_framing', body_bytes=b'not multipart', truncated=False, cause=ValueError('A multipart body must hold its boundary')] body_protocol_error
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  stored id read = FieldAttachmentsGetResponse(id=4)
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  stored id read of an extra part ! DecodeError: DecodeError(status_code=202, operation_id='readParts', call_id='<call>') [operation_id='readParts', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="id"\r\n\r\n4\r\n--b1\r\nContent-Disposition: form-data; name="x"\r\n\r\n1\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data part is not declared at /')] decode_error
   > POST https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 743] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--<boundary>\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--<boundary>\r\nContent-Disposition: form-data; name="active"\r\n\r\ntrue\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\n{"city":"London","codes":[1,2]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="nickname"\r\n\r\nnull\r\n--<boundary>--\r\n'
   async profile = None
@@ -65,6 +137,12 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  async profile read = FieldProfilesGetResponse(name='Ada', age=36, score=1.5, ratio=2, active=True, tags=['a', 'b'], address=Address(city='Oslo', codes=[7]), bonus=7)
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  async parts read MultipartData(<1 parts>) DecodedPart(name='x', content_type=None) 'x' None None [('Content-Disposition', 'form-data; name="x"')] b'1'
 # media typing.TypedDict
   > POST https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 743] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--<boundary>\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--<boundary>\r\nContent-Disposition: form-data; name="active"\r\n\r\ntrue\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\n{"city":"London","codes":[1,2]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="nickname"\r\n\r\nnull\r\n--<boundary>--\r\n'
@@ -111,6 +189,78 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 392] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":[1,"x"]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="count"\r\n\r\n5\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   raw parts = b'ok'
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read with a quoted boundary = {'name': 'Ada'}
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read without a boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1--\r\n', truncated=False, cause=ValueError('A multipart response must name its boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of another boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1--\r\n', truncated=False, cause=ValueError('A multipart body must hold its boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read with a preamble, padding, and an epilogue = {'name': 'Ada'}
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a boundary mid-line = {'name': 'Ada'}
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a part off its line ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1 x\r\n\r\n--b1--\r\n', truncated=False, cause=ValueError('A multipart part must start on its own line and end at the next boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read that ends at its boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1', truncated=False, cause=ValueError('A multipart part must start on its own line and end at the next boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of an unterminated part ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda', truncated=False, cause=ValueError('A multipart part must start on its own line and end at the next boundary')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a header without a colon ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', condition='invalid_framing', body_bytes=b'--b1\r\nBroken\r\n\r\nx\r\n--b1--\r\n', truncated=False, cause=ValueError('A part header must be a token, a colon, and a value')] body_protocol_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a part without a name ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Type: text/plain\r\n\r\nx\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data part is not declared at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a name twice ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data body repeats a single-valued member at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of a null address twice ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\nnull\r\n--b1\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\nnull\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data body repeats a single-valued member at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of an extra that is no integer ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="bonus"\r\n\r\nx\r\n--b1--\r\n', truncated=False, cause=WireValidationError('The value is not a canonical integer at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of broken JSON ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--b1\r\nContent-Disposition: form-data; name="address"\r\n\r\n{\r\n--b1--\r\n', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of text that is not UTF-8 ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\n\xff\r\n--b1--\r\n', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of Latin-1 text = {'name': 'café'}
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of UTF-16 text = {'name': 'café'}
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read without its name ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A required property is missing at /name')] response_validation_error
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  parts read MultipartData(<7 parts>) DecodedPart(name=None, content_type='text/plain') None 'a"b.txt' 'text/plain' [('Content-Disposition', 'attachment; filename="a\\"b.txt"'), ('Content-Type', 'text/plain'), ('X-Trace', 't')] b'one'; DecodedPart(name=None, content_type=None) None None None [] b'\x00two\r\n\r\n'; DecodedPart(name='third', content_type=None) 'third' 'x; name=y' None [('Content-Disposition', 'form-data; filename="x; name=y"; name=third; filename=plain.bin')] b'3'; DecodedPart(name=None, content_type=None) None None None [('X-Only', '1')] b''; DecodedPart(name=None, content_type=None) None 'café.txt' None [('Content-Disposition', 'attachment; filename="café.txt"')] b'4'; DecodedPart(name=None, content_type=None) None None None [('X-Bare', '2')] b''; DecodedPart(name=None, content_type=None) None None None [] b''
+  parts read again: True True True True False False False
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  parts read of a body without its boundary ! BodyProtocolError: BodyProtocolError(status_code=200, operation_id='readParts', call_id='<call>') [operation_id='readParts', condition='invalid_framing', body_bytes=b'not multipart', truncated=False, cause=ValueError('A multipart body must hold its boundary')] body_protocol_error
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  stored id read = {'id': 4}
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  stored id read of an extra part ! DecodeError: DecodeError(status_code=202, operation_id='readParts', call_id='<call>') [operation_id='readParts', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="id"\r\n\r\n4\r\n--b1\r\nContent-Disposition: form-data; name="x"\r\n\r\n1\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A form-data part is not declared at /')] decode_error
   > POST https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 743] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nAda\r\n--<boundary>\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--<boundary>\r\nContent-Disposition: form-data; name="active"\r\n\r\ntrue\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\na\r\n--<boundary>\r\nContent-Disposition: form-data; name="tags"\r\n\r\nb\r\n--<boundary>\r\nContent-Disposition: form-data; name="address"\r\nContent-Type: application/json\r\n\r\n{"city":"London","codes":[1,2]}\r\n--<boundary>\r\nContent-Disposition: form-data; name="nickname"\r\n\r\nnull\r\n--<boundary>--\r\n'
   async profile = None
@@ -132,3 +282,9 @@
   > POST https://forms.example.com/raw
     [host: forms.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 296] b'--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"k":1}\r\n--<boundary>\r\nContent-Disposition: form-data; name="f"\r\nContent-Type: application/octet-stream\r\n\r\nraw\r\n--<boundary>--\r\n'
   async raw parts = b'ok'
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  async profile read = {'name': 'Ada', 'age': 36, 'score': 1.5, 'ratio': 2, 'active': True, 'tags': ['a', 'b'], 'address': {'city': 'Oslo', 'codes': [7]}, 'bonus': 7}
+  > GET https://media.example.com/api/attachments
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
+  async parts read MultipartData(<1 parts>) DecodedPart(name='x', content_type=None) 'x' None None [('Content-Disposition', 'form-data; name="x"')] b'1'

@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.client.multipart import PartPlan
 
 WIDTH: Final = 88
 _RUNTIME: Final = "_runtime.client.operations"
@@ -146,9 +147,11 @@ _MULTIPART_NAMES: Final = (
     "AsyncBodyInput",
     "AsyncMultipartBody",
     "BodyInput",
+    "DecodedPart",
     "FieldPart",
     "FilePart",
     "MultipartBody",
+    "MultipartData",
 )
 _BODIES: Final = (
     '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n'
@@ -323,6 +326,12 @@ def _arguments(module: Module, spec: OperationSpec, *, media: bool) -> tuple[tup
     return tuple(call)
 
 
+def _part_plan(module: Module, plan: PartPlan) -> str:
+    """Return the PartPlan constructor of one form-data member."""
+    repeated = ", repeated=True" if plan.repeated else ""
+    return f"{module.local('_runtime.client.multipart', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
+
+
 def _signature(name: str, parameters: tuple[str, ...], returns: str, *, asynchronous: bool, stub: bool) -> str:
     head = f"    {'async ' if asynchronous else ''}def {name}("
     return layout(
@@ -430,7 +439,7 @@ class _Typing:
         if kind == "binary":
             return "bytes"
         if use is None or use.type is None:
-            return "str" if kind == "text" else "form" if kind == "form" else "wire"
+            return {"text": "str", "form": "form", "multipart": "multipart"}.get(kind, "wire")
         return _Model(use.type, self.envelope(use), sent)
 
     @staticmethod
@@ -445,6 +454,8 @@ class _Typing:
                 return f"{module.local('model_codecs', 'DecodedValue')}[{static}]" if key.envelope else static
             case "form":
                 return module.local("bodies", "FormData")
+            case "multipart":
+                return f"{module.local('bodies', 'MultipartData')}[bytes]"
             case "wire":
                 return module.local("model_codecs", "WireValue")
             case _:
@@ -1012,12 +1023,16 @@ class _Registry(_Typing):
 
     @staticmethod
     def form(module: Module, media: MediaSpec) -> list[tuple[str, Doc]]:
-        """Return the member plan keywords of a URL-encoded media type."""
+        """Return the member plan keywords of a URL-encoded or form-data media type."""
         entries: list[tuple[str, Doc]] = []
         if media.fields:
             entries.append(("fields=", _tuple(field_plan(module.local, item) for item in media.fields)))
         if media.additional is not None:
             entries.append(("additional=", field_plan(module.local, media.additional)))
+        if media.parts:
+            entries.append(("parts=", _tuple(_part_plan(module, item) for item in media.parts)))
+        if media.additional_part is not None:
+            entries.append(("additional_part=", _part_plan(module, media.additional_part)))
         return entries
 
     def decoder(self, module: Module, spec: OperationSpec) -> Group:
@@ -1046,7 +1061,9 @@ class _Registry(_Typing):
             if media.kind == "binary":
                 branches.append(f"{module.local(_RUNTIME, 'binary_branch')}({status}, {media_type})")
             elif media.use is None or media.use.id not in self.accessors:
-                name = {"json": "wire_branch", "text": "text_branch"}.get(media.kind, "form_branch")
+                name = {"json": "wire_branch", "text": "text_branch", "multipart": "multipart_branch"}.get(
+                    media.kind, "form_branch"
+                )
                 branches.append(f"{module.local(_RUNTIME, name)}({status}, {media_type})")
             else:
                 name = "envelope_branch" if self.envelope(media.use) else "model_branch"

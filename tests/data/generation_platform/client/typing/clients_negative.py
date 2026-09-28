@@ -80,3 +80,10 @@ def misuse_multipart(client: Client, file: BinaryIO) -> None:
     FieldPart[str]("a", 1)  # error
     parts: MultipartBody[str] = MultipartBody[int](())  # error
     del parts
+
+
+def misuse_multipart_data(data: object) -> None:
+    from pets.bodies import MultipartData
+
+    narrowed: MultipartData[str] = MultipartData[bytes](())  # error
+    del narrowed, data

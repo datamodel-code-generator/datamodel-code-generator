@@ -5,19 +5,22 @@ from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
 from functools import cached_property
-from typing import Literal
+from typing import Literal, overload
 
 from models import FieldAnythingPostRequest as _dcg_type_2
+from models import FieldAttachmentsGetResponse as _dcg_type_3
 from models import FieldFormsPostRequest as _dcg_type_0
 from models import FieldProfilesPostRequest as _dcg_type_1
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...bodies import AsyncMultipartBody, FormData
+from ...bodies import AsyncMultipartBody, FormData, MultipartData
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
 from ...responses import AsyncRawResponse, Response
 from ...types.forms import (
+    ReadPartsResponse,
+    ReadProfileResponse,
     SubmitAnythingResponse,
     SubmitFormResponse,
     SubmitPairsResponse,
@@ -82,6 +85,20 @@ class AsyncFormsResource:
             options=options,
         )).data
 
+    async def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadProfileResponse:
+        """Call GET /profiles."""
+        return (await self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )).data
+
     async def submit_anything(
         self,
         *,
@@ -91,7 +108,7 @@ class AsyncFormsResource:
     ) -> SubmitAnythingResponse:
         """Call POST /anything."""
         return (await self._core.execute(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -107,11 +124,46 @@ class AsyncFormsResource:
     ) -> SubmitPartsResponse:
         """Call POST /attachments."""
         return (await self._core.execute(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        )).data
+
+    @overload
+    async def read_parts(
+        self,
+        *,
+        response_media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadPartsResponse: ...
+    @overload
+    async def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed'],
+        options: RequestOptions | None = None,
+    ) -> MultipartData[bytes]: ...
+    @overload
+    async def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> _dcg_type_3: ...
+    async def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadPartsResponse:
+        """Call GET /attachments."""
+        return (await self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         )).data
 
     async def submit_pairs(
@@ -124,7 +176,7 @@ class AsyncFormsResource:
     ) -> SubmitPairsResponse:
         """Call POST /pairs."""
         return (await self._core.execute(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,
@@ -174,6 +226,20 @@ class AsyncFormsWithResponse:
             options=options,
         )
 
+    async def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadProfileResponse]:
+        """Call GET /profiles."""
+        return await self._core.execute(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     async def submit_anything(
         self,
         *,
@@ -183,7 +249,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitAnythingResponse]:
         """Call POST /anything."""
         return await self._core.execute(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -199,11 +265,46 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitPartsResponse]:
         """Call POST /attachments."""
         return await self._core.execute(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        )
+
+    @overload
+    async def read_parts(
+        self,
+        *,
+        response_media_type: None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadPartsResponse]: ...
+    @overload
+    async def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed'],
+        options: RequestOptions | None = None,
+    ) -> Response[MultipartData[bytes]]: ...
+    @overload
+    async def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'],
+        options: RequestOptions | None = None,
+    ) -> Response[_dcg_type_3]: ...
+    async def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadPartsResponse]:
+        """Call GET /attachments."""
+        return await self._core.execute(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         )
 
     async def submit_pairs(
@@ -216,7 +317,7 @@ class AsyncFormsWithResponse:
     ) -> Response[SubmitPairsResponse]:
         """Call POST /pairs."""
         return await self._core.execute(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,
@@ -266,6 +367,20 @@ class AsyncFormsWithRawResponse:
             options=options,
         )
 
+    async def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call GET /profiles."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     async def submit_anything(
         self,
         *,
@@ -275,7 +390,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /anything."""
         return await self._core.execute_raw(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -291,11 +406,25 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /attachments."""
         return await self._core.execute_raw(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        )
+
+    async def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call GET /attachments."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         )
 
     async def submit_pairs(
@@ -308,7 +437,7 @@ class AsyncFormsWithRawResponse:
     ) -> AsyncRawResponse:
         """Call POST /pairs."""
         return await self._core.execute_raw(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,
@@ -358,6 +487,20 @@ class AsyncFormsWithStreamingResponse:
             options=options,
         )
 
+    def read_profile(
+        self,
+        *,
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call GET /profiles."""
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def submit_anything(
         self,
         *,
@@ -367,7 +510,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /anything."""
         return self._core.stream(
-            _operations.OPERATION_2,
+            _operations.OPERATION_3,
             (),
             body=body,
             media_type=media_type,
@@ -383,11 +526,25 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /attachments."""
         return self._core.stream(
-            _operations.OPERATION_3,
+            _operations.OPERATION_4,
             (),
             body=body,
             media_type=media_type,
             options=options,
+        )
+
+    def read_parts(
+        self,
+        *,
+        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call GET /attachments."""
+        return self._core.stream(
+            _operations.OPERATION_5,
+            (),
+            options=options,
+            response_media_type=response_media_type,
         )
 
     def submit_pairs(
@@ -400,7 +557,7 @@ class AsyncFormsWithStreamingResponse:
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Call POST /pairs."""
         return self._core.stream(
-            _operations.OPERATION_4,
+            _operations.OPERATION_6,
             (),
             body=body,
             media_type=media_type,

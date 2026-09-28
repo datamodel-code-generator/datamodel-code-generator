@@ -2,6 +2,14 @@
 """The types of the forms operations."""
 
 from ._operations import (
+    ReadPartsErrorData,
+    ReadPartsHTTPError,
+    ReadPartsRequestCodecs,
+    ReadPartsResponse,
+    ReadProfileErrorData,
+    ReadProfileHTTPError,
+    ReadProfileRequestCodecs,
+    ReadProfileResponse,
     SubmitAnythingErrorData,
     SubmitAnythingHTTPError,
     SubmitAnythingRequestCodecs,
@@ -25,6 +33,14 @@ from ._operations import (
 )
 
 __all__ = [
+    'ReadPartsErrorData',
+    'ReadPartsHTTPError',
+    'ReadPartsRequestCodecs',
+    'ReadPartsResponse',
+    'ReadProfileErrorData',
+    'ReadProfileHTTPError',
+    'ReadProfileRequestCodecs',
+    'ReadProfileResponse',
     'SubmitAnythingErrorData',
     'SubmitAnythingHTTPError',
     'SubmitAnythingRequestCodecs',

@@ -5,15 +5,17 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias, overload
 
-from models import FieldAnythingPostRequest as _dcg_type_3
+from models import FieldAnythingPostRequest as _dcg_type_4
+from models import FieldAttachmentsGetResponse as _dcg_type_5
 from models import FieldFormsPostRequest as _dcg_type_1
 from models import FieldFormsPostResponse as _dcg_type_0
+from models import FieldProfilesGetResponse as _dcg_type_3
 from models import FieldProfilesPostRequest as _dcg_type_2
 from typing_extensions import Never
 
 from ..._generated import model_bindings
 from ..._runtime.client.codecs import RequestCodecs
-from ...bodies import FormData
+from ...bodies import FormData, MultipartData
 from ...errors import HTTPStatusError
 from ...model_codecs import NativeOutboundCodec
 
@@ -91,6 +93,21 @@ SubmitProfileRequestCodecs: Final = _SubmitProfileRequestCodecs(
 )
 
 
+ReadProfileResponse: TypeAlias = _dcg_type_3
+ReadProfileErrorData: TypeAlias = None
+
+
+class ReadProfileHTTPError(HTTPStatusError[ReadProfileErrorData]):
+    """An error response of read_profile, with its decoded payload when one is declared."""
+
+
+class _ReadProfileRequestCodecs(RequestCodecs[Never, Never]):
+    """The outbound codecs of the read_profile request."""
+
+
+ReadProfileRequestCodecs: Final = _ReadProfileRequestCodecs()
+
+
 SubmitAnythingResponse: TypeAlias = None
 SubmitAnythingErrorData: TypeAlias = None
 
@@ -100,31 +117,31 @@ class SubmitAnythingHTTPError(HTTPStatusError[SubmitAnythingErrorData]):
 
 
 class _SubmitAnythingRequestCodecs(
-    RequestCodecs[NativeOutboundCodec[_dcg_type_3], Never],
+    RequestCodecs[NativeOutboundCodec[_dcg_type_4], Never],
 ):
     """The outbound codecs of the submit_anything request."""
 
     @overload
-    def body(self) -> NativeOutboundCodec[_dcg_type_3]: ...
+    def body(self) -> NativeOutboundCodec[_dcg_type_4]: ...
     @overload
     def body(
         self,
         *,
         media_type: Literal['multipart/form-data'],
-    ) -> NativeOutboundCodec[_dcg_type_3]: ...
+    ) -> NativeOutboundCodec[_dcg_type_4]: ...
     @overload
-    def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_3]: ...
+    def body(self, *, media_type: str) -> NativeOutboundCodec[_dcg_type_4]: ...
     def body(
         self,
         *,
         media_type: str | None = None,
-    ) -> NativeOutboundCodec[_dcg_type_3]:
+    ) -> NativeOutboundCodec[_dcg_type_4]:
         """Return the outbound codec of one declared request media type."""
         return self._body(media_type)
 
 
 SubmitAnythingRequestCodecs: Final = _SubmitAnythingRequestCodecs(
-    bodies=(('multipart/form-data', model_bindings.outbound_3),),
+    bodies=(('multipart/form-data', model_bindings.outbound_4),),
     default='multipart/form-data',
 )
 
@@ -142,6 +159,21 @@ class _SubmitPartsRequestCodecs(RequestCodecs[Never, Never]):
 
 
 SubmitPartsRequestCodecs: Final = _SubmitPartsRequestCodecs()
+
+
+ReadPartsResponse: TypeAlias = MultipartData[bytes] | _dcg_type_5
+ReadPartsErrorData: TypeAlias = None
+
+
+class ReadPartsHTTPError(HTTPStatusError[ReadPartsErrorData]):
+    """An error response of read_parts, with its decoded payload when one is declared."""
+
+
+class _ReadPartsRequestCodecs(RequestCodecs[Never, Never]):
+    """The outbound codecs of the read_parts request."""
+
+
+ReadPartsRequestCodecs: Final = _ReadPartsRequestCodecs()
 
 
 SubmitPairsResponse: TypeAlias = FormData

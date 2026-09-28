@@ -1,8 +1,8 @@
-25 marked lines
+26 marked lines
 mypy pets and clients.py: clean
 pyright pets and clients.py: clean
 ty pets and clients.py: clean
-mypy clients_negative.py: 25/25 marked lines with one error, 0 elsewhere, 0 in other files
+mypy clients_negative.py: 26/26 marked lines with one error, 0 elsewhere, 0 in other files
   25 call-arg
   26 arg-type
   27 call-overload
@@ -28,7 +28,8 @@ mypy clients_negative.py: 25/25 marked lines with one error, 0 elsewhere, 0 in o
   79 arg-type
   80 arg-type
   81 assignment
-pyright clients_negative.py: 22/25 marked lines with one error, 0 elsewhere, 0 in other files
+  88 assignment
+pyright clients_negative.py: 23/26 marked lines with one error, 0 elsewhere, 0 in other files
   25 reportCallIssue
   26 reportArgumentType
   27 reportArgumentType
@@ -57,7 +58,8 @@ pyright clients_negative.py: 22/25 marked lines with one error, 0 elsewhere, 0 i
   79 reportArgumentType
   80 reportArgumentType
   81 reportAssignmentType
-ty clients_negative.py: 25/25 marked lines with one error, 0 elsewhere, 0 in other files
+  88 reportAssignmentType
+ty clients_negative.py: 26/26 marked lines with one error, 0 elsewhere, 0 in other files
   25 missing-argument
   26 invalid-argument-type
   27 no-matching-overload
@@ -83,3 +85,4 @@ ty clients_negative.py: 25/25 marked lines with one error, 0 elsewhere, 0 in oth
   79 invalid-argument-type
   80 invalid-argument-type
   81 invalid-assignment
+  88 invalid-assignment

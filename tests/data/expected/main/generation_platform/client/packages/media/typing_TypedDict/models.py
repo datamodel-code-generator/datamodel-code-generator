@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias, TypedDict
+from typing import Any, TypeAlias
 
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict
 
 
 class Address(TypedDict):
@@ -39,7 +39,21 @@ class FieldProfilesPostRequest(TypedDict):
     nickname: NotRequired[str | None]
 
 
+class FieldProfilesGetResponse(TypedDict, extra_items=int):
+    name: str
+    age: NotRequired[int]
+    score: NotRequired[float]
+    ratio: NotRequired[int | float]
+    active: NotRequired[bool]
+    tags: NotRequired[list[str]]
+    address: NotRequired[Address]
+
+
 FieldAnythingPostRequest: TypeAlias = Any
+
+
+class FieldAttachmentsGetResponse(TypedDict, closed=True):
+    id: NotRequired[int]
 
 
 class FieldDocumentsIdGetPathIdParameter(TypedDict):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
 from itertools import starmap
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
@@ -23,10 +24,11 @@ from datamodel_code_generator._client.naming import (
 )
 from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence, SourceLocation
+from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._client.config import ClientGenerationConfig, ClientOperationConfig
@@ -75,6 +77,8 @@ class MediaSpec:
     use: TypeUseBinding | None
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
+    parts: tuple[PartPlan, ...] = ()
+    additional_part: PartPlan | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -431,11 +435,8 @@ class Planner:
             media_type = declaration.name or ""
         kind = media_kind(media_type)
         use = self.use(declaration.schemas)
-        form_data = request and media_type.partition(";")[0] == _FORM_DATA
-        if (kind == "multipart" and not form_data) or (request and "*" in media_type.partition(";")[0]):
-            message = f"The {media_type} media of {_label(operation)} is not supported yet"
-            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
-        elif form_data and (reason := self.file_parts(use)) is not None:
+        essence = media_type.partition(";")[0]
+        if (reason := self.unsupported(kind, essence, use, request=request)) is not None:
             message = f"The {media_type} media of {_label(operation)} {reason}"
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
         if kind in {"form", "multipart"} and (encoded := _encoded(declaration)) is not None:
@@ -444,32 +445,47 @@ class Planner:
             )
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoded.use_site))
         fields, additional = self.forms.get(use.id, ((), None)) if kind == "form" and use is not None else ((), None)
-        return MediaSpec(media_type=media_type, kind=kind, use=use, fields=fields, additional=additional)
+        parts, additional_part = _part_plans(self.wire, use) if kind == "multipart" and not request else ((), None)
+        return MediaSpec(
+            media_type=media_type,
+            kind=kind,
+            use=use,
+            fields=fields,
+            additional=additional,
+            parts=parts,
+            additional_part=additional_part,
+        )
 
-    def file_parts(self, use: TypeUseBinding | None) -> str | None:
+    def unsupported(self, kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:
+        """Return why a media type cannot be sent or read yet, or None when it can.
+
+        Multipart without a schema is sent as form-data parts and read as bytes of any multipart media; with a
+        schema, only form-data maps its parts to the schema's members, and file parts are not supported yet.
+        """
+        if request and "*" in essence:
+            return "is not supported yet"
+        if kind != "multipart":
+            return None
+        if use is None or use.schema is None:
+            return None if essence == _FORM_DATA or not request else "is not supported yet"
+        if essence != _FORM_DATA:
+            return "is not supported yet"
+        return self.file_parts(use, use.schema)
+
+    def file_parts(self, use: TypeUseBinding, location: SourceLocation) -> str | None:
         """Return why a form-data schema cannot be sent yet: file parts or a shape other than an object; else None.
 
         The members of the use are its properties as its model declares them, so allOf branches count too.
         """
-        if use is None or use.schema is None:
-            return None
-        _, schema = self.wire.schema(use.schema)
+        _, schema = self.wire.schema(location)
         if _types(schema) - _NULL not in {frozenset(), _OBJECT}:
             return "needs an object schema to be sent as parts"
         files = [
             member.wire_name or "additional properties"
             for member in use.members
-            if member.schema is not None and self.file(member.schema)
+            if member.schema is not None and _file(self.wire, member.schema)
         ]
         return None if not files else f"has file parts, which are not supported yet: {', '.join(files)}"
-
-    def file(self, location: SourceLocation) -> bool:
-        """Return whether a property holds binary files: a binary string, or an array of them."""
-        _, schema = self.wire.schema(location)
-        if _types(schema) - _NULL == _ARRAY:
-            _, schema = self.wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
-        binary = schema.get("format") == "binary" or ("contentMediaType" in schema and "contentEncoding" not in schema)
-        return _types(schema) - _NULL == _STRING and binary
 
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None
@@ -651,6 +667,51 @@ def success_media(responses: tuple[ResponseSpec, ...]) -> tuple[str, ...]:
             if "*" not in media.media_type.partition(";")[0]
         )
     )
+
+
+def _file(wire: WirePlan, location: SourceLocation) -> bool:
+    """Return whether a property holds binary files: a binary string, or an array of them."""
+    _, schema = wire.schema(location)
+    if _types(schema) - _NULL == _ARRAY:
+        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
+    binary = schema.get("format") == "binary" or ("contentMediaType" in schema and "contentEncoding" not in schema)
+    return _types(schema) - _NULL == _STRING and binary
+
+
+def _part_plans(wire: WirePlan, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
+    """Return how the parts of a form-data response are read: each member's kind, then any other part's."""
+    if use is None or use.schema is None:
+        return (), None
+    location, schema = wire.schema(use.schema)
+    parts = tuple(
+        _part_plan(wire, member.wire_name, member.schema)
+        for member in use.members
+        if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
+    )
+    match schema.get("additionalProperties", True):
+        case False:
+            return parts, None
+        case Mapping() as extra if extra:
+            extra_location = SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
+            return parts, _part_plan(wire, "", extra_location)
+        case _:
+            pass
+    return parts, PartPlan("")
+
+
+def _part_plan(wire: WirePlan, name: str, location: SourceLocation) -> PartPlan:
+    """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
+    _, schema = wire.schema(location)
+    if repeated := _types(schema) - _NULL == _ARRAY:
+        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
+    match sorted(_types(schema) - _NULL):
+        case [("string" | "integer" | "number" | "boolean") as scalar]:
+            return PartPlan(name, scalar, repeated=repeated)
+        case ["integer", "number"]:
+            return PartPlan(name, "number", repeated=repeated)
+        case _:
+            pass
+    return PartPlan(name, "json", repeated=repeated)
 
 
 def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:
