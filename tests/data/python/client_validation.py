@@ -146,6 +146,13 @@ def _parts(context: _Validation, pets: Any, exchange: Exchange, lines: list[str]
         _exchanged(exchange, lines, f"put a caption too long, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((field("caption", "far too long"), file("photo", b"\x89PNG"))), options=context.call(request=mode)), raw_response(204))
         record(lines, f"put a read-only stamp, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((file("photo", b"\x89PNG"), field("stamp", "s"))), options=context.call(request=mode)))
         _exchanged(exchange, lines, f"put a read-only stamp left unset, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((file("photo", b"\x89PNG"), field("stamp", context.options.UNSET))), options=context.call(request=mode)), raw_response(204))
+    for mode in ("none", "native", "schema"):
+        for label, headers in (
+            ("counted below its minimum and traced out of its pattern", (("X-Count", "0"), ("X-Trace", "u"))),
+            ("counted in words", (("X-Count", "many"),)),
+            ("without its count", ()),
+        ):
+            _exchanged(exchange, lines, f"put a token {label}, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((file("photo", b"\x89PNG"), field("token", "t", headers=headers))), options=context.call(request=mode)), raw_response(204))
 
 
 def _envelopes(context: _Validation, pets: Any, exchange: Exchange, lines: list[str]) -> None:

@@ -57,12 +57,15 @@ def _label(use: TypeUseId) -> str:
     return f"{' '.join(word for word in described if word)} of {method.upper()} {path}"
 
 
-def _refusal(binding: UseBinding, mode: str, *, adapted: bool) -> str | None:
-    """Return why a use cannot take a request or response mode other than schema, or None when it can."""
+def _refusal(binding: UseBinding, mode: str, *, adapted: bool, header: bool) -> str | None:
+    """Return why a use cannot take a request or response mode other than schema, or None when it can.
+
+    A part header takes native requests without a validation entry, since they only read it as its type.
+    """
     match binding.direction, mode:
         case _, _ if adapted:
             return "goes through a registered adapter that validates it against its schema"
-        case "request", "native" if binding.converter_strategy not in _ENTRIES:
+        case "request", "native" if binding.converter_strategy not in _ENTRIES and not header:
             return f"has no native validation entry in {binding.backend}"
         case "response", "native" if binding.projection_mode == "native" and needs_schema(binding):
             return "tells its union members apart only by their schemas"
@@ -87,7 +90,11 @@ def admission_problems(validation: ClientValidationConfig, codecs: CodecPlan) ->
             continue
         overrides, modes = axes[binding.direction]
         for mode in modes:
-            if mode != "schema" and (reason := _refusal(binding, mode, adapted=use in adapted)) is not None:
+            header = use.role == "request_encoding_header"
+            if (
+                mode != "schema"
+                and (reason := _refusal(binding, mode, adapted=use in adapted, header=header)) is not None
+            ):
                 yield Diagnostic(
                     code="E_CONFIG_VALUE",
                     severity="error",

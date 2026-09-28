@@ -296,15 +296,16 @@ class PartHeader:
         self.plan = plan
         self.codec = codec
 
-    def check(self, fragments: tuple[ParameterFragment, ...]) -> None:
-        """Refuse a part's headers that lack this one when it is required, or give it a value its schema refuses."""
-        match decode_parameter(self.plan, RawParameter(location="header", fragments=fragments)):
-            case Unset() if self.plan.required:
+    def check(self, fragments: tuple[ParameterFragment, ...], *, schema: bool) -> None:
+        """Refuse a part's headers that lack this one when it is required or that do not read it as its type.
+
+        With schema, a value its schema refuses is refused too.
+        """
+        if isinstance(wire := decode_parameter(self.plan, RawParameter(location="header", fragments=fragments)), Unset):
+            if self.plan.required:
                 raise ParameterEncodingError(_HEADER)
-            case Unset():
-                pass
-            case wire:
-                self.codec().from_wire(wire)
+        elif schema:
+            self.codec().from_wire(wire)
 
 
 def _checked(
@@ -312,15 +313,22 @@ def _checked(
     plan: PartPlan,
     name: str,
     filename: str | None,
+    mode: RequestValidation,
 ) -> None:
-    """Check the headers a part carries, its Content-Disposition of the name it is sent under among them."""
+    """Check the headers a part carries, its Content-Disposition of the name it is sent under among them.
+
+    A part sends its headers as the call gives them, so a call validating no request leaves them unchecked, and only
+    schema validation checks their values against their schemas.
+    """
+    if mode == "none":
+        return
     fragments = (
         ParameterFragment(b"Content-Disposition", _disposition(name, filename).encode()),
         *(ParameterFragment(key.encode(), value.encode()) for key, value in part.headers),
     )
     try:
         for header in plan.headers:
-            header.check(fragments)
+            header.check(fragments, schema=mode == "schema")
     except CodecError as error:
         raise _malformed(part.name, error) from None
 
@@ -491,11 +499,11 @@ def _field(
     try:
         wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value, mode)
         if plan.style is not None and names is not None:
-            return _styled(part, boundary, plan, part_pairs(plan.style, wire), names)
+            return _styled(part, boundary, plan, part_pairs(plan.style, wire), names, mode=mode)
         if names is not None and names.owners is not None:
             names.claim(part.name, (part.name,))
         if plan.headers:
-            _checked(part, plan, part.name, None)
+            _checked(part, plan, part.name, None, mode)
         if not plan.repeated or not isinstance(wire, tuple):
             return _member(part, boundary, wire, plan)
         if not wire:
@@ -505,8 +513,14 @@ def _field(
         raise _malformed(part.name, error) from None
 
 
-def _styled(
-    part: FieldPart[object], boundary: str, plan: PartPlan, pairs: tuple[tuple[str, str], ...], names: _Names
+def _styled(  # noqa: PLR0913
+    part: FieldPart[object],
+    boundary: str,
+    plan: PartPlan,
+    pairs: tuple[tuple[str, str], ...],
+    names: _Names,
+    *,
+    mode: RequestValidation,
 ) -> bytes:
     """Return the parts a styled member writes, each name claimed for it and its headers checked under that name.
 
@@ -515,7 +529,7 @@ def _styled(
     names.claim(part.name, [key for key, _ in pairs])
     if plan.headers:
         for key, _ in pairs:
-            _checked(part, plan, key, None)
+            _checked(part, plan, key, None, mode)
     media_type = part.content_type
     return b"".join([
         multipart_head(boundary, key, None, media_type, part.headers)
@@ -686,7 +700,7 @@ def _layout(
                 names.claim(part.name, (part.name,))
             encoded.append(_file_head(part, boundary, file))
             if file.headers:
-                _checked(part, file, part.name, part.filename)
+                _checked(part, file, part.name, part.filename, mode)
             pieces.extend((b"".join(encoded), part))
             encoded = [b"\r\n"]
         else:

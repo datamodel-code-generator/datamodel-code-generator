@@ -336,13 +336,17 @@ coerce as their backend does. The tests send and read these values through each 
 On requests, `none` sends a model instance changed after construction, and `native` sends it too, since the backends
 trust an instance they built; `native` validates a mapping that stands for the model. `schema` refuses both.
 
+A form-data part sends the headers its encoding declares as the call gives them. `none` checks none of them, `native`
+checks that each required one is present and reads as its declared type, and `schema` also validates each against its
+schema, such as its `pattern` or `minimum`.
+
 ### When a mode is not available
 
 A package must be able to take every mode it allows for every use, or generation fails with `E_CONFIG_VALUE` naming the
 use and the mode to select instead:
 
 - `request = "native"` needs a backend validation entry: Pydantic models and dataclasses and msgspec Structs have one,
-  stdlib dataclasses and TypedDicts do not.
+  stdlib dataclasses and TypedDicts do not. A form-data part's headers need none.
 - `response = "native"` is refused for a union whose members only their schemas tell apart, such as two object models
   read by a stdlib dataclass or TypedDict converter, unless the union's use returns `DecodedValue`.
 - A use that a registered codec adapter reads or writes allows only `schema` in its direction.

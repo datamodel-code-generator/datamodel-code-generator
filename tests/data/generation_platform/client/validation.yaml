@@ -68,6 +68,18 @@ paths:
           multipart/form-data:
             schema:
               $ref: "#/components/schemas/Card"
+            encoding:
+              token:
+                headers:
+                  X-Count:
+                    required: true
+                    schema:
+                      type: integer
+                      minimum: 1
+                  X-Trace:
+                    schema:
+                      type: string
+                      pattern: "^t"
       responses:
         "204":
           description: Stored.
