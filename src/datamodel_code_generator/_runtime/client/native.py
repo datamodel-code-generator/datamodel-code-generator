@@ -113,6 +113,11 @@ class AsyncHttpx2Response:
         """Return the final status code."""
         return self._response.status_code
 
+    @property
+    def closed(self) -> bool:
+        """Return whether HTTPX2 already released the response, as it does once the body is read to its end."""
+        return self._response.is_closed
+
     async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
         """Yield the body as it arrived, classifying a failure while it streams."""
         if self._context.timeout is not self._timeout:

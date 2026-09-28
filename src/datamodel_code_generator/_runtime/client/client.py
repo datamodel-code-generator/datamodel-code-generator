@@ -61,7 +61,7 @@ from .lifecycle import Scope, TaskInterruptionError, cleanup_secondary, task_res
 from .logical import LogicalCallContext
 from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary
-from .native import AsyncHttpx2Transport, Httpx2Transport
+from .native import AsyncHttpx2Response, AsyncHttpx2Transport, Httpx2Transport
 from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
     DEFAULT_VALIDATION,
@@ -2011,7 +2011,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             raise failure from None
         if permit is not None:
             response = _AsyncLimitedResponse(response, permit)
-        if attempt is not None:
+        if attempt is not None and not isinstance(attempt, EncodedAttempt):
             try:
                 await call.cleanup(attempt.aclose)
             except BaseException as error:
@@ -2048,7 +2048,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             )
             await call.cleanup(response.aclose, error=failure)
             raise failure from None
-        await call.cleanup(response.aclose)
+        if not (isinstance(response, AsyncHttpx2Response) and response.closed):
+            await call.cleanup(response.aclose)
         return result
 
     async def _read(
