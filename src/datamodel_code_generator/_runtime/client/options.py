@@ -448,10 +448,16 @@ class RedirectOptions:
 
 def _key_value(value: object) -> None:
     match value:
-        case str() if value and value[0] not in " \t" and value[-1] not in " \t" and _VALUE.fullmatch(value):
-            if value.isascii() or not _SURROGATE.search(value):
-                return
-    raise ConfigurationError(field_path=("idempotency_key",), condition="invalid_value")
+        case str() if (
+            value
+            and value[0] not in " \t"
+            and value[-1] not in " \t"
+            and _VALUE.fullmatch(value)
+            and (value.isascii() or not _SURROGATE.search(value))
+        ):
+            return
+        case _:
+            raise ConfigurationError(field_path=("idempotency_key",), condition="invalid_value")
 
 
 def _key_time(value: object) -> None:
