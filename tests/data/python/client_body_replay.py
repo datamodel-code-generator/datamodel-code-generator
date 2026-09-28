@@ -129,6 +129,28 @@ class _Move:
             self.file.seek(0)
 
 
+class _ChangePath:
+    """Change the path after the completed upload is closed and before its next stat check."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    def on_event(self, event: Any) -> None:
+        if event.name == "retry_scheduled":
+            self.path.write_bytes(b"changed length")
+
+
+class _AsyncChangePath:
+    """Change the path at the same released-attempt boundary through the async hook contract."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+    async def on_event(self, event: Any) -> None:
+        if event.name == "retry_scheduled":
+            self.path.write_bytes(b"changed length")
+
+
 class _Replies:
     """Keep compact observations of real TLS requests and supply the requested status sequence."""
 
@@ -222,8 +244,14 @@ def body_replay(package: ModuleType, lines: list[str]) -> None:
         record(lines, "path reopened", lambda: api.retry.post_idempotent(body=bodies.FileBody.from_path(path)))
         replies.report(lines)
         body = bodies.FileBody.from_path(path)
-        replies.reset(503, 200, change=lambda: path.write_bytes(b"changed length"))
-        record(lines, "path changed between attempts", lambda body=body: api.retry.post_idempotent(body=body))
+        replies.reset(503, 200)
+        record(
+            lines,
+            "path changed between attempts",
+            lambda body=body: api.retry.post_idempotent(
+                body=body, options=options.RequestOptions(hooks=(_ChangePath(path),))
+            ),
+        )
         replies.report(lines)
         _streams(api, bodies, replies, lines)
         _factories(api, bodies, replies, lines)
@@ -333,8 +361,14 @@ async def _async_body_replay(package: ModuleType, bodies: ModuleType, options: M
             replies.reset(503, 308, 200)
             await arecord(lines, "async path reopened", lambda body=body: api.retry.post_idempotent(body=body))
             replies.report(lines)
-            replies.reset(503, 200, change=lambda: path.write_bytes(b"changed length"))
-            await arecord(lines, "async path changed", lambda body=body: api.retry.post_idempotent(body=body))
+            replies.reset(503, 200)
+            await arecord(
+                lines,
+                "async path changed",
+                lambda body=body: api.retry.post_idempotent(
+                    body=body, options=options.RequestOptions(hooks=(_AsyncChangePath(path),))
+                ),
+            )
             replies.report(lines)
             await body.aclose()
             for ownership in ("borrowed", "owned"):
