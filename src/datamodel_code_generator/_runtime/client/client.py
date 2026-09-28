@@ -1061,7 +1061,7 @@ def _acquire(limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str
 async def _aacquire(
     limiter: Limiter | AsyncLimiter, call: LogicalCallContext, url: str, events: CallEvents | None
 ) -> AsyncPermit:
-    """Acquire an async permit in the monitored task that will own every late grant."""
+    """Acquire an async permit in the caller's task, which a stop of the call interrupts."""
     call.check("limiter")
     if not _is_async_limiter(limiter):
         raise ConfigurationError(field_path=("limiter",), condition="sync_limiter")
@@ -1971,7 +1971,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         *,
         events: CallEvents | None,
     ) -> AsyncTransportResponse:
-        """Keep acquired resources in the owned task even when a callback suppresses cancellation."""
+        """Send one attempt, releasing its body and permit on failure even when a stop interrupts that cleanup."""
         attempt = request.body
         permit: AsyncPermit | None = None
         try:
@@ -1999,15 +1999,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 events.sending()
             response = await self._shared.adapter.send(request, io)
         except BaseException as error:  # noqa: BLE001
-            failure = (
-                self._failure(error, call, _delivery(trace, self._shared.adapter.capabilities))
-                if isinstance(error, Exception)
-                else error
-            )
-            if attempt is not None:
-                await call.cleanup(attempt.aclose, error=failure)
-            if permit is not None:
-                await call.cleanup(partial(_arelease_permit, permit), error=failure)
+            failure = await self._send_failure(error, attempt, permit, trace, call)
             raise failure from None
         if permit is not None:
             response = _AsyncLimitedResponse(response, permit)
@@ -2019,6 +2011,25 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 raise
         return response
 
+    async def _send_failure(
+        self,
+        error: BaseException,
+        attempt: AsyncBodyAttempt | None,
+        permit: AsyncPermit | None,
+        trace: AttemptTrace,
+        call: LogicalCallContext,
+    ) -> BaseException:
+        """Release an attempt's body, then its permit even when a stop interrupts the body's cleanup."""
+        failure = self._failure(error, call, _delivery(trace, self._shared.adapter.capabilities))
+        if attempt is not None:
+            try:
+                await call.cleanup(attempt.aclose, error=failure)
+            except BaseException as interrupted:  # noqa: BLE001
+                failure = call.failure(interrupted)
+        if permit is not None:
+            await call.cleanup(partial(_arelease_permit, permit), error=failure)
+        return failure
+
     async def _complete_response(  # noqa: PLR0913
         self,
         request: PreparedRequest[AsyncBodyAttempt],
@@ -2029,7 +2040,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         request_id_header: str | None,
         events: CallEvents | None,
     ) -> Response[T]:
-        """Own sending, reading and decoding in one monitored task, releasing its response on every path."""
+        """Send, read and decode one response, releasing it on every path."""
         trace = AttemptTrace()
         response = await self._send(request, deferred, trace, call, events=events)
         try:

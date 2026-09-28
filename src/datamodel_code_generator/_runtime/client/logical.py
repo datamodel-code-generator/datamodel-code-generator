@@ -117,7 +117,19 @@ class _Guard:
     precedence, and it withdraws its request when the work ends. Without a token it arms no polling timer.
     """
 
-    __slots__ = ("_armed", "_handles", "_loop", "_poller", "_signals", "_token", "level", "reason", "task")
+    __slots__ = (
+        "_armed",
+        "_handles",
+        "_loop",
+        "_poller",
+        "_signals",
+        "_token",
+        "error",
+        "idle_timeout",
+        "level",
+        "reason",
+        "task",
+    )
 
     def __init__(self, call: LogicalCallContext, idle_timeout: float | None) -> None:
         """Arm the call's deadline, stream idle limit, client closing signals, and token polling."""
@@ -127,6 +139,8 @@ class _Guard:
         self.task: asyncio.Task[object] | None = asyncio.current_task()
         self.level = _cancelling(self.task)
         self.reason: StopReason | None = None
+        self.error: BaseException | None = None
+        self.idle_timeout = idle_timeout
         self._armed = True
         self._token = call.settings.cancel_token
         self._handles: list[asyncio.TimerHandle] = []
@@ -309,7 +323,12 @@ class LogicalCallContext:
         phase: DeadlinePhase = "unknown",
         delivery_state: DeliveryState | None = None,
     ) -> BaseException:
-        """Preserve native interruption, otherwise select observed termination before the operation's failure."""
+        """Preserve native interruption, otherwise select observed termination before the operation's failure.
+
+        The guard's own cancellation becomes its stop error at once, so cleanup reports late failures on that error.
+        """
+        if (guard := self._stopper(error)) is not None:
+            return self._stopped(guard, phase, delivery_state, None)
         if not isinstance(error, Exception):
             return error
         try:
@@ -400,35 +419,48 @@ class LogicalCallContext:
             self._interrupted = error if isinstance(error, asyncio.CancelledError) else asyncio.CancelledError()
         return self._interrupted
 
-    def _stopping(self, error: BaseException) -> bool:
-        """Return whether a cancellation is the call guard's own request rather than a native interruption."""
+    def _stopper(self, error: BaseException) -> _Guard | None:
+        """Return the guard whose own request a cancellation is, rather than a native interruption."""
         import asyncio  # noqa: PLC0415
 
         guard = self._guard
         return (
-            isinstance(error, asyncio.CancelledError)
+            guard
+            if isinstance(error, asyncio.CancelledError)
             and guard is not None
             and guard.reason is not None
             and _cancelling(guard.task) <= guard.level + 1
+            else None
         )
 
     def _stopped(
         self,
-        reason: StopReason | None,
+        guard: _Guard,
         phase: DeadlinePhase,
         delivery_state: DeliveryState | None,
-        idle_timeout: float | None,
         cause: BaseException | None,
     ) -> BaseException:
-        """Return the error of a call its guard stopped, even when a timer fired within the clock's resolution."""
+        """Return the one error of a call its guard stopped, selected when the stop is first observed."""
+        if (stopped := guard.error) is None:
+            stopped = guard.error = self._stop_error(guard, phase, delivery_state, cause)
+        return stopped
+
+    def _stop_error(
+        self,
+        guard: _Guard,
+        phase: DeadlinePhase,
+        delivery_state: DeliveryState | None,
+        cause: BaseException | None,
+    ) -> BaseException:
+        """Return the error of a stopped call, even when a timer fired within the clock's resolution."""
         failure = cause if isinstance(cause, Exception) else None
         try:
             self.check(phase, delivery_state, failure)
         except BaseException as error:  # noqa: BLE001
             return error
         delivery = self.delivery_state if delivery_state is None else delivery_state
-        return (
-            self.snapshot_error(
+        if guard.reason == "idle" and (idle_timeout := guard.idle_timeout) is not None:
+            return self.snapshot_error(
                 PhaseTimeoutError(
                     effective_timeout=idle_timeout,
                     phase="read",
@@ -437,11 +469,8 @@ class LogicalCallContext:
                     cause=failure,
                 )
             )
-            if reason == "idle" and idle_timeout is not None
-            else self._deadline_error(
-                monotonic() if self.deadline is None else self.deadline.at, phase, delivery, failure
-            )
-        )
+        at = monotonic() if self.deadline is None else self.deadline.at
+        return self._deadline_error(at, self._phase, delivery, failure)
 
     async def _settle_left(self, failure: BaseException) -> None:
         """Wait within the cleanup cap for the work interrupted callbacks left, retaining what is still running."""
@@ -502,13 +531,15 @@ class LogicalCallContext:
         try:
             result = await operation()
         except BaseException as error:  # noqa: BLE001
+            import asyncio  # noqa: PLC0415
+
             LEFT_WORK.reset(left)
             self._guard = None
             if guard.external():
                 guard.disarm()
                 failure = self._native(error)
-            elif guard.disarm():
-                failure = self._stopped(guard.reason, phase, delivery_state, idle_timeout, error)
+            elif guard.disarm() and isinstance(error, (Exception, asyncio.CancelledError)):
+                failure = self._stopped(guard, phase, delivery_state, error)
             else:
                 if not isinstance(error, Exception) and self._interrupted is None:
                     self._interrupted = error
@@ -536,13 +567,19 @@ class LogicalCallContext:
         self._scope.retain_cleanup(task, error, owner=self)
         try:
             await asyncio.wait((task,), timeout=self.settings.cleanup_timeout)
-        except BaseException as interrupted:
-            if not isinstance(interrupted, Exception) and self._interrupted is None and not self._stopping(interrupted):
-                self._interrupted = interrupted
-            task.add_done_callback(partial(_secondary, interrupted))
+        except BaseException as interrupted:  # noqa: BLE001
+            primary = interrupted
+            if (guard := self._stopper(interrupted)) is None:
+                if not isinstance(interrupted, Exception) and self._interrupted is None:
+                    self._interrupted = interrupted
+                task.add_done_callback(partial(_secondary, interrupted))
+            elif error is None or isinstance(error, Exception):
+                primary = self._stopped(guard, "cleanup", None, error)
+                if error is None:
+                    task.add_done_callback(partial(_secondary, primary))
             if error is not None and not isinstance(error, Exception):
                 raise error from None
-            raise interrupted from None
+            raise primary from None
         if not task.done():
             failure = self.snapshot_error(CleanupError(pending_calls=1, timeout=self.settings.cleanup_timeout))
             if error is not None:

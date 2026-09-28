@@ -161,27 +161,17 @@ class SDKError(Exception):
         return f"{type(self).__name__}({details})"
 
 
-class _SecondaryErrors:
-    """Keep native cleanup failures until an owned task restores the call's original termination."""
-
-    __slots__ = ("errors",)
-
-    def __init__(self, error: BaseException) -> None:
-        self.errors = [error]
-
-
 def add_secondary(error: BaseException, *failures: BaseException) -> None:
-    """Keep cleanup failures beside the error that is already propagating, never in its place."""
+    """Keep cleanup failures beside the error that is already propagating, never in its place.
+
+    An SDK error lists them; any other error names each one in a note.
+    """
     for failure in failures:
         if error is failure:
             continue
         if isinstance(error, SDKError):
             error.secondary_errors = (*error.secondary_errors, failure)
             continue
-        if isinstance(kept := error.__dict__.get("_secondary_errors"), _SecondaryErrors):
-            kept.errors.append(failure)
-        else:
-            error.__dict__["_secondary_errors"] = _SecondaryErrors(failure)
         note = f"Secondary cleanup failure: {type(failure).__name__}"
         if _is_notes(notes := error.__dict__.get("__notes__")):
             notes.append(note)

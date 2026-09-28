@@ -681,6 +681,82 @@ async def _completed_job(
             file.close()
 
 
+async def _shared_path(
+    package: ModuleType,
+    lines: list[str],
+    label: str,
+    failures: tuple[BaseException | None, BaseException | None] = (None, None),
+) -> None:
+    """Cancel two calls on one path body after both opens ran; each settles its own late open and failure."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    options = importlib.import_module(f"{package.__name__}.options")
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    adapter = _UnsentAdapter(transports)
+    submitted: list[Future[object]] = []
+    delayed: list[Future[object]] = []
+    opened: list[_OpenedFile] = []
+    errors: list[BaseException | None] = [None, None]
+    original = ThreadPoolExecutor.submit
+    original_wrap = asyncio.wrap_future
+
+    def submit(executor: ThreadPoolExecutor, function: Callable[..., object], *arguments: object) -> Future[object]:
+        future = original(executor, function, *arguments)
+        if len(submitted) < len(failures):
+            future.exception(timeout=5)
+        submitted.append(future)
+        return future
+
+    def wrap_future(future: Future[object], *, loop: asyncio.AbstractEventLoop | None = None) -> asyncio.Future[object]:
+        """Cancel each call before its completed open is delivered."""
+        if future in submitted[: len(failures)] and future not in delayed:
+            task = asyncio.current_task()
+            if task is None:
+                msg = "shared path fixture must wrap from an asyncio task"
+                raise RuntimeError(msg)
+            delayed.append(future)
+            loop = asyncio.get_running_loop() if loop is None else loop
+            loop.call_soon(task.cancel, f"shared path cancellation {len(delayed)}")
+            return loop.create_future()
+        return original_wrap(future, loop=loop)
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "shared.bin"
+        path.write_bytes(b"upload")
+        body = bodies.AsyncFileBody.from_path(path)
+
+        def open_file(_path: Path, _mode: str) -> _OpenedFile:
+            file = _OpenedFile(path, failure=failures[len(opened)], close_failure=None)
+            opened.append(file)
+            return file
+
+        api = package.AsyncClient(
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=1.0)
+        )
+
+        async def request(index: int) -> None:
+            try:
+                await api.request_raw("POST", "https://files.example.com/", body=body)
+            except BaseException as error:  # noqa: BLE001
+                errors[index] = error
+
+        with (
+            patch.object(ThreadPoolExecutor, "submit", submit),
+            patch.object(Path, "open", open_file),
+            patch.object(asyncio, "wrap_future", wrap_future),
+        ):
+            await asyncio.wait_for(asyncio.gather(request(0), request(1)), 5)
+            await arecord(lines, f"{label} close", api.aclose)
+        record(lines, f"{label} files", lambda: (tuple((file.closed, file.closes) for file in opened), adapter.sends))
+        record(
+            lines,
+            f"{label} diagnostics",
+            lambda: tuple(
+                (type(error).__name__, error.args, tuple(getattr(error, "__notes__", ()))) for error in errors
+            ),
+        )
+        body.close()
+
+
 async def _files(package: ModuleType, lines: list[str]) -> None:
     await _successful_owned(package, lines)
     await _preparation(package, lines, "owned preparation")
@@ -745,6 +821,13 @@ async def _files(package: ModuleType, lines: list[str]) -> None:
     await _completed_job(package, lines, "completed file failure", failure=OSError("completed disk failure"))
     await _completed_job(
         package, lines, "completed path failure", path_body=True, failure=OSError("completed stat failure")
+    )
+    await _shared_path(package, lines, "shared path late opens")
+    await _shared_path(
+        package,
+        lines,
+        "shared path late failures",
+        (FileNotFoundError("first open failed late"), PermissionError("second open failed late")),
     )
     await _native_close(package, lines)
 

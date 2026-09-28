@@ -197,6 +197,12 @@
   completed file failure resources = ((False, False), True, 1, 0)
   completed path failure diagnostics = ('CancelledError', ('completed file cancellation',), ('Secondary cleanup failure: OSError',))
   completed path failure resources = ((False,), True, 1, 0)
+  shared path late opens close = None
+  shared path late opens files = (((True, 1), (True, 1)), 0)
+  shared path late opens diagnostics = (('CancelledError', ('shared path cancellation 1',), ()), ('CancelledError', ('shared path cancellation 2',), ()))
+  shared path late failures close = None
+  shared path late failures files = (((True, 1), (True, 1)), 0)
+  shared path late failures diagnostics = (('CancelledError', ('shared path cancellation 1',), ('Secondary cleanup failure: FileNotFoundError',)), ('CancelledError', ('shared path cancellation 2',), ('Secondary cleanup failure: PermissionError',)))
   > POST https://files.example.com/
     [host: files.example.com, accept-encoding: gzip, deflate, content-length: 6] b'upload'
   native close failure = (True, ('file close interruption',), (), True, 1, True)

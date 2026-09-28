@@ -24,7 +24,7 @@ LEFT_WORK: ContextVar[list[asyncio.Task[None]] | None] = ContextVar("left_work",
 
 
 class TaskInterruptionError(Exception):
-    """Carry the exact native interruption through owned tasks, including Python 3.10 cancelled-task retrieval."""
+    """Carry the exact native interruption out of a cleanup or deferred task as that task's failure."""
 
     __slots__ = ("cause",)
 

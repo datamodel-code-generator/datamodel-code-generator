@@ -569,8 +569,8 @@ class _Worker:
         self.lock = threading.Lock()
         self.closed = False
         self.uses = 0
-        self.settling: set[asyncio.Task[None]] = set()
-        self.releasing: set[asyncio.Task[None]] = set()
+        self.settling: dict[asyncio.Task[None], list[asyncio.Task[None]] | None] = {}
+        self.releasing: dict[asyncio.Task[None], list[asyncio.Task[None]] | None] = {}
 
     def acquire(self) -> None:
         """Keep the worker available until an admitted file attempt finishes its cleanup."""
@@ -621,23 +621,32 @@ class _Worker:
         return result
 
     def defer(self, work: Coroutine[object, object, None], *, release: bool = False) -> None:
-        """Finish work an interrupted caller left on a retained task.
+        """Finish work an interrupted caller left on a retained task, which belongs to the caller's call.
 
         Disk work settles before any file is released; a deferred release is awaited by the interrupted call instead.
         """
         task = asyncio.ensure_future(work)
+        left = LEFT_WORK.get()
         tasks = self.releasing if release else self.settling
-        tasks.add(task)
-        task.add_done_callback(tasks.discard)
-        if release and (left := LEFT_WORK.get()) is not None:
+        tasks[task] = left
+        task.add_done_callback(tasks.pop)
+        if release and left is not None:
             left.append(task)
 
     async def settled(self) -> tuple[BaseException, ...]:
-        """Wait for the disk work interrupted callers left, before its file is released, and return what failed late."""
-        if not (pending := self.settling - {asyncio.current_task()}):
+        """Wait for the disk work interrupted callers left, and return what the current call's share of it failed late.
+
+        Settling work waits for nothing else, so two interrupted opens of one path never wait for each other.
+        """
+        if asyncio.current_task() in self.settling or not (pending := dict(self.settling)):
             return ()
         await asyncio.wait(pending)
-        return tuple(failure for task in pending if not task.cancelled() and (failure := task.exception()) is not None)
+        owner = LEFT_WORK.get()
+        return tuple(
+            failure
+            for task, left in pending.items()
+            if left is owner and not task.cancelled() and (failure := task.exception()) is not None
+        )
 
     async def _settle(
         self,
