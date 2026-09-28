@@ -51,7 +51,7 @@ from datamodel_code_generator._runtime.model_codecs.schema import (
 from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue, escape_pointer_token, freeze_wire
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Sequence
+    from collections.abc import Collection, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._generation_contract import FrozenLiteral, TypeUseBinding
     from datamodel_code_generator._openapi_generation import SourceLease
@@ -698,10 +698,8 @@ def plan_wire(  # noqa: PLR0913
     headers = tuple(
         (use, plan)
         for operation in planned
-        for response in operation.responses
-        for header in response.children
-        if header.kind == "header"
-        for use, plan in _response_header(planner, operation.id, header)
+        for header in _headers(operation, requested)
+        for use, plan in _header(planner, operation.id, header)
     )
     planned_forms = tuple(
         form for use in batch.type_uses if use.id in forms and (form := _form(planner, use, forms[use.id])) is not None
@@ -862,17 +860,33 @@ def _planned(
             replace(
                 error.diagnostic,
                 operation=operation,
-                uses=(*declaration.schemas, *(use for child in declaration.children for use in child.schemas)),
+                uses=_uses(declaration),
             )
         )
     return None
 
 
-def _response_header(
+def _headers(operation: OperationContract, requested: frozenset[TypeUseId] | None) -> Iterator[WireDeclaration]:
+    """Yield the headers of an operation's responses, then the requested ones its request body's encodings declare."""
+    for response in operation.responses:
+        yield from (child for child in response.children if child.kind == "header")
+    for media in () if operation.request_body is None else operation.request_body.children:
+        for encoding in (child for child in media.children if child.kind == "encoding"):
+            yield from (
+                child
+                for child in encoding.children
+                if child.kind == "header" and (requested is None or not requested.isdisjoint(_uses(child)))
+            )
+
+
+def _uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
+    return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
+
+
+def _header(
     planner: _WirePlanner, operation: OperationId, declaration: WireDeclaration
 ) -> tuple[tuple[TypeUseId, ParameterPlan], ...]:
-    uses = (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
-    if not uses:
+    if not (uses := _uses(declaration)):
         return ()
     facts = (*declaration.facts, ("in", LiteralScalar("str", "header")), ("style", LiteralScalar("str", "simple")))
     plan = _planned(planner, operation, replace(declaration, facts=facts), [])

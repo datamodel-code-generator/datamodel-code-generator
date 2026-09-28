@@ -352,19 +352,20 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     bodies, _, types = _modules(package)
     body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
     meta = types.SubmitCoverRequestCodecs.part(name="meta").from_wire({"city": "Oslo"})
-    cover = file("cover", b"\x89PNG")
+    limit = (("X-Rate-Limit", "5"),)
+    cover = file("cover", b"\x89PNG", headers=limit)
     exchange.respond(raw_response(204), raw_response(204))
     record(
         lines,
         "cover",
         lambda: api.forms.submit_cover(
             body=body((
-                field("note", "h\xe9llo"),
+                field("note", "h\xe9llo", headers=(("X-Trace", "t1"),)),
                 field("size", 3),
-                field("meta", meta),
+                field("meta", meta, headers=(("X-Meta", "1"),)),
                 field("extra", 7),
                 cover,
-                file("scans", b"g", content_type="image/gif"),
+                file("scans", b"g", filename="g.gif", content_type="image/gif"),
             ))
         ),
     )
@@ -372,13 +373,21 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         lines,
         "cover of a note in plain text",
         lambda: api.forms.submit_cover(
-            body=body((field("note", "hi", content_type="Text/Plain"), file("cover", b"j", content_type="image/jpeg")))
+            body=body((
+                field("note", "hi", content_type="Text/Plain"),
+                file("cover", b"j", content_type="image/jpeg", headers=limit),
+            ))
         ),
     )
     for label, parts in (
         ("cover of a note in JSON", (field("note", "hi", content_type="application/json"), cover)),
-        ("cover in text", (file("cover", b"x", content_type="text/plain"),)),
+        ("cover in text", (file("cover", b"x", content_type="text/plain", headers=limit),)),
+        ("cover without its rate limit", (file("cover", b"x"),)),
+        ("cover of a rate limit that is no integer", (file("cover", b"x", headers=(("X-Rate-Limit", "x"),)),)),
+        ("cover of a note traced out of pattern", (cover, field("note", "hi", headers=(("X-Trace", "u"),)))),
         ("cover of a scan without its media type", (cover, file("scans", b"s"))),
+        ("cover of a scan without its filename", (cover, file("scans", b"s", content_type="image/gif"))),
+        ("cover of a meta header that is no JSON integer", (cover, field("meta", meta, headers=(("X-Meta", '"1"'),)))),
         ("cover of an object as text", (cover, field("extra", {"k": 1}))),
     ):
         record(lines, label, lambda parts=parts: api.forms.submit_cover(body=body(parts)))

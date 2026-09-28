@@ -375,12 +375,33 @@ paths:
                   items: {type: string, format: binary}
                 extra: {}
             encoding:
-              note: {contentType: text/plain; charset=utf-16}
+              note:
+                contentType: text/plain; charset=utf-16
+                headers:
+                  X-Trace:
+                    schema: {type: string, pattern: '^t'}
+                  Content-Type:
+                    required: true
+                    schema: {type: string, pattern: '^never'}
               extra: {contentType: text/plain}
               size: {contentType: application/json}
-              meta: {contentType: application/vnd.meta+json}
-              cover: {contentType: 'image/png, image/jpeg'}
-              scans: {contentType: 'image/*'}
+              meta:
+                contentType: application/vnd.meta+json
+                headers:
+                  X-Meta:
+                    content:
+                      application/json:
+                        schema: {type: integer}
+              cover:
+                contentType: 'image/png, image/jpeg'
+                headers:
+                  X-Rate-Limit: {$ref: '#/components/headers/RateLimit'}
+              scans:
+                contentType: 'image/*'
+                headers:
+                  Content-Disposition:
+                    required: true
+                    schema: {type: string, pattern: 'filename='}
       responses:
         '204':
           description: Stored.
@@ -489,6 +510,10 @@ paths:
         '204':
           description: Replaced.
 components:
+  headers:
+    RateLimit:
+      required: true
+      schema: {type: integer}
   schemas:
     Address:
       type: object

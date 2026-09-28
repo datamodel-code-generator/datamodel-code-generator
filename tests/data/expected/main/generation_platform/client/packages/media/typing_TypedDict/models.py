@@ -19,6 +19,9 @@ class Draft(TypedDict):
     secret: str
 
 
+RateLimitHeader: TypeAlias = int
+
+
 class FieldFormsPostRequest(TypedDict):
     name: str
     count: NotRequired[int]
@@ -137,6 +140,15 @@ class FieldCoversPostRequest(TypedDict):
     cover: bytes
     scans: NotRequired[list[bytes]]
     extra: NotRequired[Any]
+
+
+FieldCoversPostRequestNoteXTraceEncodingHeader: TypeAlias = str
+
+
+FieldCoversPostRequestMetaXMetaEncodingHeader: TypeAlias = int
+
+
+FieldCoversPostRequestScansContentDispositionEncodingHeader: TypeAlias = str
 
 
 class FieldCardsPostRequest(TypedDict):

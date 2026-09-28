@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from pydantic import BaseModel, ConfigDict, RootModel
+from pydantic import BaseModel, ConfigDict, RootModel, constr
 
 
 class Address(BaseModel):
@@ -17,6 +17,10 @@ class Draft(BaseModel):
     id: int
     title: str
     secret: str
+
+
+class RateLimitHeader(RootModel[int]):
+    root: int
 
 
 class FieldFormsPostRequest(BaseModel):
@@ -186,6 +190,20 @@ class FieldCoversPostRequest(BaseModel):
     cover: bytes
     scans: list[bytes] | None = None
     extra: Any | None = None
+
+
+class FieldCoversPostRequestNoteXTraceEncodingHeader(RootModel[constr(pattern=r'^t')]):
+    root: constr(pattern=r'^t')
+
+
+class FieldCoversPostRequestMetaXMetaEncodingHeader(RootModel[int]):
+    root: int
+
+
+class FieldCoversPostRequestScansContentDispositionEncodingHeader(
+    RootModel[constr(pattern=r'filename=')]
+):
+    root: constr(pattern=r'filename=')
 
 
 class FieldCardsPostRequest(BaseModel):

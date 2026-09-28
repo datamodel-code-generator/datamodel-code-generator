@@ -17,6 +17,7 @@ from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import decode_json, encode_json, issue, media_kind, normalize_media_type, typed
+from ..model_codecs.parameters import ParameterFragment, ParameterPlan, RawParameter, decode_parameter
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
@@ -36,6 +37,13 @@ if TYPE_CHECKING:
 
         def encode(self, value: object) -> WireValue:
             """Validate a value and return its wire value."""
+            ...
+
+    class HeaderCodec(Protocol):
+        """The outbound codec facade that validates the wire value of a part header."""
+
+        def from_wire(self, value: WireValue) -> object:
+            """Validate a wire value against the header's schema."""
             ...
 
 
@@ -59,6 +67,7 @@ _MISSING: Final = "A form-data body lacks a required member"
 _EMPTY: Final = "An empty array cannot be represented by repeated parts"
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
+_HEADER: Final = "A part lacks a header its member's encoding requires"
 _SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
 _ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
 
@@ -203,7 +212,7 @@ class PartPlan:
     types of the member's encoding bound the media type a part names, and the first concrete one is its default.
     """
 
-    __slots__ = ("content_types", "encoder", "file", "kind", "name", "repeated", "required")
+    __slots__ = ("content_types", "encoder", "file", "headers", "kind", "name", "repeated", "required")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -215,8 +224,9 @@ class PartPlan:
         required: bool = False,
         encoder: PartEncoder | None = None,
         content_types: tuple[str, ...] = (),
+        headers: tuple[PartHeader, ...] = (),
     ) -> None:
-        """Keep the member's name and kind, whether it repeats, holds files, or is required, its encoder, and media."""
+        """Keep the member's name, kind, repeats, files, requiredness, encoder, media types, and declared headers."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
@@ -224,6 +234,7 @@ class PartPlan:
         self.required = required
         self.encoder = encoder
         self.content_types = content_types
+        self.headers = headers
 
     def media(self, named: str | None) -> str | None:
         """Return the media type of a part: the one it names within the encoding's, or the encoding's default.
@@ -238,6 +249,42 @@ class PartPlan:
 
 
 _ANY: Final = PartPlan("")
+
+
+class PartHeader:
+    """A header an encoding declares for a member's parts, with the plan that reads it and the codec of its schema."""
+
+    __slots__ = ("codec", "plan")
+
+    def __init__(self, plan: ParameterPlan, codec: Callable[[], HeaderCodec]) -> None:
+        """Keep the header's plan and the accessor of the codec that validates its value."""
+        self.plan = plan
+        self.codec = codec
+
+    def check(self, fragments: tuple[ParameterFragment, ...]) -> None:
+        """Refuse a part's headers that lack this one when it is required, or give it a value its schema refuses."""
+        match decode_parameter(self.plan, RawParameter(location="header", fragments=fragments)):
+            case Unset() if self.plan.required:
+                raise ParameterEncodingError(_HEADER)
+            case Unset():
+                pass
+            case wire:
+                self.codec().from_wire(wire)
+
+
+def _checked(
+    part: FieldPart[object] | FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan, filename: str | None
+) -> None:
+    """Check the headers a part carries, its Content-Disposition among them, against its member's encoding."""
+    fragments = (
+        ParameterFragment(b"Content-Disposition", _disposition(part.name, filename).encode()),
+        *(ParameterFragment(key.encode(), value.encode()) for key, value in part.headers),
+    )
+    try:
+        for header in plan.headers:
+            header.check(fragments)
+    except CodecError as error:
+        raise _malformed(part.name, error) from None
 
 
 class _Names:
@@ -279,10 +326,7 @@ def multipart_head(
 
     Content-Type and Content-Disposition come from the part itself, so its own headers may not repeat them.
     """
-    disposition = f'form-data; name="{_quoted(name)}"'
-    if filename is not None:
-        disposition += f'; filename="{_quoted(filename)}"'
-    lines = [f"--{boundary}", f"Content-Disposition: {disposition}"]
+    lines = [f"--{boundary}", f"Content-Disposition: {_disposition(name, filename)}"]
     if content_type is not None:
         try:
             normalize_media_type(content_type)
@@ -296,6 +340,11 @@ def multipart_head(
             raise ParameterEncodingError(msg)
         lines.append(f"{key}: {value}")
     return ("\r\n".join(lines) + "\r\n\r\n").encode()
+
+
+def _disposition(name: str, filename: str | None) -> str:
+    disposition = f'form-data; name="{_quoted(name)}"'
+    return disposition if filename is None else f'{disposition}; filename="{_quoted(filename)}"'
 
 
 def _quoted(text: str) -> str:
@@ -530,10 +579,14 @@ def _layout(
         if _is_field(part):
             plan = _ANY if names is None else names.plan(part.name, file=False)
             if (field := _field(part, boundary, plan)) is not None:
+                if plan.headers:
+                    _checked(part, plan, None)
                 encoded.append(field)
         elif _is_file(part):
             file = _ANY if names is None else names.plan(part.name, file=True)
             encoded.append(_file_head(part, boundary, file))
+            if file.headers:
+                _checked(part, file, part.filename)
             pieces.extend((b"".join(encoded), part))
             encoded = [b"\r\n"]
         else:
