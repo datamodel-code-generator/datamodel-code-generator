@@ -16,8 +16,7 @@
     "client-e2e:ubuntu-24.04:/:",
     "client-httpx2-max-nocov-e2e:windows-latest:/:",
     "client-httpx2-min-nocov-e2e:macos-latest:/:",
-    "client-py310-e2e:ubuntu-24.04:/:",
-    "client-py311-nocov-e2e:ubuntu-24.04:/:",
+    "client-py311-e2e:ubuntu-24.04:/:",
     "client-py312-nocov-e2e:ubuntu-24.04:/:",
     "client-py314-nocov-e2e:ubuntu-24.04:/:",
     "fastapi-e2e:ubuntu-24.04:/:",
@@ -105,7 +104,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 76,
+  "job_count": 75,
   "permissions": {
     "contents": "read"
   },
