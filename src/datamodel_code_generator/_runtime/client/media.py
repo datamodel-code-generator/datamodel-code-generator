@@ -1,10 +1,14 @@
-"""Media types as a client reads them: normalized, dispatched to their most specific declaration, and charsets."""
+"""Media types as a client reads them: normalized, dispatched to their most specific declaration, and charsets.
+
+Text is written in the charset its media type names, and refused when that charset cannot represent it.
+"""
 
 from __future__ import annotations
 
 import codecs
 from typing import TYPE_CHECKING
 
+from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import normalize_media_type
 
 if TYPE_CHECKING:
@@ -53,9 +57,18 @@ def charset(media_type: str) -> str:
     """Return the Python codec a media type's charset parameter names, UTF-8 when it names none or an unknown one."""
     for parameter in media_type.split(";")[1:]:
         name, _, value = parameter.strip().partition("=")
-        if name == "charset":
+        if name.lower() == "charset":
             try:
                 return codecs.lookup(value.strip('"')).name
             except LookupError:
                 break
     return "utf-8"
+
+
+def encode_text(text: str, media_type: str) -> bytes:
+    """Return text in the charset its media type names, refusing text that charset cannot represent."""
+    try:
+        return text.encode(charset(media_type))
+    except UnicodeEncodeError:
+        msg = "The text cannot be represented in its media type's charset"
+        raise ParameterEncodingError(msg) from None

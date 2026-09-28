@@ -424,7 +424,7 @@ paths:
             encoding:
               title: {contentType: text/plain; charset=utf-16}
               count: {contentType: application/json}
-              tags: {contentType: text/plain}
+              tags: {contentType: text/plain; charset=us-ascii}
       responses:
         '204':
           description: Stored.

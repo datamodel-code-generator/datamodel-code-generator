@@ -389,11 +389,16 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         ("cover of a scan without its filename", (cover, file("scans", b"s", content_type="image/gif"))),
         ("cover of a meta header that is no JSON integer", (cover, field("meta", meta, headers=(("X-Meta", '"1"'),)))),
         ("cover of an object as text", (cover, field("extra", {"k": 1}))),
+        ("cover of a note its charset cannot represent", (cover, field("note", "h\xe9llo", content_type="text/plain; charset=us-ascii"))),
     ):
         record(lines, label, lambda parts=parts: api.forms.submit_cover(body=body(parts)))
-    card = types.SubmitCardRequestCodecs.body().from_wire({"title": "h\xe9llo", "count": 2, "tags": ["a", "b"]})
+    exchange.respond(raw_response(204))
+    record(lines, "cover of an extra in UTF-16 text", lambda: api.forms.submit_cover(body=body((cover, field("extra", 7, content_type="text/plain; charset=utf-16")))))
+    codec = types.SubmitCardRequestCodecs.body()
+    card = codec.from_wire({"title": "h\xe9llo", "count": 2, "tags": ["a", "b"]})
     exchange.respond(raw_response(204))
     record(lines, "card", lambda: api.forms.submit_card(body=card))
+    record(lines, "card of a tag its charset cannot represent", lambda: api.forms.submit_card(body=codec.from_wire({"tags": ["\xe9"]})))
 
 
 def _answered(exchange: Exchange, call: Callable[[], object]) -> object:

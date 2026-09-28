@@ -22,7 +22,7 @@ from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
 from .errors import RequestEncodingError, add_secondary
-from .media import charset, most_specific, normalized, with_charset
+from .media import charset, encode_text, most_specific, normalized, with_charset
 from .responses import HeadersView
 
 if TYPE_CHECKING:
@@ -354,26 +354,26 @@ def _quoted(text: str) -> str:
 def multipart_member(value: WireValue, media_type: str | None = None) -> tuple[bytes, str | None]:
     """Return a part's bytes and media type: a string as it is, another scalar as JSON text, the rest as JSON.
 
-    A JSON media type writes any value as JSON, and a text one a scalar as text in its charset.
+    A JSON media type writes any value as JSON, and a text one, the only other an encoding gives, a scalar as text in
+    its charset.
     """
-    if media_type is not None:
-        match media_kind(media_type), value:
-            case "json", _:
-                return encode_json(value), media_type
-            case "text", Mapping() | tuple():
-                raise ParameterEncodingError(_TEXT)
-            case "text", str():
-                return value.encode(charset(media_type)), media_type
+    if media_type is None:
+        match value:
+            case str():
+                return value.encode(), None
+            case Mapping() | tuple():
+                return encode_json(value), "application/json"
             case _:
-                pass
-    match value:
-        case str():
-            return value.encode(), media_type
-        case Mapping() | tuple():
-            return encode_json(value), media_type or "application/json"
+                return encode_json(value), None
+    match media_kind(media_type), value:
+        case "json", _:
+            return encode_json(value), media_type
+        case _, Mapping() | tuple():
+            raise ParameterEncodingError(_TEXT)
+        case _, str():
+            return encode_text(value, media_type), media_type
         case _:
-            pass
-    return encode_json(value), media_type
+            return encode_text(encode_json(value).decode(), media_type), media_type
 
 
 def encode_multipart(value: WireValue, boundary: str, content_types: Mapping[str, str] | None = None) -> bytes:

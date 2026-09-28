@@ -765,7 +765,7 @@ OPERATION_17: Final[OperationPlan[SubmitCardResponse, SubmitCardErrorData]] = Op
                 content_types=(
                     ('title', 'text/plain; charset=utf-16'),
                     ('count', 'application/json'),
-                    ('tags', 'text/plain'),
+                    ('tags', 'text/plain; charset=us-ascii'),
                 ),
             ),
         ),

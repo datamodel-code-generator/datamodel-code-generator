@@ -23,6 +23,9 @@
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
   store text = 'café'
   > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
+  store text of a charset named in capitals = 'café'
+  > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/vnd.api+json, content-length: 26] b'{"title":"t","secret":"s"}'
   store draft = None
   > POST https://media.example.com/api/documents
@@ -81,6 +84,9 @@
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
   store text = 'café'
+  > POST https://media.example.com/api/documents
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: text/plain; charset=utf-16, content-length: 10] b'\xff\xfen\x00o\x00t\x00e\x00'
+  store text of a charset named in capitals = 'café'
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain, content-type: application/vnd.api+json, content-length: 26] b'{"title":"t","secret":"s"}'
   store draft = None

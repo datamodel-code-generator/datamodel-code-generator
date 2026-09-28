@@ -42,7 +42,7 @@ from .errors import (
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
 )
-from .media import charset, essence, most_specific, normalized, with_charset
+from .media import charset, encode_text, essence, most_specific, normalized, with_charset
 from .multipart import (
     DecodedPart,
     MultipartData,
@@ -200,7 +200,7 @@ class BodyMedia:
                 if not isinstance(text := self.wire(value), str):
                     msg = "A text body must be a string"
                     raise ParameterEncodingError(msg)
-                return text.encode(charset(sent))
+                return encode_text(text, sent)
             case "form" if self.encoder is not None:
                 styled = {plan.name: partial(query_pairs, plan) for plan in self.encoded} if self.encoded else None
                 return encode_form(self.encoder.encode(value), self.fields, self.additional, styled)

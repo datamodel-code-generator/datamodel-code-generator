@@ -17,6 +17,7 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
   csv in UTF-16 sent = None
+  csv its charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='storeFile', location='body') [operation_id='storeFile', location=('body',), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: font/woff2, content-length: 4] b'wOF2'
   font sent = None
@@ -87,6 +88,7 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
   csv in UTF-16 sent = None
+  csv its charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='storeFile', location='body') [operation_id='storeFile', location=('body',), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: font/woff2, content-length: 4] b'wOF2'
   font sent = None

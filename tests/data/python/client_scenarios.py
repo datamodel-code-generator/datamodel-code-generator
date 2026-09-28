@@ -421,6 +421,11 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             lambda: api.documents.store_document(body="note", media_type="text/plain; charset=utf-16"),
         ),
         (
+            "store text of a charset named in capitals",
+            raw_response(200, "caf\xe9".encode("latin-1"), "text/plain; CHARSET=latin-1"),
+            lambda: api.documents.store_document(body="note", media_type="text/plain; charset=utf-16"),
+        ),
+        (
             "store draft",
             raw_response(202),
             lambda: api.documents.store_document(body=draft, media_type="application/vnd.api+json"),
