@@ -26,7 +26,7 @@ All new runtimes share the dependencies `jsonschema[format-nongpl]>=4.26`, `refe
 
 Add `google-re2>=1.1.20251105` only to the dependency closure of new targets that use `pattern`, `patternProperties`, or `format:regex`. The verified minimum version has wheels for all CPython 3.10–3.14 versions on Windows x86-64, macOS 13+ x86-64/arm64, and manylinux glibc 2.27+ x86-64 / glibc 2.26+ arm64; this release CI does not require source builds. This wheel guarantee does not cover every Python combination on musl, older macOS, or Windows ARM64. Do not increase the old D's model-only dependencies.
 
-The initial scope is CPython **3.10 / 3.11 / 3.12 / 3.13 / 3.14** for each of the five client / common-codec backends and each of the two server backends above. A generated package's `requires-python` is `max(3.10, the model's target_python_version, the minimum version of enabled features)`. Do not claim Python 3.10 support if the model contains Python 3.12 type statements. Retain the protocol decision that only the new WebSocket feature requires at least 3.11. PyPy, free-threaded builds, and Python 3.15 are outside the initial guarantee. This matches the pinned D's [`PythonVersion`](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/3452dfbb428c4384f40cb16faf61aadfda58a3a8/src/datamodel_code_generator/_format_types.py#L32).
+The initial scope is CPython **3.11 / 3.12 / 3.13 / 3.14** for each of the five client / common-codec backends and each of the two server backends above. A generated package's `requires-python` is `max(3.11, the model's target_python_version, the minimum version of enabled features)`, and the target Python version must be given explicitly (ENTRY §6). Do not claim Python 3.11 support if the model contains Python 3.12 type statements. PyPy, free-threaded builds, and Python 3.15 are outside the initial guarantee. This matches the pinned D's [`PythonVersion`](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/3452dfbb428c4384f40cb16faf61aadfda58a3a8/src/datamodel_code_generator/_format_types.py#L32).
 
 `typing_extensions` supplies `NotRequired` on 3.10, `ReadOnly` on 3.12 and earlier, and backports such as `TypeAliasType`, `closed`, and `extra_items` emitted by the pinned D. The target must not change the model's existing import choices. If Pydantic EmailStr is emitted, add `email-validator>=2.3` to the dependency closure. For ULID, add `pydantic-extra-types[python-ulid]>=2.11.1` and `python-ulid>=3.2.1`. Explicit Pendulum use requires `pendulum>=3.2`; importing its Pydantic wrapper additionally requires `pydantic-extra-types[pendulum]>=2.11.1`. Do not force the latest python-ulid 4 series into the `<4` constraint of extra-types 2.11.1. A custom import's distribution/version is mandatory in the adapter manifest and must not be inferred automatically. Do not add these to, or raise versions in, the existing D's model-only dependencies.
 
@@ -318,7 +318,7 @@ SchemaRef(*, pointer: str, document: str | None = None)
 BuiltinCodecCompatibility(*, name: str, backend: DataModelType,
     schemas: tuple[SchemaRef, ...] = (),
     contract: Literal['builtin-v1'] = 'builtin-v1',
-    dependencies: tuple[str, ...] = (), python_requires: str = '>=3.10')
+    dependencies: tuple[str, ...] = (), python_requires: str = '>=3.11')
 ModelExportBinding(*, schema: SchemaRef, module: str, symbol: str,
     direction: Literal['neutral', 'request', 'response'] = 'neutral')
 ```
@@ -342,7 +342,7 @@ backend = "pydantic_v2.BaseModel"
 schemas = [{pointer = "/components/schemas/Pet"}]
 contract = "builtin-v1"
 dependencies = []
-python_requires = ">=3.10"
+python_requires = ">=3.11"
 
 [[export_bindings]]
 schema = {pointer = "/components/schemas/Pet"}
