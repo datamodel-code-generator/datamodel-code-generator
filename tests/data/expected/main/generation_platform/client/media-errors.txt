@@ -1,7 +1,14 @@
 # media-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CLIENT_UNSUPPORTED target /paths/~1upload/post/requestBody/content/multipart~1form-data/encoding/file: The file encoding of the multipart/form-data media of POST /upload is not supported yet
   E_CLIENT_UNSUPPORTED target /paths/~1upload/post/responses/200/content/multipart~1mixed: The multipart/mixed media of POST /upload is not supported yet
+  E_CLIENT_UNSUPPORTED target /paths/~1upload/post/responses/201/content/multipart~1form-data/encoding/photo: The photo encoding of the multipart/form-data media of POST /upload is not supported yet
   E_CLIENT_UNSUPPORTED target /paths/~1text-parts/post/requestBody/content/multipart~1form-data: The multipart/form-data media of POST /text-parts needs an object schema to be sent as parts
+  E_METADATA_REQUIRED target /paths/~1form-data-encodings/post/requestBody/content/multipart~1form-data/encoding/other: The other encoding of the multipart/form-data media of POST /form-data-encodings names no member
+  E_CLIENT_UNSUPPORTED target /paths/~1form-data-encodings/post/requestBody/content/multipart~1form-data/encoding/a: The a encoding of the multipart/form-data media of POST /form-data-encodings is not supported yet
+  E_CLIENT_UNSUPPORTED target /paths/~1form-data-encodings/post/requestBody/content/multipart~1form-data/encoding/b: The b encoding of the multipart/form-data media of POST /form-data-encodings is not supported yet
+  E_METADATA_REQUIRED target /paths/~1form-data-encodings/post/requestBody/content/multipart~1form-data/encoding/c: The c encoding of the multipart/form-data media of POST /form-data-encodings names no media type
+  E_CLIENT_UNSUPPORTED target /paths/~1form-data-encodings/post/requestBody/content/multipart~1form-data/encoding/d: The d encoding of the multipart/form-data media of POST /form-data-encodings needs a media adapter for a member holding no files
+  E_CLIENT_UNSUPPORTED target /paths/~1form-data-encodings/post/requestBody/content/multipart~1form-data/encoding/e: The e encoding of the multipart/form-data media of POST /form-data-encodings needs a media adapter for a member holding no files
+  E_CLIENT_UNSUPPORTED target /paths/~1form-data-encodings/post/requestBody/content/multipart~1form-data/encoding/g: The g encoding of the multipart/form-data media of POST /form-data-encodings needs a media adapter for a member holding no files
   E_METADATA_REQUIRED target /paths/~1invalid/post/requestBody/content/not a media type: The media type 'not a media type' of POST /invalid is not a media type

@@ -30,8 +30,8 @@ from datamodel_code_generator._generation_contract import (
     SourceLocation,
     TypeUseBinding,
 )
+from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
-from datamodel_code_generator._runtime.client.operations import most_specific
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 
 if TYPE_CHECKING:
@@ -74,6 +74,7 @@ _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
 _MAX_ERROR: Final = 599
 _CONFIG_CODES: Final = frozenset({"E_CONFIG_VALUE", "E_CONFIG_CONFLICT", "E_OPERATION_REF"})
+_STYLED: Final = ("style", "explode", "allowReserved")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -102,6 +103,7 @@ class MediaSpec:
     additional_part: PartPlan | None = None
     members: tuple[PartSpec, ...] | None = None
     extra: PartSpec | None = None
+    content_types: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -471,7 +473,7 @@ class Planner:
         if (reason := self.unsupported(kind, essence, use, request=request)) is not None:
             message = f"The {media_type} media of {_label(operation)} {reason}"
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
-        if kind == "multipart" and (encoding := _encoded(declaration)) is not None:
+        if kind == "multipart" and not request and (encoding := _encoded(declaration)) is not None:
             message = (
                 f"The {encoding.name} encoding of the {media_type} media of {_label(operation)} is not supported yet"
             )
@@ -479,11 +481,15 @@ class Planner:
         fields, additional, encoded = (
             self.forms.get(use.id, ((), None, ())) if kind == "form" and use is not None else ((), None, ())
         )
-        members, extra = (
-            (_sent if request else _received)(self.wire, self._schemas, use, use.schema)
-            if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None
-            else (None, None)
-        )
+        media_of = self.part_media(operation, declaration, media_type, use) if kind == "multipart" and request else {}
+        members: tuple[PartSpec, ...] | None = None
+        extra: PartSpec | None = None
+        if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None:
+            members, extra = (
+                _sent(self.wire, self._schemas, use, use.schema, media_of)
+                if request
+                else _received(self.wire, self._schemas, use, use.schema)
+            )
         parts, additional_part = (
             _part_plans(self.wire, use) if kind == "multipart" and not request and members is None else ((), None)
         )
@@ -498,7 +504,45 @@ class Planner:
             additional_part=additional_part,
             members=members,
             extra=extra,
+            content_types=()
+            if members is not None
+            else tuple((name, types[0]) for name, types in media_of.items() if types),
         )
+
+    def part_media(
+        self, operation: OperationContract, declaration: WireDeclaration, media_type: str, use: TypeUseBinding | None
+    ) -> dict[str, tuple[str, ...]]:
+        """Return the media types each form-data member's encoding names, reporting the encodings not sent yet.
+
+        A member holding no files takes one JSON or text media type; a file member takes any media types and ranges.
+        """
+        members = {} if use is None else {name: member for name, member, _ in _members(use)}
+        media_of: dict[str, tuple[str, ...]] = {}
+        for encoding in (child for child in declaration.children if child.kind == "encoding"):
+            name = encoding.name or ""
+            label = f"The {name} encoding of the {media_type} media of {_label(operation)}"
+            match _content_types(encoding):
+                case _ if name not in members:
+                    self.problems.append(_problem("E_METADATA_REQUIRED", f"{label} names no member", encoding.use_site))
+                case _ if encoding.children or any(fact(encoding, key) is not None for key in _STYLED):
+                    self.problems.append(
+                        _problem("E_CLIENT_UNSUPPORTED", f"{label} is not supported yet", encoding.use_site)
+                    )
+                case None:
+                    self.problems.append(
+                        _problem("E_METADATA_REQUIRED", f"{label} names no media type", encoding.use_site)
+                    )
+                case (single,) if not media_range(single) and (
+                    media_kind(single) == "json"
+                    or (media_kind(single) == "text" and not _structured(self.wire, members[name]))
+                ):
+                    media_of[name] = (single,)
+                case types if _file(self.wire, members[name]):
+                    media_of[name] = types
+                case _:
+                    message = f"{label} needs a media adapter for a member holding no files"
+                    self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
+        return media_of
 
     def unsupported(self, kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:
         """Return why a media type cannot be sent or read yet, or None when it can.
@@ -755,6 +799,7 @@ def _sent(
     schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
     use: TypeUseBinding,
     site: SourceLocation,
+    media_of: Mapping[str, tuple[str, ...]],
 ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
     """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
 
@@ -785,6 +830,7 @@ def _sent(
                 repeated=_array(wire, member),
                 file=name in files,
                 required=facts.required and not facts.read_only,
+                content_types=media_of.get(name, ()),
             ),
             use=None
             if name in files
@@ -914,8 +960,26 @@ def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:
     return frozenset()
 
 
+def _structured(wire: WirePlan, location: SourceLocation) -> bool:
+    """Return whether a member holds objects or arrays, directly or as the items of an array, which text cannot."""
+    _, schema = wire.schema(location)
+    if _types(schema) - _NULL == _ARRAY:
+        _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
+    return bool(_types(schema) & {"object", "array"})
+
+
+def _content_types(encoding: WireDeclaration) -> tuple[str, ...] | None:
+    """Return the media types an encoding's contentType lists, none without one, or None when one is no media type."""
+    if (declared := fact(encoding, "contentType")) is None:
+        return ()
+    try:
+        return tuple(normalize_media_type(item.strip()) for item in str(declared).split(","))
+    except ValueError:
+        return None
+
+
 def _encoded(media: WireDeclaration) -> WireDeclaration | None:
-    """Return the first form-data encoding the builtin multipart writer does not read."""
+    """Return the first encoding of a multipart response, which no builtin reader applies."""
     return next(
         (
             child

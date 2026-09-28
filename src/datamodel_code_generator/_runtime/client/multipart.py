@@ -16,12 +16,12 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, 
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
-from ..model_codecs.media import decode_json, encode_json, issue, normalize_media_type, typed
+from ..model_codecs.media import decode_json, encode_json, issue, media_kind, normalize_media_type, typed
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
 from .errors import RequestEncodingError, add_secondary
-from .media import charset
+from .media import charset, most_specific, normalized, with_charset
 from .responses import HeadersView
 
 if TYPE_CHECKING:
@@ -57,6 +57,8 @@ _KIND: Final = "A form-data file member takes FileParts, and any other member Fi
 _REPEATED: Final = "A form-data body repeats a single-valued member"
 _MISSING: Final = "A form-data body lacks a required member"
 _EMPTY: Final = "An empty array cannot be represented by repeated parts"
+_MEDIA: Final = "A part's media type must fall within its member's encoding"
+_TEXT: Final = "A text part carries a scalar"
 _SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
 _ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
 
@@ -194,13 +196,14 @@ else:
 
 
 class PartPlan:
-    """How one form-data member is sent or read: its kind, repeats, files, requiredness, and encoder.
+    """How one form-data member is sent or read: its kind, repeats, files, requiredness, encoder, and media types.
 
     A received part is read in its lexical kind, or as JSON. A sent value is validated by the encoder, when the member
-    has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts.
+    has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts. The media
+    types of the member's encoding bound the media type a part names, and the first concrete one is its default.
     """
 
-    __slots__ = ("encoder", "file", "kind", "name", "repeated", "required")
+    __slots__ = ("content_types", "encoder", "file", "kind", "name", "repeated", "required")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -211,14 +214,27 @@ class PartPlan:
         file: bool = False,
         required: bool = False,
         encoder: PartEncoder | None = None,
+        content_types: tuple[str, ...] = (),
     ) -> None:
-        """Keep the member's name and kind, whether it repeats, holds files, or is required, and its encoder."""
+        """Keep the member's name and kind, whether it repeats, holds files, or is required, its encoder, and media."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
         self.file = file
         self.required = required
         self.encoder = encoder
+        self.content_types = content_types
+
+    def media(self, named: str | None) -> str | None:
+        """Return the media type of a part: the one it names within the encoding's, or the encoding's default.
+
+        A named media type is sent normalized, with the charset of the declared type it falls within when it names none.
+        """
+        if named is None:
+            return next((media for media in self.content_types if "*" not in media.partition(";")[0]), None)
+        if (wanted := normalized(named)) is None or (declared := most_specific(wanted, self.content_types)) is None:
+            raise ParameterEncodingError(_MEDIA)
+        return with_charset(wanted, declared)
 
 
 _ANY: Final = PartPlan("")
@@ -286,20 +302,36 @@ def _quoted(text: str) -> str:
     return text.replace('"', "%22").replace("\r", "%0D").replace("\n", "%0A")
 
 
-def multipart_member(value: WireValue) -> tuple[bytes, str | None]:
-    """Return a part's bytes and media type: a string as it is, another scalar as JSON text, the rest as JSON."""
+def multipart_member(value: WireValue, media_type: str | None = None) -> tuple[bytes, str | None]:
+    """Return a part's bytes and media type: a string as it is, another scalar as JSON text, the rest as JSON.
+
+    A JSON media type writes any value as JSON, and a text one a scalar as text in its charset.
+    """
+    if media_type is not None:
+        match media_kind(media_type), value:
+            case "json", _:
+                return encode_json(value), media_type
+            case "text", Mapping() | tuple():
+                raise ParameterEncodingError(_TEXT)
+            case "text", str():
+                return value.encode(charset(media_type)), media_type
+            case _:
+                pass
     match value:
         case str():
-            return value.encode(), None
+            return value.encode(), media_type
         case Mapping() | tuple():
-            return encode_json(value), "application/json"
+            return encode_json(value), media_type or "application/json"
         case _:
             pass
-    return encode_json(value), None
+    return encode_json(value), media_type
 
 
-def encode_multipart(value: WireValue, boundary: str) -> bytes:
-    """Serialize an object as ordered form-data parts, repeating a part for each array member."""
+def encode_multipart(value: WireValue, boundary: str, content_types: Mapping[str, str] | None = None) -> bytes:
+    """Serialize an object as ordered form-data parts, repeating a part for each array member.
+
+    A member with an encoding's media type is written in it.
+    """
     if not isinstance(value, Mapping):
         msg = "A multipart form value must be an object"
         raise ParameterEncodingError(msg)
@@ -307,8 +339,9 @@ def encode_multipart(value: WireValue, boundary: str) -> bytes:
     for name, item in value.items():
         if item == ():
             raise ParameterEncodingError(_EMPTY)
+        declared = None if content_types is None else content_types.get(name)
         for member in item if isinstance(item, tuple) else (item,):
-            content, media_type = multipart_member(member)
+            content, media_type = multipart_member(member, declared)
             parts.extend((multipart_head(boundary, name, None, media_type, ()), content, b"\r\n"))
     parts.append(f"--{boundary}--\r\n".encode())
     return b"".join(parts)
@@ -335,23 +368,31 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan) -> bytes | No
     try:
         wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value)
         if not plan.repeated or not isinstance(wire, tuple):
-            return _member(part, boundary, wire)
+            return _member(part, boundary, wire, plan)
         if not wire:
             raise ParameterEncodingError(_EMPTY)
-        return b"".join([_member(part, boundary, item) for item in wire])
+        return b"".join([_member(part, boundary, item, plan) for item in wire])
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
 
 
-def _member(part: FieldPart[object], boundary: str, item: WireValue) -> bytes:
-    content, media_type = multipart_member(item)
-    return multipart_head(boundary, part.name, None, part.content_type or media_type, part.headers) + content + b"\r\n"
+def _member(part: FieldPart[object], boundary: str, item: WireValue, plan: PartPlan) -> bytes:
+    if plan.content_types:
+        media_type = plan.media(part.content_type)
+        content, shaped = multipart_member(item, media_type)
+    else:
+        media_type = part.content_type
+        content, shaped = multipart_member(item)
+    return multipart_head(boundary, part.name, None, media_type or shaped, part.headers) + content + b"\r\n"
 
 
-def _file_head(part: FilePart[SyncBinaryBody | AsyncBinaryBody], boundary: str) -> bytes:
+def _file_head(part: FilePart[SyncBinaryBody | AsyncBinaryBody], boundary: str, plan: PartPlan) -> bytes:
     try:
+        media_type = plan.media(part.content_type) if plan.content_types else part.content_type
+        if media_type is None and plan.content_types:
+            raise ParameterEncodingError(_MEDIA)
         return multipart_head(
-            boundary, part.name, part.filename, part.content_type or "application/octet-stream", part.headers
+            boundary, part.name, part.filename, media_type or "application/octet-stream", part.headers
         )
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
@@ -491,9 +532,8 @@ def _layout(
             if (field := _field(part, boundary, plan)) is not None:
                 encoded.append(field)
         elif _is_file(part):
-            if names is not None:
-                names.plan(part.name, file=True)
-            encoded.append(_file_head(part, boundary))
+            file = _ANY if names is None else names.plan(part.name, file=True)
+            encoded.append(_file_head(part, boundary, file))
             pieces.extend((b"".join(encoded), part))
             encoded = [b"\r\n"]
         else:

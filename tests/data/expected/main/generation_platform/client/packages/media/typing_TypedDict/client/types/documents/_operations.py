@@ -121,7 +121,7 @@ class _StoreDocumentRequestCodecs(
 
 
 StoreDocumentRequestCodecs: Final = _StoreDocumentRequestCodecs(
-    bodies=(('application/vnd.api+json', model_bindings.outbound_11),),
+    bodies=(('application/vnd.api+json', model_bindings.outbound_12),),
     requests=(
         'application/json',
         'text/plain; charset=utf-16',
@@ -178,7 +178,7 @@ class _ReadDocumentRequestCodecs(
 
 
 ReadDocumentRequestCodecs: Final = _ReadDocumentRequestCodecs(
-    parameters=(('path', 'id', model_bindings.outbound_13),),
+    parameters=(('path', 'id', model_bindings.outbound_14),),
     responses=('application/vnd.api+json',),
 )
 
@@ -205,7 +205,7 @@ _READ_DOCUMENT_HEADERS: Final[ResponseHeaders[DecodedValue[_dcg_type_0], Unset]]
                             ),
                             additional=FieldPlan('', 'string'),
                         ),
-                        decode=envelope_value(model_bindings.codec_15, model_bindings.CONTEXT_15),
+                        decode=envelope_value(model_bindings.codec_16, model_bindings.CONTEXT_16),
                         missing=optional_header,
                     ),
                 ),

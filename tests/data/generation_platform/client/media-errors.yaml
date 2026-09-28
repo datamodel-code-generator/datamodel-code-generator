@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.2.0
 info:
   title: Media errors
   version: 1.0.0
@@ -37,13 +37,15 @@ paths:
             multipart/mixed:
               schema: {type: object}
         '201':
-          description: A form-data response with a file part.
+          description: A form-data response with a file part and an encoding.
           content:
             multipart/form-data:
               schema:
                 type: object
                 properties:
                   photo: {type: string, contentMediaType: image/png}
+              encoding:
+                photo: {contentType: image/png}
   /text-parts:
     post:
       operationId: postTextParts
@@ -54,6 +56,37 @@ paths:
       responses:
         '204':
           description: A form-data body that is no object.
+  /form-data-encodings:
+    post:
+      operationId: postFormDataEncodings
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                a: {type: string}
+                b: {type: string}
+                c: {type: string}
+                d: {type: object}
+                e: {type: string}
+                f: {type: string, format: binary}
+                g: {type: object}
+            encoding:
+              other: {contentType: text/plain}
+              a:
+                headers:
+                  X-Trace:
+                    schema: {type: string}
+              b: {style: form}
+              c: {contentType: not a media type}
+              d: {contentType: application/xml}
+              e: {contentType: 'text/*'}
+              f: {contentType: 'image/*'}
+              g: {contentType: text/plain}
+      responses:
+        '204':
+          description: Form-data encodings the client does not send yet.
   /invalid:
     post:
       operationId: postInvalid

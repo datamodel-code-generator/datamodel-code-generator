@@ -251,7 +251,14 @@ class _TargetData:
             "body": None
             if body is None
             else [
-                (item.media_type, item.fields, item.additional, self.contract(item.use), *item.encoded)
+                (
+                    item.media_type,
+                    item.fields,
+                    item.additional,
+                    self.contract(item.use),
+                    *item.encoded,
+                    *item.content_types,
+                )
                 if item.members is None
                 else (item.media_type, self.contract(item.use), self.members(item, self.contract))
                 for item in body.media
@@ -297,10 +304,10 @@ class _TargetData:
         return (self.bindings.get(use.id), self.wire.schema(use.schema)[1])
 
 
-def _plan(part: PartSpec) -> tuple[str, bool, bool, bool]:
-    """Return a part's name and whether it repeats, holds files, or is required."""
+def _plan(part: PartSpec) -> tuple[str, bool, bool, bool, tuple[str, ...]]:
+    """Return a part's name, whether it repeats, holds files, or is required, and its encoding's media types."""
     plan = part.plan
-    return plan.name, plan.repeated, plan.file, plan.required
+    return plan.name, plan.repeated, plan.file, plan.required, plan.content_types
 
 
 def _digest(value: object) -> str:

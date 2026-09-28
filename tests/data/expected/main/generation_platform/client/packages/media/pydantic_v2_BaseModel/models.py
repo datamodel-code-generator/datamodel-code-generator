@@ -179,5 +179,20 @@ class FieldSearchesPostRequest(BaseModel):
     extra: dict[str, str] | None = None
 
 
+class FieldCoversPostRequest(BaseModel):
+    note: str | None = None
+    size: int | None = None
+    meta: Address | None = None
+    cover: bytes
+    scans: list[bytes] | None = None
+    extra: Any | None = None
+
+
+class FieldCardsPostRequest(BaseModel):
+    title: str | None = None
+    count: int | None = None
+    tags: list[str] | None = None
+
+
 class FieldDocumentsIdGetPathIdParameter(BaseModel):
     key: str | None = None

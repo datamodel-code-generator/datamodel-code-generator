@@ -1217,6 +1217,7 @@ class _Registry(_Typing):
                 ("", repr(plan.name)),
                 *((flag, "True") for flag, value in flags if value),
                 *((("encoder=", self.encoder(module, part.use)),) if part.use is not None else ()),
+                *((("content_types=", _tuple(map(repr, plan.content_types))),) if plan.content_types else ()),
             ),
         )
 
@@ -1230,6 +1231,8 @@ class _Registry(_Typing):
             entries.append(("additional=", field_plan(module.local, media.additional)))
         if media.encoded:
             entries.append(("encoded=", _tuple(parameter_plan(module.local, item) for item in media.encoded)))
+        if media.content_types:
+            entries.append(("content_types=", _tuple(repr(pair) for pair in media.content_types)))
         if media.parts:
             entries.append(("parts=", _tuple(_part_plan(module, item) for item in media.parts)))
         if media.additional_part is not None:

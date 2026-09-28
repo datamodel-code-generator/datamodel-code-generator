@@ -24,7 +24,6 @@ from ..model_codecs.media import (
     encode_json,
     form_encode,
     issue,
-    normalize_media_type,
     percent_decode,
     split_form,
 )
@@ -43,7 +42,7 @@ from .errors import (
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
 )
-from .media import charset
+from .media import charset, essence, most_specific, normalized, with_charset
 from .multipart import (
     DecodedPart,
     MultipartData,
@@ -57,7 +56,7 @@ from .multipart import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterable, Sequence
+    from collections.abc import Callable, Container, Sequence
 
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
@@ -187,6 +186,7 @@ class BodyMedia:
     parts: tuple[PartPlan, ...] | None = None
     additional_part: PartPlan | None = None
     encoded: tuple[ParameterPlan, ...] = ()
+    content_types: tuple[tuple[str, str], ...] = ()
 
     def encode(self, value: object, sent: str) -> object:
         """Encode one body argument for the media type sent, or raise the codec or media failure.
@@ -218,7 +218,9 @@ class BodyMedia:
         """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""
         if self.encoder is None:
             return MultipartSource(value, boundary, self.parts, self.additional_part)
-        return encode_multipart(self.encoder.encode(value), boundary)
+        return encode_multipart(
+            self.encoder.encode(value), boundary, dict(self.content_types) if self.content_types else None
+        )
 
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
@@ -270,7 +272,7 @@ class RequestBody:
                 pass
             case MediaSelector():
                 media_type, concrete = RequestMedia.chosen(media_type, owner)
-            case str() if "*" in _essence(media_type):
+            case str() if "*" in essence(media_type):
                 raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
             case _:
                 pass
@@ -304,36 +306,9 @@ def _sent(concrete: str, declared: str) -> str:
 
     A boundary the concrete type names is left out, since a multipart body names the boundary of its call.
     """
-    essence, *parameters = concrete.split("; ")
-    kept = [parameter for parameter in parameters if not parameter.startswith("boundary=")]
-    if not any(parameter.startswith("charset=") for parameter in kept):
-        kept.extend(parameter for parameter in declared.split("; ")[1:] if parameter.startswith("charset="))
-    return "; ".join((essence, *kept))
-
-
-def normalized(media_type: str) -> str | None:
-    """Return a media type in its normalized form, or None when it is not a media type."""
-    try:
-        return normalize_media_type(media_type)
-    except ValueError:
-        return None
-
-
-def most_specific(received: str, declared: Iterable[str]) -> str | None:
-    """Return the declared media type a concrete one falls under: itself, without parameters, type/*, then */*."""
-    declared = tuple(declared)
-    if received in declared:
-        return received
-    essence = _essence(received)
-    return next(
-        (
-            media
-            for candidate in (essence, f"{essence.partition('/')[0]}/*", "*/*")
-            for media in declared
-            if _essence(media) == candidate
-        ),
-        None,
-    )
+    bare, *parameters = concrete.split("; ")
+    kept = "; ".join((bare, *(parameter for parameter in parameters if not parameter.startswith("boundary="))))
+    return with_charset(kept, declared)
 
 
 class Branch(Generic[T_co]):
@@ -612,10 +587,6 @@ def _grouped(branches: tuple[Branch[T], ...]) -> dict[str, tuple[Branch[T], ...]
     }
 
 
-def _essence(media_type: str) -> str:
-    return media_type.partition(";")[0]
-
-
 def _matching(received: str, branches: Sequence[Branch[T]]) -> Branch[T] | None:
     """Return the branch of a received media type: exact type, then parameters ignored, then type/*, then */*."""
     if found := next((branch for branch in branches if branch.media_type == received), None):
@@ -685,7 +656,7 @@ class ResponseDecoder(Generic[T_co, E_co]):
             for branch in group
             if branch.media_type is None or branch is winner
         )
-        if wanted is None or "*" in _essence(wanted) or all(branch.media_type is None for branch in success):
+        if wanted is None or "*" in essence(wanted) or all(branch.media_type is None for branch in success):
             raise ConfigurationError(
                 field_path=("response_media_type",), condition="undeclared", operation_id=operation_id
             )
