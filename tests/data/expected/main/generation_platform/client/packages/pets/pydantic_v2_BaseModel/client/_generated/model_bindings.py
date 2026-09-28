@@ -142,6 +142,27 @@ def _resources() -> tuple[SchemaResource, ...]:
                         'parameters': [{'schema': {'type': 'integer'}}],
                     },
                     '/pets/{petId}/files': {
+                        'get': {
+                            'parameters': [{'schema': {'type': 'integer'}}],
+                            'responses': {
+                                '200': {
+                                    'content': {
+                                        'multipart/form-data': {
+                                            'schema': {
+                                                'type': 'object',
+                                                'required': ['file'],
+                                                'properties': {
+                                                    'note': {'type': 'string'},
+                                                    'labels': {'type': 'array', 'items': {'type': 'string'}},
+                                                    'file': {'type': 'string', 'format': 'binary'},
+                                                },
+                                                'additionalProperties': False,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
                         'post': {
                             'parameters': [{'schema': {'type': 'integer'}}],
                             'requestBody': {
@@ -197,6 +218,8 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1pets~1{petId}/get/responses/200/content/text~1plain/schema',
                 '/paths/~1pets~1{petId}/head/responses/200/headers/ETag/schema',
                 '/paths/~1pets~1{petId}/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1files/get/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1files/get/responses/200/content/multipart~1form-data/schema',
                 '/paths/~1pets~1{petId}~1files/post/parameters/0/schema',
                 '/paths/~1pets~1{petId}~1files/post/requestBody/content/multipart~1form-data/schema',
                 '/paths/~1pets~1{petId}~1photo/put/parameters/0/schema',
@@ -458,6 +481,16 @@ def _model_14() -> ModelBinding:
 def _model_15() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdFilesPostPathPetIdParameter',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_16() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldPetsPetIdFilesGetPathPetIdParameter',
         native_kind='root',
         schema_id=None,
         root=LeafNode(),
@@ -1170,6 +1203,43 @@ def outbound_19() -> NativeOutboundCodec[models.FieldPetsPetIdFilesPostPathPetId
 CONTEXT_20: Final = CodecContext(
     surface='client',
     direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/parameters/0/schema',
+    operation_id='/paths/~1pets~1{petId}~1files/get',
+)
+
+
+@cache
+def codec_20() -> PydanticModelCodec[models.FieldPetsPetIdFilesGetPathPetIdParameter]:
+    """Codec of /paths/~1pets~1{petId}~1files/get parameter (request path petId)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/parameters/0/schema|ModelNode(symbol='models:FieldPetsPetIdFilesGetPathPetIdParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/parameters/0/schema',
+            operation_id='/paths/~1pets~1{petId}~1files/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldPetsPetIdFilesGetPathPetIdParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldPetsPetIdFilesGetPathPetIdParameter'),
+            models=(_model_16(),),
+        ),
+        models.FieldPetsPetIdFilesGetPathPetIdParameter,
+        {'models:FieldPetsPetIdFilesGetPathPetIdParameter': models.FieldPetsPetIdFilesGetPathPetIdParameter},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_20() -> NativeOutboundCodec[models.FieldPetsPetIdFilesGetPathPetIdParameter]:
+    return NativeOutboundCodec(codec_20(), CONTEXT_20)
+
+
+CONTEXT_21: Final = CodecContext(
+    surface='client',
+    direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/note',
     operation_id='/paths/~1pets~1{petId}~1files/post',
     media_type='multipart/form-data',
@@ -1177,7 +1247,7 @@ CONTEXT_20: Final = CodecContext(
 
 
 @cache
-def codec_20() -> PydanticModelCodec[str]:
+def codec_21() -> PydanticModelCodec[str]:
     """Codec of /paths/~1pets~1{petId}~1files/post request_body (request note multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1201,11 +1271,11 @@ def codec_20() -> PydanticModelCodec[str]:
 
 
 @cache
-def outbound_20() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_20(), CONTEXT_20)
+def outbound_21() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_21(), CONTEXT_21)
 
 
-CONTEXT_21: Final = CodecContext(
+CONTEXT_22: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/labels',
@@ -1215,7 +1285,7 @@ CONTEXT_21: Final = CodecContext(
 
 
 @cache
-def codec_21() -> PydanticModelCodec[list[str]]:
+def codec_22() -> PydanticModelCodec[list[str]]:
     """Codec of /paths/~1pets~1{petId}~1files/post request_body (request labels multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -1239,5 +1309,71 @@ def codec_21() -> PydanticModelCodec[list[str]]:
 
 
 @cache
-def outbound_21() -> NativeOutboundCodec[list[str]]:
-    return NativeOutboundCodec(codec_21(), CONTEXT_21)
+def outbound_22() -> NativeOutboundCodec[list[str]]:
+    return NativeOutboundCodec(codec_22(), CONTEXT_22)
+
+
+CONTEXT_23: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/note',
+    operation_id='/paths/~1pets~1{petId}~1files/get',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_23() -> PydanticModelCodec[str]:
+    """Codec of /paths/~1pets~1{petId}~1files/get response_body (response note 200 multipart/form-data)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/note|LeafNode(representation='value')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/note',
+            operation_id='/paths/~1pets~1{petId}~1files/get',
+            media_type='multipart/form-data',
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        response_bundle(),
+    )
+
+
+CONTEXT_24: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/labels/items',
+    operation_id='/paths/~1pets~1{petId}~1files/get',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_24() -> PydanticModelCodec[str]:
+    """Codec of /paths/~1pets~1{petId}~1files/get response_body (response labels 200 multipart/form-data)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/labels/items|LeafNode(representation='value')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/labels/items',
+            operation_id='/paths/~1pets~1{petId}~1files/get',
+            media_type='multipart/form-data',
+            backend='pydantic_v2.BaseModel',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        response_bundle(),
+    )

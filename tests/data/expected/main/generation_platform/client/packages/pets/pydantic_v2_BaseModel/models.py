@@ -89,3 +89,16 @@ class FieldPetsPetIdFilesPostRequest(BaseModel):
     note: str | None = None
     labels: list[str] | None = None
     file: bytes
+
+
+class FieldPetsPetIdFilesGetPathPetIdParameter(RootModel[int]):
+    root: int
+
+
+class FieldPetsPetIdFilesGetResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    note: str | None = None
+    labels: list[str] | None = None
+    file: bytes

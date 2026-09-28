@@ -82,6 +82,44 @@ class FieldUploadsPostRequest(BaseModel):
     pages: list[str] | None = None
 
 
+class FieldUploadsGetResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, int],
+    }
+    title: str
+    count: int | None = None
+    tags: list[str] | None = None
+    meta: Address | None = None
+    draft: Draft | None = None
+    photo: bytes
+    pages: list[str] | None = None
+    secret: str
+
+
+class FieldUploadsGetResponse1(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, bytes],
+    }
+    note: str | None = None
+
+
+class FieldUploadsGetResponse2(BaseModel):
+    photo: bytes | None = None
+
+
+class FieldUploadsGetResponse3(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    photo: bytes | None = None
+
+
 class FieldAvatarsPostRequest(BaseModel):
     caption: str | None = None
     avatar: bytes | None = None

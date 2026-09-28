@@ -11,6 +11,7 @@ from models import FieldPetsGetCookieSessionParameter as _dcg_type_3
 from models import FieldPetsGetHeaderXTraceParameter as _dcg_type_2
 from models import FieldPetsGetQueryLimitParameter as _dcg_type_0
 from models import FieldPetsGetQueryTagsParameter as _dcg_type_1
+from models import FieldPetsPetIdFilesGetPathPetIdParameter as _dcg_type_10
 from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_9
 from models import FieldPetsPetIdGetPathPetIdParameter as _dcg_type_6
 from models import FieldPetsPetIdGetResponse as _dcg_type_8
@@ -31,6 +32,7 @@ from ...types.pets import (
     GetPetResponse,
     HeadPetResponse,
     ListPetsResponse,
+    ReadFilesResponse,
 )
 from .photos._sync import PetsPhotosResource
 
@@ -198,6 +200,21 @@ class PetsResource:
             options=options,
         ).data
 
+    def read_files(
+        self,
+        *,
+        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> ReadFilesResponse:
+        """Call GET /pets/{petId}/files."""
+        return self._core.execute(
+            _operations.OPERATION_7,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
+        ).data
+
 
 class PetsWithResponse:
     """The pets operations, returning each result with its response metadata."""
@@ -334,6 +351,21 @@ class PetsWithResponse:
             options=options,
         )
 
+    def read_files(
+        self,
+        *,
+        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[ReadFilesResponse]:
+        """Call GET /pets/{petId}/files."""
+        return self._core.execute(
+            _operations.OPERATION_7,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
 
 class PetsWithRawResponse:
     """The pets operations, returning each raw response with its body read into memory."""
@@ -454,6 +486,21 @@ class PetsWithRawResponse:
             options=options,
         )
 
+    def read_files(
+        self,
+        *,
+        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /pets/{petId}/files."""
+        return self._core.execute_raw(
+            _operations.OPERATION_7,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
 
 class PetsWithStreamingResponse:
     """The pets operations, returning blocks that send each call on entry and stream its response."""
@@ -564,4 +611,19 @@ class PetsWithStreamingResponse:
             body=body,
             media_type=media_type,
             options=options,
+        )
+
+    def read_files(
+        self,
+        *,
+        pet_id: _dcg_type_10 | ModelValue[_dcg_type_10],
+        response_media_type: Literal['multipart/form-data'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /pets/{petId}/files."""
+        return self._core.stream(
+            _operations.OPERATION_7,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
         )

@@ -142,6 +142,27 @@ def _resources() -> tuple[SchemaResource, ...]:
                         'parameters': [{'schema': {'type': 'integer'}}],
                     },
                     '/pets/{petId}/files': {
+                        'get': {
+                            'parameters': [{'schema': {'type': 'integer'}}],
+                            'responses': {
+                                '200': {
+                                    'content': {
+                                        'multipart/form-data': {
+                                            'schema': {
+                                                'type': 'object',
+                                                'required': ['file'],
+                                                'properties': {
+                                                    'note': {'type': 'string'},
+                                                    'labels': {'type': 'array', 'items': {'type': 'string'}},
+                                                    'file': {'type': 'string', 'format': 'binary'},
+                                                },
+                                                'additionalProperties': False,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
                         'post': {
                             'parameters': [{'schema': {'type': 'integer'}}],
                             'requestBody': {
@@ -197,6 +218,8 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1pets~1{petId}/get/responses/200/content/text~1plain/schema',
                 '/paths/~1pets~1{petId}/head/responses/200/headers/ETag/schema',
                 '/paths/~1pets~1{petId}/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1files/get/parameters/0/schema',
+                '/paths/~1pets~1{petId}~1files/get/responses/200/content/multipart~1form-data/schema',
                 '/paths/~1pets~1{petId}~1files/post/parameters/0/schema',
                 '/paths/~1pets~1{petId}~1files/post/requestBody/content/multipart~1form-data/schema',
                 '/paths/~1pets~1{petId}~1photo/put/parameters/0/schema',
@@ -1050,6 +1073,43 @@ def outbound_19() -> NativeOutboundCodec[models.FieldPetsPetIdFilesPostPathPetId
 CONTEXT_20: Final = CodecContext(
     surface='client',
     direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/parameters/0/schema',
+    operation_id='/paths/~1pets~1{petId}~1files/get',
+)
+
+
+@cache
+def codec_20() -> StructuralModelCodec[models.FieldPetsPetIdFilesGetPathPetIdParameter]:
+    """Codec of /paths/~1pets~1{petId}~1files/get parameter (request path petId)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/parameters/0/schema|LeafNode(representation='value')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/parameters/0/schema',
+            operation_id='/paths/~1pets~1{petId}~1files/get',
+            media_type=None,
+            backend='typing.TypedDict',
+            native_kind='alias',
+            native_export='models:FieldPetsPetIdFilesGetPathPetIdParameter',
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        models.FieldPetsPetIdFilesGetPathPetIdParameter,
+        {},
+        request_bundle(),
+    )
+
+
+@cache
+def outbound_20() -> NativeOutboundCodec[models.FieldPetsPetIdFilesGetPathPetIdParameter]:
+    return NativeOutboundCodec(codec_20(), CONTEXT_20)
+
+
+CONTEXT_21: Final = CodecContext(
+    surface='client',
+    direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/note',
     operation_id='/paths/~1pets~1{petId}~1files/post',
     media_type='multipart/form-data',
@@ -1057,7 +1117,7 @@ CONTEXT_20: Final = CodecContext(
 
 
 @cache
-def codec_20() -> StructuralModelCodec[str]:
+def codec_21() -> StructuralModelCodec[str]:
     """Codec of /paths/~1pets~1{petId}~1files/post request_body (request note multipart/form-data)."""
     return StructuralModelCodec(
         UseBinding(
@@ -1081,11 +1141,11 @@ def codec_20() -> StructuralModelCodec[str]:
 
 
 @cache
-def outbound_20() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_20(), CONTEXT_20)
+def outbound_21() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_21(), CONTEXT_21)
 
 
-CONTEXT_21: Final = CodecContext(
+CONTEXT_22: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/requestBody/content/multipart~1form-data/schema/properties/labels',
@@ -1095,7 +1155,7 @@ CONTEXT_21: Final = CodecContext(
 
 
 @cache
-def codec_21() -> StructuralModelCodec[list[str]]:
+def codec_22() -> StructuralModelCodec[list[str]]:
     """Codec of /paths/~1pets~1{petId}~1files/post request_body (request labels multipart/form-data)."""
     return StructuralModelCodec(
         UseBinding(
@@ -1119,5 +1179,71 @@ def codec_21() -> StructuralModelCodec[list[str]]:
 
 
 @cache
-def outbound_21() -> NativeOutboundCodec[list[str]]:
-    return NativeOutboundCodec(codec_21(), CONTEXT_21)
+def outbound_22() -> NativeOutboundCodec[list[str]]:
+    return NativeOutboundCodec(codec_22(), CONTEXT_22)
+
+
+CONTEXT_23: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/note',
+    operation_id='/paths/~1pets~1{petId}~1files/get',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_23() -> StructuralModelCodec[str]:
+    """Codec of /paths/~1pets~1{petId}~1files/get response_body (response note 200 multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/note|LeafNode(representation='value')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/note',
+            operation_id='/paths/~1pets~1{petId}~1files/get',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        response_bundle(),
+    )
+
+
+CONTEXT_24: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/labels/items',
+    operation_id='/paths/~1pets~1{petId}~1files/get',
+    media_type='multipart/form-data',
+)
+
+
+@cache
+def codec_24() -> StructuralModelCodec[str]:
+    """Codec of /paths/~1pets~1{petId}~1files/get response_body (response labels 200 multipart/form-data)."""
+    return StructuralModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/labels/items|LeafNode(representation='value')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/responses/200/content/multipart~1form-data/schema/properties/labels/items',
+            operation_id='/paths/~1pets~1{petId}~1files/get',
+            media_type='multipart/form-data',
+            backend='typing.TypedDict',
+            native_kind='scalar',
+            native_export=None,
+            projection_mode='native',
+            converter_strategy='typeddict_structural',
+            type=LeafNode(),
+            models=(),
+        ),
+        str,
+        {},
+        response_bundle(),
+    )

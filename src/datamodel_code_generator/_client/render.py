@@ -12,7 +12,7 @@ from datamodel_code_generator._client._compiled_templates import client as clien
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.naming import pascal
-from datamodel_code_generator._client.plan import sent_parts, success_media
+from datamodel_code_generator._client.plan import member_parts, success_media
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
@@ -228,7 +228,19 @@ class _Model:
     sent: bool
 
 
-_Key: TypeAlias = _Model | str
+@dataclass(frozen=True, slots=True)
+class _Parts:
+    """A payload of a form-data response with file parts: the value types of its parts, in member order."""
+
+    values: tuple[_Key, ...]
+
+
+_Key: TypeAlias = _Model | _Parts | str
+_SURFACES: Final = {
+    "form": ("bodies", "FormData", ""),
+    "multipart": ("bodies", "MultipartData", "[bytes]"),
+    "wire": ("model_codecs", "WireValue", ""),
+}
 _Headers: TypeAlias = "dict[str, tuple[str, list[tuple[ResponseSpec, HeaderSpec]]]]"
 
 
@@ -453,15 +465,19 @@ class _Typing:
                     values = module.local("model_codecs", "DecodedValue" if key.envelope else "ModelValue")
                     return f"{static} | {values}[{static}]"
                 return f"{module.local('model_codecs', 'DecodedValue')}[{static}]" if key.envelope else static
-            case "form":
-                return module.local("bodies", "FormData")
-            case "multipart":
-                return f"{module.local('bodies', 'MultipartData')}[bytes]"
-            case "wire":
-                return module.local("model_codecs", "WireValue")
+            case _Parts():
+                return f"{module.local('bodies', 'MultipartData')}[{_Typing.values(module, key)}]"
+            case str() if (surface := _SURFACES.get(key)) is not None:
+                package, name, arguments = surface
+                return f"{module.local(package, name)}{arguments}"
             case _:
                 pass
         return key
+
+    @staticmethod
+    def values(module: Module, key: _Parts) -> str:
+        """Return the union of the value types of a response's parts."""
+        return _union(_Typing.spell(module, value) for value in key.values)
 
     def surface(self, module: Module, kind: str, use: TypeUseBinding | None, *, sent: bool) -> str:
         """Return the payload type of one media or parameter: its model type, envelope, or schema-less surface."""
@@ -472,10 +488,21 @@ class _Typing:
         if response.bodyless or not response.media:
             return ["None"]
         return [
-            self.key(media.kind, media.use, sent=False)
+            self.key(media.kind, media.use, sent=False) if media.members is None else self.parts(media)
             for media in response.media
             if media_type is None or media.media_type == media_type
         ]
+
+    def parts(self, media: MediaSpec) -> _Parts:
+        """Return the payload of a response read as parts: each part's type, bytes for files and untyped extras."""
+        return _Parts(
+            tuple(
+                dict.fromkeys(
+                    "bytes" if part.use is None else self.key("json", part.use, sent=False)
+                    for part in member_parts(media)
+                )
+            )
+        )
 
     def successes(self, spec: OperationSpec, media_type: str | None = None) -> tuple[_Key, ...]:
         """Return every success value type without repeats, restricted to one media type when given."""
@@ -488,7 +515,7 @@ class _Typing:
 
     def part_values(self, module: Module, media: MediaSpec) -> str:
         """Return the values the field parts of a body sent as parts take: each member's, WireValue for any extra."""
-        keys = (self.key("json", part.use, sent=True) for part in sent_parts(media) if not part.plan.file)
+        keys = (self.key("json", part.use, sent=True) for part in member_parts(media) if not part.plan.file)
         return self.union(module, keys, "") or module.name("typing_extensions", "Never")
 
     def codec(self, module: Module, use: TypeUseBinding, *, facade: bool = False) -> str:
@@ -635,7 +662,7 @@ class _Resources(_Typing):
                     surface = module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
                 case "multipart", None:
                     surface = f"{module.local('bodies', f'{prefix}MultipartBody')}[str]"
-                case "multipart", _ if media.sent is not None:
+                case "multipart", _ if media.members is not None:
                     surface = f"{module.local('bodies', f'{prefix}MultipartBody')}[{self.part_values(module, media)}]"
                 case _:
                     surface = self.surface(module, media.kind, media.use, sent=True)
@@ -816,16 +843,16 @@ class _Types(_Typing):
             for item in spec.parameters
             if item.use is not None and item.use.id in self.accessors
         ]
-        sent = [media for media in (() if spec.body is None else spec.body.media) if media.sent is not None]
+        sent = [media for media in (() if spec.body is None else spec.body.media) if media.members is not None]
         parts = [
             (media.media_type, part.plan.name, *self.part_codec(module, part))
             for media in sent
-            for part in media.sent or ()
+            for part in media.members or ()
         ]
         extras = [
             (media.media_type, *self.part_codec(module, extra))
             for media in sent
-            if (extra := media.sent_additional) is not None and extra.use is not None
+            if (extra := media.extra) is not None and extra.use is not None
         ]
         never = module.name("typing_extensions", "Never")
         body_union = _union(kind for _, kind, _ in bodies) or never
@@ -975,7 +1002,7 @@ class _Types(_Typing):
     def header_branch(self, module: Module, header: HeaderSpec) -> Group:
         """Return the HeaderBranch constructor of one status's declaration of a header."""
         assert header.use is not None
-        decoder = "envelope_header" if self.envelope(header.use) else "native_header"
+        decoder = "envelope_value" if self.envelope(header.use) else "native_value"
         missing = "required_header" if header.required else "optional_header"
         return _call(
             module.local(_CODECS, "HeaderBranch"),
@@ -1079,10 +1106,10 @@ class _Registry(_Typing):
         """Return the BodyMedia constructor of one request media type."""
         kind = media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
         entries: list[tuple[str, Doc]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
-        if media.sent is not None:
-            entries.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.sent)))
-            if media.sent_additional is not None:
-                entries.append(("additional_part=", self.sent_plan(module, media.sent_additional)))
+        if media.members is not None:
+            entries.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.members)))
+            if media.extra is not None:
+                entries.append(("additional_part=", self.sent_plan(module, media.extra)))
         elif kind != "binary" and media.use is not None and media.use.id in self.accessors:
             entries.append(("encoder=", self.encoder(module, media.use)))
             entries.extend(self.form(module, media))
@@ -1140,6 +1167,8 @@ class _Registry(_Typing):
             media_type = repr(media.media_type)
             if media.kind == "binary":
                 branches.append(f"{module.local(_RUNTIME, 'binary_branch')}({status}, {media_type})")
+            elif media.members is not None:
+                branches.append(self.parts_branch(module, status, media))
             elif media.use is None or media.use.id not in self.accessors:
                 name = {"json": "wire_branch", "text": "text_branch", "multipart": "multipart_branch"}.get(
                     media.kind, "form_branch"
@@ -1156,6 +1185,32 @@ class _Registry(_Typing):
                 ]
                 branches.append(_call(module.local(_RUNTIME, name), entries))
         return branches
+
+    def parts_branch(self, module: Module, status: str, media: MediaSpec) -> Group:
+        """Return the branch of a form-data response with file parts: its reader of each member's parts."""
+        reader = f"{module.local(_RUNTIME, 'PartsReader')}[{self.values(module, self.parts(media))}]"
+        entries: list[tuple[str, Doc]] = [("", _tuple(self.read_part(module, part) for part in media.members or ()))]
+        if media.extra is not None:
+            entries.append(("additional=", self.read_part(module, media.extra)))
+        return _call(
+            module.local(_RUNTIME, "parts_branch"),
+            (("", status), ("", repr(media.media_type)), ("", _call(reader, entries))),
+        )
+
+    def read_part(self, module: Module, part: PartSpec) -> Group:
+        """Return the PartDecoder of one member of a response read as parts: its bytes, or its codec's value."""
+        plan = part.plan
+        flags = [
+            (flag, "True") for flag, value in (("repeated=", plan.repeated), ("required=", plan.required)) if value
+        ]
+        multipart = "_runtime.client.multipart"
+        if part.use is None:
+            return _call(module.local(multipart, "file_part"), (("", repr(plan.name)), *flags))
+        decoder = "envelope_value" if self.envelope(part.use) else "native_value"
+        value = f"{module.local(_CODECS, decoder)}({self.codec(module, part.use)})"
+        return _call(
+            module.local(multipart, "value_part"), (("", repr(plan.name)), ("", repr(plan.kind)), ("", value), *flags)
+        )
 
 
 class ClientRenderer:

@@ -66,6 +66,29 @@ class FieldUploadsPostRequest(TypedDict, extra_items=int):
     pages: NotRequired[list[str]]
 
 
+class FieldUploadsGetResponse(TypedDict, extra_items=int):
+    title: str
+    count: NotRequired[int]
+    tags: NotRequired[list[str]]
+    meta: NotRequired[Address]
+    draft: NotRequired[Draft]
+    photo: bytes
+    pages: NotRequired[list[str]]
+    secret: str
+
+
+class FieldUploadsGetResponse1(TypedDict, extra_items=bytes):
+    note: NotRequired[str]
+
+
+class FieldUploadsGetResponse2(TypedDict):
+    photo: NotRequired[bytes]
+
+
+class FieldUploadsGetResponse3(TypedDict, closed=True):
+    photo: NotRequired[bytes]
+
+
 class FieldAvatarsPostRequest(TypedDict):
     caption: NotRequired[str]
     avatar: NotRequired[bytes]

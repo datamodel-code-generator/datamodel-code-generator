@@ -77,3 +77,13 @@ class FieldPetsPetIdFilesPostRequest:
     file: bytes
     note: str | None = None
     labels: list[str] | None = None
+
+
+FieldPetsPetIdFilesGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesGetPathPetIdParameter", int)
+
+
+@dataclass(config=ConfigDict(extra='forbid'))
+class FieldPetsPetIdFilesGetResponse:
+    file: bytes
+    note: str | None = None
+    labels: list[str] | None = None

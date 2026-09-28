@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Final, Literal, TypeAlias, overload
 
 from models import Address as _dcg_type_6
+from models import Draft as _dcg_type_7
 from models import FieldAnythingPostRequest as _dcg_type_4
 from models import FieldAttachmentsGetResponse as _dcg_type_5
 from models import FieldFormsPostRequest as _dcg_type_1
@@ -18,7 +19,7 @@ from ..._generated import model_bindings
 from ..._runtime.client.codecs import RequestCodecs
 from ...bodies import FormData, MultipartData
 from ...errors import HTTPStatusError
-from ...model_codecs import NativeOutboundCodec
+from ...model_codecs import DecodedValue, NativeOutboundCodec
 
 SubmitFormResponse: TypeAlias = _dcg_type_0
 SubmitFormErrorData: TypeAlias = None
@@ -272,6 +273,21 @@ SubmitUploadRequestCodecs: Final = _SubmitUploadRequestCodecs(
 )
 
 
+ReadUploadResponse: TypeAlias = MultipartData[str | int | _dcg_type_6 | DecodedValue[_dcg_type_7] | bytes] | MultipartData[str | bytes] | MultipartData[bytes]
+ReadUploadErrorData: TypeAlias = None
+
+
+class ReadUploadHTTPError(HTTPStatusError[ReadUploadErrorData]):
+    """An error response of read_upload, with its decoded payload when one is declared."""
+
+
+class _ReadUploadRequestCodecs(RequestCodecs[Never, Never]):
+    """The outbound codecs of the read_upload request."""
+
+
+ReadUploadRequestCodecs: Final = _ReadUploadRequestCodecs()
+
+
 SubmitAvatarResponse: TypeAlias = None
 SubmitAvatarErrorData: TypeAlias = None
 
@@ -328,7 +344,7 @@ class _SubmitAvatarRequestCodecs(
 SubmitAvatarRequestCodecs: Final = _SubmitAvatarRequestCodecs(
     bodies=(('application/json', model_bindings.outbound_6),),
     parts=(
-        ('multipart/form-data', 'caption', model_bindings.outbound_18),
+        ('multipart/form-data', 'caption', model_bindings.outbound_26),
         ('multipart/form-data', 'avatar', None),
     ),
 )
@@ -371,7 +387,7 @@ class _SubmitScansRequestCodecs(RequestCodecs[Never, Never, NativeOutboundCodec[
 
 SubmitScansRequestCodecs: Final = _SubmitScansRequestCodecs(
     default='multipart/form-data',
-    parts=(('multipart/form-data', 'note', model_bindings.outbound_19),),
+    parts=(('multipart/form-data', 'note', model_bindings.outbound_27),),
 )
 
 
@@ -416,5 +432,5 @@ class _SubmitLabelsRequestCodecs(
 SubmitLabelsRequestCodecs: Final = _SubmitLabelsRequestCodecs(
     default='multipart/form-data',
     parts=(('multipart/form-data', 'sheet', None),),
-    extras=(('multipart/form-data', model_bindings.outbound_20),),
+    extras=(('multipart/form-data', model_bindings.outbound_28),),
 )

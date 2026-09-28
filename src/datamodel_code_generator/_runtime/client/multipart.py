@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 
 
 PartT = TypeVar("PartT")
+T = TypeVar("T")
 InputT = TypeVar("InputT")
 PartT_co = TypeVar("PartT_co", covariant=True)
 T_co = TypeVar("T_co", covariant=True)
@@ -719,10 +720,10 @@ def _json_part(part: DecodedPart[bytes]) -> bool:
     return media == "application/json" or media.endswith("+json")
 
 
-def _part_value(part: DecodedPart[bytes], plan: PartPlan) -> WireValue:
-    if plan.kind == "json" or _json_part(part):
+def _part_value(part: DecodedPart[bytes], kind: PartKind) -> WireValue:
+    if kind == "json" or _json_part(part):
         return decode_json(part.value)
-    return typed(part.value.decode(charset(part.content_type or "")), plan.kind)
+    return typed(part.value.decode(charset(part.content_type or "")), kind)
 
 
 def decode_parts(
@@ -734,7 +735,7 @@ def decode_parts(
     for part in parts:
         if part.name is None or (plan := declared.get(part.name, additional)) is None:
             raise issue(code="multipart.undeclared", message="A form-data part is not declared")
-        value = thaw_wire(_part_value(part, plan))
+        value = thaw_wire(_part_value(part, plan.kind))
         if part.name not in result:
             result[part.name] = [value] if plan.repeated else value
         elif plan.repeated:
@@ -742,3 +743,58 @@ def decode_parts(
         else:
             raise issue(code="multipart.duplicate", message="A form-data body repeats a single-valued member")
     return freeze_wire(result)
+
+
+class PartSyntaxError(Exception):
+    """A received part that is not text of its member's kind, or not JSON."""
+
+    def __init__(self, cause: BaseException) -> None:
+        """Keep the failure of reading the part."""
+        super().__init__()
+        self.cause = cause
+
+
+class PartDecoder(Generic[T_co]):
+    """How the parts of one member of a form-data response with file parts are read, and whether they repeat.
+
+    A file part keeps its bytes; any other part is read in its member's kind, or as JSON, then decoded by its codec.
+    """
+
+    __slots__ = ("_read", "name", "repeated", "required")
+
+    def __init__(
+        self, name: str, read: Callable[[DecodedPart[bytes]], T_co], *, repeated: bool = False, required: bool = False
+    ) -> None:
+        """Keep the member's name, how a part becomes its value, and whether it repeats or is required."""
+        self.name = name
+        self._read = read
+        self.repeated = repeated
+        self.required = required
+
+    def read(self, part: DecodedPart[bytes]) -> T_co:
+        """Return the value of one part, raising PartSyntaxError when it is not text of its kind."""
+        return self._read(part)
+
+
+def _content(part: DecodedPart[bytes]) -> bytes:
+    return part.value
+
+
+def file_part(name: str, *, repeated: bool = False, required: bool = False) -> PartDecoder[bytes]:
+    """Return how a file member's parts are read, as their bytes; an untyped extra part is read the same way."""
+    return PartDecoder(name, _content, repeated=repeated, required=required)
+
+
+def value_part(
+    name: str, kind: PartKind, decode: Callable[[WireValue], T], *, repeated: bool = False, required: bool = False
+) -> PartDecoder[T]:
+    """Return how a member's parts are read: in its kind, or as JSON, then decoded by its codec."""
+
+    def read(part: DecodedPart[bytes]) -> T:
+        try:
+            wire = _part_value(part, kind)
+        except (CodecError, ValueError) as error:
+            raise PartSyntaxError(error) from None
+        return decode(wire)
+
+    return PartDecoder(name, read, repeated=repeated, required=required)

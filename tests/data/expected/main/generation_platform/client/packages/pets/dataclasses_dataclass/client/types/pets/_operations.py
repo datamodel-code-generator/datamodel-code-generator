@@ -13,6 +13,7 @@ from models import FieldPetsGetQueryTagsParameter as _dcg_type_3
 from models import FieldPetsGetResponse as _dcg_type_0
 from models import FieldPetsGetResponse200XNextHeader as _dcg_type_6
 from models import FieldPetsGetResponse200XRateHeader as _dcg_type_7
+from models import FieldPetsPetIdFilesGetPathPetIdParameter as _dcg_type_15
 from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_14
 from models import FieldPetsPetIdGetPathPetIdParameter as _dcg_type_12
 from models import FieldPetsPetIdGetResponse as _dcg_type_11
@@ -27,11 +28,12 @@ from ..._runtime.client.codecs import (
     HeaderBranch,
     RequestCodecs,
     ResponseHeaders,
-    native_header,
+    native_value,
     optional_header,
     required_header,
 )
 from ..._runtime.model_codecs.parameters import ParameterPlan
+from ...bodies import MultipartData
 from ...errors import HTTPStatusError
 from ...model_codecs import NativeOutboundCodec
 from ...options import Unset
@@ -120,7 +122,7 @@ _LIST_PETS_HEADERS: Final[ResponseHeaders[_dcg_type_6 | _dcg_type_7, Unset]] = R
                             name='X-Next',
                             style='simple',
                         ),
-                        decode=native_header(model_bindings.codec_5, model_bindings.CONTEXT_5),
+                        decode=native_value(model_bindings.codec_5, model_bindings.CONTEXT_5),
                         missing=optional_header,
                     ),
                 ),
@@ -139,7 +141,7 @@ _LIST_PETS_HEADERS: Final[ResponseHeaders[_dcg_type_6 | _dcg_type_7, Unset]] = R
                             required=True,
                             kind='integer',
                         ),
-                        decode=native_header(model_bindings.codec_6, model_bindings.CONTEXT_6),
+                        decode=native_value(model_bindings.codec_6, model_bindings.CONTEXT_6),
                         missing=required_header,
                     ),
                 ),
@@ -357,7 +359,7 @@ _HEAD_PET_HEADERS: Final[ResponseHeaders[_dcg_type_13, Unset]] = ResponseHeaders
                             name='ETag',
                             style='simple',
                         ),
-                        decode=native_header(model_bindings.codec_17, model_bindings.CONTEXT_17),
+                        decode=native_value(model_bindings.codec_17, model_bindings.CONTEXT_17),
                         missing=optional_header,
                     ),
                 ),
@@ -448,7 +450,47 @@ AttachFilesRequestCodecs: Final = _AttachFilesRequestCodecs(
     parameters=(('path', 'petId', model_bindings.outbound_19),),
     parts=(
         ('multipart/form-data', 'file', None),
-        ('multipart/form-data', 'note', model_bindings.outbound_20),
-        ('multipart/form-data', 'labels', model_bindings.outbound_21),
+        ('multipart/form-data', 'note', model_bindings.outbound_21),
+        ('multipart/form-data', 'labels', model_bindings.outbound_22),
     ),
+)
+
+
+ReadFilesResponse: TypeAlias = MultipartData[bytes | str]
+ReadFilesErrorData: TypeAlias = None
+
+
+class ReadFilesHTTPError(HTTPStatusError[ReadFilesErrorData]):
+    """An error response of read_files, with its decoded payload when one is declared."""
+
+
+class _ReadFilesRequestCodecs(RequestCodecs[Never, NativeOutboundCodec[_dcg_type_15]]):
+    """The outbound codecs of the read_files request."""
+
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['path'],
+        name: Literal['petId'],
+    ) -> NativeOutboundCodec[_dcg_type_15]: ...
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['path', 'query', 'querystring', 'header', 'cookie'],
+        name: str,
+    ) -> NativeOutboundCodec[_dcg_type_15]: ...
+    def parameter(
+        self,
+        *,
+        location: Literal['path', 'query', 'querystring', 'header', 'cookie'],
+        name: str,
+    ) -> NativeOutboundCodec[_dcg_type_15]:
+        """Return the outbound codec of one declared parameter."""
+        return self._parameter(location, name)
+
+
+ReadFilesRequestCodecs: Final = _ReadFilesRequestCodecs(
+    parameters=(('path', 'petId', model_bindings.outbound_20),),
 )

@@ -224,12 +224,23 @@ class _TargetData:
                 body.default,
                 [
                     (media.media_type, self.type(media.use))
-                    if media.sent is None
-                    else (media.media_type, self.type(media.use), self.sent(media, self.type))
+                    if media.members is None
+                    else (media.media_type, self.type(media.use), self.members(media, self.type))
                     for media in body.media
                 ],
             ),
-            "responses": [(item.status, [self.type(media.use) for media in item.media]) for item in spec.responses],
+            "responses": [
+                (
+                    item.status,
+                    [
+                        self.type(media.use)
+                        if media.members is None
+                        else (self.type(media.use), self.members(media, self.type))
+                        for media in item.media
+                    ],
+                )
+                for item in spec.responses
+            ],
             "response_media_type": spec.response_media_type,
         }
         request = {
@@ -241,8 +252,8 @@ class _TargetData:
             if body is None
             else [
                 (item.media_type, item.fields, item.additional, self.contract(item.use))
-                if item.sent is None
-                else (item.media_type, self.contract(item.use), self.sent(item, self.contract))
+                if item.members is None
+                else (item.media_type, self.contract(item.use), self.members(item, self.contract))
                 for item in body.media
             ],
         }
@@ -252,7 +263,12 @@ class _TargetData:
             "responses": [
                 (
                     item.status,
-                    [(media.media_type, self.contract(media.use)) for media in item.media],
+                    [
+                        (media.media_type, self.contract(media.use))
+                        if media.members is None
+                        else (media.media_type, self.contract(media.use), self.members(media, self.contract))
+                        for media in item.media
+                    ],
                     [(header.name, header.required, header.plan, self.contract(header.use)) for header in item.headers],
                 )
                 for item in spec.responses
@@ -262,11 +278,11 @@ class _TargetData:
         return (("signature", signature), ("request", request), ("response", response), ("security", security))
 
     @staticmethod
-    def sent(media: MediaSpec, project: Callable[[TypeUseBinding | None], object]) -> object:
-        """Return each member plan of a body sent as parts with a projection of its use, then any other part's."""
-        extra = media.sent_additional
+    def members(media: MediaSpec, project: Callable[[TypeUseBinding | None], object]) -> object:
+        """Return each member plan of media sent or read as parts with a projection of its use, then any other's."""
+        extra = media.extra
         return (
-            [(*_plan(part), project(part.use)) for part in media.sent or ()],
+            [(*_plan(part), project(part.use)) for part in media.members or ()],
             None if extra is None else (*_plan(extra), project(extra.use)),
         )
 

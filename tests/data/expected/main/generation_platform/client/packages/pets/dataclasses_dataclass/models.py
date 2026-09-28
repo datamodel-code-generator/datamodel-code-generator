@@ -76,3 +76,13 @@ class FieldPetsPetIdFilesPostRequest:
     file: bytes
     note: str | None = None
     labels: list[str] | None = None
+
+
+FieldPetsPetIdFilesGetPathPetIdParameter: TypeAlias = int
+
+
+@dataclass
+class FieldPetsPetIdFilesGetResponse:
+    file: bytes
+    note: str | None = None
+    labels: list[str] | None = None
