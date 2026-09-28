@@ -177,7 +177,7 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(_delayed(2, status))
             result = outcome(
                 lambda: api.request_raw(
-                    "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=0.2)
+                    "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=0.2, retry=options.RetryOptions(max_retries=0))
                 )
             )
             lines.append(f"  buffered acquisition {status} {result.partition(' secondary ')[0]}")
@@ -192,7 +192,7 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
             with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/cancel",
-                options=options.RequestOptions(cancel_token=token),
+                options=options.RequestOptions(cancel_token=token, retry=options.RetryOptions(max_retries=0)),
             ) as response:
                 read = getattr(response, action)
                 record(
@@ -217,6 +217,7 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
 
 
 def _interruptions(package: ModuleType, lines: list[str]) -> None:
+    options = importlib.import_module(f"{package.__name__}.options")
     transports = importlib.import_module(f"{package.__name__}.transports")
     headers = importlib.import_module(f"{package.__name__}.responses").HeadersView([("content-type", "text/plain")])
     adapter = Adapter(transports, lines)
@@ -229,7 +230,7 @@ def _interruptions(package: ModuleType, lines: list[str]) -> None:
             response.cleanup = closing
             adapter.replies.append(lambda request, context: response)
             try:
-                with api.with_streaming_response.request_raw("GET", "https://example.com/interruption") as raw:
+                with api.with_streaming_response.request_raw("GET", "https://example.com/interruption", options=options.RequestOptions(retry=options.RetryOptions(max_retries=0))) as raw:
                     if action == "iter_bytes":
                         list(raw.iter_bytes())
                     else:
@@ -294,7 +295,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(_delayed(2))
         result = await aoutcome(
             lambda: api.request_raw(
-                "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=0.2)
+                "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=0.2, retry=options.RetryOptions(max_retries=0))
             ),
         )
         lines.append(f"  async buffered acquisition {result.partition(' secondary ')[0]}")
@@ -336,7 +337,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             async with api.with_streaming_response.request_raw(
                 "GET",
                 "https://example.com/cancel",
-                options=options.RequestOptions(cancel_token=token),
+                options=options.RequestOptions(cancel_token=token, retry=options.RetryOptions(max_retries=0)),
             ) as response:
                 if action.startswith("iter_"):
                     await arecord(lines, f"async stream cancel {action}", lambda: anext(getattr(response, action)()))
@@ -362,6 +363,7 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
+    options = importlib.import_module(f"{package.__name__}.options")
     transports = importlib.import_module(f"{package.__name__}.transports")
     headers = importlib.import_module(f"{package.__name__}.responses").HeadersView([("content-type", "text/plain")])
     adapter = AsyncAdapter(transports, lines)
@@ -374,7 +376,7 @@ async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
             response.cleanup = closing
             adapter.replies.append(lambda request, context: response)
             try:
-                async with api.with_streaming_response.request_raw("GET", "https://example.com/interruption") as raw:
+                async with api.with_streaming_response.request_raw("GET", "https://example.com/interruption", options=options.RequestOptions(retry=options.RetryOptions(max_retries=0))) as raw:
                     if action == "iter_bytes":
                         async for _ in raw.iter_bytes():
                             pass

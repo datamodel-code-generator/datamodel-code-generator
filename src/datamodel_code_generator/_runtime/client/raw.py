@@ -12,7 +12,7 @@ from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import Self, TypeIs, TypeVar
 
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
@@ -22,6 +22,7 @@ from .errors import (
     CleanupError,
     DecodeError,
     DeliveryState,
+    HTTPStatusError,
     ProtocolError,
     ResponseConsumedError,
     ResponseTooLargeError,
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ..model_codecs.wire import JSONValue
+    from .errors import RetryStopReason
     from .events import CallEvents
     from .lifecycle import Scope
     from .logical import LogicalCallContext
@@ -48,6 +50,10 @@ Action: TypeAlias = Literal["read", "text", "json", "iter_bytes", "iter_raw_byte
 State: TypeAlias = Literal["buffered", "open", "streaming", "consumed", "closed", "failed"]
 SourceT = TypeVar("SourceT")
 HandleT = TypeVar("HandleT")
+
+
+def _status_error(error: Exception) -> TypeIs[HTTPStatusError[object]]:
+    return isinstance(error, HTTPStatusError)
 
 
 def _pieces(data: bytes) -> Iterator[bytes]:
@@ -150,6 +156,7 @@ class _Raw(Generic[SourceT, HandleT]):
         "_limits",
         "_operation_id",
         "_raw",
+        "_retry_stop_reason",
         "_scope",
         "_source",
         "_state",
@@ -167,6 +174,7 @@ class _Raw(Generic[SourceT, HandleT]):
         scope: Scope[HandleT],
         events: CallEvents | None,
         call: LogicalCallContext,
+        retry_stop_reason: RetryStopReason | None = None,
     ) -> None:
         """Keep the response metadata, how its status is classified, its call's limits, its body source, and scope.
 
@@ -174,6 +182,7 @@ class _Raw(Generic[SourceT, HandleT]):
         """
         self._events = events
         self._call = call
+        self._retry_stop_reason = retry_stop_reason
         self._info = info
         self._decoder = decoder
         self._limits = limits
@@ -230,6 +239,8 @@ class _Raw(Generic[SourceT, HandleT]):
         return self._failure(closed)
 
     def _failure(self, error: Exception) -> BaseException:
+        if _status_error(error):
+            error.retry_stop_reason = self._retry_stop_reason
         failure = self._classify(error)
         if isinstance(failure, SDKError):
             failure.info = self._info
@@ -270,9 +281,10 @@ class _Raw(Generic[SourceT, HandleT]):
     def _saved_failure(self) -> BaseException:
         """Return the typed failure of a buffered response from its bounded error prefix."""
         limit, body = self._limits.max_error_body_bytes, self._body
-        return self._failure(
-            self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit, native=self._native())
-        )
+        error = self._decoder.failure(self._info, body[:limit], truncated=len(body) > limit, native=self._native())
+        if _status_error(error):
+            error.retry_stop_reason = self._retry_stop_reason
+        return self._call.snapshot_error(error)
 
     def _unread_failure(self) -> BaseException:
         """Return the typed failure of a response whose body was partly or wholly read: no body, truncated."""
@@ -311,10 +323,20 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         scope: Scope[RawResponse],
         call: LogicalCallContext,
         events: CallEvents | None = None,
+        retry_stop_reason: RetryStopReason | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
         super().__init__(
-            info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events, call=call
+            info,
+            decoder,
+            limits,
+            operation_id,
+            failure,
+            source=source,
+            scope=scope,
+            events=events,
+            call=call,
+            retry_stop_reason=retry_stop_reason,
         )
         self._close: Callable[[], None] | None = close
 
@@ -523,6 +545,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 )
                 failed.info = self._info
             else:
+                self._call.retry_blocked = True
                 cleanup_secondary(error, failure)
         except BaseException as interruption:
             if error is not None and not isinstance(error, Exception):
@@ -564,10 +587,20 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         scope: Scope[AsyncRawResponse],
         call: LogicalCallContext,
         events: CallEvents | None = None,
+        retry_stop_reason: RetryStopReason | None = None,
     ) -> None:
         """Keep the response metadata, its body source, the close that releases it, and its client's scope."""
         super().__init__(
-            info, decoder, limits, operation_id, failure, source=source, scope=scope, events=events, call=call
+            info,
+            decoder,
+            limits,
+            operation_id,
+            failure,
+            source=source,
+            scope=scope,
+            events=events,
+            call=call,
+            retry_stop_reason=retry_stop_reason,
         )
         self._close: Callable[[], Awaitable[None]] | None = close
 

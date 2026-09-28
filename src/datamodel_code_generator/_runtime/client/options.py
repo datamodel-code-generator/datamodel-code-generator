@@ -6,11 +6,15 @@ import inspect
 import math
 import re
 from collections.abc import Mapping
+from collections.abc import Set as AbstractSet
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from decimal import Decimal
+from ssl import SSLContext
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 from typing_extensions import TypeIs
 
@@ -30,10 +34,14 @@ __all__ = (
     "ClientOptions",
     "Deadline",
     "HeaderPatch",
+    "IdempotencyKey",
     "QueryPatch",
+    "RedirectOptions",
     "RequestOptions",
+    "RetryOptions",
     "ServerSelection",
     "TimeoutOptions",
+    "TransportOptions",
     "Unset",
     "ValidationOptions",
 )
@@ -48,6 +56,7 @@ MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
 MAX_CONTEXT_BYTES: Final = 8 * 1024
 NO_CONTEXT: Final[Mapping[str, JSONScalar]] = MappingProxyType({})
 _SCHEMES: Final = frozenset({"http", "https"})
+_ORIGIN: Final = re.compile(r"https?://[^\s/?#\\\x00-\x1f\x7f]+", re.IGNORECASE)
 _NAME: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _VALUE: Final = re.compile(r"[^\x00-\x08\x0a-\x1f\x7f]*")
 _RESERVED: Final = frozenset({"host", "content-length", "transfer-encoding"})
@@ -59,6 +68,12 @@ _MODES: Final = (
     ("response", frozenset({"native", "schema"})),
     ("arguments", frozenset({"none", "pydantic"})),
 )
+_JITTER: Final = frozenset({"full", "none"})
+_RETRY_OWNERS: Final = frozenset({"sdk", "transport"})
+_RETRY_STATUS_MIN: Final = 400
+_RETRY_STATUS_MAX: Final = 599
+_RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
+_OptionT = TypeVar("_OptionT")
 
 
 def _count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
@@ -192,10 +207,10 @@ def _accepted(value: str) -> bool:
     return True
 
 
-def _typed(value: object, kinds: tuple[type, ...], name: str) -> None:
+def _typed(value: object, kinds: tuple[type, ...], path: tuple[str, ...]) -> None:
     """Refuse an option value of another type."""
     if not isinstance(value, kinds):
-        raise ConfigurationError(field_path=(name,), condition="invalid_type")
+        raise ConfigurationError(field_path=path, condition="invalid_type")
 
 
 def is_base_url(value: str) -> bool:
@@ -311,6 +326,299 @@ class TimeoutOptions:
                 object.__setattr__(self, name, seconds(value, ("timeout", name)))
 
 
+def _choice(value: object, choices: frozenset[str], path: tuple[str, ...]) -> None:
+    if type(value) is not str or value not in choices:
+        raise ConfigurationError(field_path=path, condition="invalid_value")
+
+
+def _is_set(value: object) -> TypeIs[AbstractSet[object]]:
+    return isinstance(value, AbstractSet)
+
+
+def _statuses(value: object) -> frozenset[int]:
+    path = ("retry", "statuses")
+    if not _is_set(value):
+        raise ConfigurationError(field_path=path, condition="invalid_type")
+    checked: set[int] = set()
+    for item in value:
+        if (
+            type(item) is not int
+            or not _RETRY_STATUS_MIN <= item <= _RETRY_STATUS_MAX
+            or item in _RETRY_STATUS_EXCLUDED
+        ):
+            raise ConfigurationError(field_path=path, condition="out_of_range")
+        checked.add(item)
+    return frozenset(checked)
+
+
+def _retry_header(value: object, name: str) -> None:
+    if value is None or isinstance(value, Unset):
+        return
+    if not isinstance(value, str) or not _NAME.fullmatch(value):
+        raise ConfigurationError(field_path=("retry", name), condition="invalid_value")
+
+
+def _ordered_delays(initial: float | Unset, maximum: float | Unset, operation_id: str | None = None) -> None:
+    if not isinstance(initial, Unset) and not isinstance(maximum, Unset) and maximum < initial:
+        raise ConfigurationError(field_path=("retry", "max_delay"), condition="out_of_range", operation_id=operation_id)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RetryOptions:
+    """Override retry limits, status selection, and delays; omitted fields inherit independently."""
+
+    max_retries: int | Unset = UNSET
+    initial_delay: float | Unset = UNSET
+    max_delay: float | Unset = UNSET
+    jitter: Literal["full", "none"] | Unset = UNSET
+    statuses: AbstractSet[int] | Unset = UNSET
+    max_retry_after: float | Unset | None = UNSET
+    respect_retry_after: bool | Unset = UNSET
+    retry_after_ms_header: str | Unset | None = UNSET
+    should_retry_header: str | Unset | None = UNSET
+    retry_on_pool_timeout: bool | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Validate explicit overrides without resolving values inherited from another layer."""
+        if not isinstance(self.max_retries, Unset):
+            _count(self.max_retries, ("retry", "max_retries"))
+        for name, value in (("initial_delay", self.initial_delay), ("max_delay", self.max_delay)):
+            if not isinstance(value, Unset):
+                object.__setattr__(self, name, seconds(value, ("retry", name)))
+        _ordered_delays(self.initial_delay, self.max_delay)
+        if not isinstance(self.jitter, Unset):
+            _choice(self.jitter, _JITTER, ("retry", "jitter"))
+        if not isinstance(self.statuses, Unset):
+            object.__setattr__(self, "statuses", _statuses(self.statuses))
+        if self.max_retry_after is not None and not isinstance(self.max_retry_after, Unset):
+            path = ("retry", "max_retry_after")
+            duration = seconds(self.max_retry_after, path)
+            _positive_seconds(duration, path)
+            object.__setattr__(self, "max_retry_after", duration)
+        for name, value in (
+            ("respect_retry_after", self.respect_retry_after),
+            ("retry_on_pool_timeout", self.retry_on_pool_timeout),
+        ):
+            if not isinstance(value, Unset):
+                _typed(value, (bool,), ("retry", name))
+        _retry_header(self.retry_after_ms_header, "retry_after_ms_header")
+        _retry_header(self.should_retry_header, "should_retry_header")
+
+
+def _origin(value: object) -> str:
+    path = ("redirects", "allowed_origins")
+    if not isinstance(value, str):
+        raise ConfigurationError(field_path=path, condition="invalid_type")
+    if not _ORIGIN.fullmatch(value):
+        raise ConfigurationError(field_path=path, condition="invalid_url")
+    return checked_base_url(value, path)
+
+
+def _origins(value: object) -> tuple[str, ...]:
+    if not _is_sequence(value):
+        raise ConfigurationError(field_path=("redirects", "allowed_origins"), condition="invalid_type")
+    return tuple(_origin(item) for item in value)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RedirectOptions:
+    """Override redirect admission; an empty origin allowlist permits only the initial origin."""
+
+    enabled: bool | Unset = UNSET
+    max_redirects: int | Unset = UNSET
+    allow_303_to_get: bool | Unset = UNSET
+    allowed_origins: tuple[str, ...] | Unset = UNSET
+    allow_https_downgrade: bool | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Freeze configured origins and reject invalid counts or nonboolean policy switches."""
+        for name, value in (
+            ("enabled", self.enabled),
+            ("allow_303_to_get", self.allow_303_to_get),
+            ("allow_https_downgrade", self.allow_https_downgrade),
+        ):
+            if not isinstance(value, Unset):
+                _typed(value, (bool,), ("redirects", name))
+        if not isinstance(self.max_redirects, Unset):
+            _count(self.max_redirects, ("redirects", "max_redirects"))
+        if not isinstance(self.allowed_origins, Unset):
+            object.__setattr__(self, "allowed_origins", _origins(self.allowed_origins))
+
+
+def _key_value(value: object) -> None:
+    if not isinstance(value, str) or not value or any(char in value for char in ("\r", "\n", "\0")):
+        raise ConfigurationError(field_path=("idempotency_key",), condition="invalid_value")
+
+
+def _key_time(value: object) -> None:
+    if value is None:
+        return
+    path = ("idempotency_key", "first_used_at")
+    if not isinstance(value, datetime):
+        raise ConfigurationError(field_path=path, condition="invalid_type")
+    try:
+        aware = value.utcoffset() is not None
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ConfigurationError(field_path=path, condition="invalid_value", cause=error) from None
+    if not aware:
+        raise ConfigurationError(field_path=path, condition="invalid_value")
+
+
+@dataclass(frozen=True, slots=True)
+class IdempotencyKey:
+    """A stable key and its known first-use time; an unknown time cannot establish retry safety."""
+
+    value: str = field(repr=False)
+    first_used_at: datetime | None = field(default=None, kw_only=True)
+
+    def __post_init__(self) -> None:
+        """Reject empty or unsafe header values and timestamps without a timezone offset."""
+        _key_value(self.value)
+        _key_time(self.first_used_at)
+
+    @staticmethod
+    def new() -> IdempotencyKey:
+        """Create a UUID4 key whose first-use time is now in UTC."""
+        return IdempotencyKey(str(uuid4()), first_used_at=datetime.now(timezone.utc))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TransportOptions:
+    """Configure an SDK-created native transport; injected transports retain their construction settings."""
+
+    verify: bool | Unset = UNSET
+    ssl_context: SSLContext | None = None
+    proxy: str | None = None
+    trust_env: bool = False
+    http2: bool = False
+    max_connections: int = 100
+    max_keepalive_connections: int = 20
+    keepalive_expiry: float = 5.0
+    retry_owner: Literal["sdk", "transport"] = "sdk"
+
+    def __post_init__(self) -> None:
+        """Validate construction fields and reject any explicit verify alongside an SSLContext."""
+        if not isinstance(self.verify, Unset):
+            _typed(self.verify, (bool,), ("transport", "verify"))
+        _typed(self.ssl_context, (SSLContext, type(None)), ("transport", "ssl_context"))
+        if self.ssl_context is not None and not isinstance(self.verify, Unset):
+            raise ConfigurationError(field_path=("transport", "verify"), condition="conflicts_with_ssl_context")
+        _typed(self.proxy, (str, type(None)), ("transport", "proxy"))
+        for name, enabled in (("trust_env", self.trust_env), ("http2", self.http2)):
+            _typed(enabled, (bool,), ("transport", name))
+        for name, count in (
+            ("max_connections", self.max_connections),
+            ("max_keepalive_connections", self.max_keepalive_connections),
+        ):
+            _count(count, ("transport", name))
+        object.__setattr__(self, "keepalive_expiry", seconds(self.keepalive_expiry, ("transport", "keepalive_expiry")))
+        _choice(self.retry_owner, _RETRY_OWNERS, ("transport", "retry_owner"))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResolvedRetryOptions:
+    """Merged retry values, retaining vendor header inheritance until an operation is selected."""
+
+    max_retries: int = 2
+    initial_delay: float = 0.5
+    max_delay: float = 8.0
+    jitter: Literal["full", "none"] = "full"
+    statuses: frozenset[int] = frozenset({408, 429, 500, 502, 503, 504})
+    max_retry_after: float | None = 60.0
+    respect_retry_after: bool = True
+    retry_after_ms_header: str | Unset | None = UNSET
+    should_retry_header: str | Unset | None = UNSET
+    retry_on_pool_timeout: bool = False
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResolvedRedirectOptions:
+    """Merged redirect limits and permitted destinations."""
+
+    enabled: bool = False
+    max_redirects: int = 5
+    allow_303_to_get: bool = False
+    allowed_origins: tuple[str, ...] = ()
+    allow_https_downgrade: bool = False
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResolvedTransportOptions:
+    """Client construction settings after verify omission has been resolved."""
+
+    verify: bool = True
+    ssl_context: SSLContext | None = None
+    proxy: str | None = None
+    trust_env: bool = False
+    http2: bool = False
+    max_connections: int = 100
+    max_keepalive_connections: int = 20
+    keepalive_expiry: float = 5.0
+    retry_owner: Literal["sdk", "transport"] = "sdk"
+
+
+DEFAULT_RETRY: Final = ResolvedRetryOptions()
+DEFAULT_REDIRECTS: Final = ResolvedRedirectOptions()
+DEFAULT_TRANSPORT: Final = ResolvedTransportOptions()
+
+
+def _inherited(current: _OptionT, layer: _OptionT | Unset) -> _OptionT:
+    return current if isinstance(layer, Unset) else layer
+
+
+def layered_retry(
+    current: ResolvedRetryOptions, layer: RetryOptions | Unset, operation_id: str | None = None
+) -> ResolvedRetryOptions:
+    """Apply each explicit retry field, then validate the resulting delay pair."""
+    if isinstance(layer, Unset):
+        return current
+    initial_delay = _inherited(current.initial_delay, layer.initial_delay)
+    max_delay = _inherited(current.max_delay, layer.max_delay)
+    _ordered_delays(initial_delay, max_delay, operation_id)
+    return ResolvedRetryOptions(
+        max_retries=_inherited(current.max_retries, layer.max_retries),
+        initial_delay=initial_delay,
+        max_delay=max_delay,
+        jitter=_inherited(current.jitter, layer.jitter),
+        statuses=frozenset(_inherited(current.statuses, layer.statuses)),
+        max_retry_after=_inherited(current.max_retry_after, layer.max_retry_after),
+        respect_retry_after=_inherited(current.respect_retry_after, layer.respect_retry_after),
+        retry_after_ms_header=_inherited(current.retry_after_ms_header, layer.retry_after_ms_header),
+        should_retry_header=_inherited(current.should_retry_header, layer.should_retry_header),
+        retry_on_pool_timeout=_inherited(current.retry_on_pool_timeout, layer.retry_on_pool_timeout),
+    )
+
+
+def layered_redirects(current: ResolvedRedirectOptions, layer: RedirectOptions | Unset) -> ResolvedRedirectOptions:
+    """Apply each explicit redirect field without resetting the remaining policy."""
+    if isinstance(layer, Unset):
+        return current
+    return ResolvedRedirectOptions(
+        enabled=_inherited(current.enabled, layer.enabled),
+        max_redirects=_inherited(current.max_redirects, layer.max_redirects),
+        allow_303_to_get=_inherited(current.allow_303_to_get, layer.allow_303_to_get),
+        allowed_origins=_inherited(current.allowed_origins, layer.allowed_origins),
+        allow_https_downgrade=_inherited(current.allow_https_downgrade, layer.allow_https_downgrade),
+    )
+
+
+def resolve_transport_options(options: TransportOptions | Unset) -> ResolvedTransportOptions:
+    """Resolve client-only construction options without creating an HTTP client or SSLContext."""
+    if isinstance(options, Unset):
+        return DEFAULT_TRANSPORT
+    return ResolvedTransportOptions(
+        verify=_inherited(DEFAULT_TRANSPORT.verify, options.verify),
+        ssl_context=options.ssl_context,
+        proxy=options.proxy,
+        trust_env=options.trust_env,
+        http2=options.http2,
+        max_connections=options.max_connections,
+        max_keepalive_connections=options.max_keepalive_connections,
+        keepalive_expiry=options.keepalive_expiry,
+        retry_owner=options.retry_owner,
+    )
+
+
 def _is_limiter(value: object) -> TypeIs[Limiter | AsyncLimiter]:
     return callable(getattr(value, "acquire", None))
 
@@ -336,11 +644,14 @@ class _Options:
     max_network_sends: int | Unset | None = UNSET
     stream_idle_timeout: float | Unset | None = UNSET
     stream_total_timeout: float | Unset | None = UNSET
+    retry: RetryOptions | Unset = UNSET
+    redirects: RedirectOptions | Unset = UNSET
+    idempotency_key: IdempotencyKey | Unset | None = UNSET
 
     def _check_timing(self) -> None:
-        _typed(self.timeout, (TimeoutOptions, Unset, type(None)), "timeout")
-        _typed(self.deadline, (Deadline, Unset, type(None)), "deadline")
-        _typed(self.cancel_token, (CancelToken, Unset, type(None)), "cancel_token")
+        _typed(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
+        _typed(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
+        _typed(self.cancel_token, (CancelToken, Unset, type(None)), ("cancel_token",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
             raise ConfigurationError(field_path=("limiter",), condition="invalid_type")
         for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
@@ -351,7 +662,10 @@ class _Options:
 
     def __post_init__(self) -> None:
         self._check_timing()
-        _typed(self.validation, (ValidationOptions, Unset), "validation")
+        _typed(self.validation, (ValidationOptions, Unset), ("validation",))
+        _typed(self.retry, (RetryOptions, Unset), ("retry",))
+        _typed(self.redirects, (RedirectOptions, Unset), ("redirects",))
+        _typed(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
         if not isinstance(self.hooks, Unset):
             object.__setattr__(self, "hooks", _hooks(self.hooks))
         if not isinstance(self.context, Unset):
@@ -362,7 +676,7 @@ class _Options:
             object.__setattr__(self, "query", _query_patch(self.query))
         if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
             raise ConfigurationError(field_path=("base_url",), condition="conflicts_with_server")
-        _typed(self.server, (ServerSelection, Unset), "server")
+        _typed(self.server, (ServerSelection, Unset), ("server",))
         if not isinstance(self.base_url, Unset):
             if type(self.base_url) is not str:
                 raise ConfigurationError(field_path=("base_url",), condition="invalid_type")
@@ -385,6 +699,13 @@ class ClientOptions(_Options):
     removes them. Its hooks observe every call's events, with its context. Its validation replaces the generated mode
     of each axis it sets.
     """
+
+    transport: TransportOptions | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Validate ordinary options and the client-only construction settings."""
+        _Options.__post_init__(self)
+        _typed(self.transport, (TransportOptions, Unset), ("transport",))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -419,6 +740,16 @@ class Settings:
     deadline: Deadline | None = None
     cancel_token: CancelToken | None = None
     limiter: Limiter | AsyncLimiter | None = field(default=None, repr=False)
-    max_network_sends: int | None = 1
+    max_network_sends: int | Unset | None = UNSET
     stream_idle_timeout: float | None = 60.0
     stream_total_timeout: float | None = None
+    retry: ResolvedRetryOptions = DEFAULT_RETRY
+    redirects: ResolvedRedirectOptions = DEFAULT_REDIRECTS
+    idempotency_key: IdempotencyKey | Unset | None = UNSET
+
+
+def network_send_limit(settings: Settings) -> int | None:
+    """Derive only an omitted send cap, after all retry and redirect fields have been merged."""
+    if not isinstance(settings.max_network_sends, Unset):
+        return settings.max_network_sends
+    return 1 + settings.retry.max_retries + (settings.redirects.max_redirects if settings.redirects.enabled else 0)

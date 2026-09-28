@@ -26,11 +26,11 @@ from .media import charset, encode_text, most_specific, normalized, with_charset
 from .responses import HeadersView
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterable, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Iterator
     from typing import Protocol
 
     from ..model_codecs.wire import JSONValue, WireValue
-    from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, BodyAttemptContext, SyncBinaryBody
+    from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
     from .options import RequestValidation
 
     class PartEncoder(Protocol):
@@ -561,7 +561,7 @@ def _file_head(part: FilePart[SyncBinaryBody | AsyncBinaryBody], boundary: str, 
         raise _malformed(part.name, error) from None
 
 
-class _MultipartAttempt:
+class MultipartAttempt:
     """One attempt of a multipart body: the encoded heads and fields, and each file part's own attempt."""
 
     __slots__ = ("_length", "_pieces")
@@ -589,11 +589,12 @@ class _MultipartAttempt:
                 yield from piece.iter_bytes()
 
     def close(self) -> None:
-        """Close every file part's attempt, raising the first failure with the others beside it."""
-        _closed_all([piece.close for piece in self._pieces if not isinstance(piece, bytes)])
+        """Close every file part's attempt, preserving native interruption before ordinary failures."""
+        pieces, self._pieces = self._pieces, []
+        close_attempts(pieces)
 
 
-class _AsyncMultipartAttempt:
+class AsyncMultipartAttempt:
     """One async attempt of a multipart body: the encoded heads and fields, and each file part's own attempt."""
 
     __slots__ = ("_length", "_pieces")
@@ -622,48 +623,58 @@ class _AsyncMultipartAttempt:
                     yield chunk
 
     async def aclose(self) -> None:
-        """Close every file part's attempt, raising the first failure with the others beside it."""
-        failures = [
-            failure
-            for piece in self._pieces
-            if not isinstance(piece, bytes) and (failure := await _aquiet(piece)) is not None
-        ]
-        _raised(failures)
+        """Close every file part's attempt, preserving native interruption before ordinary failures."""
+        pieces, self._pieces = self._pieces, []
+        await close_async_attempts(pieces)
 
 
-def _quiet(close: Callable[[], object]) -> Exception | None:
+def close_attempts(pieces: list[bytes | BodyAttempt]) -> None:
+    """Close every opened attempt before selecting its group's cleanup failure."""
+    _closed_all([piece.close for piece in pieces if not isinstance(piece, bytes)])
+
+
+async def close_async_attempts(pieces: list[bytes | AsyncBodyAttempt]) -> None:
+    """Close every opened attempt, retaining the first failure and every later one."""
+    raise_cleanup([
+        failure
+        for piece in pieces
+        if not isinstance(piece, bytes) and (failure := await quiet_aclose(piece.aclose)) is not None
+    ])
+
+
+def quiet_close(close: Callable[[], object]) -> BaseException | None:
     try:
         close()
-    except Exception as error:  # noqa: BLE001
+    except BaseException as error:  # noqa: BLE001
         return error
     return None
 
 
-async def _aquiet(attempt: AsyncBodyAttempt) -> Exception | None:
+async def quiet_aclose(close: Callable[[], Awaitable[None]]) -> BaseException | None:
     try:
-        await attempt.aclose()
-    except Exception as error:  # noqa: BLE001
+        await close()
+    except BaseException as error:  # noqa: BLE001
         return error
     return None
 
 
-def _raised(failures: list[Exception]) -> None:
+def raise_cleanup(failures: list[BaseException]) -> None:
     if failures:
-        first = failures[0]
-        for failure in failures[1:]:
+        first = next((failure for failure in failures if not isinstance(failure, Exception)), failures[0])
+        for failure in failures:
             add_secondary(first, failure)
         raise first
 
 
 def _closed_all(closes: list[Callable[[], object]]) -> None:
-    _raised([failure for close in closes if (failure := _quiet(close)) is not None])
+    raise_cleanup([failure for close in closes if (failure := quiet_close(close)) is not None])
 
 
 def _is_field(value: object) -> TypeIs[FieldPart[object]]:
     return isinstance(value, FieldPart)
 
 
-def _is_file(value: object) -> TypeIs[FilePart[SyncBinaryBody | AsyncBinaryBody]]:
+def is_file_part(value: object) -> TypeIs[FilePart[SyncBinaryBody | AsyncBinaryBody]]:
     return isinstance(value, FilePart)
 
 
@@ -694,7 +705,7 @@ def _layout(
             plan = _ANY if names is None else names.plan(part.name, file=False, omitted=isinstance(part.value, Unset))
             if (field := _field(part, boundary, plan, mode, names)) is not None:
                 encoded.append(field)
-        elif _is_file(part):
+        elif is_file_part(part):
             file = _ANY if names is None else names.plan(part.name, file=True)
             if names is not None and names.owners is not None:
                 names.claim(part.name, (part.name,))
@@ -753,36 +764,17 @@ class MultipartSource:
         self.boundary = boundary
         self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional), mode)
 
-    def attempt(self, context: BodyAttemptContext) -> BodyAttempt:
-        """Begin each file part's attempt around the encoded pieces, refusing parts of the other mode."""
+    def inputs(self) -> Iterator[SyncBinaryBody]:
+        """Yield the once-encoded layout and synchronous file inputs for call-level binding."""
         if not _is_sync(self.body):
             raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
-        pieces: list[bytes | BodyAttempt] = []
-        try:
-            pieces.extend(
-                piece if isinstance(piece, bytes) else piece(context) for piece in _inputs(self._pieces, _SYNC)
-            )
-        except BaseException:
-            _closed_all([piece.close for piece in pieces if not isinstance(piece, bytes)])
-            raise
-        return _MultipartAttempt(pieces)
+        return _inputs(self._pieces, _SYNC)
 
-    async def aattempt(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
-        """Begin each file part's async attempt around the encoded pieces, refusing parts of the other mode."""
+    def ainputs(self) -> Iterator[AsyncBinaryBody]:
+        """Yield the once-encoded layout and asynchronous file inputs for call-level binding."""
         if not _is_async(self.body):
             raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
-        pieces: list[bytes | AsyncBodyAttempt] = []
-        try:
-            for piece in _inputs(self._pieces, _ASYNC):
-                pieces.append(piece if isinstance(piece, bytes) else await piece(context))  # noqa: PERF401 - Begun attempts must stay to be closed.
-        except BaseException:
-            _raised([
-                failure
-                for piece in pieces
-                if not isinstance(piece, bytes) and (failure := await _aquiet(piece)) is not None
-            ])
-            raise
-        return _AsyncMultipartAttempt(pieces)
+        return _inputs(self._pieces, _ASYNC)
 
 
 class DecodedPart(Generic[T_co]):

@@ -1,0 +1,13 @@
+# media pydantic_v2.BaseModel
+  multipart reopens = b'ok'
+    requests=3 stable_body=True stable_type=True closes=1 factories=[(0, 0, True), (0, 1, True), (0, 2, True)]
+  multipart one shot blocks redirect ! RedirectPolicyError: RedirectPolicyError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_policy_error
+    requests=1 pending=1 begins=1 closes=1
+  multipart shared raw attempt refused ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='factory', condition='same_attempt') [operation_id='submitParts', condition='same_attempt'] body_not_replayable_error
+    requests=0 closes=1 contexts=([(0, 0, True)], [(0, 0, True)])
+  async multipart reopens = b'ok'
+    requests=3 stable_body=True stable_type=True closes=1 factories=[(0, 0, True), (0, 1, True), (0, 2, True)]
+  async multipart one shot blocks redirect ! RedirectPolicyError: RedirectPolicyError(call_id='<call>', delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_policy_error
+    requests=1 pending=1 begins=1 closes=1
+  async multipart shared raw attempt refused ! BodyNotReplayableError: BodyNotReplayableError(operation_id='submitParts', call_id='<call>', source_kind='factory', condition='same_attempt') [operation_id='submitParts', condition='same_attempt'] body_not_replayable_error
+    requests=0 closes=1 contexts=([(0, 0, True)], [(0, 0, True)])

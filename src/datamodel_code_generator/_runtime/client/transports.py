@@ -7,19 +7,23 @@ The clients send through HTTPX2 unless a transport adapter is given; an adapter 
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterator  # noqa: TC003 - Public annotations support get_type_hints().
-from dataclasses import dataclass
-from typing import Final, Generic, Protocol, get_args
+from dataclasses import dataclass, field
+from time import monotonic, time
+from typing import TYPE_CHECKING, Final, Generic, Protocol, get_args
 
 from typing_extensions import TypeIs, TypeVar
 
 from .bodies import AsyncBodyAttempt, BodyAttempt  # noqa: TC001 - Public annotations support get_type_hints().
 from .errors import IOPhase
-from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
+from .responses import HeadersView
 from .timing import (
     CancelToken,
     Deadline,
     ResolvedTimeoutOptions,
 )
+
+if TYPE_CHECKING:
+    from .evidence import ConnectFailureEvidence
 
 __all__ = (
     "AsyncTransportAdapter",
@@ -39,6 +43,8 @@ AttemptT_co = TypeVar("AttemptT_co", bound="BodyAttempt | AsyncBodyAttempt", cov
 AdapterT_co = TypeVar("AdapterT_co", bound="TransportAdapter | AsyncTransportAdapter", covariant=True)
 
 PHASES: Final[frozenset[str]] = frozenset(get_args(IOPhase))
+_MIN_STATUS: Final = 100
+_MAX_STATUS: Final = 599
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -131,14 +137,46 @@ def set_io_timing(context: AttemptIOContext, timeout: ResolvedTimeoutOptions, de
     object.__setattr__(context, "_deadline", deadline)  # noqa: PLC2801
 
 
+def attempt_trace(context: AttemptIOContext) -> AttemptTrace:
+    """Read the private trace record without adding native-only evidence to the adapter protocol."""
+    trace = context.trace
+    assert isinstance(trace, AttemptTrace)
+    return trace
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResponseHead:
+    """Retain the resource's final headers and their receipt clocks before native response processing."""
+
+    http_version: str
+    status_code: int
+    headers: HeadersView = field(repr=False)
+    received_at: float
+    received_wall_time: float
+
+
+def response_head(trace: AttemptTrace) -> ResponseHead | None:
+    """Return the private header snapshot, when valid resource headers were observed."""
+    return trace.head
+
+
 def _is_phase(value: object) -> TypeIs[IOPhase]:
-    return value in PHASES
+    return isinstance(value, str) and value in PHASES
 
 
 class AttemptTrace:
     """The client's record of one attempt's evidence; arguments outside the contract mark the adapter as broken."""
 
-    __slots__ = ("broken", "headers_started", "phase", "response_started", "wire_sent")
+    __slots__ = (
+        "broken",
+        "connect_failure",
+        "head",
+        "headers_started",
+        "phase",
+        "proven_not_sent",
+        "response_started",
+        "wire_sent",
+    )
 
     def __init__(self) -> None:
         """Start before any I/O."""
@@ -147,6 +185,9 @@ class AttemptTrace:
         self.wire_sent = False
         self.response_started = False
         self.broken = False
+        self.proven_not_sent = False
+        self.head: ResponseHead | None = None
+        self.connect_failure: ConnectFailureEvidence | None = None
 
     def phase_started(self, phase: object) -> None:
         """Record the phase an adapter reports."""
@@ -154,20 +195,38 @@ class AttemptTrace:
             self.phase = phase
         else:
             self.broken = True
+            self.proven_not_sent = False
 
     def request_headers_started(self) -> None:
         """Record that the request headers started to go out."""
         self.headers_started = True
+        self.proven_not_sent = False
 
     def response_headers_received(self, *, http_version: object, status_code: object, headers: object) -> None:
         """Record that the response headers arrived, checking the values an adapter reports."""
-        del headers
         self.response_started = True
-        self.broken = self.broken or not isinstance(http_version, str) or type(status_code) is not int
+        self.proven_not_sent = False
+        if (
+            not isinstance(http_version, str)
+            or not http_version
+            or type(status_code) is not int
+            or not _MIN_STATUS <= status_code <= _MAX_STATUS
+            or not isinstance(headers, HeadersView)
+        ):
+            self.broken = True
+        elif self.head is None:
+            self.head = ResponseHead(
+                http_version=http_version,
+                status_code=status_code,
+                headers=headers,
+                received_at=monotonic(),
+                received_wall_time=time(),
+            )
 
     def wire_send(self) -> None:
         """Record that request bytes reached the network."""
         self.wire_sent = True
+        self.proven_not_sent = False
 
 
 class TransportResponse(Protocol):

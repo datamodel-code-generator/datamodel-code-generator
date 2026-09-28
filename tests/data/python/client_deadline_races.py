@@ -185,6 +185,7 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
                         http_client=native,
                         options=options.ClientOptions(
                             timeout=timeout,
+                            retry=options.RetryOptions(max_retries=0),
                             total_timeout=total,
                             deadline=options.Deadline.after(0.5) if label == "absolute" else None,
                         ),

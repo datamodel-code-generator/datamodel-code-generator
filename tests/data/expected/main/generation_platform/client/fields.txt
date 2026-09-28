@@ -21,6 +21,8 @@ render pydantic_v2.BaseModel
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
   namespace client helpers [] bindings 17
@@ -49,7 +51,7 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports client.types.default.ReplacePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: msgspec validates its union only against the schema.
 render pydantic_v2.dataclass
   write models.py
@@ -73,6 +75,8 @@ render pydantic_v2.dataclass
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
   namespace client helpers [] bindings 17
@@ -101,7 +105,7 @@ render pydantic_v2.dataclass
   /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports client.types.default.ReplacePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: msgspec validates its union only against the schema.
 render msgspec.Struct
   write models.py
@@ -125,6 +129,8 @@ render msgspec.Struct
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
   namespace client helpers [] bindings 17
@@ -153,5 +159,5 @@ render msgspec.Struct
   /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
     exports client.types.default.ReplacePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', "exceptiongroup>=1.2.2; python_version<'3.11'", 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
   S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: msgspec validates its union only against the schema.

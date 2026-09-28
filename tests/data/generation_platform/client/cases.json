@@ -903,5 +903,310 @@
         "reason": "The fields-structural and fields-arguments cases cover the union body."
       }
     }
+  },
+  "retries": {
+    "input": "retries.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1idempotent/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        },
+        {
+          "ref": "/paths/~1keyed/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400.0,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1key-only/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": false,
+              "retention_seconds": 86400.0,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1never/get",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1never/post",
+          "runtime": {
+            "retry_safety": "never"
+          }
+        },
+        {
+          "ref": "/paths/~1vendor/get",
+          "runtime": {
+            "retry_after_ms_header": "X-Retry-In-Ms",
+            "should_retry_header": "X-Retry-Permitted"
+          }
+        },
+        {
+          "ref": "/paths/~1keyed-safe/get",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400.0,
+              "scope": "orders-v1"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retries-defaults": {
+    "input": "retries.yaml"
+  },
+  "retry-headers": {
+    "input": "retry-headers.json",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1cookie/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "session",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1query/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "token",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1ignored/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Authorization",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1direction/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            },
+            "retry_after_ms_header": "X-Idempotency",
+            "should_retry_header": "X-Retry-Control",
+            "request_id_header": "X-Idempotency"
+          }
+        },
+        {
+          "ref": "/paths/~1unused/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Auth-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retry-header-conflicts": {
+    "input": "retry-headers.json",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1parameter/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "x-request-key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1api-key/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "x-auth-key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1bearer/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "authorization",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1oauth/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "AUTHORIZATION",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1openid/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Authorization",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "orders-v1"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retry-security-context": {
+    "input": "retry-security-context.yaml",
+    "references": [
+      "retry-security-context-external.yaml"
+    ],
+    "modules": false,
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1inherited/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1explicit/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1aliased-query/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1external-inherited/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1external-query/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "retry-security-context-conflicts": {
+    "input": "retry-security-context.yaml",
+    "references": [
+      "retry-security-context-external.yaml"
+    ],
+    "modules": false,
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1actual-header/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1aliased-header/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1external-explicit/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "X-Idempotency",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "context-v1"
+            }
+          }
+        }
+      ]
+    }
   }
 }

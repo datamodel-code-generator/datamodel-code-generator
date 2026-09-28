@@ -427,6 +427,7 @@ async def _preparation_failure(
                 getattr(error, "cause", None) is failure,
                 type(getattr(error, "cause", None)).__name__,
                 tuple(getattr(failure, "__notes__", ())),
+                tuple((type(item).__name__, item is close_failure) for item in getattr(error, "secondary_errors", ())),
                 file.closed,
                 file.closes,
                 adapter.sends,
@@ -499,7 +500,7 @@ async def _native_close(package: ModuleType, lines: list[str]) -> None:
     body.close()
 
 
-async def _queued(
+async def _queued(  # noqa: PLR0914
     package: ModuleType,
     lines: list[str],
     label: str,
@@ -509,6 +510,7 @@ async def _queued(
     owned: bool = True,
     cancel_close: bool = False,
 ) -> None:
+    """Cancel queued disk work; an existing file snapshots at entry before its per-hop rewind and read."""
     bodies = importlib.import_module(f"{package.__name__}.bodies")
     options = importlib.import_module(f"{package.__name__}.options")
     transports = importlib.import_module(f"{package.__name__}.transports")
@@ -519,7 +521,7 @@ async def _queued(
     api = package.AsyncClient(
         transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=0.01)
     )
-    blocked_index = 2 if reading else 1
+    blocked_index = (2 if path_body else 3) if reading else 1
     submitted: list[tuple[Future[object], asyncio.Task[object]]] = []
     signals = [asyncio.Event() for _ in range(4)]
     blockers: list[Future[None]] = []

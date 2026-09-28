@@ -150,7 +150,7 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
     record(lines, "saved error status", listed.raise_for_status)
     record(lines, "saved error status again", listed.raise_for_status)
     exchange.respond(_streamed(500, (b"0123456789",), "text/plain"))
-    record(lines, "saved truncated status", raw.get_pet(pet_id=pet, options=options.RequestOptions(max_error_body_bytes=4)).raise_for_status)
+    record(lines, "saved truncated status", raw.get_pet(pet_id=pet, options=options.RequestOptions(max_error_body_bytes=4, retry=options.RetryOptions(max_retries=0))).raise_for_status)
     exchange.respond(_streamed(302, (), "text/plain", headers={"location": "https://api.example.com/v1/pets/4"}))
     record(lines, "saved redirect status", raw.get_pet(pet_id=pet).raise_for_status)
     for label, content, media in (
@@ -167,7 +167,7 @@ def _saved_responses(package: ModuleType, api: Any, exchange: Exchange, lines: l
         ("identity", _streamed(200, (_PET[:8], _PET[8:])), small),
         ("coded", _gzip(200, bytes(100), 100), small),
         ("expanded", _gzip(200, bytes(100), 100), options.RequestOptions(max_response_bytes=50)),
-        ("broken", _streamed(200, (_PET[:8],), fail=True), None),
+        ("broken", _streamed(200, (_PET[:8],), fail=True), options.RequestOptions(retry=options.RetryOptions(max_retries=0))),
         ("connect", failing(httpx2.ConnectError), None),
     ):
         exchange.respond(responder)
@@ -250,7 +250,7 @@ def _status(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
         ("broken read", streaming, _streamed(500, (b"012",), "text/plain", fail=True)),
     ):
         exchange.respond(responder)
-        with view.get_pet(pet_id=pet) as response:
+        with view.get_pet(pet_id=pet, options=options.RequestOptions(retry=options.RetryOptions(max_retries=0))) as response:
             record(lines, f"streaming {label} status", response.raise_for_status)
             record(lines, f"streaming {label} read", response.read)
     exchange.respond(_streamed(404, (b"miss", b"ing"), "text/plain"))
@@ -306,7 +306,9 @@ def _requests(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     """Send raw requests to any absolute URL, saved or streaming, and refuse invalid ones before sending."""
     _, _, options, _, _ = _modules(package)
     exchange.respond(
-        _streamed(200, (b"pong",), "text/plain"), _streamed(503, (b"down",), "text/plain"), _streamed(200, (b"str", b"eam"))
+        _streamed(200, (b"pong",), "text/plain"),
+        *(_streamed(503, (b"down",), "text/plain") for _ in range(3)),
+        _streamed(200, (b"str", b"eam"))
     )
     lines.append(f"  request {_saved(api.request_raw('POST', 'https://hooks.example.com/ping?x=1', body=b'ping'))}")
     record(lines, "request status", api.request_raw("GET", "https://hooks.example.com/down").raise_for_status)
@@ -317,8 +319,6 @@ def _requests(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
         ("method type", 1, "https://x.example.com", b"", None),
         ("relative url", "GET", "/pets", b"", None),
         ("url scheme", "GET", "ftp://x.example.com", b"", None),
-        ("url fragment", "GET", "https://x.example.com/#top", b"", None),
-        ("query fragment", "GET", "https://x.example.com/?a=1#top", b"", None),
         ("url userinfo", "GET", "https://user@x.example.com", b"", None),
         ("url port", "GET", "https://x.example.com:99999", b"", None),
         ("url type", "GET", b"https://x.example.com", b"", None),
@@ -326,6 +326,9 @@ def _requests(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
         ("options type", "GET", "https://x.example.com", b"", "fast"),
     ):
         record(lines, f"request {label}", lambda method=method, url=url, body=body, settings=settings: api.request_raw(method, url, body=body, options=settings))
+    for label, url in (("url fragment", "https://x.example.com/#top"), ("query fragment", "https://x.example.com/?a=1#top")):
+        exchange.respond(_streamed(200, (b"fragment omitted",), "text/plain"))
+        record(lines, f"request {label}", lambda url=url: _saved(api.request_raw("get", url)))
     view = api.with_options(options.RequestOptions(max_stream_bytes=3)).with_streaming_response
     exchange.respond(_streamed(200, (b"str", b"eam")))
     with view.request_raw("GET", "https://hooks.example.com/stream") as response:
@@ -490,12 +493,12 @@ async def _async_saved(package: ModuleType, api: Any, exchange: Exchange, lines:
     exchange.respond(_gzip(200, _PET, 7))
     lines.append(f"  async saved gzip {_saved(await raw.get_pet(pet_id=pet))}")
     exchange.respond(_streamed(500, (b"0123456789",), "text/plain"))
-    failed = await raw.get_pet(pet_id=pet, options=options.RequestOptions(max_error_body_bytes=4))
+    failed = await raw.get_pet(pet_id=pet, options=options.RequestOptions(max_error_body_bytes=4, retry=options.RetryOptions(max_retries=0)))
     await arecord(lines, "async saved status", failed.raise_for_status)
     for label, responder, limit in (
         ("coded", _gzip(200, bytes(100), 100), options.RequestOptions(max_response_bytes=8)),
         ("expanded", _gzip(200, bytes(100), 100), options.RequestOptions(max_response_bytes=50)),
-        ("broken", _streamed(200, (_PET[:8],), fail=True), None),
+        ("broken", _streamed(200, (_PET[:8],), fail=True), options.RequestOptions(retry=options.RetryOptions(max_retries=0))),
         ("connect", failing(httpx2.ConnectError), None),
     ):
         exchange.respond(responder)
@@ -530,7 +533,7 @@ async def _async_streaming(package: ModuleType, api: Any, exchange: Exchange, li
         ("broken read", streaming, _streamed(500, (b"012",), "text/plain", fail=True)),
     ):
         exchange.respond(responder)
-        async with view.get_pet(pet_id=pet) as response:
+        async with view.get_pet(pet_id=pet, options=options.RequestOptions(retry=options.RetryOptions(max_retries=0))) as response:
             await arecord(lines, f"async streaming {label} status", response.raise_for_status)
     exchange.respond(_streamed(404, (b"miss", b"ing"), "text/plain"))
     async with streaming.get_pet(pet_id=pet) as response:

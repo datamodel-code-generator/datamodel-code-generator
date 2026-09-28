@@ -1,0 +1,21 @@
+# pets pydantic_v2.BaseModel
+  redirect error = ("RedirectPolicyError(operation_id='redirect_operation', call_id='redirect-call', delivery_state='RESPONSE_STARTED')", 'redirect_policy_error', False)
+  redirect metadata = (True, False, True, True, True, 'parent-session')
+  redirect counters = (('resource_attempt_count', 2, 2), ('redirect_count', 1, 1), ('auth_exchange_count', 1, 1), ('network_send_count', 4, 4), ('network_send_budget_used', 4, 4), ('auth_exchange_budget_used', 1, 1), ('auth_refresh_ids', ('refresh-one',), ('refresh-one',)), ('auth_refresh_pending', 1, 1), ('wire_send_count', 3, 3))
+  redirect safe text = (True, True)
+  redirect received headers = True
+  redirect without response = (True, False, (('resource_attempt_count', 0), ('redirect_count', 0), ('auth_exchange_count', 0), ('network_send_count', 0), ('network_send_budget_used', 0), ('auth_exchange_budget_used', 0), ('auth_refresh_ids', ()), ('auth_refresh_pending', 0), ('wire_send_count', None)))
+  redirect NOT_SENT = RedirectPolicyError: RedirectPolicyError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] redirect_policy_error
+  redirect MAYBE_SENT = RedirectPolicyError: RedirectPolicyError(delivery_state='MAYBE_SENT') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>] redirect_policy_error
+  redirect RESPONSE_STARTED = RedirectPolicyError: RedirectPolicyError(delivery_state='RESPONSE_STARTED') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_policy_error
+  redirect invalid body True ! ValueError: body_available must be False []
+  redirect invalid body None ! ValueError: body_available must be False []
+  redirect invalid body 0 ! ValueError: body_available must be False []
+  redirect invalid body 'false' ! ValueError: body_available must be False []
+  redirect invalid delivery ! ValueError: delivery_state must be a DeliveryState []
+  redirect availability unchanged = False
+  redirect delivery unchanged = 'RESPONSE_STARTED'
+  wire counter omitted = None
+  wire counter None = None
+  wire counter 0 = 0
+  wire counter 3 = 3

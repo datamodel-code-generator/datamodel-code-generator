@@ -1,0 +1,194 @@
+openapi: 3.1.0
+info:
+  title: Retry contracts
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /safe:
+    get:
+      operationId: getSafe
+      tags: [retry]
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+  /unsafe:
+    post:
+      operationId: postUnsafe
+      tags: [retry]
+      requestBody:
+        required: false
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+  /idempotent:
+    post:
+      operationId: postIdempotent
+      tags: [retry]
+      requestBody:
+        required: false
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+  /keyed:
+    post:
+      operationId: postKeyed
+      tags: [retry]
+      requestBody:
+        required: false
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+  /key-only:
+    post:
+      operationId: postKeyOnly
+      tags: [retry]
+      requestBody:
+        required: false
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+  /never:
+    get:
+      operationId: getNever
+      tags: [retry]
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      operationId: postNever
+      tags: [retry]
+      requestBody:
+        required: false
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+  /vendor:
+    get:
+      operationId: getVendor
+      tags: [retry]
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string
+  /keyed-safe:
+    get:
+      operationId: getKeyedSafe
+      tags: [retry]
+      responses:
+        '200':
+          description: Accepted
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Rejected
+          content:
+            text/plain:
+              schema:
+                type: string

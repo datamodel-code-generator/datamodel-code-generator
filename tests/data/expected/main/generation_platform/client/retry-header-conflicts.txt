@@ -1,0 +1,8 @@
+# retry-header-conflicts
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_CONFLICT config operations[0].runtime.idempotency.header_name /paths/~1parameter/post: The idempotency header 'x-request-key' of POST /parameter already has a request owner
+  E_CONFIG_CONFLICT config operations[1].runtime.idempotency.header_name /paths/~1api-key/post: The idempotency header 'x-auth-key' of POST /api-key already has a request owner
+  E_CONFIG_CONFLICT config operations[2].runtime.idempotency.header_name /paths/~1bearer/post: The idempotency header 'authorization' of POST /bearer already has a request owner
+  E_CONFIG_CONFLICT config operations[3].runtime.idempotency.header_name /paths/~1oauth/post: The idempotency header 'AUTHORIZATION' of POST /oauth already has a request owner
+  E_CONFIG_CONFLICT config operations[4].runtime.idempotency.header_name /paths/~1openid/post: The idempotency header 'Authorization' of POST /openid already has a request owner

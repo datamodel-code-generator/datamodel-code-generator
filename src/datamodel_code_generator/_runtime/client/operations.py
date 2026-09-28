@@ -67,6 +67,7 @@ if TYPE_CHECKING:
     from .multipart import PartDecoder
     from .options import RequestValidation
     from .responses import ResponseInfo
+    from .retry import IdempotencyPlan
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
@@ -930,6 +931,10 @@ class OperationPlan(Generic[T_co, E_co]):
     codecs: object = None
     checks: tuple[tuple[str | None, Callable[[], ArgumentCheck]], ...] = ()
     fields: FieldArguments | None = None
+    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    idempotency: IdempotencyPlan | None = None
+    retry_after_ms_header: str | None = None
+    should_retry_header: str | None = None
 
     def bound(self, body: object, values: tuple[object, ...], media_type: str | MediaSelector | None) -> object:
         """Return the body a call gives, or the fields it gives of the selected media instead.

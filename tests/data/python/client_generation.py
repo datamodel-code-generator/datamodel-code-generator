@@ -17,6 +17,7 @@ from datamodel_code_generator._client.config import (
     ClientGenerationConfig,
     ClientOperationConfig,
     ClientValidationConfig,
+    IdempotencyMetadata,
     ParameterName,
     ResourceName,
     RuntimeOperationMetadata,
@@ -53,9 +54,11 @@ def _operation(value: object) -> object:
         )
     if isinstance(runtime := value.get("runtime"), dict):
         statuses = runtime.get("success_statuses", ())
+        idempotency = runtime.get("idempotency")
         converted["runtime"] = RuntimeOperationMetadata(**{
             **runtime,
             "success_statuses": tuple(statuses) if isinstance(statuses, list) else statuses,
+            "idempotency": IdempotencyMetadata(**idempotency) if isinstance(idempotency, dict) else idempotency,
         })
     return ClientOperationConfig(**converted)
 
@@ -119,7 +122,9 @@ def _public_api(content: bytes) -> list[str]:
     return lines
 
 
-def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) -> list[str]:
+def _render(
+    case: dict[str, Any], backend: str, root: Path, modules: Modules, *, documents: dict[str, str] | None = None
+) -> list[str]:
     model = {
         "output": root / "models.py",
         "input_file_type": "openapi",
@@ -132,6 +137,8 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
     }
     root.mkdir(parents=True, exist_ok=True)
     source = shutil.copy2(SOURCE / case["input"], root / case["input"])
+    for reference in case.get("references", ()):
+        shutil.copy2(SOURCE / reference, root / reference)
     try:
         project = render_target(
             source,
@@ -144,6 +151,8 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
     lines: list[str] = []
     for artifact in project.artifacts:
         path, content = artifact.path.relative_to(root), artifact.content or b""
+        if documents is not None and path.suffix in {".md", ".toml"}:
+            documents[path.as_posix()] = content.decode("utf-8")
         match path.suffix, path.parts:
             case _, parts if "_runtime" in parts:
                 continue
@@ -181,7 +190,9 @@ def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]
     manifest = next(item for item in project.artifacts if item.path.name == MANIFEST)
     models = next(item for item in project.artifacts if item.path == root / "models.py")
     operations = json.loads(manifest.content or b"")["target_data"]["client"]["public_api"]
-    return {f"{item['resource']}.{item['method']}": item["contract_digests"] for item in operations}, models.content or b""
+    return {
+        f"{item['resource']}.{item['method']}": item["contract_digests"] for item in operations
+    }, models.content or b""
 
 
 def client_digest_report(first: str, second: str, root: Path) -> str:
@@ -208,6 +219,20 @@ def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
 
 
+def client_documentation_report(case_name: str, root: Path) -> str:
+    """Report generated owned Markdown and packaging files for a finalized client selection."""
+    case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
+    documents: dict[str, str] = {}
+    lines = _render(case, "pydantic_v2.BaseModel", root, {}, documents=documents)
+    return (
+        "\n".join((
+            *lines,
+            *(f"\n# artifact {path}\n{content}" for path, content in documents.items()),
+        )).replace(root.resolve().as_posix(), "<root>").rstrip("\n")
+        + "\n"
+    )
+
+
 def _setting(value: object, root: Path) -> str:
     match value:
         case tuple():
@@ -231,4 +256,6 @@ def client_config_report(case_name: str, root: Path) -> str:
             config = client_config(case, root)
     except APIGenerationError as error:
         return "\n".join(["APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]) + "\n"
+    except TypeError as error:
+        return f"TypeError: {error}\n"
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))

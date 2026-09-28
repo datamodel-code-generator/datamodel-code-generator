@@ -1,0 +1,357 @@
+# retries pydantic_v2.BaseModel
+  retry initial_delay bool ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay bool ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  retry max_retry_after bool ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries bool ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects bool ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections bool ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections bool ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  TransportOptions keepalive_expiry bool ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry initial_delay negative ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay negative ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  retry max_retry_after negative ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries negative ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects negative ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections negative ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections negative ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  TransportOptions keepalive_expiry negative ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry initial_delay nan ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay nan ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  retry max_retry_after nan ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries nan ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects nan ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections nan ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections nan ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  TransportOptions keepalive_expiry nan ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry initial_delay infinity ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay infinity ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  retry max_retry_after infinity ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries infinity ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects infinity ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections infinity ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections infinity ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  TransportOptions keepalive_expiry infinity ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry initial_delay negative infinity ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay negative infinity ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  retry max_retry_after negative infinity ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries negative infinity ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects negative infinity ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections negative infinity ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections negative infinity ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  TransportOptions keepalive_expiry negative infinity ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry initial_delay text ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay text ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  retry max_retry_after text ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries text ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects text ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections text ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections text ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  TransportOptions keepalive_expiry text ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry initial_delay none ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay none ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries none ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects none ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections none ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections none ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  TransportOptions keepalive_expiry none ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry initial_delay overflow ! ConfigurationError: ConfigurationError(field_path='retry.initial_delay', condition='out_of_range') [field_path=('retry', 'initial_delay'), condition='out_of_range'] configuration_error
+  retry max_delay overflow ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  retry max_retry_after overflow ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  transport expiry overflow ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='out_of_range') [field_path=('transport', 'keepalive_expiry'), condition='out_of_range'] configuration_error
+  retry cap zero ! ConfigurationError: ConfigurationError(field_path='retry.max_retry_after', condition='out_of_range') [field_path=('retry', 'max_retry_after'), condition='out_of_range'] configuration_error
+  retry delay order ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  RetryOptions max_retries fractional ! ConfigurationError: ConfigurationError(field_path='retry.max_retries', condition='out_of_range') [field_path=('retry', 'max_retries'), condition='out_of_range'] configuration_error
+  RedirectOptions max_redirects fractional ! ConfigurationError: ConfigurationError(field_path='redirects.max_redirects', condition='out_of_range') [field_path=('redirects', 'max_redirects'), condition='out_of_range'] configuration_error
+  TransportOptions max_connections fractional ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='out_of_range') [field_path=('transport', 'max_connections'), condition='out_of_range'] configuration_error
+  TransportOptions max_keepalive_connections fractional ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='out_of_range') [field_path=('transport', 'max_keepalive_connections'), condition='out_of_range'] configuration_error
+  RetryOptions respect_retry_after 0 ! ConfigurationError: ConfigurationError(field_path='retry.respect_retry_after', condition='invalid_type') [field_path=('retry', 'respect_retry_after'), condition='invalid_type'] configuration_error
+  RetryOptions respect_retry_after 'true' ! ConfigurationError: ConfigurationError(field_path='retry.respect_retry_after', condition='invalid_type') [field_path=('retry', 'respect_retry_after'), condition='invalid_type'] configuration_error
+  RetryOptions respect_retry_after None ! ConfigurationError: ConfigurationError(field_path='retry.respect_retry_after', condition='invalid_type') [field_path=('retry', 'respect_retry_after'), condition='invalid_type'] configuration_error
+  RetryOptions retry_on_pool_timeout 0 ! ConfigurationError: ConfigurationError(field_path='retry.retry_on_pool_timeout', condition='invalid_type') [field_path=('retry', 'retry_on_pool_timeout'), condition='invalid_type'] configuration_error
+  RetryOptions retry_on_pool_timeout 'true' ! ConfigurationError: ConfigurationError(field_path='retry.retry_on_pool_timeout', condition='invalid_type') [field_path=('retry', 'retry_on_pool_timeout'), condition='invalid_type'] configuration_error
+  RetryOptions retry_on_pool_timeout None ! ConfigurationError: ConfigurationError(field_path='retry.retry_on_pool_timeout', condition='invalid_type') [field_path=('retry', 'retry_on_pool_timeout'), condition='invalid_type'] configuration_error
+  RedirectOptions enabled 0 ! ConfigurationError: ConfigurationError(field_path='redirects.enabled', condition='invalid_type') [field_path=('redirects', 'enabled'), condition='invalid_type'] configuration_error
+  RedirectOptions enabled 'true' ! ConfigurationError: ConfigurationError(field_path='redirects.enabled', condition='invalid_type') [field_path=('redirects', 'enabled'), condition='invalid_type'] configuration_error
+  RedirectOptions enabled None ! ConfigurationError: ConfigurationError(field_path='redirects.enabled', condition='invalid_type') [field_path=('redirects', 'enabled'), condition='invalid_type'] configuration_error
+  RedirectOptions allow_303_to_get 0 ! ConfigurationError: ConfigurationError(field_path='redirects.allow_303_to_get', condition='invalid_type') [field_path=('redirects', 'allow_303_to_get'), condition='invalid_type'] configuration_error
+  RedirectOptions allow_303_to_get 'true' ! ConfigurationError: ConfigurationError(field_path='redirects.allow_303_to_get', condition='invalid_type') [field_path=('redirects', 'allow_303_to_get'), condition='invalid_type'] configuration_error
+  RedirectOptions allow_303_to_get None ! ConfigurationError: ConfigurationError(field_path='redirects.allow_303_to_get', condition='invalid_type') [field_path=('redirects', 'allow_303_to_get'), condition='invalid_type'] configuration_error
+  RedirectOptions allow_https_downgrade 0 ! ConfigurationError: ConfigurationError(field_path='redirects.allow_https_downgrade', condition='invalid_type') [field_path=('redirects', 'allow_https_downgrade'), condition='invalid_type'] configuration_error
+  RedirectOptions allow_https_downgrade 'true' ! ConfigurationError: ConfigurationError(field_path='redirects.allow_https_downgrade', condition='invalid_type') [field_path=('redirects', 'allow_https_downgrade'), condition='invalid_type'] configuration_error
+  RedirectOptions allow_https_downgrade None ! ConfigurationError: ConfigurationError(field_path='redirects.allow_https_downgrade', condition='invalid_type') [field_path=('redirects', 'allow_https_downgrade'), condition='invalid_type'] configuration_error
+  TransportOptions verify 0 ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='invalid_type') [field_path=('transport', 'verify'), condition='invalid_type'] configuration_error
+  TransportOptions verify 'true' ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='invalid_type') [field_path=('transport', 'verify'), condition='invalid_type'] configuration_error
+  TransportOptions verify None ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='invalid_type') [field_path=('transport', 'verify'), condition='invalid_type'] configuration_error
+  TransportOptions trust_env 0 ! ConfigurationError: ConfigurationError(field_path='transport.trust_env', condition='invalid_type') [field_path=('transport', 'trust_env'), condition='invalid_type'] configuration_error
+  TransportOptions trust_env 'true' ! ConfigurationError: ConfigurationError(field_path='transport.trust_env', condition='invalid_type') [field_path=('transport', 'trust_env'), condition='invalid_type'] configuration_error
+  TransportOptions trust_env None ! ConfigurationError: ConfigurationError(field_path='transport.trust_env', condition='invalid_type') [field_path=('transport', 'trust_env'), condition='invalid_type'] configuration_error
+  TransportOptions http2 0 ! ConfigurationError: ConfigurationError(field_path='transport.http2', condition='invalid_type') [field_path=('transport', 'http2'), condition='invalid_type'] configuration_error
+  TransportOptions http2 'true' ! ConfigurationError: ConfigurationError(field_path='transport.http2', condition='invalid_type') [field_path=('transport', 'http2'), condition='invalid_type'] configuration_error
+  TransportOptions http2 None ! ConfigurationError: ConfigurationError(field_path='transport.http2', condition='invalid_type') [field_path=('transport', 'http2'), condition='invalid_type'] configuration_error
+  RetryOptions jitter None ! ConfigurationError: ConfigurationError(field_path='retry.jitter', condition='invalid_value') [field_path=('retry', 'jitter'), condition='invalid_value'] configuration_error
+  RetryOptions jitter [] ! ConfigurationError: ConfigurationError(field_path='retry.jitter', condition='invalid_value') [field_path=('retry', 'jitter'), condition='invalid_value'] configuration_error
+  RetryOptions jitter 'automatic' ! ConfigurationError: ConfigurationError(field_path='retry.jitter', condition='invalid_value') [field_path=('retry', 'jitter'), condition='invalid_value'] configuration_error
+  TransportOptions retry_owner None ! ConfigurationError: ConfigurationError(field_path='transport.retry_owner', condition='invalid_value') [field_path=('transport', 'retry_owner'), condition='invalid_value'] configuration_error
+  TransportOptions retry_owner [] ! ConfigurationError: ConfigurationError(field_path='transport.retry_owner', condition='invalid_value') [field_path=('transport', 'retry_owner'), condition='invalid_value'] configuration_error
+  TransportOptions retry_owner 'automatic' ! ConfigurationError: ConfigurationError(field_path='transport.retry_owner', condition='invalid_value') [field_path=('transport', 'retry_owner'), condition='invalid_value'] configuration_error
+  retry statuses none ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='invalid_type') [field_path=('retry', 'statuses'), condition='invalid_type'] configuration_error
+  retry statuses sequence ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='invalid_type') [field_path=('retry', 'statuses'), condition='invalid_type'] configuration_error
+  retry statuses scalar ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='invalid_type') [field_path=('retry', 'statuses'), condition='invalid_type'] configuration_error
+  retry statuses bool ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry statuses fractional ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry statuses text ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry statuses low ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry statuses high ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry statuses unauthorized ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry statuses forbidden ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry statuses proxy ! ConfigurationError: ConfigurationError(field_path='retry.statuses', condition='out_of_range') [field_path=('retry', 'statuses'), condition='out_of_range'] configuration_error
+  retry retry_after_ms_header True ! ConfigurationError: ConfigurationError(field_path='retry.retry_after_ms_header', condition='invalid_value') [field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  retry retry_after_ms_header '' ! ConfigurationError: ConfigurationError(field_path='retry.retry_after_ms_header', condition='invalid_value') [field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  retry retry_after_ms_header 'bad name' ! ConfigurationError: ConfigurationError(field_path='retry.retry_after_ms_header', condition='invalid_value') [field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  retry retry_after_ms_header 'bad\rname' ! ConfigurationError: ConfigurationError(field_path='retry.retry_after_ms_header', condition='invalid_value') [field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  retry retry_after_ms_header 'bad:name' ! ConfigurationError: ConfigurationError(field_path='retry.retry_after_ms_header', condition='invalid_value') [field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  retry retry_after_ms_header 'café' ! ConfigurationError: ConfigurationError(field_path='retry.retry_after_ms_header', condition='invalid_value') [field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  retry should_retry_header True ! ConfigurationError: ConfigurationError(field_path='retry.should_retry_header', condition='invalid_value') [field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  retry should_retry_header '' ! ConfigurationError: ConfigurationError(field_path='retry.should_retry_header', condition='invalid_value') [field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  retry should_retry_header 'bad name' ! ConfigurationError: ConfigurationError(field_path='retry.should_retry_header', condition='invalid_value') [field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  retry should_retry_header 'bad\rname' ! ConfigurationError: ConfigurationError(field_path='retry.should_retry_header', condition='invalid_value') [field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  retry should_retry_header 'bad:name' ! ConfigurationError: ConfigurationError(field_path='retry.should_retry_header', condition='invalid_value') [field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  retry should_retry_header 'café' ! ConfigurationError: ConfigurationError(field_path='retry.should_retry_header', condition='invalid_value') [field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  transport ssl_context type ! ConfigurationError: ConfigurationError(field_path='transport.ssl_context', condition='invalid_type') [field_path=('transport', 'ssl_context'), condition='invalid_type'] configuration_error
+  transport proxy type ! ConfigurationError: ConfigurationError(field_path='transport.proxy', condition='invalid_type') [field_path=('transport', 'proxy'), condition='invalid_type'] configuration_error
+  transport proxy type ! ConfigurationError: ConfigurationError(field_path='transport.proxy', condition='invalid_type') [field_path=('transport', 'proxy'), condition='invalid_type'] configuration_error
+  ClientOptions retry None ! ConfigurationError: ConfigurationError(field_path='retry', condition='invalid_type') [field_path=('retry',), condition='invalid_type'] configuration_error
+  ClientOptions retry True ! ConfigurationError: ConfigurationError(field_path='retry', condition='invalid_type') [field_path=('retry',), condition='invalid_type'] configuration_error
+  ClientOptions redirects None ! ConfigurationError: ConfigurationError(field_path='redirects', condition='invalid_type') [field_path=('redirects',), condition='invalid_type'] configuration_error
+  ClientOptions redirects {} ! ConfigurationError: ConfigurationError(field_path='redirects', condition='invalid_type') [field_path=('redirects',), condition='invalid_type'] configuration_error
+  ClientOptions idempotency_key 'key' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_type') [field_path=('idempotency_key',), condition='invalid_type'] configuration_error
+  RequestOptions retry None ! ConfigurationError: ConfigurationError(field_path='retry', condition='invalid_type') [field_path=('retry',), condition='invalid_type'] configuration_error
+  RequestOptions retry True ! ConfigurationError: ConfigurationError(field_path='retry', condition='invalid_type') [field_path=('retry',), condition='invalid_type'] configuration_error
+  RequestOptions redirects None ! ConfigurationError: ConfigurationError(field_path='redirects', condition='invalid_type') [field_path=('redirects',), condition='invalid_type'] configuration_error
+  RequestOptions redirects {} ! ConfigurationError: ConfigurationError(field_path='redirects', condition='invalid_type') [field_path=('redirects',), condition='invalid_type'] configuration_error
+  RequestOptions idempotency_key 'key' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_type') [field_path=('idempotency_key',), condition='invalid_type'] configuration_error
+  client transport None ! ConfigurationError: ConfigurationError(field_path='transport', condition='invalid_type') [field_path=('transport',), condition='invalid_type'] configuration_error
+  client transport False ! ConfigurationError: ConfigurationError(field_path='transport', condition='invalid_type') [field_path=('transport',), condition='invalid_type'] configuration_error
+  client transport {} ! ConfigurationError: ConfigurationError(field_path='transport', condition='invalid_type') [field_path=('transport',), condition='invalid_type'] configuration_error
+  request transport unavailable ! TypeError: RequestOptions.__init__() got an unexpected keyword argument 'transport' []
+  redirect origin none ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_type') [field_path=('redirects', 'allowed_origins'), condition='invalid_type'] configuration_error
+  redirect origin string ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_type') [field_path=('redirects', 'allowed_origins'), condition='invalid_type'] configuration_error
+  redirect origin mapping ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_type') [field_path=('redirects', 'allowed_origins'), condition='invalid_type'] configuration_error
+  redirect origin non-string ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_type') [field_path=('redirects', 'allowed_origins'), condition='invalid_type'] configuration_error
+  redirect origin relative ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin scheme ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin missing host ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin userinfo ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin path ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin root path ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin query ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin fragment ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin space ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin control ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin backslash ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin port zero ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url'] configuration_error
+  redirect origin port syntax ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url', cause=ValueError("Port could not be cast to integer value as 'port'")] configuration_error
+  redirect origin port large ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url', cause=ValueError('Port out of range 0-65535')] configuration_error
+  redirect origin ipv6 ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url', cause=ValueError('Invalid IPv6 URL')] configuration_error
+  frozen origins=('https://example.com', 'http://example.com:80', 'HTTPS://EXAMPLE.COM:443', 'https://[::1]:443') tuple=True
+  key value None ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  key value False ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  key value 1 ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  key value '' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  key value 'key\rvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  key value 'key\nvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  key value 'key\x00value' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  key first-used text ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_type') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_type'] configuration_error
+  key first-used number ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_type') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_type'] configuration_error
+  key first-used naive ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_value') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_value'] configuration_error
+  key first-used no offset ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_value') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_value'] configuration_error
+  key first-used invalid offset ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_value') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_value', cause=ValueError('invalid timezone offset')] configuration_error
+  key first-used positional ! TypeError: IdempotencyKey.__init__() takes 2 positional arguments but 3 were given []
+  key unknown use = IdempotencyKey(first_used_at=None)
+  key unicode value = IdempotencyKey(first_used_at=None)
+  key timezone preserved=True value='caller-key'
+  new key version=4 utc=True current=True
+  option preserves key=True
+  omitted RetryOptions=(('max_retries', True), ('initial_delay', True), ('max_delay', True), ('jitter', True), ('statuses', True), ('max_retry_after', True), ('respect_retry_after', True), ('retry_after_ms_header', True), ('should_retry_header', True), ('retry_on_pool_timeout', True))
+  omitted RedirectOptions=(('enabled', True), ('max_redirects', True), ('allow_303_to_get', True), ('allowed_origins', True), ('allow_https_downgrade', True))
+  frozen statuses=[408, 409, 500, 501] frozenset=True
+  retry empty statuses = RetryOptions(max_retries=UNSET, initial_delay=UNSET, max_delay=UNSET, jitter=UNSET, statuses=frozenset(), max_retry_after=UNSET, respect_retry_after=UNSET, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=UNSET)
+  retry explicit defaults = RetryOptions(max_retries=2, initial_delay=0.5, max_delay=8.0, jitter='full', statuses=UNSET, max_retry_after=60.0, respect_retry_after=True, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=False)
+  retry explicit switches = RetryOptions(max_retries=UNSET, initial_delay=UNSET, max_delay=UNSET, jitter=UNSET, statuses=UNSET, max_retry_after=UNSET, respect_retry_after=False, retry_after_ms_header=None, should_retry_header=None, retry_on_pool_timeout=True)
+  redirect explicit values = RedirectOptions(enabled=False, max_redirects=0, allow_303_to_get=True, allowed_origins=(), allow_https_downgrade=True)
+  transport fixed defaults = TransportOptions(verify=UNSET, ssl_context=None, proxy=None, trust_env=False, http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.0, retry_owner='sdk')
+  transport explicit values = TransportOptions(verify=False, ssl_context=None, proxy='http://proxy.example.com:8080', trust_env=True, http2=True, max_connections=0, max_keepalive_connections=0, keepalive_expiry=0.0, retry_owner='transport')
+  transport SSLContext identity=True verify omitted=True
+  transport context verify=True ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='conflicts_with_ssl_context') [field_path=('transport', 'verify'), condition='conflicts_with_ssl_context'] configuration_error
+  transport context verify=False ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='conflicts_with_ssl_context') [field_path=('transport', 'verify'), condition='conflicts_with_ssl_context'] configuration_error
+  immutable RetryOptions rejected=True unchanged=True slotted=True
+  immutable RedirectOptions rejected=True unchanged=True slotted=True
+  immutable TransportOptions rejected=True unchanged=True slotted=True
+  immutable IdempotencyKey rejected=True unchanged=True slotted=True
+  hints RetryOptions=('max_retries', 'initial_delay', 'max_delay', 'jitter', 'statuses', 'max_retry_after', 'respect_retry_after', 'retry_after_ms_header', 'should_retry_header', 'retry_on_pool_timeout')
+  init hints RetryOptions=('max_retries', 'initial_delay', 'max_delay', 'jitter', 'statuses', 'max_retry_after', 'respect_retry_after', 'retry_after_ms_header', 'should_retry_header', 'retry_on_pool_timeout', 'return')
+  hints RedirectOptions=('enabled', 'max_redirects', 'allow_303_to_get', 'allowed_origins', 'allow_https_downgrade')
+  init hints RedirectOptions=('enabled', 'max_redirects', 'allow_303_to_get', 'allowed_origins', 'allow_https_downgrade', 'return')
+  hints TransportOptions=('verify', 'ssl_context', 'proxy', 'trust_env', 'http2', 'max_connections', 'max_keepalive_connections', 'keepalive_expiry', 'retry_owner')
+  init hints TransportOptions=('verify', 'ssl_context', 'proxy', 'trust_env', 'http2', 'max_connections', 'max_keepalive_connections', 'keepalive_expiry', 'retry_owner', 'return')
+  hints IdempotencyKey=('value', 'first_used_at')
+  init hints IdempotencyKey=('value', 'first_used_at', 'return')
+  hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'transport')
+  init hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'transport', 'return')
+  hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key')
+  init hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'return')
+  new hints=('return',)
+  key signature=(('value', 'POSITIONAL_OR_KEYWORD'), ('first_used_at', 'KEYWORD_ONLY'))
+  option omitted ClientOptions=(True, True, True, True)
+  option omitted RequestOptions=(True, True, True, True)
+  optional-free public options=True
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  retry nested client/view/view/call = FieldSafeGetResponse(root='merged')
+  merged retry waits=[(0.0, 'status'), (0.0, 'status')] pending responses=0
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  partial delay inherits larger maximum = FieldSafeGetResponse(root='valid inherited delay')
+  invalid delay after request merge ! ConfigurationError: ConfigurationError(operation_id='getSafe', field_path='retry.max_delay', condition='out_of_range') [operation_id='getSafe', field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  invalid delay after view merge ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  merged delay pending responses=0
+  invalid delay after client merge ! ConfigurationError: ConfigurationError(field_path='retry.max_delay', condition='out_of_range') [field_path=('retry', 'max_delay'), condition='out_of_range'] configuration_error
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/one
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/two
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  derived cap uses final retry and redirect fields = (FieldSafeGetResponse(root='four sends'), 2, 2, 4, 4)
+  merged redirect pending responses=0
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 17] b'removed after 303'
+  > GET https://other.example.com/accepted
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  redirect nested permissions = FieldUnsafePostResponse(root='inherited destination and method permission')
+  merged redirect permissions pending responses=0
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  budget derived defaults=GetSafeHTTPError attempts=3 sends=3 used=3 stop=max_retries_exhausted
+  budget derived defaults arrivals=3
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  budget derived disabled retry=GetSafeHTTPError attempts=1 sends=1 used=1 stop=disabled
+  budget derived disabled retry arrivals=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  budget explicit one inherited=GetSafeHTTPError attempts=1 sends=1 used=1 stop=network_budget_exhausted
+  budget explicit one inherited arrivals=1
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  budget uncapped inherited=GetSafeHTTPError attempts=2 sends=2 used=2 stop=max_retries_exhausted
+  budget uncapped inherited arrivals=2
+  budget zero override=BudgetExceededError attempts=0 sends=0 used=0 stop=None
+  budget zero override arrivals=0
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  budget seven inherited=GetSafeHTTPError attempts=7 sends=7 used=7 stop=network_budget_exhausted
+  budget seven inherited arrivals=7
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  budget explicit call replaces one=GetSafeHTTPError attempts=3 sends=3 used=3 stop=max_retries_exhausted
+  budget explicit call replaces one arrivals=3
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  vendor inherited declaration = FieldVendorGetResponse(root='accepted')
+  vendor inherited declaration arrivals=2
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  vendor case-insensitive match = FieldVendorGetResponse(root='accepted')
+  vendor case-insensitive match arrivals=2
+  > GET https://api.example.com/vendor
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  vendor disabled ! GetVendorHTTPError: GetVendorHTTPError(status_code=501, operation_id='getVendor', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getVendor', status_code=501, error_decoded=True, error_data=FieldVendorGetResponse(root='vendor'), body_bytes=b'vendor', truncated=False] get_vendor_http_error
+  vendor disabled arrivals=1
+  vendor mismatched retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getVendor', call_id='<call>', field_path='retry.retry_after_ms_header', condition='invalid_value') [operation_id='getVendor', field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  vendor undeclared retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='retry.retry_after_ms_header', condition='invalid_value') [operation_id='getSafe', field_path=('retry', 'retry_after_ms_header'), condition='invalid_value'] configuration_error
+  vendor mismatched should_retry_header ! ConfigurationError: ConfigurationError(operation_id='getVendor', call_id='<call>', field_path='retry.should_retry_header', condition='invalid_value') [operation_id='getVendor', field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  vendor undeclared should_retry_header ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='retry.should_retry_header', condition='invalid_value') [operation_id='getSafe', field_path=('retry', 'should_retry_header'), condition='invalid_value'] configuration_error
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 10] b'same bytes'
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 10] b'same bytes'
+  automatic key retained through retry = FieldKeyedPostResponse(root='accepted')
+  > POST https://api.example.com/keyed
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 8] b'new call'
+  automatic key fresh next call = FieldKeyedPostResponse(root='accepted')
+  > POST https://api.example.com/keyed
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
+  automatic key suppressed = FieldKeyedPostResponse(root='accepted')
+  explicit undeclared key ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  automatic keys count=4 same retry=True fresh call=True suppressed=True
+  > POST https://api.example.com/keyed
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
+  > POST https://api.example.com/keyed
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
+  caller key inherited and retained through retry = FieldKeyedPostResponse(root='accepted')
+  caller key observed=['caller-owned', 'caller-owned']
+  > POST https://api.example.com/keyed
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
+  view clears caller key ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='retry'), body_bytes=b'retry', truncated=False] post_keyed_http_error
+  cleared key observed=[None]
+  borrowed transport conflict verify ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='injected_transport') [field_path=('transport', 'verify'), condition='injected_transport'] configuration_error
+  adapter transport conflict verify ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='injected_transport') [field_path=('transport', 'verify'), condition='injected_transport'] configuration_error
+  borrowed transport conflict ssl_context ! ConfigurationError: ConfigurationError(field_path='transport.ssl_context', condition='injected_transport') [field_path=('transport', 'ssl_context'), condition='injected_transport'] configuration_error
+  adapter transport conflict ssl_context ! ConfigurationError: ConfigurationError(field_path='transport.ssl_context', condition='injected_transport') [field_path=('transport', 'ssl_context'), condition='injected_transport'] configuration_error
+  borrowed transport conflict proxy ! ConfigurationError: ConfigurationError(field_path='transport.proxy', condition='injected_transport') [field_path=('transport', 'proxy'), condition='injected_transport'] configuration_error
+  adapter transport conflict proxy ! ConfigurationError: ConfigurationError(field_path='transport.proxy', condition='injected_transport') [field_path=('transport', 'proxy'), condition='injected_transport'] configuration_error
+  borrowed transport conflict trust_env ! ConfigurationError: ConfigurationError(field_path='transport.trust_env', condition='injected_transport') [field_path=('transport', 'trust_env'), condition='injected_transport'] configuration_error
+  adapter transport conflict trust_env ! ConfigurationError: ConfigurationError(field_path='transport.trust_env', condition='injected_transport') [field_path=('transport', 'trust_env'), condition='injected_transport'] configuration_error
+  borrowed transport conflict http2 ! ConfigurationError: ConfigurationError(field_path='transport.http2', condition='injected_transport') [field_path=('transport', 'http2'), condition='injected_transport'] configuration_error
+  adapter transport conflict http2 ! ConfigurationError: ConfigurationError(field_path='transport.http2', condition='injected_transport') [field_path=('transport', 'http2'), condition='injected_transport'] configuration_error
+  borrowed transport conflict max_connections ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='injected_transport') [field_path=('transport', 'max_connections'), condition='injected_transport'] configuration_error
+  adapter transport conflict max_connections ! ConfigurationError: ConfigurationError(field_path='transport.max_connections', condition='injected_transport') [field_path=('transport', 'max_connections'), condition='injected_transport'] configuration_error
+  borrowed transport conflict max_keepalive_connections ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='injected_transport') [field_path=('transport', 'max_keepalive_connections'), condition='injected_transport'] configuration_error
+  adapter transport conflict max_keepalive_connections ! ConfigurationError: ConfigurationError(field_path='transport.max_keepalive_connections', condition='injected_transport') [field_path=('transport', 'max_keepalive_connections'), condition='injected_transport'] configuration_error
+  borrowed transport conflict keepalive_expiry ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='injected_transport') [field_path=('transport', 'keepalive_expiry'), condition='injected_transport'] configuration_error
+  adapter transport conflict keepalive_expiry ! ConfigurationError: ConfigurationError(field_path='transport.keepalive_expiry', condition='injected_transport') [field_path=('transport', 'keepalive_expiry'), condition='injected_transport'] configuration_error
+  borrowed accepts explicit construction defaults = None
+  adapter accepts explicit construction defaults = None
+  borrowed native rejects transport retry owner ! ConfigurationError: ConfigurationError(field_path='transport.retry_owner', condition='requires_adapter') [field_path=('transport', 'retry_owner'), condition='requires_adapter'] configuration_error
+  owned native rejects transport retry owner ! ConfigurationError: ConfigurationError(field_path='transport.retry_owner', condition='requires_adapter') [field_path=('transport', 'retry_owner'), condition='requires_adapter'] configuration_error
+  SDK native rejects transport retry owner ! ConfigurationError: ConfigurationError(field_path='transport.retry_owner', condition='requires_adapter') [field_path=('transport', 'retry_owner'), condition='requires_adapter'] configuration_error
+  adapter accepts transport retry owner = None
+  adapter closed
+  owned adapter accepts transport retry owner = None
+  SDK native custom CA and pool = FieldSafeGetResponse(root='configured TLS')
+  view rejects client construction options ! ConfigurationError: ConfigurationError(field_path='options', condition='invalid_type') [field_path=('options',), condition='invalid_type'] configuration_error
+  SDK async custom CA and pool = FieldSafeGetResponse(root='configured TLS')
+  configured native arrivals=[('GET', '/safe'), ('GET', '/safe')]

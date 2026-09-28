@@ -409,19 +409,20 @@ def _sync_failures(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     http = exchange.client()
     pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
-    with package.Client(http_client=http) as api:
-        for label, acquire_failure, release_failure, response, secondary in (
-            ("acquire failure", RuntimeError("acquire failed"), None, None, False),
-            ("release failure", None, RuntimeError("release failed"), json_response(200, _PET), False),
-            ("status failure", None, None, raw_response(404), False),
-            ("decode failure", None, None, raw_response(200, b"{", "application/json"), False),
-            ("status and release failure", None, RuntimeError("release failed"), raw_response(404), True),
-            ("body read failure", None, None, broken, False),
-            ("body read and release failure", None, RuntimeError("release failed"), broken, True),
+    with package.Client(http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))) as api:
+        for label, acquire_failure, release_failure, response, secondary, attempts in (
+            ("acquire failure", RuntimeError("acquire failed"), None, None, False, 1),
+            ("release failure", None, RuntimeError("release failed"), json_response(200, _PET), False, 1),
+            ("status failure", None, None, raw_response(404), False, 1),
+            ("decode failure", None, None, raw_response(200, b"{", "application/json"), False, 1),
+            ("status and release failure", None, RuntimeError("release failed"), raw_response(404), True, 1),
+            ("body read failure", None, None, broken, False, 3),
+            ("body read and release failure", None, RuntimeError("release failed"), broken, True, 1),
         ):
             limiter = _SemaphoreLimiter(acquire_failure=acquire_failure, release_failure=release_failure)
             if response is not None:
-                exchange.respond(response)
+                for _ in range(attempts):
+                    exchange.respond(response)
             configured = options.RequestOptions(limiter=limiter)
             call = lambda configured=configured: api.pets.get_pet(pet_id=pet, options=configured)
             if secondary:
@@ -696,19 +697,22 @@ async def _async_failures(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     http = exchange.async_client()
     pet = types.GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
-    async with package.AsyncClient(http_client=http) as api:
-        for label, acquire_failure, release_failure, response, secondary in (
-            ("async acquire failure", RuntimeError("acquire failed"), None, None, False),
-            ("async release failure", None, RuntimeError("release failed"), json_response(200, _PET), False),
-            ("async status failure", None, None, raw_response(404), False),
-            ("async decode failure", None, None, raw_response(200, b"{", "application/json"), False),
-            ("async status and release failure", None, RuntimeError("release failed"), raw_response(404), True),
-            ("async body read failure", None, None, abroken, False),
-            ("async body read and release failure", None, RuntimeError("release failed"), abroken, True),
+    async with package.AsyncClient(
+        http_client=http, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+    ) as api:
+        for label, acquire_failure, release_failure, response, secondary, attempts in (
+            ("async acquire failure", RuntimeError("acquire failed"), None, None, False, 1),
+            ("async release failure", None, RuntimeError("release failed"), json_response(200, _PET), False, 1),
+            ("async status failure", None, None, raw_response(404), False, 1),
+            ("async decode failure", None, None, raw_response(200, b"{", "application/json"), False, 1),
+            ("async status and release failure", None, RuntimeError("release failed"), raw_response(404), True, 1),
+            ("async body read failure", None, None, abroken, False, 3),
+            ("async body read and release failure", None, RuntimeError("release failed"), abroken, True, 1),
         ):
             limiter = _AsyncSemaphoreLimiter(acquire_failure=acquire_failure, release_failure=release_failure)
             if response is not None:
-                exchange.respond(response)
+                for _ in range(attempts):
+                    exchange.respond(response)
             configured = options.RequestOptions(limiter=limiter)
             call = lambda configured=configured: api.pets.get_pet(pet_id=pet, options=configured)
             if secondary:

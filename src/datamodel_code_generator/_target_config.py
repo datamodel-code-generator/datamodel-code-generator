@@ -39,9 +39,16 @@ _SELECTION_COLLECTIONS: Final = ("include_operations", "include_tags", "exclude_
 
 
 class _ConfigValueError(Exception):
-    def __init__(self, option_path: str, message: str) -> None:
+    def __init__(
+        self,
+        option_path: str,
+        message: str,
+        *,
+        code: Literal["E_CONFIG_VALUE", "E_CONFIG_UNKNOWN"] = "E_CONFIG_VALUE",
+    ) -> None:
         self.option_path = option_path
         self.message = message
+        self.code = code
         super().__init__(message)
 
 
@@ -192,7 +199,7 @@ def _table(value: object, option_path: str, keys: frozenset[str]) -> Mapping[str
         raise _ConfigValueError(option_path, f"{option_path} must be a table")
     if unknown := sorted(set(value) - keys):
         at = f"{option_path}.{unknown[0]}"
-        raise _ConfigValueError(at, f"{option_path} has no key {unknown[0]!r}")
+        raise _ConfigValueError(at, f"{option_path} has no key {unknown[0]!r}", code="E_CONFIG_UNKNOWN")
     return value
 
 
@@ -341,7 +348,7 @@ def _convert(converter: Converter, value: object, base: Path, key: str) -> objec
     try:
         return converter(value, base, key)
     except _ConfigValueError as error:
-        return _diagnostic("E_CONFIG_VALUE", error.option_path, error.message)
+        return _diagnostic(error.code, error.option_path, error.message)
 
 
 def load_target_config(path: Path, config_type: type[ConfigT], *, output: Path | None = None) -> ConfigT:

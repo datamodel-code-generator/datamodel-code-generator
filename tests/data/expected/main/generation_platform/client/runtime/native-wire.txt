@@ -1,0 +1,497 @@
+# retries pydantic_v2.BaseModel
+  sync h1 = "Response status=200 attempts=1 sends=1 wire=1 headers=(('content-length', '5'), ('content-type', 'text/plain'), ('x-duplicate', 'first'), ('x-duplicate', 'second'), ('x-text', 'café'))"
+  arrivals=1 connects=0 alpn=[]
+  sync h2 = "Response status=200 attempts=1 sends=1 wire=1 headers=(('content-type', 'text/plain'), ('x-duplicate', 'first'), ('x-duplicate', 'second'), ('x-text', 'café'))"
+  arrivals=1 connects=0 alpn=['h2']
+  sync tunnel = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=1 alpn=[]
+  sync forward = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=0 alpn=[]
+  sync tunnel-ipv6 = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=1 alpn=[]
+  sync forward-ipv6 = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=0 alpn=[]
+  sync rejected-proxy = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
+  arrivals=0 connects=1 alpn=[]
+  sync malformed = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 sends=3 wire=3 status=None body=None cause=RemoteProtocolError'
+  arrivals=3 connects=0 alpn=[]
+  sync certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  arrivals=0 connects=0 alpn=[]
+  sync tunnel-certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  arrivals=0 connects=1 alpn=[]
+  sync refused 127.0.0.1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  sync refused ::1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  sync refused localhost unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  sync location 301/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=None cause=NoneType'
+  header events=1
+  sync location 301/ipv6/False/True = 'RawResponse status=301 attempts=1 sends=1 wire=1'
+  header events=1
+  sync location 301/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=NoneType'
+  header events=1
+  sync location 301/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=NoneType'
+  header events=1
+  sync location 301/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 301/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=None cause=NoneType'
+  header events=1
+  sync location 302/ipv6/False/True = 'RawResponse status=302 attempts=1 sends=1 wire=1'
+  header events=1
+  sync location 302/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=NoneType'
+  header events=1
+  sync location 302/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=NoneType'
+  header events=1
+  sync location 302/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 302/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=None cause=NoneType'
+  header events=1
+  sync location 303/ipv6/False/True = 'RawResponse status=303 attempts=1 sends=1 wire=1'
+  header events=1
+  sync location 303/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=NoneType'
+  header events=1
+  sync location 303/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=NoneType'
+  header events=1
+  sync location 303/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 303/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=None cause=NoneType'
+  header events=1
+  sync location 307/ipv6/False/True = 'RawResponse status=307 attempts=1 sends=1 wire=1'
+  header events=1
+  sync location 307/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=NoneType'
+  header events=1
+  sync location 307/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=NoneType'
+  header events=1
+  sync location 307/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 307/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=None cause=NoneType'
+  header events=1
+  sync location 308/ipv6/False/True = 'RawResponse status=308 attempts=1 sends=1 wire=1'
+  header events=1
+  sync location 308/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=NoneType'
+  header events=1
+  sync location 308/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=NoneType'
+  header events=1
+  sync location 308/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location 308/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  sync location arrivals=100
+  sync native borrowed raw=False = "Response status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  sync native borrowed raw=True = "RawResponse status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  sync h2 location borrowed = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=None status=302 body=False cause=RemoteProtocolError'
+  sync native borrowed closed=False
+  sync native owned raw=False = "Response status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  sync native owned raw=True = "RawResponse status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  sync h2 location owned = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=None status=302 body=False cause=RemoteProtocolError'
+  sync native owned closed=True
+  sync native captured responses closed=[True, True, True, True, True, True]
+  sync configured native-invalid origin = 'ConfigurationError delivery=None phase=None stop=None attempts=0 sends=0 wire=None status=None body=None cause=InvalidURL'
+  sync invalid configured origin arrivals=0
+  sync malformed Location header-hook RuntimeError raw=False: RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError secondary=['RuntimeError'] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  sync malformed Location header-hook RuntimeError raw=True: RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError secondary=['RuntimeError'] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  sync malformed Location header-hook NoneType raw=False: RequestCancelledError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=None body=None cause=NoneType secondary=[] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  sync malformed Location header-hook NoneType raw=True: RequestCancelledError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=None body=None cause=NoneType secondary=[] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  sync malformed Location header-hook Stop raw=False: Stop delivery=None phase=None stop=None attempts=None sends=None wire=None status=None body=None cause=NoneType secondary=[] same=True
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  sync malformed Location header-hook Stop raw=True: Stop delivery=None phase=None stop=None attempts=None sends=None wire=None status=None body=None cause=NoneType secondary=[] same=True
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  sync header-hook arrivals=6
+  async h1 = "Response status=200 attempts=1 sends=1 wire=1 headers=(('content-length', '5'), ('content-type', 'text/plain'), ('x-duplicate', 'first'), ('x-duplicate', 'second'), ('x-text', 'café'))"
+  arrivals=1 connects=0 alpn=[]
+  async h2 = "Response status=200 attempts=1 sends=1 wire=1 headers=(('content-type', 'text/plain'), ('x-duplicate', 'first'), ('x-duplicate', 'second'), ('x-text', 'café'))"
+  arrivals=1 connects=0 alpn=['h2']
+  async tunnel = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=1 alpn=[]
+  async forward = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=0 alpn=[]
+  async tunnel-ipv6 = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=1 alpn=[]
+  async forward-ipv6 = 'Response status=200 attempts=1 sends=1 wire=1'
+  arrivals=1 connects=0 alpn=[]
+  async rejected-proxy = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
+  arrivals=0 connects=1 alpn=[]
+  async malformed = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=read stop=max_retries_exhausted attempts=3 sends=3 wire=3 status=None body=None cause=RemoteProtocolError'
+  arrivals=3 connects=0 alpn=[]
+  async certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  arrivals=0 connects=0 alpn=[]
+  async tunnel-certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  arrivals=0 connects=1 alpn=[]
+  async refused 127.0.0.1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  async refused ::1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  async refused localhost unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  async location 301/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=None cause=NoneType'
+  header events=1
+  async location 301/ipv6/False/True = 'AsyncRawResponse status=301 attempts=1 sends=1 wire=1'
+  header events=1
+  async location 301/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=NoneType'
+  header events=1
+  async location 301/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=NoneType'
+  header events=1
+  async location 301/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 301/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=None cause=NoneType'
+  header events=1
+  async location 302/ipv6/False/True = 'AsyncRawResponse status=302 attempts=1 sends=1 wire=1'
+  header events=1
+  async location 302/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=NoneType'
+  header events=1
+  async location 302/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=NoneType'
+  header events=1
+  async location 302/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 302/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=None cause=NoneType'
+  header events=1
+  async location 303/ipv6/False/True = 'AsyncRawResponse status=303 attempts=1 sends=1 wire=1'
+  header events=1
+  async location 303/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=NoneType'
+  header events=1
+  async location 303/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=NoneType'
+  header events=1
+  async location 303/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 303/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=303 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=None cause=NoneType'
+  header events=1
+  async location 307/ipv6/False/True = 'AsyncRawResponse status=307 attempts=1 sends=1 wire=1'
+  header events=1
+  async location 307/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=NoneType'
+  header events=1
+  async location 307/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=NoneType'
+  header events=1
+  async location 307/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 307/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=307 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/port/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/port/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/ipv6/False/False = 'UnexpectedStatusError delivery=None phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=None cause=NoneType'
+  header events=1
+  async location 308/ipv6/False/True = 'AsyncRawResponse status=308 attempts=1 sends=1 wire=1'
+  header events=1
+  async location 308/ipv6/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=NoneType'
+  header events=1
+  async location 308/ipv6/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=NoneType'
+  header events=1
+  async location 308/idna/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/idna/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/idna/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/idna/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/control/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/control/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/control/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/control/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/length/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/length/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/length/True/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location 308/length/True/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=308 body=False cause=RemoteProtocolError'
+  header events=1
+  async location arrivals=100
+  async native borrowed raw=False = "Response status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  async native borrowed raw=True = "AsyncRawResponse status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  async h2 location borrowed = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=None status=302 body=False cause=RemoteProtocolError'
+  async native borrowed closed=False
+  async native owned raw=False = "Response status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  async native owned raw=True = "AsyncRawResponse status=200 attempts=1 sends=1 wire=None headers=(('content-type', 'text/plain; charset=ascii'), ('x-native-hook', 'first'), ('x-native-hook', 'second'))"
+  async h2 location owned = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=None status=302 body=False cause=RemoteProtocolError'
+  async native owned closed=True
+  async native captured responses closed=[True, True, True, True, True, True]
+  async configured native-invalid origin = 'ConfigurationError delivery=None phase=None stop=None attempts=0 sends=0 wire=None status=None body=None cause=InvalidURL'
+  async invalid configured origin arrivals=0
+  async malformed Location header-hook RuntimeError raw=False: RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError secondary=['RuntimeError'] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  async malformed Location header-hook RuntimeError raw=True: RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=302 body=False cause=RemoteProtocolError secondary=['RuntimeError'] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  async malformed Location header-hook NoneType raw=False: RequestCancelledError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=None body=None cause=NoneType secondary=[] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  async malformed Location header-hook NoneType raw=True: RequestCancelledError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=None body=None cause=NoneType secondary=[] same=False
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  async malformed Location header-hook Stop raw=False: Stop delivery=None phase=None stop=None attempts=None sends=None wire=None status=None body=None cause=NoneType secondary=[] same=True
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  async malformed Location header-hook Stop raw=True: Stop delivery=None phase=None stop=None attempts=None sends=None wire=None status=None body=None cause=NoneType secondary=[] same=True
+  header-hook events=['call_start', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  async header-hook arrivals=6

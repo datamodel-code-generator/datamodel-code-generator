@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from functools import cached_property, partial
 from pathlib import PurePosixPath
@@ -107,10 +108,14 @@ from ._runtime.client.options import (
     ClientOptions,
     Deadline,
     HeaderPatch,
+    IdempotencyKey,
     QueryPatch,
+    RedirectOptions,
     RequestOptions,
+    RetryOptions,
     ServerSelection,
     TimeoutOptions,
+    TransportOptions,
     ValidationOptions,
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
@@ -121,10 +126,14 @@ __all__ = [
     "ClientOptions",
     "Deadline",
     "HeaderPatch",
+    "IdempotencyKey",
     "QueryPatch",
+    "RedirectOptions",
     "RequestOptions",
+    "RetryOptions",
     "ServerSelection",
     "TimeoutOptions",
+    "TransportOptions",
     "Unset",
     "ValidationOptions",
 ]
@@ -152,6 +161,7 @@ _ERROR_NAMES: Final = (
     "ProtocolDataError",
     "ProtocolError",
     "ProtocolSizeError",
+    "RedirectPolicyError",
     "RequestEncodingError",
     "RequestCancelledError",
     "ResponseConsumedError",
@@ -1602,6 +1612,7 @@ class _Registry(_Typing):
             entries.append(("request_id_header=", repr(spec.request_id_header)))
         if spec.response_media_type is not None:
             entries.append(("response_media_type=", repr(spec.response_media_type)))
+        entries.extend(self.retry_metadata(module, spec))
         if (spec.body is not None and spec.body.media) or success_media(spec.responses, ranges=True):
             entries.append(("codecs=", module.local(f"types.{spec.resource}", f"{spec.pascal}RequestCodecs")))
         if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
@@ -1610,6 +1621,32 @@ class _Registry(_Typing):
         if spec.fields:
             entries.append(("fields=", self.field_arguments(module, spec)))
         return _call(module.local(_RUNTIME, "OperationPlan"), entries)
+
+    @staticmethod
+    def retry_metadata(module: Module, spec: OperationSpec) -> list[tuple[str, Doc]]:
+        """Return the explicit operation retry contract without inferring key or vendor declarations."""
+        entries: list[tuple[str, Doc]] = []
+        if spec.retry_safety != "method_default":
+            entries.append(("retry_safety=", repr(spec.retry_safety)))
+        if (idempotency := spec.idempotency) is not None:
+            entries.append((
+                "idempotency=",
+                _call(
+                    module.local("_runtime.client.retry", "IdempotencyPlan"),
+                    (
+                        ("header_name=", repr(idempotency.header_name)),
+                        ("replay_safe_with_key=", repr(idempotency.replay_safe_with_key)),
+                        ("retention_seconds=", repr(idempotency.retention_seconds)),
+                        ("scope=", repr(idempotency.scope)),
+                    ),
+                ),
+            ))
+        entries.extend(
+            (f"{name}=", repr(header))
+            for name in ("retry_after_ms_header", "should_retry_header")
+            if (header := getattr(spec, name)) is not None
+        )
+        return entries
 
     def field_arguments(self, module: Module, spec: OperationSpec) -> Group:
         """Return the FieldArguments constructor of an operation: each media's fields by their argument positions."""
@@ -1826,6 +1863,169 @@ class ClientRenderer:
         """Return one owned file of the package."""
         return RenderedFile(path=self.package / path, kind=kind, text=text, verbatim=verbatim)
 
+    def readme(self) -> str:
+        """Describe the finalized package, its operation metadata, and explicit retry-policy overrides."""
+        config = self.config
+        reference = "docs/runtime.md" if config.package_mode == "standalone" else "runtime.md"
+        metadata = [
+            {
+                "operation": f"{spec.resource}.{spec.name}",
+                "method": spec.contract.method.upper(),
+                "path": spec.contract.path,
+                "retry_safety": spec.retry_safety,
+                "idempotency": None
+                if (item := spec.idempotency) is None
+                else {
+                    "header_name": item.header_name,
+                    "replay_safe_with_key": item.replay_safe_with_key,
+                    "retention_seconds": item.retention_seconds,
+                    "scope": item.scope,
+                },
+                "retry_after_ms_header": spec.retry_after_ms_header,
+                "should_retry_header": spec.should_retry_header,
+            }
+            for spec in self.plan.operations
+        ]
+        return f"""# {config.package}
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from {config.package} import Client
+from {config.package}.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference]({reference}) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. A null idempotency declaration or a false replay guarantee cannot make an
+unsafe method replay-safe. No vendor retry-header name is inferred.
+
+```json
+{json.dumps(metadata, indent=2, ensure_ascii=True)}
+```
+"""
+
+    def runtime_documentation(self) -> str:
+        """Render public runtime settings and their resource and delivery obligations."""
+        return f"""# Runtime reference
+
+Import `Client` and `AsyncClient` from `{self.config.package}` and the records below from
+`{self.config.package}.options`. Async calls require asyncio.
+
+## Layered options and budgets
+
+`RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
+`UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
+sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`,
+`deadline=None`, and `max_network_sends=None` clear their own limits. `cleanup_timeout` remains positive and finite.
+
+| Setting | Effective default |
+|---|---|
+| connect / read / write / pool timeout | 5 / 30 / 30 / 5 seconds |
+| total timeout | 60 seconds from logical-call entry |
+| retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
+| retry statuses | 408, 429, 500, 502, 503, 504 |
+| maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
+| respect Retry-After / retry pool timeout | True / False |
+| redirects / maximum redirects / 303 conversion | False / 5 / False |
+| allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
+| network send slots | 1 + max_retries + (max_redirects when redirects are enabled) |
+| stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
+| maximum response / error body / stream bytes | 16 MiB / 64 KiB / None |
+
+Zero retries permits only the initial resource attempt. A zero send budget refuses all sends. Reservations are not
+refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across calls; the earlier of that expiry and
+the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
+DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
+Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
+
+## Retry decisions and delays
+
+GET, HEAD, OPTIONS, PUT, and DELETE are safe by default; POST/PATCH require an explicit idempotent declaration or a
+valid key contract. Proven unsent failures from the SDK-owned native transport may permit an otherwise unsafe retry;
+`retry_safety="never"` forbids every resend. All candidates still need replayable input and available budgets.
+Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
+decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
+
+Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
+is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
+explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
+an options value cannot invent that declaration, and explicit None disables an inherited vendor control.
+
+Typed errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
+including retry exhaustion, rather than converting statuses to typed HTTP errors. Transport, budget, cancellation,
+and redirect-policy failures still raise. Stream acquisition can retry; body reads never retry after handle handoff.
+After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
+phase cap still applies. Close an abandoned stream to release its response and limiter permit.
+
+## Idempotency and replayable input
+
+`IdempotencyKey(value, first_used_at=aware_datetime)` retains a caller's key and known first-use time.
+`IdempotencyKey.new()` creates a UUID4 value with a UTC timestamp. `idempotency_key=None` disables automatic creation;
+`UNSET` permits it for an operation with declared idempotency metadata, including `replay_safe_with_key=False`.
+A false replay-safety flag does not make an unsafe operation eligible for retries. The key is created once and never
+replaced to retry. Unknown prior-use time or expired retention does not establish retry safety. One logical call
+retains its key, origin, scope, encoded body, and multipart boundary across eligible attempts.
+
+Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
+`FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and
+their final position is not restored. `FileBody.from_path(path)` and its async counterpart reopen per attempt and
+check initial device/inode/size/mtime; unchanged stat data is not proof of identical content. Reads use bounded chunks.
+One-shot `StreamBody`/`AsyncStreamBody` input is never buffered or spooled implicitly and cannot replay after use.
+
+`BodyFactory`/`AsyncBodyFactory` must return a fresh SDK-owned attempt with identical payload for every invocation.
+The SDK closes every returned attempt. Freshness is the factory's general obligation; detection uses a call-owned
+ledger and an immediate cross-call guard, not indefinite object history. Fingerprint/length/stat checks detect some
+changes without buffering the entire payload. Multipart can replay only when every part can replay. Borrowed
+resources remain caller-owned; close explicitly created async file adapters to release their worker.
+
+## Redirects and transport construction
+
+`RedirectOptions(enabled=True)` enables SDK-controlled hops. 301/302 permit only GET/HEAD. 303 changes to GET for
+GET/HEAD or explicit `allow_303_to_get=True`, dropping body and content/framing headers including Content-Encoding.
+307/308 preserve method/body and require safety and replayability. Every hop consumes a send slot and the logical
+deadline. The origin allowlist and HTTPS downgrade permission are separate; credentials and cookies from the
+original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
+`RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
+
+`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=False,
+http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
+An SSLContext supplies TLS settings and conflicts with any explicit verify override. HTTP/2 is explicit and requires
+its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
+are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
+`retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
+contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
+
+## Counters and cleanup
+
+`ResponseInfo`, terminal events, and SDK errors expose logical resource attempts, redirect count, adapter invocations,
+and reserved send slots. `wire_send_count` on ResponseInfo/errors is known only when trusted adapter evidence proves
+wire sends; a borrowed transport can hide internal sends. Error counters exist even without a response.
+`PhaseTimeoutError` identifies the phase cap; `DeadlineExceededError` identifies the logical/stream budget.
+`BudgetExceededError` reports its kind, limit, and used slots. Safe error representations omit key/body/header values.
+
+A limiter permit is acquired before opening a body and released when its response is released. Cleanup has its own
+bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
+possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
+wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
+"""
+
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered client file in the fixed artifact order."""
         config = self.config
@@ -1884,4 +2084,11 @@ class ClientRenderer:
             files.append(self.file(PurePosixPath("_generated", "client_checks.py"), "checks", checks.source()))
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         runtime = runtime_sources(file.text for file in files)
-        return (*files, *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime))
+        documentation = PurePosixPath() if config.package_mode == "standalone" else PurePosixPath("_generated_docs")
+        reference = documentation / ("docs/runtime.md" if config.package_mode == "standalone" else "runtime.md")
+        return (
+            *files,
+            *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime),
+            RenderedFile(path=documentation / "README.md", kind="readme", text=self.readme()),
+            RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation()),
+        )

@@ -82,6 +82,7 @@ class ResponseInfo:
     auth_exchange_budget_used: int = 0
     auth_refresh_ids: tuple[str, ...] = ()
     auth_refresh_pending: int = 0
+    wire_send_count: int | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

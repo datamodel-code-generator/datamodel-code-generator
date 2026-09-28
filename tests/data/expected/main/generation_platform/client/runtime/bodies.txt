@@ -16,7 +16,7 @@
   file that cannot seek = b'\x89PNG'
   file that cannot seek again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
   unreadable file ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('disk failed')] body_factory_error
-  file without a position ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('tell failed')] body_factory_error
+  file without a position ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>') [operation_id='uploadPhoto', cause=OSError('tell failed')] body_factory_error
   file longer than its end ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='length') [operation_id='uploadPhoto'] body_changed_error
   file shorter than its end ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='length') [operation_id='uploadPhoto'] body_changed_error
   interrupted file propagated
@@ -99,7 +99,6 @@
   factory own 2 1 True
   factory attempt built directly None application/x-attempt b'direct'
   attempt closed
-  attempt closed
   factory <call> 0 0 True
   > PUT https://api.example.com/v1/pets/1/photo [Accept-Encoding: gzip, deflate, Accept: image/*, Content-Type: application/octet-stream] b'x' None application/x-attempt
     unknown 5.0/30.0/30.0/5.0
@@ -127,7 +126,7 @@
   async file that cannot seek = b'\x89PNG'
   async file that cannot seek again ! BodyNotReplayableError: BodyNotReplayableError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', condition='consumed') [operation_id='uploadPhoto', condition='consumed'] body_not_replayable_error
   async unreadable file ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('disk failed')] body_factory_error
-  async file without a position ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='uploadPhoto', cause=OSError('tell failed')] body_factory_error
+  async file without a position ! BodyFactoryError: BodyFactoryError(operation_id='uploadPhoto', call_id='<call>') [operation_id='uploadPhoto', cause=OSError('tell failed')] body_factory_error
   async file longer than its end ! BodyChangedError: BodyChangedError(operation_id='uploadPhoto', call_id='<call>', source_kind='file', check='length') [operation_id='uploadPhoto'] body_changed_error
   async interrupted file propagated
   > PUT https://api.example.com/v1/pets/1/photo
@@ -186,5 +185,4 @@
   async file attempt built directly 6 None [b'direct']
   factory own 2 1 None
   async factory attempt built directly None application/x-attempt [b'direct']
-  attempt closed
   attempt closed

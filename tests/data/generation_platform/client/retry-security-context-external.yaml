@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: External retry security declarations
+  version: 1.0.0
+paths: {}
+components:
+  pathItems:
+    inherited:
+      post:
+        operationId: external_inherited
+        responses:
+          '204':
+            description: Accepted
+    explicit:
+      post:
+        operationId: external_explicit
+        security:
+          - auth: []
+        responses:
+          '204':
+            description: Accepted
+    query:
+      post:
+        operationId: external_query
+        security:
+          - actualHeader: []
+        responses:
+          '204':
+            description: Accepted
+  securitySchemes:
+    auth:
+      type: apiKey
+      in: header
+      name: X-Idempotency
+    actualHeader:
+      type: apiKey
+      in: query
+      name: external_token

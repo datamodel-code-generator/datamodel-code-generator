@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Set
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
+from datetime import datetime, timezone
+from pathlib import Path
+from ssl import SSLContext, create_default_context
 from typing import BinaryIO, Literal
 
 from typing_extensions import assert_type
@@ -37,6 +40,7 @@ from pets.errors import (
     HookExecutionError,
     LimiterExecutionError,
     PhaseTimeoutError,
+    RedirectPolicyError,
     RequestCancelledError,
     SDKError,
 )
@@ -46,8 +50,12 @@ from pets.options import (
     CancelToken,
     ClientOptions,
     Deadline,
+    IdempotencyKey,
+    RedirectOptions,
     RequestOptions,
+    RetryOptions,
     TimeoutOptions,
+    TransportOptions,
     Unset,
     ValidationOptions,
 )
@@ -465,6 +473,7 @@ def error_counters(error: SDKError, event: CallEvent, info: ResponseInfo) -> Non
     assert_type(info.resource_attempt_count, int)
     assert_type(info.network_send_count, int)
     assert_type(info.network_send_budget_used, int)
+    assert_type(info.wire_send_count, int | None)
     phase = PhaseTimeoutError(effective_timeout=1, phase="connect", delivery_state=DeliveryState.NOT_SENT)
     assert_type(phase.effective_timeout, float)
     deadline = DeadlineExceededError(deadline_at=0, elapsed=1, delivery_state=DeliveryState.NOT_SENT)
@@ -487,3 +496,89 @@ def error_counters(error: SDKError, event: CallEvent, info: ResponseInfo) -> Non
         auth_refresh_ids=(),
         wire_send_count=None,
     )
+    redirect = RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info, body_available=False)
+    assert_type(redirect.body_available, Literal[False])
+    assert_type(redirect.delivery_state, DeliveryState)
+    assert_type(redirect.info, ResponseInfo | None)
+
+
+def retry_options(client: Client) -> None:
+    retry = RetryOptions(
+        max_retries=3,
+        initial_delay=0.25,
+        max_delay=2,
+        jitter="none",
+        statuses={429, 503},
+        max_retry_after=None,
+        respect_retry_after=True,
+        retry_after_ms_header=None,
+        should_retry_header=UNSET,
+        retry_on_pool_timeout=False,
+    )
+    assert_type(retry.statuses, Set[int] | Unset)
+    assert_type(retry.jitter, Literal["full", "none"] | Unset)
+    assert_type(retry.max_retry_after, float | Unset | None)
+    client.with_options(RequestOptions(retry=retry, redirects=RedirectOptions(enabled=True, max_redirects=2)))
+    Client(options=ClientOptions(retry=RetryOptions(max_retries=0), redirects=RedirectOptions()))
+    redirects = RedirectOptions(
+        allow_303_to_get=True,
+        allowed_origins=("https://download.example.com",),
+        allow_https_downgrade=False,
+    )
+    assert_type(redirects.allowed_origins, tuple[str, ...] | Unset)
+
+
+def fetch_with_retries(client: Client, url: str) -> bytes:
+    options = RequestOptions(
+        retry=RetryOptions(max_retries=2, max_retry_after=20),
+        redirects=RedirectOptions(enabled=True, max_redirects=2),
+        total_timeout=30,
+    )
+    return client.request_raw("GET", url, options=options).read()
+
+
+def keyed_view(client: Client, value: str, first_used_at: datetime) -> Client:
+    key = IdempotencyKey(value, first_used_at=first_used_at)
+    return client.with_options(RequestOptions(idempotency_key=key))
+
+
+def upload_file(client: Client, url: str, path: Path) -> bytes:
+    response = client.request_raw(
+        "PUT", url, body=FileBody.from_path(path), options=RequestOptions(retry=RetryOptions(max_retries=2))
+    )
+    return response.read()
+
+
+def configured_client(ca_file: str) -> Client:
+    context = create_default_context(cafile=ca_file)
+    transport = TransportOptions(ssl_context=context, max_connections=50, max_keepalive_connections=10)
+    return Client(options=ClientOptions(transport=transport))
+
+
+def idempotency_input(client: Client) -> None:
+    key = IdempotencyKey("stored-key", first_used_at=datetime(2026, 9, 28, tzinfo=timezone.utc))
+    assert_type(key.value, str)
+    assert_type(key.first_used_at, datetime | None)
+    assert_type(IdempotencyKey.new(), IdempotencyKey)
+    assert_type(IdempotencyKey("prior-use-unknown").first_used_at, datetime | None)
+    client.with_options(RequestOptions(idempotency_key=key))
+    Client(options=ClientOptions(idempotency_key=IdempotencyKey.new()))
+    client.with_options(RequestOptions(idempotency_key=None))
+
+
+def transport_options(context: SSLContext) -> None:
+    transport = TransportOptions(
+        ssl_context=context,
+        proxy="http://proxy.example.com:8080",
+        trust_env=False,
+        http2=False,
+        max_connections=50,
+        max_keepalive_connections=10,
+        keepalive_expiry=5,
+        retry_owner="sdk",
+    )
+    assert_type(transport.verify, bool | Unset)
+    assert_type(transport.ssl_context, SSLContext | None)
+    assert_type(transport.retry_owner, Literal["sdk", "transport"])
+    Client(options=ClientOptions(transport=transport))
+    AsyncClient(options=ClientOptions(transport=TransportOptions(verify=True)))

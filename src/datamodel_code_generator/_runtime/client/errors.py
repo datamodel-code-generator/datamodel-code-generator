@@ -1507,6 +1507,69 @@ class DecompressionLimitError(ProtocolSizeError):
         self.max_ratio = max_ratio
 
 
+class RedirectPolicyError(SDKError):
+    """A redirect that cannot be followed safely; no redirect body is retained."""
+
+    __slots__ = ("_delivery_state",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        delivery_state: DeliveryState,
+        body_available: Literal[False] = False,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep delivery evidence, obtained response metadata, and the original failure."""
+        if body_available is not False:
+            msg = "body_available must be False"
+            raise ValueError(msg)
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._delivery_state = _error_delivery(delivery_state)
+
+    @property
+    def delivery_state(self) -> DeliveryState:
+        """Return how far the request progressed before redirect handling stopped."""
+        return self._delivery_state
+
+    @property
+    def body_available(self) -> Literal[False]:
+        """Return False: redirect policy failures never retain a response body."""
+        return False
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("delivery_state", self.delivery_state.value))
+
+
 class AdapterContractError(SDKError):
     """A transport that broke its contract, such as handing over a body something already read; nothing is retried."""
 
