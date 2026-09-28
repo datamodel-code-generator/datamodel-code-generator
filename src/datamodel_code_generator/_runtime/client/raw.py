@@ -26,7 +26,7 @@ from .errors import (
     SDKError,
     add_secondary,
 )
-from .operations import charset
+from .media import charset
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Iterator

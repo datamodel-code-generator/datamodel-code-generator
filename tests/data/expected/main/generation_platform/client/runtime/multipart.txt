@@ -94,6 +94,12 @@
   profile read of text that is not UTF-8 ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\n\xff\r\n--b1--\r\n', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of Latin-1 text = FieldProfilesGetResponse(name='café', age=None, score=None, ratio=None, active=None, tags=None, address=None)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of UTF-16 text = FieldProfilesGetResponse(name='café', age=None, score=None, ratio=None, active=None, tags=None, address=None)
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read without its name ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A required property is missing at /name')] response_validation_error
   > GET https://media.example.com/api/attachments
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/mixed, multipart/form-data] b''
@@ -231,6 +237,12 @@
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read of text that is not UTF-8 ! DecodeError: DecodeError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="name"\r\n\r\n\xff\r\n--b1--\r\n', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid start byte')] decode_error
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of Latin-1 text = {'name': 'café'}
+  > GET https://media.example.com/api/profiles
+    [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
+  profile read of UTF-16 text = {'name': 'café'}
   > GET https://media.example.com/api/profiles
     [host: media.example.com, accept-encoding: gzip, deflate, accept: multipart/form-data] b''
   profile read without its name ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='readProfile', call_id='<call>') [operation_id='readProfile', body_bytes=b'--b1\r\nContent-Disposition: form-data; name="age"\r\n\r\n36\r\n--b1--\r\n', truncated=False, cause=WireValidationError('A required property is missing at /name')] response_validation_error

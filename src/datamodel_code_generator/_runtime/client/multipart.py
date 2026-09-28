@@ -19,6 +19,7 @@ from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
 from .errors import RequestEncodingError, add_secondary
+from .media import charset
 from .responses import HeadersView
 
 if TYPE_CHECKING:
@@ -622,7 +623,7 @@ def _json_part(part: DecodedPart[bytes]) -> bool:
 def _part_value(part: DecodedPart[bytes], plan: PartPlan) -> WireValue:
     if plan.kind == "json" or _json_part(part):
         return decode_json(part.value)
-    return typed(part.value.decode(), plan.kind)
+    return typed(part.value.decode(charset(part.content_type or "")), plan.kind)
 
 
 def decode_parts(

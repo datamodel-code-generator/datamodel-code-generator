@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import codecs
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias
 
@@ -40,6 +39,7 @@ from .errors import (
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
 )
+from .media import charset
 from .multipart import (
     DecodedPart,
     MultipartData,
@@ -271,18 +271,6 @@ def normalized(media_type: str) -> str | None:
         return normalize_media_type(media_type)
     except ValueError:
         return None
-
-
-def charset(media_type: str) -> str:
-    """Return the Python codec a media type's charset parameter names, UTF-8 when it names none or an unknown one."""
-    for parameter in media_type.split(";")[1:]:
-        name, _, value = parameter.strip().partition("=")
-        if name == "charset":
-            try:
-                return codecs.lookup(value.strip('"')).name
-            except LookupError:
-                break
-    return "utf-8"
 
 
 class Branch(Generic[T_co]):

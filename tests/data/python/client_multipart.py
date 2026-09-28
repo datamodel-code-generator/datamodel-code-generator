@@ -110,6 +110,16 @@ def _responses(api: Any, exchange: Exchange, lines: list[str]) -> None:
         ("profile read of an extra that is no integer", _form(*_PROFILE_PARTS[:1], (_NAMED % b"bonus", b"x")), form),
         ("profile read of broken JSON", _form(*_PROFILE_PARTS[:1], (_NAMED % b"address", b"{")), form),
         ("profile read of text that is not UTF-8", _form((_NAMED % b"name", b"\xff")), form),
+        (
+            "profile read of Latin-1 text",
+            _form((_NAMED % b"name" + b"\r\nContent-Type: text/plain; charset=iso-8859-1", "café".encode("latin-1"))),
+            form,
+        ),
+        (
+            "profile read of UTF-16 text",
+            _form((_NAMED % b"name" + b"\r\nContent-Type: text/plain; charset=utf-16", "café".encode("utf-16"))),
+            form,
+        ),
         ("profile read without its name", _form(*_PROFILE_PARTS[1:2]), form),
     ):
         exchange.respond(raw_response(200, content, media))
