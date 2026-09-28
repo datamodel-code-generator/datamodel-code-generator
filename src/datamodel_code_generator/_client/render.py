@@ -83,6 +83,9 @@ __all__ = ["UNSET", "ClientOptions", "RequestOptions", "ServerSelection", "Unset
 _ERROR_NAMES: Final = (
     "AdapterContractError",
     "AdapterExecutionError",
+    "BodyChangedError",
+    "BodyFactoryError",
+    "BodyNotReplayableError",
     "BodyProtocolError",
     "CleanupError",
     "ClientClosedError",
@@ -124,13 +127,29 @@ from ._runtime.client.responses import HeadersView, Response, ResponseInfo
 
 __all__ = ["AsyncRawResponse", "HeadersView", "RawResponse", "Response", "ResponseInfo"]
 '''
-_BODIES: Final = '''"""Request bodies and the values of this package's media types that no schema describes."""
-
-from ._runtime.client.bodies import AsyncBodyAttempt, BodyAttempt
-from ._runtime.client.operations import FormData
-
-__all__ = ["AsyncBodyAttempt", "BodyAttempt", "FormData"]
-'''
+_BODY_NAMES: Final = (
+    "AsyncBinaryBody",
+    "AsyncBodyAttempt",
+    "AsyncBodyAttemptFactory",
+    "AsyncBodyFactory",
+    "AsyncFileBody",
+    "AsyncStreamBody",
+    "BodyAttempt",
+    "BodyAttemptContext",
+    "BodyAttemptFactory",
+    "BodyFactory",
+    "FileBody",
+    "StreamBody",
+    "SyncBinaryBody",
+)
+_BODIES: Final = (
+    '"""Request bodies and the values of this package\'s media types that no schema describes."""\n\n'
+    "from ._runtime.client.bodies import (\n"
+    + "".join(f"    {name},\n" for name in _BODY_NAMES)
+    + ")\nfrom ._runtime.client.operations import FormData\n\n__all__ = [\n"
+    + "".join(f"    {name!r},\n" for name in sorted((*_BODY_NAMES, "FormData")))
+    + "]\n"
+)
 _TRANSPORT_NAMES: Final = (
     "AsyncTransportAdapter",
     "AsyncTransportResponse",
@@ -487,6 +506,7 @@ class _Resources(_Typing):
             "request_options": module.local("options", "RequestOptions"),
             "cached_property": module.name("functools", "cached_property"),
             "raw": module.local("responses", f"{prefix}RawResponse"),
+            "binary": module.local("bodies", f"{prefix or 'Sync'}BinaryBody"),
             "manager": module.name("contextlib", f"Abstract{prefix}ContextManager"),
             "coroutine": "async " if asynchronous else "",
             "wait": "await " if asynchronous else "",
@@ -569,15 +589,25 @@ class _Resources(_Typing):
         unset, value = module.local("options", "Unset"), module.local("options", "UNSET")
         return f"{parameter.python_name}: {surface} | {unset} = {value}"
 
-    def requests(self, module: Module, spec: OperationSpec) -> tuple[list[_Variant], tuple[str, ...]]:
-        """Return the body signatures of an operation and the body keywords of its implementation."""
+    def requests(
+        self, module: Module, spec: OperationSpec, *, asynchronous: bool
+    ) -> tuple[list[_Variant], tuple[str, ...]]:
+        """Return the body signatures of an operation and the body keywords of its implementation.
+
+        A binary body takes the bytes, file, stream, and factory inputs of the client's mode.
+        """
         if (body := spec.body) is None:
             return [_Variant(())], ()
         literal = module.name("typing", "Literal")
         omitted = f"{module.local('options', 'Unset')} = {module.local('options', 'UNSET')}"
         groups: dict[str, list[str]] = {}
         for media in body.media:
-            groups.setdefault(self.surface(module, media.kind, media.use, sent=True), []).append(media.media_type)
+            surface = (
+                module.local("bodies", "AsyncBinaryBody" if asynchronous else "SyncBinaryBody")
+                if media.kind == "binary"
+                else self.surface(module, media.kind, media.use, sent=True)
+            )
+            groups.setdefault(surface, []).append(media.media_type)
         choices = f"{_literal(literal, (media.media_type for media in body.media))} | None = None"
         surfaces = _union(groups)
         implementation = (
@@ -636,7 +666,7 @@ class _Resources(_Typing):
         """Return one operation method of a view: its overloads by body and response media, then its implementation."""
         arguments = [self.parameter(module, parameter) for parameter in spec.parameters]
         options = f"options: {module.local('options', 'RequestOptions')} | None = None"
-        bodies, body = self.requests(module, spec)
+        bodies, body = self.requests(module, spec, asynchronous=asynchronous)
         results, result = self.results(module, spec, asynchronous=asynchronous, view=view)
         coroutine = asynchronous and view != "streaming"
         lines: list[str] = []

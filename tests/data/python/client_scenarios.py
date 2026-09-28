@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
+from tests.data.python.client_bodies import bodies
 from tests.data.python.client_raw import raw
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_runtime import (
@@ -575,6 +576,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "transports": ("pets", ("pydantic_v2.BaseModel",), transports),
     "lifecycle": ("pets", ("pydantic_v2.BaseModel",), lifecycle),
     "raw": ("pets", ("pydantic_v2.BaseModel",), raw),
+    "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
 }
 
 

@@ -125,6 +125,24 @@ def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
     return result
 
 
+def outcome(call: Callable[[], object]) -> str:
+    """Report the class of a call's failure with the classes of its secondary errors, or its result."""
+    try:
+        result = call()
+    except Exception as error:  # noqa: BLE001
+        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
+    return f"returned {result!r}"
+
+
+async def aoutcome(call: Callable[[], Any]) -> str:
+    """Report the class of an async call's failure with the classes of its secondary errors, or its result."""
+    try:
+        result = await call()
+    except Exception as error:  # noqa: BLE001
+        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
+    return f"returned {result!r}"
+
+
 async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> object:
     try:
         result = await call()

@@ -4,6 +4,9 @@
 from ._runtime.client.errors import (
     AdapterContractError,
     AdapterExecutionError,
+    BodyChangedError,
+    BodyFactoryError,
+    BodyNotReplayableError,
     BodyProtocolError,
     CleanupError,
     ClientClosedError,
@@ -34,6 +37,9 @@ from ._runtime.client.errors import (
 __all__ = [
     'AdapterContractError',
     'AdapterExecutionError',
+    'BodyChangedError',
+    'BodyFactoryError',
+    'BodyNotReplayableError',
     'BodyProtocolError',
     'CleanupError',
     'ClientClosedError',

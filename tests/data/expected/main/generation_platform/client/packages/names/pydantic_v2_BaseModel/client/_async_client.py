@@ -13,6 +13,7 @@ from typing_extensions import Self
 
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.model_codecs.unset import UNSET, Unset
+from .bodies import AsyncBinaryBody
 from .options import ClientOptions, RequestOptions
 from .responses import AsyncRawResponse
 from .transports import AsyncTransportAdapter, OwnedTransportAdapter
@@ -60,7 +61,7 @@ class AsyncClient:
         method: str,
         url: str,
         *,
-        body: bytes | Unset = UNSET,
+        body: AsyncBinaryBody | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -129,7 +130,7 @@ class AsyncClientWithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: bytes | Unset = UNSET,
+        body: AsyncBinaryBody | Unset = UNSET,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""

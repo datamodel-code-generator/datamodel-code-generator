@@ -166,7 +166,7 @@
   request url userinfo ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
   request url port ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
   request url type ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
-  request body type ! ConfigurationError: ConfigurationError(field_path='body', condition='invalid_type') [field_path=('body',), condition='invalid_type'] configuration_error
+  request body type ! RequestEncodingError: RequestEncodingError(call_id='<call>', location='body') [location=('body',), cause=TypeError("A binary body must be bytes or a file, stream, or factory body of the client's mode")] request_encoding_error
   request options type ! ConfigurationError: ConfigurationError(field_path='options', condition='invalid_type') [field_path=('options',), condition='invalid_type'] configuration_error
   > GET https://hooks.example.com/stream
     [host: hooks.example.com, accept-encoding: gzip, deflate] b''

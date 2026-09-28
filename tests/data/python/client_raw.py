@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 import httpx2
 import pytest
 
-from tests.data.python.client_runtime import Exchange, arecord, failing, record, run
+from tests.data.python.client_runtime import Exchange, aoutcome, arecord, failing, outcome, record, run
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
 
 if TYPE_CHECKING:
@@ -47,23 +47,6 @@ def _saved(response: Any) -> str:
     info = response.info
     decoded, coded = response.body_bytes, response.raw_body_bytes
     return f"{info.status_code} {info.content_type!r} {decoded!r} {coded!r} shared {decoded is coded}"
-
-
-def _outcome(call: Callable[[], object]) -> str:
-    """Report the class of a call's failure with the classes of its secondary errors, or its result."""
-    try:
-        result = call()
-    except Exception as error:  # noqa: BLE001
-        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
-    return f"returned {result!r}"
-
-
-async def _aoutcome(call: Callable[[], Any]) -> str:
-    try:
-        result = await call()
-    except Exception as error:  # noqa: BLE001
-        return f"{type(error).__name__} secondary {[type(item).__name__ for item in getattr(error, 'secondary_errors', ())]}"
-    return f"returned {result!r}"
 
 
 def _files(directory: Path) -> list[str]:
@@ -292,15 +275,15 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     lines.append(f"  downloaded with the permissions of a new file {permissions}")
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"[]",)), _streamed(200, (b"{", b"}"), fail=True))
     with streaming.get_pet(pet_id=pet) as response:
-        lines.append(f"  existing {_outcome(lambda: response.stream_to(target))} then read {response.read()!r}")
+        lines.append(f"  existing {outcome(lambda: response.stream_to(target))} then read {response.read()!r}")
     with streaming.get_pet(pet_id=pet) as response:
         response.stream_to(str(target), overwrite=True)
     with streaming.get_pet(pet_id=pet) as response:
-        lines.append(f"  overwrite broken {_outcome(lambda: response.stream_to(target, overwrite=True))}")
+        lines.append(f"  overwrite broken {outcome(lambda: response.stream_to(target, overwrite=True))}")
     lines.append(f"  kept {target.read_bytes()!r} {_files(directory)}")
     exchange.respond(_streamed(200, (b"{", b"}"), action=lambda: raced.write_bytes(b"first")))
     with streaming.get_pet(pet_id=pet) as response:
-        lines.append(f"  raced {_outcome(lambda: response.stream_to(raced))}")
+        lines.append(f"  raced {outcome(lambda: response.stream_to(raced))}")
     lines.append(f"  raced kept {raced.read_bytes()!r} {_files(directory)}")
     writing: list[int] = []
     exchange.respond(_streamed(200, (b"{", b"}"), action=lambda: writing.extend(_modes(directory))))
@@ -311,7 +294,7 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
     with streaming.get_pet(pet_id=pet) as response, pytest.MonkeyPatch.context() as fault:
         fault.setattr(os, "link", _broken_link)
-        lines.append(f"  move failed {_outcome(lambda: response.stream_to(failed))} {_files(directory)}")
+        lines.append(f"  move failed {outcome(lambda: response.stream_to(failed))} {_files(directory)}")
     with streaming.get_pet(pet_id=pet) as response:
         response.stream_to(failed)
     lines.append(f"  moved again {failed.read_bytes()!r} {_files(directory)}")
@@ -388,15 +371,15 @@ def _handles(package: ModuleType, lines: list[str]) -> None:
     record(lines, "close again", api.close)
     record(lines, "handle after closed", held.read)
     waiting = package.Client(transport_adapter=adapter, options=options.ClientOptions(cleanup_timeout=30.0))
-    outcome: list[str] = []
+    closing: list[str] = []
     with waiting.pets.with_streaming_response.get_pet(pet_id=pet) as held:
-        closer = threading.Thread(target=lambda: record(outcome, "close", waiting.close))
+        closer = threading.Thread(target=lambda: record(closing, "close", waiting.close))
         closer.start()
         _until_closing(waiting, pet, errors)
         record(lines, "live handle while closing", lambda: list(held.iter_bytes()))
         record(lines, "live handle status while closing", held.raise_for_status)
     closer.join()
-    lines.extend(outcome)
+    lines.extend(closing)
     failing_close = Adapter(transports, lines)
     api = package.Client(transport_adapter=failing_close, options=options.ClientOptions(cleanup_timeout=0.05))
     failing_close.replies.extend((
@@ -408,10 +391,10 @@ def _handles(package: ModuleType, lines: list[str]) -> None:
     ))
     record(lines, "handle close failure", lambda: _entered(api.pets.with_streaming_response.get_pet(pet_id=pet)))
     record(lines, "saved close failure", lambda: api.pets.with_raw_response.get_pet(pet_id=pet))
-    lines.append(f"  read and close failures {_outcome(lambda: _read_in_block(api, pet))}")
-    lines.append(f"  refused read and close failure {_outcome(lambda: _switch_in_block(api, pet))}")
+    lines.append(f"  read and close failures {outcome(lambda: _read_in_block(api, pet))}")
+    lines.append(f"  refused read and close failure {outcome(lambda: _switch_in_block(api, pet))}")
     with api.pets.with_streaming_response.get_pet(pet_id=pet) as held:
-        lines.append(f"  close with a failing handle {_outcome(api.close)}")
+        lines.append(f"  close with a failing handle {outcome(api.close)}")
 
 
 def _read_in_block(api: Any, pet: object) -> object:
@@ -578,18 +561,18 @@ async def _async_download(streaming: Any, pet: object, exchange: Exchange, lines
     async with streaming.get_pet(pet_id=pet) as response:
         await response.stream_to(target)
     async with streaming.get_pet(pet_id=pet) as response:
-        lines.append(f"  async existing {await _aoutcome(lambda: response.stream_to(target))} {await response.read()!r}")
+        lines.append(f"  async existing {await aoutcome(lambda: response.stream_to(target))} {await response.read()!r}")
     async with streaming.get_pet(pet_id=pet) as response:
-        lines.append(f"  async overwrite broken {await _aoutcome(lambda: response.stream_to(target, overwrite=True))}")
+        lines.append(f"  async overwrite broken {await aoutcome(lambda: response.stream_to(target, overwrite=True))}")
     async with streaming.get_pet(pet_id=pet) as response:
-        lines.append(f"  async raced {await _aoutcome(lambda: response.stream_to(raced))}")
+        lines.append(f"  async raced {await aoutcome(lambda: response.stream_to(raced))}")
     lines.append(f"  async downloaded {sink.getvalue()!r} {target.read_bytes()!r} {raced.read_bytes()!r} {_files(directory)}")
     failed = directory / "failed.json"
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
     async with streaming.get_pet(pet_id=pet) as response:
         with pytest.MonkeyPatch.context() as fault:
             fault.setattr(os, "link", _broken_link)
-            lines.append(f"  async move failed {await _aoutcome(lambda: response.stream_to(failed))} {_files(directory)}")
+            lines.append(f"  async move failed {await aoutcome(lambda: response.stream_to(failed))} {_files(directory)}")
     async with streaming.get_pet(pet_id=pet) as response:
         await response.stream_to(failed)
     lines.append(f"  async moved again {failed.read_bytes()!r} {_files(directory)}")
@@ -638,20 +621,20 @@ async def _async_handles(package: ModuleType, lines: list[str]) -> None:
         except Stop:
             lines.append(f"  async adapter stop {label} propagated")
     await arecord(lines, "async handle close failure", lambda: _aentered(api.pets.with_streaming_response.get_pet(pet_id=pet)))
-    lines.append(f"  async read and close failures {await _aoutcome(lambda: _aread_in_block(api, pet))}")
-    lines.append(f"  async refused read and close failure {await _aoutcome(lambda: _aswitch_in_block(api, pet))}")
+    lines.append(f"  async read and close failures {await aoutcome(lambda: _aread_in_block(api, pet))}")
+    lines.append(f"  async refused read and close failure {await aoutcome(lambda: _aswitch_in_block(api, pet))}")
     async with api.pets.with_streaming_response.get_pet(pet_id=pet) as held:
-        closer = asyncio.ensure_future(_aoutcome(api.aclose))
+        closer = asyncio.ensure_future(aoutcome(api.aclose))
         await asyncio.sleep(0)
         await arecord(lines, "async live handle while closing", held.read)
         await arecord(lines, "async live handle status while closing", held.raise_for_status)
     lines.append(f"  async close with a handle {await closer}")
-    lines.append(f"  async saved after close {await saved.read()!r} {await _aoutcome(api.aclose)}")
+    lines.append(f"  async saved after close {await saved.read()!r} {await aoutcome(api.aclose)}")
     forced = package.AsyncClient(transport_adapter=adapter, options=options.ClientOptions(cleanup_timeout=0.05))
     async with forced.pets.with_streaming_response.get_pet(pet_id=pet) as held:
         chunks = held.iter_bytes()
         lines.append(f"  async handle first chunk {await anext(chunks)!r}")
-        lines.append(f"  async close with a failing handle {await _aoutcome(forced.aclose)}")
+        lines.append(f"  async close with a failing handle {await aoutcome(forced.aclose)}")
         await arecord(lines, "async handle after forced close next chunk", lambda: anext(chunks))
         await arecord(lines, "async handle after forced close", held.read)
 

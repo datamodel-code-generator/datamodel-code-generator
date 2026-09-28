@@ -2,13 +2,26 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from typing import BinaryIO
 
 from typing_extensions import assert_type
 
 from pets import AsyncClient, Client
-from pets.bodies import AsyncBodyAttempt, BodyAttempt
+from pets.bodies import (
+    AsyncBinaryBody,
+    AsyncBodyAttempt,
+    AsyncBodyFactory,
+    AsyncFileBody,
+    AsyncStreamBody,
+    BodyAttempt,
+    BodyAttemptContext,
+    BodyFactory,
+    FileBody,
+    StreamBody,
+    SyncBinaryBody,
+)
 from pets.model_codecs import JSONValue, ModelValue
 from pets.options import UNSET, RequestOptions
 from pets.responses import AsyncRawResponse, RawResponse, Response, ResponseInfo
@@ -103,6 +116,46 @@ async def raw_async(client: AsyncClient) -> None:
     assert_type(await client.request_raw("GET", "https://example.com"), AsyncRawResponse)
     async with client.with_streaming_response.request_raw("GET", "https://example.com") as download:
         await download.stream_to("file.bin")
+
+
+def build(context: BodyAttemptContext) -> BodyAttempt:
+    raise NotImplementedError(context.call_id)
+
+
+async def abuild(context: BodyAttemptContext) -> AsyncBodyAttempt:
+    raise NotImplementedError(context.attempt_index)
+
+
+def bodies(client: Client, file: BinaryIO) -> None:
+    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    inputs: tuple[SyncBinaryBody, ...] = (
+        b"\x00",
+        FileBody(file),
+        FileBody(file, ownership="owned"),
+        FileBody.from_path("photo.png"),
+        StreamBody([b"a", b"b"]),
+        StreamBody(iter([b"a"]), ownership="owned"),
+        BodyFactory(build, content_length=1, content_type="image/png", fingerprint=b"f"),
+    )
+    for body in inputs:
+        client.pets.photos.upload(pet_id=photo, body=body)
+    assert_type(BodyFactory(build).content_type, str | None)
+    client.request_raw("PUT", "https://example.com/file", body=FileBody.from_path("photo.png"))
+
+
+async def bodies_async(client: AsyncClient, file: BinaryIO) -> None:
+    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b"a"
+
+    body = AsyncFileBody.from_path("photo.png")
+    inputs: tuple[AsyncBinaryBody, ...] = (b"\x00", AsyncFileBody(file), body, AsyncStreamBody(chunks()), AsyncBodyFactory(abuild))
+    for each in inputs:
+        await client.pets.photos.upload(pet_id=photo, body=each)
+    await client.request_raw("PUT", "https://example.com/file", body=AsyncStreamBody(chunks(), ownership="owned"))
+    await body.aclose()
+    body.close()
 
 
 class Adapter:

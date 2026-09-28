@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import BinaryIO
 
 from pets import AsyncClient, Client
 from pets.responses import RawResponse
@@ -57,3 +58,14 @@ async def misuse_raw_async(client: AsyncClient) -> None:
     saved = await client.pets.with_raw_response.get_pet(pet_id=pet)
     chunks: Iterator[bytes] = saved.iter_bytes()  # error
     del chunks
+
+
+async def misuse_bodies(client: Client, aclient: AsyncClient, file: BinaryIO) -> None:
+    from pets.bodies import AsyncFileBody, BodyFactory, FileBody, StreamBody
+
+    photo = UploadRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    client.pets.photos.upload(pet_id=photo, body=AsyncFileBody(file))  # error
+    await aclient.pets.photos.upload(pet_id=photo, body=FileBody(file))  # error
+    StreamBody(["text"])  # error
+    FileBody(file, ownership="shared")  # error
+    BodyFactory(lambda: b"")  # error

@@ -11,6 +11,7 @@ from models import FieldPetsPetIdPhotoPutPathPetIdParameter as _dcg_type_0
 
 from .... import _operations
 from ...._runtime.client.client import AsyncClientCore
+from ....bodies import AsyncBinaryBody
 from ....model_codecs import ModelValue
 from ....options import UNSET, RequestOptions, Unset
 from ....responses import AsyncRawResponse, Response
@@ -43,7 +44,7 @@ class AsyncPetsPhotosResource:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> UploadResponse:
@@ -68,7 +69,7 @@ class AsyncPetsPhotosWithResponse:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[UploadResponse]:
@@ -93,7 +94,7 @@ class AsyncPetsPhotosWithRawResponse:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -118,7 +119,7 @@ class AsyncPetsPhotosWithStreamingResponse:
         self,
         *,
         pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
-        body: bytes | Unset = UNSET,
+        body: AsyncBinaryBody | Unset = UNSET,
         media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

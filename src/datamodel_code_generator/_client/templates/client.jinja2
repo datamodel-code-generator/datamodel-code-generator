@@ -41,7 +41,7 @@ class {{ name }}:
         method: str,
         url: str,
         *,
-        body: bytes | {{ unset }} = {{ unset_value }},
+        body: {{ binary }} | {{ unset }} = {{ unset_value }},
         options: {{ request_options }} | None = None,
     ) -> {{ raw }}:
         """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
@@ -76,7 +76,7 @@ class {{ name }}WithStreamingResponse:
         method: str,
         url: str,
         *,
-        body: bytes | {{ unset }} = {{ unset_value }},
+        body: {{ binary }} | {{ unset }} = {{ unset_value }},
         options: {{ request_options }} | None = None,
     ) -> {{ manager }}[{{ raw }}]:
         """Return a block that sends the request on entry and yields its streaming response until exit."""
