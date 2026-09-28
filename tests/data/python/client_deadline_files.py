@@ -7,6 +7,7 @@ import importlib
 import io
 import os
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Protocol
@@ -16,7 +17,7 @@ from tests.data.python.client_runtime import Exchange, arecord, raw_response, re
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
-    from concurrent.futures import Executor
+    from concurrent.futures import Future
     from types import ModuleType
 
 
@@ -26,8 +27,10 @@ class _DiskGate:
         self.started = asyncio.Event()
         self.finished = asyncio.Event()
         self.proceed = threading.Event()
+        self.thread: int | None = None
 
     def wait(self) -> None:
+        self.thread = threading.get_ident()
         self.loop.call_soon_threadsafe(self.started.set)
         try:
             if not self.proceed.wait(5):
@@ -192,18 +195,15 @@ async def _preparation(
         except BaseException as error:  # noqa: BLE001
             failures.append(error)
 
-    loop = asyncio.get_running_loop()
     submitted: list[asyncio.Task[object]] = []
-    original = loop.run_in_executor
+    original = ThreadPoolExecutor.submit
 
-    def submit(
-        executor: Executor | None, function: Callable[..., object], *arguments: object
-    ) -> asyncio.Future[object]:
+    def submit(executor: ThreadPoolExecutor, function: Callable[..., object], *arguments: object) -> Future[object]:
         if (task := asyncio.current_task()) is not None:
             submitted.append(task)
         return original(executor, function, *arguments)
 
-    with patch.object(loop, "run_in_executor", submit):
+    with patch.object(ThreadPoolExecutor, "submit", submit):
         caller = asyncio.create_task(request())
         try:
             await asyncio.wait_for(gate.started.wait(), 5)
@@ -448,6 +448,219 @@ async def _successful_owned(package: ModuleType, lines: list[str]) -> None:
     body.close()
 
 
+async def _native_close(package: ModuleType, lines: list[str]) -> None:
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    gate = _DiskGate()
+    gate.proceed.set()
+    failure = asyncio.CancelledError("file close interruption")
+    file = _BlockedFile(gate, close_failure=failure)
+    body = bodies.AsyncFileBody(file, ownership="owned")
+    exchange = Exchange(lines)
+    exchange.respond(raw_response(200, b"ok", "text/plain"))
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
+        try:
+            await api.request_raw("POST", "https://files.example.com/", body=body)
+        except asyncio.CancelledError as error:
+            record(
+                lines,
+                "native close failure",
+                lambda error=error: (
+                    error is failure,
+                    error.args,
+                    tuple(getattr(error, "__notes__", ())),
+                    file.closed,
+                    file.closes,
+                    len(set(file.threads)) == 1,
+                ),
+            )
+        await arecord(
+            lines,
+            "native close input consumed",
+            lambda: api.request_raw("POST", "https://files.example.com/", body=body),
+        )
+        record(lines, "native close runs once", lambda: file.closes)
+    body.close()
+
+
+async def _queued(
+    package: ModuleType,
+    lines: list[str],
+    label: str,
+    *,
+    path_body: bool = False,
+    reading: bool = False,
+    owned: bool = True,
+    cancel_close: bool = False,
+) -> None:
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    options = importlib.import_module(f"{package.__name__}.options")
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    blocker, ready = _DiskGate(), _DiskGate()
+    ready.proceed.set()
+    file = _BlockedFile(ready, reading=reading)
+    adapter = _UnsentAdapter(transports, reading=reading)
+    api = package.AsyncClient(
+        transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=0.01)
+    )
+    blocked_index = 2 if reading else 1
+    submitted: list[tuple[Future[object], asyncio.Task[object]]] = []
+    signals = [asyncio.Event() for _ in range(4)]
+    blockers: list[Future[None]] = []
+    failures: list[BaseException] = []
+    opened: list[_OpenedFile] = []
+    original = ThreadPoolExecutor.submit
+
+    def submit(executor: ThreadPoolExecutor, function: Callable[..., object], *arguments: object) -> Future[object]:
+        if len(submitted) + 1 == blocked_index:
+            blockers.append(original(executor, blocker.wait))
+        future = original(executor, function, *arguments)
+        task = asyncio.current_task()
+        assert task is not None
+        submitted.append((future, task))
+        signals[len(submitted) - 1].set()
+        return future
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "queued.bin"
+        path.write_bytes(b"upload")
+        body = (
+            bodies.AsyncFileBody.from_path(path)
+            if path_body
+            else bodies.AsyncFileBody(file, ownership="owned" if owned else "borrowed")
+        )
+
+        def open_file(_path: Path, _mode: str) -> _OpenedFile:
+            value = _OpenedFile(path, failure=None, close_failure=None)
+            opened.append(value)
+            return value
+
+        async def request() -> None:
+            try:
+                await api.request_raw("POST", "https://files.example.com/", body=body)
+            except BaseException as error:  # noqa: BLE001
+                failures.append(error)
+
+        with patch.object(ThreadPoolExecutor, "submit", submit), patch.object(Path, "open", open_file):
+            caller = asyncio.create_task(request())
+            try:
+                await asyncio.wait_for(signals[blocked_index - 1].wait(), 5)
+                await asyncio.wait_for(blocker.started.wait(), 5)
+                caller.cancel("queued file cancellation")
+                await asyncio.wait_for(caller, 5)
+                if cancel_close:
+                    await asyncio.wait_for(signals[1].wait(), 5)
+                    submitted[1][1].cancel("queued close cancellation")
+                    await asyncio.wait_for(signals[2].wait(), 5)
+                    submitted[2][1].cancel("replacement close cancellation")
+                    await asyncio.sleep(0)
+                    record(lines, f"{label} replacement retained", lambda: not submitted[2][0].cancelled())
+                body.close()
+                record(
+                    lines,
+                    f"{label} before release",
+                    lambda: (submitted[blocked_index - 1][0].cancelled(), file.blocked, file.closes, len(opened)),
+                )
+                await arecord(lines, f"{label} retained", api.aclose)
+                blocker.proceed.set()
+                await asyncio.wrap_future(blockers[0])
+                await api.aclose()
+                record(
+                    lines,
+                    f"{label} released",
+                    lambda: (
+                        tuple(future.cancelled() for future, _ in submitted),
+                        file.closed,
+                        file.closes,
+                        len(opened),
+                        adapter.sends,
+                        all(thread == blocker.thread for thread in file.threads),
+                    ),
+                )
+                record(
+                    lines,
+                    f"{label} diagnostics",
+                    lambda: (
+                        type(failures[0]).__name__,
+                        failures[0].args,
+                        tuple(getattr(failures[0], "__notes__", ())),
+                    ),
+                )
+            finally:
+                blocker.proceed.set()
+                await asyncio.wait_for(caller, 5)
+                await api.aclose()
+                body.close()
+                if not file.closed:
+                    file.close()
+
+
+async def _completed_job(
+    package: ModuleType,
+    lines: list[str],
+    label: str,
+    *,
+    path_body: bool = False,
+    failure: BaseException | None = None,
+) -> None:
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    options = importlib.import_module(f"{package.__name__}.options")
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    ready = _DiskGate()
+    ready.proceed.set()
+    file = _BlockedFile(ready, failure=failure)
+    adapter = _UnsentAdapter(transports)
+    submitted: list[Future[object]] = []
+    opened: list[_OpenedFile] = []
+    original = ThreadPoolExecutor.submit
+
+    def submit(executor: ThreadPoolExecutor, function: Callable[..., object], *arguments: object) -> Future[object]:
+        future = original(executor, function, *arguments)
+        if not submitted:
+            future.exception(timeout=5)
+            task = asyncio.current_task()
+            assert task is not None
+            task.cancel("completed file cancellation")
+        submitted.append(future)
+        return future
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "completed.bin"
+        path.write_bytes(b"upload")
+        body = bodies.AsyncFileBody.from_path(path) if path_body else bodies.AsyncFileBody(file, ownership="owned")
+
+        def open_file(_path: Path, _mode: str) -> _OpenedFile:
+            value = _OpenedFile(path, failure=failure, close_failure=None)
+            opened.append(value)
+            return value
+
+        async with package.AsyncClient(
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=None)
+        ) as api:
+            with patch.object(ThreadPoolExecutor, "submit", submit), patch.object(Path, "open", open_file):
+                try:
+                    await api.request_raw("POST", "https://files.example.com/", body=body)
+                except BaseException as error:  # noqa: BLE001
+                    record(
+                        lines,
+                        f"{label} diagnostics",
+                        lambda error=error: (type(error).__name__, error.args, tuple(getattr(error, "__notes__", ()))),
+                    )
+                value = opened[0] if path_body else file
+                record(
+                    lines,
+                    f"{label} resources",
+                    lambda: (
+                        tuple(future.cancelled() for future in submitted),
+                        value.closed,
+                        value.closes,
+                        adapter.sends,
+                    ),
+                )
+        body.close()
+        if not file.closed:
+            file.close()
+
+
 async def _files(package: ModuleType, lines: list[str]) -> None:
     await _successful_owned(package, lines)
     await _preparation(package, lines, "owned preparation")
@@ -501,6 +714,19 @@ async def _files(package: ModuleType, lines: list[str]) -> None:
     await _preparation_failure(package, lines, asyncio.CancelledError("file native interruption"))
     await _preparation_failure(package, lines, _Stopped("file stopped"))
     await _preparation_failure(package, lines, None, closed_before_read=True)
+    await _queued(package, lines, "queued path open", path_body=True)
+    await _queued(package, lines, "queued owned preparation")
+    await _queued(package, lines, "queued borrowed preparation", owned=False)
+    await _queued(package, lines, "queued owned read", reading=True)
+    await _queued(package, lines, "queued borrowed read", reading=True, owned=False)
+    await _queued(package, lines, "queued owned close", cancel_close=True)
+    await _completed_job(package, lines, "completed file preparation")
+    await _completed_job(package, lines, "completed path open", path_body=True)
+    await _completed_job(package, lines, "completed file failure", failure=OSError("completed disk failure"))
+    await _completed_job(
+        package, lines, "completed path failure", path_body=True, failure=OSError("completed stat failure")
+    )
+    await _native_close(package, lines)
 
 
 def deadline_files(package: ModuleType, lines: list[str]) -> None:

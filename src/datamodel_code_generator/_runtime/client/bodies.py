@@ -18,7 +18,7 @@ from .errors import BodyChangedError, BodyFactoryError, BodyNotReplayableError, 
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Iterable, Iterator
-    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import Future, ThreadPoolExecutor
     from os import PathLike
     from typing import TypeVar
 
@@ -580,25 +580,34 @@ class _Worker:
                 from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only async file bodies start one.
 
                 pool = self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="AsyncFileBody")
-        future = asyncio.get_running_loop().run_in_executor(pool, function, *arguments)
+        future = pool.submit(function, *arguments)
         try:
-            await asyncio.wait((future,))
+            return await asyncio.wrap_future(future)
         except asyncio.CancelledError as error:
-            await self._settle(future, error, discard)
+            resubmit = (lambda: pool.submit(function, *arguments)) if cleanup else None
+            await self._settle(future, error, discard, resubmit)
             raise
-        return future.result()
 
     async def _settle(
-        self, future: asyncio.Future[T], error: BaseException, discard: Callable[[T], None] | None
+        self,
+        future: Future[T],
+        error: BaseException,
+        discard: Callable[[T], None] | None,
+        resubmit: Callable[[], Future[T]] | None = None,
     ) -> None:
         """Retain interrupted disk work and dispose a late file on this same worker."""
-        while not future.done():
+        settled = asyncio.wrap_future(future)
+        while not settled.done():
             try:
-                await asyncio.wait((future,))
+                await asyncio.wait((settled,))
             except asyncio.CancelledError:  # noqa: PERF203 - Repeated cancellation must not abandon disk work.
                 continue
+        if future.cancelled():
+            if resubmit is not None:
+                await self._settle(resubmit(), error, None)
+            return
         try:
-            result = future.result()
+            result = settled.result()
         except BaseException as failure:  # noqa: BLE001
             add_secondary(error, failure)
         else:

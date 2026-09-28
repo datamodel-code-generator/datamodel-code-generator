@@ -164,3 +164,41 @@
   closed before read = ('BodyFactoryError', False, False, 'BodyNotReplayableError', (), True, 1, 1, True)
   closed before read owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
   closed before read owned close once = 1
+  queued path open before release = (True, False, 0, 0)
+  queued path open retained = None
+  queued path open released = ((True,), False, 0, 0, 0, True)
+  queued path open diagnostics = ('CancelledError', ('queued file cancellation',), ())
+  queued owned preparation before release = (True, False, 0, 0)
+  queued owned preparation retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  queued owned preparation released = ((True, False), True, 1, 0, 0, True)
+  queued owned preparation diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError',))
+  queued borrowed preparation before release = (True, False, 0, 0)
+  queued borrowed preparation retained = None
+  queued borrowed preparation released = ((True,), False, 0, 0, 0, True)
+  queued borrowed preparation diagnostics = ('CancelledError', ('queued file cancellation',), ())
+  queued owned read before release = (True, False, 0, 0)
+  queued owned read retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  queued owned read released = ((False, True, False), True, 1, 0, 1, True)
+  queued owned read diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: CleanupError'))
+  queued borrowed read before release = (True, False, 0, 0)
+  queued borrowed read retained = None
+  queued borrowed read released = ((False, True), False, 0, 0, 1, True)
+  queued borrowed read diagnostics = ('CancelledError', ('queued file cancellation',), ())
+  queued owned close replacement retained = True
+  queued owned close before release = (True, False, 0, 0)
+  queued owned close retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  queued owned close released = ((True, True, False), True, 1, 0, 0, True)
+  queued owned close diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: CancelledError'))
+  completed file preparation diagnostics = ('CancelledError', ('completed file cancellation',), ())
+  completed file preparation resources = ((False, False), True, 1, 0)
+  completed path open diagnostics = ('CancelledError', ('completed file cancellation',), ())
+  completed path open resources = ((False, False), True, 1, 0)
+  completed file failure diagnostics = ('CancelledError', ('completed file cancellation',), ('Secondary cleanup failure: OSError',))
+  completed file failure resources = ((False, False), True, 1, 0)
+  completed path failure diagnostics = ('CancelledError', ('completed file cancellation',), ('Secondary cleanup failure: OSError',))
+  completed path failure resources = ((False,), True, 1, 0)
+  > POST https://files.example.com/
+    [host: files.example.com, accept-encoding: gzip, deflate, content-length: 6] b'upload'
+  native close failure = (True, ('file close interruption',), (), True, 1, True)
+  native close input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  native close runs once = 1

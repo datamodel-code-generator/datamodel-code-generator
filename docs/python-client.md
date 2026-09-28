@@ -851,3 +851,7 @@ extend the original call deadline or authorize another send. Cleanup failures ar
 replace the primary failure. Unfinished cleanup stays owned and observed; a repeated `close()` or `aclose()` can wait
 again. A close that exhausts its budget raises `CleanupError` with the unfinished counts. Blocking synchronous cleanup
 has the same cooperative limits as other sync callbacks.
+
+Cancelling an async file upload can return before its current disk operation finishes. The SDK retains that work,
+keeps an open-file input claimed until it settles, and closes an owned handle once. Borrowed handles remain open.
+`aclose()` includes this pending work in its cleanup wait.
