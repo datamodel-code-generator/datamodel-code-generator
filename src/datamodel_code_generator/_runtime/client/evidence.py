@@ -9,11 +9,6 @@ import sys
 from dataclasses import dataclass, field
 from typing import Final
 
-from typing_extensions import TypeIs
-
-if sys.version_info < (3, 11):
-    from exceptiongroup import BaseExceptionGroup
-
 _DEPTH: Final = 16
 _NODES: Final = 64
 _TRANSIENT: Final = frozenset({
@@ -33,8 +28,10 @@ class CauseGraph:
     leaves: tuple[BaseException, ...] = field(repr=False)
 
 
-def _is_group(error: BaseException) -> TypeIs[BaseExceptionGroup[BaseException]]:
-    return isinstance(error, BaseExceptionGroup)
+def _members(error: BaseException) -> tuple[BaseException, ...] | None:
+    if sys.version_info >= (3, 11) and isinstance(error, BaseExceptionGroup):  # noqa: F821
+        return error.exceptions
+    return None
 
 
 def cause_graph(error: BaseException, /) -> CauseGraph | None:
@@ -49,8 +46,8 @@ def cause_graph(error: BaseException, /) -> CauseGraph | None:
         nodes.append(current)
         active.add(id(current))
         try:
-            if _is_group(current):
-                return all(visit(child, depth + 1) for child in current.exceptions)
+            if (members := _members(current)) is not None:
+                return all(visit(child, depth + 1) for child in members)
             child = current.__cause__
             if child is None and not current.__suppress_context__:
                 child = current.__context__

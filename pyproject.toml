@@ -117,7 +117,6 @@ test = [
   { include-group = "coverage" },
 ]
 type = [
-  "exceptiongroup>=1.2.2",
   "ty>=0.0.84",
   "types-jinja2",
   "types-pyyaml",
