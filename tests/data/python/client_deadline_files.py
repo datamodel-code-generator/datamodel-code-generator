@@ -16,7 +16,7 @@ from unittest.mock import patch
 from tests.data.python.client_runtime import Exchange, arecord, raw_response, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Awaitable, Callable
     from concurrent.futures import Future
     from types import ModuleType
 
@@ -155,6 +155,23 @@ class _UnsentAdapter:
 
     async def aclose(self) -> None:
         pass
+
+
+class _SettlingAdapter(_UnsentAdapter):
+    """Read the body, and once cancelled let the interrupted disk work finish before the cancellation goes on."""
+
+    def __init__(self, transports: ModuleType, gate: _DiskGate) -> None:
+        super().__init__(transports, reading=True)
+        self.gate = gate
+
+    async def send(self, request: _Request, context: object) -> object:
+        try:
+            return await super().send(request, context)
+        except asyncio.CancelledError:
+            self.gate.proceed.set()
+            await asyncio.wait_for(self.gate.finished.wait(), 5)
+            await asyncio.sleep(0.01)
+            raise
 
 
 async def _preparation(
@@ -757,6 +774,127 @@ async def _shared_path(
         body.close()
 
 
+async def _settled_read(package: ModuleType, lines: list[str]) -> None:
+    """Report a late read failure that settles before the cancelled call releases its file."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    options = importlib.import_module(f"{package.__name__}.options")
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    gate = _DiskGate()
+    file = _BlockedFile(gate, failure=OSError("read failed after cancellation"), reading=True)
+    body = bodies.AsyncFileBody(file, ownership="owned")
+    adapter = _SettlingAdapter(transports, gate)
+    failures: list[BaseException] = []
+    api = package.AsyncClient(
+        transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=1.0)
+    )
+
+    async def request() -> None:
+        try:
+            await api.request_raw("POST", "https://files.example.com/", body=body)
+        except BaseException as error:  # noqa: BLE001
+            failures.append(error)
+
+    caller = asyncio.create_task(request())
+    try:
+        await asyncio.wait_for(gate.started.wait(), 5)
+        caller.cancel("settled read cancellation")
+        await asyncio.wait_for(caller, 5)
+        await api.aclose()
+        record(
+            lines,
+            "settled read failure",
+            lambda: (
+                type(failures[0]).__name__,
+                failures[0].args,
+                tuple(getattr(failures[0], "__notes__", ())),
+                file.closed,
+                file.closes,
+                adapter.sends,
+            ),
+        )
+    finally:
+        gate.proceed.set()
+        body.close()
+
+
+async def _multipart_close(package: ModuleType, lines: list[str]) -> None:
+    """Close a multipart call's begun file part although its deadline ends the wait for another call's slow open."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    options = importlib.import_module(f"{package.__name__}.options")
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    loop = asyncio.get_running_loop()
+    gate, first_open, failing = _DiskGate(), asyncio.Event(), asyncio.Event()
+    adapter = _UnsentAdapter(transports)
+    opened: list[_OpenedFile] = []
+    outcomes: dict[str, str] = {}
+
+    async def unavailable(_context: object) -> object:
+        await failing.wait()
+        msg = "second part unavailable"
+        raise RuntimeError(msg)
+
+    async def outcome(name: str, call: Awaitable[object]) -> None:
+        try:
+            await call
+        except BaseException as error:  # noqa: BLE001
+            outcomes[name] = type(error).__name__
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "shared.bin"
+        path.write_bytes(b"upload")
+        shared = bodies.AsyncFileBody.from_path(path)
+
+        def open_file(_path: Path, _mode: str) -> _OpenedFile:
+            file = _OpenedFile(path, failure=None, close_failure=None)
+            opened.append(file)
+            if len(opened) == 1:
+                loop.call_soon_threadsafe(first_open.set)
+            else:
+                gate.wait()
+            return file
+
+        multipart_api = package.AsyncClient(
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=0.05, cleanup_timeout=2.0)
+        )
+        plain_api = package.AsyncClient(
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=2.0)
+        )
+        body = bodies.AsyncMultipartBody((
+            bodies.FilePart("first", shared, filename="first.bin"),
+            bodies.FilePart("second", bodies.AsyncBodyFactory(unavailable), filename="second.bin"),
+        ))
+        with patch.object(Path, "open", open_file):
+            multipart = asyncio.create_task(
+                outcome("multipart", multipart_api.request_raw("POST", "https://files.example.com/", body=body))
+            )
+            try:
+                await asyncio.wait_for(first_open.wait(), 5)
+                plain = asyncio.create_task(
+                    outcome("plain", plain_api.request_raw("POST", "https://files.example.com/", body=shared))
+                )
+                await asyncio.wait_for(gate.started.wait(), 5)
+                plain.cancel("slow open cancelled")
+                failing.set()
+                await asyncio.sleep(0.15)
+                gate.proceed.set()
+                await asyncio.wait_for(asyncio.gather(multipart, plain), 5)
+                await multipart_api.aclose()
+                await plain_api.aclose()
+                record(
+                    lines,
+                    "multipart part closed after its deadline",
+                    lambda: (
+                        outcomes["multipart"],
+                        outcomes["plain"],
+                        tuple((file.closed, file.closes) for file in opened),
+                        adapter.sends,
+                    ),
+                )
+            finally:
+                gate.proceed.set()
+                shared.close()
+
+
 async def _files(package: ModuleType, lines: list[str]) -> None:
     await _successful_owned(package, lines)
     await _preparation(package, lines, "owned preparation")
@@ -822,6 +960,8 @@ async def _files(package: ModuleType, lines: list[str]) -> None:
     await _completed_job(
         package, lines, "completed path failure", path_body=True, failure=OSError("completed stat failure")
     )
+    await _settled_read(package, lines)
+    await _multipart_close(package, lines)
     await _shared_path(package, lines, "shared path late opens")
     await _shared_path(
         package,

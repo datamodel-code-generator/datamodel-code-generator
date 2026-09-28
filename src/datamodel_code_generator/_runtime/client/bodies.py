@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, BinaryIO, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
 from .errors import BodyChangedError, BodyFactoryError, BodyNotReplayableError, add_secondary
-from .lifecycle import LEFT_WORK, TaskInterruptionError
+from .lifecycle import LEFT_WORK, TaskInterruptionError, task_failure
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Coroutine, Iterable, Iterator
@@ -562,7 +562,7 @@ def _raise_late(failures: tuple[BaseException, ...]) -> None:
 class _Worker:
     """The one thread an async file body reads on, started by its first read and stopped by closing."""
 
-    __slots__ = ("closed", "lock", "pool", "releasing", "settling", "uses")
+    __slots__ = ("closed", "failed", "lock", "pool", "releasing", "settling", "uses")
 
     def __init__(self) -> None:
         self.pool: ThreadPoolExecutor | None = None
@@ -570,7 +570,8 @@ class _Worker:
         self.closed = False
         self.uses = 0
         self.settling: dict[asyncio.Task[None], list[asyncio.Task[None]] | None] = {}
-        self.releasing: dict[asyncio.Task[None], list[asyncio.Task[None]] | None] = {}
+        self.releasing: set[asyncio.Task[None]] = set()
+        self.failed: list[tuple[list[asyncio.Task[None]] | None, BaseException]] = []
 
     def acquire(self) -> None:
         """Keep the worker available until an admitted file attempt finishes its cleanup."""
@@ -594,8 +595,9 @@ class _Worker:
     ) -> T:
         """Run one disk operation; an interrupted caller returns at once, and the work settles on a retained task.
 
-        Cleanup, such as closing the file, first waits for the work interrupted callers left. It runs on retained
-        cleanup tasks, so an interrupted cleanup settles before it ends, redoing a close its cancellation dropped.
+        Cleanup, such as closing the file, first waits for the work interrupted callers left; a caller interrupted in
+        that wait leaves the cleanup to a retained task that holds the worker. An interrupted cleanup settles before it
+        ends, redoing a close its cancellation dropped.
         """
         with self.lock:
             if self.closed and not cleanup:
@@ -604,7 +606,15 @@ class _Worker:
                 from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only async file bodies start one.
 
                 pool = self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="AsyncFileBody")
-        late = await self.settled() if cleanup else ()
+        late: tuple[BaseException, ...] = ()
+        if cleanup:
+            try:
+                late = await self.settled()
+            except asyncio.CancelledError:
+                with self.lock:
+                    self.uses += 1
+                self.defer(_carried(self._finish(function, *arguments)), release=True)
+                raise
         future = pool.submit(function, *arguments)
         try:
             result = await asyncio.wrap_future(future)
@@ -616,9 +626,20 @@ class _Worker:
                 await self._settle(future, discard, lambda: pool.submit(function, *arguments))
             except BaseException as failure:  # noqa: BLE001
                 add_secondary(error, failure)
+            add_secondary(error, *late)
+            raise
+        except BaseException as error:
+            add_secondary(error, *late)
             raise
         _raise_late(late)
         return result
+
+    async def _finish(self, function: Callable[..., object], *arguments: object) -> None:
+        """Run the cleanup an interrupted caller left before it began, holding the worker until it ends."""
+        try:
+            await self.run(function, *arguments, cleanup=True)
+        finally:
+            self.release()
 
     def defer(self, work: Coroutine[object, object, None], *, release: bool = False) -> None:
         """Finish work an interrupted caller left on a retained task, which belongs to the caller's call.
@@ -627,26 +648,36 @@ class _Worker:
         """
         task = asyncio.ensure_future(work)
         left = LEFT_WORK.get()
-        tasks = self.releasing if release else self.settling
-        tasks[task] = left
-        task.add_done_callback(tasks.pop)
+        if release:
+            self.releasing.add(task)
+            task.add_done_callback(self.releasing.discard)
+        else:
+            self.settling[task] = left
+            task.add_done_callback(self._settled)
         if release and left is not None:
             left.append(task)
+
+    def _settled(self, task: asyncio.Task[None]) -> None:
+        left = self.settling.pop(task)
+        if (failure := task_failure(task)) is not None:
+            self.failed.append((left, failure))
 
     async def settled(self) -> tuple[BaseException, ...]:
         """Wait for the disk work interrupted callers left, and return what the current call's share of it failed late.
 
-        Settling work waits for nothing else, so two interrupted opens of one path never wait for each other.
+        Settling work waits for nothing else, so two interrupted opens of one path never wait for each other. A late
+        failure stays with the worker until its call asks, even when its work finished before that call's release.
         """
-        if asyncio.current_task() in self.settling or not (pending := dict(self.settling)):
+        if asyncio.current_task() in self.settling:
             return ()
-        await asyncio.wait(pending)
+        if pending := tuple(self.settling):
+            await asyncio.wait(pending)
+        if not self.failed:
+            return ()
         owner = LEFT_WORK.get()
-        return tuple(
-            failure
-            for task, left in pending.items()
-            if left is owner and not task.cancelled() and (failure := task.exception()) is not None
-        )
+        failures = tuple(failure for left, failure in self.failed if left is owner)
+        self.failed = [entry for entry in self.failed if entry[0] is not owner]
+        return failures
 
     async def _settle(
         self,

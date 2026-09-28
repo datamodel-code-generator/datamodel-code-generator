@@ -197,6 +197,8 @@
   completed file failure resources = ((False, False), True, 1, 0)
   completed path failure diagnostics = ('CancelledError', ('completed file cancellation',), ('Secondary cleanup failure: OSError',))
   completed path failure resources = ((False,), True, 1, 0)
+  settled read failure = ('CancelledError', ('settled read cancellation',), ('Secondary cleanup failure: OSError',), True, 1, 1)
+  multipart part closed after its deadline = ('DeadlineExceededError', 'CancelledError', ((True, 1), (True, 1)), 0)
   shared path late opens close = None
   shared path late opens files = (((True, 1), (True, 1)), 0)
   shared path late opens diagnostics = (('CancelledError', ('shared path cancellation 1',), ()), ('CancelledError', ('shared path cancellation 2',), ()))

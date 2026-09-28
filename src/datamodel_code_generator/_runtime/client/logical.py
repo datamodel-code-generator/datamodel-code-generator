@@ -194,6 +194,7 @@ class LogicalCallContext:
         "_left",
         "_phase",
         "_scope",
+        "_task",
         "auth_exchange_budget_used",
         "auth_exchange_count",
         "auth_refresh_ids",
@@ -245,6 +246,7 @@ class LogicalCallContext:
         self._guard: _Guard | None = None
         self._interrupted: BaseException | None = None
         self._left: list[asyncio.Task[None]] = []
+        self._task: asyncio.Task[object] | None = None
 
     def remaining(self) -> float | None:
         """Return the current call or stream deadline's remaining seconds, never negative."""
@@ -419,6 +421,15 @@ class LogicalCallContext:
             self._interrupted = error if isinstance(error, asyncio.CancelledError) else asyncio.CancelledError()
         return self._interrupted
 
+    def _owning(self) -> bool:
+        """Return whether the current task runs the call, or its armed guard's work, so its interruption stops it.
+
+        Another task that closes a handed-over stream keeps its own interruption.
+        """
+        import asyncio  # noqa: PLC0415
+
+        return asyncio.current_task() is (self._task if (guard := self._guard) is None else guard.task)
+
     def _stopper(self, error: BaseException) -> _Guard | None:
         """Return the guard whose own request a cancellation is, rather than a native interruption."""
         import asyncio  # noqa: PLC0415
@@ -429,6 +440,7 @@ class LogicalCallContext:
             if isinstance(error, asyncio.CancelledError)
             and guard is not None
             and guard.reason is not None
+            and guard.task is asyncio.current_task()
             and _cancelling(guard.task) <= guard.level + 1
             else None
         )
@@ -469,6 +481,8 @@ class LogicalCallContext:
                     cause=failure,
                 )
             )
+        if isinstance(failure, DeadlineExceededError):
+            return self.snapshot_error(failure)
         at = monotonic() if self.deadline is None else self.deadline.at
         return self._deadline_error(at, self._phase, delivery, failure)
 
@@ -527,6 +541,8 @@ class LogicalCallContext:
             read, idle = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
             idle_timeout = idle if read is None else read if idle is None else min(read, idle)
         guard = self._guard = _Guard(self, idle_timeout)
+        if self._task is None:
+            self._task = guard.task
         left = LEFT_WORK.set(self._left)
         try:
             result = await operation()
@@ -570,12 +586,12 @@ class LogicalCallContext:
         except BaseException as interrupted:  # noqa: BLE001
             primary = interrupted
             if (guard := self._stopper(interrupted)) is None:
-                if not isinstance(interrupted, Exception) and self._interrupted is None:
+                if not isinstance(interrupted, Exception) and self._interrupted is None and self._owning():
                     self._interrupted = interrupted
                 task.add_done_callback(partial(_secondary, interrupted))
             elif error is None or isinstance(error, Exception):
                 primary = self._stopped(guard, "cleanup", None, error)
-                if error is None:
+                if primary is not error:
                     task.add_done_callback(partial(_secondary, primary))
             if error is not None and not isinstance(error, Exception):
                 raise error from None

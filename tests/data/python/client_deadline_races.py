@@ -102,6 +102,27 @@ class _AsyncResponse(_ResponseState):
         self.close()
 
 
+class _UnwindingStream(_AsyncResponse):
+    def __init__(self, responses: ModuleType) -> None:
+        super().__init__(responses)
+        self.unwinding = asyncio.Event()
+        self.release = asyncio.Event()
+        self.proceed = asyncio.Event()
+
+    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
+        yield b"first"
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.unwinding.set()
+            await self.release.wait()
+            raise
+
+    async def aclose(self) -> None:
+        self.close()
+        await self.proceed.wait()
+
+
 class _Fault:
     def __init__(self, transports: ModuleType, responses: ModuleType, action: Callable[[], None]) -> None:
         self.capabilities = transports.TransportCapabilities(
@@ -293,6 +314,66 @@ async def _async_races(
                 await closer
             await api.aclose()
         record(lines, "async race resources", lambda: (adapter.sent, adapter.response.closed))
+
+
+async def _capped_timeout(
+    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    clock = _Clock()
+
+    async def timed_out() -> None:
+        raise errors.TransportError(
+            delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read", cause=httpx2.ReadTimeout("capped read")
+        )
+
+    adapter = _AsyncFault(transports, responses, timed_out)
+    chunks = _GatedChunks()
+    with _clock(package, clock):
+        api = package.AsyncClient(
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=0.05, cleanup_timeout=1.0)
+        )
+        body = bodies.AsyncStreamBody(chunks, ownership="owned")
+        await arecord(
+            lines,
+            "deadline timer during the release of a capped timeout",
+            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/capped", body=body)),
+        )
+        chunks.proceed.set()
+        await api.aclose()
+
+
+async def _foreign_cancellation(
+    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
+    async def sent() -> None:
+        pass
+
+    adapter = _AsyncFault(transports, responses, sent)
+    stream = _UnwindingStream(responses)
+    adapter.response = stream
+    api = package.AsyncClient(
+        transport_adapter=adapter,
+        options=options.ClientOptions(total_timeout=None, stream_idle_timeout=0.05, cleanup_timeout=1.0),
+    )
+    async with api.with_streaming_response.request_raw("GET", "https://race.example/stream") as handle:
+
+        async def read() -> None:
+            async for _chunk in handle.iter_raw_bytes():
+                pass
+
+        reader = asyncio.create_task(_acaptured(read))
+        await stream.unwinding.wait()
+        closer = asyncio.create_task(_acaptured(handle.aclose))
+        await asyncio.sleep(0)
+        closer.cancel("closer cancelled")
+        await arecord(lines, "idle stop of another task's read leaves a native close cancellation", lambda: closer)
+        stream.release.set()
+        stream.proceed.set()
+        await arecord(lines, "idle stop of another task's read", lambda: reader)
+    await api.aclose()
+    record(lines, "idle stop of another task's read resources", lambda: (adapter.sent, stream.closed))
 
 
 async def _early_timer(
@@ -504,9 +585,10 @@ class _Interrupted(BaseException):
 
 
 class _GatedChunks:
-    def __init__(self) -> None:
+    def __init__(self, *, failure: bool = False) -> None:
         self.proceed = asyncio.Event()
         self.closed = False
+        self.failure = failure
 
     def __aiter__(self) -> _GatedChunks:
         return self
@@ -517,6 +599,8 @@ class _GatedChunks:
     async def aclose(self) -> None:
         await self.proceed.wait()
         self.closed = True
+        if self.failure:
+            raise RuntimeError("late body close failed")
 
 
 class _Limiter:
@@ -531,28 +615,42 @@ async def _stopped_attempts(
     package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
 ) -> None:
     bodies = importlib.import_module(f"{package.__name__}.bodies")
-    for failure in (RuntimeError("send failed"), _Interrupted("send interrupted")):
+    for failure, late in (
+        (RuntimeError("send failed"), False),
+        (RuntimeError("send failed"), True),
+        (_Interrupted("send interrupted"), False),
+    ):
 
         async def failed() -> None:
             raise failure
 
         adapter = _AsyncFault(transports, responses, failed)
-        chunks, limiter = _GatedChunks(), _Limiter()
+        chunks, limiter = _GatedChunks(failure=late), _Limiter()
         api = package.AsyncClient(
             transport_adapter=adapter,
             options=options.ClientOptions(total_timeout=0.1, limiter=limiter, cleanup_timeout=1.0),
         )
-        label = f"deadline stops body release after {type(failure).__name__}"
+        label = f"deadline stops body release after {type(failure).__name__}{' and a late close failure' * late}"
         body = bodies.AsyncStreamBody(chunks, ownership="owned")
+        errors: list[BaseException] = []
         await arecord(
             lines,
             label,
-            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/body", body=body)),
+            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/body", body=body), errors),
         )
         record(lines, f"{label} permit", lambda: (limiter.permit.released, chunks.closed))
         chunks.proceed.set()
         await api.aclose()
-        record(lines, f"{label} resources", lambda: (adapter.sent, limiter.permit.released, chunks.closed))
+        record(
+            lines,
+            f"{label} resources",
+            lambda: (
+                adapter.sent,
+                limiter.permit.released,
+                chunks.closed,
+                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
+            ),
+        )
 
 
 class _LateLimiter:
@@ -685,6 +783,8 @@ async def _async(
 ) -> None:
     await _async_races(package, options, transports, responses, lines)
     await _early_timer(package, options, transports, responses, lines)
+    await _capped_timeout(package, options, transports, responses, lines)
+    await _foreign_cancellation(package, options, transports, responses, lines)
     await _nested_waits(package, options, transports, responses, lines)
     await _late_permits(package, options, transports, responses, lines)
     await _retained_responses(package, options, transports, responses, lines)
