@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager, AbstractContextManager
+from typing import BinaryIO
+
 from typing_extensions import assert_type
 
 from pets import AsyncClient, Client
 from pets.bodies import AsyncBodyAttempt, BodyAttempt
-from pets.model_codecs import ModelValue
+from pets.model_codecs import JSONValue, ModelValue
 from pets.options import UNSET, RequestOptions
-from pets.responses import Response
+from pets.responses import AsyncRawResponse, RawResponse, Response, ResponseInfo
 from pets.transports import (
     AsyncTransportResponse,
     AttemptIOContext,
@@ -59,6 +62,47 @@ async def call_async(client: AsyncClient) -> None:
     value: ModelValue[object] | None = None
     del value
     await client.aclose()
+
+
+def raw(client: Client, sink: BinaryIO) -> None:
+    trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
+    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    saved = client.pets.with_raw_response.list_pets(x_trace=trace)
+    assert_type(saved, RawResponse)
+    assert_type(saved.info, ResponseInfo)
+    assert_type(saved.body_bytes, bytes)
+    assert_type(saved.read(), bytes)
+    assert_type(saved.text(), str)
+    assert_type(saved.json(), JSONValue)
+    saved.raise_for_status()
+    body = CreatePetRequestCodecs.body(media_type="application/json").from_wire({"name": "dog"})
+    manager = client.pets.with_streaming_response.create_pet(body=body, media_type="application/json")
+    assert_type(manager, AbstractContextManager[RawResponse])
+    with client.pets.with_streaming_response.get_pet(pet_id=pet, response_media_type="text/plain") as streamed:
+        for chunk in streamed.iter_bytes():
+            assert_type(chunk, bytes)
+        streamed.stream_to(sink)
+    assert_type(client.request_raw("POST", "https://example.com/hooks", body=b"{}"), RawResponse)
+    with client.with_streaming_response.request_raw("GET", "https://example.com/file") as download:
+        download.stream_to("file.bin", overwrite=True)
+
+
+async def raw_async(client: AsyncClient) -> None:
+    trace = ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t")
+    pet = GetPetRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    saved = await client.pets.with_raw_response.list_pets(x_trace=trace)
+    assert_type(saved, AsyncRawResponse)
+    assert_type(await saved.read(), bytes)
+    assert_type(await saved.json(), JSONValue)
+    await saved.raise_for_status()
+    manager = client.pets.with_streaming_response.get_pet(pet_id=pet)
+    assert_type(manager, AbstractAsyncContextManager[AsyncRawResponse])
+    async with manager as streamed:
+        async for chunk in streamed.iter_raw_bytes():
+            assert_type(chunk, bytes)
+    assert_type(await client.request_raw("GET", "https://example.com"), AsyncRawResponse)
+    async with client.with_streaming_response.request_raw("GET", "https://example.com") as download:
+        await download.stream_to("file.bin")
 
 
 class Adapter:

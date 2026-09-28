@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
@@ -13,7 +14,7 @@ from ..._runtime.client.client import ClientCore
 from ...bodies import FormData
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
-from ...responses import Response
+from ...responses import RawResponse, Response
 from ...types.forms import SubmitFormResponse, SubmitPairsResponse
 
 
@@ -28,6 +29,16 @@ class FormsResource:
     def with_response(self) -> FormsWithResponse:
         """The same operations, returning each result with its response metadata."""
         return FormsWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> FormsWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return FormsWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> FormsWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return FormsWithStreamingResponse(self._core)
 
     def submit_form(
         self,
@@ -67,7 +78,7 @@ class FormsResource:
 
 
 class FormsWithResponse:
-    """The forms operations, returning each result with its metadata."""
+    """The forms operations, returning each result with its response metadata."""
 
     def __init__(self, core: ClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -101,6 +112,94 @@ class FormsWithResponse:
     ) -> Response[SubmitPairsResponse]:
         """Call POST /pairs."""
         return self._core.execute(
+            _operations.OPERATION_1,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+
+class FormsWithRawResponse:
+    """The forms operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def submit_form(
+        self,
+        *,
+        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call POST /forms."""
+        return self._core.execute_raw(
+            _operations.OPERATION_0,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def submit_pairs(
+        self,
+        *,
+        body: FormData | Unset = UNSET,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call POST /pairs."""
+        return self._core.execute_raw(
+            _operations.OPERATION_1,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+
+class FormsWithStreamingResponse:
+    """The forms operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def submit_form(
+        self,
+        *,
+        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call POST /forms."""
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def submit_pairs(
+        self,
+        *,
+        body: FormData | Unset = UNSET,
+        media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call POST /pairs."""
+        return self._core.stream(
             _operations.OPERATION_1,
             (),
             body=body,

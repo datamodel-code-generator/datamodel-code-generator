@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from functools import cached_property
 
 from .... import _operations
 from ...._runtime.client.client import ClientCore
 from ....options import RequestOptions
-from ....responses import Response
+from ....responses import RawResponse, Response
 from ....types.admin.users import ListAdminUsersResponse
 
 
@@ -24,6 +25,16 @@ class AdminUsersResource:
         """The same operations, returning each result with its response metadata."""
         return AdminUsersWithResponse(self._core)
 
+    @cached_property
+    def with_raw_response(self) -> AdminUsersWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return AdminUsersWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> AdminUsersWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return AdminUsersWithStreamingResponse(self._core)
+
     def list_admin_users(
         self,
         *,
@@ -34,7 +45,7 @@ class AdminUsersResource:
 
 
 class AdminUsersWithResponse:
-    """The admin.users operations, returning each result with its metadata."""
+    """The admin.users operations, returning each result with its response metadata."""
 
     def __init__(self, core: ClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -47,3 +58,35 @@ class AdminUsersWithResponse:
     ) -> Response[ListAdminUsersResponse]:
         """Call GET /admin/users."""
         return self._core.execute(_operations.OPERATION_3, (), options=options)
+
+
+class AdminUsersWithRawResponse:
+    """The admin.users operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def list_admin_users(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /admin/users."""
+        return self._core.execute_raw(_operations.OPERATION_3, (), options=options)
+
+
+class AdminUsersWithStreamingResponse:
+    """The admin.users operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def list_admin_users(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /admin/users."""
+        return self._core.stream(_operations.OPERATION_3, (), options=options)

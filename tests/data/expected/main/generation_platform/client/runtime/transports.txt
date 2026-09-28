@@ -67,7 +67,7 @@
   borrowed adapter left open
   adapter closed
   adapter closed
-  owned adapter close bug ! CleanupError: CleanupError(pending_calls=0) [cause=RuntimeError('adapter close failed')] cleanup_error
+  owned adapter close bug ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [cause=RuntimeError('adapter close failed')] cleanup_error
   adapter and http_client ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='conflicts_with_http_client') [field_path=('transport_adapter',), condition='conflicts_with_http_client'] configuration_error
   adapter owned by ownership ! ConfigurationError: ConfigurationError(field_path='http_client_ownership', condition='conflicts_with_transport_adapter') [field_path=('http_client_ownership',), condition='conflicts_with_transport_adapter'] configuration_error
   adapter type ! ConfigurationError: ConfigurationError(field_path='transport_adapter', condition='invalid_type') [field_path=('transport_adapter',), condition='invalid_type'] configuration_error
@@ -135,7 +135,7 @@
   < closed
   async adapter stop while reading propagated
   adapter closed
-  async owned adapter close bug ! CleanupError: CleanupError(pending_calls=0) [cause=RuntimeError('adapter close failed')] cleanup_error
+  async owned adapter close bug ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [cause=RuntimeError('adapter close failed')] cleanup_error
   unicode header = 200
   unicode header bytes [b'caf\xc3\xa9']
   async pre-read response ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error

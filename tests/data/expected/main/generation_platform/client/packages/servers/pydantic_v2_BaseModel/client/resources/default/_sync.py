@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from functools import cached_property
 
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...options import RequestOptions
-from ...responses import Response
+from ...responses import RawResponse, Response
 from ...types.default import GetRegionalResponse, GetStatusResponse
 
 
@@ -23,6 +24,16 @@ class DefaultResource:
     def with_response(self) -> DefaultWithResponse:
         """The same operations, returning each result with its response metadata."""
         return DefaultWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> DefaultWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return DefaultWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> DefaultWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return DefaultWithStreamingResponse(self._core)
 
     def get_status(
         self,
@@ -42,7 +53,7 @@ class DefaultResource:
 
 
 class DefaultWithResponse:
-    """The default operations, returning each result with its metadata."""
+    """The default operations, returning each result with its response metadata."""
 
     def __init__(self, core: ClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -63,3 +74,47 @@ class DefaultWithResponse:
     ) -> Response[GetRegionalResponse]:
         """Call GET /regional."""
         return self._core.execute(_operations.OPERATION_1, (), options=options)
+
+
+class DefaultWithRawResponse:
+    """The default operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get_status(self, *, options: RequestOptions | None = None) -> RawResponse:
+        """Call GET /status."""
+        return self._core.execute_raw(_operations.OPERATION_0, (), options=options)
+
+    def get_regional(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /regional."""
+        return self._core.execute_raw(_operations.OPERATION_1, (), options=options)
+
+
+class DefaultWithStreamingResponse:
+    """The default operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get_status(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /status."""
+        return self._core.stream(_operations.OPERATION_0, (), options=options)
+
+    def get_regional(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /regional."""
+        return self._core.stream(_operations.OPERATION_1, (), options=options)

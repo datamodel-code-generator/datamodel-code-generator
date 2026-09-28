@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from functools import cached_property
 
 from models import FieldFilesFileNameExtGetHeaderField2faParameter as _dcg_type_3
@@ -14,7 +15,7 @@ from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
-from ...responses import Response
+from ...responses import RawResponse, Response
 from ...types.store import GetFilesByFileNameByExtResponse
 
 
@@ -29,6 +30,16 @@ class StoreResource:
     def with_response(self) -> StoreWithResponse:
         """The same operations, returning each result with its response metadata."""
         return StoreWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> StoreWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return StoreWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> StoreWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return StoreWithStreamingResponse(self._core)
 
     def get_files_by_file_name_by_ext(
         self,
@@ -48,7 +59,7 @@ class StoreResource:
 
 
 class StoreWithResponse:
-    """The store operations, returning each result with its metadata."""
+    """The store operations, returning each result with its response metadata."""
 
     def __init__(self, core: ClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -65,6 +76,54 @@ class StoreWithResponse:
     ) -> Response[GetFilesByFileNameByExtResponse]:
         """Call GET /files/{fileName}.{ext}."""
         return self._core.execute(
+            _operations.OPERATION_1,
+            (file_name, ext, class_, two_factor),
+            options=options,
+        )
+
+
+class StoreWithRawResponse:
+    """The store operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get_files_by_file_name_by_ext(
+        self,
+        *,
+        file_name: _dcg_type_0 | ModelValue[_dcg_type_0],
+        ext: _dcg_type_1 | ModelValue[_dcg_type_1],
+        class_: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        two_factor: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /files/{fileName}.{ext}."""
+        return self._core.execute_raw(
+            _operations.OPERATION_1,
+            (file_name, ext, class_, two_factor),
+            options=options,
+        )
+
+
+class StoreWithStreamingResponse:
+    """The store operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def get_files_by_file_name_by_ext(
+        self,
+        *,
+        file_name: _dcg_type_0 | ModelValue[_dcg_type_0],
+        ext: _dcg_type_1 | ModelValue[_dcg_type_1],
+        class_: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        two_factor: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /files/{fileName}.{ext}."""
+        return self._core.stream(
             _operations.OPERATION_1,
             (file_name, ext, class_, two_factor),
             options=options,

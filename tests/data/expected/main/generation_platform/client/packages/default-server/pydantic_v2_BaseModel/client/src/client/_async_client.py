@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from types import TracebackType
 from typing import TYPE_CHECKING, Literal
@@ -13,6 +14,7 @@ from typing_extensions import Self
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .options import ClientOptions, RequestOptions
+from .responses import AsyncRawResponse
 from .transports import AsyncTransportAdapter, OwnedTransportAdapter
 
 if TYPE_CHECKING:
@@ -50,6 +52,22 @@ class AsyncClient:
         view._core = self._core.view(options)
         return view
 
+    async def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: bytes | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Send a request to any absolute URL, outside the operations, and return its raw response in memory."""
+        return await self._core.request_raw(method, url, body=body, options=options)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncClientWithStreamingResponse:
+        """Raw requests that send on entering a block that streams the response."""
+        return AsyncClientWithStreamingResponse(self._core)
+
     @cached_property
     def default(self) -> AsyncDefaultResource:
         """The default operations."""
@@ -73,3 +91,22 @@ class AsyncClient:
     ) -> None:
         """Close this client."""
         await self.aclose()
+
+
+class AsyncClientWithStreamingResponse:
+    """Raw requests to any absolute URL that send on entering a block that streams the response."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the requests send through."""
+        self._core = core
+
+    def request_raw(
+        self,
+        method: str,
+        url: str,
+        *,
+        body: bytes | Unset = UNSET,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Return a block that sends the request on entry and yields its streaming response until exit."""
+        return self._core.stream_raw(method, url, body=body, options=options)

@@ -539,12 +539,17 @@ class ResponseDecoder(Generic[T_co, E_co]):
 
         A problem that stopped reading an error body, such as a broken content coding, is kept as its decode error.
         """
-        status = info.status_code
-        if self.success(status):
+        if self.success(info.status_code):
             return self._decoded(info, body, self._branch(info, body))
-        if _MIN_ERROR <= status <= _MAX_ERROR:
-            raise self._failure(info, body, truncated=truncated, problem=problem)
-        raise UnexpectedStatusError(
+        raise self.failure(info, body, truncated=truncated, problem=problem)
+
+    def failure(
+        self, info: ResponseInfo, body: bytes, *, truncated: bool = False, problem: BaseException | None = None
+    ) -> HTTPStatusError[E_co] | UnexpectedStatusError:
+        """Return the typed failure of a response that is not a success: its HTTP error, or an unexpected status."""
+        if _MIN_ERROR <= info.status_code <= _MAX_ERROR:
+            return self._failure(info, body, truncated=truncated, problem=problem)
+        return UnexpectedStatusError(
             info=info, body_bytes=body, truncated=truncated, call_id=info.call_id, cause=problem
         )
 

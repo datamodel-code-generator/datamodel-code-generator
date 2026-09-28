@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 
 from .... import _operations
 from ...._runtime.client.client import AsyncClientCore
 from ....options import RequestOptions
-from ....responses import Response
+from ....responses import AsyncRawResponse, Response
 from ....types.admin.users import ListAdminUsersResponse
 
 
@@ -24,6 +25,16 @@ class AsyncAdminUsersResource:
         """The same operations, returning each result with its response metadata."""
         return AsyncAdminUsersWithResponse(self._core)
 
+    @cached_property
+    def with_raw_response(self) -> AsyncAdminUsersWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return AsyncAdminUsersWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncAdminUsersWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return AsyncAdminUsersWithStreamingResponse(self._core)
+
     async def list_admin_users(
         self,
         *,
@@ -38,7 +49,7 @@ class AsyncAdminUsersResource:
 
 
 class AsyncAdminUsersWithResponse:
-    """The admin.users operations, returning each result with its metadata."""
+    """The admin.users operations, returning each result with its response metadata."""
 
     def __init__(self, core: AsyncClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -51,3 +62,39 @@ class AsyncAdminUsersWithResponse:
     ) -> Response[ListAdminUsersResponse]:
         """Call GET /admin/users."""
         return await self._core.execute(_operations.OPERATION_3, (), options=options)
+
+
+class AsyncAdminUsersWithRawResponse:
+    """The admin.users operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    async def list_admin_users(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call GET /admin/users."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_3,
+            (),
+            options=options,
+        )
+
+
+class AsyncAdminUsersWithStreamingResponse:
+    """The admin.users operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def list_admin_users(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call GET /admin/users."""
+        return self._core.stream(_operations.OPERATION_3, (), options=options)

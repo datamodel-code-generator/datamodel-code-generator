@@ -46,13 +46,13 @@
   coding chunked = 4000
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding error ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, call_id='<call>') [status_code=500, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] list_pets_http_error
+  coding error ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>') [operation_id='listPets', status_code=500, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] list_pets_http_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding error truncated ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, call_id='<call>') [status_code=500, error_decoded=False, error_decode_error=ProtocolDataError(), body_bytes=b'{"code": 7, "message": "boom"}', truncated=True] list_pets_http_error
+  coding error truncated ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, operation_id='listPets', call_id='<call>') [operation_id='listPets', status_code=500, error_decoded=False, error_decode_error=ProtocolDataError(), body_bytes=b'{"code": 7, "message": "boom"}', truncated=True] list_pets_http_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  coding redirect ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, call_id='<call>') [status_code=302, body_bytes=b'', truncated=True, cause=UnsupportedContentCodingError()] unexpected_status_error
+  coding redirect ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='listPets', call_id='<call>') [operation_id='listPets', status_code=302, body_bytes=b'', truncated=True, cause=UnsupportedContentCodingError()] unexpected_status_error
   > DELETE https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   coding bodyless = None

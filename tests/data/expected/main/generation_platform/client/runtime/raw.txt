@@ -1,0 +1,376 @@
+# pets pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved 200 'application/json' b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' shared True
+    read b'{"id":3,"name":"fox"}' text '{"id":3,"name":"fox"}' json {'id': 3, 'name': 'fox'} pieces [b'{"id":3,"name":"fox"}'] [b'{"id":3,"name":"fox"}']
+    closed twice True None True
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved gzip 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved pieces [65536, 4464]
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  saved error 418 'application/json' b'{"code":7,"message":"boom"}' b'{"code":7,"message":"boom"}' shared True r-1
+  saved error status ! ListPetsHTTPError: ListPetsHTTPError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1') [operation_id='listPets', status_code=418, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] list_pets_http_error
+  saved error status again ! ListPetsHTTPError: ListPetsHTTPError(status_code=418, operation_id='listPets', call_id='<call>', request_id='r-1') [operation_id='listPets', status_code=418, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code":7,"message":"boom"}', truncated=False] list_pets_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved truncated status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved redirect status ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved undecodable text text ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'\xff\xfe', truncated=False, cause=UnicodeDecodeError('utf-8', b'\xff\xfe', 0, 1, 'invalid start byte')] decode_error
+  saved undecodable text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'\xff\xfe', truncated=False, cause=WireValidationError('JSON text must be UTF-8 at /')] decode_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved latin-1 text text = 'café'
+  saved latin-1 text json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'caf\xe9', truncated=False, cause=WireValidationError('JSON text must be UTF-8 at /')] decode_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved invalid json text = '{'
+  saved invalid json json ! DecodeError: DecodeError(status_code=200, operation_id='getPet', call_id='<call>') [operation_id='getPet', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved identity ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='decoded', limit=8, observed_bytes=21] response_too_large_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved coded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='content_coded', limit=8, observed_bytes=24] response_too_large_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved expanded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='decoded', limit=50, observed_bytes=100] response_too_large_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved broken ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  saved connect ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] transport_error
+  saved options ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streamed [b'{"id":3,', b'"name":"fox"}'] status None
+  consumed read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='read') [operation_id='getPet'] response_consumed_error
+  consumed text ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='text') [operation_id='getPet'] response_consumed_error
+  consumed json ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='json') [operation_id='getPet'] response_consumed_error
+  consumed iter_bytes ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='iter_bytes') [operation_id='getPet'] response_consumed_error
+  consumed iter_raw_bytes ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='iter_raw_bytes') [operation_id='getPet'] response_consumed_error
+  consumed body_bytes ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='read') [operation_id='getPet'] response_consumed_error
+  consumed raw_body_bytes ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  unread body_bytes ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='streaming', action='read') [operation_id='getPet'] response_consumed_error
+  read first b'{"id":3,"name":"fox"}' 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False [b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streamed coded [b'\x1f\x8b\x08\x00\x00\x00\x00', b'\x00\x02\xff\xabV\xcaL', b'Q\xb22\xd6Q\xcaK', b'\xccMU\xb2RJ\xcb', b'\xafP\xaa\x05\x00\xc4\x1a', b'\xc5\x91\x15\x00\x00\x00']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streamed first b'{"id":3,'
+  streaming read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='streaming', action='read') [operation_id='getPet'] response_consumed_error
+  closed read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streamed 100 MiB 104857600
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  capped identity ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='decoded', limit=10, observed_bytes=21] response_too_large_error
+    passed [b'{"id":3,']
+  capped identity read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='failed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  capped gzip decoded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='decoded', limit=10, observed_bytes=13] response_too_large_error
+    passed [b'{"id"']
+  capped gzip decoded read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='failed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  capped gzip coded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='content_coded', limit=10, observed_bytes=16] response_too_large_error
+    passed [b'\x1f\x8b\x08\x00\x00\x00\x00\x00']
+  capped gzip coded read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='failed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  capped broken ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+    passed [b'{"id":3,']
+  capped broken read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='failed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  stopped block read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streaming connect ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] transport_error
+  streaming options ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streaming error status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=404, error_decoded=False, error_decode_error=BodyProtocolError(), body_bytes=b'missing', truncated=False] get_pet_http_error
+  streaming error read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streaming truncated status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  streaming truncated read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streaming broken coding status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=500, error_decoded=False, error_decode_error=ProtocolDataError(), body_bytes=b'', truncated=True] get_pet_http_error
+  streaming broken coding read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  streaming broken read status ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+  streaming broken read read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='failed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  partly read status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=404, error_decoded=False, body_bytes=b'', truncated=True] get_pet_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  downloaded b'{"id":3,"name":"fox"}' open True b'{"id":3,"name":"fox"}' ['pet.json']
+  downloaded with the permissions of a new file True
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  existing FileExistsError secondary [] then read b'{}'
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  overwrite broken TransportError secondary []
+  kept b'[]' ['pet.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  raced FileExistsError secondary []
+  raced kept b'first' ['pet.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  downloading readable by its owner alone True
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  move failed OSError secondary [] ['pet.json', 'private.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  moved again b'{}' ['failed.json', 'pet.json', 'private.json', 'raced.json']
+  > POST https://hooks.example.com/ping?x=1
+    [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 4] b'ping'
+  request 200 'text/plain' b'pong' b'pong' shared True
+  > GET https://hooks.example.com/down
+    [host: hooks.example.com, accept-encoding: gzip, deflate] b''
+  request status ! HTTPStatusError: HTTPStatusError(status_code=503, call_id='<call>') [status_code=503, error_decoded=False, body_bytes=b'down', truncated=False] http_status_error
+  > GET https://hooks.example.com/stream
+    [host: hooks.example.com, accept-encoding: gzip, deflate] b''
+  request streamed [b'str', b'eam']
+  request method ! ConfigurationError: ConfigurationError(field_path='method', condition='invalid_value') [field_path=('method',), condition='invalid_value'] configuration_error
+  request method type ! ConfigurationError: ConfigurationError(field_path='method', condition='invalid_value') [field_path=('method',), condition='invalid_value'] configuration_error
+  request relative url ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  request url scheme ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  request url fragment ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  request query fragment ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  request url userinfo ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  request url port ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  request url type ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  request body type ! ConfigurationError: ConfigurationError(field_path='body', condition='invalid_type') [field_path=('body',), condition='invalid_type'] configuration_error
+  request options type ! ConfigurationError: ConfigurationError(field_path='options', condition='invalid_type') [field_path=('options',), condition='invalid_type'] configuration_error
+  > GET https://hooks.example.com/stream
+    [host: hooks.example.com, accept-encoding: gzip, deflate] b''
+  request capped ! ResponseTooLargeError: ResponseTooLargeError(call_id='<call>') [representation='decoded', limit=3, observed_bytes=6] response_too_large_error
+  request streaming options ! ConfigurationError: ConfigurationError(field_path='options', condition='invalid_type') [field_path=('options',), condition='invalid_type'] configuration_error
+  streaming view options ! ConfigurationError: ConfigurationError(field_path='max_stream_bytes', condition='out_of_range') [field_path=('max_stream_bytes',), condition='out_of_range'] configuration_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  view close with a handle ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
+  handle after view close ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='view') [operation_id='getPet'] client_closed_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  handle first chunk b'{"id"'
+  < closed
+  close with a handle ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
+  handle after close next chunk ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  handle after close read ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  handle after close status ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  handle after close iterate ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  handle close after close = None
+  saved after close b'{"id":3,"name":"fox"}'
+  close again = None
+  handle after closed ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSED', owner='client') [operation_id='getPet'] client_closed_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  live handle while closing ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  live handle status while closing ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  < closed
+  close = None
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  handle close failure ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('close failed')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  saved close failure ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('close failed')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  read and close failures AdapterExecutionError secondary ['RuntimeError']
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  refused read and close failure ResponseConsumedError secondary ['RuntimeError']
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  close with a failing handle CleanupError secondary []
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter saved 200 'application/json' b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' shared True
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter chunk type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter status type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  adapter stop before the headers propagated
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  adapter stop while reading a saved body propagated
+  > GET https://x.example.com [Accept-Encoding: gzip, deflate] None None None
+    unknown 5.0/30.0/30.0/5.0
+  adapter stop while sending propagated
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved 200 'application/json' b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' shared True b'{"id":3,"name":"fox"}' '{"id":3,"name":"fox"}' {'id': 3, 'name': 'fox'} [b'{"id":3,"name":"fox"}'] [b'{"id":3,"name":"fox"}']
+    closed twice None True
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved gzip 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved coded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='content_coded', limit=8, observed_bytes=24] response_too_large_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved expanded ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='decoded', limit=50, observed_bytes=100] response_too_large_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved broken ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async saved connect ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='getPet', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=ConnectError('failed')] transport_error
+  async saved options ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async streamed [b'{"id":3,', b'"name":"fox"}']
+  async consumed read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='read') [operation_id='getPet'] response_consumed_error
+  async consumed text ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='text') [operation_id='getPet'] response_consumed_error
+  async consumed json ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='json') [operation_id='getPet'] response_consumed_error
+  async consumed iter_raw_bytes ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='consumed', action='iter_raw_bytes') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async read first b'{"id":3,"name":"fox"}' 200 'application/json' b'{"id":3,"name":"fox"}' b'\x1f\x8b\x08\x00\x00\x00\x00\x00\x02\xff\xabV\xcaLQ\xb22\xd6Q\xcaK\xccMU\xb2RJ\xcb\xafP\xaa\x05\x00\xc4\x1a\xc5\x91\x15\x00\x00\x00' shared False
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async streamed coded [b'\x1f\x8b\x08\x00\x00\x00\x00', b'\x00\x02\xff\xabV\xcaL', b'Q\xb22\xd6Q\xcaK', b'\xccMU\xb2RJ\xcb', b'\xafP\xaa\x05\x00\xc4\x1a', b'\xc5\x91\x15\x00\x00\x00']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async capped identity ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getPet', call_id='<call>') [operation_id='getPet', representation='decoded', limit=10, observed_bytes=21] response_too_large_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async capped broken ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async streaming error status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=404, error_decoded=False, error_decode_error=BodyProtocolError(), body_bytes=b'missing', truncated=False] get_pet_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async streaming truncated status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=500, error_decoded=False, body_bytes=b'0123', truncated=True] get_pet_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async streaming broken coding status ! GetPetHTTPError: GetPetHTTPError(status_code=500, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=500, error_decoded=False, error_decode_error=ProtocolDataError(), body_bytes=b'', truncated=True] get_pet_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async streaming broken read status ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async partly read status ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=404, error_decoded=False, body_bytes=b'', truncated=True] get_pet_http_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async stopped block read ! ResponseConsumedError: ResponseConsumedError(operation_id='getPet', call_id='<call>', state='closed', action='read') [operation_id='getPet'] response_consumed_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async existing FileExistsError secondary [] b'{}'
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async overwrite broken TransportError secondary []
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async raced FileExistsError secondary []
+  async downloaded b'{"id":3,"name":"fox"}' b'{"id":3,"name":"fox"}' b'first' ['pet.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async move failed OSError secondary [] ['pet.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async moved again b'{}' ['failed.json', 'pet.json', 'raced.json']
+  > POST https://hooks.example.com/ping
+    [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 4] b'ping'
+  async request status ! HTTPStatusError: HTTPStatusError(status_code=503, call_id='<call>') [status_code=503, error_decoded=False, body_bytes=b'down', truncated=False] http_status_error
+  > GET https://hooks.example.com/stream
+    [host: hooks.example.com, accept-encoding: gzip, deflate] b''
+  async request streamed [b'str', b'eam']
+  async request url ! ConfigurationError: ConfigurationError(field_path='url', condition='invalid_url') [field_path=('url',), condition='invalid_url'] configuration_error
+  async request streaming options ! ConfigurationError: ConfigurationError(field_path='options', condition='invalid_type') [field_path=('options',), condition='invalid_type'] configuration_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter chunk type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter status type ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async adapter stop before the headers propagated
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async adapter stop while reading a saved body propagated
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async handle close failure ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('close failed')] adapter_execution_error
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async read and close failures AdapterExecutionError secondary ['RuntimeError']
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  < closed
+  async refused read and close failure ResponseConsumedError secondary ['RuntimeError']
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async live handle while closing ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  async live handle status while closing ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  < closed
+  async close with a handle returned None
+  async saved after close b'{"id":3,"name":"fox"}' returned None
+  > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
+    unknown 5.0/30.0/30.0/5.0
+  async handle first chunk b'{"id"'
+  < closed
+  async close with a failing handle CleanupError secondary []
+  async handle after forced close next chunk ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
+  async handle after forced close ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error

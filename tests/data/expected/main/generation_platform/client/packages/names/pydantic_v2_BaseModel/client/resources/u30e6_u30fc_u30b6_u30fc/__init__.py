@@ -3,13 +3,24 @@
 
 from ._async import (
     AsyncU30e6U30fcU30b6U30fcResource,
+    AsyncU30e6U30fcU30b6U30fcWithRawResponse,
     AsyncU30e6U30fcU30b6U30fcWithResponse,
+    AsyncU30e6U30fcU30b6U30fcWithStreamingResponse,
 )
-from ._sync import U30e6U30fcU30b6U30fcResource, U30e6U30fcU30b6U30fcWithResponse
+from ._sync import (
+    U30e6U30fcU30b6U30fcResource,
+    U30e6U30fcU30b6U30fcWithRawResponse,
+    U30e6U30fcU30b6U30fcWithResponse,
+    U30e6U30fcU30b6U30fcWithStreamingResponse,
+)
 
 __all__ = [
     'AsyncU30e6U30fcU30b6U30fcResource',
+    'AsyncU30e6U30fcU30b6U30fcWithRawResponse',
     'AsyncU30e6U30fcU30b6U30fcWithResponse',
+    'AsyncU30e6U30fcU30b6U30fcWithStreamingResponse',
     'U30e6U30fcU30b6U30fcResource',
+    'U30e6U30fcU30b6U30fcWithRawResponse',
     'U30e6U30fcU30b6U30fcWithResponse',
+    'U30e6U30fcU30b6U30fcWithStreamingResponse',
 ]

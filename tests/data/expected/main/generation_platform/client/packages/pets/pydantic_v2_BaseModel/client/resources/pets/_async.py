@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal, overload
 
@@ -20,7 +21,7 @@ from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
-from ...responses import Response
+from ...responses import AsyncRawResponse, Response
 from ...types.pets import (
     CreatePetResponse,
     DeletePetsByPetIdResponse,
@@ -42,6 +43,16 @@ class AsyncPetsResource:
     def with_response(self) -> AsyncPetsWithResponse:
         """The same operations, returning each result with its response metadata."""
         return AsyncPetsWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> AsyncPetsWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return AsyncPetsWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncPetsWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return AsyncPetsWithStreamingResponse(self._core)
 
     @cached_property
     def photos(self) -> AsyncPetsPhotosResource:
@@ -169,7 +180,7 @@ class AsyncPetsResource:
 
 
 class AsyncPetsWithResponse:
-    """The pets operations, returning each result with its metadata."""
+    """The pets operations, returning each result with its response metadata."""
 
     def __init__(self, core: AsyncClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -293,3 +304,201 @@ class AsyncPetsWithResponse:
             (pet_id,),
             options=options,
         )
+
+
+class AsyncPetsWithRawResponse:
+    """The pets operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    async def list_pets(
+        self,
+        *,
+        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """List every pet."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_0,
+            (limit, labels, x_trace, session),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    @overload
+    async def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse: ...
+    @overload
+    async def create_pet(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse: ...
+    async def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Create a pet \"quoted\" \\ escaped."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_1,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    async def get_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Show one pet."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_2,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    async def delete_pets_by_pet_id(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call DELETE /pets/{petId}."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_3,
+            (pet_id,),
+            options=options,
+        )
+
+    async def head_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call HEAD /pets/{petId}."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_4,
+            (pet_id,),
+            options=options,
+        )
+
+
+class AsyncPetsWithStreamingResponse:
+    """The pets operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def list_pets(
+        self,
+        *,
+        limit: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        labels: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        session: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """List every pet."""
+        return self._core.stream(
+            _operations.OPERATION_0,
+            (limit, labels, x_trace, session),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    @overload
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4],
+        media_type: Literal['application/json'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    @overload
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['text/plain'],
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]: ...
+    def create_pet(
+        self,
+        *,
+        body: _dcg_type_4 | ModelValue[_dcg_type_4] | _dcg_type_5 | ModelValue[_dcg_type_5],
+        media_type: Literal['application/json', 'text/plain'] | None = None,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Create a pet \"quoted\" \\ escaped."""
+        return self._core.stream(
+            _operations.OPERATION_1,
+            (),
+            body=body,
+            media_type=media_type,
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def get_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        response_media_type: Literal['application/json', 'text/plain'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Show one pet."""
+        return self._core.stream(
+            _operations.OPERATION_2,
+            (pet_id,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+    def delete_pets_by_pet_id(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call DELETE /pets/{petId}."""
+        return self._core.stream(_operations.OPERATION_3, (pet_id,), options=options)
+
+    def head_pet(
+        self,
+        *,
+        pet_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call HEAD /pets/{petId}."""
+        return self._core.stream(_operations.OPERATION_4, (pet_id,), options=options)

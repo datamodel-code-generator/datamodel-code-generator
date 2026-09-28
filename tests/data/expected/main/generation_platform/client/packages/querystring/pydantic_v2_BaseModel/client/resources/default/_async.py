@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
@@ -12,7 +13,7 @@ from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...model_codecs import ModelValue
 from ...options import UNSET, RequestOptions, Unset
-from ...responses import Response
+from ...responses import AsyncRawResponse, Response
 from ...types.default import SearchResponse
 
 
@@ -27,6 +28,16 @@ class AsyncDefaultResource:
     def with_response(self) -> AsyncDefaultWithResponse:
         """The same operations, returning each result with its response metadata."""
         return AsyncDefaultWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> AsyncDefaultWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return AsyncDefaultWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncDefaultWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return AsyncDefaultWithStreamingResponse(self._core)
 
     async def search(
         self,
@@ -45,7 +56,7 @@ class AsyncDefaultResource:
 
 
 class AsyncDefaultWithResponse:
-    """The default operations, returning each result with its metadata."""
+    """The default operations, returning each result with its response metadata."""
 
     def __init__(self, core: AsyncClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -60,6 +71,52 @@ class AsyncDefaultWithResponse:
     ) -> Response[SearchResponse]:
         """Call GET /search."""
         return await self._core.execute(
+            _operations.OPERATION_0,
+            (criteria,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+
+class AsyncDefaultWithRawResponse:
+    """The default operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    async def search(
+        self,
+        *,
+        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call GET /search."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_0,
+            (criteria,),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
+
+class AsyncDefaultWithStreamingResponse:
+    """The default operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def search(
+        self,
+        *,
+        criteria: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        response_media_type: Literal['application/json'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call GET /search."""
+        return self._core.stream(
             _operations.OPERATION_0,
             (criteria,),
             options=options,

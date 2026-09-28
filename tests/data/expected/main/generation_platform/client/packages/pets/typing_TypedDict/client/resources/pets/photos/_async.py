@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
 from functools import cached_property
 from typing import Literal
 
@@ -12,7 +13,7 @@ from .... import _operations
 from ...._runtime.client.client import AsyncClientCore
 from ....model_codecs import ModelValue
 from ....options import UNSET, RequestOptions, Unset
-from ....responses import Response
+from ....responses import AsyncRawResponse, Response
 from ....types.pets.photos import UploadResponse
 
 
@@ -27,6 +28,16 @@ class AsyncPetsPhotosResource:
     def with_response(self) -> AsyncPetsPhotosWithResponse:
         """The same operations, returning each result with its response metadata."""
         return AsyncPetsPhotosWithResponse(self._core)
+
+    @cached_property
+    def with_raw_response(self) -> AsyncPetsPhotosWithRawResponse:
+        """The same operations, returning each raw response with its body read into memory."""
+        return AsyncPetsPhotosWithRawResponse(self._core)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncPetsPhotosWithStreamingResponse:
+        """The same operations, returning blocks that send each call on entry and stream its response."""
+        return AsyncPetsPhotosWithStreamingResponse(self._core)
 
     async def upload(
         self,
@@ -47,7 +58,7 @@ class AsyncPetsPhotosResource:
 
 
 class AsyncPetsPhotosWithResponse:
-    """The pets.photos operations, returning each result with its metadata."""
+    """The pets.photos operations, returning each result with its response metadata."""
 
     def __init__(self, core: AsyncClientCore) -> None:
         """Keep the client core the operations send through."""
@@ -63,6 +74,56 @@ class AsyncPetsPhotosWithResponse:
     ) -> Response[UploadResponse]:
         """Call PUT /pets/{petId}/photo."""
         return await self._core.execute(
+            _operations.OPERATION_5,
+            (pet_id,),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+
+class AsyncPetsPhotosWithRawResponse:
+    """The pets.photos operations, returning each raw response with its body read into memory."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    async def upload(
+        self,
+        *,
+        pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: bytes | Unset = UNSET,
+        media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AsyncRawResponse:
+        """Call PUT /pets/{petId}/photo."""
+        return await self._core.execute_raw(
+            _operations.OPERATION_5,
+            (pet_id,),
+            body=body,
+            media_type=media_type,
+            options=options,
+        )
+
+
+class AsyncPetsPhotosWithStreamingResponse:
+    """The pets.photos operations, returning blocks that send each call on entry and stream its response."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the operations send through."""
+        self._core = core
+
+    def upload(
+        self,
+        *,
+        pet_id: _dcg_type_0 | ModelValue[_dcg_type_0],
+        body: bytes | Unset = UNSET,
+        media_type: Literal['application/octet-stream'] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractAsyncContextManager[AsyncRawResponse]:
+        """Call PUT /pets/{petId}/photo."""
+        return self._core.stream(
             _operations.OPERATION_5,
             (pet_id,),
             body=body,

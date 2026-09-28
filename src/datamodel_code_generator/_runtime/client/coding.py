@@ -108,6 +108,11 @@ class ContentDecoder:
         self._operation_id = operation_id
         self._applied = codings(info)
 
+    @property
+    def identity(self) -> bool:
+        """Return whether the response applied no content coding, so its body passes through untouched."""
+        return not self._applied
+
     def decoded(self, chunks: Iterator[bytes]) -> Iterator[bytes]:
         """Return the decoded chunks of a content-coded body; an identity body passes through untouched."""
         return self._decoded(chunks) if self._applied else chunks

@@ -1,40 +1,58 @@
-10 marked lines
+16 marked lines
 mypy pets and clients.py: clean
 pyright pets and clients.py: clean
 ty pets and clients.py: clean
-mypy clients_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
-  21 call-arg
-  22 arg-type
-  23 call-overload
-  24 call-overload
+mypy clients_negative.py: 16/16 marked lines with one error, 0 elsewhere, 0 in other files
+  24 call-arg
+  25 arg-type
   26 call-overload
-  28 arg-type
-  30 arg-type
-  36 arg-type
-  37 arg-type
-  38 arg-type
-pyright clients_negative.py: 7/10 marked lines with one error, 0 elsewhere, 0 in other files
-  21 reportCallIssue
-  22 reportArgumentType
-  23 reportArgumentType
-  23 reportCallIssue
-  24 reportArgumentType
+  27 call-overload
+  29 call-overload
+  31 arg-type
+  33 arg-type
+  39 arg-type
+  40 arg-type
+  41 arg-type
+  47 arg-type
+  48 assignment
+  50 arg-type
+  51 call-arg
+  56 misc
+  58 assignment
+pyright clients_negative.py: 13/16 marked lines with one error, 0 elsewhere, 0 in other files
   24 reportCallIssue
+  25 reportArgumentType
   26 reportArgumentType
   26 reportCallIssue
-  28 reportArgumentType
-  30 reportArgumentType
-  36 reportArgumentType
-  37 reportArgumentType
-  38 reportArgumentType
-ty clients_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
-  21 missing-argument
-  22 invalid-argument-type
-  23 no-matching-overload
-  24 no-matching-overload
+  27 reportArgumentType
+  27 reportCallIssue
+  29 reportArgumentType
+  29 reportCallIssue
+  31 reportArgumentType
+  33 reportArgumentType
+  39 reportArgumentType
+  40 reportArgumentType
+  41 reportArgumentType
+  47 reportArgumentType
+  48 reportAssignmentType
+  50 reportArgumentType
+  51 reportCallIssue
+  56 reportGeneralTypeIssues
+  58 reportAssignmentType
+ty clients_negative.py: 16/16 marked lines with one error, 0 elsewhere, 0 in other files
+  24 missing-argument
+  25 invalid-argument-type
   26 no-matching-overload
-  28 invalid-argument-type
-  30 invalid-argument-type
-  36 invalid-argument-type
-  37 invalid-argument-type
-  38 invalid-argument-type
+  27 no-matching-overload
+  29 no-matching-overload
+  31 invalid-argument-type
+  33 invalid-argument-type
+  39 invalid-argument-type
+  40 invalid-argument-type
+  41 invalid-argument-type
+  47 invalid-argument-type
+  48 invalid-assignment
+  50 invalid-argument-type
+  51 missing-argument
+  56 invalid-await
+  58 invalid-assignment
