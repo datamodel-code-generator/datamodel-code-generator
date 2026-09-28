@@ -1,6 +1,6 @@
-mypy pets and clients.py and signatures.py: clean
-pyright pets and clients.py and signatures.py: clean
-ty pets and clients.py and signatures.py: clean
+mypy pets and clients.py and signatures.py and webhooks.py: clean
+pyright pets and clients.py and signatures.py and webhooks.py: clean
+ty pets and clients.py and signatures.py and webhooks.py: clean
 clients_negative.py 37 marked lines
 mypy clients_negative.py: 37/37 marked lines with one error, 0 elsewhere, 0 in other files
   28 call-arg
@@ -130,3 +130,64 @@ pyright signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 
 ty signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
   42 unknown-argument
   43 invalid-assignment
+webhooks_negative.py 19 marked lines
+mypy webhooks_negative.py: 19/19 marked lines with one error, 0 elsewhere, 0 in other files
+  27 assignment
+  28 assignment
+  29 arg-type
+  30 misc
+  36 misc
+  37 misc
+  38 assignment
+  39 arg-type
+  40 arg-type
+  41 arg-type
+  42 misc
+  43 arg-type
+  44 arg-type
+  45 arg-type
+  51 misc
+  52 assignment
+  53 assignment
+  54 assignment
+  55 arg-type
+pyright webhooks_negative.py: 19/19 marked lines with one error, 0 elsewhere, 0 in other files
+  27 reportAssignmentType
+  28 reportAssignmentType
+  29 reportArgumentType
+  30 reportAttributeAccessIssue
+  36 reportAttributeAccessIssue
+  37 reportAttributeAccessIssue
+  38 reportAssignmentType
+  39 reportArgumentType
+  40 reportArgumentType
+  41 reportArgumentType
+  42 reportCallIssue
+  43 reportArgumentType
+  44 reportArgumentType
+  45 reportArgumentType
+  51 reportGeneralTypeIssues
+  52 reportAssignmentType
+  53 reportAssignmentType
+  54 reportAssignmentType
+  55 reportArgumentType
+ty webhooks_negative.py: 19/19 marked lines with one error, 0 elsewhere, 0 in other files
+  27 invalid-assignment
+  28 invalid-assignment
+  29 invalid-argument-type
+  30 invalid-assignment
+  36 invalid-assignment
+  37 invalid-assignment
+  38 invalid-assignment
+  39 invalid-argument-type
+  40 invalid-argument-type
+  41 invalid-argument-type
+  42 too-many-positional-arguments
+  43 invalid-argument-type
+  44 invalid-argument-type
+  45 invalid-argument-type
+  51 invalid-await
+  52 invalid-assignment
+  53 invalid-assignment
+  54 invalid-assignment
+  55 invalid-argument-type
