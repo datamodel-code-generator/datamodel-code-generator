@@ -70,6 +70,16 @@ def _files(directory: Path) -> list[str]:
     return sorted(path.name for path in directory.iterdir())
 
 
+def _modes(directory: Path) -> list[int]:
+    """Return the permissions of the downloads being written in a directory."""
+    return [stat.S_IMODE(path.stat().st_mode) for path in directory.glob(".*.part")]
+
+
+def _private(mode: int) -> bool:
+    """Return whether only a file's owner may read it, which Windows permissions cannot tell."""
+    return os.name == "nt" or not mode & 0o077
+
+
 def _broken_link(source: object, target: object) -> NoReturn:
     """Fail to give a completed download its name, as a full disk or a lost volume would."""
     del source, target
@@ -292,6 +302,11 @@ def _download(package: ModuleType, api: Any, exchange: Exchange, lines: list[str
     with streaming.get_pet(pet_id=pet) as response:
         lines.append(f"  raced {_outcome(lambda: response.stream_to(raced))}")
     lines.append(f"  raced kept {raced.read_bytes()!r} {_files(directory)}")
+    writing: list[int] = []
+    exchange.respond(_streamed(200, (b"{", b"}"), action=lambda: writing.extend(_modes(directory))))
+    with streaming.get_pet(pet_id=pet) as response:
+        response.stream_to(directory / "private.json")
+    lines.append(f"  downloading readable by its owner alone {bool(writing) and all(map(_private, writing))}")
     failed = directory / "failed.json"
     exchange.respond(_streamed(200, (b"{}",)), _streamed(200, (b"{}",)))
     with streaming.get_pet(pet_id=pet) as response, pytest.MonkeyPatch.context() as fault:

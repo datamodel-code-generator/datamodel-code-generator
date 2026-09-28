@@ -141,10 +141,13 @@
   raced kept b'first' ['pet.json', 'raced.json']
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  move failed OSError secondary [] ['pet.json', 'raced.json']
+  downloading readable by its owner alone True
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  moved again b'{}' ['failed.json', 'pet.json', 'raced.json']
+  move failed OSError secondary [] ['pet.json', 'private.json', 'raced.json']
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  moved again b'{}' ['failed.json', 'pet.json', 'private.json', 'raced.json']
   > POST https://hooks.example.com/ping?x=1
     [host: hooks.example.com, accept-encoding: gzip, deflate, content-length: 4] b'ping'
   request 200 'text/plain' b'pong' b'pong' shared True

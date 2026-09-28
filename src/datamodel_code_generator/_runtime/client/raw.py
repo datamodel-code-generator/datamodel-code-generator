@@ -69,17 +69,26 @@ class _SavedPieces:
 
 
 def _temporary(path: Path) -> tuple[int, Path]:
-    """Create a new file beside the target, with the permissions a plain new file gets under the umask."""
+    """Create a new file beside the target that only its owner can read while the download is written."""
     temporary = path.with_name(f".{path.name}.{os.urandom(8).hex()}.part")
-    return os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | _BINARY, 0o666), temporary
+    return os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | _BINARY, 0o600), temporary
+
+
+def _umask() -> int:
+    """Return the process umask, which reading sets for an instant to one that no new file is looser under."""
+    umask = os.umask(0o077)
+    os.umask(umask)
+    return umask
 
 
 def _commit(temporary: Path, path: Path, *, overwrite: bool) -> None:
     """Give a completed download its name at once, never over a file that appeared meanwhile unless overwriting.
 
-    Without overwriting, a new link gives the complete file its name, refusing a name that exists, before the temporary
-    name goes, so a failed move leaves no file under the target's name.
+    The download first takes the permissions a plain new file gets under the umask. Without overwriting, a new link
+    gives the complete file its name, refusing a name that exists, before the temporary name goes, so a failed move
+    leaves no file under the target's name.
     """
+    temporary.chmod(0o666 & ~_umask())
     if overwrite:
         temporary.replace(path)
         return
