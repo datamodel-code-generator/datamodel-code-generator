@@ -532,14 +532,21 @@ class ResponseDecoder(Generic[T_co, E_co]):
         """Return whether a status is a typed success of this operation."""
         return _MIN_SUCCESS <= status <= _MAX_SUCCESS or status in self._successes
 
-    def decode(self, info: ResponseInfo, body: bytes, *, truncated: bool = False) -> T_co:
-        """Return the success value of a complete response, or raise the typed failure of any other response."""
+    def decode(
+        self, info: ResponseInfo, body: bytes, *, truncated: bool = False, problem: BaseException | None = None
+    ) -> T_co:
+        """Return the success value of a complete response, or raise the typed failure of any other response.
+
+        A problem that stopped reading an error body, such as a broken content coding, is kept as its decode error.
+        """
         status = info.status_code
         if self.success(status):
             return self._decoded(info, body, self._branch(info, body))
         if _MIN_ERROR <= status <= _MAX_ERROR:
-            raise self._failure(info, body, truncated=truncated)
-        raise UnexpectedStatusError(info=info, body_bytes=body, truncated=truncated, call_id=info.call_id)
+            raise self._failure(info, body, truncated=truncated, problem=problem)
+        raise UnexpectedStatusError(
+            info=info, body_bytes=body, truncated=truncated, call_id=info.call_id, cause=problem
+        )
 
     def _bodyless(self, status: int) -> bool:
         return self._head or status in BODYLESS_STATUSES
@@ -556,10 +563,11 @@ class ResponseDecoder(Generic[T_co, E_co]):
         except _InvalidBodyError as error:
             raise error.failure(info=info, body_bytes=body, call_id=info.call_id, cause=error.cause) from None
 
-    def _failure(self, info: ResponseInfo, body: bytes, *, truncated: bool) -> HTTPStatusError[E_co]:
+    def _failure(
+        self, info: ResponseInfo, body: bytes, *, truncated: bool, problem: BaseException | None
+    ) -> HTTPStatusError[E_co]:
         data: E_co | None = None
         decoded = False
-        problem: BaseException | None = None
         key = status_key(info.status_code, self._error_groups.keys())
         declared = () if key is None else self._error_groups[key]
         if declared and not truncated:

@@ -1,0 +1,67 @@
+# pets pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding gzip = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding x-gzip = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding deflate = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding stacked = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding identity = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding members = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding layers ! ProtocolSizeError: ProtocolSizeError(operation_id='getPet', call_id='<call>', kind='content_layers', limit=2, observed=3) [operation_id='getPet', kind='content_layers', unit='items', limit=2] protocol_size_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding unknown ! UnsupportedContentCodingError: UnsupportedContentCodingError(operation_id='getPet', call_id='<call>') [operation_id='getPet', coding='br'] unsupported_content_coding_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed'] protocol_data_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding corrupt ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', cause=error('Error -3 while decompressing data: incorrect data check')] protocol_data_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding deflate trailing ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed'] protocol_data_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding gzip trailing ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed', cause=error('Error -3 while decompressing data: incorrect header check')] protocol_data_error
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding bomb = 'DecompressionLimitError layer=0 ratio=100.0 over=True'
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  coding pre-read ! AdapterContractError: AdapterContractError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding chunked = 4000
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding error ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, call_id='<call>') [status_code=500, error_decoded=True, error_data=Error(code=7, message='boom'), body_bytes=b'{"code": 7, "message": "boom"}', truncated=False] list_pets_http_error
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding error truncated ! ListPetsHTTPError: ListPetsHTTPError(status_code=500, call_id='<call>') [status_code=500, error_decoded=False, error_decode_error=ProtocolDataError(), body_bytes=b'{"code": 7, "message": "boom"}', truncated=True] list_pets_http_error
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  coding redirect ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, call_id='<call>') [status_code=302, body_bytes=b'', truncated=True, cause=UnsupportedContentCodingError()] unexpected_status_error
+  > DELETE https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  coding bodyless = None
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding stacked = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding identity = Pet(id=3, name='fox', tag=None)
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async coding truncated ! ProtocolDataError: ProtocolDataError(operation_id='getPet', call_id='<call>', condition='malformed') [operation_id='getPet', condition='malformed'] protocol_data_error

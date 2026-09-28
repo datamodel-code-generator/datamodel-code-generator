@@ -81,12 +81,17 @@ from ._runtime.model_codecs.unset import UNSET, Unset
 __all__ = ["UNSET", "ClientOptions", "RequestOptions", "ServerSelection", "Unset"]
 '''
 _ERROR_NAMES: Final = (
+    "AdapterContractError",
     "BodyProtocolError",
     "ConfigurationError",
     "DecodeError",
+    "DecompressionLimitError",
     "DeliveryState",
     "HTTPStatusError",
     "IOPhase",
+    "ProtocolDataError",
+    "ProtocolError",
+    "ProtocolSizeError",
     "RequestEncodingError",
     "ResponseDecodeError",
     "ResponseHeaderDecodeError",
@@ -97,6 +102,7 @@ _ERROR_NAMES: Final = (
     "TransportError",
     "UnexpectedMediaTypeError",
     "UnexpectedStatusError",
+    "UnsupportedContentCodingError",
 )
 _ERRORS: Final = (
     '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n'

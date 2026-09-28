@@ -1,6 +1,6 @@
 # S09 implementation record
 
-Status: in progress. S09-1 (client operations) is implemented and verified. It opens a new native stack on #4192, which updates the locked HTTPX2 to 2.13.1 on top of the S08 stack and its review fixes (#4179, top #4191), because that stack is still under review. S09-2 and S09-3 follow on this stack. Nothing in it has been merged.
+Status: in progress. S09-1 (client operations, #4193) and S09-2 (response content codings) are implemented and verified. They open a new native stack on #4192, which updates the locked HTTPX2 to 2.13.1 on top of the S08 stack and its review fixes (#4179, top #4191), because that stack is still under review. The rest of S09 follows on this stack. Nothing in it has been merged.
 
 ## Baseline and review boundaries
 
@@ -10,16 +10,19 @@ PR-STACKS splits S09 into resources, methods and URL, parameter, request and res
 
 The isolated checkout is `/private/tmp/dcg-s09`. No subagents were used; measurement scripts and raw output stay in the session scratchpad.
 
-## Scope of S09-1
+## Scope and split
 
-Generated calls have to run to be tested end to end, so S09-1 carries the HTTPX2 core they need: sync and asyncio clients over a borrowed or owned HTTPX2 client, `close`, `aclose` and context managers, `with_response`, the success body cap and the bounded error prefix. S09-2 adds the lifecycle states (`ClientClosedError`), the other views, transport adapters, raw and streaming responses, file and multipart bodies, wildcard request media and `RequestCodecs.part`; S09-3 the full option set, the remaining typed exceptions, hooks and `api-diff.json`.
+Generated calls have to run to be tested end to end, so S09-1 carries the HTTPX2 core they need: sync and asyncio clients over a borrowed or owned HTTPX2 client, `close`, `aclose` and context managers, `with_response`, the success body cap and the bounded error prefix.
+
+PR-STACKS plans a second PR for HTTPX2 sync and asyncio, injection, ownership and close, and raw, file and multipart bodies. It is split so each part stays reviewable: S09-2 decodes response content codings in the SDK, which raw responses need; then come transport adapters and the client lifecycle (`ClientClosedError`, `with_options` views), raw and streaming responses, and file, stream and multipart bodies with wildcard request media and `RequestCodecs.part`. The third planned PR, the full option set, the remaining typed exceptions, hooks and `api-diff.json`, comes last.
 
 ## Deviations from the plan
 
-- Until S09-2, multipart request or response media, wildcard request media, and form encodings the URL-encoded writer does not read fail generation with the temporary `E_CLIENT_UNSUPPORTED`, so no operation is generated without a capability it needs. S09-2 removes the code.
+- Until file and multipart bodies land, multipart request or response media, wildcard request media, and form encodings the URL-encoded writer does not read fail generation with the temporary `E_CLIENT_UNSUPPORTED`, so no operation is generated without a capability it needs. That PR removes the code.
 - A media type name that is not a media type, such as `json`, fails with `E_METADATA_REQUIRED` instead of raising `ValueError`. The FastAPI planner still raises; that is left to a separate fix.
 - A base URL carries no query, besides the userinfo and fragment the plan excludes: the operation path and query are appended to it, so a query would end up inside the path. One predicate, `options.is_base_url` in the runtime, decides for `ClientOptions`/`RequestOptions`, `default_base_url`, `server_base_url` and resolved servers, so generation and the runtime never disagree.
-- The SDK does not decode content codings itself yet. It sends the plan's `Accept-Encoding: gzip, deflate`, HTTPX2 decodes both, and the response cap counts decoded bytes.
+- `ProtocolError` has no `helper_id` or `operation`, and `ProtocolDataError` no `location`, until the protocol helpers define `OperationRef`, `Selector` and `RequestTarget` (S11).
+- `ResponseInfo.elapsed` is measured when the response headers arrive, so streaming handles can carry it (S09-2).
 - Embedded packages send no `User-Agent`, since they have no distribution; standalone distributions send `<distribution>/<version>`.
 - Response headers without a schema have no decoder, so `decode_<method>_header` leaves them out.
 - Until S10, every transport failure is a `TransportError` with its phase and delivery state, `retry_stop_reason` is always `None`, and security requirements are recorded in the contract digests but not applied.
@@ -58,6 +61,16 @@ Benchmarks (macOS on arm64, Python 3.13, medians or best of repeated runs):
 - Calls through an HTTPX2 mock transport, best of 7 × 3000, µs: a GET with a path and a query parameter decoding one model takes 99–100 with Pydantic BaseModel (104.6 before caching the settings, server URL and response groups), 95.7–96.4 with dataclasses and 96.1–96.7 with msgspec; a POST with a JSON body 115.6–116.5; a bodyless DELETE 36.0–36.4; asyncio adds about 3. The handwritten HTTPX2 call with `model_validate_json` takes 34.4–35.2 (GET), 24.8–25.0 (POST) and 16.7–16.8 (DELETE). Under the profiler a GET spends about 45% in the model codecs (wire validation, freezing and projection), 35% in HTTPX2 and 13% in the client runtime.
 - Imports: `import <package>` takes 1.9 ms and loads no HTTP runtime; `Client` 35 ms (HTTPX2 26.5 ms); the first resource 63–84 ms with its models. The first call takes about 400 ms, 345 ms of it importing jsonschema: `jsonschema[format-nongpl]` installs `rfc3987-syntax` for the `iri` formats, and it builds a Lark grammar at import (320 ms). FastAPI packages pay the same on their first request; the shared codec runtime is the place to address it.
 
+## S09-2: response content codings
+
+- `coding.py` reads the codings of every `Content-Encoding` header, comma lists and case-insensitive, drops `identity` and treats `x-gzip` as gzip. They are checked at the first body chunk, so a response without a body never fails on them: more than two layers are a `ProtocolSizeError(kind='content_layers')` and an unknown coding an `UnsupportedContentCodingError`. Each layer is removed incrementally with zlib, gzip with every member and deflate with zlib framing, at most 64 KiB per step, and its decoded bytes may not pass max(1 MiB, 100 × its encoded bytes), or `DecompressionLimitError` stops the read. Corrupt data, data after a deflate stream or garbage after a gzip member, and a coding without its end are `ProtocolDataError(condition='malformed')`.
+- The client core reads `iter_raw` and `aiter_raw` and removes each coding exactly once; both body caps count decoded bytes. A response whose body something already read, an HTTPX2 event hook or a mock built from `content=` or `json=`, is refused with `AdapterContractError(delivery_state=RESPONSE_STARTED)` as RUNTIME §4 requires, so the test responders stream their bodies as a server does. A coding failure on a success raises that error. On an error status the operation's `HTTPStatusError` keeps the prefix decoded so far with `truncated=True` and the failure as `error_decode_error`; on an undeclared status `UnexpectedStatusError` keeps it as its cause.
+- `errors.py` gains `ProtocolError`, `ProtocolDataError`, `ProtocolSizeError`, `UnsupportedContentCodingError`, `DecompressionLimitError` and `AdapterContractError`, which the generated `errors` module exports. Their messages name only SDK-defined values; the coding a server sent stays in the `coding` field.
+
+Tests: the `codings` runtime scenario decodes gzip, `X-Gzip`, deflate, a stacked `gzip, deflate` body, identity, a two-member gzip body and a 112 KiB list whose gzip body streams in 100-byte chunks; refuses three layers, `br`, a truncated and a corrupt gzip body, data after deflate and garbage after gzip, and a bomb of 2 MiB of zeros; keeps a gzip error payload, a truncated one as the decode error, a coded 302 as `UnexpectedStatusError`'s cause, and a bodyless 204 with an unknown coding; refuses a pre-read mock response; and repeats stacked, identity and truncated bodies with asyncio. The runtime stays at 100% coverage.
+
+Benchmarks (best of 5 × 2000 calls, µs): a GET streaming one small item takes 88.7–92.0 before and 89.1–92.1 after as identity, 92.2–95.6 and 94.1–97.9 gzip-coded; a 30 KiB item takes about 5900 either way, all of it in the model codec.
+
 ## Next action
 
-Publish S09-1 on #4192, then S09-2: lifecycle, views, transport adapters, raw and streaming responses, file and multipart bodies.
+Publish S09-2 on #4193, then transport adapters and the client lifecycle.

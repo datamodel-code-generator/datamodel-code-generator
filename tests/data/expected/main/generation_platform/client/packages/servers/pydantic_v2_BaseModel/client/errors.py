@@ -2,12 +2,17 @@
 """Exceptions of this package's clients: every class derives from SDKError."""
 
 from ._runtime.client.errors import (
+    AdapterContractError,
     BodyProtocolError,
     ConfigurationError,
     DecodeError,
+    DecompressionLimitError,
     DeliveryState,
     HTTPStatusError,
     IOPhase,
+    ProtocolDataError,
+    ProtocolError,
+    ProtocolSizeError,
     RequestEncodingError,
     ResponseDecodeError,
     ResponseHeaderDecodeError,
@@ -18,15 +23,21 @@ from ._runtime.client.errors import (
     TransportError,
     UnexpectedMediaTypeError,
     UnexpectedStatusError,
+    UnsupportedContentCodingError,
 )
 
 __all__ = [
+    'AdapterContractError',
     'BodyProtocolError',
     'ConfigurationError',
     'DecodeError',
+    'DecompressionLimitError',
     'DeliveryState',
     'HTTPStatusError',
     'IOPhase',
+    'ProtocolDataError',
+    'ProtocolError',
+    'ProtocolSizeError',
     'RequestEncodingError',
     'ResponseDecodeError',
     'ResponseHeaderDecodeError',
@@ -37,4 +48,5 @@ __all__ = [
     'TransportError',
     'UnexpectedMediaTypeError',
     'UnexpectedStatusError',
+    'UnsupportedContentCodingError',
 ]

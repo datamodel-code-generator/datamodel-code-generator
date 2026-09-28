@@ -453,3 +453,177 @@ class ResponseTooLargeError(SDKError):
         self.limit = limit
         self.observed_bytes = observed_bytes
         self.body_prefix = body_prefix
+
+
+class ProtocolError(SDKError):
+    """Base of failures in received protocol data, such as a content coding that does not decode."""
+
+
+class ProtocolDataError(ProtocolError):
+    """Received data that is missing, null, of another type or value, malformed, or inconsistent."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"] = "value",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep which rule the received data broke."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.condition = condition
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("condition", self.condition))
+
+
+class ProtocolSizeError(ProtocolError):
+    """A received record over the limit of its buffer; the oversized value never reaches the caller."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        kind: Literal[
+            "page",
+            "cursor",
+            "line",
+            "event",
+            "message",
+            "checkpoint",
+            "body",
+            "headers",
+            "keys",
+            "signatures",
+            "ack_buffer",
+            "part_manifest",
+            "content_layers",
+            "expanded_content",
+        ],
+        limit: int,
+        observed: int,
+        unit: Literal["bytes", "items"],
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep which record overflowed, its limit, and how much arrived."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.kind = kind
+        self.limit = limit
+        self.observed = observed
+        self.unit = unit
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("kind", self.kind), ("limit", self.limit), ("observed", self.observed))
+
+
+class UnsupportedContentCodingError(ProtocolError):
+    """A response content coding that no decoder handles; its name stays out of the message."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        coding: str,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the coding the response named."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.coding = coding
+
+
+class DecompressionLimitError(ProtocolSizeError):
+    """A content coding that expands beyond max(1 MiB, its encoded bytes times the ratio); the response is closed."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        layer: int,
+        encoded_bytes: int,
+        max_ratio: float,
+        limit: int,
+        observed: int,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the decoding layer, its encoded bytes so far, and the ratio its limit came from."""
+        super().__init__(
+            kind="expanded_content",
+            limit=limit,
+            observed=observed,
+            unit="bytes",
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.layer = layer
+        self.encoded_bytes = encoded_bytes
+        self.max_ratio = max_ratio
+
+
+class AdapterContractError(SDKError):
+    """A transport that broke its contract, such as handing over a body something already read; nothing is retried."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep how far the request got."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.delivery_state = delivery_state
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("delivery_state", self.delivery_state.value))

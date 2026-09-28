@@ -41,8 +41,11 @@ _ERROR_FIELDS: Final = (
     "actual_media_type",
     "expected_media_types",
     "representation",
+    "kind",
+    "unit",
     "limit",
     "observed_bytes",
+    "coding",
     "cause",
 )
 
@@ -131,17 +134,44 @@ async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> obje
     return result
 
 
+def _streamed(status: int, content: bytes, headers: dict[str, str]) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder that streams its body as a server does, with the Content-Length HTTPX2 would add."""
+    fields = {**headers, **({"content-length": str(len(content))} if content else {})}
+    return lambda _: httpx2.Response(status, headers=fields, stream=httpx2.ByteStream(content))
+
+
 def json_response(status: int, payload: object, **headers: str) -> Callable[[httpx2.Request], httpx2.Response]:
-    """Return a responder of a JSON body."""
-    return lambda _: httpx2.Response(status, json=payload, headers=headers)
+    """Return a responder of a JSON body, encoded as HTTPX2 encodes one."""
+    content = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode()
+    return _streamed(status, content, {**headers, "content-length": str(len(content)), "content-type": "application/json"})
 
 
 def raw_response(
     status: int, content: bytes = b"", content_type: str | None = None, **headers: str
 ) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of raw bytes with an optional Content-Type."""
-    fields = {**headers, **({} if content_type is None else {"content-type": content_type})}
-    return lambda _: httpx2.Response(status, content=content, headers=fields)
+    return _streamed(status, content, {**headers, **({} if content_type is None else {"content-type": content_type})})
+
+
+class _Chunks(httpx2.SyncByteStream, httpx2.AsyncByteStream):
+    def __init__(self, chunks: tuple[bytes, ...]) -> None:
+        self.chunks = chunks
+
+    def __iter__(self) -> Iterator[bytes]:
+        yield from self.chunks
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        for chunk in self.chunks:
+            yield chunk
+
+
+def chunked_response(
+    status: int, content: bytes, size: int, content_type: str, **headers: str
+) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder that streams raw bytes in chunks of a size."""
+    chunks = tuple(content[start : start + size] for start in range(0, len(content), size))
+    fields = {**headers, "content-type": content_type}
+    return lambda _: httpx2.Response(status, headers=fields, stream=_Chunks(chunks))
 
 
 def failing(error: type[httpx2.TransportError]) -> Callable[[httpx2.Request], httpx2.Response]:

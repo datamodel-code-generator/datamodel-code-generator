@@ -12,7 +12,16 @@ import httpx2
 
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
 from ..model_codecs.unset import UNSET, Unset
-from .errors import ConfigurationError, DeliveryState, RequestEncodingError, ResponseTooLargeError, TransportError
+from .coding import ContentDecoder
+from .errors import (
+    AdapterContractError,
+    ConfigurationError,
+    DeliveryState,
+    ProtocolError,
+    RequestEncodingError,
+    ResponseTooLargeError,
+    TransportError,
+)
 from .operations import DATA_ERRORS, normalized
 from .options import ClientOptions, RequestOptions, ServerSelection, checked_base_url
 from .responses import HeadersView, Response, ResponseInfo
@@ -132,7 +141,7 @@ def _pairs(fragments: tuple[ParameterFragment, ...]) -> Iterator[str]:
 
 
 class _Body:
-    __slots__ = ("chunks", "limit", "overflow", "size", "success", "truncated")
+    __slots__ = ("chunks", "limit", "overflow", "problem", "size", "success", "truncated")
 
     def __init__(self, limit: int | None, *, success: bool) -> None:
         self.limit = limit
@@ -141,6 +150,7 @@ class _Body:
         self.size = 0
         self.truncated = False
         self.overflow = False
+        self.problem: ProtocolError | None = None
 
     def add(self, chunk: bytes) -> bool:
         """Keep a chunk within the limit and return whether reading continues.
@@ -198,6 +208,17 @@ def _info(
     )
 
 
+def _unconsumed(response: httpx2.Response, operation: OperationPlan[object, object], info: ResponseInfo) -> None:
+    """Refuse a response whose body something already read, such as an HTTPX2 event hook or a pre-read mock."""
+    if response.is_stream_consumed:
+        raise AdapterContractError(
+            delivery_state=DeliveryState.RESPONSE_STARTED,
+            operation_id=operation.operation_id,
+            call_id=info.call_id,
+            info=info,
+        )
+
+
 def _received(decoder: ResponseDecoder[object, object], status: int, settings: _Settings) -> _Body:
     success = decoder.success(status)
     return _Body(settings.max_response_bytes if success else settings.max_error_body_bytes, success=success)
@@ -215,7 +236,10 @@ def _completed(
             observed_bytes=body.size,
             call_id=info.call_id,
         )
-    return Response(data=decoder.decode(info, body.content, truncated=body.truncated), info=info)
+    if (problem := body.problem) is not None and body.success:
+        raise problem
+    truncated = body.truncated or problem is not None
+    return Response(data=decoder.decode(info, body.content, truncated=truncated, problem=problem), info=info)
 
 
 class _Core:
@@ -350,11 +374,18 @@ class ClientCore(_Core):
         except httpx2.TransportError as error:
             raise _transport_error(error, operation, call_id, started=False) from None
         try:
-            received = _received(decoder, response.status_code, settings)
-            for chunk in _chunks(response.iter_bytes(), operation, call_id):
-                if not received.add(chunk):
-                    break
             info = _info(response, operation, call_id, started)
+            received = _received(decoder, response.status_code, settings)
+            _unconsumed(response, operation, info)
+            chunks = ContentDecoder(info, operation.operation_id).decoded(
+                _chunks(response.iter_raw(), operation, call_id)
+            )
+            try:
+                for chunk in chunks:
+                    if not received.add(chunk):
+                        break
+            except ProtocolError as error:
+                received.problem = error
         finally:
             response.close()
         return _completed(decoder, info, received, settings)
@@ -419,11 +450,18 @@ class AsyncClientCore(_Core):
         except httpx2.TransportError as error:
             raise _transport_error(error, operation, call_id, started=False) from None
         try:
-            received = _received(decoder, response.status_code, settings)
-            async for chunk in _async_chunks(response.aiter_bytes(), operation, call_id):
-                if not received.add(chunk):
-                    break
             info = _info(response, operation, call_id, started)
+            received = _received(decoder, response.status_code, settings)
+            _unconsumed(response, operation, info)
+            chunks = ContentDecoder(info, operation.operation_id).adecoded(
+                _async_chunks(response.aiter_raw(), operation, call_id)
+            )
+            try:
+                async for chunk in chunks:
+                    if not received.add(chunk):
+                        break
+            except ProtocolError as error:
+                received.problem = error
         finally:
             await response.aclose()
         return _completed(decoder, info, received, settings)

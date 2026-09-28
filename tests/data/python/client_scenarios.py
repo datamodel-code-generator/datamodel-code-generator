@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import gzip
 import importlib
+import json
+import zlib
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -12,6 +15,7 @@ from tests.data.python.client_runtime import (
     abroken,
     arecord,
     broken,
+    chunked_response,
     failing,
     generated,
     json_response,
@@ -474,12 +478,98 @@ def default_server(package: ModuleType, lines: list[str]) -> None:
         record(lines, "status", lambda: api.default.get_status())
 
 
+_PET: Final = json.dumps({"id": 3, "name": "fox"}).encode()
+_ERROR: Final = json.dumps({"code": 7, "message": "boom"}).encode()
+_BOMB: Final = gzip.compress(bytes(2 * 1024 * 1024), mtime=0)
+
+
+def _coded(coding: str, content: bytes, status: int = 200) -> Callable[[Any], Any]:
+    return chunked_response(status, content, len(content), "application/json", **{"content-encoding": coding})
+
+
+def _corrupt(content: bytes) -> bytes:
+    return content[:-8] + bytes([content[-8] ^ 1]) + content[-7:]
+
+
+def _limit(call: Callable[[], object]) -> Callable[[], str]:
+    """Report an expansion failure by its fixed facts, leaving out the byte counts the compressor decides."""
+
+    def limited() -> str:
+        try:
+            call()
+        except Exception as error:  # noqa: BLE001
+            over = error.observed > error.limit >= 1024 * 1024
+            return f"{type(error).__name__} layer={error.layer} ratio={error.max_ratio} over={over}"
+        return "decoded"
+
+    return limited
+
+
+def codings(package: ModuleType, lines: list[str]) -> None:
+    """Remove gzip, deflate, and stacked codings exactly once, and refuse unknown, broken, and expanding ones."""
+    exchange = Exchange(lines)
+    pets = json.dumps([{"id": index, "name": "cat"} for index in range(4000)]).encode()
+    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+        pet, trace = _pet(package, "GetPet"), _trace(package)
+        for label, responder in (
+            ("gzip", _coded("gzip", gzip.compress(_PET, mtime=0))),
+            ("x-gzip", _coded("X-Gzip", gzip.compress(_PET, mtime=0))),
+            ("deflate", _coded("deflate", zlib.compress(_PET))),
+            ("stacked", _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0)))),
+            ("identity", _coded("identity", _PET)),
+            ("members", _coded("gzip", gzip.compress(_PET[:5], mtime=0) + gzip.compress(_PET[5:], mtime=0))),
+            ("layers", _coded("gzip, deflate, gzip", _PET)),
+            ("unknown", _coded("gzip, br", _PET)),
+            ("truncated", _coded("gzip", gzip.compress(_PET, mtime=0)[:-4])),
+            ("corrupt", _coded("gzip", _corrupt(gzip.compress(_PET, mtime=0)))),
+            ("deflate trailing", _coded("deflate", zlib.compress(_PET) + b"x")),
+            ("gzip trailing", _coded("gzip", gzip.compress(_PET, mtime=0) + b"garbage")),
+        ):
+            exchange.respond(responder)
+            record(lines, f"coding {label}", lambda: api.pets.get_pet(pet_id=pet))
+        exchange.respond(_coded("gzip", _BOMB))
+        record(lines, "coding bomb", _limit(lambda: api.pets.get_pet(pet_id=pet)))
+        exchange.respond(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"}))
+        record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
+        exchange.respond(
+            chunked_response(
+                200, gzip.compress(pets, mtime=0), 100, "application/json", **{"content-encoding": "gzip", "X-Rate": "1"}
+            )
+        )
+        record(lines, "coding chunked", lambda: len(api.pets.list_pets(x_trace=trace).root))
+        exchange.respond(
+            _coded("gzip", gzip.compress(_ERROR, mtime=0), 500),
+            _coded("gzip", gzip.compress(_ERROR, mtime=0)[:-4], 500),
+            chunked_response(302, b"moved", 5, "text/plain", **{"content-encoding": "br"}),
+            chunked_response(204, b"", 1, "text/plain", **{"content-encoding": "br"}),
+        )
+        record(lines, "coding error", lambda: api.pets.list_pets(x_trace=trace))
+        record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
+        record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
+        record(lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId")))
+    run(lambda: _async_codings(package, exchange, lines))
+
+
+async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    pet = _pet(package, "GetPet")
+    async with package.AsyncClient(http_client=httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))) as api:
+        exchange.respond(
+            _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0))),
+            _coded("identity", _PET),
+            _coded("gzip", gzip.compress(_PET, mtime=0)[:-4]),
+        )
+        await arecord(lines, "async coding stacked", lambda: api.pets.get_pet(pet_id=pet))
+        await arecord(lines, "async coding identity", lambda: api.pets.get_pet(pet_id=pet))
+        await arecord(lines, "async coding truncated", lambda: api.pets.get_pet(pet_id=pet))
+
+
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "media": ("media", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), media),
     "querystring": ("querystring", ("pydantic_v2.BaseModel",), querystring),
     "servers": ("servers", ("pydantic_v2.BaseModel",), servers),
     "default-server": ("default-server", ("pydantic_v2.BaseModel",), default_server),
+    "codings": ("pets", ("pydantic_v2.BaseModel",), codings),
 }
 
 
