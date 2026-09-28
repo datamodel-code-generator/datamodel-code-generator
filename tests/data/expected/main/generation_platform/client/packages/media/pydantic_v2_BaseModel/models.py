@@ -66,5 +66,53 @@ class FieldAttachmentsGetResponse(BaseModel):
     id: int | None = None
 
 
+class FieldUploadsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, int],
+    }
+    id: int
+    title: str
+    count: int | None = None
+    tags: list[str] | None = None
+    meta: Address | None = None
+    photo: bytes
+    pages: list[str] | None = None
+
+
+class FieldAvatarsPostRequest(BaseModel):
+    caption: str | None = None
+    avatar: bytes | None = None
+
+
+class FieldScansPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, bytes],
+    }
+    note: str | None = None
+
+
+class FieldPhotosPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    photo: bytes
+
+
+class FieldLabelsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, str],
+    }
+    sheet: bytes | None = None
+
+
 class FieldDocumentsIdGetPathIdParameter(BaseModel):
     key: str | None = None

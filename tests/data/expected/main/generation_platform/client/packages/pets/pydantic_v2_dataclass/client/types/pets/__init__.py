@@ -2,6 +2,10 @@
 """The types of the pets operations."""
 
 from ._operations import (
+    AttachFilesErrorData,
+    AttachFilesHTTPError,
+    AttachFilesRequestCodecs,
+    AttachFilesResponse,
     CreatePetErrorData,
     CreatePetHTTPError,
     CreatePetRequestCodecs,
@@ -27,6 +31,10 @@ from ._operations import (
 )
 
 __all__ = [
+    'AttachFilesErrorData',
+    'AttachFilesHTTPError',
+    'AttachFilesRequestCodecs',
+    'AttachFilesResponse',
     'CreatePetErrorData',
     'CreatePetHTTPError',
     'CreatePetRequestCodecs',

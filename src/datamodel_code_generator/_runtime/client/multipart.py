@@ -1,7 +1,9 @@
-"""Multipart/form-data request bodies: ordered field and file parts, sent with the boundary of their call.
+"""Multipart bodies: form-data field and file parts sent with the boundary of their call, and received parts.
 
 A field part carries a value, a file part any binary body of the client's mode. Each send encodes the fields and
-begins each file part's own attempt, so a multipart body can be sent again when all of its file parts can.
+begins each file part's own attempt, so a multipart body can be sent again when all of its file parts can. A body
+whose schema has file parts is checked against the plans of its members: each part's name, kind, and repeats, and
+the presence of every required member.
 """
 
 from __future__ import annotations
@@ -24,9 +26,18 @@ from .responses import HeadersView
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
+    from typing import Protocol
 
     from ..model_codecs.wire import JSONValue, WireValue
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, BodyAttemptContext, SyncBinaryBody
+
+    class PartEncoder(Protocol):
+        """The encoder of a member's values, as the generated operation registry binds it."""
+
+        def encode(self, value: object) -> WireValue:
+            """Validate a value and return its wire value."""
+            ...
+
 
 PartT = TypeVar("PartT")
 InputT = TypeVar("InputT")
@@ -40,6 +51,11 @@ _BREAK: Final = re.compile(r"[\r\n\x00]")
 _PART_HEADERS: Final = frozenset({"content-type", "content-disposition"})
 _PARAMETERS: Final = r';\s*([^\s;=]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^\s;]*))'
 _PART: Final = "A multipart part must be a FieldPart, or a FilePart of a binary body of the client's mode"
+_UNDECLARED: Final = "A form-data part is not declared"
+_KIND: Final = "A form-data file member takes FileParts, and any other member FieldParts"
+_REPEATED: Final = "A form-data body repeats a single-valued member"
+_MISSING: Final = "A form-data body lacks a required member"
+_EMPTY: Final = "An empty array cannot be represented by repeated parts"
 _SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
 _ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
 
@@ -176,6 +192,65 @@ else:
     )
 
 
+class PartPlan:
+    """How one form-data member is sent or read: its kind, repeats, files, requiredness, and encoder.
+
+    A received part is read in its lexical kind, or as JSON. A sent value is validated by the encoder, when the member
+    has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts.
+    """
+
+    __slots__ = ("encoder", "file", "kind", "name", "repeated", "required")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        name: str,
+        kind: PartKind = "string",
+        *,
+        repeated: bool = False,
+        file: bool = False,
+        required: bool = False,
+        encoder: PartEncoder | None = None,
+    ) -> None:
+        """Keep the member's name and kind, whether it repeats, holds files, or is required, and its encoder."""
+        self.name = name
+        self.kind: PartKind = kind
+        self.repeated = repeated
+        self.file = file
+        self.required = required
+        self.encoder = encoder
+
+
+_ANY: Final = PartPlan("")
+
+
+class _Names:
+    """The member plans of a body with file parts, and the names its parts have used so far."""
+
+    __slots__ = ("additional", "declared", "seen")
+
+    def __init__(self, plans: tuple[PartPlan, ...], additional: PartPlan | None) -> None:
+        self.declared = {plan.name: plan for plan in plans}
+        self.additional = additional
+        self.seen: set[str] = set()
+
+    def plan(self, name: object, *, file: bool) -> PartPlan:
+        """Return the plan of a part, refusing an undeclared name, the other kind of part, or a repeat."""
+        if not isinstance(name, str) or (plan := self.declared.get(name, self.additional)) is None:
+            raise _malformed(name, ValueError(_UNDECLARED))
+        if plan.file is not file:
+            raise _malformed(name, ValueError(_KIND))
+        if name in self.seen and not (file and plan.repeated):
+            raise _malformed(name, ValueError(_REPEATED))
+        self.seen.add(name)
+        return plan
+
+    def check(self) -> None:
+        """Refuse a body that lacks a part of a required member."""
+        for plan in self.declared.values():
+            if plan.required and plan.name not in self.seen:
+                raise _malformed(plan.name, ValueError(_MISSING))
+
+
 def _malformed(name: object, cause: BaseException) -> RequestEncodingError:
     return RequestEncodingError(location=("body", name if isinstance(name, str) else "?"), cause=cause)
 
@@ -230,8 +305,7 @@ def encode_multipart(value: WireValue, boundary: str) -> bytes:
     parts: list[bytes] = []
     for name, item in value.items():
         if item == ():
-            msg = "An empty array cannot be represented by repeated parts"
-            raise ParameterEncodingError(msg)
+            raise ParameterEncodingError(_EMPTY)
         for member in item if isinstance(item, tuple) else (item,):
             content, media_type = multipart_member(member)
             parts.extend((multipart_head(boundary, name, None, media_type, ()), content, b"\r\n"))
@@ -248,16 +322,29 @@ def _refused(part: object) -> NoReturn:
     raise _malformed(getattr(part, "name", None), TypeError(_PART))
 
 
-def _field(part: FieldPart[object], boundary: str) -> bytes | None:
-    """Return a field part's bytes with its head and tail, or None when its value is UNSET."""
+def _field(part: FieldPart[object], boundary: str, plan: PartPlan) -> bytes | None:
+    """Return a field part's bytes with their heads and tails, one part for each item of a repeated member.
+
+    UNSET leaves an optional member out and is refused for a required one.
+    """
     if isinstance(value := part.value, Unset):
+        if plan.required:
+            raise _malformed(part.name, ValueError(_MISSING))
         return None
     try:
-        content, media_type = multipart_member(checked_wire(value))
-        head = multipart_head(boundary, part.name, None, part.content_type or media_type, part.headers)
+        wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value)
+        if not plan.repeated or not isinstance(wire, tuple):
+            return _member(part, boundary, wire)
+        if not wire:
+            raise ParameterEncodingError(_EMPTY)
+        return b"".join([_member(part, boundary, item) for item in wire])
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
-    return head + content + b"\r\n"
+
+
+def _member(part: FieldPart[object], boundary: str, item: WireValue) -> bytes:
+    content, media_type = multipart_member(item)
+    return multipart_head(boundary, part.name, None, part.content_type or media_type, part.headers) + content + b"\r\n"
 
 
 def _file_head(part: FilePart[SyncBinaryBody | AsyncBinaryBody], boundary: str) -> bytes:
@@ -388,30 +475,54 @@ def _is_async(value: object) -> TypeIs[AsyncMultipartBody[object]]:
     return isinstance(value, AsyncMultipartBody)
 
 
-def _layout(parts: tuple[object, ...], boundary: str, inputs: tuple[type[InputT], ...]) -> list[bytes | InputT]:
-    """Return a body's pieces in order: the encoded heads and fields, and each file part's binary input."""
+def _layout(
+    parts: tuple[object, ...], boundary: str, inputs: tuple[type[InputT], ...], names: _Names | None
+) -> list[bytes | InputT]:
+    """Return a body's pieces in order: the encoded heads and fields, and each file part's binary input.
+
+    With member plans, each part must be declared for its kind, and every required member must have a part.
+    """
     pieces: list[bytes | InputT] = []
     for part in parts:
         if _is_field(part):
-            if (field := _field(part, boundary)) is not None:
+            plan = _ANY if names is None else names.plan(part.name, file=False)
+            if (field := _field(part, boundary, plan)) is not None:
                 pieces.append(field)
         elif _is_file(part) and isinstance(content := part.content, inputs):
+            if names is not None:
+                names.plan(part.name, file=True)
             pieces.extend((_file_head(part, boundary), content, b"\r\n"))
         else:
             _refused(part)
+    if names is not None:
+        names.check()
     pieces.append(f"--{boundary}--\r\n".encode())
     return pieces
 
 
 class MultipartSource:
-    """A multipart body with the boundary of its call, which builds the attempt of each send in the client's mode."""
+    """A multipart body with the boundary of its call, which builds the attempt of each send in the client's mode.
 
-    __slots__ = ("body", "boundary")
+    The member plans of a schema with file parts check the parts of each attempt; a body without a schema has none.
+    """
 
-    def __init__(self, body: object, boundary: str) -> None:
-        """Keep the body as the call gave it and the boundary its Content-Type names."""
+    __slots__ = ("additional", "body", "boundary", "plans")
+
+    def __init__(
+        self,
+        body: object,
+        boundary: str,
+        plans: tuple[PartPlan, ...] | None = None,
+        additional: PartPlan | None = None,
+    ) -> None:
+        """Keep the body as the call gave it, the boundary its Content-Type names, and any member plans."""
         self.body = body
         self.boundary = boundary
+        self.plans = plans
+        self.additional = additional
+
+    def _names(self) -> _Names | None:
+        return None if self.plans is None else _Names(self.plans, self.additional)
 
     def attempt(self, context: BodyAttemptContext) -> BodyAttempt:
         """Encode the fields and begin each file part's attempt, refusing parts of the other mode."""
@@ -421,7 +532,7 @@ class MultipartSource:
         try:
             pieces.extend(
                 piece if isinstance(piece, bytes) else piece(context)
-                for piece in _layout(body.parts, self.boundary, _SYNC)
+                for piece in _layout(body.parts, self.boundary, _SYNC, self._names())
             )
         except BaseException:
             _closed_all([piece.close for piece in pieces if not isinstance(piece, bytes)])
@@ -434,7 +545,7 @@ class MultipartSource:
             raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
         pieces: list[bytes | AsyncBodyAttempt] = []
         try:
-            for piece in _layout(body.parts, self.boundary, _ASYNC):
+            for piece in _layout(body.parts, self.boundary, _ASYNC, self._names()):
                 pieces.append(piece if isinstance(piece, bytes) else await piece(context))  # noqa: PERF401 - Begun attempts must stay to be closed.
         except BaseException:
             _raised([
@@ -538,18 +649,6 @@ def _is_part(value: object) -> TypeIs[DecodedPart[object]]:
 
 def _is_data(value: object) -> TypeIs[MultipartData[object]]:
     return isinstance(value, MultipartData)
-
-
-class PartPlan:
-    """How one form-data member of a schema is read: its lexical kind, or JSON, and whether its parts repeat."""
-
-    __slots__ = ("kind", "name", "repeated")
-
-    def __init__(self, name: str, kind: PartKind = "string", *, repeated: bool = False) -> None:
-        """Keep the member's name, kind, and whether each item of an array arrives as its own part."""
-        self.name = name
-        self.kind: PartKind = kind
-        self.repeated = repeated
 
 
 def _parameter(value: str, name: str) -> str | None:

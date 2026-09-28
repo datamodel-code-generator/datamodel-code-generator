@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -66,3 +67,13 @@ FieldPetsPetIdPhotoPutRequest = TypeAliasType("FieldPetsPetIdPhotoPutRequest", b
 
 
 FieldPetsPetIdPhotoPutResponse = TypeAliasType("FieldPetsPetIdPhotoPutResponse", bytes)
+
+
+FieldPetsPetIdFilesPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesPostPathPetIdParameter", int)
+
+
+@dataclass(config=ConfigDict(extra='forbid'))
+class FieldPetsPetIdFilesPostRequest:
+    file: bytes
+    note: str | None = None
+    labels: list[str] | None = None

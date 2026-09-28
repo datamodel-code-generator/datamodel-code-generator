@@ -5,7 +5,8 @@ from __future__ import annotations
 import re
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from functools import cached_property
 from itertools import starmap
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import urljoin, urlsplit
@@ -23,7 +24,12 @@ from datamodel_code_generator._client.naming import (
     snake,
 )
 from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence, SourceLocation
+from datamodel_code_generator._generation_contract import (
+    LiteralScalar,
+    LiteralSequence,
+    SourceLocation,
+    TypeUseBinding,
+)
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 
@@ -35,7 +41,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import (
         FrozenLiteral,
         OperationContract,
-        TypeUseBinding,
+        SourceDocumentId,
         TypeUseId,
         WireDeclaration,
     )
@@ -69,8 +75,20 @@ _CONFIG_CODES: Final = frozenset({"E_CONFIG_VALUE", "E_CONFIG_CONFLICT", "E_OPER
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class PartSpec:
+    """One member of a form-data body with file parts: its plan, and the type use of its values unless it is a file."""
+
+    plan: PartPlan
+    use: TypeUseBinding | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class MediaSpec:
-    """One declared media type of a body or response, with its type use when its content has a schema."""
+    """One declared media type of a body or response, with its type use when its content has a schema.
+
+    A form-data body whose schema has file parts is sent as parts: `sent` plans each declared member, and
+    `sent_additional` any other part, which no plan allows when the schema allows no other properties.
+    """
 
     media_type: str
     kind: MediaKind
@@ -79,6 +97,8 @@ class MediaSpec:
     additional: FieldPlan | None = None
     parts: tuple[PartPlan, ...] = ()
     additional_part: PartPlan | None = None
+    sent: tuple[PartSpec, ...] | None = None
+    sent_additional: PartSpec | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -274,6 +294,15 @@ class Planner:
         self.settings = self.resolved()
         self.raise_problems()
 
+    @cached_property
+    def _schemas(self) -> dict[tuple[SourceDocumentId, str], TypeUseBinding]:
+        """Return the value use of each schema occurrence by its location, which a part of a body is bound as."""
+        return {
+            (use.id.use_site.document, use.id.use_site.pointer): use
+            for use in self.request.batch.type_uses
+            if use.id.role == "schema" and use.id.projection == "value"
+        }
+
     def raise_problems(self) -> None:
         """Stop the phase when it reported any failure."""
         if self.problems:
@@ -446,6 +475,11 @@ class Planner:
             self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoded.use_site))
         fields, additional = self.forms.get(use.id, ((), None)) if kind == "form" and use is not None else ((), None)
         parts, additional_part = _part_plans(self.wire, use) if kind == "multipart" and not request else ((), None)
+        sent, sent_additional = (
+            _sent(self.wire, self._schemas, use, use.schema)
+            if request and reason is None and essence == _FORM_DATA and use is not None and use.schema is not None
+            else (None, None)
+        )
         return MediaSpec(
             media_type=media_type,
             kind=kind,
@@ -454,13 +488,15 @@ class Planner:
             additional=additional,
             parts=parts,
             additional_part=additional_part,
+            sent=sent,
+            sent_additional=sent_additional,
         )
 
     def unsupported(self, kind: MediaKind, essence: str, use: TypeUseBinding | None, *, request: bool) -> str | None:
         """Return why a media type cannot be sent or read yet, or None when it can.
 
         Multipart without a schema is sent as form-data parts and read as bytes of any multipart media; with a
-        schema, only form-data maps its parts to the schema's members, and file parts are not supported yet.
+        schema, only form-data maps its parts to the schema's members, and file parts are only sent so far.
         """
         if request and "*" in essence:
             return "is not supported yet"
@@ -470,10 +506,10 @@ class Planner:
             return None if essence == _FORM_DATA or not request else "is not supported yet"
         if essence != _FORM_DATA:
             return "is not supported yet"
-        return self.file_parts(use, use.schema)
+        return self.file_parts(use, use.schema, request=request)
 
-    def file_parts(self, use: TypeUseBinding, location: SourceLocation) -> str | None:
-        """Return why a form-data schema cannot be sent yet: file parts or a shape other than an object; else None.
+    def file_parts(self, use: TypeUseBinding, location: SourceLocation, *, request: bool) -> str | None:
+        """Return why a form-data schema cannot be used yet: a shape other than an object, or read file parts.
 
         The members of the use are its properties as its model declares them, so allOf branches count too.
         """
@@ -485,7 +521,7 @@ class Planner:
             for member in use.members
             if member.schema is not None and _file(self.wire, member.schema)
         ]
-        return None if not files else f"has file parts, which are not supported yet: {', '.join(files)}"
+        return None if request or not files else f"has file parts, which are not supported yet: {', '.join(files)}"
 
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None
@@ -678,6 +714,76 @@ def _file(wire: WirePlan, location: SourceLocation) -> bool:
     return _types(schema) - _NULL == _STRING and binary
 
 
+def _sent(
+    wire: WirePlan,
+    schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
+    use: TypeUseBinding,
+    site: SourceLocation,
+) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
+    """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
+
+    A member holding no files takes values of its field's type, which the part's own type use validates.
+    """
+    location, schema = wire.schema(site)
+    members = [
+        (member.wire_name, member.schema, facts)
+        for member in use.members
+        if member.member_kind == "property"
+        and member.wire_name is not None
+        and member.schema is not None
+        and member.exclusion is None
+        and (facts := member.model_facts) is not None
+    ]
+    extra = SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
+    match schema.get("additionalProperties", True):
+        case False:
+            additional = None
+        case Mapping() as declared if declared and _file(wire, extra):
+            additional = PartSpec(plan=PartPlan("", repeated=_array(wire, extra), file=True))
+        case Mapping() as declared if declared and (typed := schemas.get((extra.document, extra.pointer))):
+            additional = PartSpec(
+                plan=PartPlan("", repeated=_array(wire, extra)),
+                use=_part_use(use, extra, None, typed),
+            )
+        case _:
+            additional = PartSpec(plan=PartPlan(""))
+    files = {name for name, member, _ in members if _file(wire, member)}
+    if not files and (additional is None or not additional.plan.file):
+        return None, None
+    return tuple(
+        PartSpec(
+            plan=PartPlan(
+                name,
+                repeated=_array(wire, member),
+                file=name in files,
+                required=facts.required and not facts.read_only,
+            ),
+            use=None
+            if name in files
+            else _part_use(use, member, name, TypeUseBinding(use.id, "bound", facts.type, None)),
+        )
+        for name, member, facts in members
+    ), additional
+
+
+def _part_use(
+    body: TypeUseBinding, location: SourceLocation, name: str | None, bound: TypeUseBinding
+) -> TypeUseBinding:
+    """Return the type use of one part of a body: the body's use at the part's schema, bound as `bound` is."""
+    return TypeUseBinding(
+        id=replace(body.id, use_site=location, schema_site=location, name=name),
+        state=bound.state,
+        type=bound.type,
+        reason=bound.reason,
+        schema=location,
+    )
+
+
+def _array(wire: WirePlan, location: SourceLocation) -> bool:
+    """Return whether a member is an array, whose items are parts of their own."""
+    return _types(wire.schema(location)[1]) - _NULL == _ARRAY
+
+
 def _part_plans(wire: WirePlan, use: TypeUseBinding | None) -> tuple[tuple[PartPlan, ...], PartPlan | None]:
     """Return how the parts of a form-data response are read: each member's kind, then any other part's."""
     if use is None or use.schema is None:
@@ -789,18 +895,35 @@ def _declared(url: str, variables: tuple[tuple[str, str, tuple[str, ...]], ...])
     return set(_PLACEHOLDER.findall(url)) <= {name for name, _, _ in variables}
 
 
+def sent_parts(media: MediaSpec) -> tuple[PartSpec, ...]:
+    """Return the plans of a body sent as parts: each declared member, then any other part."""
+    return (*(media.sent or ()), *(() if media.sent_additional is None else (media.sent_additional,)))
+
+
+def part_uses(plan: ClientPlan) -> Iterator[TypeUseBinding]:
+    """Yield the type use of each part holding no files, of every body sent as parts."""
+    for spec in plan.operations:
+        for media in () if spec.body is None else spec.body.media:
+            yield from (part.use for part in sent_parts(media) if part.use is not None)
+
+
 def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
-    """Yield every type use whose codec the client binds: parameters, bodies, responses, and headers."""
+    """Yield every type use whose codec the client binds: parameters, bodies or their parts, responses, and headers."""
     for spec in plan.operations:
         yield from (parameter.use.id for parameter in spec.parameters if parameter.use is not None)
         if spec.body is not None:
-            yield from (media.use.id for media in spec.body.media if media.use is not None and media.kind != "binary")
+            yield from (
+                media.use.id
+                for media in spec.body.media
+                if media.use is not None and media.kind != "binary" and media.sent is None
+            )
         for response in spec.responses:
             if not response.bodyless:
                 yield from (
                     media.use.id for media in response.media if media.use is not None and media.kind != "binary"
                 )
             yield from (header.use.id for header in response.headers if header.use is not None)
+    yield from (use.id for use in part_uses(plan))
 
 
 def form_uses(request: TargetRequest) -> Iterator[TypeUseId]:

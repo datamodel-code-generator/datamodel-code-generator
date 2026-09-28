@@ -13,6 +13,7 @@ from models import FieldPetsGetQueryTagsParameter as _dcg_type_3
 from models import FieldPetsGetResponse as _dcg_type_0
 from models import FieldPetsGetResponse200XNextHeader as _dcg_type_6
 from models import FieldPetsGetResponse200XRateHeader as _dcg_type_7
+from models import FieldPetsPetIdFilesPostPathPetIdParameter as _dcg_type_14
 from models import FieldPetsPetIdGetPathPetIdParameter as _dcg_type_12
 from models import FieldPetsPetIdGetResponse as _dcg_type_11
 from models import FieldPetsPetIdHeadResponse200ETagHeader as _dcg_type_13
@@ -373,3 +374,81 @@ def decode_head_pet_header(
 ) -> _dcg_type_13 | Unset:
     """Decode one declared response header of head_pet from a response's metadata."""
     return _HEAD_PET_HEADERS.decode(info, name)
+
+
+AttachFilesResponse: TypeAlias = None
+AttachFilesErrorData: TypeAlias = None
+
+
+class AttachFilesHTTPError(HTTPStatusError[AttachFilesErrorData]):
+    """An error response of attach_files, with its decoded payload when one is declared."""
+
+
+class _AttachFilesRequestCodecs(
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_14], NativeOutboundCodec[str] | NativeOutboundCodec[list[str]]],
+):
+    """The outbound codecs of the attach_files request."""
+
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['path'],
+        name: Literal['petId'],
+    ) -> NativeOutboundCodec[_dcg_type_14]: ...
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['path', 'query', 'querystring', 'header', 'cookie'],
+        name: str,
+    ) -> NativeOutboundCodec[_dcg_type_14]: ...
+    def parameter(
+        self,
+        *,
+        location: Literal['path', 'query', 'querystring', 'header', 'cookie'],
+        name: str,
+    ) -> NativeOutboundCodec[_dcg_type_14]:
+        """Return the outbound codec of one declared parameter."""
+        return self._parameter(location, name)
+
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['note'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[str]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: Literal['labels'],
+        media_type: Literal['multipart/form-data'] | None = None,
+    ) -> NativeOutboundCodec[list[str]]: ...
+    @overload
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str] | NativeOutboundCodec[list[str]]: ...
+    def part(
+        self,
+        *,
+        name: str,
+        media_type: str | None = None,
+    ) -> NativeOutboundCodec[str] | NativeOutboundCodec[list[str]]:
+        """Return the outbound codec of one part of a body sent as parts."""
+        return self._part(name, media_type)
+
+
+AttachFilesRequestCodecs: Final = _AttachFilesRequestCodecs(
+    default='multipart/form-data',
+    parameters=(('path', 'petId', model_bindings.outbound_19),),
+    parts=(
+        ('multipart/form-data', 'file', None),
+        ('multipart/form-data', 'note', model_bindings.outbound_20),
+        ('multipart/form-data', 'labels', model_bindings.outbound_21),
+    ),
+)

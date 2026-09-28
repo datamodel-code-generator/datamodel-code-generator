@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias, TypedDict
+from typing import TypeAlias
 
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict
 
 
 class Pet(TypedDict):
@@ -64,3 +64,12 @@ FieldPetsPetIdPhotoPutRequest: TypeAlias = bytes
 
 
 FieldPetsPetIdPhotoPutResponse: TypeAlias = bytes
+
+
+FieldPetsPetIdFilesPostPathPetIdParameter: TypeAlias = int
+
+
+class FieldPetsPetIdFilesPostRequest(TypedDict, closed=True):
+    note: NotRequired[str]
+    labels: NotRequired[list[str]]
+    file: bytes

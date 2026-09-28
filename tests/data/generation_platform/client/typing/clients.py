@@ -28,7 +28,7 @@ from pets.bodies import (
     StreamBody,
     SyncBinaryBody,
 )
-from pets.model_codecs import JSONValue, ModelValue, WireValue
+from pets.model_codecs import JSONValue, ModelValue, NativeOutboundCodec, WireValue
 from pets.options import UNSET, RequestOptions
 from pets.responses import AsyncRawResponse, HeadersView, RawResponse, Response, ResponseInfo
 from pets.transports import (
@@ -41,6 +41,7 @@ from pets.transports import (
 )
 from pets.types.pets.photos import UploadRequestCodecs
 from pets.types.pets import (
+    AttachFilesRequestCodecs,
     CreatePetRequestCodecs,
     CreatePetResponse,
     GetPetRequestCodecs,
@@ -156,7 +157,13 @@ async def bodies_async(client: AsyncClient, file: BinaryIO) -> None:
         yield b"a"
 
     body = AsyncFileBody.from_path("photo.png")
-    inputs: tuple[AsyncBinaryBody, ...] = (b"\x00", AsyncFileBody(file), body, AsyncStreamBody(chunks()), AsyncBodyFactory(abuild))
+    inputs: tuple[AsyncBinaryBody, ...] = (
+        b"\x00",
+        AsyncFileBody(file),
+        body,
+        AsyncStreamBody(chunks()),
+        AsyncBodyFactory(abuild),
+    )
     for each in inputs:
         await client.pets.photos.upload(pet_id=photo, body=each)
     await client.request_raw("PUT", "https://example.com/file", body=AsyncStreamBody(chunks(), ownership="owned"))
@@ -173,6 +180,17 @@ def multipart(client: Client, file: BinaryIO) -> None:
     assert_type(parts.parts, tuple[FilePart[SyncBinaryBody] | FieldPart[str | int], ...])
     body = MultipartBody[WireValue]((FieldPart("meta", {"k": 1}), FieldPart("skipped", UNSET), FilePart("f", b"x")))
     client.request_raw("POST", "https://example.com/forms", body=body)
+
+
+def file_parts(client: Client, file: BinaryIO) -> None:
+    note = FieldPart("note", "hello")
+    labels = FieldPart("labels", AttachFilesRequestCodecs.part(name="labels").from_wire(["a", "b"]))
+    assert_type(labels, FieldPart[ModelValue[list[str]]])
+    pet = AttachFilesRequestCodecs.parameter(location="path", name="petId").from_wire(1)
+    client.pets.attach_files(pet_id=pet, body=MultipartBody((note, labels, FilePart("file", FileBody(file)))))
+    codec = AttachFilesRequestCodecs.part(name="note", media_type="multipart/form-data")
+    assert_type(codec, NativeOutboundCodec[str])
+    assert_type(AttachFilesRequestCodecs.part(name="file"), NativeOutboundCodec[str] | NativeOutboundCodec[list[str]])
 
 
 def multipart_data(data: MultipartData[bytes]) -> None:
@@ -213,7 +231,9 @@ class AsyncAdapter:
     def capabilities(self) -> TransportCapabilities:
         return TransportCapabilities(internal_retry_limit=None, delivery_evidence=True, http_versions=("HTTP/2",))
 
-    async def send(self, request: PreparedRequest[AsyncBodyAttempt], context: AttemptIOContext) -> AsyncTransportResponse:
+    async def send(
+        self, request: PreparedRequest[AsyncBodyAttempt], context: AttemptIOContext
+    ) -> AsyncTransportResponse:
         raise NotImplementedError
 
     async def aclose(self) -> None:
@@ -226,4 +246,6 @@ def transports() -> None:
     owned = OwnedTransportAdapter(Adapter())
     assert_type(owned, OwnedTransportAdapter[Adapter])
     Client(transport_adapter=owned)
-    assert_type(AsyncClient(transport_adapter=OwnedTransportAdapter(AsyncAdapter())).with_options(RequestOptions()), AsyncClient)
+    assert_type(
+        AsyncClient(transport_adapter=OwnedTransportAdapter(AsyncAdapter())).with_options(RequestOptions()), AsyncClient
+    )
