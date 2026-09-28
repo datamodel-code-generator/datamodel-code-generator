@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx2
 
-from tests.data.python.client_runtime import arecord, record, run
+from tests.data.python.client_runtime import Exchange, arecord, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -249,7 +249,7 @@ def transports(package: ModuleType, lines: list[str]) -> None:
     failing = Adapter(transport_module, lines)
     failing.close_error = True
     record(lines, "owned adapter close bug", package.Client(transport_adapter=transport_module.OwnedTransportAdapter(failing)).close)
-    http = httpx2.Client(transport=httpx2.MockTransport(lambda request: httpx2.Response(200, json={})))
+    http = httpx2.Client()
     for label, build in (
         ("adapter and http_client", lambda: package.Client(transport_adapter=adapter, http_client=http)),
         ("adapter owned by ownership", lambda: package.Client(transport_adapter=adapter, http_client_ownership="owned")),
@@ -297,12 +297,15 @@ async def _async_transports(package: ModuleType, lines: list[str]) -> None:
     client = package.AsyncClient(transport_adapter=transport_module.OwnedTransportAdapter(owned))
     await arecord(lines, "async owned adapter close bug", client.aclose)
     sent: list[object] = []
-    unicode = httpx2.Client(transport=httpx2.MockTransport(lambda request: _header_echo(request, sent)))
+    echo = Exchange(lines)
+    echo.respond(lambda request: _header_echo(request, sent))
+    unicode = echo.client()
     with package.Client(http_client=unicode) as api:
         trace = importlib.import_module(f"{package.__name__}.types.pets").ListPetsRequestCodecs.parameter(
             location="header", name="X-Trace"
         ).from_wire("café")
         record(lines, "unicode header", lambda: api.pets.with_response.list_pets(x_trace=trace).info.status_code)
+    unicode.close()
     lines.append(f"  unicode header bytes {sent}")
     native = httpx2.AsyncClient(transport=httpx2.MockTransport(lambda request: httpx2.Response(200, json={"id": 3})))
     async with package.AsyncClient(http_client=native) as api:

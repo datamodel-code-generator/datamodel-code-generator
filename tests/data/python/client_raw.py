@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Final, NoReturn
 import httpx2
 import pytest
 
-from tests.data.python.client_runtime import Exchange, aoutcome, arecord, failing, outcome, record, run
+from tests.data.python.client_runtime import Exchange, Injected, aoutcome, arecord, failing, outcome, record, run
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
 
 if TYPE_CHECKING:
@@ -92,8 +92,10 @@ class _Stream(httpx2.SyncByteStream, httpx2.AsyncByteStream):
 
 
 def _streamed(status: int, chunks: tuple[bytes, ...], media: str = _JSON, **options: Any) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder of a chunked body; one that fails or acts mid-body runs in-process, as the client reads it."""
     headers = {"content-type": media, **options.pop("headers", {})}
-    return lambda request: httpx2.Response(status, headers=headers, stream=_Stream(chunks, **options))
+    responder = lambda request: httpx2.Response(status, headers=headers, stream=_Stream(chunks, **options))  # noqa: E731
+    return Injected(responder) if options.get("fail") or options.get("action") else responder
 
 
 def _gzip(status: int, content: bytes, size: int, media: str = _JSON) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -110,7 +112,7 @@ def raw(package: ModuleType, lines: list[str]) -> None:
     """Read raw responses saved and streaming, synchronously and with asyncio, through HTTPX2 and adapters."""
     _, _, options, _, _ = _modules(package)
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     with tempfile.TemporaryDirectory() as directory, package.Client(http_client=http) as api:
         _saved_responses(package, api, exchange, lines)
         _streaming(package, api, exchange, lines)
@@ -464,7 +466,7 @@ async def _async_raw(package: ModuleType, lines: list[str]) -> None:
     """Read raw responses of an asyncio client: the same saved, streaming, and closing behaviour."""
     _, _, options, _, _ = _modules(package)
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     with tempfile.TemporaryDirectory() as directory:
         async with package.AsyncClient(http_client=http) as api:
             await _async_saved(package, api, exchange, lines)

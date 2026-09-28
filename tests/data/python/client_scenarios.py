@@ -28,6 +28,7 @@ from tests.data.python.client_runtime import (
     chunked_response,
     failing,
     generated,
+    injected,
     json_response,
     raw_response,
     record,
@@ -42,10 +43,6 @@ if TYPE_CHECKING:
 
 def _modules(package: ModuleType, *names: str) -> list[ModuleType]:
     return [importlib.import_module(f"{package.__name__}.{name}") for name in names]
-
-
-def _transport(handler: Callable[[httpx2.Request], httpx2.Response]) -> httpx2.MockTransport:
-    return httpx2.MockTransport(handler)
 
 
 def _argument(package: ModuleType, operation: str, location: str, name: str, wire: object) -> object:
@@ -113,10 +110,10 @@ def _lifecycle(package: ModuleType, lines: list[str]) -> None:
     owned = package.Client()
     owned.close()
     owned.close()
-    borrowed_http = httpx2.Client(transport=_transport(lambda _: httpx2.Response(204)))
+    borrowed_http = httpx2.Client()
     with package.Client(http_client=borrowed_http):
         pass
-    transferred = httpx2.Client(transport=_transport(lambda _: httpx2.Response(204)))
+    transferred = httpx2.Client()
     with package.Client(http_client=transferred, http_client_ownership="owned"):
         pass
     lines.append(f"  lifecycle borrowed closed {borrowed_http.is_closed} owned closed {transferred.is_closed}")
@@ -245,7 +242,7 @@ def _get_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]
     pet = _pet(package, "GetPet")
     record(lines, "get undeclared", lambda: api.pets.get_pet(pet_id=pet, response_media_type="image/png"))
     record(lines, "get invalid", lambda: api.pets.get_pet(pet_id=pet, response_media_type="png"))
-    exchange.respond(raw_response(204), raw_response(204, b"x", "text/plain"), raw_response(200))
+    exchange.respond(raw_response(204), injected(raw_response(204, b"x", "text/plain")), raw_response(200))
     deleted = _pet(package, "DeletePetsByPetId")
     record(lines, "delete", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
     record(lines, "delete body", lambda: api.pets.delete_pets_by_pet_id(pet_id=deleted))
@@ -268,7 +265,7 @@ def _upload(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
 def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: list[str]) -> None:
     (options,) = _modules(package, "options")
     selection = options.ServerSelection
-    http = httpx2.Client(transport=_transport(exchange.handle))
+    http = exchange.client()
     override = options.ClientOptions(base_url="https://override.example.com/root/")
     pet = _pet(package, "DeletePetsByPetId")
     with package.Client(http_client=http, options=override) as api:
@@ -288,6 +285,7 @@ def _servers(package: ModuleType, api_options: Any, exchange: Exchange, lines: l
                     pet_id=pet, options=options.RequestOptions(server=chosen)
                 ),
             )
+    http.close()
     del api_options
 
 
@@ -327,7 +325,7 @@ def _transports(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
 def pets(package: ModuleType, lines: list[str]) -> None:
     """Call every pets operation synchronously, then its async client, covering each success and failure."""
     exchange = Exchange(lines)
-    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         for step in (_list_pets, _create_pet, _get_pet, _upload, _limits, _transports):
             step(package, api, exchange, lines)
     _servers(package, None, exchange, lines)
@@ -340,7 +338,7 @@ def pets(package: ModuleType, lines: list[str]) -> None:
 
 async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     (options,) = _modules(package, "options")
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     trace, pet = _trace(package), _pet(package, "GetPet")
     (types,) = _modules(package, "types.pets")
     text = types.CreatePetRequestCodecs.body(media_type="text/plain").from_wire("dog")
@@ -366,7 +364,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
     owned = package.AsyncClient()
     await owned.aclose()
     await owned.aclose()
-    transferred = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    transferred = exchange.async_client()
     async with package.AsyncClient(http_client=transferred, http_client_ownership="owned"):
         pass
     lines.append(f"  async owned closed {transferred.is_closed}")
@@ -384,7 +382,7 @@ def media(package: ModuleType, lines: list[str]) -> None:
     """Send forms, pairs, documents, and notes, and decode forms, texts, envelopes, and object headers."""
     forms, documents = _modules(package, "types.forms", "types.documents")
     exchange = Exchange(lines)
-    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         form = forms.SubmitFormRequestCodecs.body().from_wire({"name": "a b", "count": 2, "labels": ["x", "y"]})
         exchange.respond(
             raw_response(200, b"name=a+b&count=2", "application/x-www-form-urlencoded"),
@@ -480,7 +478,7 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
         "term": "a b",
         "page": 2,
     })
-    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
         record(lines, "search all", lambda: api.default.search())
@@ -492,7 +490,7 @@ def servers(package: ModuleType, lines: list[str]) -> None:
     """Resolve relative servers against their base, default server variables, and later servers by position."""
     (options,) = _modules(package, "options")
     exchange = Exchange(lines)
-    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(raw_response(204), raw_response(204), raw_response(204))
         record(lines, "status", lambda: api.default.get_status())
         record(lines, "regional", lambda: api.default.get_regional())
@@ -503,7 +501,7 @@ def servers(package: ModuleType, lines: list[str]) -> None:
 def default_server(package: ModuleType, lines: list[str]) -> None:
     """Send the generated User-Agent of a distribution to its default base URL."""
     exchange = Exchange(lines)
-    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(raw_response(204))
         record(lines, "status", lambda: api.default.get_status())
 
@@ -539,7 +537,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
     """Remove gzip, deflate, and stacked codings exactly once, and refuse unknown, broken, and expanding ones."""
     exchange = Exchange(lines)
     pets = json.dumps([{"id": index, "name": "cat"} for index in range(4000)]).encode()
-    with package.Client(http_client=httpx2.Client(transport=_transport(exchange.handle))) as api:
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         pet, trace = _pet(package, "GetPet"), _trace(package)
         for label, responder in (
             ("gzip", _coded("gzip", gzip.compress(_PET, mtime=0))),
@@ -559,7 +557,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
             record(lines, f"coding {label}", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(_coded("gzip", _BOMB))
         record(lines, "coding bomb", _limit(lambda: api.pets.get_pet(pet_id=pet)))
-        exchange.respond(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"}))
+        exchange.respond(injected(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"})))
         record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(
             chunked_response(
@@ -582,7 +580,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
 
 async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
     pet = _pet(package, "GetPet")
-    async with package.AsyncClient(http_client=httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))) as api:
+    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
         exchange.respond(
             _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0))),
             _coded("identity", _PET),

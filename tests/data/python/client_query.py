@@ -19,7 +19,7 @@ def query(package: ModuleType, lines: list[str]) -> None:
     """Patch the query in layers, percent-encoding each patched name and value once, and refuse malformed patches."""
     options, types = (importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "types.pets"))
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     codecs = types.ListPetsRequestCodecs
     trace = codecs.parameter(location="header", name="X-Trace").from_wire("t1").value
     limit = codecs.parameter(location="query", name="limit").from_wire(5).value
@@ -50,7 +50,7 @@ def query(package: ModuleType, lines: list[str]) -> None:
 async def _async_query(package: ModuleType, lines: list[str]) -> None:
     options, types = (importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "types.pets"))
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     trace = types.ListPetsRequestCodecs.parameter(location="header", name="X-Trace").from_wire("t1").value
     api: Any
     async with package.AsyncClient(http_client=http, options=options.ClientOptions(query=(("api-version", "1"),))) as api:

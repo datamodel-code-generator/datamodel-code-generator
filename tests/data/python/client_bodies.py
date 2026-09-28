@@ -187,7 +187,7 @@ def _blocked(entered: threading.Event, proceed: threading.Event) -> Callable[[ht
 def bodies(package: ModuleType, lines: list[str]) -> None:
     """Upload bytes, files, streams, and factories, synchronously and with asyncio, and refuse the rest."""
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     with tempfile.TemporaryDirectory() as directory, package.Client(http_client=http) as api:
         _files(package, api, exchange, lines, Path(directory))
         _streams(package, api, exchange, lines)
@@ -362,7 +362,7 @@ def _factories(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
 
 async def _async_bodies(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     with tempfile.TemporaryDirectory() as directory:
         async with package.AsyncClient(http_client=http) as api:
             await _async_files(package, api, exchange, lines, Path(directory))

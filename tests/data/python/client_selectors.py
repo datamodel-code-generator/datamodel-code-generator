@@ -22,7 +22,7 @@ def selectors(package: ModuleType, lines: list[str]) -> None:
     codecs = importlib.import_module(f"{package.__name__}.model_codecs")
     store = files.StoreFileRequestCodecs
     exchange = Exchange(lines)
-    http = httpx2.Client(transport=httpx2.MockTransport(exchange.handle))
+    http = exchange.client()
     with package.Client(http_client=http) as api:
         _requests(api, exchange, lines, package)
         _responses(api, exchange, lines, store)
@@ -119,7 +119,7 @@ def _misuse(api: Any, lines: list[str], store: Any, files: ModuleType, codecs: M
 
 async def _async_selectors(package: ModuleType, lines: list[str], store: Any) -> None:
     exchange = Exchange(lines)
-    http = httpx2.AsyncClient(transport=httpx2.MockTransport(exchange.ahandle))
+    http = exchange.async_client()
     async with package.AsyncClient(http_client=http) as api:
         png = store.select_request_media(declared_media="image/*", concrete_media="image/png")
         accepted = store.select_response_media(declared_media="image/*", concrete_media="image/png")

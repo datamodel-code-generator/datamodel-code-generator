@@ -1,4 +1,4 @@
-"""Generate client packages, call them through HTTPX2 mock transports, and report every exchange and failure."""
+"""Generate client packages, call them through a local HTTPS server, and report every exchange and failure."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_generation import SOURCE, client_config
+from tests.data.python.fixture_server import AsyncLocalTransport, FixtureServer, Injected, LocalTransport
 from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -71,16 +72,49 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
 
 
 class Exchange:
-    """Answer each request through a queue of responders, recording the request line, headers, and body."""
+    """Answer each request through a queue of responders, recording the request line, headers, and body.
+
+    Its clients send through HTTPX2's transports to a local HTTPS server that answers with the queued responses;
+    a responder marked as injected answers in-process instead, for failures no server can produce.
+    """
 
     def __init__(self, lines: list[str]) -> None:
-        """Start with no queued responder."""
+        """Start with no queued responder and no server."""
         self.lines = lines
         self.responders: list[Callable[[httpx2.Request], httpx2.Response]] = []
+        self.server: FixtureServer | None = None
+        self.transports = 0
 
     def respond(self, *responders: Callable[[httpx2.Request], httpx2.Response]) -> None:
         """Queue the responders of the next requests."""
         self.responders.extend(responders)
+
+    def client(self, **options: Any) -> httpx2.Client:
+        """Return an HTTPX2 client that sends through this exchange's server."""
+        self.transports += 1
+        return httpx2.Client(transport=LocalTransport(self), **options)
+
+    def async_client(self, **options: Any) -> httpx2.AsyncClient:
+        """Return an asyncio HTTPX2 client that sends through this exchange's server."""
+        self.transports += 1
+        return httpx2.AsyncClient(transport=AsyncLocalTransport(self), **options)
+
+    def port(self) -> int:
+        """Return the port of the server, starting it first."""
+        if self.server is None:
+            self.server = FixtureServer(self.handle)
+        return self.server.server_port
+
+    def injected(self) -> bool:
+        """Return whether the next responder answers in-process."""
+        return bool(self.responders) and isinstance(self.responders[0], Injected)
+
+    def release(self) -> None:
+        """Stop the server once every transport of this exchange is closed."""
+        self.transports -= 1
+        if not self.transports and (server := self.server) is not None:
+            self.server = None
+            server.stop()
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
         """Record a request and answer it with the next queued responder."""
@@ -195,12 +229,17 @@ def chunked_response(
 
 
 def failing(error: type[httpx2.TransportError]) -> Callable[[httpx2.Request], httpx2.Response]:
-    """Return a responder that fails with a transport error before any response."""
+    """Return an injected responder that fails with a transport error before any response."""
 
     def fail(request: httpx2.Request) -> httpx2.Response:
         raise error("failed", request=request)
 
-    return fail
+    return Injected(fail)
+
+
+def injected(responder: Callable[[httpx2.Request], httpx2.Response]) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Mark a responder that injects a failure no server can produce, so it answers in-process."""
+    return Injected(responder)
 
 
 class _BrokenStream(httpx2.SyncByteStream):
@@ -217,12 +256,14 @@ class _AsyncBrokenStream(httpx2.AsyncByteStream):
         raise httpx2.ReadError(msg)
 
 
+@Injected
 def broken(request: httpx2.Request) -> httpx2.Response:
     """Answer with headers, then fail while the body streams."""
     del request
     return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_BrokenStream())
 
 
+@Injected
 def abroken(request: httpx2.Request) -> httpx2.Response:
     """Answer an async request with headers, then fail while the body streams."""
     del request

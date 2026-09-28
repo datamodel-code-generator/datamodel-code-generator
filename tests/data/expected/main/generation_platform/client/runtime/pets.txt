@@ -36,7 +36,7 @@
   list redirect ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='listPets', call_id='<call>') [operation_id='listPets', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  redirect info 302 HeadersView(<1 headers>)
+  redirect info 302 HeadersView(<2 headers>)
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success default = Error(code=1, message=None)
@@ -254,7 +254,7 @@
   list redirect ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='listPets', call_id='<call>') [operation_id='listPets', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  redirect info 302 HeadersView(<1 headers>)
+  redirect info 302 HeadersView(<2 headers>)
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success default = {'code': 1}
