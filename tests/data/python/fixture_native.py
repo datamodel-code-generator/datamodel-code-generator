@@ -38,6 +38,7 @@ class _Handler(BaseRequestHandler):
                 if isinstance(event, h2.events.RequestReceived):
                     fields = dict(event.headers)
                     self.server.requests.append((fields[b":method"], fields[b":path"], b""))
+                    self.server.request_headers.append(tuple(event.headers))
                     headers = [(b":status", str(self.server.status).encode()), (b"content-type", b"text/plain")]
                     if self.server.location is not None:
                         headers.append((b"location", self.server.location))
@@ -59,7 +60,8 @@ class _Handler(BaseRequestHandler):
             head, body = data.split(b"\r\n\r\n", 1)
             request_line, *fields = head.split(b"\r\n")
             method, target, _ = request_line.split(b" ", 2)
-            headers = dict(field.split(b":", 1) for field in fields)
+            header_fields = tuple((name, value) for name, value in (field.split(b":", 1) for field in fields))
+            headers = dict(header_fields)
             length = int(next((value for name, value in headers.items() if name.lower() == b"content-length"), b"0"))
             while len(body) < length:
                 received = stream.recv(length - len(body))
@@ -78,6 +80,9 @@ class _Handler(BaseRequestHandler):
                     return
             else:
                 self.server.requests.append((method, target, body))
+                self.server.request_headers.append(
+                    tuple((name, value.removeprefix(b" ")) for name, value in header_fields)
+                )
             if self.server.malformed:
                 stream.sendall(b"NOT-HTTP\r\n\r\n")
                 return
@@ -117,6 +122,7 @@ class NativeFixture(ThreadingTCPServer):
         self.extra_headers: tuple[tuple[bytes, bytes], ...] = ()
         self.connects = 0
         self.requests: list[tuple[bytes, bytes, bytes]] = []
+        self.request_headers: list[tuple[tuple[bytes, bytes], ...]] = []
         self.protocols: list[str | None] = []
         super().__init__(("127.0.0.1", 0), _Handler)
         self.port = self.socket.getsockname()[1]

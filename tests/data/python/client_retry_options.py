@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, get_type_hints
 from uuid import UUID
 
-from tests.data.python.client_runtime import Exchange, arecord, raw_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, describe, raw_response, record, run
 from tests.data.python.client_transports import Adapter
+from tests.data.python.fixture_native import NativeFixture
 from tests.data.python.fixture_server import FixtureServer, _contexts
 
 if TYPE_CHECKING:
@@ -177,9 +178,44 @@ def _origins(options: ModuleType, lines: list[str]) -> None:
     lines.append(f"  frozen origins={configured.allowed_origins!r} tuple={type(configured.allowed_origins) is tuple}")
 
 
-def _keys(options: ModuleType, lines: list[str]) -> None:
-    for value in (None, False, 1, "", "key\rvalue", "key\nvalue", "key\0value"):
-        record(lines, f"key value {value!r}", lambda value=value: options.IdempotencyKey(value))
+def _keys(options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    for value in (
+        None,
+        False,
+        1,
+        "",
+        "key\rvalue",
+        "key\nvalue",
+        "key\0value",
+        "key\x01value",
+        "key\x08value",
+        "key\x0bvalue",
+        "key\x0cvalue",
+        "key\x1fvalue",
+        "key\x7fvalue",
+        " key",
+        "key ",
+        "\tkey",
+        "key\t",
+        " ",
+        "\t",
+        " \t ",
+        "key\ud800value",
+        "key\udfffvalue",
+    ):
+        try:
+            accepted = options.IdempotencyKey(value)
+        except errors.ConfigurationError as error:
+            lines.append(f"  key value {value!r} ! {describe(error)}")
+            lines.append(
+                f"  rejected key attempts={error.resource_attempt_count} redirects={error.redirect_count}"
+                f" auth={error.auth_exchange_count} sends={error.network_send_count}"
+                f" budget={error.network_send_budget_used} auth_budget={error.auth_exchange_budget_used}"
+                f" refresh_ids={error.auth_refresh_ids} pending={error.auth_refresh_pending}"
+                f" wire={error.wire_send_count} info={error.info}"
+            )
+        else:
+            record(lines, f"unexpected accepted key {value!r}", lambda accepted=accepted: accepted)
     for label, value in (
         ("text", "2026-09-28"),
         ("number", 0),
@@ -634,6 +670,74 @@ def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> No
     lines.append(f"  cleared key observed={observed}")
 
 
+def _key_wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
+    mode = "async" if asynchronous else "sync"
+    values = ("a b", "a\tb", "a \t b", "clé", "\u00a0key\u00a0", "\ud7ffkey\ue000")
+    for http2 in (False, True):
+        server = NativeFixture(http2=http2)
+        protocol = "h2" if http2 else "h1"
+        client_options = options.ClientOptions(
+            base_url=server.url,
+            transport=options.TransportOptions(ssl_context=server.verify, http2=http2),
+        )
+        try:
+            if asynchronous:
+
+                async def calls(
+                    client_options: object = client_options, protocol: str = protocol, server: NativeFixture = server
+                ) -> None:
+                    async with package.AsyncClient(options=client_options) as api:
+                        await arecord(
+                            lines,
+                            f"key {mode} {protocol} pre-send rejection",
+                            lambda: api.retry.post_keyed(
+                                options=options.RequestOptions(idempotency_key=options.IdempotencyKey(" key"))
+                            ),
+                        )
+                        lines.append(f"  rejected key arrivals={len(server.requests)}")
+                        for value in values:
+                            key = options.IdempotencyKey(value)
+                            await arecord(
+                                lines,
+                                f"key {mode} {protocol} value={value!r}",
+                                lambda key=key: api.retry.post_keyed(
+                                    options=options.RequestOptions(idempotency_key=key)
+                                ),
+                            )
+                            fields = tuple(
+                                value
+                                for name, value in server.request_headers[-1]
+                                if name.lower() == b"idempotency-key"
+                            )
+                            lines.append(f"  unchanged={key.value is value} key wire={fields!r}")
+
+                run(calls)
+            else:
+                with package.Client(options=client_options) as api:
+                    record(
+                        lines,
+                        f"key {mode} {protocol} pre-send rejection",
+                        lambda: api.retry.post_keyed(
+                            options=options.RequestOptions(idempotency_key=options.IdempotencyKey(" key"))
+                        ),
+                    )
+                    lines.append(f"  rejected key arrivals={len(server.requests)}")
+                    for value in values:
+                        key = options.IdempotencyKey(value)
+                        record(
+                            lines,
+                            f"key {mode} {protocol} value={value!r}",
+                            lambda key=key: api.retry.post_keyed(options=options.RequestOptions(idempotency_key=key)),
+                        )
+                        fields = tuple(
+                            value for name, value in server.request_headers[-1] if name.lower() == b"idempotency-key"
+                        )
+                        lines.append(f"  unchanged={key.value is value} key wire={fields!r}")
+            lines.append(f"  key {mode} {protocol} arrivals={len(server.requests)} alpn={server.protocols}")
+        finally:
+            server.stop()
+
+
 def _transports(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     transport_module = importlib.import_module(f"{package.__name__}.transports")
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -750,15 +854,17 @@ def _transports(package: ModuleType, options: ModuleType, lines: list[str]) -> N
 def retry_options(package: ModuleType, lines: list[str]) -> None:
     """Report public record validation and effective layered options using generated clients."""
     options = importlib.import_module(f"{package.__name__}.options")
+    errors = importlib.import_module(f"{package.__name__}.errors")
     _invalid_numbers(options, lines)
     _invalid_values(options, lines)
     _origins(options, lines)
-    _keys(options, lines)
+    _keys(options, errors, lines)
     _records(options, lines)
     _imports(package, lines)
-    errors = importlib.import_module(f"{package.__name__}.errors")
     _merges(package, options, lines)
     _budgets(package, options, errors, lines)
     _vendor_headers(package, options, lines)
     _key_calls(package, options, lines)
+    _key_wire(package, options, lines, asynchronous=False)
+    _key_wire(package, options, lines, asynchronous=True)
     _transports(package, options, lines)

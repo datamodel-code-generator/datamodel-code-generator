@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import httpx2
 
 from tests.data.python.client_retry_policy import _response
-from tests.data.python.client_runtime import Exchange, arecord, record, run
+from tests.data.python.client_runtime import Exchange, arecord, raw_response, record, run
 from tests.data.python.fixture_native import NativeFixture
 
 if TYPE_CHECKING:
@@ -437,3 +437,146 @@ def redirects(package: ModuleType, lines: list[str]) -> None:
     _origins(package, options, lines)
     _downgrade(package, options, lines)
     run(lambda: _async(package, options, lines))
+
+
+class _HeadEvents:
+    def __init__(self) -> None:
+        self.ends: list[tuple[object, ...]] = []
+
+    def on_event(self, event: object) -> None:
+        if getattr(event, "name", None) in {"call_end", "stream_end"}:
+            self.ends.append(
+                tuple(
+                    getattr(event, name)
+                    for name in (
+                        "name",
+                        "status",
+                        "outcome",
+                        "resource_attempt_count",
+                        "redirect_count",
+                        "network_send_count",
+                        "network_send_budget_used",
+                    )
+                )
+            )
+
+
+async def _async_head_redirects(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    types = importlib.import_module(f"{package.__name__}.types.pets")
+    pet = types.HeadPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    exchange, events = Exchange(lines), _HeadEvents()
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(
+            http_client=native,
+            options=options.ClientOptions(redirects=options.RedirectOptions(enabled=True), hooks=(events,)),
+        ) as api,
+    ):
+
+        async def buffered(request: object) -> bytes:
+            response = await api.pets.with_raw_response.head_pet(pet_id=pet, options=request)
+            return response.body_bytes
+
+        async def streaming(request: object) -> bytes:
+            async with api.pets.with_streaming_response.head_pet(pet_id=pet, options=request) as response:
+                return await response.read()
+
+        async def escape(request: object) -> bytes:
+            response = await api.request_raw(
+                "HEAD", "https://api.example.com/v1/pets/3", body=b"head request", options=request
+            )
+            return response.body_bytes
+
+        for allowed in (False, True):
+            request = options.RequestOptions(
+                redirects=options.RedirectOptions(allow_303_to_get=allowed),
+                headers=(("Content-Encoding", "identity"), ("Content-Language", "en")),
+            )
+            calls = {
+                "typed": lambda request=request: api.pets.head_pet(pet_id=pet, options=request),
+                "response": lambda request=request: api.pets.with_response.head_pet(pet_id=pet, options=request),
+                "raw": lambda request=request: buffered(request),
+                "stream": lambda request=request: streaming(request),
+                "escape": lambda request=request: escape(request),
+            }
+            for mode, payload, hops in (
+                ("typed", b"redirected representation", 1),
+                ("response", b"redirected representation", 1),
+                ("raw", b"redirected representation", 1),
+                ("stream", b"redirected representation", 1),
+                ("typed", b"", 1),
+                ("response", b"", 1),
+                ("escape", b"redirected representation", 1),
+                ("raw", b"redirected representation", 2),
+            ):
+                exchange.respond(raw_response(303, Location="/redirected"))
+                if hops == 2:
+                    exchange.respond(raw_response(302, Location="/done"))
+                exchange.respond(raw_response(200, payload, "text/plain", ETag='"redirected"'))
+                await arecord(
+                    lines,
+                    f"async HEAD303 {mode} allow={allowed} body={bool(payload)} hops={hops}",
+                    calls[mode],
+                )
+                lines.append(f"    ends={events.ends!r} unused={len(exchange.responders)}")
+                events.ends.clear()
+
+
+def head_redirects(package: ModuleType, lines: list[str]) -> None:
+    """Keep HEAD's typed bodyless declaration after the prescribed 303 conversion to GET."""
+    options = importlib.import_module(f"{package.__name__}.options")
+    types = importlib.import_module(f"{package.__name__}.types.pets")
+    pet = types.HeadPetRequestCodecs.parameter(location="path", name="petId").from_wire(3)
+    exchange, events = Exchange(lines), _HeadEvents()
+    with (
+        exchange.client() as native,
+        package.Client(
+            http_client=native,
+            options=options.ClientOptions(redirects=options.RedirectOptions(enabled=True), hooks=(events,)),
+        ) as api,
+    ):
+
+        def streaming(request: object) -> bytes:
+            with api.pets.with_streaming_response.head_pet(pet_id=pet, options=request) as response:
+                return response.read()
+
+        for allowed in (False, True):
+            request = options.RequestOptions(
+                redirects=options.RedirectOptions(allow_303_to_get=allowed),
+                headers=(("Content-Encoding", "identity"), ("Content-Language", "en")),
+            )
+            calls = {
+                "typed": lambda request=request: api.pets.head_pet(pet_id=pet, options=request),
+                "response": lambda request=request: api.pets.with_response.head_pet(pet_id=pet, options=request),
+                "raw": lambda request=request: (
+                    api.pets.with_raw_response.head_pet(pet_id=pet, options=request).body_bytes
+                ),
+                "stream": lambda request=request: streaming(request),
+                "escape": lambda request=request: (
+                    api.request_raw(
+                        "HEAD", "https://api.example.com/v1/pets/3", body=b"head request", options=request
+                    ).body_bytes
+                ),
+            }
+            for mode, payload, hops in (
+                ("typed", b"redirected representation", 1),
+                ("response", b"redirected representation", 1),
+                ("raw", b"redirected representation", 1),
+                ("stream", b"redirected representation", 1),
+                ("typed", b"", 1),
+                ("response", b"", 1),
+                ("escape", b"redirected representation", 1),
+                ("raw", b"redirected representation", 2),
+            ):
+                exchange.respond(raw_response(303, Location="/redirected"))
+                if hops == 2:
+                    exchange.respond(raw_response(302, Location="/done"))
+                exchange.respond(raw_response(200, payload, "text/plain", ETag='"redirected"'))
+                record(
+                    lines,
+                    f"HEAD303 {mode} allow={allowed} body={bool(payload)} hops={hops}",
+                    calls[mode],
+                )
+                lines.append(f"    ends={events.ends!r} unused={len(exchange.responders)}")
+                events.ends.clear()
+    run(lambda: _async_head_redirects(package, options, lines))

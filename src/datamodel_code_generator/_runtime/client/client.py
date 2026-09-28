@@ -665,11 +665,13 @@ class _Call(LogicalCallContext):
         self.received_wall_time = 0.0
         self.response_transferred = False
 
-    def bind(self, capabilities: TransportCapabilities) -> None:
+    def bind(self, capabilities: TransportCapabilities, options: RequestOptions | None) -> None:
         """Validate operation-bound controls before hooks, encoding, and any send."""
         operation = self.operation
         if self.idempotency is None and isinstance(self.key, IdempotencyKey):
-            raise ConfigurationError(field_path=("idempotency_key",), condition="not_declared")
+            if options is not None and isinstance(options.idempotency_key, IdempotencyKey):
+                raise ConfigurationError(field_path=("idempotency_key",), condition="not_declared")
+            self.key = None
         retry = self.settings.retry
         if (
             retry.retry_after_ms_header is not UNSET
@@ -1671,7 +1673,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = self._run(call, body, prepare, receive)
+            result = self._run(call, body, prepare, receive, options)
             call.check("decode")
             if events is not None:
                 events.finish(result)
@@ -1727,7 +1729,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = self._run(call, body, prepare, receive)
+            result = self._run(call, body, prepare, receive, options)
             call.check("send")
             if stream:
                 self._scope.handoff(result)
@@ -1803,7 +1805,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             return self._raw_prepared(method, url, body, options)
 
         try:
-            result = self._run(call, body, prepare, receive)
+            result = self._run(call, body, prepare, receive, options)
             call.check("send")
             if stream:
                 self._scope.handoff(result)
@@ -1845,6 +1847,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[TransportResponse, ResponseInfo], T],
+        options: RequestOptions | None,
     ) -> T:
         """Own entry capture, the single encode, every hop, and final source release."""
         entry: BodyBindings | None = None
@@ -1856,7 +1859,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(self._shared.adapter.capabilities)
+            call.bind(self._shared.adapter.capabilities, options)
             if (events := call.events) is not None:
                 events.emit(events.starting(call.settings))
             call.check("encode")
@@ -2258,7 +2261,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             if fields:
                 body = operation.bound(body, fields, media_type)
-            result = await call.bounded(lambda: self._run(call, body, prepare, receive))
+            result = await call.bounded(lambda: self._run(call, body, prepare, receive, options))
             call.check("decode")
             if events is not None:
                 await events.afinish(result)
@@ -2316,7 +2319,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if fields:
                 body = operation.bound(body, fields, media_type)
             result = await call.bounded(
-                lambda: self._run(call, body, prepare, receive), cleanup=AsyncRawResponse.aclose
+                lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
             if stream:
@@ -2395,7 +2398,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         try:
             result = await call.bounded(
-                lambda: self._run(call, body, prepare, receive), cleanup=AsyncRawResponse.aclose
+                lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
             if stream:
@@ -2438,6 +2441,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[AsyncTransportResponse, ResponseInfo], Awaitable[T]],
+        options: RequestOptions | None,
     ) -> T:
         """Own entry capture, the single encode, every hop, and final source release."""
         entry: AsyncBodyBindings | None = None
@@ -2449,7 +2453,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(self._shared.adapter.capabilities)
+            call.bind(self._shared.adapter.capabilities, options)
             if (events := call.events) is not None:
                 await events.aemit(events.starting(call.settings))
             call.check("encode")

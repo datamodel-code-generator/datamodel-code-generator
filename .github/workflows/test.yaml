@@ -234,6 +234,10 @@ jobs:
             name: Client e2e
             os: ubuntu-24.04
             coverage: true
+          - tox_env: client-py310-e2e
+            name: Client deadlines Python 3.10
+            os: ubuntu-24.04
+            coverage: true
     runs-on: ${{ matrix.os }}
     env: &test-http-backends-env
       OS: ${{ matrix.os }}
@@ -305,10 +309,6 @@ jobs:
           - tox_env: httpx-both-nocov-e2e
             name: HTTPX + HTTPX2 HTTP(S) e2e
             os: macos-latest
-            coverage: false
-          - tox_env: client-py310-nocov-e2e
-            name: Client deadlines Python 3.10
-            os: ubuntu-24.04
             coverage: false
           - tox_env: client-py311-nocov-e2e
             name: Client deadlines Python 3.11

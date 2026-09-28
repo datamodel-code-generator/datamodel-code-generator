@@ -1000,6 +1000,10 @@ same call retains one key, origin, and scope throughout retries; expiry never ca
 A `replay_safe_with_key=False` declaration allows the header without promising that it makes an unsafe resend safe.
 The contract does not guarantee exactly-once business execution.
 
+Keys must be nonempty, UTF-8-encodable strings. ASCII control characters are rejected except for interior tabs;
+leading or trailing ASCII spaces and tabs are also rejected. Interior spaces, tabs, and valid Unicode are preserved
+without trimming or normalization. Invalid keys raise `ConfigurationError` when constructed, before any send.
+
 ```python
 from datetime import datetime
 
@@ -1067,6 +1071,11 @@ original request are stripped across origins. Repeated method/URL loops, invalid
 forbidden destinations, exhausted redirect limits, or unsafe replay raise `RedirectPolicyError`. It directly
 inherits `SDKError` and exposes readonly `delivery_state`, `body_available=False`, and available response metadata.
 Native failure while constructing a redirect also raises this error if no response handle can be returned.
+
+A HEAD operation also follows a 303 as GET, regardless of `allow_303_to_get`. Its typed return contract remains
+bodyless: ordinary and `with_response` calls return `None` data for an empty final body and raise
+`BodyProtocolError(condition="forbidden_body")` if the GET returns content. Use `with_raw_response` or
+`with_streaming_response` to access that final GET body without typed decoding.
 
 `TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
 `verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=False`, `http2=False`, `max_connections=100`,

@@ -43,18 +43,28 @@ def _header_details(value: object) -> str:
     return f"{_details(value)} headers={headers.items()}"
 
 
-def _called(call: Callable[[], object], *, headers: bool = False) -> str:
+def _called(
+    call: Callable[[], object],
+    *,
+    headers: bool = False,
+    error_details: Callable[[Exception], str] = _details,
+) -> str:
     try:
         return (_header_details if headers else _details)(call())
     except Exception as error:  # noqa: BLE001
-        return _details(error)
+        return error_details(error)
 
 
-async def _acalled(call: Callable[[], Awaitable[object]], *, headers: bool = False) -> str:
+async def _acalled(
+    call: Callable[[], Awaitable[object]],
+    *,
+    headers: bool = False,
+    error_details: Callable[[Exception], str] = _details,
+) -> str:
     try:
         return (_header_details if headers else _details)(await call())
     except Exception as error:  # noqa: BLE001
-        return _details(error)
+        return error_details(error)
 
 
 def _options(module: ModuleType, server: NativeFixture, *, certificate: bool = True) -> object:
@@ -131,6 +141,27 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
 
 def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:
     mode = "async" if asynchronous else "sync"
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    error_details: Callable[[Exception], str] = lambda error: (
+        "TransportError delivery=DeliveryState.NOT_SENT phase=connect "
+        "retry_outcome=permitted wire=0 status=None body=None cause=ConnectError"
+        if (
+            type(error) is errors.TransportError
+            and getattr(error, "delivery_state", None) is errors.DeliveryState.NOT_SENT
+            and getattr(error, "phase", None) == "connect"
+            and getattr(error, "wire_send_count", None) == 0
+            and getattr(error, "info", None) is None
+            and getattr(error, "body_available", None) is None
+            and type(getattr(error, "cause", None)) is httpx2.ConnectError
+            and (
+                getattr(error, "retry_stop_reason", None),
+                getattr(error, "resource_attempt_count", None),
+                getattr(error, "network_send_count", None),
+            )
+            in (("transport_not_retryable", 1, 1), ("max_retries_exhausted", 3, 3))
+        )
+        else _details(error)
+    )
     for host in ("127.0.0.1", "::1", "localhost"):
         family = socket.AF_INET6 if host == "::1" else socket.AF_INET
         with socket.socket(family) as held:
@@ -147,13 +178,17 @@ def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asyn
                         await arecord(
                             lines,
                             f"{mode} refused {host} unsafe",
-                            lambda: _acalled(api.retry.with_response.post_unsafe),
+                            lambda: _acalled(api.retry.with_response.post_unsafe, error_details=error_details),
                         )
 
                 run(call)
             else:
                 with package.Client(options=settings) as api:
-                    record(lines, f"{mode} refused {host} unsafe", lambda: _called(api.retry.with_response.post_unsafe))
+                    record(
+                        lines,
+                        f"{mode} refused {host} unsafe",
+                        lambda: _called(api.retry.with_response.post_unsafe, error_details=error_details),
+                    )
 
 
 _LOCATIONS = (

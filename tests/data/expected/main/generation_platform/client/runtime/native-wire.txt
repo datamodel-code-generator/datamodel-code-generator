@@ -19,9 +19,9 @@
   arrivals=0 connects=0 alpn=[]
   sync tunnel-certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
   arrivals=0 connects=1 alpn=[]
-  sync refused 127.0.0.1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
-  sync refused ::1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
-  sync refused localhost unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  sync refused 127.0.0.1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect retry_outcome=permitted wire=0 status=None body=None cause=ConnectError'
+  sync refused ::1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect retry_outcome=permitted wire=0 status=None body=None cause=ConnectError'
+  sync refused localhost unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect retry_outcome=permitted wire=0 status=None body=None cause=ConnectError'
   sync location 301/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
   header events=1
   sync location 301/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
@@ -267,9 +267,9 @@
   arrivals=0 connects=0 alpn=[]
   async tunnel-certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
   arrivals=0 connects=1 alpn=[]
-  async refused 127.0.0.1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
-  async refused ::1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
-  async refused localhost unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=max_retries_exhausted attempts=3 sends=3 wire=0 status=None body=None cause=ConnectError'
+  async refused 127.0.0.1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect retry_outcome=permitted wire=0 status=None body=None cause=ConnectError'
+  async refused ::1 unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect retry_outcome=permitted wire=0 status=None body=None cause=ConnectError'
+  async refused localhost unsafe = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect retry_outcome=permitted wire=0 status=None body=None cause=ConnectError'
   async location 301/port/False/False = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'
   header events=1
   async location 301/port/False/True = 'RedirectPolicyError delivery=DeliveryState.RESPONSE_STARTED phase=None stop=None attempts=1 sends=1 wire=1 status=301 body=False cause=RemoteProtocolError'

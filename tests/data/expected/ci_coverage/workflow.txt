@@ -16,7 +16,7 @@
     "client-e2e:ubuntu-24.04:/:",
     "client-httpx2-max-nocov-e2e:windows-latest:/:",
     "client-httpx2-min-nocov-e2e:macos-latest:/:",
-    "client-py310-nocov-e2e:ubuntu-24.04:/:",
+    "client-py310-e2e:ubuntu-24.04:/:",
     "client-py311-nocov-e2e:ubuntu-24.04:/:",
     "client-py312-nocov-e2e:ubuntu-24.04:/:",
     "client-py314-nocov-e2e:ubuntu-24.04:/:",
@@ -86,9 +86,9 @@
     "pydantic25:ubuntu-24.04:/:",
     "typing-nocov-e2e:ubuntu-24.04:/:"
   ],
-  "coverage_count": 31,
+  "coverage_count": 32,
   "coverage_needs_only_producers": true,
-  "coverage_unique": 31,
+  "coverage_unique": 32,
   "exclude_only_without_coverage": true,
   "exclude_tests": [
     "tests/main/test_payload_validation.py"

@@ -59,6 +59,7 @@ _SCHEMES: Final = frozenset({"http", "https"})
 _ORIGIN: Final = re.compile(r"https?://[^\s/?#\\\x00-\x1f\x7f]+", re.IGNORECASE)
 _NAME: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _VALUE: Final = re.compile(r"[^\x00-\x08\x0a-\x1f\x7f]*")
+_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
 _RESERVED: Final = frozenset({"host", "content-length", "transfer-encoding"})
 _CODINGS: Final = frozenset({"identity", "gzip", "x-gzip", "deflate"})
 _WEIGHT: Final = re.compile(r"[qQ]=(?:0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?)")
@@ -446,8 +447,11 @@ class RedirectOptions:
 
 
 def _key_value(value: object) -> None:
-    if not isinstance(value, str) or not value or any(char in value for char in ("\r", "\n", "\0")):
-        raise ConfigurationError(field_path=("idempotency_key",), condition="invalid_value")
+    match value:
+        case str() if value and value[0] not in " \t" and value[-1] not in " \t" and _VALUE.fullmatch(value):
+            if value.isascii() or not _SURROGATE.search(value):
+                return
+    raise ConfigurationError(field_path=("idempotency_key",), condition="invalid_value")
 
 
 def _key_time(value: object) -> None:

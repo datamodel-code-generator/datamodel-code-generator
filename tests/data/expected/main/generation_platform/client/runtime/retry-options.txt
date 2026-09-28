@@ -155,12 +155,49 @@
   redirect origin ipv6 ! ConfigurationError: ConfigurationError(field_path='redirects.allowed_origins', condition='invalid_url') [field_path=('redirects', 'allowed_origins'), condition='invalid_url', cause=ValueError('Invalid IPv6 URL')] configuration_error
   frozen origins=('https://example.com', 'http://example.com:80', 'HTTPS://EXAMPLE.COM:443', 'https://[::1]:443') tuple=True
   key value None ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
   key value False ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
   key value 1 ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
   key value '' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
   key value 'key\rvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
   key value 'key\nvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
   key value 'key\x00value' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\x01value' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\x08value' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\x0bvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\x0cvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\x1fvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\x7fvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value ' key' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key ' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value '\tkey' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\t' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value ' ' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value '\t' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value ' \t ' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\ud800value' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
+  key value 'key\udfffvalue' ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key attempts=0 redirects=0 auth=0 sends=0 budget=0 auth_budget=0 refresh_ids=() pending=0 wire=None info=None
   key first-used text ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_type') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_type'] configuration_error
   key first-used number ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_type') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_type'] configuration_error
   key first-used naive ! ConfigurationError: ConfigurationError(field_path='idempotency_key.first_used_at', condition='invalid_value') [field_path=('idempotency_key', 'first_used_at'), condition='invalid_value'] configuration_error
@@ -327,6 +364,66 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   view clears caller key ! PostKeyedHTTPError: PostKeyedHTTPError(status_code=503, operation_id='postKeyed', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyed', status_code=503, error_decoded=True, error_data=FieldKeyedPostResponse(root='retry'), body_bytes=b'retry', truncated=False] post_keyed_http_error
   cleared key observed=[None]
+  key sync h1 pre-send rejection ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key arrivals=0
+  key sync h1 value='a b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a b',)
+  key sync h1 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a\tb',)
+  key sync h1 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a \t b',)
+  key sync h1 value='clé' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'cl\xc3\xa9',)
+  key sync h1 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xc2\xa0key\xc2\xa0',)
+  key sync h1 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
+  key sync h1 arrivals=6 alpn=[]
+  key sync h2 pre-send rejection ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key arrivals=0
+  key sync h2 value='a b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a b',)
+  key sync h2 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a\tb',)
+  key sync h2 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a \t b',)
+  key sync h2 value='clé' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'cl\xc3\xa9',)
+  key sync h2 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xc2\xa0key\xc2\xa0',)
+  key sync h2 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
+  key sync h2 arrivals=6 alpn=['h2']
+  key async h1 pre-send rejection ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key arrivals=0
+  key async h1 value='a b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a b',)
+  key async h1 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a\tb',)
+  key async h1 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a \t b',)
+  key async h1 value='clé' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'cl\xc3\xa9',)
+  key async h1 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xc2\xa0key\xc2\xa0',)
+  key async h1 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
+  key async h1 arrivals=6 alpn=[]
+  key async h2 pre-send rejection ! ConfigurationError: ConfigurationError(field_path='idempotency_key', condition='invalid_value') [field_path=('idempotency_key',), condition='invalid_value'] configuration_error
+  rejected key arrivals=0
+  key async h2 value='a b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a b',)
+  key async h2 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a\tb',)
+  key async h2 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'a \t b',)
+  key async h2 value='clé' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'cl\xc3\xa9',)
+  key async h2 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xc2\xa0key\xc2\xa0',)
+  key async h2 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
+  unchanged=True key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
+  key async h2 arrivals=6 alpn=['h2']
   borrowed transport conflict verify ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='injected_transport') [field_path=('transport', 'verify'), condition='injected_transport'] configuration_error
   adapter transport conflict verify ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='injected_transport') [field_path=('transport', 'verify'), condition='injected_transport'] configuration_error
   borrowed transport conflict ssl_context ! ConfigurationError: ConfigurationError(field_path='transport.ssl_context', condition='injected_transport') [field_path=('transport', 'ssl_context'), condition='injected_transport'] configuration_error

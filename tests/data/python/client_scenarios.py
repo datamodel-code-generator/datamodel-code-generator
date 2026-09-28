@@ -28,7 +28,7 @@ from tests.data.python.client_query import query
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_native import native_faults, native_wire
 from tests.data.python.client_raw import raw
-from tests.data.python.client_redirects import redirects
+from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_retry_boundaries import retry_boundaries
 from tests.data.python.client_retry_calls import retry_calls
 from tests.data.python.client_retry_errors import retry_errors
@@ -644,6 +644,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "retry-options": ("retries", ("pydantic_v2.BaseModel",), retry_options),
     "retry-policy": ("retries", ("pydantic_v2.BaseModel",), retry_policy),
     "redirects": ("retries", ("pydantic_v2.BaseModel",), redirects),
+    "redirect-head": ("pets", ("pydantic_v2.BaseModel",), head_redirects),
     "native-wire": ("retries", ("pydantic_v2.BaseModel",), native_wire),
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),

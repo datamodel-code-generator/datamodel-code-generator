@@ -6,6 +6,7 @@ import asyncio
 import importlib
 import io
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import AsyncExitStack, ExitStack
 from typing import TYPE_CHECKING
 
@@ -261,6 +262,7 @@ def retry_calls(package: ModuleType, lines: list[str]) -> None:
     _resource_interruptions(package, options, lines)
     _handles(package, options, lines)
     _presend(package, options, lines)
+    _key_inheritance(package, options, lines)
     run(lambda: _async_calls(package, options, lines))
 
 
@@ -480,6 +482,7 @@ async def _async_calls(package: ModuleType, options: ModuleType, lines: list[str
     await _async_resource_interruptions(package, options, lines)
     await _async_handles(package, options, lines)
     await _async_presend(package, options, lines)
+    await _async_key_inheritance(package, options, lines)
 
 
 async def _async_close_interruptions(api: object, events: _Events, exchange: Exchange, lines: list[str]) -> None:
@@ -643,3 +646,165 @@ async def _async_wait(package: ModuleType, options: ModuleType, lines: list[str]
             task.cancel("retry wait interrupted")
         await arecord(lines, f"async wait {stop}", lambda: task)
         _report(lines, events, exchange)
+
+
+class _KeyReply:
+    """Echo the idempotency header received by the real TLS server."""
+
+    def __init__(self) -> None:
+        self.keys: list[str | None] = []
+
+    def __call__(self, request: httpx2.Request) -> httpx2.Response:
+        key = request.headers.get("Idempotency-Key")
+        self.keys.append(key)
+        return raw_response(200, ("absent" if key is None else key).encode(), "text/plain")(request)
+
+
+def _key_cases(options: ModuleType, key: object) -> Iterator[tuple[str, bool, str, object]]:
+    requests = (
+        ("omitted", None),
+        ("empty", options.RequestOptions()),
+        ("UNSET", options.RequestOptions(idempotency_key=options.UNSET)),
+        ("None", options.RequestOptions(idempotency_key=None)),
+        ("override", options.RequestOptions(idempotency_key=options.IdempotencyKey("call-key"))),
+        ("same object", options.RequestOptions(idempotency_key=key)),
+    )
+    for declared in (True, False):
+        surfaces = ("typed", "response", "buffered", "stream")
+        if not declared:
+            surfaces += ("request raw", "request stream")
+        for surface in surfaces:
+            for label, request in requests:
+                yield surface, declared, label, request
+
+
+def _key_call(api: object, surface: str, declared: bool, request: object) -> object:
+    keywords = {} if request is None else {"options": request}
+    operation = "post_keyed" if declared else "get_safe"
+    if surface == "typed":
+        return getattr(api.retry, operation)(**keywords)
+    if surface == "response":
+        return getattr(api.retry.with_response, operation)(**keywords).data
+    if surface == "buffered":
+        return getattr(api.retry.with_raw_response, operation)(**keywords).read()
+    if surface == "stream":
+        with getattr(api.retry.with_streaming_response, operation)(**keywords) as response:
+            return response.read()
+    if surface == "request raw":
+        return api.request_raw("GET", "https://api.example.com/safe", **keywords).read()
+    with api.with_streaming_response.request_raw("GET", "https://api.example.com/safe", **keywords) as response:
+        return response.read()
+
+
+async def _async_key_call(api: object, surface: str, declared: bool, request: object) -> object:
+    keywords = {} if request is None else {"options": request}
+    operation = "post_keyed" if declared else "get_safe"
+    if surface == "typed":
+        return await getattr(api.retry, operation)(**keywords)
+    if surface == "response":
+        return (await getattr(api.retry.with_response, operation)(**keywords)).data
+    if surface == "buffered":
+        response = await getattr(api.retry.with_raw_response, operation)(**keywords)
+        return await response.read()
+    if surface == "stream":
+        async with getattr(api.retry.with_streaming_response, operation)(**keywords) as response:
+            return await response.read()
+    if surface == "request raw":
+        response = await api.request_raw("GET", "https://api.example.com/safe", **keywords)
+        return await response.read()
+    async with api.with_streaming_response.request_raw("GET", "https://api.example.com/safe", **keywords) as response:
+        return await response.read()
+
+
+def _key_inheritance(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    exchange, reply = Exchange([]), _KeyReply()
+    client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
+    with (
+        exchange.client() as native,
+        package.Client(http_client=native, options=options.ClientOptions(idempotency_key=client_key)) as api,
+        api.with_options(options.RequestOptions(idempotency_key=view_key)) as view,
+    ):
+        for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
+            for surface, declared, label, request in _key_cases(options, key):
+                before = len(reply.keys)
+                exchange.respond(reply)
+                record(
+                    lines,
+                    f"key {layer} {surface} declared={declared} {label}",
+                    lambda current=current, surface=surface, declared=declared, request=request: _key_call(
+                        current, surface, declared, request
+                    ),
+                )
+                record(lines, "key admission", lambda before=before: (reply.keys[before:], len(exchange.responders)))
+                exchange.responders.clear()
+        barrier = threading.Barrier(4)
+        actions = (
+            lambda: _key_call(api, "typed", True, None),
+            lambda: _key_call(api, "stream", False, None),
+            lambda: _key_call(view, "response", True, None),
+            lambda: _key_call(view, "request raw", False, None),
+        )
+
+        def concurrent(action: Callable[[], object]) -> object:
+            barrier.wait(timeout=5)
+            return action()
+
+        exchange.respond(reply, reply, reply, reply)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            record(lines, "concurrent inherited keys", lambda: tuple(executor.map(concurrent, actions)))
+        record(lines, "concurrent key admission", lambda: (sorted(reply.keys[-4:], key=repr), len(exchange.responders)))
+        for layer, current in (("client", api), ("view", view)):
+            exchange.respond(reply)
+            record(
+                lines,
+                f"key {layer} unchanged after mixed calls",
+                lambda current=current: current.retry.post_keyed(),
+            )
+
+
+async def _async_key_inheritance(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    exchange, reply = Exchange([]), _KeyReply()
+    client_key, view_key = options.IdempotencyKey("client-key"), options.IdempotencyKey("view-key")
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(http_client=native, options=options.ClientOptions(idempotency_key=client_key)) as api,
+        api.with_options(options.RequestOptions(idempotency_key=view_key)) as view,
+    ):
+        for layer, current, key in (("client", api, client_key), ("view", view, view_key)):
+            for surface, declared, label, request in _key_cases(options, key):
+                before = len(reply.keys)
+                exchange.respond(reply)
+                await arecord(
+                    lines,
+                    f"async key {layer} {surface} declared={declared} {label}",
+                    lambda current=current, surface=surface, declared=declared, request=request: _async_key_call(
+                        current, surface, declared, request
+                    ),
+                )
+                record(
+                    lines, "async key admission", lambda before=before: (reply.keys[before:], len(exchange.responders))
+                )
+                exchange.responders.clear()
+        exchange.respond(reply, reply, reply, reply)
+        await arecord(
+            lines,
+            "async concurrent inherited keys",
+            lambda: asyncio.gather(
+                _async_key_call(api, "typed", True, None),
+                _async_key_call(api, "stream", False, None),
+                _async_key_call(view, "response", True, None),
+                _async_key_call(view, "request raw", False, None),
+            ),
+        )
+        record(
+            lines,
+            "async concurrent key admission",
+            lambda: (sorted(reply.keys[-4:], key=repr), len(exchange.responders)),
+        )
+        for layer, current in (("client", api), ("view", view)):
+            exchange.respond(reply)
+            await arecord(
+                lines,
+                f"async key {layer} unchanged after mixed calls",
+                lambda current=current: current.retry.post_keyed(),
+            )
