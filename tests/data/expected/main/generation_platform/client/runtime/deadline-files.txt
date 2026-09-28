@@ -179,7 +179,7 @@
   queued owned read before release = (True, False, 0, 0)
   queued owned read retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
   queued owned read released = ((False, True, False), True, 1, 0, 1, True)
-  queued owned read diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: CleanupError'))
+  queued owned read diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError',))
   queued borrowed read before release = (True, False, 0, 0)
   queued borrowed read retained = None
   queued borrowed read released = ((False, True), False, 0, 0, 1, True)

@@ -498,10 +498,11 @@ async def _late_permits(
             caller.cancel()
         else:
             token.cancel()
-        await arecord(lines, label, lambda: caller)
         if deferred:
+            await limiter.cancelled.wait()
             await arecord(lines, f"{label} first close", lambda: _acaptured(api.aclose))
             limiter.proceed.set()
+        await arecord(lines, label, lambda: caller)
         await api.aclose()
         record(
             lines,
@@ -519,7 +520,7 @@ async def _startup_cancellation(
     package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
 ) -> None:
     loop = asyncio.get_running_loop()
-    for label in ("operation", "rejected cleanup", "client close"):
+    for label in ("rejected cleanup", "client close"):
         rejected = label == "rejected cleanup"
         created = 0
 

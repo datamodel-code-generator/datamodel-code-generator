@@ -700,9 +700,11 @@ deadline; the client then raises `DeadlineExceededError` and starts no further n
 latched when acquisition or body reading begins, so a sequence of reads or HTTP/2 stream processing can overrun a
 total deadline. There is no background thread that forcibly interrupts a synchronous call.
 
-Async clients require asyncio. They bound their owned asynchronous operations by deadline, explicit cancellation,
-and client closing. Native task cancellation propagates as `asyncio.CancelledError`; it is never converted into an
-SDK timeout, even when a result becomes ready at the same time.
+Async clients require asyncio. Like `asyncio.timeout`, they stop a call at its deadline, explicit cancellation, or
+client closing by cancelling the task that awaits it, and turn that cancellation into the matching SDK error. Native
+task cancellation propagates as `asyncio.CancelledError`; it is never converted into an SDK error, even when a result
+becomes ready at the same time or a callback suppresses or converts it. A hook, limiter, or body factory that
+suppresses cancellation delays the stop until it returns; the call then ends at the SDK's next boundary.
 
 ### Explicit cancellation
 

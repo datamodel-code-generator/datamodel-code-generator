@@ -7,6 +7,7 @@ every view, while closing a view touches only its own.
 from __future__ import annotations
 
 import threading
+from contextvars import ContextVar
 from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Generic, Literal, Protocol, TypeAlias, TypeVar
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 State: TypeAlias = Literal["OPEN", "CLOSING", "CLOSED"]
 HandleT = TypeVar("HandleT")
 TaskT = TypeVar("TaskT")
+LEFT_WORK: ContextVar[list[asyncio.Task[None]] | None] = ContextVar("left_work", default=None)
 
 
 class TaskInterruptionError(Exception):

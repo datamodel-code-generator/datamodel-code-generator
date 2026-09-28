@@ -1,11 +1,12 @@
-"""One call's identity, admission counters, time limits, and owned asynchronous work."""
+"""One call's identity, admission counters, time limits, and the release of its asynchronous work."""
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from functools import partial
 from time import monotonic
-from typing import TYPE_CHECKING, Literal, Protocol, TypeVar
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias, TypeVar
 from uuid import uuid4
 
 from .errors import (
@@ -20,9 +21,8 @@ from .errors import (
     TransportError,
     add_secondary,
     set_error_counters,
-    transfer_secondary,
 )
-from .lifecycle import TaskInterruptionError, cleanup_secondary, task_failure, task_result
+from .lifecycle import LEFT_WORK, TaskInterruptionError, cleanup_secondary, task_failure, task_result
 from .timing import absolute_deadline
 from .transports import AttemptIOContext, ResolvedTimeoutOptions, set_io_timing
 
@@ -39,6 +39,8 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
+StopReason: TypeAlias = Literal["token", "closing", "deadline", "idle"]
+TOKEN_INTERVAL = 0.05
 
 
 class _Scope(Protocol):
@@ -92,44 +94,92 @@ async def _released(operation: Callable[[], Awaitable[None]]) -> None:
         raise TaskInterruptionError(error) from None
 
 
-async def _late_result(
-    task: asyncio.Task[T], cleanup: Callable[[T], Awaitable[None]] | None, error: BaseException
-) -> None:
-    try:
-        result = await task
-    except BaseException as failure:  # noqa: BLE001
-        if isinstance(failure, TaskInterruptionError):
-            failure = failure.cause
-        if failure is error:
-            return
-        if isinstance(failure, (RequestCancelledError, ClientClosedError, DeadlineExceededError)) and isinstance(
-            error, (RequestCancelledError, ClientClosedError, DeadlineExceededError)
-        ):
-            for secondary in failure.secondary_errors:
-                cleanup_secondary(error, secondary)
-            if failure.cause is not None and not isinstance(
-                failure.cause, (RequestCancelledError, ClientClosedError, DeadlineExceededError)
-            ):
-                add_secondary(error, failure.cause)
-        elif not task.cancelled():
-            add_secondary(error, failure)
-        return
-    if cleanup is not None:
-        await cleanup(result)
+def _cancelling(task: asyncio.Task[object] | None) -> int:
+    return task.cancelling() if sys.version_info >= (3, 11) and task is not None else 0
+
+
+def _uncancel(task: asyncio.Task[object] | None) -> int:
+    return task.uncancel() if sys.version_info >= (3, 11) and task is not None else 0
+
+
+async def _joined(tasks: tuple[asyncio.Task[None], ...]) -> None:
+    import asyncio  # noqa: PLC0415
+
+    await asyncio.wait(tasks)
+    if failures := [failure for task in tasks if (failure := task_failure(task)) is not None]:
+        raise CleanupError(cause=failures[0], secondary_errors=tuple(failures[1:]))
+
+
+class _Guard:
+    """Cancel the task awaiting a call's work once its token, client closing, deadline, or stream idle limit stops it.
+
+    Like asyncio.timeout, it counts its own cancellation request so that a native cancellation of the same task keeps
+    precedence, and it withdraws its request when the work ends. Without a token it arms no polling timer.
+    """
+
+    __slots__ = ("_armed", "_handles", "_loop", "_poller", "_signals", "_token", "level", "reason", "task")
+
+    def __init__(self, call: LogicalCallContext, idle_timeout: float | None) -> None:
+        """Arm the call's deadline, stream idle limit, client closing signals, and token polling."""
+        import asyncio  # noqa: PLC0415
+
+        self._loop = loop = asyncio.get_running_loop()
+        self.task: asyncio.Task[object] | None = asyncio.current_task()
+        self.level = _cancelling(self.task)
+        self.reason: StopReason | None = None
+        self._armed = True
+        self._token = call.settings.cancel_token
+        self._handles: list[asyncio.TimerHandle] = []
+        if (deadline := call.deadline) is not None:
+            self._handles.append(loop.call_at(loop.time() + deadline.remaining(), self.stop, "deadline"))
+        if idle_timeout is not None:
+            self._handles.append(loop.call_at(loop.time() + idle_timeout, self.stop, "idle"))
+        self._poller = None if self._token is None else loop.call_later(TOKEN_INTERVAL, self._poll)
+        self._signals = call.closing_signals()
+        for signal in self._signals:
+            signal.add_done_callback(self._closing)
+
+    def stop(self, reason: StopReason) -> None:
+        """Cancel the awaiting task once, for the first reason that stops the call."""
+        if self._armed and self.reason is None and self.task is not None:
+            self.reason = reason
+            self.task.cancel()
+
+    def _closing(self, _signal: asyncio.Future[None]) -> None:
+        self.stop("closing")
+
+    def _poll(self) -> None:
+        if self._token is not None and self._token.cancelled:
+            self.stop("token")
+        else:
+            self._poller = self._loop.call_later(TOKEN_INTERVAL, self._poll)
+
+    def external(self) -> bool:
+        """Return whether something else also requested the task's cancellation, however the work reacted to it."""
+        return _cancelling(self.task) > self.level + (self.reason is not None)
+
+    def disarm(self) -> bool:
+        """Remove every timer and callback, and return whether this guard alone cancelled the task."""
+        self._armed = False
+        for handle in self._handles:
+            handle.cancel()
+        if self._poller is not None:
+            self._poller.cancel()
+        for signal in self._signals:
+            signal.remove_done_callback(self._closing)
+        return self.reason is not None and _uncancel(self.task) <= self.level
 
 
 class LogicalCallContext:
     """Keep all state belonging to a call, through stream handoff and the release of its owned work."""
 
     __slots__ = (
-        "_active_task",
-        "_deadline_signal",
+        "_guard",
         "_interrupted",
         "_io_context",
-        "_owned_cancellation",
+        "_left",
         "_phase",
         "_scope",
-        "_timer",
         "auth_exchange_budget_used",
         "auth_exchange_count",
         "auth_refresh_ids",
@@ -178,15 +228,17 @@ class LogicalCallContext:
         self.phase_caps: tuple[PhaseCap, ...] = ()
         self._io_context: AttemptIOContext
         self._phase: DeadlinePhase = "unknown"
-        self._deadline_signal: asyncio.Future[None] | None = None
-        self._active_task: asyncio.Task[object] | None = None
-        self._owned_cancellation: tuple[asyncio.Task[object], BaseException] | None = None
+        self._guard: _Guard | None = None
         self._interrupted: BaseException | None = None
-        self._timer: asyncio.TimerHandle | None = None
+        self._left: list[asyncio.Task[None]] = []
 
     def remaining(self) -> float | None:
         """Return the current call or stream deadline's remaining seconds, never negative."""
         return None if self.deadline is None else self.deadline.remaining()
+
+    def closing_signals(self) -> tuple[asyncio.Future[None], ...]:
+        """Return the signals that complete once the call's client or view starts closing."""
+        return self._scope.closing_signals()
 
     def snapshot_error(self, error: ErrorT) -> ErrorT:
         """Attach this call's identity and a readonly counter snapshot to an error before publication."""
@@ -232,6 +284,8 @@ class LogicalCallContext:
             phase = self._phase
         if (interrupted := self._interrupted) is not None:
             raise interrupted
+        if (guard := self._guard) is not None and guard.external():
+            raise self._native(None)
         delivery = self.delivery_state if delivery_state is None else delivery_state
         if (token := self.settings.cancel_token) is not None and token.cancelled:
             if isinstance(cause, RequestCancelledError):
@@ -256,7 +310,6 @@ class LogicalCallContext:
         delivery_state: DeliveryState | None = None,
     ) -> BaseException:
         """Preserve native interruption, otherwise select observed termination before the operation's failure."""
-        error = self._interruption(error)
         if not isinstance(error, Exception):
             return error
         try:
@@ -328,7 +381,6 @@ class LogicalCallContext:
 
     def handoff(self) -> None:
         """Start stream lifetime limits and replace the completed acquisition's caps before the first body read."""
-        self._disarm()
         self.streaming = True
         self.delivery_state = DeliveryState.RESPONSE_STARTED
         total = self.settings.stream_total_timeout
@@ -337,55 +389,80 @@ class LogicalCallContext:
         set_io_timing(self._io_context, timeout, self.deadline)
 
     def finish(self) -> None:
-        """Disarm the call's single lazy deadline timer on every terminal path."""
+        """Mark the call finished, so its remaining cleanup counts as a lease rather than a running call."""
         self.finished = True
-        self._disarm()
 
-    def _disarm(self) -> None:
-        if self._timer is not None:
-            self._timer.cancel()
-            self._timer = None
-        self._deadline_signal = None
-
-    def _signals(self) -> tuple[asyncio.Future[None], ...]:
-        signals = self._scope.closing_signals()
-        if (deadline := self.deadline) is None:
-            return signals
-        if self._deadline_signal is None:
-            import asyncio  # noqa: PLC0415
-
-            loop = asyncio.get_running_loop()
-            self._deadline_signal = loop.create_future()
-            self._timer = loop.call_at(loop.time() + deadline.remaining(), self._deadline_signal.set_result, None)
-        return (*signals, self._deadline_signal)
-
-    def _check_idle(self, idle_at: float | None, timeout: float | None, delivery_state: DeliveryState | None) -> None:
-        if idle_at is not None and monotonic() >= idle_at and timeout is not None:
-            raise self.snapshot_error(
-                PhaseTimeoutError(
-                    effective_timeout=timeout,
-                    phase="read",
-                    delivery_state=self.delivery_state if delivery_state is None else delivery_state,
-                    retry_stop_reason="transport_not_retryable",
-                )
-            )
-
-    async def _invoked(
-        self, operation: Callable[[], Awaitable[T]], phase: DeadlinePhase, delivery_state: DeliveryState | None
-    ) -> T:
+    def _native(self, error: BaseException | None) -> BaseException:
+        """Return the native cancellation that stops the call, even when the work suppressed or converted it."""
         import asyncio  # noqa: PLC0415
 
-        previous, self._active_task = self._active_task, asyncio.current_task()
+        if self._interrupted is None:
+            self._interrupted = error if isinstance(error, asyncio.CancelledError) else asyncio.CancelledError()
+        return self._interrupted
+
+    def _stopping(self, error: BaseException) -> bool:
+        """Return whether a cancellation is the call guard's own request rather than a native interruption."""
+        import asyncio  # noqa: PLC0415
+
+        guard = self._guard
+        return (
+            isinstance(error, asyncio.CancelledError)
+            and guard is not None
+            and guard.reason is not None
+            and _cancelling(guard.task) <= guard.level + 1
+        )
+
+    def _stopped(
+        self,
+        reason: StopReason | None,
+        phase: DeadlinePhase,
+        delivery_state: DeliveryState | None,
+        idle_timeout: float | None,
+        cause: BaseException | None,
+    ) -> BaseException:
+        """Return the error of a call its guard stopped, even when a timer fired within the clock's resolution."""
+        failure = cause if isinstance(cause, Exception) else None
+        try:
+            self.check(phase, delivery_state, failure)
+        except BaseException as error:  # noqa: BLE001
+            return error
+        delivery = self.delivery_state if delivery_state is None else delivery_state
+        return (
+            self.snapshot_error(
+                PhaseTimeoutError(
+                    effective_timeout=idle_timeout,
+                    phase="read",
+                    delivery_state=delivery,
+                    retry_stop_reason="transport_not_retryable",
+                    cause=failure,
+                )
+            )
+            if reason == "idle" and idle_timeout is not None
+            else self._deadline_error(
+                monotonic() if self.deadline is None else self.deadline.at, phase, delivery, failure
+            )
+        )
+
+    async def _settle_left(self, failure: BaseException) -> None:
+        """Wait within the cleanup cap for the work interrupted callbacks left, retaining what is still running."""
+        if left := self._left:
+            self._left = []
+            await self.cleanup(partial(_joined, tuple(left)), error=failure)
+
+    async def _checked(
+        self,
+        result: T,
+        phase: DeadlinePhase,
+        delivery_state: DeliveryState | None,
+        cleanup: Callable[[T], Awaitable[None]] | None,
+    ) -> T:
         try:
             self.check(phase, delivery_state)
-            return await operation()
         except BaseException as error:
-            error = self._interruption(error)
-            if isinstance(error, Exception):
-                raise error from None
-            raise TaskInterruptionError(error) from None
-        finally:
-            self._active_task = previous
+            if cleanup is not None:
+                await self.cleanup(partial(cleanup, result), error=error)
+            raise
+        return result
 
     async def _nested(
         self,
@@ -398,33 +475,7 @@ class LogicalCallContext:
             result = await operation()
         except BaseException as error:  # noqa: BLE001
             raise self.failure(error, phase, delivery_state) from None
-        try:
-            self.check(phase, delivery_state)
-        except BaseException as error:
-            if cleanup is not None:
-                await self.cleanup(partial(cleanup, result), error=error)
-            raise
-        return result
-
-    def _interruption(self, error: BaseException) -> BaseException:
-        """Distinguish cancellation of an owned operation from native cancellation delivered to its caller."""
-        if self._owned_cancellation is not None:
-            import asyncio  # noqa: PLC0415
-
-            task, failure = self._owned_cancellation
-            if isinstance(error, asyncio.CancelledError) and task is asyncio.current_task():
-                transfer_secondary(error, failure)
-                return failure
-        return error
-
-    def _cancel(self, task: asyncio.Task[object], error: BaseException) -> None:
-        """Cancel the call's sole monitored task; the first cancellation always terminates this logical call."""
-        if task.cancel():
-            self._owned_cancellation = (task, error)
-            task.add_done_callback(self._cancellation_finished)
-
-    def _cancellation_finished(self, _task: asyncio.Task[object]) -> None:
-        self._owned_cancellation = None
+        return await self._checked(result, phase, delivery_state, cleanup)
 
     async def bounded(
         self,
@@ -435,52 +486,41 @@ class LogicalCallContext:
         cleanup: Callable[[T], Awaitable[None]] | None = None,
         idle_timeout: float | None = None,
     ) -> T:
-        """Wait on SDK-owned work, using one call timer and token polling only when a token is present."""
-        import asyncio  # noqa: PLC0415
+        """Await SDK work in the caller's task, cancelling it only when the call's token, closing, or limits stop it.
 
+        Work nested in a guarded call runs directly under that guard. A result the stopped work still returned, such
+        as a response whose close a callback delayed, is released through cleanup.
+        """
         self.check(phase, delivery_state)
-        if (
-            self._active_task is not None
-            and self._active_task is asyncio.current_task()
-            and idle_timeout is None
-            and not (self.streaming and phase == "stream")
-        ):
+        if self._guard is not None and idle_timeout is None and not (self.streaming and phase == "stream"):
             return await self._nested(operation, phase, delivery_state, cleanup)
         if self.streaming and phase == "stream" and idle_timeout is None:
             read, idle = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
             idle_timeout = idle if read is None else read if idle is None else min(read, idle)
-        signals = self._signals()
-        task = asyncio.create_task(self._invoked(operation, phase, delivery_state))
-        waiters: tuple[asyncio.Task[T] | asyncio.Future[None], ...] = (task, *signals)
-        idle_at = None if idle_timeout is None else monotonic() + idle_timeout
+        guard = self._guard = _Guard(self, idle_timeout)
+        left = LEFT_WORK.set(self._left)
         try:
-            while True:
-                timeout = None if idle_at is None else max(0.0, idle_at - monotonic())
-                if self.settings.cancel_token is not None:
-                    timeout = 0.05 if timeout is None else min(0.05, timeout)
-                await asyncio.wait(waiters, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
-                if task.done() and (
-                    task.cancelled()
-                    or ((failure := task_failure(task)) is not None and not isinstance(failure, Exception))
-                ):
-                    task_result(task)
-                self.check(phase, delivery_state)
-                self._check_idle(idle_at, idle_timeout, delivery_state)
-                if task.done():
-                    try:
-                        return task_result(task)
-                    except Exception as error:  # noqa: BLE001
-                        raise self.failure(error, phase, delivery_state) from None
+            result = await operation()
         except BaseException as error:  # noqa: BLE001
-            error = self._interruption(error)
-            if not isinstance(error, Exception) and self._interrupted is None:
-                self._interrupted = error
-            if task.done() and cleanup is None:
-                await _late_result(task, None, error)
+            LEFT_WORK.reset(left)
+            self._guard = None
+            if guard.external():
+                guard.disarm()
+                failure = self._native(error)
+            elif guard.disarm():
+                failure = self._stopped(guard.reason, phase, delivery_state, idle_timeout, error)
             else:
-                self._cancel(task, error)
-                await self.cleanup(partial(_late_result, task, cleanup, error), error=error)
-            raise self.failure(error, phase, delivery_state) from None
+                if not isinstance(error, Exception) and self._interrupted is None:
+                    self._interrupted = error
+                failure = self.failure(error, phase, delivery_state)
+            await self._settle_left(failure)
+            raise failure from None
+        try:
+            return await self._checked(result, phase, delivery_state, cleanup)
+        finally:
+            LEFT_WORK.reset(left)
+            self._guard = None
+            guard.disarm()
 
     async def cleanup(
         self,
@@ -497,8 +537,7 @@ class LogicalCallContext:
         try:
             await asyncio.wait((task,), timeout=self.settings.cleanup_timeout)
         except BaseException as interrupted:
-            interrupted = self._interruption(interrupted)
-            if not isinstance(interrupted, Exception) and self._interrupted is None:
+            if not isinstance(interrupted, Exception) and self._interrupted is None and not self._stopping(interrupted):
                 self._interrupted = interrupted
             task.add_done_callback(partial(_secondary, interrupted))
             if error is not None and not isinstance(error, Exception):
