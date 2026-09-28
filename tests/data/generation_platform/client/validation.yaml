@@ -83,6 +83,39 @@ paths:
       responses:
         "204":
           description: Stored.
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "204":
+          description: Healthy.
+  /notes:
+    post:
+      operationId: postNote
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: string
+      requestBody:
+        content:
+          text/plain: {}
+      responses:
+        "204":
+          description: Stored.
+  /photos:
+    put:
+      operationId: putPhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+          image/png: {}
+      responses:
+        "204":
+          description: Stored.
   /accounts/{accountId}:
     get:
       operationId: getAccount

@@ -20,7 +20,7 @@ from tests.data.python.client_raw import raw
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_transports import lifecycle, transports
-from tests.data.python.client_validation import validation
+from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_runtime import (
     Exchange,
     abroken,
@@ -599,6 +599,7 @@ BACKENDS: Final = (
     "typing.TypedDict",
     "msgspec.Struct",
 )
+ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "media": ("media", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), media),
@@ -627,6 +628,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "evolution-forbid": ("evolution-forbid", ("pydantic_v2.BaseModel", "msgspec.Struct"), evolution),
     "validation": ("validation", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), validation),
     "validation-structural": ("validation-structural", ("dataclasses.dataclass", "typing.TypedDict"), validation),
+    "validation-arguments": ("validation-arguments", ALL_BUT_MSGSPEC, arguments),
+    "validation-arguments-lax": ("validation-arguments-lax", ALL_BUT_MSGSPEC, arguments),
     "evolution-allow": ("evolution-allow", ("pydantic_v2.BaseModel",), evolution),
 }
 

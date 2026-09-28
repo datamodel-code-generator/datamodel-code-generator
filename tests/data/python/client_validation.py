@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _BOUNDARY: Final = re.compile(r"dcg[0-9a-f]{32}")
+_PYDANTIC_DOCS: Final = re.compile(r"https://errors\.pydantic\.dev/[0-9.]+/")
 _LARGE: Final = 2**40
 _NAMED: Final = b'Content-Disposition: form-data; name="%s"'
 _PHOTO: Final = (_NAMED % b"photo" + b'; filename="a.png"\r\nContent-Type: image/png', b"\x89PNG")
@@ -63,7 +64,10 @@ class _Validation:
 
     def bundles(self, lines: list[str], label: str) -> None:
         """Report whether any schema bundle was built, which only schema validation needs."""
-        built = (self.bindings.request_bundle.cache_info().currsize, self.bindings.response_bundle.cache_info().currsize)
+        built = (
+            self.bindings.request_bundle.cache_info().currsize,
+            self.bindings.response_bundle.cache_info().currsize,
+        )
         lines.append(f"  schema bundles {label}: request {built[0]} response {built[1]}")
 
     def pet(self, **fields: object) -> Any:
@@ -95,16 +99,52 @@ def validation(package: ModuleType, lines: list[str]) -> None:
 
 def _requests(context: _Validation, pets: Any, exchange: Exchange, lines: list[str]) -> None:
     """Send what each request mode accepts: none serializes, native asks the backend, schema checks the wire."""
-    _exchanged(exchange, lines, "create", lambda: pets.create_pet(body=context.pet(secret="s")), json_response(201, {"id": 1, "name": "Mimi"}))
+    _exchanged(
+        exchange,
+        lines,
+        "create",
+        lambda: pets.create_pet(body=context.pet(secret="s")),
+        json_response(201, {"id": 1, "name": "Mimi"}),
+    )
     context.bundles(lines, "after none and native calls")
     for mode in ("none", "native", "schema"):
         large = context.pet(age=_LARGE)
-        _exchanged(exchange, lines, f"create an age beyond int32, request {mode}", lambda: pets.create_pet(body=large, options=context.call(request=mode)), json_response(201, {"id": 1, "name": "Mimi"}))
+        _exchanged(
+            exchange,
+            lines,
+            f"create an age beyond int32, request {mode}",
+            lambda: pets.create_pet(body=large, options=context.call(request=mode)),
+            json_response(201, {"id": 1, "name": "Mimi"}),
+        )
         long = _mutated(context.pet(), name="far too long")
-        _exchanged(exchange, lines, f"create a name mutated too long, request {mode}", lambda: pets.create_pet(body=long, options=context.call(request=mode)), json_response(201, {"id": 1, "name": "Mimi"}))
-        _exchanged(exchange, lines, f"list beyond an int32 limit, request {mode}", lambda: pets.list_pets(limit=context.value("FieldPetsGetQueryLimitParameter", _LARGE), options=context.call(request=mode)), json_response(200, []))
-    _exchanged(exchange, lines, "create from a mapping, request native", lambda: pets.create_pet(body={"id": 1, "name": "Mimi"}, options=context.call(request="native")), json_response(201, {"id": 1, "name": "Mimi"}))
-    record(lines, "create from a mapping of a wrong type, request native", lambda: pets.create_pet(body={"id": 1, "name": 5}, options=context.call(request="native")))
+        _exchanged(
+            exchange,
+            lines,
+            f"create a name mutated too long, request {mode}",
+            lambda: pets.create_pet(body=long, options=context.call(request=mode)),
+            json_response(201, {"id": 1, "name": "Mimi"}),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            f"list beyond an int32 limit, request {mode}",
+            lambda: pets.list_pets(
+                limit=context.value("FieldPetsGetQueryLimitParameter", _LARGE), options=context.call(request=mode)
+            ),
+            json_response(200, []),
+        )
+    _exchanged(
+        exchange,
+        lines,
+        "create from a mapping, request native",
+        lambda: pets.create_pet(body={"id": 1, "name": "Mimi"}, options=context.call(request="native")),
+        json_response(201, {"id": 1, "name": "Mimi"}),
+    )
+    record(
+        lines,
+        "create from a mapping of a wrong type, request native",
+        lambda: pets.create_pet(body={"id": 1, "name": 5}, options=context.call(request="native")),
+    )
 
 
 def _responses(context: _Validation, pets: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -119,13 +159,25 @@ def _responses(context: _Validation, pets: Any, exchange: Exchange, lines: list[
         ("no name", {"id": 1}),
     ):
         for mode in ("native", "schema"):
-            _exchanged(exchange, lines, f"list {label}, response {mode}", lambda: pets.list_pets(options=context.call(response=mode)), json_response(200, [payload]))
+            _exchanged(
+                exchange,
+                lines,
+                f"list {label}, response {mode}",
+                lambda: pets.list_pets(options=context.call(response=mode)),
+                json_response(200, [payload]),
+            )
 
 
 def _errors(context: _Validation, pets: Any, exchange: Exchange, lines: list[str]) -> None:
     """Decode error payloads under the call's response mode, through ordinary, raw, and streaming calls."""
     for mode in ("native", "schema"):
-        _exchanged(exchange, lines, f"list failing with a code below its minimum, response {mode}", lambda: pets.list_pets(options=context.call(response=mode)), json_response(404, {"code": 200}))
+        _exchanged(
+            exchange,
+            lines,
+            f"list failing with a code below its minimum, response {mode}",
+            lambda: pets.list_pets(options=context.call(response=mode)),
+            json_response(404, {"code": 200}),
+        )
         exchange.respond(json_response(404, {"code": 200}))
         raw = pets.with_raw_response.list_pets(options=context.call(response=mode))
         record(lines, f"raw list failing, response {mode}", raw.raise_for_status)
@@ -139,26 +191,87 @@ def _parts(context: _Validation, pets: Any, exchange: Exchange, lines: list[str]
     form = "multipart/form-data; boundary=b1"
     caption = (_NAMED % b"caption", b"far too long")
     for mode in ("native", "schema"):
-        _exchanged(exchange, lines, f"card with a caption too long, response {mode}", lambda: [(part.name, part.value) for part in pets.get_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), options=context.call(response=mode)).parts], raw_response(200, _form(caption, _PHOTO), form))
-        _exchanged(exchange, lines, f"card with a write-only token, response {mode}", lambda: pets.get_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), options=context.call(response=mode)), raw_response(200, _form(_PHOTO, (_NAMED % b"token", b"t")), form))
+        _exchanged(
+            exchange,
+            lines,
+            f"card with a caption too long, response {mode}",
+            lambda: [
+                (part.name, part.value)
+                for part in pets.get_card(
+                    pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3),
+                    options=context.call(response=mode),
+                ).parts
+            ],
+            raw_response(200, _form(caption, _PHOTO), form),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            f"card with a write-only token, response {mode}",
+            lambda: pets.get_card(
+                pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), options=context.call(response=mode)
+            ),
+            raw_response(200, _form(_PHOTO, (_NAMED % b"token", b"t")), form),
+        )
     body, field, file = context.bodies.MultipartBody, context.bodies.FieldPart, context.bodies.FilePart
     for mode in ("none", "schema"):
-        _exchanged(exchange, lines, f"put a caption too long, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((field("caption", "far too long"), file("photo", b"\x89PNG"))), options=context.call(request=mode)), raw_response(204))
-        record(lines, f"put a read-only stamp, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((file("photo", b"\x89PNG"), field("stamp", "s"))), options=context.call(request=mode)))
-        _exchanged(exchange, lines, f"put a read-only stamp left unset, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((file("photo", b"\x89PNG"), field("stamp", context.options.UNSET))), options=context.call(request=mode)), raw_response(204))
+        _exchanged(
+            exchange,
+            lines,
+            f"put a caption too long, request {mode}",
+            lambda: pets.put_card(
+                pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3),
+                body=body((field("caption", "far too long"), file("photo", b"\x89PNG"))),
+                options=context.call(request=mode),
+            ),
+            raw_response(204),
+        )
+        record(
+            lines,
+            f"put a read-only stamp, request {mode}",
+            lambda: pets.put_card(
+                pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3),
+                body=body((file("photo", b"\x89PNG"), field("stamp", "s"))),
+                options=context.call(request=mode),
+            ),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            f"put a read-only stamp left unset, request {mode}",
+            lambda: pets.put_card(
+                pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3),
+                body=body((file("photo", b"\x89PNG"), field("stamp", context.options.UNSET))),
+                options=context.call(request=mode),
+            ),
+            raw_response(204),
+        )
     for mode in ("none", "native", "schema"):
         for label, headers in (
             ("counted below its minimum and traced out of its pattern", (("X-Count", "0"), ("X-Trace", "u"))),
             ("counted in words", (("X-Count", "many"),)),
             ("without its count", ()),
         ):
-            _exchanged(exchange, lines, f"put a token {label}, request {mode}", lambda: pets.put_card(pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3), body=body((file("photo", b"\x89PNG"), field("token", "t", headers=headers))), options=context.call(request=mode)), raw_response(204))
+            _exchanged(
+                exchange,
+                lines,
+                f"put a token {label}, request {mode}",
+                lambda: pets.put_card(
+                    pet_id=context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3),
+                    body=body((file("photo", b"\x89PNG"), field("token", "t", headers=headers))),
+                    options=context.call(request=mode),
+                ),
+                raw_response(204),
+            )
 
 
 def _envelopes(context: _Validation, pets: Any, exchange: Exchange, lines: list[str]) -> None:
     """Read an envelope use as strictly under native responses as under schema ones, since it keeps its snapshot."""
     account = context.value("FieldAccountsAccountIdGetPathAccountIdParameter", 1)
-    for label, payload in (("an account", {"id": 1}), ("an account with an undeclared member", {"id": 1, "extra": True})):
+    for label, payload in (
+        ("an account", {"id": 1}),
+        ("an account with an undeclared member", {"id": 1, "extra": True}),
+    ):
         _exchanged(exchange, lines, label, lambda: pets.get_account(account_id=account), json_response(200, payload))
 
 
@@ -166,15 +279,36 @@ def _layers(context: _Validation, api: Any, http: Any, exchange: Exchange, lines
     """Merge modes per axis as call, view, client, then the generated default, and refuse modes the package lacks."""
     options = context.options
     validation = options.ValidationOptions
-    strict = context.package.Client(http_client=http, options=options.ClientOptions(validation=validation(response="schema")))
+    strict = context.package.Client(
+        http_client=http, options=options.ClientOptions(validation=validation(response="schema"))
+    )
     view = strict.with_options(options.RequestOptions(validation=validation(request="schema")))
     payload = {"id": 1, "name": "Mimi", "age": _LARGE}
-    _exchanged(exchange, lines, "list through a client reading schemas", strict.default.list_pets, json_response(200, [payload]))
-    _exchanged(exchange, lines, "list through it, response native", lambda: strict.default.list_pets(options=context.call(response="native")), json_response(200, [payload]))
-    record(lines, "create through its view sending schemas", lambda: view.default.create_pet(body=context.pet(age=_LARGE)))
+    _exchanged(
+        exchange,
+        lines,
+        "list through a client reading schemas",
+        strict.default.list_pets,
+        json_response(200, [payload]),
+    )
+    _exchanged(
+        exchange,
+        lines,
+        "list through it, response native",
+        lambda: strict.default.list_pets(options=context.call(response="native")),
+        json_response(200, [payload]),
+    )
+    record(
+        lines, "create through its view sending schemas", lambda: view.default.create_pet(body=context.pet(age=_LARGE))
+    )
     _exchanged(exchange, lines, "list through its view", view.default.list_pets, json_response(200, [payload]))
     for label, build in (
-        ("client selecting Pydantic arguments", lambda: context.package.Client(http_client=http, options=options.ClientOptions(validation=validation(arguments="pydantic")))),
+        (
+            "client selecting Pydantic arguments",
+            lambda: context.package.Client(
+                http_client=http, options=options.ClientOptions(validation=validation(arguments="pydantic"))
+            ),
+        ),
         ("view selecting native requests", lambda: type(api.with_options(context.call(request="native"))).__name__),
         ("request mode None", lambda: validation(request=None)),
         ("response mode none", lambda: validation(response="none")),
@@ -183,7 +317,13 @@ def _layers(context: _Validation, api: Any, http: Any, exchange: Exchange, lines
         ("unset", lambda: validation()),
     ):
         record(lines, label, build)
-    _exchanged(exchange, lines, "call selecting native requests", lambda: api.default.list_pets(options=context.call(request="native")), json_response(200, []))
+    _exchanged(
+        exchange,
+        lines,
+        "call selecting native requests",
+        lambda: api.default.list_pets(options=context.call(request="native")),
+        json_response(200, []),
+    )
 
 
 async def _async_validation(context: _Validation, lines: list[str]) -> None:
@@ -193,10 +333,156 @@ async def _async_validation(context: _Validation, lines: list[str]) -> None:
     async with context.package.AsyncClient(http_client=http) as api:
         pets = api.default
         large = context.pet(age=_LARGE)
-        await _aexchanged(exchange, lines, "async create, request none", lambda: pets.create_pet(body=large), json_response(201, {"id": 1, "name": "Mimi", "age": _LARGE}))
-        await arecord(lines, "async create, request schema", lambda: pets.create_pet(body=large, options=context.call(request="schema")))
-        await _aexchanged(exchange, lines, "async list, response schema", lambda: pets.list_pets(options=context.call(response="schema")), json_response(200, [{"id": 1, "name": "Mimi", "age": _LARGE}]))
+        await _aexchanged(
+            exchange,
+            lines,
+            "async create, request none",
+            lambda: pets.create_pet(body=large),
+            json_response(201, {"id": 1, "name": "Mimi", "age": _LARGE}),
+        )
+        await arecord(
+            lines,
+            "async create, request schema",
+            lambda: pets.create_pet(body=large, options=context.call(request="schema")),
+        )
+        await _aexchanged(
+            exchange,
+            lines,
+            "async list, response schema",
+            lambda: pets.list_pets(options=context.call(response="schema")),
+            json_response(200, [{"id": 1, "name": "Mimi", "age": _LARGE}]),
+        )
         exchange.respond(json_response(404, {"code": 200}))
         raw = await pets.with_raw_response.list_pets()
         await arecord(lines, "async raw list failing, response native", raw.raise_for_status)
+    await http.aclose()
+
+
+def arguments(package: ModuleType, lines: list[str]) -> None:
+    """Validate the arguments of calls with Pydantic when a package allows it, as its generated strictness decides."""
+    context = _Validation(package)
+    checks = importlib.import_module(f"{package.__name__}._generated.client_checks")
+    types = importlib.import_module(f"{package.__name__}.types.default")
+    exchange = Exchange(lines)
+    http = exchange.client()
+    pydantic = context.call(arguments="pydantic")
+    with package.Client(http_client=http) as api:
+        pets = api.default
+        lines.append(f"  checks built before a call selects them: {checks.operation_1_0.cache_info().currsize}")
+        for label, body in (
+            ("a pet", context.pet(age=3)),
+            ("a pet mutated to a string age", _mutated(context.pet(), age="3")),
+            ("a mapping with an undeclared key", {"id": 1, "name": "Mimi", "extra": 1}),
+            ("a snapshot", types.CreatePetRequestCodecs.body().from_wire({"name": "Mimi"})),
+        ):
+            _exchanged(
+                exchange,
+                lines,
+                f"create {label}",
+                lambda: pets.create_pet(body=body, options=pydantic),
+                json_response(201, {"id": 1, "name": "Mimi"}),
+            )
+        limit = context.value("FieldPetsGetQueryLimitParameter", 5)
+        for label, value in (("a limit", limit), ("a string limit", "5"), ("no limit", context.options.UNSET)):
+            _exchanged(
+                exchange,
+                lines,
+                f"list with {label}",
+                lambda: pets.list_pets(limit=value, options=pydantic),
+                json_response(200, []),
+            )
+        account = context.value("FieldAccountsAccountIdGetPathAccountIdParameter", 1)
+        _exchanged(
+            exchange,
+            lines,
+            "account",
+            lambda: pets.get_account(account_id=account, options=pydantic),
+            json_response(200, {"id": 1}),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            "account by a string id",
+            lambda: pets.get_account(account_id="1", options=pydantic),
+            json_response(200, {"id": 1}),
+        )
+        body, field, file = context.bodies.MultipartBody, context.bodies.FieldPart, context.bodies.FilePart
+        card = context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3)
+        _exchanged(
+            exchange,
+            lines,
+            "put a card",
+            lambda: pets.put_card(pet_id=card, body=body((file("photo", b"\x89PNG"),)), options=pydantic),
+            raw_response(204),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            "put a card of a string id",
+            lambda: pets.put_card(pet_id="3", body=body((file("photo", b"\x89PNG"),)), options=pydantic),
+            raw_response(204),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            "create a pet mutated to a string age by default",
+            lambda: pets.create_pet(body=_mutated(context.pet(), age="3")),
+            json_response(201, {"id": 1, "name": "Mimi"}),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            "health, which takes no argument",
+            lambda: pets.get_health(options=pydantic),
+            raw_response(204),
+        )
+        for label, tag in (("a note", "t"), ("a note of a numeric tag", 5)):
+            _exchanged(
+                exchange, lines, label, lambda: pets.post_note(tag=tag, body="n", options=pydantic), raw_response(204)
+            )
+        _exchanged(
+            exchange,
+            lines,
+            "put a photo link",
+            lambda: pets.put_photo(body="https://example.com/p.png", media_type="application/json", options=pydantic),
+            raw_response(204),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            "put photo bytes, whose branch takes no argument",
+            lambda: pets.put_photo(body=b"\x89PNG", media_type="image/png", options=pydantic),
+            raw_response(204),
+        )
+        _exchanged(
+            exchange,
+            lines,
+            "select no argument validation",
+            lambda: pets.list_pets(options=context.call(arguments="none")),
+            json_response(200, []),
+        )
+        lines.append(f"  checks built once: {checks.operation_1_0.cache_info().currsize}")
+    http.close()
+    run(lambda: _async_arguments(context, pydantic, lines))
+    lines[:] = [_BOUNDARY.sub("<boundary>", _PYDANTIC_DOCS.sub("<pydantic errors>/", line)) for line in lines]
+
+
+async def _async_arguments(context: _Validation, pydantic: Any, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    http = exchange.async_client()
+    async with context.package.AsyncClient(http_client=http) as api:
+        await _aexchanged(
+            exchange,
+            lines,
+            "async create a pet",
+            lambda: api.default.create_pet(body=context.pet(age=3), options=pydantic),
+            json_response(201, {"id": 1, "name": "Mimi"}),
+        )
+        await _aexchanged(
+            exchange,
+            lines,
+            "async create a pet mutated to a string age",
+            lambda: api.default.create_pet(body=_mutated(context.pet(), age="3"), options=pydantic),
+            json_response(201, {"id": 1, "name": "Mimi"}),
+        )
     await http.aclose()

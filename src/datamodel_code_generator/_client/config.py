@@ -205,11 +205,6 @@ def _validation_problems(value: object) -> Iterator[Diagnostic]:
             yield _diagnostic(
                 "E_CONFIG_VALUE", f"validation.{overrides}", f"validation.{overrides} lists {repeated!r} twice"
             )
-    arguments = value.argument_overrides
-    if value.arguments == "pydantic" or (_is_tuple(arguments) and "pydantic" in arguments):
-        yield _diagnostic(
-            "E_CLIENT_UNSUPPORTED", "validation.arguments", "Pydantic argument validation is not available yet"
-        )
     if type(value.pydantic_strict) is not bool:
         yield _diagnostic(
             "E_CONFIG_VALUE", "validation.pydantic_strict", "validation.pydantic_strict must be a boolean"

@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
+    from .checks import ArgumentCheck
     from .multipart import PartDecoder
     from .options import RequestValidation
     from .responses import ResponseInfo
@@ -289,18 +290,7 @@ class RequestBody:
             if self.required:
                 raise RequestEncodingError(location=("body",), operation_id=operation_id)
             return None
-        concrete: str | None = None
-        match media_type:
-            case None:
-                pass
-            case MediaSelector():
-                media_type, concrete = RequestMedia.chosen(media_type, owner)
-            case str() if "*" in essence(media_type):
-                raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
-            case _:
-                pass
-        selected = self.select(operation_id, media_type)
-        sent = selected.media_type if concrete is None else _sent(concrete, selected.media_type)
+        selected, sent = self.selected(operation_id, media_type, owner)
         try:
             if selected.kind == "multipart":
                 boundary = new_boundary()
@@ -313,6 +303,23 @@ class RequestBody:
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(location=("body",), operation_id=operation_id, cause=error) from None
         return EncodedBody(media_type=sent, content=content)
+
+    def selected(
+        self, operation_id: str | None, media_type: str | MediaSelector | None, owner: object = None
+    ) -> tuple[BodyMedia, str]:
+        """Return the declared media a call sends, by its media type or selector, and the media type sent."""
+        concrete: str | None = None
+        match media_type:
+            case None:
+                pass
+            case MediaSelector():
+                media_type, concrete = RequestMedia.chosen(media_type, owner)
+            case str() if "*" in essence(media_type):
+                raise ConfigurationError(field_path=("media_type",), condition="undeclared", operation_id=operation_id)
+            case _:
+                pass
+        selected = self.select(operation_id, media_type)
+        return selected, selected.media_type if concrete is None else _sent(concrete, selected.media_type)
 
     def select(self, operation_id: str | None, media_type: str | None) -> BodyMedia:
         """Return the declared media a call names, or the default media when it names none."""
@@ -845,3 +852,26 @@ class OperationPlan(Generic[T_co, E_co]):
     request_id_header: str | None = None
     response_media_type: str | None = None
     codecs: object = None
+    checks: tuple[tuple[str | None, Callable[[], ArgumentCheck]], ...] = ()
+
+    def checked(
+        self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
+    ) -> tuple[tuple[object, ...], object]:
+        """Return a call's arguments and body with Pydantic validating each supplied value of its branch.
+
+        The branch is the declared media the body is sent as; a call without a body takes any branch's parameters. A
+        branch that takes no argument has no check.
+        """
+        if not (checks := self.checks):
+            return arguments, body
+        accessor = checks[0][1]
+        if self.body is not None and not isinstance(body, Unset):
+            wanted = self.body.selected(self.operation_id, media_type, self.codecs)[0].media_type
+            if (found := next((check for media, check in checks if media == wanted), None)) is None:
+                return arguments, body
+            accessor = found
+        check = accessor()
+        if len(check.names) == len(arguments):
+            return check(arguments, self.operation_id), body
+        *values, checked = check((*arguments, body), self.operation_id)
+        return tuple(values), checked

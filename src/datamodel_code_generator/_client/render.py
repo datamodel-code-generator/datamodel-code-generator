@@ -1031,6 +1031,85 @@ class _Records:
         )
 
 
+class _Checks(_Typing):
+    """The Pydantic validation of the arguments each branch of each operation takes as native values.
+
+    A branch is one declared request media type, whose body joins the operation's parameters unless it is sent as
+    parts or as binary; an operation without a body has one branch.
+    """
+
+    def __init__(
+        self, plan: ClientPlan, codecs: CodecPlan, accessors: dict[TypeUseId, UseAccessors], *, strict: bool
+    ) -> None:
+        """Spell each branch's function and accessor in the module that defines them."""
+        super().__init__(plan, codecs, accessors)
+        self.strict = strict
+        self.module = Module((), self.symbols, level=2)
+        self.sections: list[str] = []
+        self.branches: dict[int, tuple[tuple[str | None, str], ...]] = {}
+        for spec in plan.operations:
+            media = spec.body.media if spec.body is not None else (None,)
+            branches = tuple(
+                branch for position, item in enumerate(media) if (branch := self.branch(spec, item, position))
+            )
+            if branches:
+                self.branches[spec.index] = branches
+
+    def native(self, use: TypeUseBinding | None) -> str | None:
+        """Return the final type of a use a call takes as a native value, or None when it has none."""
+        return None if use is None or use.type is None else self.module.types.static(use.type)
+
+    def branch(self, spec: OperationSpec, media: MediaSpec | None, position: int) -> tuple[str | None, str] | None:
+        """Return the media type and accessor of one branch's check, or None when the branch takes no argument."""
+        arguments: list[tuple[str, tuple[str, ...], str]] = [
+            (parameter.python_name, (parameter.location, parameter.wire_name), self.native(parameter.use) or "object")
+            for parameter in spec.parameters
+        ]
+        if (
+            media is not None
+            and media.members is None
+            and media.kind != "binary"
+            and (body := self.native(media.use)) is not None
+        ):
+            arguments.append(("body", ("body",), body))
+        if not arguments:
+            return None
+        name = f"operation_{spec.index}" if media is None else f"operation_{spec.index}_{position}"
+        module = self.module
+        omitted = module.local("_runtime.client.checks", "OMITTED")
+        parameters = "".join(f"    {argument}: {annotation} = {omitted},\n" for argument, _, annotation in arguments)
+        returned = ", ".join(argument for argument, _, _ in arguments)
+        returned = f"({returned},)" if len(arguments) == 1 else returned
+        sent = "" if media is None else f" sending {media.media_type}"
+        check = module.local("_runtime.client.checks", "ArgumentCheck")
+        head = "    return "
+        call = _call(
+            check,
+            (
+                ("", _tuple(_tuple((repr(argument), repr(location))) for argument, location, _ in arguments)),
+                ("", f"_{name}"),
+                ("strict=", repr(self.strict)),
+            ),
+        )
+        self.sections.extend((
+            f"def _{name}(\n    *,\n{parameters}) -> tuple[object, ...]:\n    return {returned}",
+            (
+                f"@{module.name('functools', 'cache')}\ndef {name}() -> {check}:\n"
+                f'    """Return the validation of the arguments of {spec.name}{sent}."""\n'
+                f"{head}{layout(call, 4, len(head), WIDTH)}"
+            ),
+        ))
+        return None if media is None else media.media_type, name
+
+    def source(self) -> str:
+        """Return the private module of the argument checks."""
+        return types_template.render(
+            docstring="The Pydantic validation of each operation's arguments; regenerate it instead of editing.",
+            imports=self.module.imports(),
+            sections=self.sections,
+        )
+
+
 class _Types(_Typing):
     """Render each resource's types module: result aliases, HTTP errors, request codecs, and header accessors."""
 
@@ -1313,7 +1392,9 @@ class _Types(_Typing):
 
 
 class _Registry(_Typing):
-    """Render the operation registry: each operation's servers, parameters, body, and response decoder."""
+    """Render the operation registry: each operation's servers, parameters, body, response decoder, and checks."""
+
+    checks: _Checks | None = None
 
     def module(self) -> str:
         """Return the operation registry module."""
@@ -1389,6 +1470,9 @@ class _Registry(_Typing):
             entries.append(("response_media_type=", repr(spec.response_media_type)))
         if (spec.body is not None and spec.body.media) or success_media(spec.responses, ranges=True):
             entries.append(("codecs=", module.local(f"types.{spec.resource}", f"{spec.pascal}RequestCodecs")))
+        if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
+            checks = module.local("_generated", "client_checks")
+            entries.append(("checks=", _tuple(_tuple((repr(media), f"{checks}.{name}")) for media, name in branches)))
         return _call(module.local(_RUNTIME, "OperationPlan"), entries)
 
     def encoder(self, module: Module, use: TypeUseBinding) -> str:
@@ -1597,6 +1681,9 @@ class ClientRenderer:
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)
+        validation = config.validation
+        if "pydantic" in allowed(validation.arguments, validation.argument_overrides):
+            registry.checks = _Checks(self.plan, self.codecs, self.accessors, strict=validation.pydantic_strict)
         files = [
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
@@ -1632,6 +1719,8 @@ class ClientRenderer:
         ))
         if (records := resources.records) is not None:
             files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
+        if (checks := registry.checks) is not None:
+            files.append(self.file(PurePosixPath("_generated", "client_checks.py"), "checks", checks.source()))
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         runtime = runtime_sources(file.text for file in files)
         return (*files, *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime))

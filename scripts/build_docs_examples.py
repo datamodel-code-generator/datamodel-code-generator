@@ -395,6 +395,23 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.validation.arguments",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "validation-arguments"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "_generated"
+                    / "client_checks.py",
+                    "_operation_1_0",
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.validation.options",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
