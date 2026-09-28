@@ -212,5 +212,48 @@ class FieldCardsPostRequest(BaseModel):
     tags: list[str] | None = None
 
 
+class Point(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, int],
+    }
+    x: int | None = None
+
+
+class FieldStickersPostRequest(BaseModel):
+    tags: list[str] | None = None
+    words: list[str] | None = None
+    sizes: list[int] | None = None
+    filter: Filter | None = None
+    point: Point | None = None
+    label: str | None = None
+    y: int | None = None
+
+
+class Bounds(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, int],
+    }
+    w: int | None = None
+
+
+class FieldAlbumsPostRequest(BaseModel):
+    photo: bytes
+    bounds: Bounds | None = None
+    title: str | None = None
+    tags: list[str] | None = None
+
+
+class FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader(
+    RootModel[constr(pattern=r'name="[^b]')]
+):
+    root: constr(pattern=r'name="[^b]')
+
+
 class FieldDocumentsIdGetPathIdParameter(BaseModel):
     key: str | None = None

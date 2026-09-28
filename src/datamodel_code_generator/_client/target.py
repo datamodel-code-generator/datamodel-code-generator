@@ -19,6 +19,7 @@ from datamodel_code_generator._client.plan import (
     form_uses,
     part_uses,
     plan_uses,
+    style_uses,
 )
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._codec_declarations import CodecDeclarations
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
@@ -129,6 +131,7 @@ def _wire(
         operations=frozenset(operation.id for operation in request.operations),
         documents=request.documents.pointers,
         forms=dict(form_uses(request)),
+        styles=dict(style_uses(request)),
     )
 
 
@@ -322,10 +325,10 @@ class _TargetData:
         return (self.bindings.get(use.id), self.wire.schema(use.schema)[1])
 
 
-def _plan(part: PartSpec) -> tuple[str, bool, bool, bool, tuple[str, ...]]:
-    """Return a part's name, whether it repeats, holds files, or is required, and its encoding's media types."""
+def _plan(part: PartSpec) -> tuple[str, bool, bool, bool, tuple[str, ...], ParameterPlan | None]:
+    """Return a part's name, whether it repeats, holds files, or is required, and its encoding's media and style."""
     plan = part.plan
-    return plan.name, plan.repeated, plan.file, plan.required, plan.content_types
+    return plan.name, plan.repeated, plan.file, plan.required, plan.content_types, plan.style
 
 
 def _digest(value: object) -> str:

@@ -157,5 +157,33 @@ class FieldCardsPostRequest(TypedDict):
     tags: NotRequired[list[str]]
 
 
+class Point(TypedDict, extra_items=int):
+    x: NotRequired[int]
+
+
+class FieldStickersPostRequest(TypedDict):
+    tags: NotRequired[list[str]]
+    words: NotRequired[list[str]]
+    sizes: NotRequired[list[int]]
+    filter: NotRequired[Filter]
+    point: NotRequired[Point]
+    label: NotRequired[str]
+    y: NotRequired[int]
+
+
+class Bounds(TypedDict, extra_items=int):
+    w: NotRequired[int]
+
+
+class FieldAlbumsPostRequest(TypedDict):
+    photo: bytes
+    bounds: NotRequired[Bounds]
+    title: NotRequired[str]
+    tags: NotRequired[list[str]]
+
+
+FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader: TypeAlias = str
+
+
 class FieldDocumentsIdGetPathIdParameter(TypedDict):
     key: NotRequired[str]

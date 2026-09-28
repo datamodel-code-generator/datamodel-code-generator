@@ -30,6 +30,7 @@ from datamodel_code_generator._generation_contract import (
     SourceLocation,
     TypeUseBinding,
 )
+from datamodel_code_generator._openapi_wire_plan import property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
@@ -297,6 +298,7 @@ class Planner:
         }
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
+        self.styles = {use: {plan.name: plan for plan in plans} for use, plans in wire.styles}
         self.documents = {document.id: document.uri for document in request.batch.documents}
         self.resource_names = {item.tag: item.namespace for item in config.resource_names}
         self.problems: list[Diagnostic] = []
@@ -488,15 +490,25 @@ class Planner:
         media_of, headers_of = (
             self.part_media(operation, declaration, media_type, use) if kind == "multipart" and request else ({}, {})
         )
+        styles_of = self.styles.get(use.id, {}) if request and use is not None else {}
         members: tuple[PartSpec, ...] | None = None
         extra: PartSpec | None = None
         if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None:
             members, extra = (
-                _sent(self.wire, self._schemas, use, use.schema, media_of=media_of, headers_of=headers_of)
+                _sent(
+                    self.wire,
+                    self._schemas,
+                    use,
+                    use.schema,
+                    media_of=media_of,
+                    headers_of=headers_of,
+                    styles_of=styles_of,
+                )
                 if request
                 else _received(self.wire, self._schemas, use, use.schema)
             )
             if members is None:
+                encoded = tuple(styles_of.values())
                 self.problems.extend(
                     _problem(
                         "E_CLIENT_UNSUPPORTED",
@@ -535,6 +547,7 @@ class Planner:
         """Return the media types and headers each form-data member's encoding names, reporting those not sent yet.
 
         A member holding no files takes one JSON or text media type; a file member takes any media types and ranges.
+        A style, explode, or allowReserved leaves the contentType ignored, and only a member holding no files takes it.
         A declared header with a schema is checked on the member's parts; one without a schema is not.
         """
         members = {} if use is None else {name: member for name, member, _ in _members(use)}
@@ -545,13 +558,15 @@ class Planner:
             label = f"The {name} encoding of the {media_type} media of {_label(operation)}"
             if name in members and (headers := self._part_headers(encoding)):
                 headers_of[name] = headers
+            styled = any(fact(encoding, key) is not None for key in _STYLED)
             match _content_types(encoding):
                 case _ if name not in members:
                     self.problems.append(_problem("E_METADATA_REQUIRED", f"{label} names no member", encoding.use_site))
-                case _ if any(fact(encoding, key) is not None for key in _STYLED):
-                    self.problems.append(
-                        _problem("E_CLIENT_UNSUPPORTED", f"{label} is not supported yet", encoding.use_site)
-                    )
+                case _ if styled and _file(self.wire, members[name]):
+                    message = f"{label} gives a style to a member holding files"
+                    self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
+                case _ if styled:
+                    pass
                 case None:
                     self.problems.append(
                         _problem("E_METADATA_REQUIRED", f"{label} names no media type", encoding.use_site)
@@ -816,13 +831,9 @@ def _file(wire: WirePlan, location: SourceLocation) -> bool:
 def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldFacts]]:
     """Return the members of a form-data use as its model declares them, allOf branches included."""
     return [
-        (member.wire_name, member.schema, facts)
-        for member in use.members
-        if member.member_kind == "property"
-        and member.wire_name is not None
-        and member.schema is not None
-        and member.exclusion is None
-        and (facts := member.model_facts) is not None
+        (name, schema, facts)
+        for name, schema, member in property_members(use)
+        if member.exclusion is None and (facts := member.model_facts) is not None
     ]
 
 
@@ -838,10 +849,12 @@ def _sent(  # noqa: PLR0913
     *,
     media_of: Mapping[str, tuple[str, ...]],
     headers_of: Mapping[str, tuple[HeaderSpec, ...]],
+    styles_of: Mapping[str, ParameterPlan],
 ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
     """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
 
-    A member holding no files takes values of its field's type, which the part's own type use validates.
+    A member holding no files takes values of its field's type, which the part's own type use validates, and a styled
+    member writes the parts its style gives rather than one for each item.
     """
     location, schema = wire.schema(site)
     members = _members(use)
@@ -865,10 +878,11 @@ def _sent(  # noqa: PLR0913
         PartSpec(
             plan=PartPlan(
                 name,
-                repeated=_array(wire, member),
+                repeated=name not in styles_of and _array(wire, member),
                 file=name in files,
                 required=facts.required and not facts.read_only,
                 content_types=media_of.get(name, ()),
+                style=styles_of.get(name),
             ),
             use=None
             if name in files
@@ -1131,6 +1145,20 @@ def encoding_header_uses(request: TargetRequest) -> Iterator[TypeUseId]:
                 yield from (use for header in encoding.children if header.kind == "header" for use in _uses(header))
 
 
+def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:
+    """Yield the uses of the selected operations' form-data request bodies with the encodings that give a style."""
+    for operation in request.operations:
+        for media in () if operation.request_body is None else operation.request_body.children:
+            if _essence(media.name or "") == _FORM_DATA and (
+                encodings := tuple(
+                    child
+                    for child in media.children
+                    if child.kind == "encoding" and any(fact(child, key) is not None for key in _STYLED)
+                )
+            ):
+                yield from ((use, encodings) for use in media.schemas)
+
+
 def form_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:
     """Yield the uses of the URL-encoded bodies and responses of the selected operations, which need member plans.
 
@@ -1150,7 +1178,11 @@ def form_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDec
 
 
 def _form(media_type: str) -> bool:
+    return media_kind(_essence(media_type)) == "form"
+
+
+def _essence(media_type: str) -> str:
     try:
-        return media_kind(normalize_media_type(media_type)) == "form"
+        return normalize_media_type(media_type).partition(";")[0]
     except ValueError:
-        return False
+        return ""

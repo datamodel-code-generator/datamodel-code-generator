@@ -43,6 +43,7 @@ def multipart(package: ModuleType, lines: list[str]) -> None:
         _parts(package, api, exchange, lines)
         _uploads(package, api, exchange, lines)
         _covers(package, api, exchange, lines)
+        _styles(package, api, exchange, lines)
         _responses(api, exchange, lines)
     http.close()
     run(lambda: _async_multipart(package, lines))
@@ -399,6 +400,65 @@ def _covers(package: ModuleType, api: Any, exchange: Exchange, lines: list[str])
     exchange.respond(raw_response(204))
     record(lines, "card", lambda: api.forms.submit_card(body=card))
     record(lines, "card of a tag its charset cannot represent", lambda: api.forms.submit_card(body=codec.from_wire({"tags": ["\xe9"]})))
+
+
+def _styles(package: ModuleType, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send members in the parts their query styles give, without percent-encoding, and refuse names two members write."""
+    bodies, options, types = _modules(package)
+    body, field, file = bodies.MultipartBody, bodies.FieldPart, bodies.FilePart
+    stickers = types.SubmitStickersRequestCodecs.body()
+    sticker = {
+        "tags": ["a&b", "c"],
+        "words": ["x", "y"],
+        "sizes": [1, 2],
+        "filter": {"name": "n m", "min": 2},
+        "point": {"x": 1, "z": 3},
+        "label": "l/1",
+        "y": 4,
+    }
+    exchange.respond(raw_response(204))
+    record(lines, "stickers", lambda: api.forms.submit_stickers(body=stickers.from_wire(sticker)))
+    for label, value in (
+        ("stickers of a point whose extra is named as another member", {"point": {"y": 1}, "y": 2}),
+        ("stickers of another member named as a point's extra", {"y": 2, "point": {"y": 1}}),
+        ("stickers of a tag holding its delimiter", {"tags": ["a|b"]}),
+    ):
+        record(lines, label, lambda value=value: api.forms.submit_stickers(body=stickers.from_wire(value)))
+    photo = file("photo", b"p")
+    bounds = types.SubmitAlbumRequestCodecs.part(name="bounds")
+    exchange.respond(raw_response(204), raw_response(204))
+    record(
+        lines,
+        "album of UTF-16 tags",
+        lambda: api.forms.submit_album(body=body((photo, field("tags", ["x", "y"], content_type="text/plain; charset=utf-16")))),
+    )
+    record(
+        lines,
+        "album",
+        lambda: api.forms.submit_album(
+            body=body((
+                photo,
+                field("tags", ["a", "b"]),
+                field("bounds", bounds.from_wire({"w": 1, "h": 2})),
+                field("title", "t"),
+            ))
+        ),
+    )
+    clash = field("bounds", bounds.from_wire({"title": 1}))
+    exchange.respond(raw_response(204))
+    record(
+        lines,
+        "album of an omitted title beside a bound's extra of its name",
+        lambda: api.forms.submit_album(body=body((photo, field("title", options.UNSET), clash))),
+    )
+    for label, parts in (
+        ("album of bounds whose extra is named as another member", (photo, clash, field("title", "t"))),
+        ("album of another member named as a bound's extra", (photo, field("title", "t"), clash)),
+        ("album of a bound's extra its disposition pattern refuses", (photo, field("bounds", bounds.from_wire({"b2": 1})))),
+        ("album of a tag holding its delimiter", (photo, field("tags", ["a b"]))),
+        ("album of tags their named charset cannot represent", (photo, field("tags", ["\xe9"], content_type="text/plain; charset=us-ascii"))),
+    ):
+        record(lines, label, lambda parts=parts: api.forms.submit_album(body=body(parts)))
 
 
 def _answered(exchange: Exchange, call: Callable[[], object]) -> object:

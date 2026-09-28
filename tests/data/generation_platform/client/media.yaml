@@ -428,6 +428,83 @@ paths:
       responses:
         '204':
           description: Stored.
+  /stickers:
+    post:
+      operationId: submitStickers
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items: {type: string}
+                words:
+                  type: array
+                  items: {type: string}
+                sizes:
+                  type: array
+                  items: {type: integer}
+                filter:
+                  type: object
+                  properties:
+                    name: {type: string}
+                    min: {type: integer}
+                point:
+                  type: object
+                  properties:
+                    x: {type: integer}
+                  additionalProperties: {type: integer}
+                label: {type: string}
+                y: {type: integer}
+            encoding:
+              tags: {style: pipeDelimited}
+              words: {style: spaceDelimited}
+              sizes: {style: form, explode: false}
+              filter: {style: deepObject, explode: true}
+              point: {explode: true}
+              label: {allowReserved: true, contentType: application/json}
+      responses:
+        '204':
+          description: Stored.
+  /albums:
+    post:
+      operationId: submitAlbum
+      tags: [forms]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - type: object
+                  required: [photo]
+                  properties:
+                    photo: {type: string, format: binary}
+                    bounds:
+                      type: object
+                      properties:
+                        w: {type: integer}
+                      additionalProperties: {type: integer}
+                    title: {type: string}
+                - type: object
+                  properties:
+                    tags:
+                      type: array
+                      items: {type: string}
+            encoding:
+              tags: {style: spaceDelimited}
+              bounds:
+                explode: true
+                headers:
+                  Content-Disposition:
+                    schema: {type: string, pattern: 'name="[^b]'}
+      responses:
+        '204':
+          description: Stored.
   /documents:
     post:
       operationId: storeDocument

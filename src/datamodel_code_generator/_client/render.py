@@ -1223,6 +1223,7 @@ class _Registry(_Typing):
                     if part.headers
                     else ()
                 ),
+                *((("style=", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
             ),
         )
 

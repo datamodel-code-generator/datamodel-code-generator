@@ -17,7 +17,7 @@ from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import decode_json, encode_json, issue, media_kind, normalize_media_type, typed
-from ..model_codecs.parameters import ParameterFragment, ParameterPlan, RawParameter, decode_parameter
+from ..model_codecs.parameters import ParameterFragment, ParameterPlan, RawParameter, decode_parameter, part_pairs
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
@@ -26,7 +26,7 @@ from .media import charset, encode_text, most_specific, normalized, with_charset
 from .responses import HeadersView
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterable, Iterator
     from typing import Protocol
 
     from ..model_codecs.wire import JSONValue, WireValue
@@ -68,6 +68,7 @@ _EMPTY: Final = "An empty array cannot be represented by repeated parts"
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
 _HEADER: Final = "A part lacks a header its member's encoding requires"
+_CLAIMED: Final = "Two form-data members write parts of the same name"
 _SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
 _ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
 
@@ -209,10 +210,11 @@ class PartPlan:
 
     A received part is read in its lexical kind, or as JSON. A sent value is validated by the encoder, when the member
     has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts. The media
-    types of the member's encoding bound the media type a part names, and the first concrete one is its default.
+    types of the member's encoding bound the media type a part names, and the first concrete one is its default. A
+    member whose encoding gives a query style writes a part for each name and value that style gives its value.
     """
 
-    __slots__ = ("content_types", "encoder", "file", "headers", "kind", "name", "repeated", "required")
+    __slots__ = ("content_types", "encoder", "file", "headers", "kind", "name", "repeated", "required", "style")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -225,8 +227,9 @@ class PartPlan:
         encoder: PartEncoder | None = None,
         content_types: tuple[str, ...] = (),
         headers: tuple[PartHeader, ...] = (),
+        style: ParameterPlan | None = None,
     ) -> None:
-        """Keep the member's name, kind, repeats, files, requiredness, encoder, media types, and declared headers."""
+        """Keep the member's name, kind, repeats, files, requiredness, encoder, media types, headers, and style."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
@@ -235,6 +238,7 @@ class PartPlan:
         self.encoder = encoder
         self.content_types = content_types
         self.headers = headers
+        self.style = style
 
     def media(self, named: str | None) -> str | None:
         """Return the media type of a part: the one it names within the encoding's, or the encoding's default.
@@ -273,11 +277,14 @@ class PartHeader:
 
 
 def _checked(
-    part: FieldPart[object] | FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan, filename: str | None
+    part: FieldPart[object] | FilePart[SyncBinaryBody | AsyncBinaryBody],
+    plan: PartPlan,
+    name: str,
+    filename: str | None,
 ) -> None:
-    """Check the headers a part carries, its Content-Disposition among them, against its member's encoding."""
+    """Check the headers a part carries, its Content-Disposition of the name it is sent under among them."""
     fragments = (
-        ParameterFragment(b"Content-Disposition", _disposition(part.name, filename).encode()),
+        ParameterFragment(b"Content-Disposition", _disposition(name, filename).encode()),
         *(ParameterFragment(key.encode(), value.encode()) for key, value in part.headers),
     )
     try:
@@ -288,14 +295,18 @@ def _checked(
 
 
 class _Names:
-    """The member plans of a body with file parts, and the names its parts have used so far."""
+    """The member plans of a body with file parts, and the names its parts have used so far.
 
-    __slots__ = ("additional", "declared", "seen")
+    Once a member's style writes part names of its own, each part name is owned by the member that wrote it.
+    """
+
+    __slots__ = ("additional", "declared", "owners", "seen")
 
     def __init__(self, plans: tuple[PartPlan, ...], additional: PartPlan | None) -> None:
         self.declared = {plan.name: plan for plan in plans}
         self.additional = additional
         self.seen: set[str] = set()
+        self.owners: dict[str, str] | None = {} if any(plan.style is not None for plan in plans) else None
 
     def plan(self, name: object, *, file: bool) -> PartPlan:
         """Return the plan of a part, refusing an undeclared name, the other kind of part, or a repeat."""
@@ -307,6 +318,11 @@ class _Names:
             raise _malformed(name, ValueError(_REPEATED))
         self.seen.add(name)
         return plan
+
+    def claim(self, member: str, written: Iterable[str]) -> None:
+        """Refuse part names another member's parts have written."""
+        if self.owners is not None and any(self.owners.setdefault(name, member) != member for name in written):
+            raise _malformed(member, ValueError(_CLAIMED))
 
     def check(self) -> None:
         """Refuse a body that lacks a part of a required member."""
@@ -376,18 +392,37 @@ def multipart_member(value: WireValue, media_type: str | None = None) -> tuple[b
             return encode_text(encode_json(value).decode(), media_type), media_type
 
 
-def encode_multipart(value: WireValue, boundary: str, content_types: Mapping[str, str] | None = None) -> bytes:
+def encode_multipart(
+    value: WireValue,
+    boundary: str,
+    content_types: Mapping[str, str] | None = None,
+    styled: Mapping[str, ParameterPlan] | None = None,
+) -> bytes:
     """Serialize an object as ordered form-data parts, repeating a part for each array member.
 
-    A member with an encoding's media type is written in it.
+    A member with an encoding's media type is written in it. A member in `styled` writes a part for each name and
+    value its query style gives, without percent-encoding, and no two members may then write parts of the same name.
     """
     if not isinstance(value, Mapping):
         msg = "A multipart form value must be an object"
         raise ParameterEncodingError(msg)
     parts: list[bytes] = []
+    owners: dict[str, str] = {}
     for name, item in value.items():
+        if styled and (style := styled.get(name)) is not None:
+            pairs = part_pairs(style, item)
+            if any(owners.setdefault(key, name) != name for key, _ in pairs):
+                raise ParameterEncodingError(_CLAIMED)
+            parts.extend(
+                piece
+                for key, text in pairs
+                for piece in (multipart_head(boundary, key, None, None, ()), text.encode(), b"\r\n")
+            )
+            continue
         if item == ():
             raise ParameterEncodingError(_EMPTY)
+        if styled and owners.setdefault(name, name) != name:
+            raise ParameterEncodingError(_CLAIMED)
         declared = None if content_types is None else content_types.get(name)
         for member in item if isinstance(item, tuple) else (item,):
             content, media_type = multipart_member(member, declared)
@@ -405,10 +440,11 @@ def _refused(part: object) -> NoReturn:
     raise _malformed(getattr(part, "name", None), TypeError(_PART))
 
 
-def _field(part: FieldPart[object], boundary: str, plan: PartPlan) -> bytes | None:
+def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names | None = None) -> bytes | None:
     """Return a field part's bytes with their heads and tails, one part for each item of a repeated member.
 
-    UNSET leaves an optional member out and is refused for a required one.
+    UNSET leaves an optional member out and is refused for a required one. A styled member writes a part for each
+    name and value its style gives, without percent-encoding.
     """
     if isinstance(value := part.value, Unset):
         if plan.required:
@@ -416,6 +452,12 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan) -> bytes | No
         return None
     try:
         wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value)
+        if plan.style is not None and names is not None:
+            return _styled(part, boundary, plan, part_pairs(plan.style, wire), names)
+        if names is not None and names.owners is not None:
+            names.claim(part.name, (part.name,))
+        if plan.headers:
+            _checked(part, plan, part.name, None)
         if not plan.repeated or not isinstance(wire, tuple):
             return _member(part, boundary, wire, plan)
         if not wire:
@@ -423,6 +465,26 @@ def _field(part: FieldPart[object], boundary: str, plan: PartPlan) -> bytes | No
         return b"".join([_member(part, boundary, item, plan) for item in wire])
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
+
+
+def _styled(
+    part: FieldPart[object], boundary: str, plan: PartPlan, pairs: tuple[tuple[str, str], ...], names: _Names
+) -> bytes:
+    """Return the parts a styled member writes, each name claimed for it and its headers checked under that name.
+
+    Each value is text in the charset of the media type its part names, UTF-8 without one.
+    """
+    names.claim(part.name, [key for key, _ in pairs])
+    if plan.headers:
+        for key, _ in pairs:
+            _checked(part, plan, key, None)
+    media_type = part.content_type
+    return b"".join([
+        multipart_head(boundary, key, None, media_type, part.headers)
+        + (text.encode() if media_type is None else encode_text(text, media_type))
+        + b"\r\n"
+        for key, text in pairs
+    ])
 
 
 def _member(part: FieldPart[object], boundary: str, item: WireValue, plan: PartPlan) -> bytes:
@@ -578,15 +640,15 @@ def _layout(
     for part in parts:
         if _is_field(part):
             plan = _ANY if names is None else names.plan(part.name, file=False)
-            if (field := _field(part, boundary, plan)) is not None:
-                if plan.headers:
-                    _checked(part, plan, None)
+            if (field := _field(part, boundary, plan, names)) is not None:
                 encoded.append(field)
         elif _is_file(part):
             file = _ANY if names is None else names.plan(part.name, file=True)
+            if names is not None and names.owners is not None:
+                names.claim(part.name, (part.name,))
             encoded.append(_file_head(part, boundary, file))
             if file.headers:
-                _checked(part, file, part.filename)
+                _checked(part, file, part.name, part.filename)
             pieces.extend((b"".join(encoded), part))
             encoded = [b"\r\n"]
         else:
