@@ -10,7 +10,7 @@ default, prints a `uv add` command, and `requirements` prints the lines of a req
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --dependency-format requirements > requirements.txt
     ```

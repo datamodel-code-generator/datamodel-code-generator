@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from uuid import UUID
 
 from pydantic import AwareDatetime, conint, constr
@@ -36,7 +36,7 @@ FieldPetsGetQueryLimitParameter = TypeAliasType("FieldPetsGetQueryLimitParameter
 FieldPetsGetQueryTagsParameter = TypeAliasType("FieldPetsGetQueryTagsParameter", list[str])
 
 
-class FieldPetsGetQueryKindParameter(Enum):
+class FieldPetsGetQueryKindParameter(StrEnum):
     cat = 'cat'
     dog = 'dog'
 

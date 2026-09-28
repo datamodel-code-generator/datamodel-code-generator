@@ -62,6 +62,7 @@ def _api(root: Path, name: str, mode: str, backend: str, *, sentinel: bool) -> s
     model = GenerateConfig(
         output=root / "models.py",
         input_file_type="openapi",
+        target_python_version="3.11",
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType(backend),
         use_missing_sentinel=sentinel,
@@ -98,7 +99,7 @@ def _cli(root: Path, name: str, backend: str) -> str:
 
     arguments = [
         *("--input", str(root / f"{name}.yaml"), "--input-file-type", "openapi", "--openapi-scopes", "schemas", "api"),
-        *("--output", str(root / "models.py"), "--output-model-type", backend, "--check"),
+        *("--output", str(root / "models.py"), "--output-model-type", backend, "--target-python-version", "3.11", "--check"),
         *("--generate-server", "fastapi", "--target-config", str(root / f"{name}.toml")),
     ]
     stderr = StringIO()

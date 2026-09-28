@@ -64,7 +64,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.
 
---generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines.
+--generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 
@@ -194,4 +194,4 @@ The parser focuses on model generation from XSD documents, not full XML instance
 
 The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
 
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi.
+generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi. They need Python 3.11 or later, both to run and as model_config.target_python_version.

@@ -12,6 +12,10 @@ generated file is regenerated on each run. You write the business logic in your 
 service Protocols, and type checkers, Python, and the package at startup check that every operation has a
 matching method.
 
+Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
+Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
+default target, 3.10, is refused with `E_CONFIG_VALUE`, and running on Python 3.10 with `E_PYTHON_UNSUPPORTED`.
+
 ## Quick start
 
 Write a target configuration file:
@@ -257,7 +261,8 @@ API.
 
 The command line prints each diagnostic to stderr as `CODE severity stage location: message`, and
 [`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes them as JSON. Errors
-stop the run before anything is written: configuration (`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
+stop the run before anything is written: an unsupported Python (`E_PYTHON_UNSUPPORTED`), configuration
+(`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
 (`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding and planning (`BND_*`, `F_*`), hooks (`E_HOOK_*`), and ownership
 (`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
 served document cannot carry, and informational records, such as `S_OPERATION_EXCLUDED`, do not.

@@ -57,6 +57,7 @@ def _settings(checkout: Path, cwd: Path, monkeypatch: pytest.MonkeyPatch) -> tup
     model = GenerateConfig(
         output=base / "models.py",
         input_file_type="openapi",
+        target_python_version="3.11",
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType.PydanticV2BaseModel,
         formatters=[Formatter.BUILTIN],

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Literal
 from uuid import UUID
 
@@ -83,7 +83,7 @@ class FieldItemsItemIdPartsPartGetQueryRefParameter(RootModel[UUID]):
     root: UUID
 
 
-class FieldItemsItemIdPartsPartGetQueryModeParameter(Enum):
+class FieldItemsItemIdPartsPartGetQueryModeParameter(StrEnum):
     fast = 'fast'
     slow = 'slow'
 

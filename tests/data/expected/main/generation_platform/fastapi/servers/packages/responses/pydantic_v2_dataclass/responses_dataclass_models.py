@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
@@ -20,7 +20,7 @@ class Error:
     message: str
 
 
-class FieldGreetingsGetQueryModeParameter(Enum):
+class FieldGreetingsGetQueryModeParameter(StrEnum):
     bare = 'bare'
     result = 'result'
     value = 'value'

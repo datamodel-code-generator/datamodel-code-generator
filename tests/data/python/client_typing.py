@@ -26,6 +26,7 @@ def client_typing_report(
         model_config=GenerateConfig(
             output=root / "pets_models.py",
             input_file_type="openapi",
+            target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=backend,
             formatters=[Formatter.BUILTIN],

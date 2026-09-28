@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import ConfigDict, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 
-class Kind(Enum):
+class Kind(StrEnum):
     cat = 'cat'
     dog = 'dog'
 

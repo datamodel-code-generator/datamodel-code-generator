@@ -11031,6 +11031,10 @@ generated file is regenerated on each run. You write the business logic in your 
 service Protocols, and type checkers, Python, and the package at startup check that every operation has a
 matching method.
 
+Server generation needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version.
+Set the target with `--target-python-version` or a preset that sets it, as the quick start below does; the
+default target, 3.10, is refused with `E_CONFIG_VALUE`, and running on Python 3.10 with `E_PYTHON_UNSUPPORTED`.
+
 ## Quick start
 
 Write a target configuration file:
@@ -11276,7 +11280,8 @@ API.
 
 The command line prints each diagnostic to stderr as `CODE severity stage location: message`, and
 [`--diagnostics-json`](cli-reference/manual/diagnostics-json.md#diagnostics-json) writes them as JSON. Errors
-stop the run before anything is written: configuration (`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
+stop the run before anything is written: an unsupported Python (`E_PYTHON_UNSUPPORTED`), configuration
+(`E_CONFIG_*`), input (`E_INPUT_ROOT`), model
 (`E_MODEL_CONFIG`, `E_MODEL_PARSE`), binding and planning (`BND_*`, `F_*`), hooks (`E_HOOK_*`), and ownership
 (`E_OUTPUT_*`, `E_STATE_*`). Warnings, such as `W_DOCUMENTATION_ANNOTATION` for a documentation value the
 served document cannot carry, and informational records, such as `S_OPERATION_EXCLUDED`, do not.
@@ -40557,7 +40562,7 @@ default, prints a `uv add` command, and `requirements` prints the lines of a req
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --dependency-format requirements > requirements.txt
     ```
@@ -40591,7 +40596,7 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --diagnostics-json diagnostics.json
     ```
@@ -40720,10 +40725,10 @@ The only choice is `fastapi`.
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml # (1)!
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml --check # (2)!
     ```
 
@@ -40735,6 +40740,10 @@ document, then publishes both together. `--check` exits with 1 when a file would
 error. Diagnostics go to stderr, and the generated code is never printed; a generation ends by printing the
 command that adds the package to your project, as [`--dependency-format`](#dependency-format)
 chooses.
+
+The server needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version, which
+`--target-python-version` or a preset sets. On Python 3.10 the run stops with `E_PYTHON_UNSUPPORTED`, and a target
+Python version below 3.11, including the default 3.10, stops it with `E_CONFIG_VALUE`.
 
 `--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
 `--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints
@@ -41118,7 +41127,7 @@ Read the selected target's settings from a flat TOML file (experimental). `--gen
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml
     ```
 
@@ -41148,7 +41157,7 @@ Write the selected target to a directory instead of the `output` its target conf
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output src/example/models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output src/example/models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --target-output src/example/server
     ```
@@ -42864,7 +42873,7 @@ The option currently targets Pydantic v2 BaseModel output and covers selected ob
 
 FastAPI server generation from the CLI is experimental; its options, target configuration file, generated package, and diagnostics may change.
 
---generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines.
+--generate-server fastapi generates the models at --output and a server package from the flat TOML file --target-config names; --target-output overrides the file's output, --check compares without writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, both to run and as --target-python-version.
 
 ### `cli-option.install-skill`
 
@@ -42994,7 +43003,7 @@ The parser focuses on model generation from XSD documents, not full XML instance
 
 The FastAPI server target is experimental; its entry points, settings, context, generated package, and served OpenAPI document may change.
 
-generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi.
+generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI document with the api scope. The package declares a service Protocol for each router group, builds routers from the services you implement in your own modules, and serves the source document's metadata through install_openapi. They need Python 3.11 or later, both to run and as model_config.target_python_version.
 
 ---
 

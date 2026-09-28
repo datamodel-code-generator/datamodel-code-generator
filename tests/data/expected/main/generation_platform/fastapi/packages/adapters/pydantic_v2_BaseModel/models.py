@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, RootModel, conint, constr
@@ -33,7 +33,7 @@ class FieldPetsGetQueryTagsParameter(RootModel[list[str]]):
     root: list[str]
 
 
-class FieldPetsGetQueryKindParameter(Enum):
+class FieldPetsGetQueryKindParameter(StrEnum):
     cat = 'cat'
     dog = 'dog'
 

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import AwareDatetime, ConfigDict, EmailStr, Field, conint, constr
@@ -46,7 +46,7 @@ class Bounded:
     name: str | None = None
 
 
-class Color(Enum):
+class Color(StrEnum):
     red = 'red'
     blue = 'blue'
 

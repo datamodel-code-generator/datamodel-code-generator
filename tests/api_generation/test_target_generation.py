@@ -62,6 +62,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "format-errors",
         "target-grammar-modern",
         "target-grammar-misplaced",
+        "python-floor",
     ],
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -73,6 +74,12 @@ def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 def test_target_render_target_grammar(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Reject syntax the running Python accepts but the configured target Python does not."""
     assert_output(target_render_report("target-grammar", tmp_path, monkeypatch), EXPECTED / "target-grammar.txt")
+
+
+def test_target_render_python_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Refuse to render a target on a Python older than every target supports."""
+    monkeypatch.setattr("datamodel_code_generator._api_generation._PYTHON_MINIMUM", (99, 0))
+    assert_output(target_render_report("python-runtime", tmp_path, monkeypatch), EXPECTED / "python-runtime.txt")
 
 
 def test_target_render_timestamp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -260,7 +267,15 @@ def test_target_config(case: str) -> None:
 
 def _toml_arguments(*extra: str) -> list[str]:
     return [
-        *("--openapi-scopes", "api", "--disable-timestamp", "--formatters", "builtin"),
+        *(
+            "--target-python-version",
+            "3.11",
+            "--openapi-scopes",
+            "api",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ),
         *("--generate-server", "fastapi", "--target-config", "target.toml", *extra),
     ]
 

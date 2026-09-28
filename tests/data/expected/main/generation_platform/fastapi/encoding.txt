@@ -168,7 +168,7 @@ render pydantic_v2.BaseModel
     | [project]
     | name = "menu-server"
     | version = "1.0.0"
-    | requires-python = ">=3.10"
+    | requires-python = ">=3.11"
     | readme = "README.md"
     | dependencies = ["fastapi>=0.141.1", "starlette>=1.0.0", "pydantic>=2.13.5", "jsonschema[format-nongpl]>=4.26", "referencing>=0.37", "typing-extensions>=4.16", "google-re2>=1.1.20251105", "menu-models>=1.0"]
     |

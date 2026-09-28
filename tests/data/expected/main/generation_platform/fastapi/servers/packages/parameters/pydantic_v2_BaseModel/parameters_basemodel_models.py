@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, RootModel, constr
@@ -81,6 +81,6 @@ class FieldItemsLevelGetHeaderXFlagParameter(RootModel[Literal[True]]):
     root: Literal[True]
 
 
-class FieldItemsLevelGetQueryKindParameter(Enum):
+class FieldItemsLevelGetQueryKindParameter(StrEnum):
     a = 'a'
     b = 'b'

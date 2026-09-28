@@ -93,6 +93,8 @@ ConverterStrategy: TypeAlias = Literal[
 Exclusion: TypeAlias = "tuple[OperationContract, str]"
 
 _SECRET_MODEL_OPTIONS = frozenset({"http_headers", "http_query_parameters"})
+_PYTHON_MINIMUM = (3, 11)
+_PYTHON_MINIMUM_TEXT = f"{_PYTHON_MINIMUM[0]}.{_PYTHON_MINIMUM[1]}"
 _README = PurePosixPath("README.md")
 
 
@@ -212,6 +214,12 @@ def prepare_target(
     )
     from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
 
+    if sys.version_info < _PYTHON_MINIMUM:
+        raise config_error(
+            code="E_PYTHON_UNSUPPORTED",
+            option_path=None,
+            message=f"The {generator.kind} target needs Python {_PYTHON_MINIMUM_TEXT} or later to run",
+        )
     if model_config.output is None:
         raise config_error(
             code="E_CONFIG_VALUE",
@@ -233,6 +241,12 @@ def prepare_target(
             code=generator.unsupported_backend,
             option_path="model_config.output_model_type",
             message=f"The {generator.kind} target does not support {backend.value!r}; use {allowed}",
+        )
+    if effective.target_python_version.version_key < _PYTHON_MINIMUM:
+        raise config_error(
+            code="E_CONFIG_VALUE",
+            option_path="model_config.target_python_version",
+            message=f"The {generator.kind} target needs a target Python version of {_PYTHON_MINIMUM_TEXT} or later",
         )
     if (problem := _root_problem(input_, effective)) is None:
         return effective

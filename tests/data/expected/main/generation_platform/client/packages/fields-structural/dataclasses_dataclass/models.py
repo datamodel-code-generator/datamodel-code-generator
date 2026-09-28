@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import TypeAlias
 
 
-class Kind(Enum):
+class Kind(StrEnum):
     cat = 'cat'
     dog = 'dog'
 

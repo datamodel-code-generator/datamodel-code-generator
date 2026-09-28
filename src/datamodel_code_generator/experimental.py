@@ -119,7 +119,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "--generate-server fastapi generates the models at --output and a server package from the flat TOML "
             "file --target-config names; --target-output overrides the file's output, --check compares without "
             "writing, --diagnostics-json writes the target diagnostics as JSON, and --dependency-format chooses "
-            "whether a generation prints a uv add command or requirements lines."
+            "whether a generation prints a uv add command or requirements lines. It needs Python 3.11 or later, "
+            "both to run and as --target-python-version."
         ),
     ),
     "cli-option.install-skill": ExperimentalFeature(
@@ -253,7 +254,8 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "generate_fastapi and render_fastapi generate the models and a FastAPI server package from one OpenAPI "
             "document with the api scope. The package declares a service Protocol for each router group, builds "
             "routers from the services you implement in your own modules, and serves the source document's metadata "
-            "through install_openapi."
+            "through install_openapi. They need Python 3.11 or later, both to run and as "
+            "model_config.target_python_version."
         ),
     ),
 }

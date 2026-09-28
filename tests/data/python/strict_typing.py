@@ -10,7 +10,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Final
 
-PYTHON_VERSION = "3.10"
+PYTHON_VERSION = "3.11"
 MYPY: Final = ("uvx", "--quiet", "mypy@2.3.1")
 PYRIGHT: Final = ("uvx", "--quiet", "pyright@1.1.414")
 TIMEOUT: Final = 600

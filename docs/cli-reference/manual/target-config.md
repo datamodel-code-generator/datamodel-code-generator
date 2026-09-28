@@ -9,7 +9,7 @@ Read the selected target's settings from a flat TOML file (experimental). `--gen
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml
     ```
 

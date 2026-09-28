@@ -21,6 +21,7 @@ def _generate(root: Path, source: Path, package: str, backend: DataModelType, **
         model_config=GenerateConfig(
             output=root / f"{package}_models.py",
             input_file_type="openapi",
+            target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=backend,
             formatters=[Formatter.BUILTIN],

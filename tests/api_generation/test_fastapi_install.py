@@ -16,6 +16,8 @@ DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "fastapi" / "install"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi" / "install"
 OPTIONS = [
+    "--target-python-version",
+    "3.11",
     "--openapi-scopes",
     "schemas",
     "api",

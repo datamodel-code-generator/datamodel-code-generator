@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, RootModel
 
@@ -17,7 +17,7 @@ class Error(BaseModel):
     message: str
 
 
-class FieldGreetingsGetQueryModeParameter(Enum):
+class FieldGreetingsGetQueryModeParameter(StrEnum):
     bare = 'bare'
     result = 'result'
     value = 'value'
