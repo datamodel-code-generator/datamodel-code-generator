@@ -36,6 +36,7 @@ from .codec import (
     at,
     child_value,
     directional_gap,
+    directs,
     has_models,
     is_mapping,
     is_sequence,
@@ -127,7 +128,7 @@ def _native_type(binding: ModelBinding, models: Mapping[str, type]) -> tuple[typ
 class PydanticModelCodec(BuiltinModelCodec[T]):
     """Validate, construct, snapshot, and encode one bound use of a Pydantic v2 model type."""
 
-    __slots__ = ("_adapter", "_inspect", "_keys", "_leaves", "_nested", "_reserved", "_unstored", "_walk")
+    __slots__ = ("_adapter", "_directed", "_inspect", "_keys", "_leaves", "_nested", "_reserved", "_unstored", "_walk")
 
     @overload
     def __init__(
@@ -187,6 +188,7 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         self._leaves: dict[type, TypeAdapter[object]] = {}
         self._adapter: TypeAdapter[T] = TypeAdapter(native_type)
         self._walk = walks(binding) or bool(self._reserved)
+        self._directed = self._walk or directs(binding)
         self._unstored = frozenset(
             model.symbol
             for model in binding.models
@@ -258,8 +260,8 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
             raise self._invalid(error, None, MatchBudget(), schema=False) from None
 
     def _converted(self, wire: WireValue, budget: MatchBudget) -> T:
-        walk = Walk(budget)
-        keyed = self._keyed(wire, self._binding.type, "", (), walk) if self._walk else wire
+        walk = Walk(budget, converting=True)
+        keyed = self._keyed(wire, self._binding.type, "", (), walk) if self._directed else wire
         if walk.native:
             raise NativeValidationError(tuple(walk.native))
         if walk.issues:
@@ -302,7 +304,9 @@ class PydanticModelCodec(BuiltinModelCodec[T]):
         reserved = self._reserved.get(model.symbol, _NO_KEYS)
         keyed: dict[str, JSONValue] = {}
         for name, entry in wire.items():
-            if (field := fields.get(name)) is not None:
+            if (field := fields.get(name)) is not None and walk.converting and self._excluded(field):
+                walk.native.append(self._carried(at(pointer, name), (*path, field.validation_key)))
+            elif field is not None:
                 keyed[field.validation_key] = self._keyed(
                     entry, field.type, at(pointer, name), (*path, field.validation_key), walk
                 )

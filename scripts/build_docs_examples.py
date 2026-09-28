@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -21,6 +22,7 @@ EXPECTED_JSON_SCHEMA = EXPECTED_MAIN / "jsonschema"
 EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
 EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
+CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
 CLIENT_PACKAGES = EXPECTED_CLIENT / "packages"
 BINDING_LINES = ("plain", "async plain", "async list with")
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
@@ -374,6 +376,49 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "\n".join(
                     f"# {style}\n{report_lines(EXPECTED_CLIENT / 'runtime' / name, *BINDING_LINES)}"
                     for style, name in (("explicit", "signatures.txt"), ("unpack", "signatures-unpack.txt"))
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.toml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-validation"]["toml"]
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.defaults",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(CLIENT_PACKAGES / "media" / "pydantic_v2_BaseModel" / "client" / "_client.py", "_DEFAULTS = "),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.options",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                report_lines(
+                    EXPECTED_CLIENT / "runtime" / "validation-structural.txt",
+                    "client selecting",
+                    "view selecting",
+                    "call selecting",
+                    "request mode None",
+                    "response mode none",
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.validation.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for name in ("validation-ambiguous.txt", "validation-adapters.txt")
+                    for line in read_text(EXPECTED_CLIENT / name).splitlines()
+                    if "E_CONFIG_VALUE" in line
                 ),
             ),
         ),

@@ -141,38 +141,53 @@ class HeaderBranch(Generic[T_co, M_co]):
     missing: Callable[[ResponseInfo, str | None], M_co]
 
 
-class _Native(Generic[T_co]):
+class NativeValue(Generic[T_co]):
+    """Decode a received header or part value into its native value: by its schema, or through its converter alone."""
+
     __slots__ = ("_codec", "_context")
 
     def __init__(self, codec: Callable[[], InboundModelCodec[T_co]], context: CodecContext) -> None:
+        """Bind the value's codec accessor and context."""
         self._codec = codec
         self._context = context
 
     def __call__(self, wire: WireValue) -> T_co:
+        """Validate a wire value against its schema and construct its native value."""
         return self._codec().decode(wire, self._context).require_model()
 
+    def convert(self, wire: WireValue) -> T_co:
+        """Construct the native value of a wire value through its converter alone."""
+        return self._codec().convert(wire, self._context)
 
-class _Envelope(Generic[T]):
+
+class EnvelopeValue(Generic[T]):
+    """Decode a received header or part value into its model value or envelope, always by its schema."""
+
     __slots__ = ("_codec", "_context")
 
     def __init__(self, codec: Callable[[], InboundEnvelopeCodec[T]], context: CodecContext) -> None:
+        """Bind the value's codec accessor and context."""
         self._codec = codec
         self._context = context
 
     def __call__(self, wire: WireValue) -> DecodedValue[T]:
+        """Validate a wire value against its schema and construct its model value or envelope."""
         return self._codec().decode(wire, self._context)
 
+    convert = __call__
 
-def native_value(codec: Callable[[], InboundModelCodec[T]], context: CodecContext) -> Callable[[WireValue], T]:
+
+def native_value(codec: Callable[[], InboundModelCodec[T]], context: CodecContext) -> NativeValue[T]:
     """Return a decoder of a header or part value that constructs the native value."""
-    return _Native(codec, context)
+    return NativeValue(codec, context)
 
 
-def envelope_value(
-    codec: Callable[[], InboundEnvelopeCodec[T]], context: CodecContext
-) -> Callable[[WireValue], DecodedValue[T]]:
-    """Return a decoder of a header or part value that constructs a model value or envelope."""
-    return _Envelope(codec, context)
+def envelope_value(codec: Callable[[], InboundEnvelopeCodec[T]], context: CodecContext) -> EnvelopeValue[T]:
+    """Return a decoder of a header or part value that constructs a model value or envelope.
+
+    An envelope keeps its strict contract, so it is validated against its schema even where values are converted.
+    """
+    return EnvelopeValue(codec, context)
 
 
 class ResponseHeaders(Generic[T_co, M_co]):

@@ -48,7 +48,7 @@
   list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success value ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=WireValidationError('A required property is missing at /0/name')] response_validation_error
+  list success value ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_parsing) at /0/id')] response_validation_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! BodyProtocolError: BodyProtocolError(status_code=204, operation_id='listPets', call_id='<call>') [operation_id='listPets', condition='missing_body', body_bytes=b'', truncated=False] body_protocol_error
@@ -183,7 +183,7 @@
   options server index ! ConfigurationError: ConfigurationError(field_path='server.index', condition='out_of_range') [field_path=('server', 'index'), condition='out_of_range'] configuration_error
   options server variables ! ConfigurationError: ConfigurationError(field_path='server.variables', condition='invalid_value') [field_path=('server', 'variables'), condition='invalid_value'] configuration_error
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, validation=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False
@@ -266,7 +266,7 @@
   list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success value ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=WireValidationError('A required property is missing at /0/name')] response_validation_error
+  list success value ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=NativeValidationError('The native type rejected the value (native.int_type) at /0/id')] response_validation_error
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! BodyProtocolError: BodyProtocolError(status_code=204, operation_id='listPets', call_id='<call>') [operation_id='listPets', condition='missing_body', body_bytes=b'', truncated=False] body_protocol_error
@@ -401,7 +401,7 @@
   options server index ! ConfigurationError: ConfigurationError(field_path='server.index', condition='out_of_range') [field_path=('server', 'index'), condition='out_of_range'] configuration_error
   options server variables ! ConfigurationError: ConfigurationError(field_path='server.variables', condition='invalid_value') [field_path=('server', 'variables'), condition='invalid_value'] configuration_error
   options server = ServerSelection(index=0, variables=mappingproxy({'region': 'eu'}))
-  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET)
+  options limits = RequestOptions(server=UNSET, base_url=UNSET, headers=(), query=(), max_response_bytes=None, max_error_body_bytes=10, cleanup_timeout=UNSET, max_stream_bytes=UNSET, hooks=UNSET, context=UNSET, validation=UNSET)
   headers HeadersView(<3 headers>) 3 [('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2')] (('Set-Cookie', 'a=1'), ('X-Id', '7'), ('set-cookie', 'b=2'))
   headers get a=1 None ('a=1', 'b=2')
   headers contains True False False

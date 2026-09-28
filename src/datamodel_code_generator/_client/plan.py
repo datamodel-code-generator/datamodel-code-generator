@@ -49,6 +49,7 @@ if TYPE_CHECKING:
         WireDeclaration,
     )
     from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.client.multipart import PartKind
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
@@ -67,6 +68,13 @@ _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _SCHEMES: Final = frozenset({"http", "https"})
 _FORM_DATA: Final = "multipart/form-data"
 _NULL: Final = frozenset({"null"})
+_PART_KINDS: Final[dict[tuple[str, ...], PartKind]] = {
+    ("string",): "string",
+    ("integer",): "integer",
+    ("number",): "number",
+    ("boolean",): "boolean",
+    ("integer", "number"): "number",
+}
 _OBJECT: Final = frozenset({"object"})
 _ARRAY: Final = frozenset({"array"})
 _STRING: Final = frozenset({"string"})
@@ -881,6 +889,7 @@ def _sent(  # noqa: PLR0913
                 repeated=name not in styles_of and _array(wire, member),
                 file=name in files,
                 required=facts.required and not facts.read_only,
+                excluded=facts.read_only,
                 content_types=media_of.get(name, ()),
                 style=styles_of.get(name),
             ),
@@ -921,7 +930,16 @@ def _received(
         case _:
             additional = PartSpec(plan=PartPlan("", repeated=True, file=True))
     return tuple(
-        _read(wire, schemas, use, name, member, file=name in files, required=facts.required and not facts.write_only)
+        _read(
+            wire,
+            schemas,
+            use,
+            name,
+            member,
+            file=name in files,
+            required=facts.required and not facts.write_only,
+            excluded=facts.write_only,
+        )
         for name, member, facts in members
     ), additional
 
@@ -935,11 +953,14 @@ def _read(  # noqa: PLR0913
     *,
     file: bool,
     required: bool,
+    excluded: bool = False,
 ) -> PartSpec:
     """Return how a member's parts are read: a file's as bytes, any other in its kind by its own or its items' use."""
     if file:
-        return PartSpec(plan=PartPlan(name, repeated=_array(wire, location), file=True, required=required))
-    plan = _part_plan(wire, name, location, required=required)
+        return PartSpec(
+            plan=PartPlan(name, repeated=_array(wire, location), file=True, required=required, excluded=excluded)
+        )
+    plan = _part_plan(wire, name, location, required=required, excluded=excluded)
     if plan.repeated:
         resolved, _ = wire.schema(location)
         location = SourceLocation(resolved.document, f"{resolved.pointer}/items", "schema")
@@ -986,19 +1007,15 @@ def _part_plans(wire: WirePlan, use: TypeUseBinding | None) -> tuple[tuple[PartP
     return parts, PartPlan("")
 
 
-def _part_plan(wire: WirePlan, name: str, location: SourceLocation, *, required: bool = False) -> PartPlan:
+def _part_plan(
+    wire: WirePlan, name: str, location: SourceLocation, *, required: bool = False, excluded: bool = False
+) -> PartPlan:
     """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
     _, schema = wire.schema(location)
     if repeated := _types(schema) - _NULL == _ARRAY:
         _, schema = wire.schema(SourceLocation(location.document, f"{location.pointer}/items", "schema"))
-    match sorted(_types(schema) - _NULL):
-        case [("string" | "integer" | "number" | "boolean") as scalar]:
-            return PartPlan(name, scalar, repeated=repeated, required=required)
-        case ["integer", "number"]:
-            return PartPlan(name, "number", repeated=repeated, required=required)
-        case _:
-            pass
-    return PartPlan(name, "json", repeated=repeated, required=required)
+    kind = _PART_KINDS.get(tuple(sorted(_types(schema) - _NULL)), "json")
+    return PartPlan(name, kind, repeated=repeated, required=required, excluded=excluded)
 
 
 def _types(schema: Mapping[str, WireValue]) -> frozenset[str]:

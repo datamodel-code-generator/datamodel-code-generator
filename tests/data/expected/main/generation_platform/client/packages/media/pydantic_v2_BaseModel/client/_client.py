@@ -12,6 +12,7 @@ import httpx2
 from typing_extensions import Self
 
 from ._runtime.client.client import ClientCore, ClientDefaults
+from ._runtime.client.options import ValidationModes
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import BodyInput
 from .model_codecs import WireValue
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from .resources.files._sync import FilesResource
     from .resources.forms._sync import FormsResource
 
-_DEFAULTS = ClientDefaults(user_agent=None)
+_DEFAULTS = ClientDefaults(user_agent=None, validation=ValidationModes(request=('schema',), response=('schema',)))
 
 
 class Client:

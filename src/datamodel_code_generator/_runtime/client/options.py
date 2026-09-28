@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, TypeAlias
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import urlsplit
 
 from typing_extensions import TypeIs
@@ -23,10 +23,22 @@ from .hooks import AsyncHook, Hook  # noqa: TC001 - Public annotations support g
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-__all__ = ("UNSET", "ClientOptions", "HeaderPatch", "QueryPatch", "RequestOptions", "ServerSelection", "Unset")
+__all__ = (
+    "UNSET",
+    "ClientOptions",
+    "HeaderPatch",
+    "QueryPatch",
+    "RequestOptions",
+    "ServerSelection",
+    "Unset",
+    "ValidationOptions",
+)
 
 HeaderPatch: TypeAlias = tuple[tuple[str, str | None], ...]
 QueryPatch: TypeAlias = tuple[tuple[str, str | None], ...]
+RequestValidation: TypeAlias = Literal["none", "native", "schema"]
+ResponseValidation: TypeAlias = Literal["native", "schema"]
+ArgumentValidation: TypeAlias = Literal["none", "pydantic"]
 
 MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
 MAX_CONTEXT_BYTES: Final = 8 * 1024
@@ -38,6 +50,11 @@ _RESERVED: Final = frozenset({"host", "content-length", "transfer-encoding"})
 _CODINGS: Final = frozenset({"identity", "gzip", "x-gzip", "deflate"})
 _WEIGHT: Final = re.compile(r"[qQ]=(?:0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?)")
 _PAIR: Final = 2
+_MODES: Final = (
+    ("request", frozenset({"none", "native", "schema"})),
+    ("response", frozenset({"native", "schema"})),
+    ("arguments", frozenset({"none", "pydantic"})),
+)
 
 
 def _count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
@@ -171,8 +188,10 @@ def _accepted(value: str) -> bool:
     return True
 
 
-def _server(value: object) -> bool:
-    return isinstance(value, (ServerSelection, Unset))
+def _typed(value: object, kinds: tuple[type, ...], name: str) -> None:
+    """Refuse an option value of another type."""
+    if not isinstance(value, kinds):
+        raise ConfigurationError(field_path=(name,), condition="invalid_type")
 
 
 def is_base_url(value: str) -> bool:
@@ -213,6 +232,65 @@ class ServerSelection:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class ValidationOptions:
+    """How calls validate what they send, what they receive, and their arguments; UNSET inherits the lower layer's.
+
+    `request` is `none` to send native values as they serialize, `native` to pass them through their model backend's
+    validation first, and `schema` to validate the serialized value against its schema. `response` is `native` to
+    construct the declared type through its backend's converter and `schema` to validate the received value first.
+    A package allows the modes it was generated with; selecting another raises ConfigurationError.
+    """
+
+    request: RequestValidation | Unset = UNSET
+    response: ResponseValidation | Unset = UNSET
+    arguments: ArgumentValidation | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Refuse None and any mode that no package defines."""
+        for name, modes in _MODES:
+            if not isinstance(value := getattr(self, name), Unset) and not (type(value) is str and value in modes):
+                raise ConfigurationError(field_path=("validation", name), condition="invalid_value")
+
+
+@dataclass(frozen=True, slots=True)
+class Validation:
+    """The validation modes a call runs with."""
+
+    request: RequestValidation
+    response: ResponseValidation
+    arguments: ArgumentValidation
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ValidationModes:
+    """The modes a package allows on each axis, its generated default first."""
+
+    request: tuple[RequestValidation, ...] = ("none",)
+    response: tuple[ResponseValidation, ...] = ("native",)
+    arguments: tuple[ArgumentValidation, ...] = ("none",)
+
+    def default(self) -> Validation:
+        """Return the generated default of every axis."""
+        return Validation(self.request[0], self.response[0], self.arguments[0])
+
+    def layered(self, current: Validation, layer: ValidationOptions, operation_id: str | None = None) -> Validation:
+        """Return the modes with a layer's set fields applied, refusing a mode the package does not allow."""
+        for name, allowed in (("request", self.request), ("response", self.response), ("arguments", self.arguments)):
+            if not isinstance(value := getattr(layer, name), Unset) and value not in allowed:
+                raise ConfigurationError(
+                    field_path=("validation", name), condition="not_allowed", operation_id=operation_id
+                )
+        return Validation(
+            current.request if isinstance(layer.request, Unset) else layer.request,
+            current.response if isinstance(layer.response, Unset) else layer.response,
+            current.arguments if isinstance(layer.arguments, Unset) else layer.arguments,
+        )
+
+
+DEFAULT_VALIDATION: Final = ValidationModes()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class _Options:
     server: ServerSelection | Unset = UNSET
     base_url: str | Unset = UNSET
@@ -224,8 +302,10 @@ class _Options:
     max_stream_bytes: int | Unset | None = UNSET
     hooks: tuple[Hook | AsyncHook, ...] | Unset = UNSET
     context: Mapping[str, JSONScalar] | Unset = UNSET
+    validation: ValidationOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
+        _typed(self.validation, (ValidationOptions, Unset), "validation")
         if not isinstance(self.hooks, Unset):
             object.__setattr__(self, "hooks", _hooks(self.hooks))
         if not isinstance(self.context, Unset):
@@ -236,8 +316,7 @@ class _Options:
             object.__setattr__(self, "query", _query_patch(self.query))
         if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
             raise ConfigurationError(field_path=("base_url",), condition="conflicts_with_server")
-        if not _server(self.server):
-            raise ConfigurationError(field_path=("server",), condition="invalid_type")
+        _typed(self.server, (ServerSelection, Unset), "server")
         if not isinstance(self.base_url, Unset):
             if type(self.base_url) is not str:
                 raise ConfigurationError(field_path=("base_url",), condition="invalid_type")
@@ -257,7 +336,8 @@ class ClientOptions(_Options):
     """Settings of one client; every field left UNSET takes the generated default.
 
     Its headers and query patch the generated ones: each name it gives replaces their values of that name, and None
-    removes them. Its hooks observe every call's events, with its context.
+    removes them. Its hooks observe every call's events, with its context. Its validation replaces the generated mode
+    of each axis it sets.
     """
 
 
@@ -267,7 +347,7 @@ class RequestOptions(_Options):
 
     Its headers and query patch the lower layers' last: the client's, a view's, and those the call's parameters give.
     Its hooks replace the lower layers' rather than adding to them, and its context replaces their values of the names
-    it gives.
+    it gives. Its validation replaces their mode of each axis it sets.
     """
 
 
@@ -286,3 +366,4 @@ class Settings:
     hooks: tuple[Hook | AsyncHook, ...] = ()
     context: Mapping[str, JSONScalar] = field(default_factory=lambda: NO_CONTEXT)
     async_hooks: bool = False
+    validation: Validation = field(default_factory=DEFAULT_VALIDATION.default)

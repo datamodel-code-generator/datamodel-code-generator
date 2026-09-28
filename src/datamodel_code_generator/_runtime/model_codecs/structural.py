@@ -38,6 +38,7 @@ from .codec import (
     BuiltinModelCodec,
     Walk,
     directional_gap,
+    directs,
     is_mapping,
     is_sequence,
     is_set,
@@ -126,6 +127,7 @@ _ENUM: Final = _Failure("native.enum")
 _LITERAL: Final = _Failure("native.literal_error")
 _UNHASHABLE: Final = _Failure("native.set_item_not_hashable")
 _CONSTRUCTOR: Final = _Failure("native.constructor")
+_MISSING: Final = _Failure("native.missing")
 _EXTRA_FORBIDDEN: Final = _Failure("native.extra_forbidden")
 _TAG: Final = _Failure("native.tag")
 _KIND_FAILURES: Final = {
@@ -632,7 +634,7 @@ def _fits_record(binding: ModelBinding, native: type) -> bool:
 class StructuralModelCodec(BuiltinModelCodec[T]):
     """Validate, construct, snapshot, and encode one bound use of a standard dataclass or TypedDict model type."""
 
-    __slots__ = ("_convert", "_invalid", "_plan", "_plans", "_scan")
+    __slots__ = ("_convert", "_directed", "_invalid", "_plan", "_plans", "_scan")
 
     @overload
     def __init__(
@@ -686,6 +688,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         self._invalid: type[Exception] = ModelProjectionError
         if binding.converter_strategy == "msgspec_convert":
             self._convert, self._invalid = self._converter(native_type)
+        self._directed = directs(binding)
 
     def _converter(self, native_type: object) -> tuple[Callable[[object], object], type[Exception]]:
         """Return msgspec's strict converter of the use's type, which msgspec must describe at startup.
@@ -818,16 +821,22 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             raise NativeValidationError((_msgspec_issue(str(error), value),)) from None
 
     def _converted(self, wire: WireValue, budget: MatchBudget) -> T:
-        if (convert := self._convert) is not None:
-            try:
-                return typing.cast("T", convert(_thawed(wire)))
-            except self._invalid as error:
-                raise NativeValidationError((_msgspec_issue(str(error), wire),)) from None
-        state = Walk(budget, construct=True)
-        value = typing.cast("T", self._decode(wire, self._plan, None, state))
-        if state.native:
-            raise NativeValidationError(tuple(state.native))
-        return value
+        """Construct the native value by the structural walk, or by msgspec once a walk found no excluded member."""
+        convert = self._convert
+        if convert is None or self._directed:
+            state = Walk(budget, construct=convert is None, converting=True)
+            value = self._decode(wire, self._plan, None, state)
+            if state.issues:
+                msg = f"The native use has an unplanned projection gap at {state.issues[0].pointer or '/'}"
+                raise ModelProjectionError(msg)
+            if state.native:
+                raise NativeValidationError(tuple(state.native))
+            if convert is None:
+                return typing.cast("T", value)
+        try:
+            return typing.cast("T", convert(_thawed(wire)))
+        except self._invalid as error:
+            raise NativeValidationError((_msgspec_issue(str(error), wire),)) from None
 
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
         presence = snapshot_presence(wire)
@@ -934,17 +943,15 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 self._unbound(name, entry, plan, (route, name, name), state, arguments)
             elif not (binding := member.binding).constructible:
                 state.issues.append(self._gap("FIELD_NOT_CONSTRUCTIBLE", plan, binding, route))
+            elif state.converting and self._excluded(binding):
+                state.native.append(self._carried(*_located((route, name, binding.native_name))))
             else:
                 arguments[binding.native_name] = self._decode(
                     entry, member.plan, (route, name, binding.native_name), state
                 )
-        state.issues.extend(
-            directional_gap(plan.binding, member.binding, _located(route)[0])
-            if self._excluded(member.binding)
-            else self._gap("MODEL_PROJECTION_GAP", plan, member.binding, route)
-            for member in plan.required
-            if member.binding.wire_name not in wire
-        )
+        for member in plan.required:
+            if member.binding.wire_name not in wire:
+                self._absent(member.binding, plan, route, state)
         if len(state.issues) > gaps and state.construct:
             msg = f"The native use has an unplanned projection gap at {state.issues[gaps].pointer or '/'}"
             raise ModelProjectionError(msg)
@@ -956,6 +963,15 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
             return plan.native(**arguments)
         except Exception:  # noqa: BLE001
             return self._refuse(state, _CONSTRUCTOR, route)
+
+    def _absent(self, binding: FieldBinding, plan: _Model, route: _Route, state: Walk) -> None:
+        """Take a required member the wire value lacks: a directional gap, or a native issue when converting."""
+        if self._excluded(binding):
+            state.issues.append(directional_gap(plan.binding, binding, _located(route)[0]))
+        elif state.converting:
+            self._refuse(state, _MISSING, (route, binding.wire_name, binding.native_name))
+        else:
+            state.issues.append(self._gap("MODEL_PROJECTION_GAP", plan, binding, route))
 
     def _unbound(  # noqa: PLR0913, PLR0917
         self, name: str, entry: WireValue, plan: _Model, route: _Route, state: Walk, arguments: dict[str, object]

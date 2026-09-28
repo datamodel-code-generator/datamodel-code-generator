@@ -21,6 +21,8 @@
     {"name": "constrained-tuple", "use": "/paths/~1stamps/post request_body",
      "models": {"models:Stamped": "tests.data.python.model_codec_stdlib:SizedStamped"}},
     {"name": "native-gap", "use": "/paths/~1limits/post request_body", "binding": {"projection_mode": "native"}, "decode": {"low": 2}},
+    {"name": "native-gap-convert", "use": "/paths/~1limits/post request_body", "binding": {"projection_mode": "native"},
+     "convert": {"low": 2}},
     {"name": "relaxed-tag", "use": "/paths/~1holders/post request_body", "decode": {"pet": {"size": "tiny"}},
      "patch": {"uri": "https://dcg.invalid/inputs/root", "pointer": "/components/schemas/Small/properties/size", "keyword": "const", "value": "tiny"}},
     {"name": "relaxed-pattern", "use": "/paths/~1coded/post request_body", "decode": {"code": "ABC"},

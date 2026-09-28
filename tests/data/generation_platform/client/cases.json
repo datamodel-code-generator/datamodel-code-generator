@@ -106,7 +106,11 @@
             ]
           }
         }
-      ]
+      ],
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
     }
   },
   "servers": {
@@ -253,6 +257,14 @@
       "msgspec.Struct"
     ]
   },
+  "evolution-schema": {
+    "input": "evolution.yaml",
+    "config": {
+      "validation": {
+        "response": "schema"
+      }
+    }
+  },
   "evolution-forbid": {
     "input": "evolution.yaml",
     "model": {
@@ -275,5 +287,177 @@
     "config": {
       "signature_style": "unpack"
     }
+  },
+  "validation": {
+    "input": "validation.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "validation": {
+        "request_overrides": [
+          "native",
+          "schema"
+        ],
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "validation-structural": {
+    "input": "validation.yaml",
+    "config": {
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ],
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "validation-native-structural": {
+    "input": "validation.yaml",
+    "backends": [
+      "dataclasses.dataclass",
+      "typing.TypedDict"
+    ],
+    "config": {
+      "validation": {
+        "request_overrides": [
+          "native"
+        ],
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "validation-ambiguous": {
+    "input": "evolution.yaml",
+    "backends": [
+      "dataclasses.dataclass"
+    ]
+  },
+  "validation-adapters": {
+    "input": "validation.yaml",
+    "config": {
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "limit",
+          "import_ref": "app.codecs:limit",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "integer"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "limit"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "pets",
+          "import_ref": "app.codecs:pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/post",
+              "role": "response_body",
+              "status": "201",
+              "media_type": "application/json"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "validation-adapters-schema": {
+    "input": "validation.yaml",
+    "config": {
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "limit",
+          "import_ref": "app.codecs:limit",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "integer"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "limit"
+            }
+          ]
+        },
+        {
+          "kind": "model",
+          "name": "pets",
+          "import_ref": "app.codecs:pets",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1pets/post",
+              "role": "response_body",
+              "status": "201",
+              "media_type": "application/json"
+            }
+          ]
+        }
+      ],
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    },
+    "modules": false
   }
 }

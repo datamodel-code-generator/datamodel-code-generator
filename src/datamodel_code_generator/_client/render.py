@@ -13,6 +13,7 @@ from datamodel_code_generator._client._compiled_templates import resource as res
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.naming import pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
+from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
@@ -22,7 +23,7 @@ from datamodel_code_generator._target_render import field_plan, items, parameter
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
 
-    from datamodel_code_generator._client.config import ClientGenerationConfig
+    from datamodel_code_generator._client.config import ClientGenerationConfig, ClientValidationConfig
     from datamodel_code_generator._client.plan import (
         ClientPlan,
         HeaderSpec,
@@ -84,10 +85,26 @@ __all__ = ["AsyncHook", "CallEvent", "CallOutcome", "EventName", "Hook", "RetryR
 '''
 _OPTIONS: Final = '''"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""
 
-from ._runtime.client.options import ClientOptions, HeaderPatch, QueryPatch, RequestOptions, ServerSelection
+from ._runtime.client.options import (
+    ClientOptions,
+    HeaderPatch,
+    QueryPatch,
+    RequestOptions,
+    ServerSelection,
+    ValidationOptions,
+)
 from ._runtime.model_codecs.unset import UNSET, Unset
 
-__all__ = ["UNSET", "ClientOptions", "HeaderPatch", "QueryPatch", "RequestOptions", "ServerSelection", "Unset"]
+__all__ = [
+    "UNSET",
+    "ClientOptions",
+    "HeaderPatch",
+    "QueryPatch",
+    "RequestOptions",
+    "ServerSelection",
+    "Unset",
+    "ValidationOptions",
+]
 '''
 _ERROR_NAMES: Final = (
     "AdapterContractError",
@@ -633,19 +650,35 @@ class _Typing:
 class _Resources(_Typing):
     """Render the root clients and the resource modules with their typed operation methods."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         plan: ClientPlan,
         codecs: CodecPlan,
         accessors: dict[TypeUseId, UseAccessors],
         user_agent: str | None,
+        validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
     ) -> None:
-        """Keep the typing context, the generated User-Agent, and the TypedDicts of unpacked methods."""
+        """Keep the typing context, the generated User-Agent and validation, and the TypedDicts of unpacked methods."""
         super().__init__(plan, codecs, accessors)
         self.user_agent = user_agent
+        self.validation = validation
         self.records = _Records(self) if unpacked else None
+
+    def defaults(self, module: Module) -> str:
+        """Return the generated defaults of the clients, naming the validation modes that differ from the runtime's."""
+        validation = self.validation
+        modes = (
+            ("request", allowed(validation.request, validation.request_overrides), ("none",)),
+            ("response", allowed(validation.response, validation.response_overrides), ("native",)),
+            ("arguments", allowed(validation.arguments, validation.argument_overrides), ("none",)),
+        )
+        arguments = ", ".join(f"{axis}={selected!r}" for axis, selected, runtime in modes if selected != runtime)
+        defaults = f"{module.local('_runtime.client.client', 'ClientDefaults')}(user_agent={self.user_agent!r}"
+        if not arguments:
+            return f"{defaults})"
+        return f"{defaults}, validation={module.local('_runtime.client.options', 'ValidationModes')}({arguments}))"
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -658,7 +691,7 @@ class _Resources(_Typing):
         names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", "_DEFAULTS"}
         module = Module({*names, *(name for _, name, _ in roots)}, self.symbols, level=1)
         values = {
-            "defaults": f"{module.local('_runtime.client.client', 'ClientDefaults')}(user_agent={self.user_agent!r})",
+            "defaults": self.defaults(module),
             "options": module.local("options", "ClientOptions"),
             "http_client": f"{module.namespace.module('httpx2')}.{prefix}Client",
             "unset": module.local("_runtime.model_codecs.unset", "Unset"),
@@ -1385,7 +1418,12 @@ class _Registry(_Typing):
     def sent_plan(self, module: Module, part: PartSpec) -> Group:
         """Return the PartPlan constructor of one member of a body sent as parts."""
         plan = part.plan
-        flags = (("repeated=", plan.repeated), ("file=", plan.file), ("required=", plan.required))
+        flags = (
+            ("repeated=", plan.repeated),
+            ("file=", plan.file),
+            ("required=", plan.required),
+            ("excluded=", plan.excluded),
+        )
         return _call(
             module.local("_runtime.client.multipart", "PartPlan"),
             (
@@ -1490,7 +1528,13 @@ class _Registry(_Typing):
         """Return the PartDecoder of one member of a response read as parts: its bytes, or its codec's value."""
         plan = part.plan
         flags = [
-            (flag, "True") for flag, value in (("repeated=", plan.repeated), ("required=", plan.required)) if value
+            (flag, "True")
+            for flag, value in (
+                ("repeated=", plan.repeated),
+                ("required=", plan.required),
+                ("excluded=", plan.excluded),
+            )
+            if value
         ]
         multipart = "_runtime.client.multipart"
         if part.use is None:
@@ -1544,7 +1588,12 @@ class ClientRenderer:
         if config.package_mode == "standalone":
             user_agent = f"{config.distribution_name}/{config.package_version}"
         resources = _Resources(
-            self.plan, self.codecs, self.accessors, user_agent, unpacked=config.signature_style == "unpack"
+            self.plan,
+            self.codecs,
+            self.accessors,
+            user_agent,
+            config.validation,
+            unpacked=config.signature_style == "unpack",
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)

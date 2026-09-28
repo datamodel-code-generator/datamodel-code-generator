@@ -205,16 +205,23 @@ def walks(binding: UseBinding) -> bool:
     return binding.projection_mode == "envelope" or any(map(_walked, binding.models))
 
 
+def directs(binding: UseBinding) -> bool:
+    """Return whether a use's models have a field its direction excludes, which a received value must not carry."""
+    request = binding.direction == "request"
+    return any(item.read_only if request else item.write_only for model in binding.models for item in model.fields)
+
+
 def needs_schema(binding: UseBinding) -> bool:
     """Return whether converting a builtin use's wire value must match it against schemas to choose a union member.
 
     A member whose JSON kind no other member has is chosen by that kind. msgspec's converter chooses members itself, and
-    so does a Pydantic adapter that reads the wire members as they are.
+    so does a Pydantic adapter that reads the wire members as they are, unless members their direction excludes must be
+    found in the value first.
     """
     match binding.converter_strategy:
-        case "msgspec_convert":
+        case "msgspec_convert" if not directs(binding):
             return False
-        case "pydantic_type_adapter" if not walks(binding):
+        case "pydantic_type_adapter" if not (walks(binding) or directs(binding)):
             return False
         case _:
             pass
@@ -257,10 +264,15 @@ def directional_gap(model: ModelBinding, member: FieldBinding, pointer: str) -> 
 
 @dataclass(slots=True)
 class Walk:
-    """Collect the extras, projection gaps, and native issues of one projection."""
+    """Collect the extras, projection gaps, and native issues of one projection.
+
+    A converting walk reads a value no schema validated, so a member its direction excludes, or a required one it lacks,
+    is a native issue.
+    """
 
     budget: MatchBudget
     construct: bool = False
+    converting: bool = False
     extras: dict[str, WireValue] = field(default_factory=dict[str, WireValue])
     issues: list[ProjectionIssue] = field(default_factory=list[ProjectionIssue])
     native: list[NativeIssue] = field(default_factory=list[NativeIssue])
@@ -438,6 +450,11 @@ class BuiltinModelCodec(ABC, Generic[T]):
 
     def _excluded(self, member: FieldBinding) -> bool:
         return member.read_only if self._binding.direction == "request" else member.write_only
+
+    def _carried(self, pointer: str, path: tuple[str | int, ...]) -> NativeIssue:
+        """Return the native issue of a received member that its direction excludes."""
+        code = "native.read_only" if self._binding.direction == "request" else "native.write_only"
+        return NativeIssue(code=code, pointer=pointer, native_path=path)
 
     def _matches(self, symbol: str, wire: WireValue, budget: MatchBudget) -> bool:
         if (schema_id := (model := self._models[symbol]).schema_id) is None:

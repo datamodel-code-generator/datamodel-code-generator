@@ -1,8 +1,8 @@
 mypy pets and clients.py and signatures.py: clean
 pyright pets and clients.py and signatures.py: clean
 ty pets and clients.py and signatures.py: clean
-clients_negative.py 33 marked lines
-mypy clients_negative.py: 33/33 marked lines with one error, 0 elsewhere, 0 in other files
+clients_negative.py 37 marked lines
+mypy clients_negative.py: 37/37 marked lines with one error, 0 elsewhere, 0 in other files
   28 call-arg
   29 arg-type
   30 call-overload
@@ -36,7 +36,11 @@ mypy clients_negative.py: 33/33 marked lines with one error, 0 elsewhere, 0 in o
   106 assignment
   111 arg-type
   112 dict-item
-pyright clients_negative.py: 29/33 marked lines with one error, 0 elsewhere, 0 in other files
+  116 arg-type
+  117 arg-type
+  118 arg-type
+  119 arg-type
+pyright clients_negative.py: 33/37 marked lines with one error, 0 elsewhere, 0 in other files
   28 reportCallIssue
   29 reportArgumentType
   30 reportArgumentType
@@ -74,7 +78,11 @@ pyright clients_negative.py: 29/33 marked lines with one error, 0 elsewhere, 0 i
   106 reportAssignmentType
   111 reportArgumentType
   112 reportArgumentType
-ty clients_negative.py: 33/33 marked lines with one error, 0 elsewhere, 0 in other files
+  116 reportArgumentType
+  117 reportArgumentType
+  118 reportArgumentType
+  119 reportArgumentType
+ty clients_negative.py: 37/37 marked lines with one error, 0 elsewhere, 0 in other files
   28 missing-argument
   29 invalid-argument-type
   30 no-matching-overload
@@ -108,6 +116,10 @@ ty clients_negative.py: 33/33 marked lines with one error, 0 elsewhere, 0 in oth
   106 invalid-assignment
   111 invalid-argument-type
   112 invalid-argument-type
+  116 invalid-argument-type
+  117 invalid-argument-type
+  118 invalid-argument-type
+  119 invalid-argument-type
 signatures_negative.py 2 marked lines
 mypy signatures_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
   42 misc

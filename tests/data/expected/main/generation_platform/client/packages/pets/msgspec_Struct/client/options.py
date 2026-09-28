@@ -7,7 +7,17 @@ from ._runtime.client.options import (
     QueryPatch,
     RequestOptions,
     ServerSelection,
+    ValidationOptions,
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
 
-__all__ = ["UNSET", "ClientOptions", "HeaderPatch", "QueryPatch", "RequestOptions", "ServerSelection", "Unset"]
+__all__ = [
+    "UNSET",
+    "ClientOptions",
+    "HeaderPatch",
+    "QueryPatch",
+    "RequestOptions",
+    "ServerSelection",
+    "Unset",
+    "ValidationOptions",
+]

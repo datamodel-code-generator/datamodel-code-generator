@@ -1,0 +1,5 @@
+# validation-adapters
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE binding validation.request /paths/~1pets/get/parameters/0: The 'none' request validation cannot take the query parameter limit of GET /pets, which goes through a registered adapter that validates it against its schema; select 'schema'
+  E_CONFIG_VALUE binding validation.response /paths/~1pets/post/responses/201: The 'native' response validation cannot take the response body 201 application/json of POST /pets, which goes through a registered adapter that validates it against its schema; select 'schema'

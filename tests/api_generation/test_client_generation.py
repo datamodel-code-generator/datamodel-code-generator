@@ -33,6 +33,10 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "empty",
         "querystring",
         "evolution",
+        "validation-native-structural",
+        "validation-ambiguous",
+        "validation-adapters",
+        "validation-adapters-schema",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -48,6 +52,13 @@ def test_client_signature_style_digests(tmp_path: Path) -> None:
     assert_output(client_digest_report("pets", "pets-unpack", tmp_path), EXPECTED / "digests" / "signature-style.txt")
 
 
+def test_client_validation_digests(tmp_path: Path) -> None:
+    """Keep every operation's contract digests and the models when the same API renders with other validation modes."""
+    assert_output(
+        client_digest_report("validation", "validation-structural", tmp_path), EXPECTED / "digests" / "validation.txt"
+    )
+
+
 @pytest.mark.parametrize(
     "case",
     [
@@ -61,6 +72,13 @@ def test_client_signature_style_digests(tmp_path: Path) -> None:
         "toml-invalid-location",
         "toml-invalid-statuses",
         "toml-unknown-keys",
+        "validation-values",
+        "validation-invalid",
+        "validation-shape",
+        "validation-pydantic",
+        "toml-validation",
+        "toml-validation-unknown",
+        "toml-validation-types",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:
