@@ -231,8 +231,8 @@ class LogicalCallContext:
             self._phase = phase
         else:
             phase = self._phase
-        if self._interrupted is not None:
-            raise self._interrupted
+        if (interrupted := self._interrupted) is not None:
+            raise interrupted
         delivery = self.delivery_state if delivery_state is None else delivery_state
         if (token := self.settings.cancel_token) is not None and token.cancelled:
             if isinstance(cause, RequestCancelledError):

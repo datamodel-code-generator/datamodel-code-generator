@@ -70,7 +70,14 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
     lines.append(
         f"  deadlines expired={elapsed.remaining()} future={0 < future.remaining() <= 3600} ordered={future.at > elapsed.at}"
     )
-    lines.append(f"  deadline readonly {outcome(lambda: setattr(future, 'at', 1))}")
+    deadline_at = future.at
+    try:
+        setattr(future, "at", deadline_at + 1)
+    except (AttributeError, TypeError):
+        rejected = True
+    else:
+        rejected = False
+    lines.append(f"  deadline readonly rejected={rejected} unchanged={future.at == deadline_at}")
     token = options.CancelToken()
     lines.append(f"  cancellation initial={token.cancelled}")
     worker = threading.Thread(target=token.cancel)

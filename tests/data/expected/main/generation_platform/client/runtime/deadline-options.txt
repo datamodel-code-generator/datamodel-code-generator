@@ -67,7 +67,7 @@
   timeout mixed = TimeoutOptions(connect=None, read=1.0, write=2.5, pool=UNSET)
   deadline constructor ! TypeError: Use Deadline.after(seconds) to create a deadline []
   deadlines expired=0.0 future=True ordered=True
-  deadline readonly TypeError secondary []
+  deadline readonly rejected=True unchanged=True
   cancellation initial=False
   cancellation after-thread=True readonly=AttributeError secondary []
   seconds 0.0/1.0/2.5 count=0

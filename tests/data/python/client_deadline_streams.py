@@ -242,14 +242,17 @@ def _interruptions(package: ModuleType, lines: list[str]) -> None:
 
 def _http2(package: ModuleType, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
-    server = Http2Fixture(0.8)
+    server = Http2Fixture(0)
     try:
         http = httpx2.Client(http1=False, http2=True, verify=server.client_context, trust_env=False)
         with package.Client(http_client=http, http_client_ownership="owned") as api:
+            warmed = api.request_raw("GET", server.url, options=options.RequestOptions(total_timeout=10))
+            lines.append(f"  HTTP2 sync warm connection {warmed.read()!r}")
+            server.delay = 1.0
             with api.with_streaming_response.request_raw(
                 "GET",
                 server.url,
-                options=options.RequestOptions(total_timeout=0.2, stream_idle_timeout=3),
+                options=options.RequestOptions(total_timeout=0.5, stream_idle_timeout=3),
             ) as response:
                 record(lines, "HTTP2 stream acquisition released", response.read)
         lines.append(f"  HTTP2 sync protocols {server.protocols!r} requests {server.requests}")
@@ -318,6 +321,8 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
                 await reader
             except asyncio.CancelledError:
                 lines.append("  async stream native cancellation propagated")
+            else:
+                lines.append("  async stream native cancellation not propagated")
         token = options.CancelToken()
         exchange.respond(raw_response(200, b'{"ready":true}', "application/json"))
         saved = await api.request_raw(
@@ -397,14 +402,17 @@ async def _async_interruptions(package: ModuleType, lines: list[str]) -> None:
 
 async def _async_http2(package: ModuleType, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
-    server = Http2Fixture(0.8)
+    server = Http2Fixture(0)
     try:
         http = httpx2.AsyncClient(http1=False, http2=True, verify=server.client_context, trust_env=False)
         async with package.AsyncClient(http_client=http, http_client_ownership="owned") as api:
+            warmed = await api.request_raw("GET", server.url, options=options.RequestOptions(total_timeout=10))
+            lines.append(f"  HTTP2 async warm connection {await warmed.read()!r}")
+            server.delay = 1.0
             async with api.with_streaming_response.request_raw(
                 "GET",
                 server.url,
-                options=options.RequestOptions(total_timeout=0.2, stream_idle_timeout=3),
+                options=options.RequestOptions(total_timeout=0.5, stream_idle_timeout=3),
             ) as response:
                 await arecord(lines, "HTTP2 async stream acquisition released", response.read)
         lines.append(f"  HTTP2 async protocols {server.protocols!r} requests {server.requests}")

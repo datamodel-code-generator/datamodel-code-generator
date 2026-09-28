@@ -385,11 +385,21 @@ fields, a missing required field, a field of another media type, or fields for a
 
 ```text
 a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields missing a required one ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
-fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='media_type', condition='missing') [operation_id='createPet', field_path=('media_type',), condition='missing'] configuration_error
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
+fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='missing') [operation_id='createPet', field_path=('media_type',), condition='missing'] configuration_error
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
-update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=True context={}
+update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
 ```
 
 <!-- fmt: on -->

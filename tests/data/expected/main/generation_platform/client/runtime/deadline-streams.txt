@@ -64,8 +64,9 @@
   > GET https://example.com/interruption [Accept-Encoding: gzip, deflate] None None None
     unknown 5.0/30.0/30.0/5.0
   stream interruption close original True released 1
+  HTTP2 sync warm connection b'ready'
   HTTP2 stream acquisition released = b'ready'
-  HTTP2 sync protocols ['h2'] requests 1
+  HTTP2 sync protocols ['h2'] requests 2
   > GET https://example.com/handoff
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream acquisition released = b'ready'
@@ -138,5 +139,6 @@
     unknown 5.0/30.0/30.0/5.0
   async stream cleanup cancellation original True
   async stream retained cleanup released 1
+  HTTP2 async warm connection b'ready'
   HTTP2 async stream acquisition released = b'ready'
-  HTTP2 async protocols ['h2'] requests 1
+  HTTP2 async protocols ['h2'] requests 2

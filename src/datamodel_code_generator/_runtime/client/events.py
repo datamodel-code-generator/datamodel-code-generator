@@ -160,7 +160,7 @@ class CallEvents:
             try:
                 await self.call.cleanup(notify, wrap_errors=False)
             except HookExecutionError:
-                pass
+                return failures
             except CleanupError as error:
                 return [*failures, error]
         else:
