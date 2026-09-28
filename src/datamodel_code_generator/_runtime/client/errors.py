@@ -233,7 +233,7 @@ class ProtocolConfigurationError(ConfigurationError):
         self.operation = operation
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super(ConfigurationError, self)._details(), ("condition", self.condition))
+        return tuple((name, value) for name, value in super()._details() if name != "field_path")
 
 
 class RequestEncodingError(SDKError):

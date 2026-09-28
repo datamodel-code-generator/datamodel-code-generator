@@ -45,6 +45,8 @@ synchronous verifier contract applies to asynchronous consumers.
 `WebhookOptions` has the fields below. Every constructor default is `UNSET`, imported from `pkg.options`;
 the effective values are the standalone verification defaults. `ResolvedWebhookOptions` has the same fields with
 `Unset` removed and every argument required. Both types are exported from `pkg.protocols`.
+`ResolvedWebhookOptions` records limits already validated and resolved by the consuming helper. Helpers must
+validate `WebhookOptions` before constructing this record and passing it to an application verifier.
 
 | Field | Type | Effective default | Valid values |
 |---|---|---|---|

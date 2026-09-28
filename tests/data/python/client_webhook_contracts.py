@@ -272,11 +272,19 @@ def _stores(protocols: ModuleType, errors: ModuleType, lines: list[str]) -> None
         "latest offset expiry",
         lambda: independent.claim("limits", "future", datetime.max.replace(tzinfo=timezone(-timedelta(hours=9)))),
     )
-    expires = datetime.now(timezone.utc) + timedelta(seconds=2)
-    expiring = protocols.MemoryReplayStore(max_entries=2)
-    record(lines, "retain long claim", lambda: expiring.claim("expiry", "long", future))
-    record(lines, "retain short claim", lambda: expiring.claim("expiry", "short", expires))
-    record(lines, "duplicate never extends expiry", lambda: expiring.claim("expiry", "short", future))
+    for _ in range(5):
+        observations: list[str] = []
+        expiring = protocols.MemoryReplayStore(max_entries=2)
+        record(observations, "retain long claim", lambda: expiring.claim("expiry", "long", future))
+        expires = datetime.now(timezone.utc) + timedelta(seconds=2)
+        record(observations, "retain short claim", lambda: expiring.claim("expiry", "short", expires))
+        record(observations, "duplicate never extends expiry", lambda: expiring.claim("expiry", "short", future))
+        if datetime.now(timezone.utc) < expires:
+            lines.extend(observations)
+            break
+    else:
+        msg = "Replay expiry assertions missed all five real-clock scheduling windows"
+        raise RuntimeError(msg)
     sleep(2.1)
     record(lines, "expired entry frees capacity", lambda: expiring.claim("expiry", "short", future))
     record(lines, "unexpired entry remains", lambda: expiring.claim("expiry", "long", future))
