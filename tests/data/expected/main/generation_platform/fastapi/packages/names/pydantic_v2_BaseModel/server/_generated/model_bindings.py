@@ -130,5 +130,5 @@ def codec_0() -> PydanticModelCodec[models.FieldUsersIdGetCookieSessionParameter
         ),
         models.FieldUsersIdGetCookieSessionParameter,
         {'models:FieldUsersIdGetCookieSessionParameter': models.FieldUsersIdGetCookieSessionParameter},
-        request_bundle(),
+        request_bundle,
     )

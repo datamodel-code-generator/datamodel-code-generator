@@ -157,7 +157,7 @@ def codec_0() -> PydanticModelCodec[models.FieldSearchGetQuerystringCriteriaPara
         ),
         models.FieldSearchGetQuerystringCriteriaParameter,
         {'models:FieldSearchGetQuerystringCriteriaParameter': models.FieldSearchGetQuerystringCriteriaParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -195,5 +195,5 @@ def codec_1() -> PydanticModelCodec[models.FieldSearchGetResponse]:
         ),
         models.FieldSearchGetResponse,
         {'models:FieldSearchGetResponse': models.FieldSearchGetResponse},
-        response_bundle(),
+        response_bundle,
     )

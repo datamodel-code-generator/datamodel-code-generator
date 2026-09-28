@@ -573,7 +573,7 @@ def codec_0() -> PydanticModelCodec[adapted_models.Tags]:
         ),
         adapted_models.Tags,
         {'adapted.models:Tags': adapted_models.Tags},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -659,7 +659,7 @@ def codec_1() -> PydanticModelCodec[adapted_models.FieldTagsGetCookieSessionPara
         ),
         adapted_models.FieldTagsGetCookieSessionParameter,
         {'adapted.models:FieldTagsGetCookieSessionParameter': adapted_models.FieldTagsGetCookieSessionParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -718,7 +718,7 @@ def codec_2() -> PydanticModelCodec[adapted_models.Code]:
         ),
         adapted_models.Code,
         {'adapted.models:Code': adapted_models.Code},
-        request_bundle(),
+        request_bundle,
         validator=validator_2(),
     )
 
@@ -778,7 +778,7 @@ def codec_3() -> PydanticModelCodec[adapted_models.Code]:
         ),
         adapted_models.Code,
         {'adapted.models:Code': adapted_models.Code},
-        response_bundle(),
+        response_bundle,
         validator=validator_3(),
     )
 
@@ -1223,7 +1223,7 @@ def codec_8() -> PydanticModelCodec[adapted_models.Secretive]:
         ),
         adapted_models.Secretive,
         {'adapted.models:Secretive': adapted_models.Secretive},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1265,7 +1265,7 @@ def codec_9() -> PydanticModelCodec[adapted_models.FieldZooPutRequest]:
             'adapted.models:Keeper': adapted_models.Keeper,
             'adapted.models:Pet': adapted_models.Pet,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 --- model_codecs.py

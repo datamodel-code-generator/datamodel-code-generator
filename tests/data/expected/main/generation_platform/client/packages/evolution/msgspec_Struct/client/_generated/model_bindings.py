@@ -308,7 +308,7 @@ def codec_0() -> StructuralModelCodec[models.FieldOrdersOrderIdGetPathOrderIdPar
         ),
         models.FieldOrdersOrderIdGetPathOrderIdParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -345,7 +345,7 @@ def codec_1() -> StructuralModelCodec[models.FieldOrdersOrderIdGetQueryViewParam
         ),
         models.FieldOrdersOrderIdGetQueryViewParameter,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -383,7 +383,7 @@ def codec_2() -> StructuralModelCodec[models.Order]:
         ),
         models.Order,
         {'models:Card': models.Card, 'models:Order': models.Order, 'models:Transfer': models.Transfer},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -416,5 +416,5 @@ def codec_3() -> StructuralModelCodec[models.Problem]:
         ),
         models.Problem,
         {'models:Problem': models.Problem},
-        response_bundle(),
+        response_bundle,
     )

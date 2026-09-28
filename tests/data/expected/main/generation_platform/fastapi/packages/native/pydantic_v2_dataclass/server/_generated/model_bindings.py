@@ -1182,7 +1182,7 @@ def codec_0() -> PydanticModelCodec[models.Discriminated]:
         ),
         models.Discriminated,
         {'models:Cat': models.Cat, 'models:Discriminated': models.Discriminated, 'models:Dog': models.Dog},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1215,7 +1215,7 @@ def codec_1() -> PydanticModelCodec[models.Wide]:
         ),
         models.Wide,
         {'models:Wide': models.Wide},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1248,7 +1248,7 @@ def codec_2() -> PydanticModelCodec[models.Described]:
         ),
         models.Described,
         {'models:Described': models.Described},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1281,7 +1281,7 @@ def codec_3() -> PydanticModelCodec[models.Patterned]:
         ),
         models.Patterned,
         {'models:Patterned': models.Patterned},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1314,7 +1314,7 @@ def codec_4() -> PydanticModelCodec[models.Bounded]:
         ),
         models.Bounded,
         {'models:Bounded': models.Bounded},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1347,7 +1347,7 @@ def codec_5() -> PydanticModelCodec[models.Wrapper]:
         ),
         models.Wrapper,
         {'models:MaybeInner': models.MaybeInner, 'models:Wrapper': models.Wrapper},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1380,7 +1380,7 @@ def codec_6() -> PydanticModelCodec[models.Extended]:
         ),
         models.Extended,
         {'models:Extended': models.Extended},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1413,7 +1413,7 @@ def codec_7() -> PydanticModelCodec[models.Defaulted]:
         ),
         models.Defaulted,
         {'models:Defaulted': models.Defaulted},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1446,7 +1446,7 @@ def codec_8() -> PydanticModelCodec[models.Listed]:
         ),
         models.Listed,
         {'models:Listed': models.Listed},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1479,7 +1479,7 @@ def codec_9() -> PydanticModelCodec[models.Mapped]:
         ),
         models.Mapped,
         {'models:Mapped': models.Mapped},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1512,7 +1512,7 @@ def codec_10() -> PydanticModelCodec[models.Opaque]:
         ),
         models.Opaque,
         {'models:Opaque': models.Opaque},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1545,7 +1545,7 @@ def codec_11() -> PydanticModelCodec[models.Anything]:
         ),
         models.Anything,
         {'models:Anything': models.Anything},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1578,7 +1578,7 @@ def codec_12() -> PydanticModelCodec[models.Stamped]:
         ),
         models.Stamped,
         {'models:Stamped': models.Stamped},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1611,7 +1611,7 @@ def codec_13() -> PydanticModelCodec[models.Twice]:
         ),
         models.Twice,
         {'models:Twice': models.Twice},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1644,7 +1644,7 @@ def codec_14() -> PydanticModelCodec[models.Extra]:
         ),
         models.Extra,
         {'models:Extra': models.Extra},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1677,7 +1677,7 @@ def codec_15() -> PydanticModelCodec[models.Nested]:
         ),
         models.Nested,
         {'models:Nested': models.Nested},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1710,5 +1710,5 @@ def codec_16() -> PydanticModelCodec[models.Box]:
         ),
         models.Box,
         {'models:Box': models.Box},
-        request_bundle(),
+        request_bundle,
     )

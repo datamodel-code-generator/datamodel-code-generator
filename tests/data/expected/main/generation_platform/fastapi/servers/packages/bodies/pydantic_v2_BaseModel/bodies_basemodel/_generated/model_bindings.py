@@ -549,7 +549,7 @@ def codec_0() -> PydanticModelCodec[bodies_basemodel_models.Item]:
         ),
         bodies_basemodel_models.Item,
         {'bodies_basemodel_models:Item': bodies_basemodel_models.Item},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -582,7 +582,7 @@ def codec_1() -> PydanticModelCodec[bodies_basemodel_models.Account]:
         ),
         bodies_basemodel_models.Account,
         {'bodies_basemodel_models:Account': bodies_basemodel_models.Account},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -615,7 +615,7 @@ def codec_2() -> PydanticModelCodec[bodies_basemodel_models.FieldProfilesPostReq
         ),
         bodies_basemodel_models.FieldProfilesPostRequest,
         {'bodies_basemodel_models:FieldProfilesPostRequest': bodies_basemodel_models.FieldProfilesPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -648,7 +648,7 @@ def codec_3() -> PydanticModelCodec[bodies_basemodel_models.FieldProfilesPostReq
         ),
         bodies_basemodel_models.FieldProfilesPostRequest1,
         {'bodies_basemodel_models:FieldProfilesPostRequest1': bodies_basemodel_models.FieldProfilesPostRequest1},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -681,7 +681,7 @@ def codec_4() -> PydanticModelCodec[bodies_basemodel_models.FieldVariantsPostReq
         ),
         bodies_basemodel_models.FieldVariantsPostRequest,
         {'bodies_basemodel_models:FieldVariantsPostRequest': bodies_basemodel_models.FieldVariantsPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -714,7 +714,7 @@ def codec_5() -> PydanticModelCodec[bodies_basemodel_models.FieldVariantsPostReq
         ),
         bodies_basemodel_models.FieldVariantsPostRequest1,
         {'bodies_basemodel_models:FieldVariantsPostRequest1': bodies_basemodel_models.FieldVariantsPostRequest1},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -747,7 +747,7 @@ def codec_6() -> PydanticModelCodec[bodies_basemodel_models.Item]:
         ),
         bodies_basemodel_models.Item,
         {'bodies_basemodel_models:Item': bodies_basemodel_models.Item},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -780,7 +780,7 @@ def codec_7() -> PydanticModelCodec[bodies_basemodel_models.Item]:
         ),
         bodies_basemodel_models.Item,
         {'bodies_basemodel_models:Item': bodies_basemodel_models.Item},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -813,7 +813,7 @@ def codec_8() -> PydanticModelCodec[bodies_basemodel_models.FieldDocumentsPutReq
         ),
         bodies_basemodel_models.FieldDocumentsPutRequest,
         {'bodies_basemodel_models:FieldDocumentsPutRequest': bodies_basemodel_models.FieldDocumentsPutRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -846,7 +846,7 @@ def codec_9() -> PydanticModelCodec[bodies_basemodel_models.FieldArchivesPutRequ
         ),
         bodies_basemodel_models.FieldArchivesPutRequest,
         {'bodies_basemodel_models:FieldArchivesPutRequest': bodies_basemodel_models.FieldArchivesPutRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -879,7 +879,7 @@ def codec_10() -> PydanticModelCodec[bodies_basemodel_models.FieldFormsPostReque
         ),
         bodies_basemodel_models.FieldFormsPostRequest,
         {'bodies_basemodel_models:FieldFormsPostRequest': bodies_basemodel_models.FieldFormsPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -912,5 +912,5 @@ def codec_11() -> PydanticModelCodec[bodies_basemodel_models.Check]:
         ),
         bodies_basemodel_models.Check,
         {'bodies_basemodel_models:Check': bodies_basemodel_models.Check},
-        request_bundle(),
+        request_bundle,
     )

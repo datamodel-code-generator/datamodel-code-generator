@@ -1,0 +1,13 @@
+{
+  "backend": "dataclasses.dataclass",
+  "package": "codec_loose_dataclass",
+  "cases": [
+    {"name": "holder-client-decode-tag", "use": "/paths/~1loose/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"value": {"label": "x"}}},
+    {"name": "holder-client-decode-other", "use": "/paths/~1loose/post response_body 200", "surface": "client", "op": "decode",
+     "value": {"value": {"other": 1}}},
+    {"name": "holder-client-needs-schema", "use": "/paths/~1loose/post response_body 200", "surface": "client", "op": "needs-schema"},
+    {"name": "holder-client-convert-other", "use": "/paths/~1loose/post response_body 200", "surface": "client", "op": "convert",
+     "value": {"value": {"other": 1}}}
+  ]
+}

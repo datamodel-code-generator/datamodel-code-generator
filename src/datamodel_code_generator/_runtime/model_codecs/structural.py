@@ -37,7 +37,6 @@ from .codec import (
     EMPTY,
     BuiltinModelCodec,
     Walk,
-    child_value,
     directional_gap,
     is_mapping,
     is_sequence,
@@ -641,7 +640,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: type[T],
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None: ...
@@ -651,7 +650,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: object,
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None: ...
@@ -660,7 +659,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         binding: UseBinding,
         native_type: object,
         models: Mapping[str, type],
-        bundle: SchemaBundle,
+        bundle: Callable[[], SchemaBundle],
         *,
         validator: WireValidator | None = None,
     ) -> None:
@@ -683,12 +682,12 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         self._plans: dict[str, _Model] = {}
         self._plan = self._build(binding.type, native_type, binding.native_export or binding.schema_id)
         self._scan = binding.projection_mode == "envelope"
-        self._convert: Callable[[JSONValue], object] | None = None
+        self._convert: Callable[[object], object] | None = None
         self._invalid: type[Exception] = ModelProjectionError
         if binding.converter_strategy == "msgspec_convert":
             self._convert, self._invalid = self._converter(native_type)
 
-    def _converter(self, native_type: object) -> tuple[Callable[[JSONValue], object], type[Exception]]:
+    def _converter(self, native_type: object) -> tuple[Callable[[object], object], type[Exception]]:
         """Return msgspec's strict converter of the use's type, which msgspec must describe at startup.
 
         Describing the type walks all of it, so a union msgspec refuses or a type it cannot read from JSON stops here.
@@ -808,6 +807,27 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         if binding.extra_items is not None:
             plan.extras = self._build(binding.extra_items, extra_items, f"{symbol} extra items")
         return plan
+
+    def _validated(self, value: object) -> object:
+        if (convert := self._convert) is None:
+            msg = "A standard dataclass, TypedDict, or structurally read Struct has no native validation entry"
+            raise CodecConfigurationError(msg)
+        try:
+            return convert(value)
+        except self._invalid as error:
+            raise NativeValidationError((_msgspec_issue(str(error), value),)) from None
+
+    def _converted(self, wire: WireValue, budget: MatchBudget) -> T:
+        if (convert := self._convert) is not None:
+            try:
+                return typing.cast("T", convert(_thawed(wire)))
+            except self._invalid as error:
+                raise NativeValidationError((_msgspec_issue(str(error), wire),)) from None
+        state = Walk(budget, construct=True)
+        value = typing.cast("T", self._decode(wire, self._plan, None, state))
+        if state.native:
+            raise NativeValidationError(tuple(state.native))
+        return value
 
     def _project(self, wire: WireValue, budget: MatchBudget) -> DecodedValue[T]:
         presence = snapshot_presence(wire)
@@ -969,9 +989,12 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
         )
 
     def _member(self, wire: WireValue, plan: _Union, budget: MatchBudget) -> _Plan | None:
+        """Return a wire value's member: by its JSON kind when no other member shares that kind, else by schema."""
         for member, shared in zip(plan.members, plan.shared, strict=True):
             match member:
-                case _Model(binding=binding) if self._matches(binding.symbol, wire, budget):
+                case _Model(binding=binding) if (
+                    self._matches(binding.symbol, wire, budget) if shared else isinstance(wire, Mapping)
+                ):
                     return member
                 case _Sequence() | _Tuple() if isinstance(wire, tuple) and (
                     not shared or self._within(wire, member, budget)
@@ -1073,7 +1096,7 @@ class StructuralModelCodec(BuiltinModelCodec[T]):
                 if items is None
                 else items.get(binding.native_name, _ABSENT)
             )
-            if value is _ABSENT or value is plan.unset:
+            if value is _ABSENT or value is plan.unset or self._excluded(binding):
                 continue
             child = None if presence is None else presence.child(binding.wire_name)
             if (presence is not None and child is None) or (presence is None and binding.omit_none and value is None):
@@ -1132,8 +1155,8 @@ def _fits(plan: _Model, native: object) -> bool:
     )
 
 
-def _msgspec_issue(message: str, wire: WireValue) -> NativeIssue:
-    """Locate the issue msgspec reports by walking its ``$`` path through the wire value it read.
+def _msgspec_issue(message: str, read: object) -> NativeIssue:
+    """Locate the issue msgspec reports by walking its ``$`` path through the wire or native value it read.
 
     A member name may itself hold dots, so the longest name of the object the path continues with is taken; a map
     entry, which msgspec writes as ``[...]``, ends the walk at its map.
@@ -1144,20 +1167,22 @@ def _msgspec_issue(message: str, wire: WireValue) -> NativeIssue:
     while rest:
         if (index := _MSGSPEC_PATH.match(rest)) is not None and index[1] != "...":
             tokens.append(position := int(index[1]))
-            wire, rest = child_value(wire, position), rest[index.end() :]
-        elif isinstance(wire, Mapping) and (
+            read, rest = read[position] if is_sequence(read) else None, rest[index.end() :]
+        elif is_mapping(read) and (
             name := max(
                 (
                     key
-                    for key in wire
-                    if rest.startswith(f".{key}") and rest[len(key) + 1 : len(key) + 2] in {"", ".", "["}
+                    for key in read
+                    if isinstance(key, str)
+                    and rest.startswith(f".{key}")
+                    and rest[len(key) + 1 : len(key) + 2] in {"", ".", "["}
                 ),
                 key=len,
                 default=None,
             )
         ):
             tokens.append(name)
-            wire, rest = wire[name], rest[len(name) + 1 :]
+            read, rest = read[name], rest[len(name) + 1 :]
         else:
             break
     pointer = "".join(f"/{escape_pointer_token(token)}" for token in tokens)
@@ -1215,15 +1240,16 @@ def _holds(native: object, plan: _Plan) -> bool:
 
 
 def _shared(members: tuple[_Plan, ...]) -> tuple[bool, ...]:
-    """Return which container members share their JSON kind with another member, so their shape cannot choose."""
+    """Return which model and container members another member may take a value of, so their kind cannot choose.
+
+    Another member of the same JSON kind may, and so may a member of any type, which takes every value.
+    """
     kinds = [
         "array" if isinstance(member, (_Sequence, _Tuple)) else "object" if isinstance(member, (_Map, _Model)) else None
         for member in members
     ]
-    return tuple(
-        not isinstance(member, _Model) and kind is not None and kinds.count(kind) > 1
-        for member, kind in zip(members, kinds, strict=True)
-    )
+    catch_all = any(member is _ANY for member in members)
+    return tuple(kind is not None and (catch_all or kinds.count(kind) > 1) for kind in kinds)
 
 
 def _json(value: object, representation: Representation, presence: PresenceTree | None, route: _Route) -> WireValue:  # noqa: PLR0911

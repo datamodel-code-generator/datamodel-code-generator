@@ -290,7 +290,7 @@ def codec_0() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
             'variants_reuse_dataclass_models:Owner': variants_reuse_dataclass_models.Owner,
             'variants_reuse_dataclass_models:Pet': variants_reuse_dataclass_models.Pet,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -326,7 +326,7 @@ def codec_1() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
             'variants_reuse_dataclass_models:Owner': variants_reuse_dataclass_models.Owner,
             'variants_reuse_dataclass_models:Pet': variants_reuse_dataclass_models.Pet,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -367,7 +367,7 @@ def codec_2() -> PydanticModelCodec[variants_reuse_dataclass_models.Pet]:
             'variants_reuse_dataclass_models:Owner': variants_reuse_dataclass_models.Owner,
             'variants_reuse_dataclass_models:Pet': variants_reuse_dataclass_models.Pet,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -405,7 +405,7 @@ def codec_3() -> PydanticModelCodec[variants_reuse_dataclass_models.FieldOwnersG
         ),
         variants_reuse_dataclass_models.FieldOwnersGetResponse,
         {'variants_reuse_dataclass_models:Owner': variants_reuse_dataclass_models.Owner},
-        response_bundle(),
+        response_bundle,
     )
 
 

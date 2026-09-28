@@ -1486,7 +1486,7 @@ def codec_0() -> PydanticModelCodec[models.FieldFormsPostRequest]:
         ),
         models.FieldFormsPostRequest,
         {'models:FieldFormsPostRequest': models.FieldFormsPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1524,7 +1524,7 @@ def codec_1() -> PydanticModelCodec[models.FieldFormsPostResponse]:
         ),
         models.FieldFormsPostResponse,
         {'models:FieldFormsPostResponse': models.FieldFormsPostResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1557,7 +1557,7 @@ def codec_2() -> PydanticModelCodec[models.FieldProfilesPostRequest]:
         ),
         models.FieldProfilesPostRequest,
         {'models:Address': models.Address, 'models:FieldProfilesPostRequest': models.FieldProfilesPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1595,7 +1595,7 @@ def codec_3() -> PydanticModelCodec[models.FieldProfilesGetResponse]:
         ),
         models.FieldProfilesGetResponse,
         {'models:Address': models.Address, 'models:FieldProfilesGetResponse': models.FieldProfilesGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1628,7 +1628,7 @@ def codec_4() -> PydanticModelCodec[models.FieldAnythingPostRequest]:
         ),
         models.FieldAnythingPostRequest,
         {'models:FieldAnythingPostRequest': models.FieldAnythingPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1666,7 +1666,7 @@ def codec_5() -> PydanticModelCodec[models.FieldAttachmentsGetResponse]:
         ),
         models.FieldAttachmentsGetResponse,
         {'models:FieldAttachmentsGetResponse': models.FieldAttachmentsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1699,7 +1699,7 @@ def codec_6() -> PydanticModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1737,7 +1737,7 @@ def codec_7() -> PydanticModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1775,7 +1775,7 @@ def codec_8() -> PydanticModelCodec[models.FieldFilesPostRequest2]:
         ),
         models.FieldFilesPostRequest2,
         {'models:FieldFilesPostRequest2': models.FieldFilesPostRequest2},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1813,7 +1813,7 @@ def codec_9() -> PydanticModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -1850,7 +1850,7 @@ def codec_10() -> PydanticModelCodec[models.FieldSearchesPostRequest]:
             'models:FieldSearchesPostRequest': models.FieldSearchesPostRequest,
             'models:Filter': models.Filter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1890,7 +1890,7 @@ def codec_11() -> PydanticModelCodec[models.FieldCoversPostRequestNoteXTraceEnco
         {
             'models:FieldCoversPostRequestNoteXTraceEncodingHeader': models.FieldCoversPostRequestNoteXTraceEncodingHeader,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1928,7 +1928,7 @@ def codec_12() -> PydanticModelCodec[models.FieldCoversPostRequestMetaXMetaEncod
         ),
         models.FieldCoversPostRequestMetaXMetaEncodingHeader,
         {'models:FieldCoversPostRequestMetaXMetaEncodingHeader': models.FieldCoversPostRequestMetaXMetaEncodingHeader},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -1966,7 +1966,7 @@ def codec_13() -> PydanticModelCodec[models.RateLimitHeader]:
         ),
         models.RateLimitHeader,
         {'models:RateLimitHeader': models.RateLimitHeader},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2006,7 +2006,7 @@ def codec_14() -> PydanticModelCodec[models.FieldCoversPostRequestScansContentDi
         {
             'models:FieldCoversPostRequestScansContentDispositionEncodingHeader': models.FieldCoversPostRequestScansContentDispositionEncodingHeader,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2044,7 +2044,7 @@ def codec_15() -> PydanticModelCodec[models.FieldCardsPostRequest]:
         ),
         models.FieldCardsPostRequest,
         {'models:FieldCardsPostRequest': models.FieldCardsPostRequest},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2086,7 +2086,7 @@ def codec_16() -> PydanticModelCodec[models.FieldStickersPostRequest]:
             'models:Filter': models.Filter,
             'models:Point': models.Point,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2126,7 +2126,7 @@ def codec_17() -> PydanticModelCodec[models.FieldAlbumsPostRequestBoundsContentD
         {
             'models:FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader': models.FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2164,7 +2164,7 @@ def codec_18() -> PydanticModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2202,7 +2202,7 @@ def codec_19() -> PydanticModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2235,7 +2235,7 @@ def codec_20() -> PydanticModelCodec[models.FieldDocumentsIdGetPathIdParameter]:
         ),
         models.FieldDocumentsIdGetPathIdParameter,
         {'models:FieldDocumentsIdGetPathIdParameter': models.FieldDocumentsIdGetPathIdParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2273,7 +2273,7 @@ def codec_21() -> PydanticModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2305,7 +2305,7 @@ def codec_22() -> PydanticModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2338,7 +2338,7 @@ def codec_23() -> PydanticModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2376,7 +2376,7 @@ def codec_24() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2414,7 +2414,7 @@ def codec_25() -> PydanticModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2452,7 +2452,7 @@ def codec_26() -> PydanticModelCodec[list[str]]:
         ),
         list[str],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2490,7 +2490,7 @@ def codec_27() -> PydanticModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2528,7 +2528,7 @@ def codec_28() -> PydanticModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2566,7 +2566,7 @@ def codec_29() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2599,7 +2599,7 @@ def codec_30() -> PydanticModelCodec[int]:
         ),
         int,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2632,7 +2632,7 @@ def codec_31() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2665,7 +2665,7 @@ def codec_32() -> PydanticModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2698,7 +2698,7 @@ def codec_33() -> PydanticModelCodec[models.Draft]:
         ),
         models.Draft,
         {'models:Draft': models.Draft},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2731,7 +2731,7 @@ def codec_34() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2764,7 +2764,7 @@ def codec_35() -> PydanticModelCodec[int]:
         ),
         int,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2797,7 +2797,7 @@ def codec_36() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -2830,7 +2830,7 @@ def codec_37() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2868,7 +2868,7 @@ def codec_38() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2906,7 +2906,7 @@ def codec_39() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2944,7 +2944,7 @@ def codec_40() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -2982,7 +2982,7 @@ def codec_41() -> PydanticModelCodec[int]:
         ),
         int,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3020,7 +3020,7 @@ def codec_42() -> PydanticModelCodec[models.Address]:
         ),
         models.Address,
         {'models:Address': models.Address},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3058,7 +3058,7 @@ def codec_43() -> PydanticModelCodec[typing.Any]:
         ),
         typing.Any,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3096,7 +3096,7 @@ def codec_44() -> PydanticModelCodec[models.Bounds]:
         ),
         models.Bounds,
         {'models:Bounds': models.Bounds},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3134,7 +3134,7 @@ def codec_45() -> PydanticModelCodec[str]:
         ),
         str,
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -3172,7 +3172,7 @@ def codec_46() -> PydanticModelCodec[list[str]]:
         ),
         list[str],
         {},
-        request_bundle(),
+        request_bundle,
     )
 
 

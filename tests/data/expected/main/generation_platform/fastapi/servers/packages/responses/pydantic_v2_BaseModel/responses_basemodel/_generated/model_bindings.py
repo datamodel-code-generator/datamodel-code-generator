@@ -220,7 +220,7 @@ def codec_0() -> PydanticModelCodec[responses_basemodel_models.FieldGreetingsGet
         ),
         responses_basemodel_models.FieldGreetingsGetResponse,
         {'responses_basemodel_models:FieldGreetingsGetResponse': responses_basemodel_models.FieldGreetingsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -258,7 +258,7 @@ def codec_1() -> PydanticModelCodec[responses_basemodel_models.Error]:
         ),
         responses_basemodel_models.Error,
         {'responses_basemodel_models:Error': responses_basemodel_models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -296,7 +296,7 @@ def codec_2() -> PydanticModelCodec[responses_basemodel_models.Pet]:
         ),
         responses_basemodel_models.Pet,
         {'responses_basemodel_models:Pet': responses_basemodel_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -334,7 +334,7 @@ def codec_3() -> PydanticModelCodec[responses_basemodel_models.Pet]:
         ),
         responses_basemodel_models.Pet,
         {'responses_basemodel_models:Pet': responses_basemodel_models.Pet},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -372,7 +372,7 @@ def codec_4() -> PydanticModelCodec[responses_basemodel_models.Error]:
         ),
         responses_basemodel_models.Error,
         {'responses_basemodel_models:Error': responses_basemodel_models.Error},
-        response_bundle(),
+        response_bundle,
     )
 
 

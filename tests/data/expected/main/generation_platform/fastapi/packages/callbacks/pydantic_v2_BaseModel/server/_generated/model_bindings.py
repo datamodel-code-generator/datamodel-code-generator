@@ -437,7 +437,7 @@ def codec_0() -> PydanticModelCodec[models.Subscription]:
         ),
         models.Subscription,
         {'models:Subscription': models.Subscription},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -470,7 +470,7 @@ def codec_1() -> PydanticModelCodec[models.FieldEventsGetResponse]:
         ),
         models.FieldEventsGetResponse,
         {'models:Event': models.Event, 'models:FieldEventsGetResponse': models.FieldEventsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -507,7 +507,7 @@ def codec_2() -> PydanticModelCodec[models.FieldEventsGetResponse200XMapHeader]:
         ),
         models.FieldEventsGetResponse200XMapHeader,
         {'models:FieldEventsGetResponse200XMapHeader': models.FieldEventsGetResponse200XMapHeader},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -545,7 +545,7 @@ def codec_3() -> PydanticModelCodec[models.Event]:
         ),
         models.Event,
         {'models:Event': models.Event},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -582,7 +582,7 @@ def codec_4() -> PydanticModelCodec[models.FieldSecureGetCookieTokenParameter]:
         ),
         models.FieldSecureGetCookieTokenParameter,
         {'models:FieldSecureGetCookieTokenParameter': models.FieldSecureGetCookieTokenParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -615,7 +615,7 @@ def codec_5() -> PydanticModelCodec[models.Animal]:
         ),
         models.Animal,
         {'models:Animal': models.Animal, 'models:Cat': models.Cat, 'models:Dog': models.Dog},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -654,7 +654,7 @@ def codec_6() -> PydanticModelCodec[models.FieldSecureGetResponse401wwwAuthentic
         {
             'models:FieldSecureGetResponse401wwwAuthenticateHeader': models.FieldSecureGetResponse401wwwAuthenticateHeader,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -696,7 +696,7 @@ def codec_7() -> PydanticModelCodec[models.FieldSecureGetResponse]:
             'models:FieldSecureGetResponse': models.FieldSecureGetResponse,
             'models:Status': models.Status,
         },
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -734,7 +734,7 @@ def codec_8() -> PydanticModelCodec[models.FieldEventsGetResponse]:
         ),
         models.FieldEventsGetResponse,
         {'models:Event': models.Event, 'models:FieldEventsGetResponse': models.FieldEventsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 
@@ -772,7 +772,7 @@ def codec_9() -> PydanticModelCodec[models.Näme]:
         ),
         models.Näme,
         {'models:Näme': models.Näme},
-        response_bundle(),
+        response_bundle,
     )
 
 

@@ -102,7 +102,7 @@ def codec_0() -> PydanticModelCodec[security_basemodel_models.FieldPetsGetRespon
         ),
         security_basemodel_models.FieldPetsGetResponse,
         {'security_basemodel_models:FieldPetsGetResponse': security_basemodel_models.FieldPetsGetResponse},
-        response_bundle(),
+        response_bundle,
     )
 
 

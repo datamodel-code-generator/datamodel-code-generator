@@ -29,6 +29,8 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
         ("structural/structs", "structs-options"),
         ("pydantic/shapes", "shapes-dataclass"),
         ("pydantic/shapes", "shapes-aliases"),
+        ("pydantic/loose", "loose-dataclass"),
+        ("pydantic/loose", "loose-typeddict"),
         ("structural/stdlib", "stdlib-dataclass"),
         ("structural/stdlib", "stdlib-frozen"),
         ("structural/stdlib", "stdlib-generic"),

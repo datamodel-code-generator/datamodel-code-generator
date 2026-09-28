@@ -128,7 +128,7 @@ def codec_0() -> PydanticModelCodec[models.FieldFilesFileNameExtGetPathFileNameP
         ),
         models.FieldFilesFileNameExtGetPathFileNameParameter,
         {'models:FieldFilesFileNameExtGetPathFileNameParameter': models.FieldFilesFileNameExtGetPathFileNameParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -165,7 +165,7 @@ def codec_1() -> PydanticModelCodec[models.FieldFilesFileNameExtGetPathExtParame
         ),
         models.FieldFilesFileNameExtGetPathExtParameter,
         {'models:FieldFilesFileNameExtGetPathExtParameter': models.FieldFilesFileNameExtGetPathExtParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -202,7 +202,7 @@ def codec_2() -> PydanticModelCodec[models.FieldFilesFileNameExtGetQueryClassPar
         ),
         models.FieldFilesFileNameExtGetQueryClassParameter,
         {'models:FieldFilesFileNameExtGetQueryClassParameter': models.FieldFilesFileNameExtGetQueryClassParameter},
-        request_bundle(),
+        request_bundle,
     )
 
 
@@ -241,7 +241,7 @@ def codec_3() -> PydanticModelCodec[models.FieldFilesFileNameExtGetHeaderField2f
         {
             'models:FieldFilesFileNameExtGetHeaderField2faParameter': models.FieldFilesFileNameExtGetHeaderField2faParameter,
         },
-        request_bundle(),
+        request_bundle,
     )
 
 
