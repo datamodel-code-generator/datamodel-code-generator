@@ -117,12 +117,12 @@ class _AsyncSigner(_Signing):
 
 
 class _Faulty(_File):
-    """A borrowed file whose descriptor, reads or seeks fail, or whose reads stall, once hashing reads it."""
+    """A borrowed file whose descriptor, reads or seeks fail, or whose reads stall past a time, once hashing reads it."""
 
-    def __init__(self, *faults: str, stall: float = 0.0) -> None:
+    def __init__(self, *faults: str) -> None:
         super().__init__(b"prefix-" + b"f" * 65549)
         self.faults = faults
-        self.stall = stall
+        self.until = 0.0
         self.hashing = False
 
     def fileno(self) -> int:
@@ -133,8 +133,8 @@ class _Faulty(_File):
 
     def read(self, size: int | None = -1, /) -> bytes:
         self.hashing = True
-        if self.stall:
-            time.sleep(self.stall)
+        if "stall" in self.faults:
+            time.sleep(max(0.0, self.until - time.monotonic()))
         if "read" in self.faults:
             msg = "read failed"
             raise OSError(msg)
@@ -189,7 +189,7 @@ def _faults() -> tuple[tuple[str, _Faulty, float], ...]:
         ("descriptor lookup fails before hashing", _Faulty("fileno"), 60.0),
         ("seek back fails after hashing", _Faulty("seek"), 60.0),
         ("read and seek back fail while hashing", _Faulty("read", "seek"), 60.0),
-        ("deadline while hashing", _Faulty(stall=0.3), 0.1),
+        ("deadline while hashing", _Faulty("stall"), 0.5),
     )
 
 
@@ -307,6 +307,7 @@ def _sync_faults(
         file.seek(7)
         signer.reset(file=file, offset=7)
         replies.reset(200)
+        file.until = time.monotonic() + timeout + 0.05
         outcome = _failure(
             lambda file=file, timeout=timeout: api.auth.signed_body(
                 body=bodies.FileBody(file), options=options.RequestOptions(total_timeout=timeout)
@@ -513,6 +514,7 @@ async def _async_faults(
         body = bodies.AsyncFileBody(file)
         signer.reset(file=file, offset=7)
         replies.reset(200)
+        file.until = time.monotonic() + timeout + 0.05
         outcome = await _afailure(
             lambda body=body, timeout=timeout: api.auth.signed_body(
                 body=body, options=options.RequestOptions(total_timeout=timeout)

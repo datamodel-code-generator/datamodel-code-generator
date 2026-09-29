@@ -692,18 +692,17 @@ def _permits(package: ModuleType, auth: ModuleType, options: ModuleType, lines: 
     for label, setup in _expiring(auth, auth.StaticTokenProvider, _Renewing, _Limiter, _Late):
         exchange = Exchange(lines)
         exchange.respond(_ok())
-        credentials, limiter, signers = setup()
         hook = _Hook()
         with (
             exchange.client() as native,
-            package.Client(
-                http_client=native,
-                options=options.ClientOptions(
-                    auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter, hooks=(hook,)
-                ),
-            ) as api,
+            package.Client(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
         ):
-            record(lines, label, lambda api=api: _outcome(api.auth.with_response.bearer))
+            credentials, limiter, signers = setup()
+            expiring = options.RequestOptions(
+                auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter
+            )
+            record(lines, label, lambda api=api, expiring=expiring: _outcome(
+                lambda: api.auth.with_response.bearer(options=expiring)))
         lines.append(f"    limiter={limiter.log} callbacks={getattr(credentials, 'calls', ())} events={hook.names}")
 
 
@@ -711,18 +710,16 @@ async def _apermits(package: ModuleType, auth: ModuleType, options: ModuleType, 
     for label, setup in _expiring(auth, auth.AsyncStaticTokenProvider, _AsyncRenewing, _AsyncLimiter, _AsyncLate):
         exchange = Exchange(lines)
         exchange.respond(_ok())
-        credentials, limiter, signers = setup()
         hook = _AsyncHook()
         async with (
             exchange.async_client() as native,
-            package.AsyncClient(
-                http_client=native,
-                options=options.ClientOptions(
-                    auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter, hooks=(hook,)
-                ),
-            ) as api,
+            package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
         ):
-            outcome = await _aoutcome(api.auth.with_response.bearer)
+            credentials, limiter, signers = setup()
+            expiring = options.RequestOptions(
+                auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter
+            )
+            outcome = await _aoutcome(lambda api=api, expiring=expiring: api.auth.with_response.bearer(options=expiring))
         lines.append(f"  async {label} = {outcome}")
         lines.append(f"    limiter={limiter.log} callbacks={getattr(credentials, 'calls', ())} events={hook.names}")
 
