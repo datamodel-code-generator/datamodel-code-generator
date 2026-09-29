@@ -173,18 +173,19 @@ def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]
     """Return the contract digests of each operation in the manifest of a rendered case, and its models."""
     root.mkdir(parents=True)
     config = client_config(case.get("config", {}), root)
+    model = {
+        "output": root / "models.py",
+        "input_file_type": "openapi",
+        "target_python_version": "3.11",
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType.PydanticV2BaseModel,
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+        **case.get("model", {}),
+    }
     project = render_target(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
-        model_config=GenerateConfig(
-            output=root / "models.py",
-            input_file_type="openapi",
-            target_python_version="3.11",
-            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            output_model_type=DataModelType.PydanticV2BaseModel,
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
-            **case.get("model", {}),
-        ),
+        model_config=GenerateConfig(**model),
         config=config,
         generator=ClientTarget(),
     )
