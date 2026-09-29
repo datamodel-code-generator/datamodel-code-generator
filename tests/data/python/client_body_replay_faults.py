@@ -328,7 +328,7 @@ async def _cancel_partial(
     token = options.CancelToken()
     config = options.ClientOptions(
         total_timeout=0.1 if mode == "deadline" else None,
-        cleanup_timeout=0.2 if mode == "deadline" else 0.005,
+        cleanup_timeout=0.005 if mode == "native" else 0.2,
         retry=options.RetryOptions(initial_delay=0),
     )
     failures: list[BaseException] = []
