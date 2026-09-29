@@ -305,7 +305,8 @@ contract and disables SDK retries. The default SDK-owned native transport disabl
 Import `AuthConfig`, credential values, providers, and signers from `client.auth`.
 `auth=UNSET` inherits, an `AuthConfig` replaces the inherited configuration as a whole, and `auth=None` disables it.
 Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
-alternative unless `selection` chooses its index. That choice stays fixed through a call and its retries.
+alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
+That choice stays fixed through a call and its retries.
 
 ```python
 from client.auth import AccessToken, AuthConfig, StaticTokenProvider

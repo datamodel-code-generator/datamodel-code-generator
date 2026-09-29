@@ -1111,7 +1111,9 @@ adapter with the internal retry-count, deadline, and body-safety contract and di
 
 Generated clients compile root security inheritance and operation overrides from OpenAPI. An AND requirement needs
 all its schemes; an OR list selects its first fully available alternative, or the index given by `AuthConfig.selection`.
-Selection stays fixed for the logical call, including retries and 401 recovery. Required credentials that are missing,
+The index applies only to operations that declare more than one alternative, so one client-wide configuration also
+serves anonymous and single-requirement operations. Selection stays fixed for the logical call, including retries and
+401 recovery. Required credentials that are missing,
 unknown, unavailable, or of the wrong material kind fail before a provider callback or send. Unused unsupported or
 unresolved scheme declarations do not prevent generation, but configuring one does not make it usable.
 
