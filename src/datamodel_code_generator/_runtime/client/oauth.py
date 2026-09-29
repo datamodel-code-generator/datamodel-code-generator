@@ -52,7 +52,6 @@ from .transports import (
 )
 
 if TYPE_CHECKING:
-    import asyncio
     from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine, Iterator, Mapping
 
     from .auth import AsyncCredentialProvider, CredentialProvider
@@ -665,7 +664,7 @@ class AsyncTokenEndpoint:
         self._transport = token_transport_options(transport, token_transport)
         self._adapter, self._owned = injected_adapter(token_transport, is_async_adapter)
         self.closed = False
-        self._loop: asyncio.AbstractEventLoop | None = None
+        self._loop: object = None
         with suppress(RuntimeError):
             self._loop = asyncio.get_running_loop()
 

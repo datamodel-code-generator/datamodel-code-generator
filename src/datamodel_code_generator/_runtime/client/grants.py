@@ -297,63 +297,65 @@ class _CodeFlow(_Flow[EndpointT]):
         """Commit the request's terminal state from the answer, then return its token set or raise its failure."""
         from .oauth import failure_kind, token_material  # noqa: PLC0415
 
+        if exchanged.outcome != "success":
+            raise self._failure(exchanged, issued)
+        assert exchanged.fields is not None
+        assert exchanged.received is not None
+        try:
+            access, refresh, _ = token_material(exchanged.fields, exchanged.received, issued.scopes)
+        except (ValueError, TokenExpiredError) as cause:
+            self._finish(issued, "UNCERTAIN")
+            raise AuthStateUncertainError(
+                failure_kind=failure_kind(cause),
+                status_code=exchanged.status_code,
+                state="UNCERTAIN",
+                delivery_state=exchanged.delivery,
+                phase="validate",
+                cause=cause,
+            ) from None
+        self._finish(issued, "SUCCEEDED")
+        return TokenSet(access, refresh)
+
+    def _failure(self, exchanged: Exchanged, issued: _Issued) -> Exception:
+        """Commit the terminal state of an exchange that did not succeed and return the error it raises."""
         delivery = exchanged.delivery
-        match exchanged.outcome:
-            case "success":
-                assert exchanged.fields is not None
-                assert exchanged.received is not None
-                try:
-                    access, refresh, _ = token_material(exchanged.fields, exchanged.received, issued.scopes)
-                except (ValueError, TokenExpiredError) as cause:
-                    self._finish(issued, "UNCERTAIN")
-                    raise AuthStateUncertainError(
-                        failure_kind=failure_kind(cause),
-                        status_code=exchanged.status_code,
-                        state="UNCERTAIN",
-                        delivery_state=delivery,
-                        phase="validate",
-                        cause=cause,
-                    ) from None
-                self._finish(issued, "SUCCEEDED")
-                return TokenSet(access, refresh)
-            case "rejected" if exchanged.oauth_error == "invalid_grant":
-                self._finish(issued, "REAUTH_REQUIRED")
-                raise AuthReauthorizationRequiredError(
-                    condition="invalid_grant", state="REAUTH_REQUIRED", delivery_state=delivery
-                )
-            case "rejected":
-                self._finish(issued, "EXCHANGE_REJECTED")
-                raise OAuthExchangeError(
-                    status_code=exchanged.status_code,
-                    oauth_error=exchanged.oauth_error,
-                    state="EXCHANGE_REJECTED",
-                    delivery_state=delivery,
-                )
-            case "unsent":
-                self._finish(issued, "FAILED_NOT_SENT")
-                if exchanged.timeout_kind is not None:
-                    assert exchanged.timeout is not None
-                    raise AuthTimeoutError(
-                        effective_timeout=exchanged.timeout,
-                        timeout_kind=exchanged.timeout_kind,
-                        state="FAILED_NOT_SENT",
-                        delivery_state=delivery,
-                        phase=exchanged.phase,
-                        cause=exchanged.cause,
-                    )
-                raise OAuthExchangeError(
+        if exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant":
+            self._finish(issued, "REAUTH_REQUIRED")
+            return AuthReauthorizationRequiredError(
+                condition="invalid_grant", state="REAUTH_REQUIRED", delivery_state=delivery
+            )
+        if exchanged.outcome == "rejected":
+            self._finish(issued, "EXCHANGE_REJECTED")
+            return OAuthExchangeError(
+                status_code=exchanged.status_code,
+                oauth_error=exchanged.oauth_error,
+                state="EXCHANGE_REJECTED",
+                delivery_state=delivery,
+            )
+        if exchanged.outcome == "unsent":
+            self._finish(issued, "FAILED_NOT_SENT")
+            if exchanged.timeout_kind is None:
+                return OAuthExchangeError(
                     state="FAILED_NOT_SENT", delivery_state=delivery, phase=exchanged.phase, cause=exchanged.cause
                 )
-            case _:
-                self._finish(issued, "UNCERTAIN")
-                raise AuthStateUncertainError(
-                    failure_kind=_uncertain_kind(exchanged),
-                    status_code=exchanged.status_code,
-                    state="UNCERTAIN",
-                    delivery_state=delivery,
-                    phase="validate" if exchanged.outcome == "malformed_response" else exchanged.phase,
-                    cause=exchanged.cause,
-                )
+            assert exchanged.timeout is not None
+            return AuthTimeoutError(
+                effective_timeout=exchanged.timeout,
+                timeout_kind=exchanged.timeout_kind,
+                state="FAILED_NOT_SENT",
+                delivery_state=delivery,
+                phase=exchanged.phase,
+                cause=exchanged.cause,
+            )
+        self._finish(issued, "UNCERTAIN")
+        return AuthStateUncertainError(
+            failure_kind=_uncertain_kind(exchanged),
+            status_code=exchanged.status_code,
+            state="UNCERTAIN",
+            delivery_state=delivery,
+            phase="validate" if exchanged.outcome == "malformed_response" else exchanged.phase,
+            cause=exchanged.cause,
+        )
 
 
 def _uncertain_kind(exchanged: Exchanged) -> Literal["transport", "deadline", "http_status", "malformed_response"]:
