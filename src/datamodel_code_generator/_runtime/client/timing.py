@@ -2,28 +2,29 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from time import monotonic
 
 from .errors import ConfigurationError
 
 
+def finite_number(value: object) -> float | None:
+    """Return a number as a finite float, or None for booleans, other types, and values no finite float holds."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        number = float(value)
+    except OverflowError:
+        return None
+    return number if math.isfinite(number) else None
+
+
 def seconds(value: object, path: tuple[str, ...]) -> float:
     """Validate and normalize a finite nonnegative duration at its option path."""
-    match value:
-        case bool():
-            pass
-        case int() | float():
-            try:
-                number = float(value)
-            except OverflowError:
-                pass
-            else:
-                if 0 <= number < float("inf"):
-                    return number
-        case _:
-            pass
-    raise ConfigurationError(field_path=path, condition="out_of_range")
+    if (number := finite_number(value)) is None or number < 0:
+        raise ConfigurationError(field_path=path, condition="out_of_range")
+    return number
 
 
 _seconds = seconds

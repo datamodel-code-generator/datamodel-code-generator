@@ -13,6 +13,7 @@ from .errors import (
     AdapterContractError,
     AdapterExecutionError,
     CleanupError,
+    ConfigurationError,
     DeliveryState,
     IOPhase,
     PhaseTimeoutError,
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
 
     from .bodies import AsyncBodyAttempt, BodyAttempt
     from .hooks import RetryReason
+    from .options import ResolvedTransportOptions
     from .transports import AttemptIOContext, AttemptTrace
 
 AttemptT = TypeVar("AttemptT", bound="BodyAttempt | AsyncBodyAttempt")
@@ -442,6 +444,42 @@ class AsyncHttpx2Response:
     async def aclose(self) -> None:
         """Release the response."""
         await self._response.aclose()
+
+
+def native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
+    """Create an SDK-owned HTTPX2 client from resolved construction settings, refusing HTTP/2 without its extra."""
+    try:
+        return httpx2.Client(
+            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
+            proxy=transport.proxy,
+            trust_env=transport.trust_env,
+            http2=transport.http2,
+            limits=httpx2.Limits(
+                max_connections=transport.max_connections,
+                max_keepalive_connections=transport.max_keepalive_connections,
+                keepalive_expiry=transport.keepalive_expiry,
+            ),
+        )
+    except ImportError as error:
+        raise ConfigurationError(field_path=("transport", "http2"), condition="unavailable", cause=error) from None
+
+
+def native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClient:
+    """Create an SDK-owned asyncio HTTPX2 client from resolved construction settings."""
+    try:
+        return httpx2.AsyncClient(
+            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
+            proxy=transport.proxy,
+            trust_env=transport.trust_env,
+            http2=transport.http2,
+            limits=httpx2.Limits(
+                max_connections=transport.max_connections,
+                max_keepalive_connections=transport.max_keepalive_connections,
+                keepalive_expiry=transport.keepalive_expiry,
+            ),
+        )
+    except ImportError as error:
+        raise ConfigurationError(field_path=("transport", "http2"), condition="unavailable", cause=error) from None
 
 
 class Httpx2Transport:

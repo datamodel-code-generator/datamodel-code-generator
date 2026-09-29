@@ -1,0 +1,342 @@
+# auth pydantic_v2.BaseModel
+  authorization url type = AuthConfigurationError condition=invalid_type field_path=('authorization_url',)
+  authorization url scheme = AuthConfigurationError condition=invalid_url field_path=('authorization_url',)
+  authorization url user = AuthConfigurationError condition=invalid_url field_path=('authorization_url',)
+  authorization url fragment = AuthConfigurationError condition=invalid_url field_path=('authorization_url',)
+  authorization url syntax = AuthConfigurationError condition=invalid_url field_path=('authorization_url',)
+  authorization url empty fragment = AuthConfigurationError condition=invalid_url field_path=('authorization_url',)
+  authorization url newline = AuthConfigurationError condition=invalid_url field_path=('authorization_url',)
+  authorization url with a flow parameter = AuthConfigurationError condition=reserved_parameter field_path=('authorization_url',)
+  token url port = AuthConfigurationError condition=invalid_url field_path=('token_url',)
+  insecure token url = AuthConfigurationError condition=insecure_url field_path=('token_url',)
+  insecure loopback without permission = AuthConfigurationError condition=insecure_url field_path=('token_url',)
+  empty client id = AuthConfigurationError condition=invalid_value field_path=('client_id',)
+  client id control character = AuthConfigurationError condition=invalid_value field_path=('client_id',)
+  unknown client auth = AuthConfigurationError condition=invalid_value field_path=('client_auth_method',)
+  secret beside none = AuthConfigurationError condition=forbidden_value field_path=('client_secret',)
+  missing secret = AuthConfigurationError condition=missing_value field_path=('client_secret',)
+  async secret = AuthConfigurationError condition=invalid_mode field_path=('client_secret',)
+  secret without get = AuthConfigurationError condition=invalid_mode field_path=('client_secret',)
+  sync secret of an async flow = AuthConfigurationError condition=invalid_mode field_path=('client_secret',)
+  options type = AuthConfigurationError condition=invalid_type field_path=('options',)
+  zero refresh timeout = AuthConfigurationError condition=invalid_value field_path=('refresh_timeout',)
+  boolean refresh timeout = AuthConfigurationError condition=invalid_value field_path=('refresh_timeout',)
+  infinite refresh timeout = AuthConfigurationError condition=invalid_value field_path=('refresh_timeout',)
+  overflowing refresh timeout = AuthConfigurationError condition=invalid_value field_path=('refresh_timeout',)
+  phase timeout type = AuthConfigurationError condition=invalid_type field_path=('phase_timeout',)
+  disabled phase = AuthConfigurationError condition=invalid_value field_path=('phase_timeout', 'read')
+  zero waiters = AuthConfigurationError condition=invalid_value field_path=('max_waiters',)
+  boolean refreshes = AuthConfigurationError condition=invalid_value field_path=('max_concurrent_refreshes',)
+  loopback flag type = AuthConfigurationError condition=invalid_type field_path=('allow_insecure_loopback',)
+  transport type = AuthConfigurationError condition=invalid_type field_path=('transport',)
+  unverified tls = AuthConfigurationError condition=insecure_transport field_path=('options', 'transport', 'verify')
+  unverified tls context = AuthConfigurationError condition=insecure_transport field_path=('options', 'transport', 'ssl_context')
+  tls context without hostname check = AuthConfigurationError condition=insecure_transport field_path=('options', 'transport', 'ssl_context')
+  http2 without its extra = AuthConfigurationError condition=unavailable field_path=('options', 'transport', 'http2')
+  transport retries = AuthConfigurationError condition=transport_retries field_path=('options', 'transport', 'retry_owner')
+  settings beside injected transport = AuthConfigurationError condition=injected_transport field_path=('options', 'transport')
+  async transport = AuthConfigurationError condition=invalid_mode field_path=('token_transport',)
+  sync transport of an async flow = AuthConfigurationError condition=invalid_mode field_path=('token_transport',)
+  transport without send = AuthConfigurationError condition=invalid_mode field_path=('token_transport',)
+  transport without capabilities = AuthConfigurationError condition=invalid_capabilities field_path=('token_transport',)
+  transport retrying internally = AuthConfigurationError condition=transport_retries field_path=('token_transport',)
+  token set type = AuthConfigurationError condition=invalid_type field_path=('access_token',)
+  empty refresh token = AuthConfigurationError condition=invalid_value field_path=('refresh_token',)
+  boolean revision = AuthConfigurationError condition=invalid_value field_path=('revision',)
+  resolved phases = TimeoutOptions(connect=5.0, read=2.0, write=15.0, pool=5.0)
+  permitted loopback = AuthorizationCodeFlow
+  lone scope string = AuthConfigurationError condition=invalid_scope field_path=('scopes',)
+  spaced scope = AuthConfigurationError condition=invalid_scope field_path=('scopes',)
+  non-ASCII scope = AuthConfigurationError condition=invalid_scope field_path=('scopes',)
+  null scopes = AuthConfigurationError condition=invalid_scope field_path=('scopes',)
+  non-string scope = AuthConfigurationError condition=invalid_scope field_path=('scopes',)
+  non-ASCII redirect = AuthConfigurationError condition=invalid_url field_path=('redirect_uri',)
+  redirect type = AuthConfigurationError condition=invalid_type field_path=('redirect_uri',)
+  relative redirect = AuthConfigurationError condition=invalid_url field_path=('redirect_uri',)
+  redirect fragment = AuthConfigurationError condition=invalid_url field_path=('redirect_uri',)
+  redirect space = AuthConfigurationError condition=invalid_url field_path=('redirect_uri',)
+  redirect syntax = AuthConfigurationError condition=invalid_url field_path=('redirect_uri',)
+  client_secret_basic state and verifier lengths = 43 43
+  client_secret_basic authorization url = https://auth.example.com/authorize?audience=api&response_type=code&client_id=client+id&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&scope=read+write&state=<state0>&code_challenge=<challenge0>&code_challenge_method=S256
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 153] b'grant_type=authorization_code&code=code-1&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier0>'
+  client_secret_basic exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=('read', 'write') expires_in_minutes=60 refresh=refresh-1
+  client_secret_post state and verifier lengths = 43 43
+  client_secret_post authorization url = https://auth.example.com/authorize?audience=api&response_type=code&client_id=client+id&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&scope=read+write&state=<state1>&code_challenge=<challenge1>&code_challenge_method=S256
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 198] b'grant_type=authorization_code&code=code-1&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier1>&client_id=client+id&client_secret=se%3Acr+et'
+  client_secret_post exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=('read', 'write') expires_in_minutes=60 refresh=refresh-1
+  none state and verifier lengths = 43 43
+  none authorization url = https://auth.example.com/authorize?audience=api&response_type=code&client_id=client+id&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&scope=read+write&state=<state2>&code_challenge=<challenge2>&code_challenge_method=S256
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 173] b'grant_type=authorization_code&code=code-1&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier2>&client_id=client+id'
+  none exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=('read', 'write') expires_in_minutes=60 refresh=refresh-1
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier3>&client_id=c'
+  explicit scope narrows the grant = TokenSet(revision=0) value=access-1 type=Bearer scopes=('read',) expires_in_minutes=60 refresh=refresh-1
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier4>&client_id=c'
+  empty request keeps an empty grant = TokenSet(revision=0) value=a type=Bearer scopes=() expires_in_minutes=None refresh=None
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier5>&client_id=c'
+  charset parameter = TokenSet(revision=0) value=access-1 type=Bearer scopes=('read',) expires_in_minutes=60 refresh=refresh-1
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier6>&client_id=c'
+  missing access token = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier7>&client_id=c'
+  empty access token = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier8>&client_id=c'
+  unsupported token type = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier9>&client_id=c'
+  missing token type = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier10>&client_id=c'
+  zero expiry = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=TokenExpiredError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier11>&client_id=c'
+  string expiry = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=TokenExpiredError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier12>&client_id=c'
+  boolean expiry = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=TokenExpiredError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier13>&client_id=c'
+  overflowing expiry = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=TokenExpiredError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier14>&client_id=c'
+  infinite expiry = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=TokenExpiredError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier15>&client_id=c'
+  null expiry = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=TokenExpiredError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier16>&client_id=c'
+  integer expiry beyond a float = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=TokenExpiredError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier17>&client_id=c'
+  null scope = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier18>&client_id=c'
+  empty scope = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier19>&client_id=c'
+  double-spaced scope = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier20>&client_id=c'
+  empty refresh token = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier21>&client_id=c'
+  null refresh token = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response cause=InvalidTokenResponseError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier22>&client_id=c'
+  success with an error member = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier23>&client_id=c'
+  success without JSON = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier24>&client_id=c'
+  success array = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier25>&client_id=c'
+  deeply nested success = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier26>&client_id=c'
+  repeated member = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier27>&client_id=c'
+  NaN member = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier28>&client_id=c'
+  undecodable body = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier29>&client_id=c'
+  text media = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier30>&client_id=c'
+  latin-1 charset = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier31>&client_id=c'
+  gzip coding = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier32>&client_id=c'
+  oversized body = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier33>&client_id=c'
+  invalid request = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_request
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier34>&client_id=c'
+  unauthorized client = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=unauthorized_client
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier35>&client_id=c'
+  unsupported grant = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=unsupported_grant_type
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier36>&client_id=c'
+  invalid scope = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_scope
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier37>&client_id=c'
+  invalid grant = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier38>&client_id=c'
+  unknown error code = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier39>&client_id=c'
+  error description quote = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier40>&client_id=c'
+  error uri space = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier41>&client_id=c'
+  error uri host syntax = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier42>&client_id=c'
+  error uri port = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier43>&client_id=c'
+  error uri colon segment = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier44>&client_id=c'
+  error uri second fragment = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier45>&client_id=c'
+  error uri bracket = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier46>&client_id=c'
+  relative error uri = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_request
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier47>&client_id=c'
+  error beside a token = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier48>&client_id=c'
+  error without JSON = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier49>&client_id=c'
+  deeply nested error = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier50>&client_id=c'
+  oversized error = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier51>&client_id=c'
+  invalid client = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=401 oauth_error=invalid_client
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier52>&client_id=c'
+  unauthorized invalid request = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=401 failure_kind=http_status
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier53>&client_id=c'
+  unauthorized without JSON = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=401 failure_kind=http_status cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier54>&client_id=c'
+  unauthorized oversized = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=401 failure_kind=http_status cause=ValueError
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier55>&client_id=c'
+  forbidden = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=403 failure_kind=http_status
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier56>&client_id=c'
+  rate limited = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=429 failure_kind=http_status
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier57>&client_id=c'
+  unavailable = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=503 failure_kind=http_status
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier58>&client_id=c'
+  redirect = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=302 failure_kind=http_status
+  query after a trailing question mark = https://auth.example.com/authorize?response_type=code
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier60>&client_id=c'
+  later request first = TokenSet(revision=0) value=narrow type=Bearer scopes=('read',) expires_in_minutes=None refresh=None
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier59>&client_id=c'
+  earlier request keeps its scopes = TokenSet(revision=0) value=wide type=Bearer scopes=('read', 'write') expires_in_minutes=None refresh=None
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 163] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier61>&client_id=c'
+  session expires while reading = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=read failure_kind=deadline cause=TransportError
+  connection refused = OAuthExchangeError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=connect cause=TransportError
+  refused request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  unsent connect failure = OAuthExchangeError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=connect cause=TransportError
+    borrowed transport closes=0
+  unsent claim without delivery evidence = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=connect failure_kind=transport cause=TransportError
+    borrowed transport closes=0
+  unsent phase timeout = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=connect timeout_kind=phase cause=PhaseTimeoutError
+    borrowed transport closes=0
+  unsent timeout within a short session = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=connect timeout_kind=provider cause=PhaseTimeoutError
+    borrowed transport closes=0
+  read timeout after sending = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=read failure_kind=transport cause=PhaseTimeoutError
+    borrowed transport closes=0
+  failure in an unknown phase = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=transport cause=TransportError
+    borrowed transport closes=0
+  timeout in an unknown phase = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=transport cause=TransportError
+    borrowed transport closes=0
+  timeout in an unknown phase after the session = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline cause=TransportError
+    borrowed transport closes=0
+  failure after the response started = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown failure_kind=transport cause=RuntimeError
+    borrowed transport closes=0
+  adapter programming failure = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=transport cause=RuntimeError
+    borrowed transport closes=0
+  invalid response status = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown failure_kind=transport cause=AdapterContractError
+    borrowed transport closes=0
+  body failure = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=read status_code=200 failure_kind=transport cause=TransportError
+    borrowed transport closes=0
+  reported body failure = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=200 failure_kind=transport cause=RuntimeError
+    borrowed transport closes=0
+  body arriving after the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=200 failure_kind=deadline
+    borrowed transport closes=0
+  body ending after the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=200 failure_kind=deadline
+    borrowed transport closes=0
+  close failure after a complete answer = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+    borrowed transport closes=0
+  foreign request = AuthConfigurationError condition=foreign_request field_path=('request',)
+  empty code = AuthConfigurationError condition=invalid_value field_path=('code',)
+  code outside visible ASCII = AuthConfigurationError condition=invalid_value field_path=('code',)
+  state outside ASCII = AuthConfigurationError condition=state_mismatch field_path=('returned_state',)
+  state mismatch = AuthConfigurationError condition=state_mismatch field_path=('returned_state',)
+  non-string state = AuthConfigurationError condition=state_mismatch field_path=('returned_state',)
+  exchange after refused input = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+  exchange after success = AuthStateConflictError state=SUCCEEDED delivery_state=NOT_SENT phase=unknown action=exchange_code
+  owned transport closes once = 1
+  request after close = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
+  exchange after close = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
+  request repr = AuthorizationRequest()
+  secret provider failure = AuthProviderExecutionError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown callback=get cause=RuntimeError
+    request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  secret provider auth failure = AuthConfigurationError condition=missing_value
+    request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  secret of another kind = AuthConfigurationError condition=invalid_material field_path=('client_secret',)
+    request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  secret outside visible ASCII = AuthConfigurationError condition=invalid_material field_path=('client_secret',)
+    request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  secret coroutine = AuthConfigurationError condition=invalid_material field_path=('client_secret',)
+    request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  secret outlives the session = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider
+    request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  interrupted send = KeyboardInterrupt
+    request again = AuthStateConflictError state=UNCERTAIN delivery_state=NOT_SENT phase=unknown action=exchange_code
+  interrupted secret = KeyboardInterrupt
+    request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  concurrent exchange = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=exchange_code
+    first exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Yzphc3luYytzZWNyZXQ=, content-length: 151] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier63>'
+  async exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=('read',) expires_in_minutes=60 refresh=refresh-1
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Yzphc3luYytzZWNyZXQ=, content-length: 151] b'grant_type=authorization_code&code=code&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&code_verifier=<verifier64>'
+  async invalid grant = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant
+  async injected answer = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+  async body failure = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=read status_code=200 failure_kind=transport cause=PhaseTimeoutError
+  async oversized body = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response cause=ValueError
+  async close failure = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+  async send failure = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=read failure_kind=transport cause=PhaseTimeoutError
+  async secret failure = AuthProviderExecutionError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown callback=get cause=RuntimeError
+  async secret outlives the session = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider cause=TimeoutError
+  async body slower than the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown failure_kind=deadline cause=TimeoutError
+  async slow secret = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider cause=TimeoutError
+    stopped at the session deadline = True
+  async concurrent exchange = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=exchange_code
+    first exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+  async session expires while sending = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline cause=TimeoutError
+  async cancelled exchange = CancelledError
+    request again = AuthStateConflictError state=UNCERTAIN delivery_state=NOT_SENT phase=unknown action=exchange_code
+  async owned transport closes once = 1
+  async exchange after close = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
+  loop other than the constructing one = UnsupportedAsyncBackendError loop_mismatch=True
+  without a running asyncio loop = UnsupportedAsyncBackendError
+  first loop = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+  another loop = UnsupportedAsyncBackendError loop_mismatch=True

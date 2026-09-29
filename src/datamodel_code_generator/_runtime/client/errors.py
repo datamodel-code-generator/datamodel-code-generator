@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from enum import Enum
-from typing import ClassVar, Final, Generic, Literal, TypeAlias
+from typing import ClassVar, Final, Generic, Literal, TypeAlias, get_args
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -42,9 +42,42 @@ IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
 DeadlinePhase: TypeAlias = Literal[
     "encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"
 ]
+AuthPhase: TypeAlias = Literal[
+    "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+]
+OAuthErrorCode: TypeAlias = Literal[
+    "invalid_request",
+    "invalid_client",
+    "invalid_grant",
+    "unauthorized_client",
+    "unsupported_grant_type",
+    "invalid_scope",
+]
+AuthTimeoutKind: TypeAlias = Literal["phase", "provider"]
+AuthFailureKind: TypeAlias = Literal[
+    "transport", "deadline", "http_status", "malformed_response", "invalid_token_response", "stopped"
+]
+ReauthorizationCondition: TypeAlias = Literal[
+    "invalid_grant", "missing_token", "no_refresh_token", "unusable_loaded_token"
+]
+AuthAction: TypeAlias = Literal[
+    "get",
+    "refresh",
+    "retry_store",
+    "replace_token_set",
+    "reload_token_set",
+    "exchange_code",
+    "begin",
+    "poll",
+    "close",
+    "aclose",
+]
 
 _CONDITION: Final = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _ACRONYM: Final = re.compile(r"([A-Z]+)([A-Z][a-z])")
+OAUTH_ERROR_CODES: Final[tuple[str, ...]] = get_args(OAuthErrorCode)
+MIN_STATUS: Final = 100
+MAX_STATUS: Final = 599
 _CAMEL: Final = re.compile(r"([a-z0-9])([A-Z])")
 
 
@@ -62,6 +95,7 @@ class SDKError(Exception):
     __slots__ = ("_counters",)
 
     _counters: tuple[int, int, int, int, int, int, tuple[str, ...], int, int | None]
+    _reason_code: ClassVar[str | None] = None
 
     def __init__(  # noqa: PLR0913
         self,
@@ -152,7 +186,7 @@ class SDKError(Exception):
     @property
     def reason_code(self) -> str:
         """Return the snake_case name of the exception class."""
-        return _CAMEL.sub(r"\1_\2", _ACRONYM.sub(r"\1_\2", type(self).__name__)).lower()
+        return self._reason_code or _CAMEL.sub(r"\1_\2", _ACRONYM.sub(r"\1_\2", type(self).__name__)).lower()
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (("operation_id", self.operation_id), ("call_id", self.call_id))
@@ -242,6 +276,13 @@ def _error_time(value: object, field: str, *, nonnegative: bool = True) -> float
             pass
     msg = f"{field} must be a finite number in its permitted range"
     raise ValueError(msg)
+
+
+def _error_status(value: object) -> int:
+    if type(value) is not int or not MIN_STATUS <= value <= MAX_STATUS:
+        msg = "status_code must be an HTTP status code"
+        raise ValueError(msg)
+    return value
 
 
 def _error_count(value: object, field: str) -> int:
@@ -633,9 +674,7 @@ class AuthRefreshError(SDKError):
         refresh_id: str | None = None,
         state: str = "UNKNOWN",
         delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: Literal[
-            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
-        ] = "unknown",
+        phase: AuthPhase = "unknown",
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -656,7 +695,7 @@ class AuthRefreshError(SDKError):
         _error_choice(state, self._states, "state")
         _error_choice(
             phase,
-            ("admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"),
+            get_args(AuthPhase),
             "phase",
         )
         super().__init__(
@@ -680,9 +719,7 @@ class AuthRefreshError(SDKError):
         self._refresh_id = _error_identifier(refresh_id, "refresh_id")
         self._state = state
         self._delivery_state = _error_delivery(delivery_state)
-        self._phase: Literal[
-            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
-        ] = phase
+        self._phase: AuthPhase = phase
 
     @property
     def provider_id(self) -> str | None:
@@ -707,7 +744,7 @@ class AuthRefreshError(SDKError):
     @property
     def phase(
         self,
-    ) -> Literal["admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"]:
+    ) -> AuthPhase:
         """Return the credential acquisition phase that failed."""
         return self._phase
 
@@ -733,9 +770,7 @@ class AuthProviderExecutionError(AuthRefreshError):
         refresh_id: str | None = None,
         state: str = "UNKNOWN",
         delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: Literal[
-            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
-        ] = "unknown",
+        phase: AuthPhase = "unknown",
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -798,9 +833,7 @@ class InsufficientScopeError(AuthRefreshError):
         refresh_id: str | None = None,
         state: str = "UNKNOWN",
         delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: Literal[
-            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
-        ] = "unknown",
+        phase: AuthPhase = "unknown",
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -875,9 +908,7 @@ class TokenExpiredError(AuthRefreshError):
         refresh_id: str | None = None,
         state: str = "UNKNOWN",
         delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: Literal[
-            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
-        ] = "unknown",
+        phase: AuthPhase = "unknown",
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -935,6 +966,370 @@ class TokenExpiredError(AuthRefreshError):
         return (*super()._details(), ("condition", self.condition))
 
 
+class OAuthExchangeError(AuthRefreshError):
+    """A token endpoint rejected an exchange, or an exchange failed where the SDK may try again later."""
+
+    __slots__ = ("_oauth_error", "_status_code")
+
+    _reason_code = "oauth_exchange_error"
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        status_code: int | None = None,
+        oauth_error: OAuthErrorCode | None = None,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the obtained status and the standard OAuth error code, never the endpoint's descriptions."""
+        if status_code is not None:
+            _error_status(status_code)
+        if oauth_error is not None:
+            _error_choice(oauth_error, OAUTH_ERROR_CODES, "oauth_error")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._status_code = status_code
+        self._oauth_error: OAuthErrorCode | None = oauth_error
+
+    @property
+    def status_code(self) -> int | None:
+        """Return the token endpoint's status, or None without an HTTP response."""
+        return self._status_code
+
+    @property
+    def oauth_error(
+        self,
+    ) -> OAuthErrorCode | None:
+        """Return the standard OAuth error code, or None without one."""
+        return self._oauth_error
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("status_code", self.status_code), ("oauth_error", self.oauth_error))
+
+
+class AuthTimeoutError(AuthRefreshError):
+    """A token endpoint exchange ran out of time before anything was sent, or its provider session expired."""
+
+    __slots__ = ("_effective_timeout", "_timeout_kind")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        effective_timeout: float,
+        timeout_kind: AuthTimeoutKind,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the timeout that fired and whether it bounded one phase or the whole provider session."""
+        seconds = _error_time(effective_timeout, "effective_timeout")
+        _error_choice(timeout_kind, get_args(AuthTimeoutKind), "timeout_kind")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._effective_timeout = seconds
+        self._timeout_kind: AuthTimeoutKind = timeout_kind
+
+    @property
+    def effective_timeout(self) -> float:
+        """Return the timeout in seconds that fired."""
+        return self._effective_timeout
+
+    @property
+    def timeout_kind(self) -> AuthTimeoutKind:
+        """Return whether one phase or the whole provider session timed out."""
+        return self._timeout_kind
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("timeout_kind", self.timeout_kind))
+
+
+class AuthStateUncertainError(AuthRefreshError):
+    """A consumable credential may have been used by an exchange whose outcome is unknown, so it is never reused."""
+
+    __slots__ = ("_failure_kind", "_status_code")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        failure_kind: AuthFailureKind,
+        status_code: int | None = None,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the category that left the exchange's outcome unknown and any status obtained, never the body."""
+        _error_choice(
+            failure_kind,
+            get_args(AuthFailureKind),
+            "failure_kind",
+        )
+        if status_code is not None:
+            _error_status(status_code)
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._failure_kind: AuthFailureKind = failure_kind
+        self._status_code = status_code
+
+    @property
+    def failure_kind(
+        self,
+    ) -> AuthFailureKind:
+        """Return the category that left the outcome unknown."""
+        return self._failure_kind
+
+    @property
+    def status_code(self) -> int | None:
+        """Return the token endpoint's status, or None without a complete response."""
+        return self._status_code
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("failure_kind", self.failure_kind), ("status_code", self.status_code))
+
+
+class AuthReauthorizationRequiredError(AuthRefreshError):
+    """The credential cannot be renewed without a new authorization by its owner."""
+
+    __slots__ = ("_condition",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        condition: ReauthorizationCondition,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep why a new authorization is required."""
+        _error_choice(condition, get_args(ReauthorizationCondition), "condition")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._condition: ReauthorizationCondition = condition
+
+    @property
+    def condition(self) -> ReauthorizationCondition:
+        """Return why a new authorization is required."""
+        return self._condition
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("condition", self.condition))
+
+
+class AuthStateConflictError(AuthRefreshError):
+    """An explicit OAuth operation is not permitted in the provider's or flow's current state."""
+
+    __slots__ = ("_action",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        action: AuthAction,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the refused operation; the state names where the provider or flow stood."""
+        _error_choice(action, get_args(AuthAction), "action")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._action: AuthAction = action
+
+    @property
+    def action(
+        self,
+    ) -> AuthAction:
+        """Return the refused operation."""
+        return self._action
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("action", self.action))
+
+
 class AuthProviderClosedError(AuthRefreshError):
     """The provider is closing or closed and cannot supply credentials."""
 
@@ -949,9 +1344,7 @@ class AuthProviderClosedError(AuthRefreshError):
         refresh_id: str | None = None,
         state: Literal["CLOSED", "CLOSING"] = "CLOSED",
         delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: Literal[
-            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
-        ] = "unknown",
+        phase: AuthPhase = "unknown",
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,

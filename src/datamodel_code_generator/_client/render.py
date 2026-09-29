@@ -168,12 +168,21 @@ _AUTH_NAMES: Final = (
     "StaticTokenProvider",
     "TokenVersion",
 )
+_OAUTH_NAMES: Final = (
+    "AsyncAuthorizationCodeFlow",
+    "AuthorizationCodeFlow",
+    "AuthorizationRequest",
+    "OAuthProviderOptions",
+    "TokenSet",
+)
 _AUTH: Final = (
-    '"""Explicit credential providers and request signers for this package."""\n\n'
+    '"""Explicit credential providers, request signers, and OAuth flows for this package."""\n\n'
     "from ._runtime.client.auth import (\n"
     + "".join(f"    {name},\n" for name in _AUTH_NAMES)
+    + ")\nfrom ._runtime.client.grants import (\n"
+    + "".join(f"    {name},\n" for name in _OAUTH_NAMES)
     + ")\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in _AUTH_NAMES)
+    + "".join(f"    {name!r},\n" for name in sorted((*_AUTH_NAMES, *_OAUTH_NAMES)))
     + "]\n"
 )
 _ERROR_NAMES: Final = (
@@ -182,7 +191,11 @@ _ERROR_NAMES: Final = (
     "AuthConfigurationError",
     "AuthProviderClosedError",
     "AuthProviderExecutionError",
+    "AuthReauthorizationRequiredError",
     "AuthRefreshError",
+    "AuthStateConflictError",
+    "AuthStateUncertainError",
+    "AuthTimeoutError",
     "BodyChangedError",
     "BodyFactoryError",
     "BodyNotReplayableError",
@@ -200,6 +213,7 @@ _ERROR_NAMES: Final = (
     "IOPhase",
     "InsufficientScopeError",
     "LimiterExecutionError",
+    "OAuthExchangeError",
     "PhaseTimeoutError",
     "ProtocolDataError",
     "ProtocolError",
@@ -2191,9 +2205,13 @@ never implicitly spooled. A part factory's digest cannot establish the whole mul
 
 Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
-their potentially sensitive messages. Builtin OAuth flows, token persistence, shared refresh, Basic
-charset overrides, resource audience metadata, and generated OAuth factories are not available yet.
-Providers are explicit.
+their potentially sensitive messages.
+
+`AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` create PKCE S256 authorization requests without I/O and
+exchange each request's code once, without redirects or retries, through a token transport of their own that must
+verify TLS. They never open a browser; the returned `TokenSet` omits its tokens from repr. Device authorization, client
+credentials, refresh-token providers, token persistence, shared refresh, Basic charset overrides, resource audience
+metadata, and generated OAuth factories are not available yet. Providers are explicit.
 
 ## Counters and cleanup
 

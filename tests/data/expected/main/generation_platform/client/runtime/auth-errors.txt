@@ -231,11 +231,195 @@
   undeclared AuthProviderClosedError.oauth_error TypeError secondary []
   undeclared AuthProviderClosedError.retry_stop_reason TypeError secondary []
   positional AuthProviderClosedError TypeError secondary []
+  family OAuthExchangeError bases=('AuthRefreshError',) code=oauth_exchange_error
+  signature OAuthExchangeError keyword-only=True required=()
+  hints OAuthExchangeError ('status_code', 'oauth_error', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults OAuthExchangeError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('status_code', None), ('oauth_error', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  metadata OAuthExchangeError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
+  supplied OAuthExchangeError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('status_code', None), ('oauth_error', None))
+  safe OAuthExchangeError True text="OAuthExchangeError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate')"
+  readonly OAuthExchangeError.resource_attempt_count AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.redirect_count AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.auth_exchange_count AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.network_send_count AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.network_send_budget_used AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.auth_refresh_ids AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.auth_refresh_pending AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.wire_send_count AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.provider_id AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.refresh_id AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.state AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.delivery_state AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.phase AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.status_code AttributeError secondary [] unchanged=True
+  readonly OAuthExchangeError.oauth_error AttributeError secondary [] unchanged=True
+  property hints OAuthExchangeError.provider_id ('return',)
+  property hints OAuthExchangeError.refresh_id ('return',)
+  property hints OAuthExchangeError.state ('return',)
+  property hints OAuthExchangeError.delivery_state ('return',)
+  property hints OAuthExchangeError.phase ('return',)
+  property hints OAuthExchangeError.status_code ('return',)
+  property hints OAuthExchangeError.oauth_error ('return',)
+  undeclared OAuthExchangeError.message TypeError secondary []
+  undeclared OAuthExchangeError.status_code ValueError secondary []
+  undeclared OAuthExchangeError.oauth_error ValueError secondary []
+  undeclared OAuthExchangeError.retry_stop_reason TypeError secondary []
+  positional OAuthExchangeError TypeError secondary []
+  family AuthTimeoutError bases=('AuthRefreshError',) code=auth_timeout_error
+  signature AuthTimeoutError keyword-only=True required=('effective_timeout', 'timeout_kind')
+  hints AuthTimeoutError ('effective_timeout', 'timeout_kind', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthTimeoutError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('effective_timeout', 5.0), ('timeout_kind', 'phase')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  metadata AuthTimeoutError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
+  supplied AuthTimeoutError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('effective_timeout', 5.0), ('timeout_kind', 'phase'))
+  safe AuthTimeoutError True text="AuthTimeoutError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', timeout_kind='phase')"
+  readonly AuthTimeoutError.resource_attempt_count AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.redirect_count AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.auth_exchange_count AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.network_send_count AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.network_send_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.auth_refresh_ids AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.auth_refresh_pending AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.wire_send_count AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.provider_id AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.refresh_id AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.state AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.delivery_state AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.phase AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.effective_timeout AttributeError secondary [] unchanged=True
+  readonly AuthTimeoutError.timeout_kind AttributeError secondary [] unchanged=True
+  property hints AuthTimeoutError.provider_id ('return',)
+  property hints AuthTimeoutError.refresh_id ('return',)
+  property hints AuthTimeoutError.state ('return',)
+  property hints AuthTimeoutError.delivery_state ('return',)
+  property hints AuthTimeoutError.phase ('return',)
+  property hints AuthTimeoutError.effective_timeout ('return',)
+  property hints AuthTimeoutError.timeout_kind ('return',)
+  undeclared AuthTimeoutError.message TypeError secondary []
+  undeclared AuthTimeoutError.status_code TypeError secondary []
+  undeclared AuthTimeoutError.oauth_error TypeError secondary []
+  undeclared AuthTimeoutError.retry_stop_reason TypeError secondary []
+  positional AuthTimeoutError TypeError secondary []
+  family AuthStateUncertainError bases=('AuthRefreshError',) code=auth_state_uncertain_error
+  signature AuthStateUncertainError keyword-only=True required=('failure_kind',)
+  hints AuthStateUncertainError ('failure_kind', 'status_code', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthStateUncertainError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('failure_kind', 'transport'), ('status_code', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  metadata AuthStateUncertainError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
+  supplied AuthStateUncertainError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('failure_kind', 'transport'), ('status_code', None))
+  safe AuthStateUncertainError True text="AuthStateUncertainError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', failure_kind='transport')"
+  readonly AuthStateUncertainError.resource_attempt_count AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.redirect_count AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.auth_exchange_count AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.network_send_count AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.network_send_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.auth_refresh_ids AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.auth_refresh_pending AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.wire_send_count AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.provider_id AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.refresh_id AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.state AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.delivery_state AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.phase AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.failure_kind AttributeError secondary [] unchanged=True
+  readonly AuthStateUncertainError.status_code AttributeError secondary [] unchanged=True
+  property hints AuthStateUncertainError.provider_id ('return',)
+  property hints AuthStateUncertainError.refresh_id ('return',)
+  property hints AuthStateUncertainError.state ('return',)
+  property hints AuthStateUncertainError.delivery_state ('return',)
+  property hints AuthStateUncertainError.phase ('return',)
+  property hints AuthStateUncertainError.failure_kind ('return',)
+  property hints AuthStateUncertainError.status_code ('return',)
+  undeclared AuthStateUncertainError.message TypeError secondary []
+  undeclared AuthStateUncertainError.status_code ValueError secondary []
+  undeclared AuthStateUncertainError.oauth_error TypeError secondary []
+  undeclared AuthStateUncertainError.retry_stop_reason TypeError secondary []
+  positional AuthStateUncertainError TypeError secondary []
+  family AuthReauthorizationRequiredError bases=('AuthRefreshError',) code=auth_reauthorization_required_error
+  signature AuthReauthorizationRequiredError keyword-only=True required=('condition',)
+  hints AuthReauthorizationRequiredError ('condition', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthReauthorizationRequiredError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('condition', 'invalid_grant')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  metadata AuthReauthorizationRequiredError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
+  supplied AuthReauthorizationRequiredError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('condition', 'invalid_grant'))
+  safe AuthReauthorizationRequiredError True text="AuthReauthorizationRequiredError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', condition='invalid_grant')"
+  readonly AuthReauthorizationRequiredError.resource_attempt_count AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.redirect_count AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.auth_exchange_count AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.network_send_count AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.network_send_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.auth_refresh_ids AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.auth_refresh_pending AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.wire_send_count AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.provider_id AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.refresh_id AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.state AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.delivery_state AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.phase AttributeError secondary [] unchanged=True
+  readonly AuthReauthorizationRequiredError.condition AttributeError secondary [] unchanged=True
+  property hints AuthReauthorizationRequiredError.provider_id ('return',)
+  property hints AuthReauthorizationRequiredError.refresh_id ('return',)
+  property hints AuthReauthorizationRequiredError.state ('return',)
+  property hints AuthReauthorizationRequiredError.delivery_state ('return',)
+  property hints AuthReauthorizationRequiredError.phase ('return',)
+  property hints AuthReauthorizationRequiredError.condition ('return',)
+  undeclared AuthReauthorizationRequiredError.message TypeError secondary []
+  undeclared AuthReauthorizationRequiredError.status_code TypeError secondary []
+  undeclared AuthReauthorizationRequiredError.oauth_error TypeError secondary []
+  undeclared AuthReauthorizationRequiredError.retry_stop_reason TypeError secondary []
+  positional AuthReauthorizationRequiredError TypeError secondary []
+  family AuthStateConflictError bases=('AuthRefreshError',) code=auth_state_conflict_error
+  signature AuthStateConflictError keyword-only=True required=('action',)
+  hints AuthStateConflictError ('action', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthStateConflictError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('action', 'exchange_code')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  metadata AuthStateConflictError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
+  supplied AuthStateConflictError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('action', 'exchange_code'))
+  safe AuthStateConflictError True text="AuthStateConflictError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', action='exchange_code')"
+  readonly AuthStateConflictError.resource_attempt_count AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.redirect_count AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.auth_exchange_count AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.network_send_count AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.network_send_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.auth_refresh_ids AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.auth_refresh_pending AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.wire_send_count AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.provider_id AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.refresh_id AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.state AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.delivery_state AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.phase AttributeError secondary [] unchanged=True
+  readonly AuthStateConflictError.action AttributeError secondary [] unchanged=True
+  property hints AuthStateConflictError.provider_id ('return',)
+  property hints AuthStateConflictError.refresh_id ('return',)
+  property hints AuthStateConflictError.state ('return',)
+  property hints AuthStateConflictError.delivery_state ('return',)
+  property hints AuthStateConflictError.phase ('return',)
+  property hints AuthStateConflictError.action ('return',)
+  undeclared AuthStateConflictError.message TypeError secondary []
+  undeclared AuthStateConflictError.status_code TypeError secondary []
+  undeclared AuthStateConflictError.oauth_error TypeError secondary []
+  undeclared AuthStateConflictError.retry_stop_reason TypeError secondary []
+  positional AuthStateConflictError TypeError secondary []
   closed inherited state default='CLOSED'
   closed state omitted = AuthProviderClosedError: AuthProviderClosedError(state='CLOSED', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown'] auth_provider_closed_error
   missing required AuthProviderExecutionError TypeError secondary []
   missing required InsufficientScopeError TypeError secondary []
   missing required TokenExpiredError TypeError secondary []
+  missing required AuthTimeoutError TypeError secondary []
+  missing required AuthStateUncertainError TypeError secondary []
+  missing required AuthReauthorizationRequiredError TypeError secondary []
+  missing required AuthStateConflictError TypeError secondary []
+  oauth values OAuthExchangeError {'status_code': 400, 'oauth_error': 'invalid_client'} returned "OAuthExchangeError(state='UNKNOWN', delivery_state='MAYBE_SENT', phase='unknown', status_code=400, oauth_error='invalid_client')"
+  oauth values OAuthExchangeError {'status_code': 600} ValueError secondary []
+  oauth values OAuthExchangeError {'status_code': True} ValueError secondary []
+  oauth values OAuthExchangeError {'oauth_error': 'slow_down'} ValueError secondary []
+  oauth values AuthTimeoutError {'effective_timeout': -1.0, 'timeout_kind': 'phase'} ValueError secondary []
+  oauth values AuthTimeoutError {'effective_timeout': 1.0, 'timeout_kind': 'total'} ValueError secondary []
+  oauth values AuthStateUncertainError {'failure_kind': 'unknown'} ValueError secondary []
+  oauth values AuthReauthorizationRequiredError {'condition': 'expired'} ValueError secondary []
+  oauth values AuthStateConflictError {'action': 'delete'} ValueError secondary []
   auth state UNKNOWN = 'UNKNOWN'
   closed rejects UNKNOWN ! ValueError: state must be one of its declared values []
   auth state UNINITIALIZED = 'UNINITIALIZED'

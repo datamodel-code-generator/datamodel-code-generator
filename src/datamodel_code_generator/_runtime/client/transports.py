@@ -6,6 +6,7 @@ The clients send through HTTPX2 unless a transport adapter is given; an adapter 
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import AsyncIterator, Iterator  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
 from time import monotonic, time
@@ -14,7 +15,7 @@ from typing import TYPE_CHECKING, Final, Generic, Protocol, get_args
 from typing_extensions import TypeIs, TypeVar
 
 from .bodies import AsyncBodyAttempt, BodyAttempt  # noqa: TC001 - Public annotations support get_type_hints().
-from .errors import IOPhase
+from .errors import MAX_STATUS, MIN_STATUS, IOPhase
 from .responses import HeadersView
 from .timing import (
     CancelToken,
@@ -43,8 +44,6 @@ AttemptT_co = TypeVar("AttemptT_co", bound="BodyAttempt | AsyncBodyAttempt", cov
 AdapterT_co = TypeVar("AdapterT_co", bound="TransportAdapter | AsyncTransportAdapter", covariant=True)
 
 PHASES: Final[frozenset[str]] = frozenset(get_args(IOPhase))
-_MIN_STATUS: Final = 100
-_MAX_STATUS: Final = 599
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -210,7 +209,7 @@ class AttemptTrace:
             not isinstance(http_version, str)
             or not http_version
             or type(status_code) is not int
-            or not _MIN_STATUS <= status_code <= _MAX_STATUS
+            or not MIN_STATUS <= status_code <= MAX_STATUS
             or not isinstance(headers, HeadersView)
         ):
             self.broken = True
@@ -307,6 +306,19 @@ class AsyncTransportAdapter(Protocol):
     def capabilities(self) -> TransportCapabilities:
         """Return what the adapter declares about retries, delivery evidence, and HTTP versions."""
         ...
+
+
+def is_adapter(value: object) -> TypeIs[TransportAdapter]:
+    """Recognize a synchronous adapter by its methods, before its capabilities are checked."""
+    send, close = getattr(value, "send", None), getattr(value, "close", None)
+    return callable(send) and callable(close) and not inspect.iscoroutinefunction(send)
+
+
+def is_async_adapter(value: object) -> TypeIs[AsyncTransportAdapter]:
+    """Recognize an asyncio adapter by its coroutine methods, before its capabilities are checked."""
+    return inspect.iscoroutinefunction(getattr(value, "send", None)) and inspect.iscoroutinefunction(
+        getattr(value, "aclose", None)
+    )
 
 
 @dataclass(frozen=True, slots=True)

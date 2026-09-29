@@ -1310,5 +1310,68 @@ hook events. A credential or signature placed in the query is part of the reques
 on its `httpx2` logger, so keep that logger above INFO wherever URLs must stay private. Errors retain safe metadata,
 common send/attempt counters, and causes without automatically formatting secret-bearing callback messages.
 Applications must apply their own policy before explicitly inspecting those causes.
-Builtin OAuth flows, token HTTP clients, token persistence, shared refresh, Basic charset overrides, resource audience
-metadata, and generated OAuth provider factories are not available yet; applications construct providers explicitly.
+
+### Exchange an authorization code
+
+`AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` implement the OAuth authorization code grant with PKCE S256
+for applications that obtain the code themselves. `authorization_request(redirect_uri, scopes)` performs no I/O: it
+creates a fresh state and code verifier and returns the authorization URL for the application to open. The SDK never
+opens a browser or listens for the redirect. `exchange_code(code, returned_state, request)` compares the returned state
+in constant time, sends one token request, and returns a `TokenSet` whose repr omits both tokens.
+
+```python
+from pets.auth import AccessToken, AuthorizationCodeFlow, AuthorizationRequest
+
+
+def login_flow() -> AuthorizationCodeFlow:
+    return AuthorizationCodeFlow(
+        "https://auth.example.com/authorize",
+        "https://auth.example.com/token",
+        client_id="pets-cli",
+        client_auth_method="none",
+    )
+
+
+def begin_login(flow: AuthorizationCodeFlow) -> AuthorizationRequest:
+    return flow.authorization_request("http://127.0.0.1:8400/callback", ("pets.read",))
+
+
+def finish_login(flow: AuthorizationCodeFlow, request: AuthorizationRequest, code: str, state: str) -> AccessToken:
+    return flow.exchange_code(code, state, request).access_token
+```
+
+A request belongs to the flow that created it and allows one exchange. A mismatched state, or a code that is empty or
+not visible ASCII, is refused with `AuthConfigurationError` before the request is used; the first exchange then
+consumes it whatever the outcome, and a later one raises `AuthStateConflictError`. The requested scopes, in canonical
+order, become the token's scopes when the token response omits its `scope` member. The authorization URL may carry
+its own query, but not the parameters the flow adds.
+
+`client_secret_basic` (the default) and `client_secret_post` take a `client_secret` provider returning an
+`ApiKeyCredential` of visible ASCII; it is called once per exchange with a context naming the token endpoint's origin
+and the scheme `oauth_client_secret`. `none` sends only the client id. Both endpoints must be HTTPS; plain HTTP to a
+loopback host requires `OAuthProviderOptions(allow_insecure_loopback=True)`.
+
+Token requests use a transport the flow owns, separate from every client: an HTTPX2 client created at the first
+exchange from `OAuthProviderOptions.transport`, or an adapter passed as `token_transport`, which is borrowed unless
+wrapped in `OwnedTransportAdapter`. Its settings must verify certificates and host names and leave retries to the
+SDK, and an injected adapter must declare `internal_retry_limit=0`. Token requests never follow redirects or retry,
+and closing the flow, or leaving its `with` block, closes an owned transport. `refresh_timeout` (30 seconds by default)
+bounds each exchange, the client secret lookup included, independently of any resource call; the synchronous flow
+checks it when the secret provider returns and at each response chunk. `phase_timeout` caps connecting, reading,
+writing, and pool waits at 5, 15, 15, and 5 seconds unless overridden. The async flow binds to the event loop it was created on, or else to the
+first one that exchanges a code.
+
+`invalid_grant` raises `AuthReauthorizationRequiredError`. Another RFC 6749 error code in a 400 response, or
+`invalid_client` in a 401, raises `OAuthExchangeError` with its `oauth_error`. A client secret provider's failure
+raises its own auth error or `AuthProviderExecutionError`, and a failure proven to happen before sending raises
+`OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran out; none of them sent the code, but the request is
+still used. When the endpoint may have issued tokens that did not arrive intact (a transport failure after sending, the
+session deadline, an unexpected status, or a malformed or unusable response), `AuthStateUncertainError` reports the
+`failure_kind`, and the application starts a new authorization. Only a transport that declares delivery evidence can
+prove that a failed request was never sent. Responses are read up to 64 KiB and must be UTF-8 JSON objects. Errors
+keep no response body or error description, but a transport failure's cause is the native exception, which can hold
+the token request and its client authentication, so apply your own policy before logging causes.
+
+Device authorization, client credentials, refresh-token providers, token persistence, shared refresh, Basic charset
+overrides, resource audience metadata, and generated OAuth provider factories are not available yet; applications
+construct providers explicitly.

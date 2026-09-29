@@ -38,6 +38,11 @@ _FAMILIES = (
     ),
     ("TokenExpiredError", {"condition": "expired"}, ("condition", "expires_at")),
     ("AuthProviderClosedError", {"state": "CLOSED"}, ()),
+    ("OAuthExchangeError", {}, ("status_code", "oauth_error")),
+    ("AuthTimeoutError", {"effective_timeout": 5.0, "timeout_kind": "phase"}, ("effective_timeout", "timeout_kind")),
+    ("AuthStateUncertainError", {"failure_kind": "transport"}, ("failure_kind", "status_code")),
+    ("AuthReauthorizationRequiredError", {"condition": "invalid_grant"}, ("condition",)),
+    ("AuthStateConflictError", {"action": "exchange_code"}, ("action",)),
 )
 
 
@@ -122,8 +127,28 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
     parameters = signature(errors.AuthProviderClosedError).parameters
     lines.append(f"  closed inherited state default={parameters['state'].default!r}")
     record(lines, "closed state omitted", errors.AuthProviderClosedError)
-    for name in ("AuthProviderExecutionError", "InsufficientScopeError", "TokenExpiredError"):
+    for name in (
+        "AuthProviderExecutionError",
+        "InsufficientScopeError",
+        "TokenExpiredError",
+        "AuthTimeoutError",
+        "AuthStateUncertainError",
+        "AuthReauthorizationRequiredError",
+        "AuthStateConflictError",
+    ):
         lines.append(f"  missing required {name} {outcome(getattr(errors, name))}")
+    for name, values in (
+        ("OAuthExchangeError", {"status_code": 400, "oauth_error": "invalid_client"}),
+        ("OAuthExchangeError", {"status_code": 600}),
+        ("OAuthExchangeError", {"status_code": True}),
+        ("OAuthExchangeError", {"oauth_error": "slow_down"}),
+        ("AuthTimeoutError", {"effective_timeout": -1.0, "timeout_kind": "phase"}),
+        ("AuthTimeoutError", {"effective_timeout": 1.0, "timeout_kind": "total"}),
+        ("AuthStateUncertainError", {"failure_kind": "unknown"}),
+        ("AuthReauthorizationRequiredError", {"condition": "expired"}),
+        ("AuthStateConflictError", {"action": "delete"}),
+    ):
+        lines.append(f"  oauth values {name} {values} {outcome(lambda name=name, values=values: str(getattr(errors, name)(**values)))}")
 
 
 def _validation(errors: ModuleType, lines: list[str]) -> None:
