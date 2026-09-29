@@ -1535,27 +1535,39 @@ A refresh that may have spent its refresh token stops the family: `invalid_grant
 `EXCHANGE_REJECTED` state, and any other answer, an unusable one, or a lost request `AuthStateUncertainError` in the
 `UNCERTAIN` state, as does a refresh still running a second after its `refresh_timeout`. Every later `get` and `refresh`
 raises a new instance of that error without a request, until `replace_token_set` adopts a token set of a higher
-revision; it refuses one whose refresh token the family spent, or that has neither a refresh token nor an unexpired
-access token, with `AuthConfigurationError`. A new authorization's token set has revision 0, and the family's current
-revision is not exposed, so a stopped family is restarted with a new provider from that token set. A refresh that
-provably sent nothing, as when the client secret provider fails, raises its error in the `FAILED_NOT_SENT` state and
-leaves the family as it was, so the next call sends the same refresh token. A token set without a refresh token serves
-its access token until it expires or a resource rejects it, then stops the family with
-`AuthReauthorizationRequiredError`, as a forced `refresh` does at once.
+revision, or `reload_token_set` loads one; `replace_token_set` refuses one whose refresh token the family spent, or that
+has neither a refresh token nor an unexpired access token, with `AuthConfigurationError`. A new authorization's token
+set has revision 0; without a load, which returns the current token set, the family's revision is not exposed, so a
+stopped family is restarted with a new provider from that token set. A refresh that provably sent nothing, as when the
+client secret provider fails, raises its error in the `FAILED_NOT_SENT` state and leaves the family as it was, so the
+next call sends the same refresh token. A token set without a refresh token serves its access token until it expires or
+a resource rejects it, then stops the family with `AuthReauthorizationRequiredError`, as a forced `refresh` does at
+once.
 
 Concurrent callers, `OAuthProviderOptions`, snapshots, call accounting, and closing follow the client credentials
-provider. `replace_token_set` raises `AuthStateConflictError` while a refresh runs or once the provider is closing; its
-`persist` argument has no effect without a token store.
+provider. `replace_token_set` raises `AuthStateConflictError` while a refresh, load, or reload runs, or once the
+provider is closing; its `persist` argument has no effect without a token store.
 
-`TokenLoad` and `TokenStore`, with `AsyncTokenLoad` and `AsyncTokenStore`, declare the callbacks that will persist a
-token family, each bound to the storage namespace of one family: `load(context)` returns the stored `TokenSet` or None,
-and `store(token_set, expected_revision=..., context=...)` saves it durably only if the stored revision is
+`TokenLoad` and `TokenStore`, with `AsyncTokenLoad` and `AsyncTokenStore`, are the callbacks that persist a token
+family, each bound to the storage namespace of one family: `load(context)` returns the stored `TokenSet` or None, and
+`store(token_set, expected_revision=..., context=...)` saves it durably only if the stored revision is
 `expected_revision`, or if nothing is stored for None, treating an identical stored token set as success and raising
 `AuthTokenStoreConflictError` on any other conflict. Their `TokenPersistenceContext` names the provider, the session,
 its deadline, the `purpose`, and the `cache_key` fingerprinting the family's configuration without tokens or secrets;
-the key alone is no global store key, since families of different users share it. A failed load is reported as
-`AuthTokenLoadError`, a failed or unknown store as `AuthTokenStoreError`, and a revision conflict of a store, or of a
-load against the current token set, as `AuthTokenStoreConflictError` with the `observed_revision` when known.
+the key alone is no global store key, since families of different users share it.
 
-Persisting through these callbacks, Basic charset overrides, resource audience metadata, and generated OAuth provider
+A provider needs a `token_set`, a `load`, or both. With a load, the first call loads the persisted token set once, in a
+session of the provider's own that no call pays for, and keeps the newer of it and the constructor's token set by
+revision; callers arriving meanwhile wait for that load. A failing load, or a stored token set that differs from the
+constructor's at the same revision, stops the family in the `LOAD_FAILED` state with `AuthTokenLoadError` or
+`AuthTokenStoreConflictError`, without loading again by itself; a newer token set that can never serve is made current
+and stops the family with `AuthReauthorizationRequiredError`, as does a family with no token set at all.
+`reload_token_set()` loads once more, or raises `AuthStateConflictError` while a refresh, load, or reload runs,
+including one whose session ended before its work returned, or once the provider is closing. It makes a newer token set
+current unless that brings back a spent refresh token, recovering a family that failed its load or stopped once the
+token set can serve; a family a refresh stopped keeps its state otherwise, and any other family stops for
+reauthorization when the newer token set can never serve. It returns the current token set, or None once the family
+stopped, and its own failures are raised to its caller alone, leaving the family as it was.
+
+Storing token sets through a store, Basic charset overrides, resource audience metadata, and generated OAuth provider
 factories are not available yet; applications construct providers explicitly.

@@ -40,13 +40,15 @@ _ROTATED: Final = {"access_token": "access-2", "token_type": "Bearer", "expires_
 _REJECTED: Final = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
 
 
-def _context(auth: ModuleType, *scopes: str, audience: str | None = None, cancel_token: object = None) -> Any:
+def _context(
+    auth: ModuleType, *scopes: str, audience: str | None = None, deadline: object = None, cancel_token: object = None
+) -> Any:
     return auth.CredentialContext(
         scheme="oauth",
         required_scopes=scopes,
         audience=audience,
         origin="https://api.example.com",
-        deadline=None,
+        deadline=deadline,
         cancel_token=cancel_token,
     )
 
@@ -542,3 +544,338 @@ def oauth_refresh(package: ModuleType, lines: list[str]) -> None:
     run(flows)
     for index, line in enumerate(lines):
         lines[index] = line.replace(f":{port}", ":<port>")
+
+
+class _Load:
+    """A token load answering from a script of token sets, None, and failures, maybe once a gate opens."""
+
+    def __init__(self, *answers: object, gate: threading.Event | None = None) -> None:
+        self.answers = list(answers)
+        self.gate = gate
+        self.contexts: list[Any] = []
+        self.entered = threading.Event()
+
+    def load(self, context: Any) -> object:
+        self.contexts.append(context)
+        self.entered.set()
+        if self.gate is not None:
+            self.gate.wait(LIMIT)
+        if isinstance(answer := self.answers.pop(0), BaseException):
+            raise answer
+        return answer
+
+
+class _AsyncLoad(_Load):
+    """An asyncio token load, answering after a delay."""
+
+    def __init__(self, *answers: object, delay: float = 0) -> None:
+        super().__init__(*answers)
+        self.delay = delay
+
+    async def load(self, context: Any) -> object:  # ty: ignore[invalid-method-override]
+        self.contexts.append(context)
+        await asyncio.sleep(self.delay)
+        if isinstance(answer := self.answers.pop(0), BaseException):
+            raise answer
+        return answer
+
+
+def _set_line(tokens: Any) -> str:
+    if tokens is None:
+        return "None"
+    return f"revision={tokens.revision} access={tokens.access_token.value} refresh={tokens.refresh_token}"
+
+
+def _reloaded(call: Callable[[], object]) -> str:
+    try:
+        result = call()
+    except Exception as error:  # noqa: BLE001
+        return failure_line(error)
+    return _set_line(result)
+
+
+def _loaded(family: Any, load: _Load) -> Any:
+    """Wait until the family's first load job ended, and return its snapshot."""
+    load.entered.wait(LIMIT)
+    session, deadline = load.contexts[0].session_id, time.monotonic() + LIMIT
+    while (snapshot := family.refresh_snapshot(session)).state == "PENDING" and time.monotonic() < deadline:
+        time.sleep(0.01)
+    return snapshot
+
+
+def _load_configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -> None:
+    """Refuse a family without a token set or a load, and loads of the other mode; fingerprint the configuration."""
+    provider, async_provider = auth.RefreshTokenProvider, auth.AsyncRefreshTokenProvider
+    for label, call in (
+        ("neither token set nor load", lambda: provider(_TOKEN, client_id="c", client_auth_method="none")),
+        (
+            "async load of a sync provider",
+            lambda: provider(_TOKEN, client_id="c", load=_AsyncLoad(), client_auth_method="none"),
+        ),
+        (
+            "sync load of an async provider",
+            lambda: async_provider(_TOKEN, client_id="c", load=_Load(), client_auth_method="none"),
+        ),
+        (
+            "reload without a load",
+            lambda: provider(_TOKEN, client_id="c", token_set=_tokens(auth), client_auth_method="none").reload_token_set(),
+        ),
+    ):
+        lines.append(f"  {label} = {_outcome(call)}")
+    keys = []
+    for url, audience, scopes in (
+        (_TOKEN, None, ("b", "a")),
+        ("https://auth.example.com:443/token", None, ("a", "b", "a")),
+        ("https://auth.example.com/token?tenant=1", None, ("a", "b")),
+        (_TOKEN, "api", ("a", "b")),
+    ):
+        load = _Load(_tokens(auth))
+        with auth.RefreshTokenProvider(
+            url,
+            client_id="c",
+            load=load,
+            client_auth_method="none",
+            scopes=scopes,
+            audience=audience,
+            token_transport=Adapter(transports),
+        ) as family:
+            family.get(_context(auth, audience=audience))
+        keys.append(load.contexts[0].cache_key)
+    lines.append(
+        f"  cache keys prefixed={all(key.startswith('oauth-refresh-v1:') for key in keys)}"
+        f" default port and scope order ignored={keys[0] == keys[1]} distinct otherwise={len(set(keys)) == 3}"
+    )
+
+
+def _loads(auth: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+    """Load once before the first acquisition, keeping the newer token set, and stop on what cannot be trusted."""
+    stored, same = _tokens(auth, "stored", "refresh-5", revision=3), _tokens(auth)
+    for label, answer, initial in (
+        ("nothing stored beside a token set", None, _tokens(auth)),
+        ("newer token set stored", stored, _tokens(auth)),
+        ("older token set stored", _tokens(auth, "old", "refresh-0"), _tokens(auth, revision=2)),
+        ("same token set stored", same, same),
+        ("another token set at the same revision", _tokens(auth, "other", "refresh-9", revision=3), stored),
+        ("load failure", RuntimeError("load"), _tokens(auth)),
+        ("load interrupted", KeyboardInterrupt(), _tokens(auth)),
+        ("stored value of another type", "stored", _tokens(auth)),
+        ("nothing stored", None, None),
+        ("stored token set without a usable token", _tokens(auth, refresh=None, revision=1, minutes=-1), None),
+        ("constructor token set without a usable token", None, _tokens(auth, refresh=None, minutes=-1)),
+        ("stored token set needing a refresh", _tokens(auth, refresh="refresh-5", revision=1, minutes=-1), None),
+    ):
+        load = _Load(answer)
+        adapter = _Sent(transports, _reply(responses, _ROTATED))
+        with auth.RefreshTokenProvider(
+            _TOKEN, client_id="c", token_set=initial, load=load, client_auth_method="none", token_transport=adapter
+        ) as family:
+            lines.append(f"  {label} = {_outcome(lambda family=family: family.get(_context(auth)))}")
+            lines.append(
+                f"    later get = {_outcome(lambda family=family: family.get(_context(auth)))}"
+                f" loads={len(load.contexts)} sent={adapter.refresh_tokens}"
+            )
+    context = load.contexts[0]
+    lines.append(
+        f"  load context purpose={context.purpose} session={bool(context.session_id)}"
+        f" within its session={context.deadline.remaining() > 0}"
+    )
+    gate = threading.Event()
+    load = _Load(_tokens(auth), gate=gate)
+    with auth.RefreshTokenProvider(
+        _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=_Sent(transports)
+    ) as family:
+        starter = started(lambda: family.get(_context(auth)), load.entered, _outcome)
+        token = watched(options)
+        joiner = started(lambda: family.get(_context(auth, cancel_token=token)), token.checked, _outcome)
+        gate.set()
+        starter.join(LIMIT)
+        joiner.join(LIMIT)
+        lines.append(f"  concurrent callers share one load = {starter.line} / {joiner.line} loads={len(load.contexts)}")
+    gate = threading.Event()
+    load = _Load(_tokens(auth, minutes=-1), gate=gate)
+    adapter = _Sent(transports, _reply(responses, _ROTATED))
+    with auth.RefreshTokenProvider(
+        _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=adapter
+    ) as family:
+        deadline = options.Deadline.after(0.1)
+        lines.append(f"  caller leaving the load = {_outcome(lambda: family.get(_context(auth, deadline=deadline)))}")
+        gate.set()
+        lines.append(f"    load finished = {_loaded(family, load)} sent={adapter.refresh_tokens}")
+        lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+    gate = threading.Event()
+    load = _Load(_tokens(auth, minutes=-1), gate=gate)
+    adapter = _Sent(transports, _reply(responses, _ROTATED))
+    with auth.RefreshTokenProvider(
+        _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=adapter
+    ) as family:
+        token = options.CancelToken()
+        caller = started(lambda: family.get(_context(auth, cancel_token=token)), load.entered, _outcome)
+        token.cancel()
+        gate.set()
+        caller.join(LIMIT)
+        lines.append(f"  caller cancelled while the load runs = {caller.line}")
+        lines.append(f"    load finished = {_loaded(family, load)} sent={adapter.refresh_tokens}")
+    gate = threading.Event()
+    load = _Load(_tokens(auth), gate=gate)
+    family = auth.RefreshTokenProvider(
+        _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=_Sent(transports)
+    )
+    starter = started(lambda: family.get(_context(auth)), load.entered, _outcome)
+    released = family.request_close()
+    gate.set()
+    starter.join(LIMIT)
+    lines.append(f"  provider closing while its load runs = {starter.line} released={released.result(LIMIT)}")
+    load = _Load(_tokens(auth, "stored", None, revision=4, minutes=-1), None)
+    adapter = _Sent(transports, _reply(responses, _ROTATED))
+    with auth.RefreshTokenProvider(
+        _TOKEN,
+        client_id="c",
+        token_set=_tokens(auth, "constructor", "refresh-constructor", minutes=-1),
+        load=load,
+        client_auth_method="none",
+        token_transport=adapter,
+    ) as family:
+        lines.append(f"  stored token set that can never serve = {_outcome(lambda: family.get(_context(auth)))}")
+        lines.append(f"    reload with nothing stored = {_reloaded(family.reload_token_set)}")
+        lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+
+
+def _reloads(auth: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+    """Reload on request: recover a family that failed or stopped, and leave it as it was when nothing is newer."""
+    newer = _tokens(auth, "reloaded", "refresh-7", revision=5)
+
+    def provider(load: _Load, *replies: object, **settings: Any) -> tuple[Any, _Sent]:
+        adapter = _Sent(transports, *replies)
+        family = auth.RefreshTokenProvider(
+            _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=adapter, **settings
+        )
+        return family, adapter
+
+    family, _ = provider(_Load(RuntimeError("load"), newer))
+    with family:
+        lines.append(f"  initial load failed = {_outcome(lambda: family.get(_context(auth)))}")
+        lines.append(f"    reload = {_reloaded(family.reload_token_set)}")
+        lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))}")
+    family, _ = provider(_Load(_tokens(auth, revision=2), None, _tokens(auth, "old", "refresh-0"), RuntimeError("load")))
+    with family:
+        family.get(_context(auth))
+        for label in ("nothing stored", "older token set stored", "load failure"):
+            lines.append(f"  reload with {label} = {_reloaded(family.reload_token_set)}")
+        lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))}")
+    family, _ = provider(_Load(_tokens(auth, revision=3), _tokens(auth, "other", "refresh-9", revision=3)))
+    with family:
+        family.get(_context(auth))
+        lines.append(f"  reload conflicting at the same revision = {_reloaded(family.reload_token_set)}")
+    unusable = _tokens(auth, "unusable", None, revision=6, minutes=-1)
+    spent = _tokens(auth, "spent", "refresh-1", revision=7)
+    family, adapter = provider(
+        _Load(_tokens(auth, minutes=-1), unusable, spent, newer), _reply(responses, {}, status=503)
+    )
+    with family:
+        lines.append(f"  stopped family = {_outcome(lambda: family.get(_context(auth)))}")
+        for label in ("an unusable token set", "a spent refresh token", "a newer usable token set"):
+            lines.append(f"    reload with {label} = {_reloaded(family.reload_token_set)}")
+        lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+    family, _ = provider(_Load(RuntimeError("load"), unusable))
+    with family:
+        lines.append(f"  failed family = {_outcome(lambda: family.get(_context(auth)))}")
+        lines.append(f"    reload with an unusable token set = {_reloaded(family.reload_token_set)}")
+        lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))}")
+    gate = threading.Event()
+    load = _Load(_tokens(auth), newer, gate=gate)
+    family, _ = provider(load)
+    with family:
+        gate.set()
+        family.invalidate(family.get(_context(auth)).version)
+        gate.clear()
+        load.entered.clear()
+        reloading = started(family.reload_token_set, load.entered, _reloaded)
+        token = watched(options)
+        joiner = started(lambda: family.get(_context(auth, cancel_token=token)), token.checked, _outcome)
+        lines.append(f"  reload while another reload runs = {_reloaded(family.reload_token_set)}")
+        lines.append(f"    exchange needed meanwhile = {family.exchange_needed(auth.TokenVersion())}")
+        gate.set()
+        reloading.join(LIMIT)
+        joiner.join(LIMIT)
+        lines.append(f"  get joining a reload = {joiner.line} after {reloading.line}")
+    gate = threading.Event()
+    load = _Load(_tokens(auth), gate=gate)
+    family, _ = provider(load, options=auth.OAuthProviderOptions(refresh_timeout=0.05))
+    load.answers.append(newer)
+    with family:
+        gate.set()
+        family.get(_context(auth))
+        gate.clear()
+        lines.append(f"  reload outliving its session = {_reloaded(family.reload_token_set)}")
+        gate.set()
+        lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))}")
+    lines.append(f"  reload once closed = {_reloaded(family.reload_token_set)}")
+
+
+async def _async_loads(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+    """Load and reload an asyncio family on its event loop, within the load's session."""
+    load = _AsyncLoad(_tokens(auth, "stored", "refresh-5", revision=3), _tokens(auth, "reloaded", "refresh-7", revision=5))
+    async with auth.AsyncRefreshTokenProvider(
+        _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=AsyncAdapter(transports)
+    ) as family:
+        lines.append(f"  async load = {await _aoutcome(lambda: family.get(_context(auth)))}")
+        lines.append(f"    reload = {_set_line(await family.reload_token_set())}")
+    load = _AsyncLoad(_tokens(auth), delay=0.3)
+    async with auth.AsyncRefreshTokenProvider(
+        _TOKEN,
+        client_id="c",
+        load=load,
+        client_auth_method="none",
+        options=auth.OAuthProviderOptions(refresh_timeout=0.1),
+        token_transport=AsyncAdapter(transports),
+    ) as family:
+        lines.append(f"  async load outliving its session = {await _aoutcome(lambda: family.get(_context(auth)))}")
+    load = _AsyncLoad(RuntimeError("load"))
+    async with auth.AsyncRefreshTokenProvider(
+        _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=AsyncAdapter(transports)
+    ) as family:
+        lines.append(f"  async load failure = {await _aoutcome(lambda: family.get(_context(auth)))}")
+    load = _AsyncLoad(_tokens(auth, minutes=-1))
+    adapter = AsyncAdapter(transports, AsyncResponse(responses, 200, json.dumps(_ROTATED).encode()))
+    async with auth.AsyncRefreshTokenProvider(
+        _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=adapter
+    ) as family:
+        lines.append(f"  async stored token set needing a refresh = {await _aoutcome(lambda: family.get(_context(auth)))}")
+
+
+def _load_budget(package: ModuleType, auth: ModuleType, options: ModuleType, transports: ModuleType, lines: list[str]) -> None:
+    """Load without an exchange of the call's budget; a refresh the loaded token set needs still pays one."""
+    for label, stored in (
+        ("a usable", _tokens(auth, "stored", "refresh-5", revision=3)),
+        ("an expired", _tokens(auth, "stored", "refresh-5", revision=3, minutes=-1)),
+    ):
+        exchange = Exchange(lines)
+        exchange.respond(raw_response(200, b"ok", "application/octet-stream"))
+        family = auth.RefreshTokenProvider(
+            _TOKEN, client_id="c", load=_Load(stored), client_auth_method="none", token_transport=Adapter(transports)
+        )
+        with (
+            family,
+            exchange.client() as native,
+            package.Client(
+                http_client=native,
+                options=options.ClientOptions(auth=auth.AuthConfig({"oauth": family}, max_token_exchanges=0)),
+            ) as api,
+        ):
+            record(lines, f"call with no exchange left and {label} stored token", api.auth.with_response.oauth_empty)
+
+
+def oauth_refresh_load(package: ModuleType, lines: list[str]) -> None:
+    """Exercise the initial load and explicit reloads of refresh token families in both execution modes."""
+    auth, options, transports, responses = (
+        importlib.import_module(f"{package.__name__}.{name}") for name in ("auth", "options", "transports", "responses")
+    )
+    _load_configuration(auth, transports, lines)
+    _loads(auth, options, transports, responses, lines)
+    _reloads(auth, options, transports, responses, lines)
+    _load_budget(package, auth, options, transports, lines)
+
+    async def flows() -> None:
+        await _async_loads(auth, transports, responses, lines)
+
+    run(flows)

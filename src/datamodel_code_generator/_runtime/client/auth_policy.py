@@ -54,6 +54,7 @@ if TYPE_CHECKING:
         AsyncCredentialProvider,
         AsyncRefreshableTokenProvider,
         AsyncRequestSigner,
+        AsyncTokenLoad,
         AuthConfig,
         CloseableCredentialProvider,
         CredentialContext,
@@ -63,6 +64,7 @@ if TYPE_CHECKING:
         RefreshableTokenProvider,
         RequestSigner,
         SigningInput,
+        TokenLoad,
         TokenVersion,
     )
     from .bodies import AsyncBodyAttempt, BodyAttempt
@@ -183,6 +185,16 @@ def sync_provider(value: object) -> TypeIs[CredentialProvider]:
 def async_provider(value: object) -> TypeIs[AsyncCredentialProvider]:
     """Recognize a credential provider whose get method is a coroutine function."""
     return _method(value, "get", asynchronous=True)
+
+
+def sync_load(value: object) -> TypeIs[TokenLoad]:
+    """Recognize a token load whose load method is synchronous."""
+    return _method(value, "load", asynchronous=False)
+
+
+def async_load(value: object) -> TypeIs[AsyncTokenLoad]:
+    """Recognize a token load whose load method is a coroutine function."""
+    return _method(value, "load", asynchronous=True)
 
 
 def is_sync_closeable(value: object) -> TypeIs[CloseableCredentialProvider]:

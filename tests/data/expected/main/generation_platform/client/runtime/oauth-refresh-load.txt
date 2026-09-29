@@ -1,0 +1,72 @@
+# auth pydantic_v2.BaseModel
+  neither token set nor load = AuthConfigurationError condition=missing_value field_path=('token_set',)
+  async load of a sync provider = AuthConfigurationError condition=invalid_mode field_path=('load',)
+  sync load of an async provider = AuthConfigurationError condition=invalid_mode field_path=('load',)
+  reload without a load = AuthConfigurationError condition=missing_value field_path=('load',)
+  cache keys prefixed=True default port and scope order ignored=True distinct otherwise=True
+  nothing stored beside a token set = access-1 scopes=None expires_in_minutes=60
+    later get = access-1 scopes=None expires_in_minutes=60 loads=1 sent=[]
+  newer token set stored = stored scopes=None expires_in_minutes=60
+    later get = stored scopes=None expires_in_minutes=60 loads=1 sent=[]
+  older token set stored = access-1 scopes=None expires_in_minutes=60
+    later get = access-1 scopes=None expires_in_minutes=60 loads=1 sent=[]
+  same token set stored = access-1 scopes=None expires_in_minutes=60
+    later get = access-1 scopes=None expires_in_minutes=60 loads=1 sent=[]
+  another token set at the same revision = AuthTokenStoreConflictError state=LOAD_FAILED delivery_state=NOT_SENT phase=load action=load expected_revision=3 observed_revision=3 refresh_id=<call>
+    later get = AuthTokenStoreConflictError state=LOAD_FAILED delivery_state=NOT_SENT phase=load action=load expected_revision=3 observed_revision=3 refresh_id=<call> loads=1 sent=[]
+  load failure = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=RuntimeError
+    later get = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=RuntimeError loads=1 sent=[]
+  load interrupted = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=KeyboardInterrupt
+    later get = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=KeyboardInterrupt loads=1 sent=[]
+  stored value of another type = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=AuthConfigurationError
+    later get = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=AuthConfigurationError loads=1 sent=[]
+  nothing stored = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=missing_token refresh_id=<call>
+    later get = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=missing_token refresh_id=<call> loads=1 sent=[]
+  stored token set without a usable token = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=unusable_loaded_token refresh_id=<call>
+    later get = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=unusable_loaded_token refresh_id=<call> loads=1 sent=[]
+  constructor token set without a usable token = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=no_refresh_token refresh_id=<call>
+    later get = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=no_refresh_token refresh_id=<call> loads=1 sent=[]
+  stored token set needing a refresh = access-2 scopes=None expires_in_minutes=60
+    later get = access-2 scopes=None expires_in_minutes=60 loads=1 sent=['refresh-5']
+  load context purpose=initial_load session=True within its session=True
+  concurrent callers share one load = access-1 scopes=None expires_in_minutes=60 / access-1 scopes=None expires_in_minutes=60 loads=1
+  caller leaving the load = DeadlineExceededError delivery_state=NOT_SENT phase=auth
+    load finished = RefreshInfo(refresh_id='<call>', state='READY', token_send_count=0, failure=None) sent=[]
+    later get = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+  caller cancelled while the load runs = RequestCancelledError delivery_state=NOT_SENT source=cancel_token
+    load finished = RefreshInfo(refresh_id='<call>', state='READY', token_send_count=0, failure=None) sent=[]
+  provider closing while its load runs = access-1 scopes=None expires_in_minutes=60 released=None
+  stored token set that can never serve = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=unusable_loaded_token refresh_id=<call>
+    reload with nothing stored = None
+    get = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=unusable_loaded_token refresh_id=<call> sent=[]
+  initial load failed = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=RuntimeError
+    reload = revision=5 access=reloaded refresh=refresh-7
+    get = reloaded scopes=None expires_in_minutes=60
+  reload with nothing stored = revision=2 access=access-1 refresh=refresh-1
+  reload with older token set stored = revision=2 access=access-1 refresh=refresh-1
+  reload with load failure = AuthTokenLoadError state=READY delivery_state=NOT_SENT phase=load purpose=reload refresh_id=<call> cause=RuntimeError
+    get = access-1 scopes=None expires_in_minutes=60
+  reload conflicting at the same revision = AuthTokenStoreConflictError state=READY delivery_state=NOT_SENT phase=load action=load expected_revision=3 observed_revision=3 refresh_id=<call>
+  stopped family = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=503 failure_kind=http_status refresh_id=<call>
+    reload with an unusable token set = None
+    reload with a spent refresh token = None
+    reload with a newer usable token set = revision=5 access=reloaded refresh=refresh-7
+    get = reloaded scopes=None expires_in_minutes=60 sent=['refresh-1']
+  failed family = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=RuntimeError
+    reload with an unusable token set = None
+    get = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=load condition=unusable_loaded_token refresh_id=<call>
+  reload while another reload runs = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=reload_token_set
+    exchange needed meanwhile = True
+  get joining a reload = reloaded scopes=None expires_in_minutes=60 after revision=5 access=reloaded refresh=refresh-7
+  reload outliving its session = AuthTokenLoadError state=READY delivery_state=NOT_SENT phase=load purpose=reload refresh_id=<call> cause=TimeoutError
+    get = access-1 scopes=None expires_in_minutes=60
+  reload once closed = AuthStateConflictError state=CLOSED delivery_state=NOT_SENT phase=unknown action=reload_token_set
+  > GET https://api.example.com/oauth/empty
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer stored] b''
+  call with no exchange left and a usable stored token = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
+  call with no exchange left and an expired stored token ! AuthBudgetExceededError: AuthBudgetExceededError(operation_id='oauth_empty', call_id='<call>', state='READY', delivery_state='NOT_SENT', phase='admission', budget_kind='auth_exchange', limit=0, used=0) [operation_id='oauth_empty', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='admission', limit=0] auth_budget_exceeded_error
+  async load = stored scopes=None expires_in_minutes=60
+    reload = revision=5 access=reloaded refresh=refresh-7
+  async load outliving its session = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=TimeoutError
+  async load failure = AuthTokenLoadError state=LOAD_FAILED delivery_state=NOT_SENT phase=load purpose=initial_load refresh_id=<call> cause=RuntimeError
+  async stored token set needing a refresh = access-2 scopes=None expires_in_minutes=60
