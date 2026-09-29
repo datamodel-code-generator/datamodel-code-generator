@@ -1562,6 +1562,15 @@ revision; callers arriving meanwhile wait for that load. A failing load, or a st
 constructor's at the same revision, stops the family in the `LOAD_FAILED` state with `AuthTokenLoadError` or
 `AuthTokenStoreConflictError`, without loading again by itself; a newer token set that can never serve is made current
 and stops the family with `AuthReauthorizationRequiredError`, as does a family with no token set at all.
+
+Each refresh then reads the persisted token set right before its request. A newer one that can serve is used without a
+request, although the refresh keeps what it charged its call; a newer expired one is refreshed instead of the current
+one, and one that can never serve stops the family; an older one, or one bringing back a spent refresh token, changes
+nothing. A failed read, or another token set at the same revision, ends the refresh without a request in the
+`FAILED_NOT_SENT` state. After `invalid_grant`, the family requires reauthorization while the refresh reads once more,
+and recovers only with a newer token set whose access token has not expired and whose refresh token the family never
+spent; otherwise `AuthReauthorizationRequiredError` keeps a failed read or a conflict as its cause.
+
 `reload_token_set()` loads once more, or raises `AuthStateConflictError` while a refresh, load, or reload runs,
 including one whose session ended before its work returned, or once the provider is closing. It makes a newer token set
 current unless that brings back a spent refresh token, recovering a family that failed its load or stopped once the
