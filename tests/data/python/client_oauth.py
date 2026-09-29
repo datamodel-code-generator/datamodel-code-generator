@@ -34,6 +34,10 @@ _FIELDS: Final = (
     "callback",
     "field_path",
     "loop_mismatch",
+    "budget_kind",
+    "limit",
+    "used",
+    "source",
 )
 
 
@@ -45,6 +49,8 @@ def failure_line(error: BaseException) -> str:
             parts.append(f"{name}={getattr(value, 'value', value)}")
     if (cause := getattr(error, "cause", None)) is not None:
         parts.append(f"cause={type(cause).__name__}")
+        if (reason := getattr(cause, "reason", None)) is not None:
+            parts.append(f"reason={reason}")
     if (context := error.__cause__) is not None:
         parts.append(f"from={type(context).__name__}")
     return " ".join(parts)

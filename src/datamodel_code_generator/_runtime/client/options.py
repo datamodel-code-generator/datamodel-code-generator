@@ -41,6 +41,7 @@ __all__ = (
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
+    "SessionOptions",
     "TimeoutOptions",
     "TransportOptions",
     "Unset",
@@ -331,6 +332,26 @@ class TimeoutOptions:
         for name in ("connect", "read", "write", "pool"):
             if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
                 object.__setattr__(self, name, seconds(value, ("timeout", name)))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SessionOptions:
+    """Limits of a session spanning several requests: UNSET keeps the session's default and None removes that limit.
+
+    The session ends at the earlier of its total timeout, counted from its start, and its absolute deadline.
+    """
+
+    total_timeout: float | Unset | None = UNSET
+    deadline: Deadline | Unset | None = UNSET
+    max_network_sends: int | Unset | None = UNSET
+
+    def __post_init__(self) -> None:
+        """Refuse booleans, negative or nonfinite durations, negative counts, and deadlines of other types."""
+        if (timeout := self.total_timeout) is not None and not isinstance(timeout, Unset):
+            object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))
+        _typed(self.deadline, (Deadline, Unset, type(None)), ("session_options", "deadline"))
+        if (sends := self.max_network_sends) is not None and not isinstance(sends, Unset):
+            _count(sends, ("session_options", "max_network_sends"))
 
 
 def _choice(value: object, choices: frozenset[str], path: tuple[str, ...]) -> None:

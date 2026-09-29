@@ -1372,6 +1372,55 @@ prove that a failed request was never sent. Responses are read up to 64 KiB and 
 keep no response body or error description, but a transport failure's cause is the native exception, which can hold
 the token request and its client authentication, so apply your own policy before logging causes.
 
-Device authorization, client credentials, refresh-token providers, token persistence, shared refresh, Basic charset
-overrides, resource audience metadata, and generated OAuth provider factories are not available yet; applications
-construct providers explicitly.
+### Authorize a device
+
+`DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` implement the OAuth device authorization grant for
+devices that cannot open a browser. One flow owns exactly one transaction: `begin(scopes)` requests a device
+authorization and returns a `DeviceAuthorization` whose user code and verification URIs the application shows; the SDK
+never opens them. `poll()` then waits the server's interval, five seconds unless the response names another, and polls
+the token endpoint until the user approves, returning a `TokenSet`.
+
+```python
+from collections.abc import Callable
+
+from pets.auth import AccessToken, DeviceAuthorizationFlow
+
+
+def device_login(show: Callable[[str, str], None]) -> AccessToken:
+    with DeviceAuthorizationFlow(
+        "https://auth.example.com/device",
+        "https://auth.example.com/token",
+        client_id="pets-tv",
+        client_auth_method="none",
+    ) as flow:
+        authorization = flow.begin(("pets.read",))
+        show(authorization.user_code, authorization.verification_uri)
+        return flow.poll().access_token
+```
+
+`authorization_pending` waits within the same `poll` call, and `slow_down` adds five seconds to every later wait.
+`access_denied` and `expired_token` end the transaction with `OAuthExchangeError` in the `REAUTH_REQUIRED` state, whose
+cause's message names which of the two the server sent. A transaction never resumes, so a new authorization needs a
+new flow, and calling `begin` twice, `poll` before `begin`, `poll` concurrently, or either after the end raises
+`AuthStateConflictError`. `begin` validates every member of the device authorization response first and refuses a
+response without a positive `expires_in`; the requested scopes become the token's scopes when the token response
+omits its `scope` member.
+
+The transaction ends at the response's `expires_in`, or earlier at the limit of the `SessionOptions` (from
+`pets.options`) given to `begin`, whose `total_timeout` counts from the `begin` call and whose `deadline` is absolute.
+The `begin` and every poll count against `max_network_sends`, 128 by default; `None` removes that limit, while `0` or
+a limit that already passed refuses the `begin` itself. A poll that could not be sent before the deadline or within the
+limit raises `DeadlineExceededError` or `BudgetExceededError` at once instead of waiting, and a send the session limit
+cuts short raises `DeadlineExceededError`. `poll(cancel_token=...)` stops a wait with `RequestCancelledError`, and
+closing the flow stops it with `AuthProviderClosedError`.
+
+Client authentication, endpoints, and the token transport follow the authorization code flow; the client secret
+lookup for `begin` names the device authorization endpoint's origin. Unlike the code flow, every answer the flow cannot
+continue from, including an invalid token response, an unexpected status, or a malformed body, raises
+`OAuthExchangeError` in the `EXCHANGE_REJECTED` state. A transport failure raises `OAuthExchangeError`, or
+`AuthTimeoutError` when a time limit ran out, in the `UNCERTAIN` state when the request may have been sent and in the
+`FAILED_NOT_SENT` state otherwise.
+
+Client credentials, refresh-token providers, token persistence, shared refresh, Basic charset overrides, resource
+audience metadata, and generated OAuth provider factories are not available yet; applications construct providers
+explicitly.
