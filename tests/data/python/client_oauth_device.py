@@ -144,9 +144,11 @@ def _wire(auth: ModuleType, options: ModuleType, lines: list[str]) -> int:
             lines.append(f"  {method} begin again = {_outcome(lambda device=device: device.begin(()))}")
     exchange.respond(json_reply(200, _REQUIRED))
     with flow() as device:
-        began = device.begin((), session_options=options.SessionOptions(total_timeout=1))
-        lines.append(f"  required fields only = {_began(began)}")
-        lines.append(f"  session limit shortens the lifetime = {began.deadline.remaining() <= 1}")
+        lines.append(f"  required fields only = {_began(device.begin(()))}")
+    exchange.respond(json_reply(200, {**_REQUIRED, "interval": 30}))
+    with flow() as device:
+        began = device.begin((), session_options=options.SessionOptions(total_timeout=10))
+        lines.append(f"  session limit shortens the lifetime = {began.deadline.remaining() <= 10}")
         lines.append(f"  first poll after the lifetime = {_outcome(device.poll)}")
     exchange.respond(json_reply(200, _REQUIRED))
     with flow() as device:
@@ -159,9 +161,9 @@ def _wire(auth: ModuleType, options: ModuleType, lines: list[str]) -> int:
     exchange.respond(json_reply(200, _REQUIRED))
     with flow() as device:
         began = device.begin(
-            (), session_options=options.SessionOptions(total_timeout=100, deadline=options.Deadline.after(1))
+            (), session_options=options.SessionOptions(total_timeout=100, deadline=options.Deadline.after(10))
         )
-        lines.append(f"  earlier of the session limits = {began.deadline.remaining() <= 1}")
+        lines.append(f"  earlier of the session limits = {began.deadline.remaining() <= 10}")
     exchange.respond(json_reply(200, _QUICK), json_reply(200, _QUICK))
     with flow() as wide, flow() as narrow:
         wide.begin(("read", "write"))

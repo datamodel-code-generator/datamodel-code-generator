@@ -60,6 +60,8 @@
   > POST https://localhost:<port>/device
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 19] b'client_id=client+id'
   required fields only = DeviceAuthorization(expires_in=120.0, interval=5.0) user_code=WDJB-MJHT uri=https://example.com/device complete=None
+  > POST https://localhost:<port>/device
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 19] b'client_id=client+id'
   session limit shortens the lifetime = True
   first poll after the lifetime = DeadlineExceededError delivery_state=NOT_SENT phase=sleep
   > POST https://localhost:<port>/device
