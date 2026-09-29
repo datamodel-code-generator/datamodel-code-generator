@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import importlib
 import io
@@ -159,7 +160,9 @@ class _Vanishing(io.FileIO):
         return super().read(size)
 
     def fileno(self) -> int:
-        return -1 if self.hashing else super().fileno()
+        if self.hashing:
+            raise OSError(errno.EBADF, "descriptor lost")
+        return super().fileno()
 
 
 def _faulted(error: BaseException | None) -> str:

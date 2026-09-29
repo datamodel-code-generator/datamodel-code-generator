@@ -105,7 +105,7 @@
     signed=[]
     wire=[] pending=1
     offset=7 reads=1
-  descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'Bad file descriptor')] body_factory_error secondary=[]
+  descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'descriptor lost')] body_factory_error secondary=[]
     signed=[]
     wire=[] pending=1
     offset=0
@@ -210,7 +210,7 @@
     signed=[]
     wire=[] pending=1
     offset=7 reads=1
-  async descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'Bad file descriptor')] body_factory_error secondary=[]
+  async descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'descriptor lost')] body_factory_error secondary=[]
     signed=[]
     wire=[] pending=1
     offset=0
