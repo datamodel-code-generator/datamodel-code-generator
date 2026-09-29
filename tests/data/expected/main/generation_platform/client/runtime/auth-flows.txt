@@ -79,6 +79,9 @@
   > GET https://api.example.com/api-key/cookie
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: theme=light; session_key=key] b''
   generic ordinary cookie patch = ('returned', 200)
+  > GET https://api.example.com/api-key/cookie
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, cookie: theme=light; session_key=key] b''
+  padded ordinary cookie patch = ('returned', 200)
   signer claiming a parameter header = ('AuthConfigurationError', 'name_collision', None, None, 'NoneType', (), 0, None, 0)
   signer claiming an exploded query field = ('AuthConfigurationError', 'name_collision', None, None, 'NoneType', (), 0, None, 0)
   > GET https://api.example.com/bearer

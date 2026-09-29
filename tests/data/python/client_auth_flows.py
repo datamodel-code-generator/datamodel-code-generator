@@ -562,6 +562,10 @@ def _configuration(package: ModuleType, auth: ModuleType, options: ModuleType, l
         plain = options.RequestOptions(headers=(("Cookie", "theme=light"),))
         record(lines, "generic ordinary cookie patch", lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(
             options=plain)))
+        padded = options.RequestOptions(headers=(("Cookie", " theme=light\t"),))
+        exchange.respond(_ok())
+        record(lines, "padded ordinary cookie patch", lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(
+            options=padded)))
         arguments = _cookie_arguments(package)
         for label, signer in (
             ("signer claiming a parameter header", _ManagingSigner(auth, ("X-Trace",), ())),

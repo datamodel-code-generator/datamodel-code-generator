@@ -1308,6 +1308,7 @@ supported without such a signer. No multipart digest field is added.
 Credential values, signing inputs, and returned signature values are omitted from their representations and from
 hook events. A credential or signature placed in the query is part of the request URL, which HTTPX2 logs at INFO level
 on its `httpx2` logger, so keep that logger above INFO wherever URLs must stay private. Errors retain safe metadata,
-common send/attempt counters, and causes without automatically formatting secret-bearing callback messages. Applications must apply their own policy before explicitly inspecting those causes.
+common send/attempt counters, and causes without automatically formatting secret-bearing callback messages.
+Applications must apply their own policy before explicitly inspecting those causes.
 Builtin OAuth flows, token HTTP clients, token persistence, shared refresh, Basic charset overrides, resource audience
 metadata, and generated OAuth provider factories are not available yet; applications construct providers explicitly.

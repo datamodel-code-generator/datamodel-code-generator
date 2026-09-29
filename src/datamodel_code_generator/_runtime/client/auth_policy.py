@@ -629,9 +629,10 @@ def strip_managed_query(url: str, bound: BoundAuth | AsyncBoundAuth) -> str:
 
 
 def _cookie_fields(headers: list[tuple[str, str]], cookies: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Join ordinary cookies and managed ones into one Cookie field, dropping whitespace that is no part of a value."""
     if not cookies:
         return headers
-    values = [value for name, value in headers if name.lower() == "cookie"]
+    values = [trimmed for name, value in headers if name.lower() == "cookie" if (trimmed := value.strip(" \t"))]
     values.extend(f"{name}={value}" for name, value in cookies)
     return [(name, value) for name, value in headers if name.lower() != "cookie"] + [("Cookie", "; ".join(values))]
 
