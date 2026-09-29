@@ -57,6 +57,26 @@ class _Pending:
         return material()
 
 
+class _Closing:
+    """A client secret provider during whose lookup the flow is closed."""
+
+    def __init__(self, auth: ModuleType) -> None:
+        self.material = auth.ApiKeyCredential("s")
+        self.close: Callable[[], object] = lambda: None
+
+    def get(self, context: object) -> object:
+        del context
+        self.close()
+        return self.material
+
+
+class _AsyncClosing(_Closing):
+    async def get(self, context: object) -> object:  # ty: ignore[invalid-method-override]
+        del context
+        await self.close()
+        return self.material
+
+
 class _Uncapable:
     """A transport that declares no capabilities."""
 
@@ -455,6 +475,13 @@ def _faults(auth: ModuleType, transports: ModuleType, responses: ModuleType, err
             except KeyboardInterrupt:
                 lines.append(f"  {label} = KeyboardInterrupt")
             lines.append(f"    request again = {token_outcome(lambda flow=flow, request=request: flow.exchange_code('code', request.state, request))}")
+    closing = _Closing(auth)
+    racing = Adapter(transports, Response(responses, 200, granted))
+    flow = flow_type(_AUTHORIZE, token, client_id="c", client_secret=closing, token_transport=racing)
+    closing.close = flow.close
+    request = flow.authorization_request(_REDIRECT, ())
+    lines.append(f"  closed while the secret is fetched = {token_outcome(lambda: flow.exchange_code('code', request.state, request))}")
+    lines.append(f"    nothing sent = {len(racing.replies) == 1}")
     gate = threading.Event()
     blocked = Adapter(transports, Response(responses, 200, granted), gate=gate)
     first: list[str] = []
@@ -519,6 +546,15 @@ async def _async_flows(
         lines.append(f"    stopped at the session deadline = {time.monotonic() - started < 2}")
     release = asyncio.Event()
     held = AsyncAdapter(transports, AsyncResponse(responses, 200, granted), hold=release)
+    closing = _AsyncClosing(auth)
+    racing = AsyncAdapter(transports, AsyncResponse(responses, 200, granted))
+    flow = auth.AsyncAuthorizationCodeFlow(
+        _AUTHORIZE, token, client_id="c", client_secret=closing, token_transport=racing
+    )
+    closing.close = flow.aclose
+    request = flow.authorization_request(_REDIRECT, ())
+    lines.append(f"  async closed while the secret is fetched = {await atoken_outcome(lambda: flow.exchange_code('code', request.state, request))}")
+    lines.append(f"    nothing sent = {len(racing.replies) == 1}")
     async with auth.AsyncAuthorizationCodeFlow(
         _AUTHORIZE, token, client_id="c", client_auth_method="none", token_transport=held
     ) as flow:

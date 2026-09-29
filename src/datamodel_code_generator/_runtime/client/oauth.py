@@ -11,7 +11,7 @@ import json
 import re
 import sys
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from time import monotonic
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar, get_args
@@ -97,7 +97,7 @@ class Endpoint:
     origin: str
 
 
-def endpoint_url(value: object, field: str, *, allow_insecure_loopback: bool) -> Endpoint:
+def endpoint_url(value: object, name: str, *, allow_insecure_loopback: bool) -> Endpoint:
     """Accept an absolute HTTPS URL, or plain HTTP only to an explicitly permitted loopback host.
 
     The URL is parsed as requests will parse it, so its origin, port included, is known before any exchange.
@@ -105,17 +105,17 @@ def endpoint_url(value: object, field: str, *, allow_insecure_loopback: bool) ->
     from .urls import URLValidationError, canonical_origin, origin_text  # noqa: PLC0415
 
     if not isinstance(value, str):
-        raise AuthConfigurationError(field_path=(field,), condition="invalid_type")
+        raise AuthConfigurationError(field_path=(name,), condition="invalid_type")
     if "#" in value or _UNSAFE.search(value):
-        raise AuthConfigurationError(field_path=(field,), condition="invalid_url")
+        raise AuthConfigurationError(field_path=(name,), condition="invalid_url")
     try:
         urlsplit(value)
         origin = canonical_origin(value)
     except (URLValidationError, ValueError):
-        raise AuthConfigurationError(field_path=(field,), condition="invalid_url") from None
+        raise AuthConfigurationError(field_path=(name,), condition="invalid_url") from None
     scheme, host, _ = origin
     if scheme == "http" and not (allow_insecure_loopback and host in _LOOPBACK):
-        raise AuthConfigurationError(field_path=(field,), condition="insecure_url")
+        raise AuthConfigurationError(field_path=(name,), condition="insecure_url")
     return Endpoint(value, origin_text(origin))
 
 
@@ -360,7 +360,7 @@ class Exchanged:
     outcome: Outcome
     delivery: DeliveryState
     status_code: int | None = None
-    fields: Mapping[str, object] | None = None
+    fields: Mapping[str, object] | None = field(default=None, repr=False)
     oauth_error: OAuthErrorCode | None = None
     received: datetime | None = None
     cause: BaseException | None = None
@@ -557,7 +557,10 @@ async def _within(operation: Coroutine[object, object, T], deadline: Deadline) -
         async with asyncio.timeout(deadline.remaining()):
             return await operation
     else:  # pragma: <3.11 cover
-        return await asyncio.wait_for(operation, deadline.remaining())
+        try:
+            return await asyncio.wait_for(operation, deadline.remaining())
+        except asyncio.TimeoutError as error:
+            raise TimeoutError from error
 
 
 class TokenEndpoint:
@@ -582,11 +585,14 @@ class TokenEndpoint:
         self.closed = False
         self._lock = threading.Lock()
 
+    def _open(self) -> None:
+        if self.closed:
+            raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+
     def prepare(self) -> None:
         """Create the SDK-owned transport once, before any exchange consumes its credential, unless already closed."""
         with self._lock:
-            if self.closed:
-                raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+            self._open()
             if self._adapter is None:
                 from .native import Httpx2Transport, native_client  # noqa: PLC0415
 
@@ -613,9 +619,11 @@ class TokenEndpoint:
         request = token_request(self.endpoint.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace()
         context, caps = session.context(trace)
-        adapter = self._adapter
+        with self._lock:
+            self._open()
+            adapter = self._adapter
+            progress.sent = True
         assert adapter is not None
-        progress.sent = True
         try:
             response = adapter.send(request, context)
         except Exception as error:  # noqa: BLE001 - Every adapter failure is classified by its evidence.
@@ -668,6 +676,10 @@ class AsyncTokenEndpoint:
         with suppress(RuntimeError):
             self._loop = asyncio.get_running_loop()
 
+    def _open(self) -> None:
+        if self.closed:
+            raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+
     def prepare(self) -> None:
         """Refuse other loops and backends, then create the SDK-owned transport once unless already closed."""
         import asyncio  # noqa: PLC0415
@@ -680,8 +692,7 @@ class AsyncTokenEndpoint:
             self._loop = loop
         elif self._loop is not loop:
             raise UnsupportedAsyncBackendError(loop_mismatch=True)
-        if self.closed:
-            raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+        self._open()
         if self._adapter is None:
             from .native import AsyncHttpx2Transport, native_async_client  # noqa: PLC0415
 
@@ -711,6 +722,7 @@ class AsyncTokenEndpoint:
         request = token_request(self.endpoint.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace()
         context, caps = session.context(trace)
+        self._open()
         adapter = self._adapter
         assert adapter is not None
         progress.sent = True

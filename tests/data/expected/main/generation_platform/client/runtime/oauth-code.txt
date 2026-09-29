@@ -311,6 +311,8 @@
     request again = AuthStateConflictError state=UNCERTAIN delivery_state=NOT_SENT phase=unknown action=exchange_code
   interrupted secret = KeyboardInterrupt
     request again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=exchange_code
+  closed while the secret is fetched = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
+    nothing sent = True
   concurrent exchange = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=exchange_code
     first exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
   > POST https://localhost:<port>/token
@@ -329,6 +331,8 @@
   async body slower than the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown failure_kind=deadline cause=TimeoutError
   async slow secret = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider cause=TimeoutError
     stopped at the session deadline = True
+  async closed while the secret is fetched = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
+    nothing sent = True
   async concurrent exchange = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=exchange_code
     first exchange = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
   async session expires while sending = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline cause=TimeoutError
