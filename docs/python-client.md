@@ -1268,7 +1268,9 @@ class PayloadSigner:
     def __init__(self, key: bytes, origin: str) -> None:
         self._key = key
         self._capabilities = SignerCapabilities(
-            allowed_origins=(origin,), managed_headers=("X-Payload-Signature",), managed_query=(),
+            allowed_origins=(origin,),
+            managed_headers=("X-Payload-Signature",),
+            managed_query=(),
             requires_body_digest=True,
         )
 
