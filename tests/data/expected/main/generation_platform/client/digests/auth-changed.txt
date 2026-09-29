@@ -11,6 +11,7 @@
   auth.api_key_header same ['request', 'response', 'signature'] different ['security']
   auth.api_key_query same ['request', 'response', 'security', 'signature'] different []
   auth.api_key_cookie same ['request', 'response', 'security', 'signature'] different []
+  auth.cookie_parameters same ['request', 'response', 'security', 'signature'] different []
   auth.basic same ['request', 'response', 'security', 'signature'] different []
   auth.bearer same ['request', 'response', 'security', 'signature'] different []
   auth.alias_auth same ['request', 'response', 'security', 'signature'] different []

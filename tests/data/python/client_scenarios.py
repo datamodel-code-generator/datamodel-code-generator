@@ -12,6 +12,7 @@ import httpx2
 
 from tests.data.python.client_auth_challenges import auth_challenges
 from tests.data.python.client_auth_errors import auth_errors
+from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_body_digest import body_digest
@@ -641,6 +642,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", BACKENDS, auth_values),
     "auth-challenges": ("auth", ("pydantic_v2.BaseModel",), auth_challenges),
+    "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
     "auth-options": ("auth", ("pydantic_v2.BaseModel",), auth_options),
     "body-digest": ("auth", ("pydantic_v2.BaseModel",), body_digest),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),

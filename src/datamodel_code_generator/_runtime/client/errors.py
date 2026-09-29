@@ -779,7 +779,7 @@ class AuthProviderExecutionError(AuthRefreshError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-        self._callback = callback
+        self._callback: Literal["get", "invalidate", "refresh"] = callback
 
     @property
     def callback(self) -> Literal["get", "invalidate", "refresh"]:
@@ -921,7 +921,7 @@ class TokenExpiredError(AuthRefreshError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-        self._condition = condition
+        self._condition: Literal["expired", "nonpositive_expiry", "invalid_expiry"] = condition
         self._expires_at = _error_expiry(expires_at)
 
     @property

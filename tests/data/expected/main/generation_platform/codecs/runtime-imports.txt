@@ -3,7 +3,7 @@ client/__init__.py: -
 client/arguments.py: __future__, collections.abc, typing
 client/auth.py: ..model_codecs.unset, .errors, .responses, .scopes, .timing, __future__, collections.abc, dataclasses, datetime, os, types, typing, typing_extensions
 client/auth_challenges.py: .responses, __future__, re, typing
-client/auth_policy.py: ..model_codecs.unset, .auth, .auth_challenges, .bodies, .errors, .options, .responses, .security, .transports, .urls, __future__, base64, collections.abc, dataclasses, inspect, math, re, time, typing, typing_extensions, urllib.parse
+client/auth_policy.py: ..model_codecs.unset, .auth, .auth_challenges, .bodies, .errors, .options, .responses, .security, .transports, .urls, __future__, base64, collections.abc, dataclasses, inspect, re, time, typing, typing_extensions, urllib.parse
 client/bodies.py: .coding, .errors, .lifecycle, __future__, asyncio, collections.abc, concurrent.futures, io, os, pathlib, threading, typing
 client/body_sources.py: .bodies, .coding, .errors, .multipart, __future__, asyncio, collections.abc, hashlib, typing
 client/checks.py: ..model_codecs.unset, ..model_codecs.values, .errors, __future__, collections.abc, pydantic, pydantic.warnings, typing, warnings

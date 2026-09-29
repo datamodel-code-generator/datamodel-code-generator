@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import inspect
-import math
 import re
 from dataclasses import dataclass
 from time import monotonic, time
@@ -250,6 +249,7 @@ def _requirements(
     for name in (*config.credentials, *config.anonymous_schemes):
         _scheme(name, schemes)
     alternatives = () if security is None else security.alternatives
+    selected: tuple[SecurityRequirement, ...] | None = ()
     if not isinstance(config.selection, Unset) and len(alternatives) > 1:
         if config.selection >= len(alternatives):
             raise AuthConfigurationError(field_path=("auth", "selection"), condition="out_of_range")
@@ -262,8 +262,6 @@ def _requirements(
         )
         if selected is None:
             raise AuthConfigurationError(field_path=("auth", "credentials"), condition="missing_credentials")
-    else:
-        selected = ()
     if selected:
         return selected
     if not config.send_on_anonymous:
@@ -325,8 +323,7 @@ def bind_auth(
     origins = _origins(config.allowed_origins, AuthConfigurationError)
     signers: list[BoundSigner] = []
     for index, signer in enumerate(config.signers):
-        if not _sync_signer(signer):
-            raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_mode")
+        assert _sync_signer(signer)
         capabilities = _capabilities(signer.capabilities)
         signers.append(
             BoundSigner(
@@ -340,8 +337,7 @@ def bind_auth(
     credentials: list[BoundCredential] = []
     for requirement in requirements:
         provider = _provider(config.credentials[requirement.scheme.name])
-        if not _sync_provider(provider):
-            raise AuthConfigurationError(field_path=("auth", "credentials"), condition="invalid_mode")
+        assert _sync_provider(provider)
         credentials.append(
             BoundCredential(
                 scheme=requirement.scheme,
@@ -370,8 +366,7 @@ def bind_async_auth(
     origins = _origins(config.allowed_origins, AuthConfigurationError)
     signers: list[AsyncBoundSigner] = []
     for index, signer in enumerate(config.signers):
-        if not _async_signer(signer):
-            raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_mode")
+        assert _async_signer(signer)
         capabilities = _capabilities(signer.capabilities)
         signers.append(
             AsyncBoundSigner(
@@ -385,8 +380,7 @@ def bind_async_auth(
     credentials: list[AsyncBoundCredential] = []
     for requirement in requirements:
         provider = _provider(config.credentials[requirement.scheme.name])
-        if not _async_provider(provider):
-            raise AuthConfigurationError(field_path=("auth", "credentials"), condition="invalid_mode")
+        assert _async_provider(provider)
         credentials.append(
             AsyncBoundCredential(
                 scheme=requirement.scheme,
@@ -451,21 +445,17 @@ def validate_ownership(
 
 
 def _expiry(token: AccessToken) -> float | None:
-    expires = token.expires_at
-    if expires is None:
+    if (expires := token.expires_at) is None:
         return None
     try:
-        if expires.tzinfo is None or expires.utcoffset() is None:
-            raise TokenExpiredError(condition="invalid_expiry", delivery_state=DeliveryState.NOT_SENT)
-        timestamp = expires.timestamp()
-    except (OSError, OverflowError, ValueError) as cause:
+        timestamp = None if expires.utcoffset() is None else expires.timestamp()
+    except (TypeError, ValueError) as cause:
         raise TokenExpiredError(
             condition="invalid_expiry", delivery_state=DeliveryState.NOT_SENT, cause=cause
         ) from None
-    if not math.isfinite(timestamp):
+    if timestamp is None:
         raise TokenExpiredError(condition="invalid_expiry", delivery_state=DeliveryState.NOT_SENT)
-    remaining = timestamp - time()
-    if remaining <= 0:
+    if (remaining := timestamp - time()) <= 0:
         raise TokenExpiredError(condition="expired", expires_at=expires, delivery_state=DeliveryState.NOT_SENT)
     return monotonic() + remaining
 
@@ -511,11 +501,20 @@ class _Wrapped:
 
 
 _PROVIDER_KEPT: Final = (AuthConfigurationError, AuthRefreshError)
-_GET: Final = _Wrapped(_PROVIDER_KEPT, lambda cause: AuthProviderExecutionError(callback="get", cause=cause))
-_INVALIDATE: Final = _Wrapped(
-    _PROVIDER_KEPT, lambda cause: AuthProviderExecutionError(callback="invalidate", cause=cause)
+_GET: Final = _Wrapped(
+    _PROVIDER_KEPT,
+    lambda cause: AuthProviderExecutionError(callback="get", delivery_state=DeliveryState.NOT_SENT, cause=cause),
 )
-_REFRESH: Final = _Wrapped(_PROVIDER_KEPT, lambda cause: AuthProviderExecutionError(callback="refresh", cause=cause))
+_INVALIDATE: Final = _Wrapped(
+    _PROVIDER_KEPT,
+    lambda cause: AuthProviderExecutionError(
+        callback="invalidate", delivery_state=DeliveryState.RESPONSE_STARTED, cause=cause
+    ),
+)
+_REFRESH: Final = _Wrapped(
+    _PROVIDER_KEPT,
+    lambda cause: AuthProviderExecutionError(callback="refresh", delivery_state=DeliveryState.NOT_SENT, cause=cause),
+)
 
 
 def get_credential(binding: BoundCredential, context: CredentialContext) -> AcquiredCredential:
@@ -597,21 +596,15 @@ def _query_url(url: str, added: tuple[tuple[str, str], ...], removed: frozenset[
 
 
 def strip_managed(request: PreparedRequest[BodyT], bound: BoundAuth | AsyncBoundAuth) -> PreparedRequest[BodyT]:
-    """Remove previous-hop auth fields while retaining unrelated encoded query and cookies."""
-    headers: list[tuple[str, str]] = []
-    for name, value in request.headers:
-        if name.lower() == "cookie" and bound.managed_cookies:
-            retained = tuple(
-                part.strip() for part in value.split(";") if part.strip().partition("=")[0] not in bound.managed_cookies
-            )
-            if retained:
-                headers.append((name, "; ".join(retained)))
-        elif name.lower() not in bound.managed_headers:
-            headers.append((name, value))
+    """Remove managed query fields a redirect target carries, retaining unrelated encoded query atoms.
+
+    An unsigned request never carries a managed header or cookie: patches, parameters, and raw requests naming one are
+    refused before the first hop, and credentials and signatures are placed only on each outgoing copy.
+    """
     return PreparedRequest(
         method=request.method,
         url=_query_url(request.url, (), bound.managed_query),
-        headers=HeadersView(headers),
+        headers=request.headers,
         body=request.body,
     )
 
@@ -632,8 +625,7 @@ def place_credentials(
     headers = list(request.headers.items())
     query: list[tuple[str, str]] = []
     cookies: list[tuple[str, str]] = []
-    for binding, value in zip(bound.credentials, acquired.values, strict=True):
-        scheme = binding.scheme
+    for scheme, value in zip((binding.scheme for binding in bound.credentials), acquired.values, strict=True):
         text = _wire_value(value.material)
         if scheme.location == "header":
             if _NAME.fullmatch(scheme.wire_name) is None or _HEADER_VALUE.fullmatch(text) is None:

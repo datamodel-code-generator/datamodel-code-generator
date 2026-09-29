@@ -240,6 +240,52 @@ paths:
                 format: binary
       security:
         - cookie_key: []
+  /api-key/cookie-parameters:
+    get:
+      operationId: cookie_parameters
+      tags: [auth]
+      parameters:
+        - name: theme
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: X-Trace
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              kind:
+                type: string
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - cookie_key: []
   /basic:
     get:
       operationId: basic
@@ -580,6 +626,10 @@ components:
       type: apiKey
       in: cookie
       name: session_key
+    cookie_header:
+      type: apiKey
+      in: header
+      name: Cookie
     basic:
       type: http
       scheme: basic

@@ -7,6 +7,11 @@ from contextlib import AbstractContextManager
 from functools import cached_property
 from typing import Literal
 
+from models import FieldApiKeyCookieParametersGetCookieThemeParameter as _dcg_type_0
+from models import FieldApiKeyCookieParametersGetHeaderXTraceParameter as _dcg_type_2
+from models import FieldApiKeyCookieParametersGetQueryFilterParameter as _dcg_type_3
+from models import FieldApiKeyCookieParametersGetQueryPageParameter as _dcg_type_1
+
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import AsyncBinaryBody, AsyncMultipartBody, MultipartBody, SyncBinaryBody
@@ -24,6 +29,7 @@ from ...types.auth import (
     BasicResponse,
     BearerResponse,
     ChallengeLessResponse,
+    CookieParametersResponse,
     EmptySecurityResponse,
     IdempotentAuthResponse,
     InheritedAuthResponse,
@@ -218,6 +224,24 @@ class AuthResource:
             response_media_type=response_media_type,
         ).data
 
+    def cookie_parameters(
+        self,
+        *,
+        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
+        page: _dcg_type_1 | ModelValue[_dcg_type_1],
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/octet-stream'] | ResponseMedia[CookieParametersResponse] | None = None,
+        options: RequestOptions | None = None,
+    ) -> CookieParametersResponse:
+        """Call GET /api-key/cookie-parameters."""
+        return self._core.execute(
+            _operations.OPERATION_11,
+            (theme, page, x_trace, filter),
+            options=options,
+            response_media_type=response_media_type,
+        ).data
+
     def basic(
         self,
         *,
@@ -226,7 +250,7 @@ class AuthResource:
     ) -> BasicResponse:
         """Call GET /basic."""
         return self._core.execute(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -240,7 +264,7 @@ class AuthResource:
     ) -> BearerResponse:
         """Call GET /bearer."""
         return self._core.execute(
-            _operations.OPERATION_12,
+            _operations.OPERATION_13,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -254,7 +278,7 @@ class AuthResource:
     ) -> AliasAuthResponse:
         """Call GET /alias."""
         return self._core.execute(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -268,7 +292,7 @@ class AuthResource:
     ) -> OauthReadResponse:
         """Call GET /oauth/read."""
         return self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -282,7 +306,7 @@ class AuthResource:
     ) -> OauthScopesResponse:
         """Call GET /oauth/scopes."""
         return self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -296,7 +320,7 @@ class AuthResource:
     ) -> OauthEmptyResponse:
         """Call GET /oauth/empty."""
         return self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -310,7 +334,7 @@ class AuthResource:
     ) -> OpenidReadResponse:
         """Call GET /openid/read."""
         return self._core.execute(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -324,7 +348,7 @@ class AuthResource:
     ) -> ChallengeLessResponse:
         """Call GET /challenge-less."""
         return self._core.execute(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -340,7 +364,7 @@ class AuthResource:
     ) -> UnsafeAuthResponse:
         """Call POST /unsafe."""
         return self._core.execute(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -358,7 +382,7 @@ class AuthResource:
     ) -> IdempotentAuthResponse:
         """Call POST /idempotent."""
         return self._core.execute(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -374,7 +398,7 @@ class AuthResource:
     ) -> NeverAuthResponse:
         """Call GET /never."""
         return self._core.execute(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -388,7 +412,7 @@ class AuthResource:
     ) -> VendorAuthResponse:
         """Call GET /vendor."""
         return self._core.execute(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -404,7 +428,7 @@ class AuthResource:
     ) -> SignedBodyResponse:
         """Call PUT /signed."""
         return self._core.execute(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,
@@ -422,7 +446,7 @@ class AuthResource:
     ) -> SignedMultipartResponse:
         """Call POST /signed-multipart."""
         return self._core.execute(
-            _operations.OPERATION_24,
+            _operations.OPERATION_25,
             (),
             body=body,
             media_type=media_type,
@@ -592,6 +616,24 @@ class AuthWithResponse:
             response_media_type=response_media_type,
         )
 
+    def cookie_parameters(
+        self,
+        *,
+        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
+        page: _dcg_type_1 | ModelValue[_dcg_type_1],
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/octet-stream'] | ResponseMedia[CookieParametersResponse] | None = None,
+        options: RequestOptions | None = None,
+    ) -> Response[CookieParametersResponse]:
+        """Call GET /api-key/cookie-parameters."""
+        return self._core.execute(
+            _operations.OPERATION_11,
+            (theme, page, x_trace, filter),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def basic(
         self,
         *,
@@ -600,7 +642,7 @@ class AuthWithResponse:
     ) -> Response[BasicResponse]:
         """Call GET /basic."""
         return self._core.execute(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -614,7 +656,7 @@ class AuthWithResponse:
     ) -> Response[BearerResponse]:
         """Call GET /bearer."""
         return self._core.execute(
-            _operations.OPERATION_12,
+            _operations.OPERATION_13,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -628,7 +670,7 @@ class AuthWithResponse:
     ) -> Response[AliasAuthResponse]:
         """Call GET /alias."""
         return self._core.execute(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -642,7 +684,7 @@ class AuthWithResponse:
     ) -> Response[OauthReadResponse]:
         """Call GET /oauth/read."""
         return self._core.execute(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -656,7 +698,7 @@ class AuthWithResponse:
     ) -> Response[OauthScopesResponse]:
         """Call GET /oauth/scopes."""
         return self._core.execute(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -670,7 +712,7 @@ class AuthWithResponse:
     ) -> Response[OauthEmptyResponse]:
         """Call GET /oauth/empty."""
         return self._core.execute(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -684,7 +726,7 @@ class AuthWithResponse:
     ) -> Response[OpenidReadResponse]:
         """Call GET /openid/read."""
         return self._core.execute(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -698,7 +740,7 @@ class AuthWithResponse:
     ) -> Response[ChallengeLessResponse]:
         """Call GET /challenge-less."""
         return self._core.execute(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -714,7 +756,7 @@ class AuthWithResponse:
     ) -> Response[UnsafeAuthResponse]:
         """Call POST /unsafe."""
         return self._core.execute(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -732,7 +774,7 @@ class AuthWithResponse:
     ) -> Response[IdempotentAuthResponse]:
         """Call POST /idempotent."""
         return self._core.execute(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -748,7 +790,7 @@ class AuthWithResponse:
     ) -> Response[NeverAuthResponse]:
         """Call GET /never."""
         return self._core.execute(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -762,7 +804,7 @@ class AuthWithResponse:
     ) -> Response[VendorAuthResponse]:
         """Call GET /vendor."""
         return self._core.execute(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -778,7 +820,7 @@ class AuthWithResponse:
     ) -> Response[SignedBodyResponse]:
         """Call PUT /signed."""
         return self._core.execute(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,
@@ -796,7 +838,7 @@ class AuthWithResponse:
     ) -> Response[SignedMultipartResponse]:
         """Call POST /signed-multipart."""
         return self._core.execute(
-            _operations.OPERATION_24,
+            _operations.OPERATION_25,
             (),
             body=body,
             media_type=media_type,
@@ -966,6 +1008,24 @@ class AuthWithRawResponse:
             response_media_type=response_media_type,
         )
 
+    def cookie_parameters(
+        self,
+        *,
+        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
+        page: _dcg_type_1 | ModelValue[_dcg_type_1],
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/octet-stream'] | ResponseMedia[CookieParametersResponse] | None = None,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """Call GET /api-key/cookie-parameters."""
+        return self._core.execute_raw(
+            _operations.OPERATION_11,
+            (theme, page, x_trace, filter),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def basic(
         self,
         *,
@@ -974,7 +1034,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /basic."""
         return self._core.execute_raw(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -988,7 +1048,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /bearer."""
         return self._core.execute_raw(
-            _operations.OPERATION_12,
+            _operations.OPERATION_13,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1002,7 +1062,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /alias."""
         return self._core.execute_raw(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1016,7 +1076,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /oauth/read."""
         return self._core.execute_raw(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1030,7 +1090,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /oauth/scopes."""
         return self._core.execute_raw(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1044,7 +1104,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /oauth/empty."""
         return self._core.execute_raw(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1058,7 +1118,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /openid/read."""
         return self._core.execute_raw(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1072,7 +1132,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /challenge-less."""
         return self._core.execute_raw(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1088,7 +1148,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call POST /unsafe."""
         return self._core.execute_raw(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -1106,7 +1166,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call POST /idempotent."""
         return self._core.execute_raw(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -1122,7 +1182,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /never."""
         return self._core.execute_raw(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1136,7 +1196,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call GET /vendor."""
         return self._core.execute_raw(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1152,7 +1212,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call PUT /signed."""
         return self._core.execute_raw(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,
@@ -1170,7 +1230,7 @@ class AuthWithRawResponse:
     ) -> RawResponse:
         """Call POST /signed-multipart."""
         return self._core.execute_raw(
-            _operations.OPERATION_24,
+            _operations.OPERATION_25,
             (),
             body=body,
             media_type=media_type,
@@ -1340,6 +1400,24 @@ class AuthWithStreamingResponse:
             response_media_type=response_media_type,
         )
 
+    def cookie_parameters(
+        self,
+        *,
+        theme: _dcg_type_0 | ModelValue[_dcg_type_0],
+        page: _dcg_type_1 | ModelValue[_dcg_type_1],
+        x_trace: _dcg_type_2 | ModelValue[_dcg_type_2],
+        filter: _dcg_type_3 | ModelValue[_dcg_type_3] | Unset = UNSET,
+        response_media_type: Literal['application/octet-stream'] | ResponseMedia[CookieParametersResponse] | None = None,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """Call GET /api-key/cookie-parameters."""
+        return self._core.stream(
+            _operations.OPERATION_11,
+            (theme, page, x_trace, filter),
+            options=options,
+            response_media_type=response_media_type,
+        )
+
     def basic(
         self,
         *,
@@ -1348,7 +1426,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /basic."""
         return self._core.stream(
-            _operations.OPERATION_11,
+            _operations.OPERATION_12,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1362,7 +1440,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /bearer."""
         return self._core.stream(
-            _operations.OPERATION_12,
+            _operations.OPERATION_13,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1376,7 +1454,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /alias."""
         return self._core.stream(
-            _operations.OPERATION_13,
+            _operations.OPERATION_14,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1390,7 +1468,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /oauth/read."""
         return self._core.stream(
-            _operations.OPERATION_14,
+            _operations.OPERATION_15,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1404,7 +1482,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /oauth/scopes."""
         return self._core.stream(
-            _operations.OPERATION_15,
+            _operations.OPERATION_16,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1418,7 +1496,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /oauth/empty."""
         return self._core.stream(
-            _operations.OPERATION_16,
+            _operations.OPERATION_17,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1432,7 +1510,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /openid/read."""
         return self._core.stream(
-            _operations.OPERATION_17,
+            _operations.OPERATION_18,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1446,7 +1524,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /challenge-less."""
         return self._core.stream(
-            _operations.OPERATION_18,
+            _operations.OPERATION_19,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1462,7 +1540,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /unsafe."""
         return self._core.stream(
-            _operations.OPERATION_19,
+            _operations.OPERATION_20,
             (),
             body=body,
             media_type=media_type,
@@ -1480,7 +1558,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /idempotent."""
         return self._core.stream(
-            _operations.OPERATION_20,
+            _operations.OPERATION_21,
             (),
             body=body,
             media_type=media_type,
@@ -1496,7 +1574,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /never."""
         return self._core.stream(
-            _operations.OPERATION_21,
+            _operations.OPERATION_22,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1510,7 +1588,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call GET /vendor."""
         return self._core.stream(
-            _operations.OPERATION_22,
+            _operations.OPERATION_23,
             (),
             options=options,
             response_media_type=response_media_type,
@@ -1526,7 +1604,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call PUT /signed."""
         return self._core.stream(
-            _operations.OPERATION_23,
+            _operations.OPERATION_24,
             (),
             body=body,
             media_type=media_type,
@@ -1544,7 +1622,7 @@ class AuthWithStreamingResponse:
     ) -> AbstractContextManager[RawResponse]:
         """Call POST /signed-multipart."""
         return self._core.stream(
-            _operations.OPERATION_24,
+            _operations.OPERATION_25,
             (),
             body=body,
             media_type=media_type,

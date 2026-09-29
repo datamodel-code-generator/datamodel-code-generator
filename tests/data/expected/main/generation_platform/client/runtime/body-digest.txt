@@ -89,6 +89,26 @@
     signed=[('PUT', 0, 0, None, True, True)]
     wire=[('PUT', b'/signed', 3, None)] pending=0
     reads=[65536, 65536] borrowed_open=True
+  descriptor lookup fails before hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('descriptor lost')] body_factory_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=7 reads=0
+  seek back fails after hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('seek failed')] body_factory_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=65556 reads=3
+  read and seek back fail while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('read failed')] body_factory_error secondary=['BodyFactoryError()']
+    signed=[]
+    wire=[] pending=1
+    offset=7 reads=0
+  deadline while hashing ! DeadlineExceededError: DeadlineExceededError(operation_id='signed_body', call_id='<call>', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=7 reads=1
+  descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'Bad file descriptor')] body_factory_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=0
   async bodyless = b'ok'
     signed=[('PUT', 0, 0, None, True, True)]
     wire=[('PUT', b'/signed', 0, None)] pending=0
@@ -174,3 +194,23 @@
     signed=[('PUT', 0, 0, None, True, True)]
     wire=[('PUT', b'/signed', 3, None)] pending=0
     reads=[65536, 65536] borrowed_open=True
+  async descriptor lookup fails before hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('descriptor lost')] body_factory_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=7 reads=0
+  async seek back fails after hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('seek failed')] body_factory_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=65556 reads=3
+  async read and seek back fail while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError('read failed')] body_factory_error secondary=['BodyFactoryError()']
+    signed=[]
+    wire=[] pending=1
+    offset=7 reads=0
+  async deadline while hashing ! DeadlineExceededError: DeadlineExceededError(operation_id='signed_body', call_id='<call>', delivery_state='NOT_SENT', phase='auth') [operation_id='signed_body', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='auth'] deadline_exceeded_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=7 reads=1
+  async descriptor lost while hashing ! BodyFactoryError: BodyFactoryError(operation_id='signed_body', call_id='<call>', attempt_index=0, hop_index=0) [operation_id='signed_body', cause=OSError(9, 'Bad file descriptor')] body_factory_error secondary=[]
+    signed=[]
+    wire=[] pending=1
+    offset=0

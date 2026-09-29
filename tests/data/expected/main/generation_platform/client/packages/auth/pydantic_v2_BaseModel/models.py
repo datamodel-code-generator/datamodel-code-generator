@@ -50,6 +50,26 @@ class FieldApiKeyCookieGetResponse(RootModel[bytes]):
     root: bytes
 
 
+class FieldApiKeyCookieParametersGetCookieThemeParameter(RootModel[str]):
+    root: str
+
+
+class FieldApiKeyCookieParametersGetQueryPageParameter(RootModel[int]):
+    root: int
+
+
+class FieldApiKeyCookieParametersGetHeaderXTraceParameter(RootModel[str]):
+    root: str
+
+
+class FieldApiKeyCookieParametersGetQueryFilterParameter(BaseModel):
+    kind: str | None = None
+
+
+class FieldApiKeyCookieParametersGetResponse(RootModel[bytes]):
+    root: bytes
+
+
 class FieldBasicGetResponse(RootModel[bytes]):
     root: bytes
 

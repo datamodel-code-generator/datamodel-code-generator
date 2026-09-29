@@ -410,7 +410,7 @@ class AuthConfig:
 
 def owned_providers(config: AuthConfig) -> tuple[_CloseableProvider, ...]:
     """Return the configuration's precomputed owned providers in declaration order."""
-    return config._owned_providers  # noqa: SLF001 - Internal immutable ownership snapshot.
+    return config._owned_providers  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 def _material(value: object) -> CredentialMaterial:

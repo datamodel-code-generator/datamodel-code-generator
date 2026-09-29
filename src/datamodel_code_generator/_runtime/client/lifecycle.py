@@ -164,10 +164,10 @@ class AsyncOwnedProviders(_Providers["CloseableCredentialProvider | AsyncCloseab
         """Start every adopted finalizer once, so one pending close cannot block the others."""
         import asyncio  # noqa: PLC0415
 
-        if self.tasks is None:
-            self.tasks = tuple(asyncio.create_task(_provider_closed(provider)) for provider in self.providers.values())
-            for task in self.tasks:
-                task.add_done_callback(_provider_observed)
+        assert self.tasks is None
+        self.tasks = tuple(asyncio.create_task(_provider_closed(provider)) for provider in self.providers.values())
+        for task in self.tasks:
+            task.add_done_callback(_provider_observed)
 
     async def drain(self) -> tuple[BaseException, ...]:
         """Observe all admitted finalizers without propagating a waiting caller's cancellation into them."""

@@ -38,6 +38,14 @@ _SCHEME_2: Final = SecurityScheme(
 
 
 _SCHEME_3: Final = SecurityScheme(
+    name='cookie_header',
+    kind='api_key',
+    location='header',
+    wire_name='Cookie',
+)
+
+
+_SCHEME_4: Final = SecurityScheme(
     name='basic',
     kind='basic',
     location='header',
@@ -45,7 +53,7 @@ _SCHEME_3: Final = SecurityScheme(
 )
 
 
-_SCHEME_4: Final = SecurityScheme(
+_SCHEME_5: Final = SecurityScheme(
     name='bearer',
     kind='bearer',
     location='header',
@@ -53,7 +61,7 @@ _SCHEME_4: Final = SecurityScheme(
 )
 
 
-_SCHEME_5: Final = SecurityScheme(
+_SCHEME_6: Final = SecurityScheme(
     name='bearer_alias',
     kind='bearer',
     location='header',
@@ -61,7 +69,7 @@ _SCHEME_5: Final = SecurityScheme(
 )
 
 
-_SCHEME_6: Final = SecurityScheme(
+_SCHEME_7: Final = SecurityScheme(
     name='oauth',
     kind='bearer',
     location='header',
@@ -69,7 +77,7 @@ _SCHEME_6: Final = SecurityScheme(
 )
 
 
-_SCHEME_7: Final = SecurityScheme(
+_SCHEME_8: Final = SecurityScheme(
     name='openid',
     kind='bearer',
     location='header',
@@ -77,10 +85,10 @@ _SCHEME_7: Final = SecurityScheme(
 )
 
 
-_SCHEME_8: Final = UnavailableSecurityScheme(name='unused_digest')
+_SCHEME_9: Final = UnavailableSecurityScheme(name='unused_digest')
 
 
-_SCHEME_9: Final = UnavailableSecurityScheme(name='unused_external')
+_SCHEME_10: Final = UnavailableSecurityScheme(name='unused_external')
 
 
 ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
@@ -94,6 +102,7 @@ ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
     _SCHEME_7,
     _SCHEME_8,
     _SCHEME_9,
+    _SCHEME_10,
 )
 
 
@@ -109,8 +118,9 @@ OPERATION_0: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
 
 
@@ -126,6 +136,7 @@ OPERATION_1: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=((),),
 )
@@ -143,6 +154,7 @@ OPERATION_2: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=(),
 )
@@ -160,8 +172,9 @@ OPERATION_3: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((), (SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),)),
+    alternatives=((), (SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),)),
 )
 
 
@@ -177,8 +190,9 @@ OPERATION_4: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),), ()),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),), ()),
 )
 
 
@@ -194,11 +208,12 @@ OPERATION_5: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=(
         (
             SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),
-            SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),
+            SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),
         ),
     ),
 )
@@ -216,10 +231,11 @@ OPERATION_6: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=(
         (SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),),
-        (SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),
+        (SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),
     ),
 )
 
@@ -236,10 +252,11 @@ OPERATION_7: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=(
-        (SecurityRequirement(scheme=_SCHEME_3, required_scopes=()),),
         (SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),
+        (SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),
     ),
 )
 
@@ -256,6 +273,7 @@ OPERATION_8: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=()),),),
 )
@@ -273,6 +291,7 @@ OPERATION_9: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=((SecurityRequirement(scheme=_SCHEME_1, required_scopes=()),),),
 )
@@ -290,6 +309,7 @@ OPERATION_10: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=((SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),),),
 )
@@ -307,8 +327,9 @@ OPERATION_11: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_3, required_scopes=()),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),),),
 )
 
 
@@ -324,6 +345,7 @@ OPERATION_12: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
 )
@@ -341,6 +363,7 @@ OPERATION_13: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
@@ -358,8 +381,9 @@ OPERATION_14: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=('read',)),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
 )
 
 
@@ -375,10 +399,9 @@ OPERATION_15: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=(
-        (SecurityRequirement(scheme=_SCHEME_6, required_scopes=('read', 'write')),),
-    ),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_7, required_scopes=('read',)),),),
 )
 
 
@@ -394,8 +417,11 @@ OPERATION_16: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_6, required_scopes=()),),),
+    alternatives=(
+        (SecurityRequirement(scheme=_SCHEME_7, required_scopes=('read', 'write')),),
+    ),
 )
 
 
@@ -411,8 +437,9 @@ OPERATION_17: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_7, required_scopes=('read',)),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_7, required_scopes=()),),),
 )
 
 
@@ -428,8 +455,9 @@ OPERATION_18: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_8, required_scopes=('read',)),),),
 )
 
 
@@ -445,8 +473,9 @@ OPERATION_19: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
 
 
@@ -462,8 +491,9 @@ OPERATION_20: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
 
 
@@ -479,8 +509,9 @@ OPERATION_21: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
 
 
@@ -496,8 +527,9 @@ OPERATION_22: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_4, required_scopes=()),),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
 
 
@@ -513,8 +545,9 @@ OPERATION_23: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
     ),
-    alternatives=((),),
+    alternatives=((SecurityRequirement(scheme=_SCHEME_5, required_scopes=()),),),
 )
 
 
@@ -530,6 +563,25 @@ OPERATION_24: Final = SecurityBinding(
         _SCHEME_7,
         _SCHEME_8,
         _SCHEME_9,
+        _SCHEME_10,
+    ),
+    alternatives=((),),
+)
+
+
+OPERATION_25: Final = SecurityBinding(
+    schemes=(
+        _SCHEME_0,
+        _SCHEME_1,
+        _SCHEME_2,
+        _SCHEME_3,
+        _SCHEME_4,
+        _SCHEME_5,
+        _SCHEME_6,
+        _SCHEME_7,
+        _SCHEME_8,
+        _SCHEME_9,
+        _SCHEME_10,
     ),
     alternatives=((),),
 )

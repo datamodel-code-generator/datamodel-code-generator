@@ -324,7 +324,7 @@ def _close_file(file: BinaryIO) -> None:
     file.close()
 
 
-def _digest_declaration(value: bytes | None) -> bytes | None:
+def _digest_declaration(value: object) -> bytes | None:
     if value is None:
         return None
     if not isinstance(value, bytes) or len(value) != _SHA256_BYTES:

@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from typing import Final, Literal, TypeAlias, overload
 
+from models import FieldApiKeyCookieParametersGetCookieThemeParameter as _dcg_type_0
+from models import FieldApiKeyCookieParametersGetHeaderXTraceParameter as _dcg_type_2
+from models import FieldApiKeyCookieParametersGetQueryFilterParameter as _dcg_type_3
+from models import FieldApiKeyCookieParametersGetQueryPageParameter as _dcg_type_1
 from typing_extensions import Never
 
 from ..._generated import model_bindings
@@ -317,6 +321,84 @@ class _ApiKeyCookieRequestCodecs(
 
 
 ApiKeyCookieRequestCodecs: Final = _ApiKeyCookieRequestCodecs(
+    responses=('application/octet-stream',),
+)
+
+
+CookieParametersResponse: TypeAlias = bytes
+CookieParametersErrorData: TypeAlias = bytes
+
+
+class CookieParametersHTTPError(HTTPStatusError[CookieParametersErrorData]):
+    """An error response of cookie_parameters, with its decoded payload when one is declared."""
+
+
+class _CookieParametersRequestCodecs(
+    RequestCodecs[Never, NativeOutboundCodec[_dcg_type_0] | NativeOutboundCodec[_dcg_type_1] | NativeOutboundCodec[_dcg_type_2] | NativeOutboundCodec[_dcg_type_3], Never, Never, ResponseMedia[CookieParametersResponse]],
+):
+    """The outbound codecs of the cookie_parameters request."""
+
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['cookie'],
+        name: Literal['theme'],
+    ) -> NativeOutboundCodec[_dcg_type_0]: ...
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['query'],
+        name: Literal['page'],
+    ) -> NativeOutboundCodec[_dcg_type_1]: ...
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['header'],
+        name: Literal['X-Trace'],
+    ) -> NativeOutboundCodec[_dcg_type_2]: ...
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['query'],
+        name: Literal['filter'],
+    ) -> NativeOutboundCodec[_dcg_type_3]: ...
+    @overload
+    def parameter(
+        self,
+        *,
+        location: Literal['path', 'query', 'querystring', 'header', 'cookie'],
+        name: str,
+    ) -> NativeOutboundCodec[_dcg_type_0] | NativeOutboundCodec[_dcg_type_1] | NativeOutboundCodec[_dcg_type_2] | NativeOutboundCodec[_dcg_type_3]: ...
+    def parameter(
+        self,
+        *,
+        location: Literal['path', 'query', 'querystring', 'header', 'cookie'],
+        name: str,
+    ) -> NativeOutboundCodec[_dcg_type_0] | NativeOutboundCodec[_dcg_type_1] | NativeOutboundCodec[_dcg_type_2] | NativeOutboundCodec[_dcg_type_3]:
+        """Return the outbound codec of one declared parameter."""
+        return self._parameter(location, name)
+
+    def select_response_media(
+        self,
+        *,
+        declared_media: Literal['application/octet-stream'],
+        concrete_media: str,
+    ) -> ResponseMedia[CookieParametersResponse]:
+        """Return the selector of a declared success response media type for a concrete one."""
+        return self._response_media(declared_media, concrete_media)
+
+
+CookieParametersRequestCodecs: Final = _CookieParametersRequestCodecs(
+    parameters=(
+        ('cookie', 'theme', model_bindings.outbound_0),
+        ('query', 'page', model_bindings.outbound_1),
+        ('header', 'X-Trace', model_bindings.outbound_2),
+        ('query', 'filter', model_bindings.outbound_3),
+    ),
     responses=('application/octet-stream',),
 )
 
@@ -774,7 +856,7 @@ SignedMultipartRequestCodecs: Final = _SignedMultipartRequestCodecs(
     default='multipart/form-data',
     parts=(
         ('multipart/form-data', 'file', None),
-        ('multipart/form-data', 'note', model_bindings.outbound_0),
+        ('multipart/form-data', 'note', model_bindings.outbound_4),
     ),
     requests=('multipart/form-data',),
     responses=('application/octet-stream',),

@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import io
 import tempfile
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import httpx2
 
 from tests.data.python.client_body_replay import _Chunks, _File
-from tests.data.python.client_runtime import Exchange, arecord, record, run
+from tests.data.python.client_runtime import Exchange, arecord, describe, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterator
+    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
     from types import ModuleType
 
 
@@ -112,6 +114,83 @@ class _Signer(_Signing):
 class _AsyncSigner(_Signing):
     async def sign(self, request: Any) -> Any:
         return self.observe(request)
+
+
+class _Faulty(_File):
+    """A borrowed file whose descriptor, reads or seeks fail, or whose reads stall, once hashing reads it."""
+
+    def __init__(self, *faults: str, stall: float = 0.0) -> None:
+        super().__init__(b"prefix-" + b"f" * 65549)
+        self.faults = faults
+        self.stall = stall
+        self.hashing = False
+
+    def fileno(self) -> int:
+        if "fileno" in self.faults:
+            msg = "descriptor lost"
+            raise OSError(msg)
+        return super().fileno()
+
+    def read(self, size: int | None = -1, /) -> bytes:
+        self.hashing = True
+        if self.stall:
+            time.sleep(self.stall)
+        if "read" in self.faults:
+            msg = "read failed"
+            raise OSError(msg)
+        return super().read(size)
+
+    def seek(self, offset: int, whence: int = 0, /) -> int:
+        if self.hashing and "seek" in self.faults:
+            msg = "seek failed"
+            raise OSError(msg)
+        return super().seek(offset, whence)
+
+
+class _Vanishing(io.FileIO):
+    """A real file whose descriptor stops resolving once hashing has read it."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(path, "rb")
+        self.hashing = False
+
+    def read(self, size: int = -1, /) -> bytes:
+        self.hashing = True
+        return super().read(size)
+
+    def fileno(self) -> int:
+        return -1 if self.hashing else super().fileno()
+
+
+def _faulted(error: BaseException | None) -> str:
+    if error is None:
+        return "returned"
+    return f"! {describe(error)} secondary={[repr(item) for item in getattr(error, 'secondary_errors', ())]}"
+
+
+def _failure(call: Callable[[], object]) -> str:
+    try:
+        call()
+    except Exception as error:  # noqa: BLE001
+        return _faulted(error)
+    return _faulted(None)
+
+
+async def _afailure(call: Callable[[], Awaitable[object]]) -> str:
+    try:
+        await call()
+    except Exception as error:  # noqa: BLE001
+        return _faulted(error)
+    return _faulted(None)
+
+
+def _faults() -> tuple[tuple[str, _Faulty, float], ...]:
+    return (
+        ("descriptor lookup fails before hashing", _Faulty("fileno"), 60.0),
+        ("seek back fails after hashing", _Faulty("seek"), 60.0),
+        ("read and seek back fail while hashing", _Faulty("read", "seek"), 60.0),
+        ("deadline while hashing", _Faulty(stall=0.3), 0.1),
+    )
 
 
 class _Replies:
@@ -217,7 +296,33 @@ def body_digest(package: ModuleType, lines: list[str]) -> None:
         _sync_factories(api, auth, bodies, options, replies, signer, lines)
         _sync_multipart(api, auth, bodies, options, replies, signer, path, lines)
         _sync_unsigned(api, auth, bodies, options, replies, signer, lines)
+        _sync_faults(api, bodies, options, replies, signer, path, lines)
     run(lambda: _async_digest(package, auth, bodies, options, lines))
+
+
+def _sync_faults(
+    api: Any, bodies: ModuleType, options: ModuleType, replies: _Replies, signer: _Signing, path: Path, lines: list[str]
+) -> None:
+    for label, file, timeout in _faults():
+        file.seek(7)
+        signer.reset(file=file, offset=7)
+        replies.reset(200)
+        outcome = _failure(
+            lambda file=file, timeout=timeout: api.auth.signed_body(
+                body=bodies.FileBody(file), options=options.RequestOptions(total_timeout=timeout)
+            )
+        )
+        lines.append(f"  {label} {outcome}")
+        replies.report(lines, signer)
+        lines.append(f"    offset={file.tell()} reads={len(file.reads)}")
+        file.close()
+    with _Vanishing(path) as vanishing:
+        signer.reset()
+        replies.reset(200)
+        outcome = _failure(lambda: api.auth.signed_body(body=bodies.FileBody(vanishing)))
+        lines.append(f"  descriptor lost while hashing {outcome}")
+        replies.report(lines, signer)
+        lines.append(f"    offset={vanishing.tell()}")
 
 
 def _sync_factories(
@@ -397,6 +502,36 @@ async def _async_digest(package: ModuleType, auth: ModuleType, bodies: ModuleTyp
                 lines.append(f"    reads={file.reads} borrowed_open={not file.closed}")
                 await body.aclose()
                 file.close()
+            await _async_faults(api, bodies, options, replies, signer, path, lines)
+
+
+async def _async_faults(
+    api: Any, bodies: ModuleType, options: ModuleType, replies: _Replies, signer: _Signing, path: Path, lines: list[str]
+) -> None:
+    for label, file, timeout in _faults():
+        file.seek(7)
+        body = bodies.AsyncFileBody(file)
+        signer.reset(file=file, offset=7)
+        replies.reset(200)
+        outcome = await _afailure(
+            lambda body=body, timeout=timeout: api.auth.signed_body(
+                body=body, options=options.RequestOptions(total_timeout=timeout)
+            )
+        )
+        lines.append(f"  async {label} {outcome}")
+        await body.aclose()
+        replies.report(lines, signer)
+        lines.append(f"    offset={file.tell()} reads={len(file.reads)}")
+        file.close()
+    with _Vanishing(path) as vanishing:
+        body = bodies.AsyncFileBody(vanishing)
+        signer.reset()
+        replies.reset(200)
+        outcome = await _afailure(lambda: api.auth.signed_body(body=body))
+        lines.append(f"  async descriptor lost while hashing {outcome}")
+        await body.aclose()
+        replies.report(lines, signer)
+        lines.append(f"    offset={vanishing.tell()}")
 
 
 async def _async_factories(

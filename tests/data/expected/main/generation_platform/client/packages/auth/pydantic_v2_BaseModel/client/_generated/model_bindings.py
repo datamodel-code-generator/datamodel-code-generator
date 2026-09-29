@@ -6,7 +6,15 @@ from __future__ import annotations
 from functools import cache
 from typing import Final
 
-from .._runtime.model_codecs.bindings import LeafNode, UseBinding
+import models
+
+from .._runtime.model_codecs.bindings import (
+    FieldBinding,
+    LeafNode,
+    ModelBinding,
+    ModelNode,
+    UseBinding,
+)
 from .._runtime.model_codecs.context import CodecContext
 from .._runtime.model_codecs.outbound import NativeOutboundCodec
 from .._runtime.model_codecs.pydantic_v2 import PydanticModelCodec
@@ -55,6 +63,28 @@ def _resources() -> tuple[SchemaResource, ...]:
                     },
                     '/anonymous': {
                         'get': {
+                            'responses': {
+                                '200': {
+                                    'content': {
+                                        'application/octet-stream': {'schema': {'type': 'string', 'format': 'binary'}},
+                                    },
+                                },
+                                'default': {
+                                    'content': {
+                                        'application/octet-stream': {'schema': {'type': 'string', 'format': 'binary'}},
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    '/api-key/cookie-parameters': {
+                        'get': {
+                            'parameters': [
+                                {'schema': {'type': 'string'}},
+                                {'schema': {'type': 'integer'}},
+                                {'schema': {'type': 'string'}},
+                                {'schema': {'type': 'object', 'properties': {'kind': {'type': 'string'}}}},
+                            ],
                             'responses': {
                                 '200': {
                                     'content': {
@@ -460,6 +490,12 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1and/get/responses/default/content/application~1octet-stream/schema',
                 '/paths/~1anonymous/get/responses/200/content/application~1octet-stream/schema',
                 '/paths/~1anonymous/get/responses/default/content/application~1octet-stream/schema',
+                '/paths/~1api-key~1cookie-parameters/get/parameters/0/schema',
+                '/paths/~1api-key~1cookie-parameters/get/parameters/1/schema',
+                '/paths/~1api-key~1cookie-parameters/get/parameters/2/schema',
+                '/paths/~1api-key~1cookie-parameters/get/parameters/3/schema',
+                '/paths/~1api-key~1cookie-parameters/get/responses/200/content/application~1octet-stream/schema',
+                '/paths/~1api-key~1cookie-parameters/get/responses/default/content/application~1octet-stream/schema',
                 '/paths/~1api-key~1cookie/get/responses/200/content/application~1octet-stream/schema',
                 '/paths/~1api-key~1cookie/get/responses/default/content/application~1octet-stream/schema',
                 '/paths/~1api-key~1header/get/responses/200/content/application~1octet-stream/schema',
@@ -523,7 +559,216 @@ def request_bundle() -> SchemaBundle:
     return SchemaBundle(_resources(), _request_view())
 
 
+@cache
+def _model_0() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldApiKeyCookieParametersGetCookieThemeParameter',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_1() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldApiKeyCookieParametersGetQueryPageParameter',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_2() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldApiKeyCookieParametersGetHeaderXTraceParameter',
+        native_kind='root',
+        schema_id=None,
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_3() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldApiKeyCookieParametersGetQueryFilterParameter',
+        native_kind='model',
+        schema_id=None,
+        fields=(
+            FieldBinding(
+                field_id='models:FieldApiKeyCookieParametersGetQueryFilterParameter.kind',
+                native_name='kind',
+                wire_name='kind',
+                validation_key='kind',
+                validation_keys=('kind',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
 CONTEXT_0: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/0/schema',
+    operation_id='/paths/~1api-key~1cookie-parameters/get',
+)
+
+
+@cache
+def codec_0() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetCookieThemeParameter]:
+    """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request cookie theme)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/0/schema|ModelNode(symbol='models:FieldApiKeyCookieParametersGetCookieThemeParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/0/schema',
+            operation_id='/paths/~1api-key~1cookie-parameters/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldApiKeyCookieParametersGetCookieThemeParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldApiKeyCookieParametersGetCookieThemeParameter'),
+            models=(_model_0(),),
+        ),
+        models.FieldApiKeyCookieParametersGetCookieThemeParameter,
+        {
+            'models:FieldApiKeyCookieParametersGetCookieThemeParameter': models.FieldApiKeyCookieParametersGetCookieThemeParameter,
+        },
+        request_bundle,
+    )
+
+
+@cache
+def outbound_0() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetCookieThemeParameter]:
+    return NativeOutboundCodec(codec_0(), CONTEXT_0)
+
+
+CONTEXT_1: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/1/schema',
+    operation_id='/paths/~1api-key~1cookie-parameters/get',
+)
+
+
+@cache
+def codec_1() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetQueryPageParameter]:
+    """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request query page)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/1/schema|ModelNode(symbol='models:FieldApiKeyCookieParametersGetQueryPageParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/1/schema',
+            operation_id='/paths/~1api-key~1cookie-parameters/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldApiKeyCookieParametersGetQueryPageParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldApiKeyCookieParametersGetQueryPageParameter'),
+            models=(_model_1(),),
+        ),
+        models.FieldApiKeyCookieParametersGetQueryPageParameter,
+        {
+            'models:FieldApiKeyCookieParametersGetQueryPageParameter': models.FieldApiKeyCookieParametersGetQueryPageParameter,
+        },
+        request_bundle,
+    )
+
+
+@cache
+def outbound_1() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetQueryPageParameter]:
+    return NativeOutboundCodec(codec_1(), CONTEXT_1)
+
+
+CONTEXT_2: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/2/schema',
+    operation_id='/paths/~1api-key~1cookie-parameters/get',
+)
+
+
+@cache
+def codec_2() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetHeaderXTraceParameter]:
+    """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request header X-Trace)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/2/schema|ModelNode(symbol='models:FieldApiKeyCookieParametersGetHeaderXTraceParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/2/schema',
+            operation_id='/paths/~1api-key~1cookie-parameters/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldApiKeyCookieParametersGetHeaderXTraceParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldApiKeyCookieParametersGetHeaderXTraceParameter'),
+            models=(_model_2(),),
+        ),
+        models.FieldApiKeyCookieParametersGetHeaderXTraceParameter,
+        {
+            'models:FieldApiKeyCookieParametersGetHeaderXTraceParameter': models.FieldApiKeyCookieParametersGetHeaderXTraceParameter,
+        },
+        request_bundle,
+    )
+
+
+@cache
+def outbound_2() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetHeaderXTraceParameter]:
+    return NativeOutboundCodec(codec_2(), CONTEXT_2)
+
+
+CONTEXT_3: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/3/schema',
+    operation_id='/paths/~1api-key~1cookie-parameters/get',
+)
+
+
+@cache
+def codec_3() -> PydanticModelCodec[models.FieldApiKeyCookieParametersGetQueryFilterParameter]:
+    """Codec of /paths/~1api-key~1cookie-parameters/get parameter (request query filter)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/3/schema|ModelNode(symbol='models:FieldApiKeyCookieParametersGetQueryFilterParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/3/schema',
+            operation_id='/paths/~1api-key~1cookie-parameters/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:FieldApiKeyCookieParametersGetQueryFilterParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldApiKeyCookieParametersGetQueryFilterParameter'),
+            models=(_model_3(),),
+        ),
+        models.FieldApiKeyCookieParametersGetQueryFilterParameter,
+        {
+            'models:FieldApiKeyCookieParametersGetQueryFilterParameter': models.FieldApiKeyCookieParametersGetQueryFilterParameter,
+        },
+        request_bundle,
+    )
+
+
+@cache
+def outbound_3() -> NativeOutboundCodec[models.FieldApiKeyCookieParametersGetQueryFilterParameter]:
+    return NativeOutboundCodec(codec_3(), CONTEXT_3)
+
+
+CONTEXT_4: Final = CodecContext(
     surface='client',
     direction='request',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1signed-multipart/post/requestBody/content/multipart~1form-data/schema/properties/note',
@@ -533,7 +778,7 @@ CONTEXT_0: Final = CodecContext(
 
 
 @cache
-def codec_0() -> PydanticModelCodec[str]:
+def codec_4() -> PydanticModelCodec[str]:
     """Codec of /paths/~1signed-multipart/post request_body (request note multipart/form-data)."""
     return PydanticModelCodec(
         UseBinding(
@@ -557,5 +802,5 @@ def codec_0() -> PydanticModelCodec[str]:
 
 
 @cache
-def outbound_0() -> NativeOutboundCodec[str]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
+def outbound_4() -> NativeOutboundCodec[str]:
+    return NativeOutboundCodec(codec_4(), CONTEXT_4)
