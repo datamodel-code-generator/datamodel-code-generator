@@ -163,17 +163,19 @@ class CallEvents:
         """Pass an event to every hook, preserving an existing failure during terminal notification."""
         failures: list[Exception] = []
         try:
-            self._notified(event, failures, terminal=terminal)
-        except BaseException as interrupted:
-            if error is not None and _interrupted(error, interrupted) is error:
-                return failures
+            interrupted = self._notified(event, failures, terminal=terminal)
+        except BaseException as interruption:
+            for failure in failures:
+                add_secondary(interruption, failure)
+            raise
+        if interrupted is not None and (error is None or _interrupted(error, interrupted) is not error):
             for failure in failures:
                 add_secondary(interrupted, failure)
-            raise
+            raise interrupted
         return failures
 
-    def _notified(self, event: CallEvent, failures: list[Exception], *, terminal: bool) -> None:
-        """Drain terminal hooks after native interruption while ordinary events stop immediately."""
+    def _notified(self, event: CallEvent, failures: list[Exception], *, terminal: bool) -> BaseException | None:
+        """Stop an ordinary event at a native interruption, but drain terminal hooks and return the interruption."""
         interruption: BaseException | None = None
         for hook in self.hooks:
             if not terminal:
@@ -191,8 +193,7 @@ class CallEvents:
                     add_secondary(interruption, error)
             if not terminal:
                 self.call.check()
-        if interruption is not None:
-            raise interruption
+        return interruption
 
     async def anotify(
         self, event: CallEvent, *, terminal: bool = False, error: BaseException | None = None
@@ -202,13 +203,12 @@ class CallEvents:
         if terminal:
 
             async def notify() -> None:
-                try:
-                    await self._anotified(event, failures, terminal=True)
-                except BaseException as interrupted:
-                    if error is None or _interrupted(error, interrupted) is not error:
-                        for failure in failures:
-                            add_secondary(interrupted, failure)
-                        raise
+                if (interrupted := await self._anotified(event, failures, terminal=True)) is not None and (
+                    error is None or _interrupted(error, interrupted) is not error
+                ):
+                    for failure in failures:
+                        add_secondary(interrupted, failure)
+                    raise interrupted
                 if failures:
                     raise self.failed(event.name, failures)
 
@@ -227,7 +227,7 @@ class CallEvents:
                 raise
         return failures
 
-    async def _anotified(self, event: CallEvent, failures: list[Exception], *, terminal: bool) -> None:
+    async def _anotified(self, event: CallEvent, failures: list[Exception], *, terminal: bool) -> BaseException | None:
         """Deliver an event in its owner's task, preserving ordinary callback failures in order."""
         interruption: BaseException | None = None
         for hook in self.hooks:
@@ -246,8 +246,7 @@ class CallEvents:
                     add_secondary(interruption, error)
             if not terminal:
                 self.call.check()
-        if interruption is not None:
-            raise interruption
+        return interruption
 
     def failed(
         self, name: EventName, failures: list[Exception], completed: Response[object] | Unset = UNSET
@@ -395,9 +394,7 @@ class CallEvents:
             if event.name == "call_end":
                 event, primary = self._observed_end(event, primary)
             failures: list[Exception] = []
-            try:
-                self._notified(event, failures, terminal=True)
-            except BaseException as interrupted:  # noqa: BLE001
+            if (interrupted := self._notified(event, failures, terminal=True)) is not None:
                 self.call.retry_blocked = True
                 primary = _interrupted(primary, interrupted)
             if failures:
@@ -447,9 +444,7 @@ class CallEvents:
                 if pending.name == "call_end":
                     event, primary = self._observed_end(pending, primary)
                 failures: list[Exception] = []
-                try:
-                    await self._anotified(event, failures, terminal=True)
-                except BaseException as interrupted:  # noqa: BLE001
+                if (interrupted := await self._anotified(event, failures, terminal=True)) is not None:
                     self.call.retry_blocked = True
                     primary = _interrupted(primary, interrupted)
                 if failures:
