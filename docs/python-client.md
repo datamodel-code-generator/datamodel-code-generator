@@ -644,7 +644,7 @@ views. The following examples use a generated package named `pets` and take the 
 | `total_timeout` | `60` | Relative budget from call entry through encoding, callbacks, sending, reading, and decoding |
 | `deadline` | `None` | An absolute monotonic deadline created by `Deadline.after(seconds)` |
 | `cancel_token` | `None` | An explicit cancellation signal shared with the call |
-| `max_network_sends` | `1 + max_retries + (max_redirects if enabled)` | Maximum number of send slots the call may reserve; `3` with the fixed defaults |
+| `max_network_sends` | `1 + max_retries + (max_redirects if enabled)`, plus `AuthConfig.max_token_exchanges` with an OAuth provider of the SDK | Maximum number of send slots the call may reserve; `3` with the fixed defaults |
 | `stream_idle_timeout` | `60` | Read inactivity limit after a streaming response is handed to the caller |
 | `stream_total_timeout` | `None` | Total stream lifetime after handoff |
 | `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
@@ -665,7 +665,8 @@ Durations must be finite and nonnegative, and send limits must be nonnegative in
 `cleanup_timeout` must be strictly positive and cannot be `None`. Invalid values raise `ConfigurationError` with the
 option's `field_path`, such as `("timeout", "read")`. `total_timeout=0` raises `DeadlineExceededError` before body
 factories, limiter acquisition, or sending; hooks still receive `call_start` and `call_end` with zero sends.
-`max_network_sends=0` raises `BudgetExceededError` before a send.
+`max_network_sends=0` raises `BudgetExceededError` before a send, or `AuthBudgetExceededError` when an OAuth provider of
+the SDK would first acquire a token.
 
 ### A budget shared by every phase
 
@@ -1468,6 +1469,17 @@ already names another one, and `refresh_snapshot(refresh_id)` returns its `Refre
 or runs, then the state it ended in, whether it sent a token request, and its failure's reason code, without tokens.
 Snapshots of the latest 128 ended acquisitions are kept for five minutes.
 
+A generated call accounts for these acquisitions. The call that needs a new one pays one of its
+`AuthConfig.max_token_exchanges` exchanges (two by default) and one network send, and it needs room for the request the
+token serves too; when `max_network_sends` is omitted, the call's send limit makes room for its exchanges. A call that
+joins an acquisition another caller started pays nothing and reports `auth_wait` to its hooks; when a queued acquisition
+starts later, its oldest waiter pays for it if that waiter is a call. A call that cannot pay raises
+`AuthBudgetExceededError` before the token request, and recovering from a rejected token stops with
+`auth_exchange_budget_exhausted` when the recovery needs an acquisition the call can no longer pay for. `ResponseInfo`
+and errors report `auth_exchange_count`, `auth_exchange_budget_used`, the `auth_refresh_ids` of the acquisitions the
+call started or waited for, and `auth_refresh_pending`, how many of them were still queued or running. Custom providers,
+wrappers of these providers included, take no part in this accounting.
+
 `get` returns the shared token, waiting for it when none is usable; `refresh` acquires a new one, or joins the running
 acquisition, whatever the provider holds; `invalidate(version)` forgets the held token only if it is that version.
 Closing the provider refuses new acquisitions with `AuthProviderClosedError`, ends a queued one, lets a running one
@@ -1476,6 +1488,5 @@ async provider belongs to the event loop it was created on or first used from, a
 own that a later `aclose` awaits when the first was cancelled. Client authentication, endpoints, and the token transport
 otherwise follow the authorization code flow.
 
-Refresh-token providers, token persistence, token exchange budgets and counters, Basic charset overrides, resource
-audience metadata, and generated OAuth provider factories are not available yet; applications construct providers
-explicitly.
+Refresh-token providers, token persistence, Basic charset overrides, resource audience metadata, and generated OAuth
+provider factories are not available yet; applications construct providers explicitly.

@@ -126,6 +126,7 @@ class RetryState:
     network_available: bool
     server_hint: bool | None
     proven_not_sent: bool = False
+    exchange_available: bool = True
 
 
 def replay_safe(
@@ -186,6 +187,8 @@ def retry_stop(
         return "max_retries_exhausted"
     if state.reason == "auth_invalid_token" and auth_recovery_used:
         return "auth_recovery_exhausted"
+    if not state.exchange_available:
+        return "auth_exchange_budget_exhausted"
     return _replay_stop(state, now=now)
 
 

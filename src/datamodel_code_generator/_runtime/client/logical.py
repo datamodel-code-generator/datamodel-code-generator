@@ -32,7 +32,8 @@ if TYPE_CHECKING:
     from _thread import LockType
     from collections.abc import Awaitable, Callable
 
-    from .errors import DeadlinePhase, IOPhase
+    from .admission import RefreshRecord
+    from .errors import AuthBudgetKind, DeadlinePhase, IOPhase
     from .lifecycle import CleanupOwner
     from .options import Settings
     from .timing import Deadline
@@ -186,7 +187,7 @@ class _Guard:
         return self.reason is not None and _uncancel(self.task) <= self.level
 
 
-class LogicalCallContext:
+class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of one call.
     """Keep all state belonging to a call, through stream handoff and the release of its owned work."""
 
     __slots__ = (
@@ -195,12 +196,12 @@ class LogicalCallContext:
         "_io_context",
         "_left",
         "_phase",
+        "_refreshes",
         "_scope",
         "_task",
         "auth_exchange_budget_used",
         "auth_exchange_count",
         "auth_refresh_ids",
-        "auth_refresh_pending",
         "call_id",
         "deadline",
         "delivery_state",
@@ -241,7 +242,7 @@ class LogicalCallContext:
         self.retry_blocked = False
         self.auth_exchange_budget_used = 0
         self.auth_refresh_ids: tuple[str, ...] = ()
-        self.auth_refresh_pending = 0
+        self._refreshes: tuple[RefreshRecord, ...] = ()
         self.wire_send_count: int | None = None
         self.delivery_state = DeliveryState.NOT_SENT
         self.finished = False
@@ -253,6 +254,48 @@ class LogicalCallContext:
         self._interrupted: BaseException | None = None
         self._left: list[asyncio.Task[None]] = []
         self._task: asyncio.Task[object] | None = None
+
+    @property
+    def auth_refresh_pending(self) -> int:
+        """Return how many acquisitions the call started or waited for are still queued or running."""
+        return sum(refresh.outstanding for refresh in refreshes) if (refreshes := self._refreshes) else 0
+
+    def shortfall(self) -> tuple[AuthBudgetKind, int, int] | None:
+        """Return the budget without room for a new acquisition, or None.
+
+        An acquisition needs a token exchange and two network sends: its token request and the request it serves.
+        """
+        config = self.settings.auth
+        assert config is not None
+        with self._scope.lock:
+            if (used := self.auth_exchange_budget_used) >= (limit := config.max_token_exchanges):
+                return "auth_exchange", limit, used
+            if (sends := self.send_limit) is not None and (used := self.network_send_budget_used) + 1 >= sends:
+                return "network", sends, used
+        return None
+
+    def exchange_room(self) -> bool:
+        """Return whether the call may still pay for a new token acquisition."""
+        config = self.settings.auth
+        assert config is not None
+        return self.auth_exchange_budget_used < config.max_token_exchanges
+
+    def charge(self) -> None:
+        """Consume the token exchange and the network send of an acquisition admitted for the call."""
+        with self._scope.lock:
+            self.auth_exchange_budget_used += 1
+            self.network_send_budget_used += 1
+
+    def joined(self, refresh: RefreshRecord) -> None:
+        """Record an acquisition the call started or waits for."""
+        self._refreshes = (*self._refreshes, refresh)
+        self.auth_refresh_ids = (*self.auth_refresh_ids, refresh.refresh_id)
+
+    def exchanged(self) -> None:
+        """Count the token request that an acquisition charged to the call sent."""
+        with self._scope.lock:
+            self.auth_exchange_count += 1
+            self.network_send_count += 1
 
     def remaining(self) -> float | None:
         """Return the current call or stream deadline's remaining seconds, never negative."""

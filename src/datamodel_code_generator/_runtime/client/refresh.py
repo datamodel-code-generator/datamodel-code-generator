@@ -18,6 +18,7 @@ from uuid import uuid4
 
 from .auth import BearerCredential, CredentialContext, RefreshInfo, TokenVersion, checked_scopes
 from .errors import (
+    AuthBudgetExceededError,
     AuthConcurrencyLimitError,
     AuthConfigurationError,
     AuthProviderClosedError,
@@ -39,7 +40,9 @@ if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Coroutine
     from concurrent.futures import ThreadPoolExecutor
 
+    from .admission import CallAdmission
     from .auth import RefreshState
+    from .errors import AuthBudgetKind
     from .oauth import AsyncTokenEndpoint, Exchanged, TokenEndpoint
     from .options import OAuthProviderOptions
 
@@ -117,14 +120,21 @@ Outcome = Published | Failed
 
 
 class _Waiter(Protocol):
+    @property
+    def admission(self) -> CallAdmission | None:
+        """Return the call the caller waits for, if a client call accounts for the acquisition."""
+
     def deliver(self, outcome: Outcome) -> None:
         """Hand a committed outcome to the waiting caller."""
 
 
 class Job:
-    """One shared acquisition: QUEUED until admitted, then run once; its outcome is committed exactly once."""
+    """One shared acquisition: QUEUED until admitted, then run once; its outcome is committed exactly once.
 
-    __slots__ = ("finished", "outcome", "progress", "refresh_id", "session", "waiters")
+    It stays outstanding until its work returns, or until it ends without being admitted.
+    """
+
+    __slots__ = ("charged", "finished", "outcome", "outstanding", "progress", "refresh_id", "session", "waiters")
 
     def __init__(self) -> None:
         """Start queued under a new refresh id, without waiters or a session."""
@@ -134,6 +144,8 @@ class Job:
         self.progress = Progress()
         self.outcome: Outcome | None = None
         self.finished = False
+        self.outstanding = True
+        self.charged: CallAdmission | None = None
 
     @property
     def until(self) -> float | None:
@@ -145,6 +157,7 @@ class Job:
 class SyncWaiter:
     """A synchronous caller waiting on the family's condition for a job's outcome."""
 
+    admission: CallAdmission | None = None
     outcome: Outcome | None = None
 
     def deliver(self, outcome: Outcome) -> None:
@@ -157,6 +170,7 @@ class AsyncWaiter:
     """An asyncio caller waiting for a job's outcome through its own future."""
 
     future: Future[Outcome]
+    admission: CallAdmission | None = None
 
     def deliver(self, outcome: Outcome) -> None:
         """Resolve the caller's future."""
@@ -233,10 +247,12 @@ class SharedRefresh:
         self._outstanding: set[Job] = set()
         self._running: set[Job] = set()
 
-    def claim(self, waiter: _Waiter, *, force: bool) -> Published | tuple[Job, bool]:
-        """Return usable cached material, or attach the waiter to the family's job and say whether to start it.
+    def claim(self, waiter: _Waiter, *, force: bool) -> Published | tuple[Job, bool, bool]:
+        """Return usable cached material, or attach the waiter to the family's job.
 
-        The caller holds the lock. A new job is admitted at once while fewer jobs than the concurrency limit run.
+        The result says whether to start the job and whether another caller started it. The caller holds the lock. A
+        new job is admitted at once while fewer jobs than the concurrency limit run. A call that may pay for an
+        admission, starting a job or joining a queued one, needs room in its budgets first.
         """
         options = self.options
         if (lifecycle := self.lifecycle) != "OPEN":
@@ -254,8 +270,11 @@ class SharedRefresh:
             and (cache.refresh_at is None or monotonic() < cache.refresh_at)
         ):
             return cache
-        start = False
+        start = joined = False
+        admission = waiter.admission
         if (job := self._active) is None:
+            if admission is not None and (shortfall := admission.shortfall()) is not None:
+                raise self.over_budget(shortfall)
             if len(self._outstanding) >= options.max_pending_refreshes:
                 raise AuthConcurrencyLimitError(
                     limit_kind="pending_refreshes",
@@ -268,8 +287,9 @@ class SharedRefresh:
             job = self._active = Job()
             self._outstanding.add(job)
             self.receipts.started(job)
-            if start := len(self._running) < options.max_concurrent_refreshes:
-                self.admit(job)
+            start = len(self._running) < options.max_concurrent_refreshes
+        elif job.session is None and admission is not None and (shortfall := admission.shortfall()) is not None:
+            raise self.over_budget(shortfall, job.refresh_id)
         elif len(job.waiters) >= options.max_waiters:
             raise AuthConcurrencyLimitError(
                 limit_kind="waiters",
@@ -280,14 +300,37 @@ class SharedRefresh:
                 provider_id=self.provider_id,
                 refresh_id=job.refresh_id,
             )
+        else:
+            joined = True
         job.waiters.append(waiter)
-        return job, start
+        if admission is not None:
+            admission.joined(job)
+        if start:
+            self.admit(job)
+        return job, start, joined
+
+    def over_budget(self, shortfall: tuple[AuthBudgetKind, int, int], refresh_id: str | None = None) -> SDKError:
+        """Return the refusal of a call without room for the acquisition it would pay for."""
+        kind, limit, used = shortfall
+        return AuthBudgetExceededError(
+            budget_kind=kind,
+            limit=limit,
+            used=used,
+            state=self.state,
+            delivery_state=DeliveryState.NOT_SENT,
+            phase="admission",
+            provider_id=self.provider_id,
+            refresh_id=refresh_id,
+        )
 
     def admit(self, job: Job) -> None:
-        """Start a job's provider-owned session; the caller holds the lock."""
+        """Start a job's provider-owned session, charged to the call of its oldest waiter; the caller holds the lock."""
         options = self.options
         job.session = Session.start(options.refresh_timeout, options.phase_timeout)
         self._running.add(job)
+        if (charged := job.waiters[0].admission) is not None:
+            charged.charge()
+            job.charged = charged
 
     def commit(self, job: Job, outcome: Outcome) -> None:
         """Commit a job's outcome once, publish material before anyone wakes, and deliver it in arrival order."""
@@ -309,13 +352,21 @@ class SharedRefresh:
         self.changed.notify_all()
 
     def leave(self, waiter: _Waiter, job: Job) -> None:
-        """Detach a departing waiter; a job nobody waits for is dropped unless it was already admitted."""
+        """Detach a departing waiter, counting the token request its call paid for, if the job sent it by now.
+
+        A job nobody waits for is dropped unless it was already admitted.
+        """
         if waiter in job.waiters:
             job.waiters.remove(waiter)
+        if (admission := waiter.admission) is not None and job.charged is admission:
+            job.charged = None
+            if job.progress.sent:
+                admission.exchanged()
         if job.session is None and not job.waiters and job.outcome is None:
             self._active = None
             self._outstanding.remove(job)
             self.receipts.dropped(job)
+            job.outstanding = False
 
     def expire(self, job: Job) -> None:
         """Fail an admitted job whose work outlived its session and grace period, without stopping that work."""
@@ -369,6 +420,7 @@ class SharedRefresh:
         """Commit a returned job, free its slot even when finished twice, and return the queued job to start next."""
         self.commit(job, outcome)
         job.finished = True
+        job.outstanding = False
         self._running.discard(job)
         self._outstanding.discard(job)
         self.changed.notify_all()
@@ -401,6 +453,21 @@ class SharedRefresh:
                     ),
                 )
                 self._outstanding.remove(queued)
+                queued.outstanding = False
+
+    def exchange_needed(self, version: object) -> bool:
+        """Return whether replacing a rejected version needs a new acquisition.
+
+        None is needed while an admitted job runs, or while a newer usable token is held.
+        """
+        with self.lock:
+            if (active := self._active) is not None and active.session is not None:
+                return False
+            return (
+                (cache := self.cache) is None
+                or cache.material.version is version
+                or (cache.refresh_at is not None and monotonic() >= cache.refresh_at)
+            )
 
     def drained(self, now: float) -> float | None:
         """Expire running jobs whose session ended, and return how long closing still waits for the others."""
@@ -457,18 +524,27 @@ class SyncSharedRefresh:
         self._executor: ThreadPoolExecutor | None = None
         self._releasing = False
 
-    def obtain(self, context: CredentialContext, *, force: bool) -> BearerCredential:
+    def obtain(
+        self, context: CredentialContext, *, force: bool, admission: CallAdmission | None = None
+    ) -> BearerCredential:
         """Return usable material, joining or starting the family's job and waiting within the caller's limits."""
         started = monotonic()
         shared = self.shared
-        waiter = SyncWaiter()
+        waiter = SyncWaiter(admission)
         with shared.lock:
             claimed = shared.claim(waiter, force=force)
             if isinstance(claimed, Published):
                 return claimed.material
-            job, start = claimed
+            job, start, joined = claimed
         if start:
             self._start(job)
+        if joined and admission is not None:
+            try:
+                admission.waiting()
+            except BaseException:
+                with shared.lock:
+                    shared.leave(waiter, job)
+                raise
         with shared.lock:
             try:
                 while (outcome := waiter.outcome) is None:
@@ -568,22 +644,26 @@ class AsyncSharedRefresh:
         self._tasks: set[Task[None]] = set()
         self._finalizer: Task[None] | None = None
 
-    async def obtain(self, context: CredentialContext, *, force: bool) -> BearerCredential:
+    async def obtain(
+        self, context: CredentialContext, *, force: bool, admission: CallAdmission | None = None
+    ) -> BearerCredential:
         """Return usable material, joining or starting the family's job and awaiting it within the caller's limits."""
         from asyncio import get_running_loop, wait  # noqa: PLC0415
 
         started = monotonic()
         shared = self.shared
-        waiter = AsyncWaiter(get_running_loop().create_future())
+        waiter = AsyncWaiter(get_running_loop().create_future(), admission)
         with shared.lock:
             claimed = shared.claim(waiter, force=force)
             if isinstance(claimed, Published):
                 return claimed.material
-            job, start = claimed
+            job, start, joined = claimed
         if start:
             self._start(job)
         future = waiter.future
         try:
+            if joined and admission is not None:
+                await admission.awaiting()
             while not future.done():
                 await wait({future}, timeout=_waited(context, started))
         finally:
@@ -780,9 +860,13 @@ class SyncClientCredentials:
         self._grant = grant
         self._refresh = SyncSharedRefresh(options, self._acquire, endpoint.close)
 
-    def obtain(self, context: object, *, force: bool) -> BearerCredential:
+    def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
         """Return usable material or acquire it, after checking the caller's context."""
-        return self._refresh.obtain(self._grant.checked(context), force=force)
+        return self._refresh.obtain(self._grant.checked(context), force=force, admission=admission)
+
+    def exchange_needed(self, version: object) -> bool:
+        """Return whether replacing a rejected version needs a new acquisition."""
+        return self._refresh.shared.exchange_needed(version)
 
     def invalidate(self, version: object) -> None:
         """Forget the cached material if it is the rejected version."""
@@ -819,11 +903,15 @@ class AsyncClientCredentials:
         self._grant = grant
         self._refresh = AsyncSharedRefresh(options, self._acquire, endpoint.aclose)
 
-    async def obtain(self, context: object, *, force: bool) -> BearerCredential:
+    async def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
         """Return usable material or acquire it, after checking the caller's context and event loop."""
         checked = self._grant.checked(context)
         self._endpoint.bind()
-        return await self._refresh.obtain(checked, force=force)
+        return await self._refresh.obtain(checked, force=force, admission=admission)
+
+    def exchange_needed(self, version: object) -> bool:
+        """Return whether replacing a rejected version needs a new acquisition."""
+        return self._refresh.shared.exchange_needed(version)
 
     def invalidate(self, version: object) -> None:
         """Forget the cached material if it is the rejected version."""

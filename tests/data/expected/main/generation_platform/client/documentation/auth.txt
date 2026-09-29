@@ -566,7 +566,7 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| network send slots | 1 + max_retries + (max_redirects when redirects are enabled) |
+| network send slots | 1 + max_retries + (max_redirects if redirects) + (max_token_exchanges if SDK OAuth) |
 | stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
 | maximum response / error body / stream bytes | 16 MiB / 64 KiB / None |
 
@@ -694,9 +694,10 @@ verify TLS. `DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` run one
 at the server's interval within the response's lifetime and the `SessionOptions` limits. No flow opens a browser or a
 verification URI; the returned `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and
 `AsyncClientCredentialsProvider` acquire a client's own token when a call first needs it, share one acquisition among
-concurrent callers within `OAuthProviderOptions` limits, and renew the token before it expires. Refresh-token
-providers, token persistence, token exchange budgets and counters, Basic charset overrides, resource audience
-metadata, and generated OAuth factories are not available yet. Providers are explicit.
+concurrent callers within `OAuthProviderOptions` limits, and renew the token before it expires. The call needing a
+new acquisition, or a queued one's oldest waiting call, pays one `AuthConfig.max_token_exchanges` exchange and one
+network send, and joiners report `auth_wait`. Refresh-token providers, token persistence, Basic charset overrides,
+resource audience metadata, and generated OAuth factories are not available yet. Providers are explicit.
 
 ## Counters and cleanup
 

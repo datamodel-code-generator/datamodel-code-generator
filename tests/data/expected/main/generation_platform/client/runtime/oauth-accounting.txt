@@ -1,0 +1,100 @@
+# auth pydantic_v2.BaseModel
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  first call = 200 exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0
+    events = ['call_start', 'auth_start', 'auth_end', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  cached token = 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer t] b''
+  static provider send limit = [3] 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  provider of the SDK send limit = [5] 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  wrapper of a provider of the SDK send limit = [3] 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  explicit send limit send limit = [4] 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  no token exchange left = AuthBudgetExceededError state=UNINITIALIZED delivery_state=NOT_SENT phase=admission budget_kind=auth_exchange exchanges=0 sends=0 budgets=0/0 refreshes=0 pending=0 token sends=0
+  no network send left = AuthBudgetExceededError state=UNINITIALIZED delivery_state=NOT_SENT phase=admission budget_kind=network exchanges=0 sends=0 budgets=0/0 refreshes=0 pending=0 token sends=0
+  no room for the request the token serves = AuthBudgetExceededError state=UNINITIALIZED delivery_state=NOT_SENT phase=admission budget_kind=network limit=1 exchanges=0 sends=0 budgets=0/0 refreshes=0 pending=0 token sends=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  joiner without exchange slots = 200 exchanges=0 sends=1 budgets=0/1 refreshes=1 pending=0
+    starter = access-1 events = ['call_start', 'auth_start', 'auth_wait', 'auth_end', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  failing wait hook = HookExecutionError delivery_state=NOT_SENT event_name=auth_wait cause=RuntimeError exchanges=0 sends=0 budgets=0/0 refreshes=1 pending=1
+    starter = access-1
+  acquisition outliving its session = AuthTimeoutError state=EXCHANGE_REJECTED delivery_state=MAYBE_SENT phase=unknown timeout_kind=provider refresh_id=<call>
+  joining a queued acquisition without exchange slots = AuthBudgetExceededError state=EXCHANGE_REJECTED delivery_state=NOT_SENT phase=admission budget_kind=auth_exchange refresh_id=<call> exchanges=0 sends=0 budgets=0/0 refreshes=0 pending=0
+    standalone creator out of time = DeadlineExceededError delivery_state=NOT_SENT phase=auth
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+    oldest waiter pays the admission = 200 exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0
+    later waiter = 200 exchanges=0 sends=1 budgets=0/1 refreshes=1 pending=0
+  call leaving its acquisition = RequestCancelledError delivery_state=NOT_SENT source=cancel_token cause=AuthProviderExecutionError exchanges=1 sends=1 budgets=1/1 refreshes=1 pending=1
+    events once the acquisition ended = ['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+    next call = 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  call leaving before its acquisition sent = RequestCancelledError delivery_state=NOT_SENT source=cancel_token cause=AuthProviderExecutionError exchanges=0 sends=0 budgets=1/1 refreshes=1 pending=1
+    events once the acquisition ended = ['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+    next call = 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  recovery = 200 exchanges=2 sends=4 budgets=2/4 refreshes=2 pending=0 token sends=2
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  recovery without an exchange slot = BearerHTTPError status_code=401 stop=auth_exchange_budget_exhausted exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0 token sends=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+    next call = 200 exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0 token sends=2
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  second rejection = BearerHTTPError status_code=401 stop=auth_recovery_exhausted exchanges=2 sends=4 budgets=2/4 refreshes=2 pending=0 token sends=2
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  recovery without a network send = BearerHTTPError status_code=401 stop=network_budget_exhausted exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0 token sends=1
+  > POST https://api.example.com/unsafe
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  unsafe operation = UnsafeAuthHTTPError status_code=401 stop=unsafe_operation exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0 token sends=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  newer token published meanwhile = 200 exchanges=1 sends=3 budgets=1/3 refreshes=1 pending=0 token sends=2
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  acquisition running meanwhile = 200 exchanges=1 sends=3 budgets=1/3 refreshes=2 pending=0 token sends=2
+    events = ['call_start', 'auth_start', 'auth_end', 'attempt_start', 'response_headers', 'auth_start', 'auth_end', 'attempt_end', 'retry_scheduled', 'auth_start', 'auth_wait', 'auth_end', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  recovery cancelled while acquiring = RequestCancelledError delivery_state=RESPONSE_STARTED source=cancel_token cause=AuthProviderExecutionError exchanges=2 sends=3 budgets=2/3 refreshes=2 pending=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  async first call = 200 exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  async cached token = 200 exchanges=0 sends=1 budgets=0/1 refreshes=0 pending=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  async recovery = 200 exchanges=1 sends=3 budgets=1/3 refreshes=1 pending=0
+  async no token exchange left = AuthBudgetExceededError state=UNINITIALIZED delivery_state=NOT_SENT phase=admission budget_kind=auth_exchange exchanges=0 sends=0 budgets=0/0 refreshes=0 pending=0 token sends=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  async joiner without exchange slots = 200 exchanges=0 sends=1 budgets=0/1 refreshes=1 pending=0
+    starter = access-1 events = ['call_start', 'auth_start', 'auth_wait', 'auth_end', 'attempt_start', 'response_headers', 'attempt_end', 'call_end']
