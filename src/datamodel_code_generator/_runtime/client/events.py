@@ -165,11 +165,11 @@ class CallEvents:
         try:
             self._notified(event, failures, terminal=terminal)
         except BaseException as interrupted:
-            if error is None:
-                for failure in failures:
-                    add_secondary(interrupted, failure)
-                raise
-            add_secondary(error, interrupted)
+            if error is not None and _interrupted(error, interrupted) is error:
+                return failures
+            for failure in failures:
+                add_secondary(interrupted, failure)
+            raise
         return failures
 
     def _notified(self, event: CallEvent, failures: list[Exception], *, terminal: bool) -> None:
@@ -205,11 +205,10 @@ class CallEvents:
                 try:
                     await self._anotified(event, failures, terminal=True)
                 except BaseException as interrupted:
-                    if error is None:
+                    if error is None or _interrupted(error, interrupted) is not error:
                         for failure in failures:
                             add_secondary(interrupted, failure)
                         raise
-                    add_secondary(error, interrupted)
                 if failures:
                     raise self.failed(event.name, failures)
 

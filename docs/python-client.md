@@ -904,7 +904,9 @@ def fetch_with_retries(client: Client, url: str) -> bytes:
 ```
 
 Buffered and streaming raw APIs return the final HTTP response when status retries end, including non-2xx statuses.
-Transport, policy, deadline, cancellation, and budget failures still raise. Typed operations retain final response
+Transport, policy, deadline, cancellation, and budget failures still raise. A hook failure, or a response that cannot
+be released within `cleanup_timeout`, stops a planned retry after its response was discarded: the call then raises
+that response's status error with `retry_stop_reason="callback_failure"` and the failure among its secondary errors. Typed operations retain final response
 metadata in their operation error. A streaming response can retry during acquisition; after handoff, body failures
 terminate that stream and never issue another request.
 

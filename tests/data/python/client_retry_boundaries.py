@@ -118,6 +118,7 @@ def retry_boundaries(package: ModuleType, lines: list[str]) -> None:
     _uncapped(package, options, errors, transports, lines)
     _closing_wait(package, options, errors, lines)
     _terminal(package, options, lines)
+    _failed_streams(package, options, lines)
     _hook_interruption(package, options, lines)
     run(lambda: _async(package, options, bodies, errors, transports, lines))
 
@@ -333,6 +334,7 @@ async def _async(
     await _async_presend(package, options, errors, lines)
     await _late_native(package, options, bodies, transports, lines)
     await _async_terminal(package, options, lines)
+    await _async_failed_streams(package, options, lines)
     await _ahook_interruption(package, options, lines)
     exchange = Exchange([])
     exchange.respond(raw_response(200, b"bounded stream", "text/plain"))
@@ -514,6 +516,54 @@ def _terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
             lambda: _capture(lambda: api.request_raw("GET", "https://api.example.com/safe")),
         )
     _report(lines, events, exchange)
+
+
+def _failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    for failure in ("body", "block"):
+        primary = KeyboardInterrupt("stream_end interruption")
+        hook = _TerminalHook({"stream_end": primary})
+        exchange = Exchange([])
+        body = _Broken(read=True)
+        exchange.respond(
+            injected(lambda _, body=body: httpx2.Response(200, headers={"Content-Type": "text/plain"}, stream=body))
+        )
+        with (
+            exchange.client() as native,
+            package.Client(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
+        ):
+            try:
+                with api.retry.with_streaming_response.get_safe() as response:
+                    if failure == "block":
+                        message = "caller block failure"
+                        raise ValueError(message)
+                    response.read()
+            except BaseException as error:  # noqa: BLE001
+                observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())
+        record(lines, f"stream_end interruption after a failed {failure}", lambda observed=observed: observed)
+
+
+async def _async_failed_streams(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    for failure in ("body", "block"):
+        primary = _Stop("stream_end interruption")
+        hook = _TerminalHook({"stream_end": primary})
+        exchange = Exchange([])
+        body = _Broken(read=True)
+        exchange.respond(
+            injected(lambda _, body=body: httpx2.Response(200, headers={"Content-Type": "text/plain"}, stream=body))
+        )
+        async with (
+            exchange.async_client() as native,
+            package.AsyncClient(http_client=native, options=options.ClientOptions(hooks=(hook,))) as api,
+        ):
+            try:
+                async with api.retry.with_streaming_response.get_safe() as response:
+                    if failure == "block":
+                        message = "caller block failure"
+                        raise ValueError(message)
+                    await response.read()
+            except BaseException as error:  # noqa: BLE001
+                observed = type(error).__name__, error is primary, getattr(error, "__notes__", ())
+        record(lines, f"async stream_end interruption after a failed {failure}", lambda observed=observed: observed)
 
 
 async def _async_terminal(package: ModuleType, options: ModuleType, lines: list[str]) -> None:

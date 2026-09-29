@@ -34,6 +34,8 @@
   terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')])
   raw terminal cancellation retains hook failure = ('RequestCancelledError', None, 1, 1, None, ('RuntimeError',))
     events=[('call_start', None, None, False, 0, 0, None, None), ('attempt_start', 0, None, False, 0, 0, None, None), ('response_headers', 0, 200, True, 1, 1, None, None), ('attempt_end', 0, 200, True, 1, 1, None, None), ('call_end', 0, 200, True, 1, 1, None, 'cancel')] one-call=True queued=0
+  stream_end interruption after a failed body = ('KeyboardInterrupt', True, ['Secondary cleanup failure: TransportError'])
+  stream_end interruption after a failed block = ('KeyboardInterrupt', True, ['Secondary cleanup failure: ValueError'])
   intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: GetSafeHTTPError'])
   intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')]
   async key expires during limiter = ('PostKeyedHTTPError', 'unsafe_operation', 1, 1, None, ())
@@ -64,6 +66,8 @@
   async terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'success')])
   async terminal native drain body = ('CancelledError', True, ('first native terminal interruption',), ['Secondary cleanup failure: _Stop', 'Secondary cleanup failure: RuntimeError'])
   async terminal hook order = ([('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')], [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'handed_off'), ('stream_end', 'cancel')])
+  async stream_end interruption after a failed body = ('_Stop', True, ['Secondary cleanup failure: TransportError'])
+  async stream_end interruption after a failed block = ('_Stop', True, ['Secondary cleanup failure: ValueError'])
   async intermediate hook interruption = ('_Stop', True, ['Secondary cleanup failure: GetSafeHTTPError'])
   async intermediate hook interruption events = [('call_start', None), ('attempt_start', None), ('response_headers', None), ('attempt_end', None), ('call_end', 'cancel')]
   stream reuses its deadline through EOF = b'bounded stream'
