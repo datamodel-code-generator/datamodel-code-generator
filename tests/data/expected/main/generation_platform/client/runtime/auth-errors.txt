@@ -231,7 +231,7 @@
   undeclared AuthProviderClosedError.oauth_error TypeError secondary []
   undeclared AuthProviderClosedError.retry_stop_reason TypeError secondary []
   positional AuthProviderClosedError TypeError secondary []
-  closed inherited state default=None
+  closed inherited state default='CLOSED'
   closed state omitted = AuthProviderClosedError: AuthProviderClosedError(state='CLOSED', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown'] auth_provider_closed_error
   missing required AuthProviderExecutionError TypeError secondary []
   missing required InsufficientScopeError TypeError secondary []
@@ -281,7 +281,9 @@
   provider callback invalidate = 'invalidate'
   provider callback refresh = 'refresh'
   omitted auth state = 'UNKNOWN'
+  omitted closed provider state = 'CLOSED'
   invalid auth state unknown ! ValueError: state must be one of its declared values []
+  invalid auth state none ! ValueError: state must be one of its declared values []
   invalid auth state bool ! ValueError: state must be one of its declared values []
   invalid auth state list ! ValueError: state must be one of its declared values []
   invalid auth phase unknown ! ValueError: phase must be one of its declared values []

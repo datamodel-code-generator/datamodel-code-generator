@@ -6,9 +6,10 @@ import base64
 import inspect
 import re
 from dataclasses import dataclass
+from functools import partial
 from time import monotonic, time
 from typing import TYPE_CHECKING, Final, Literal, TypeVar
-from urllib.parse import quote, unquote, urlsplit, urlunsplit
+from urllib.parse import quote, unquote_plus, urlsplit, urlunsplit
 
 from typing_extensions import TypeIs
 
@@ -444,23 +445,23 @@ def validate_ownership(
         raise AuthConfigurationError(field_path=("auth",), condition="name_collision")
 
 
-def _expiry(token: AccessToken) -> float | None:
+def _expiry(token: AccessToken, delivery: DeliveryState) -> float | None:
     if (expires := token.expires_at) is None:
         return None
     try:
         timestamp = None if expires.utcoffset() is None else expires.timestamp()
     except (TypeError, ValueError) as cause:
-        raise TokenExpiredError(
-            condition="invalid_expiry", delivery_state=DeliveryState.NOT_SENT, cause=cause
-        ) from None
+        raise TokenExpiredError(condition="invalid_expiry", delivery_state=delivery, cause=cause) from None
     if timestamp is None:
-        raise TokenExpiredError(condition="invalid_expiry", delivery_state=DeliveryState.NOT_SENT)
+        raise TokenExpiredError(condition="invalid_expiry", delivery_state=delivery)
     if (remaining := timestamp - time()) <= 0:
-        raise TokenExpiredError(condition="expired", expires_at=expires, delivery_state=DeliveryState.NOT_SENT)
+        raise TokenExpiredError(condition="expired", expires_at=expires, delivery_state=delivery)
     return monotonic() + remaining
 
 
-def _material(value: object, scheme: SecurityScheme, context: CredentialContext) -> AcquiredCredential:
+def _material(
+    value: object, scheme: SecurityScheme, context: CredentialContext, delivery: DeliveryState
+) -> AcquiredCredential:
     if isinstance(value, ApiKeyCredential) and scheme.kind == "api_key":
         return AcquiredCredential(value, None)
     if isinstance(value, BasicCredential) and scheme.kind == "basic":
@@ -471,11 +472,9 @@ def _material(value: object, scheme: SecurityScheme, context: CredentialContext)
             raise AuthConfigurationError(field_path=("auth", "token_type"), condition="unsupported_token_type")
         if token.scopes is not None and not set(context.required_scopes).issubset(token.scopes):
             raise InsufficientScopeError(
-                required_scopes=context.required_scopes,
-                granted_scopes=token.scopes,
-                delivery_state=DeliveryState.NOT_SENT,
+                required_scopes=context.required_scopes, granted_scopes=token.scopes, delivery_state=delivery
             )
-        return AcquiredCredential(value, _expiry(token))
+        return AcquiredCredential(value, _expiry(token, delivery))
     if inspect.iscoroutine(value):
         value.close()
     raise AuthConfigurationError(field_path=("auth", "credentials", scheme.name), condition="invalid_material")
@@ -500,35 +499,37 @@ class _Wrapped:
         return False
 
 
+def _provider_failure(
+    callback: Literal["get", "invalidate", "refresh"], delivery: DeliveryState, cause: Exception
+) -> AuthProviderExecutionError:
+    return AuthProviderExecutionError(callback=callback, delivery_state=delivery, cause=cause)
+
+
+def _provider_calls(callback: Literal["get", "refresh"]) -> dict[DeliveryState, _Wrapped]:
+    """Prepare one callback wrapper per delivery state the call may have reached, so no call allocates one."""
+    return {state: _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, callback, state)) for state in DeliveryState}
+
+
 _PROVIDER_KEPT: Final = (AuthConfigurationError, AuthRefreshError)
-_GET: Final = _Wrapped(
-    _PROVIDER_KEPT,
-    lambda cause: AuthProviderExecutionError(callback="get", delivery_state=DeliveryState.NOT_SENT, cause=cause),
-)
-_INVALIDATE: Final = _Wrapped(
-    _PROVIDER_KEPT,
-    lambda cause: AuthProviderExecutionError(
-        callback="invalidate", delivery_state=DeliveryState.RESPONSE_STARTED, cause=cause
-    ),
-)
-_REFRESH: Final = _Wrapped(
-    _PROVIDER_KEPT,
-    lambda cause: AuthProviderExecutionError(callback="refresh", delivery_state=DeliveryState.NOT_SENT, cause=cause),
-)
+_GET: Final = _provider_calls("get")
+_INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, "invalidate", DeliveryState.RESPONSE_STARTED))
+_REFRESH: Final = _provider_calls("refresh")
 
 
-def get_credential(binding: BoundCredential, context: CredentialContext) -> AcquiredCredential:
+def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> AcquiredCredential:
     """Acquire one synchronous credential, retaining classified auth failures."""
-    with _GET:
+    with _GET[delivery]:
         value = binding.provider.get(context)
-    return _material(value, binding.scheme, context)
+    return _material(value, binding.scheme, context, delivery)
 
 
-async def aget_credential(binding: AsyncBoundCredential, context: CredentialContext) -> AcquiredCredential:
+async def aget_credential(
+    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState
+) -> AcquiredCredential:
     """Acquire one asynchronous credential in the existing caller-owned operation."""
-    with _GET:
+    with _GET[delivery]:
         value = await binding.provider.get(context)
-    return _material(value, binding.scheme, context)
+    return _material(value, binding.scheme, context, delivery)
 
 
 def invalidate_credential(binding: BoundCredential, version: TokenVersion) -> None:
@@ -545,20 +546,24 @@ async def ainvalidate_credential(binding: AsyncBoundCredential, version: TokenVe
         await binding.refreshable.invalidate(version)
 
 
-def refresh_credential(binding: BoundCredential, context: CredentialContext) -> AcquiredCredential:
+def refresh_credential(
+    binding: BoundCredential, context: CredentialContext, delivery: DeliveryState
+) -> AcquiredCredential:
     """Execute one explicitly admitted synchronous refresh callback."""
     assert binding.refreshable is not None
-    with _REFRESH:
+    with _REFRESH[delivery]:
         value = binding.refreshable.refresh(context)
-    return _material(value, binding.scheme, context)
+    return _material(value, binding.scheme, context, delivery)
 
 
-async def arefresh_credential(binding: AsyncBoundCredential, context: CredentialContext) -> AcquiredCredential:
+async def arefresh_credential(
+    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState
+) -> AcquiredCredential:
     """Execute one explicitly admitted asynchronous refresh callback."""
     assert binding.refreshable is not None
-    with _REFRESH:
+    with _REFRESH[delivery]:
         value = await binding.refreshable.refresh(context)
-    return _material(value, binding.scheme, context)
+    return _material(value, binding.scheme, context, delivery)
 
 
 def credentials_expired(acquired: HopCredentials | AsyncHopCredentials, *, now: float) -> bool:
@@ -587,7 +592,7 @@ def _query_url(url: str, added: tuple[tuple[str, str], ...], removed: frozenset[
         return url
     parsed = urlsplit(url)
     parts = (
-        [part for part in parsed.query.split("&") if unquote(part.partition("=")[0]) not in removed]
+        [part for part in parsed.query.split("&") if unquote_plus(part.partition("=")[0]) not in removed]
         if parsed.query
         else []
     )
@@ -595,18 +600,14 @@ def _query_url(url: str, added: tuple[tuple[str, str], ...], removed: frozenset[
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "&".join(parts), parsed.fragment))
 
 
-def strip_managed(request: PreparedRequest[BodyT], bound: BoundAuth | AsyncBoundAuth) -> PreparedRequest[BodyT]:
+def strip_managed_query(url: str, bound: BoundAuth | AsyncBoundAuth) -> str:
     """Remove managed query fields a redirect target carries, retaining unrelated encoded query atoms.
 
-    An unsigned request never carries a managed header or cookie: patches, parameters, and raw requests naming one are
-    refused before the first hop, and credentials and signatures are placed only on each outgoing copy.
+    Names compare as forms decode them, as for request patches. An unsigned request never carries a managed header or
+    cookie: patches, parameters, and raw requests naming one are refused before the first hop, and credentials and
+    signatures are placed only on each outgoing copy.
     """
-    return PreparedRequest(
-        method=request.method,
-        url=_query_url(request.url, (), bound.managed_query),
-        headers=request.headers,
-        body=request.body,
-    )
+    return _query_url(url, (), bound.managed_query)
 
 
 def _cookie_fields(headers: list[tuple[str, str]], cookies: list[tuple[str, str]]) -> list[tuple[str, str]]:

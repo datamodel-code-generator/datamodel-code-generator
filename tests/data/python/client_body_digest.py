@@ -303,14 +303,15 @@ def body_digest(package: ModuleType, lines: list[str]) -> None:
 def _sync_faults(
     api: Any, bodies: ModuleType, options: ModuleType, replies: _Replies, signer: _Signing, path: Path, lines: list[str]
 ) -> None:
-    for label, file, timeout in _faults():
+    for label, file, seconds in _faults():
         file.seek(7)
         signer.reset(file=file, offset=7)
         replies.reset(200)
-        file.until = time.monotonic() + timeout + 0.05
+        deadline = options.Deadline.after(seconds)
+        file.until = deadline.at + 0.05
         outcome = _failure(
-            lambda file=file, timeout=timeout: api.auth.signed_body(
-                body=bodies.FileBody(file), options=options.RequestOptions(total_timeout=timeout)
+            lambda file=file, deadline=deadline: api.auth.signed_body(
+                body=bodies.FileBody(file), options=options.RequestOptions(deadline=deadline)
             )
         )
         lines.append(f"  {label} {outcome}")
@@ -509,15 +510,16 @@ async def _async_digest(package: ModuleType, auth: ModuleType, bodies: ModuleTyp
 async def _async_faults(
     api: Any, bodies: ModuleType, options: ModuleType, replies: _Replies, signer: _Signing, path: Path, lines: list[str]
 ) -> None:
-    for label, file, timeout in _faults():
+    for label, file, seconds in _faults():
         file.seek(7)
         body = bodies.AsyncFileBody(file)
         signer.reset(file=file, offset=7)
         replies.reset(200)
-        file.until = time.monotonic() + timeout + 0.05
+        deadline = options.Deadline.after(seconds)
+        file.until = deadline.at + 0.05
         outcome = await _afailure(
-            lambda body=body, timeout=timeout: api.auth.signed_body(
-                body=body, options=options.RequestOptions(total_timeout=timeout)
+            lambda body=body, deadline=deadline: api.auth.signed_body(
+                body=body, options=options.RequestOptions(deadline=deadline)
             )
         )
         lines.append(f"  async {label} {outcome}")

@@ -630,6 +630,10 @@ components:
       type: apiKey
       in: header
       name: Cookie
+    spaced_query:
+      type: apiKey
+      in: query
+      name: api key
     basic:
       type: http
       scheme: basic

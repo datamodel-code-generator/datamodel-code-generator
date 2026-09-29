@@ -726,7 +726,7 @@ def _usable_credentials(call: _Call) -> None:
     if call.auth is not None and _expired_credentials(call):
         from .errors import TokenExpiredError  # noqa: PLC0415
 
-        raise TokenExpiredError(condition="expired", delivery_state=DeliveryState.NOT_SENT)
+        raise TokenExpiredError(condition="expired", delivery_state=_delivery(call))
 
 
 class _Call(LogicalCallContext):
@@ -1027,6 +1027,13 @@ class _Call(LogicalCallContext):
         )
         if self.send_limit is not None and self.network_send_budget_used >= self.send_limit:
             raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
+        url = target.url
+        if self.auth is not None:
+            from .auth_policy import strip_managed_query  # noqa: PLC0415
+
+            url = strip_managed_query(url, self.auth.bound)
+            if (target.method, url) in visited:
+                raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
         headers = request.headers.items()
         if target.cross_origin:
             headers = tuple((name, value) for name, value in headers if name.lower() not in _CREDENTIAL_HEADERS)
@@ -1039,17 +1046,12 @@ class _Call(LogicalCallContext):
         self.current_origin = target.origin
         if target.drop_body:
             self.body_enabled = False
-        redirected = PreparedRequest(
+        return PreparedRequest(
             method=target.method,
-            url=target.url,
+            url=url,
             headers=HeadersView(headers),
             body=None if target.drop_body else request.body,
         )
-        if self.auth is not None:
-            from .auth_policy import strip_managed  # noqa: PLC0415
-
-            return strip_managed(redirected, self.auth.bound)
-        return redirected
 
 
 class _Shared(Generic[AdapterT]):
@@ -1102,7 +1104,7 @@ class _Core(Generic[AdapterT, HandleT]):
         settings = self._call_settings(options, None)
         view = type(self)(self._shared, settings, self._scope.view(), owned=False)
         if not isinstance(options.auth, Unset) and options.auth is not None:
-            self._adopt_auth(options.auth)
+            view._adopt_auth(options.auth)  # noqa: SLF001 - The new view admits ownership through its own scope.
         return view
 
     def _adopt_auth(self, config: AuthConfig) -> None:
@@ -2348,17 +2350,18 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         auth.rejected = None
         if not bound.credentials:
             return
+        delivery = _delivery(call)
         with _auth_work(call):
             values: list[AcquiredCredential] = []
             for index, binding in enumerate(bound.credentials):
                 call.check("auth")
                 context = _credential_context(binding, call)
-                acquired = get_credential(binding, context)
+                acquired = get_credential(binding, context, delivery)
                 call.check("auth")
                 if auth.pending is not None and auth.pending[0] == index:
                     assert isinstance(acquired.material, BearerCredential)
                     if acquired.material.version is auth.pending[1]:
-                        acquired = refresh_credential(binding, context)
+                        acquired = refresh_credential(binding, context, delivery)
                         call.check("auth")
                 values.append(acquired)
             auth.credentials = HopCredentials(tuple(values))
@@ -3110,17 +3113,18 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         auth.rejected = None
         if not bound.credentials:
             return
+        delivery = _delivery(call)
         async with _aauth_work(call):
             values: list[AcquiredCredential] = []
             for index, binding in enumerate(bound.credentials):
                 call.check("auth")
                 context = _credential_context(binding, call)
-                acquired = await aget_credential(binding, context)
+                acquired = await aget_credential(binding, context, delivery)
                 call.check("auth")
                 if auth.pending is not None and auth.pending[0] == index:
                     assert isinstance(acquired.material, BearerCredential)
                     if acquired.material.version is auth.pending[1]:
-                        acquired = await arefresh_credential(binding, context)
+                        acquired = await arefresh_credential(binding, context, delivery)
                         call.check("auth")
                 values.append(acquired)
             auth.credentials = AsyncHopCredentials(tuple(values))

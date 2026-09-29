@@ -611,6 +611,33 @@ def _gates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: li
         ) as api,
     ):
         record(lines, "signed anonymous rejected", lambda: _outcome(api.auth.with_response.anonymous))
+    _after_send(package, auth, options, lines)
+
+
+def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Report auth failures that follow a sent request with the delivery the call reached, never as unsent."""
+    lapsed = _bearer(auth, "lapsed", expires_at=datetime.now(timezone.utc) - timedelta(seconds=1))
+    retry = options.RetryOptions(initial_delay=0)
+    for label, scheme, method, provider, reply, redirects in (
+        ("retry token already expired", "bearer", "bearer", _Renewing(_bearer(auth), refreshed=lapsed),
+         raw_response(503, b"busy", "application/octet-stream"), options.RedirectOptions()),
+        ("redirect hop token already expired", "bearer", "bearer", _Renewing(_bearer(auth), refreshed=lapsed),
+         _moved(f"{_ORIGIN}/bearer?hop=1"), options.RedirectOptions(enabled=True)),
+        ("refresh grants known empty scopes", "oauth", "oauth_read",
+         _Provider(_bearer(auth), refreshed=_bearer(auth, "narrowed", scopes=())), _rejected(), options.RedirectOptions()),
+    ):
+        exchange = Exchange(lines)
+        exchange.respond(reply, _ok())
+        with (
+            exchange.client() as native,
+            package.Client(
+                http_client=native,
+                options=options.ClientOptions(
+                    auth=auth.AuthConfig({scheme: provider}), retry=retry, redirects=redirects
+                ),
+            ) as api,
+        ):
+            record(lines, label, lambda api=api, method=method: _outcome(getattr(api.auth.with_response, method)))
 
 
 async def _agates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -777,6 +804,15 @@ def _ownership(package: ModuleType, auth: ModuleType, options: ModuleType, lines
         record(lines, "adopt after close", lambda: _outcome(lambda: api.with_options(adopting)))
         lines.append(f"  close again = {_closed(api.close)}")
     lines.append(f"    closes={failing.closes, closing.closes, late.closes}")
+    adopted = _Owned(auth)
+    with exchange.client() as native:
+        api = package.Client(http_client=native)
+        view = api.with_options(options.RequestOptions())
+        view.close()
+        adopting = options.RequestOptions(auth=auth.AuthConfig({"bearer": owned(adopted)}))
+        record(lines, "adopt through a closed view", lambda: _outcome(lambda: view.with_options(adopting)))
+        lines.append(f"  close root = {_closed(api.close)}")
+    lines.append(f"    adopted closes={adopted.closes}")
 
 
 async def _aownership(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -833,6 +869,20 @@ def _redirects(package: ModuleType, auth: ModuleType, options: ModuleType, lines
             auth.AuthConfig({"query_key": key}, allowed_origins=both),
             "api_key_query",
             f"{_OTHER}/api-key/query?api_key=planted&page=1",
+        ),
+        (
+            "self redirect planting the query key",
+            auth.AuthConfig({"query_key": key}),
+            "api_key_query",
+            f"{_ORIGIN}/api-key/query?api_key=planted",
+        ),
+        (
+            "form-encoded planted query key",
+            auth.AuthConfig(
+                {"spaced_query": key}, send_on_anonymous=True, anonymous_schemes=("spaced_query",), allowed_origins=both
+            ),
+            "anonymous",
+            f"{_OTHER}/anonymous?api+key=planted",
         ),
     ):
         exchange = Exchange(lines)

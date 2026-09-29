@@ -164,11 +164,10 @@ def _validation(errors: ModuleType, lines: list[str]) -> None:
             f"provider callback {callback}",
             lambda callback=callback: errors.AuthProviderExecutionError(callback=callback).callback,
         )
-    record(lines, "omitted auth state", lambda: errors.AuthRefreshError(state=None).state)
+    record(lines, "omitted auth state", lambda: errors.AuthRefreshError().state)
+    record(lines, "omitted closed provider state", lambda: errors.AuthProviderClosedError().state)
     for field in ("state", "phase", "delivery_state"):
         for label, value in (("unknown", "private-secret"), ("none", None), ("bool", True), ("list", [])):
-            if field == "state" and value is None:
-                continue
             record(
                 lines,
                 f"invalid auth {field} {label}",

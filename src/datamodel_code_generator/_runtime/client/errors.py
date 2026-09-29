@@ -630,7 +630,7 @@ class AuthRefreshError(SDKError):
         *,
         provider_id: str | None = None,
         refresh_id: str | None = None,
-        state: str | None = None,
+        state: str = "UNKNOWN",
         delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
         phase: Literal[
             "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
@@ -651,11 +651,7 @@ class AuthRefreshError(SDKError):
         auth_refresh_pending: int = 0,
         wire_send_count: int | None = None,
     ) -> None:
-        """Keep provider identifiers, the SDK state, and the phase without exposing credential material.
-
-        An omitted state is the first state the error class admits, UNKNOWN for the general refresh failure.
-        """
-        state = self._states[0] if state is None else state
+        """Keep provider identifiers, the SDK state, and the phase without exposing credential material."""
         _error_choice(state, self._states, "state")
         _error_choice(
             phase,
@@ -944,6 +940,56 @@ class AuthProviderClosedError(AuthRefreshError):
     __slots__ = ()
 
     _states = ("CLOSED", "CLOSING")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: Literal["CLOSED", "CLOSING"] = "CLOSED",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: Literal[
+            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+        ] = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Default to the closed state, the only states a closing or closed provider reports."""
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
 
 
 class TransportError(SDKError):
