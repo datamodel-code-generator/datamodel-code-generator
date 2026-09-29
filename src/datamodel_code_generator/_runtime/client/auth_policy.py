@@ -621,7 +621,6 @@ def place_credentials(
     request: PreparedRequest[BodyT], bound: BoundAuth | AsyncBoundAuth, acquired: HopCredentials | AsyncHopCredentials
 ) -> PreparedRequest[BodyT]:
     """Place validated material only at the compiled scheme's exact outgoing position."""
-    request = strip_managed(request, bound)
     headers = list(request.headers.items())
     query: list[tuple[str, str]] = []
     cookies: list[tuple[str, str]] = []

@@ -107,7 +107,7 @@ from .transports import (
     TransportCapabilities,
     response_head,
 )
-from .urls import URLValidationError, absolute_target, canonical_origin
+from .urls import URLValidationError, absolute_target, canonical_origin, request_origin
 
 if TYPE_CHECKING:
     from collections.abc import (
@@ -833,10 +833,12 @@ class _Call(LogicalCallContext):
     def prepared(self, request: PreparedRequest[EncodedAttempt]) -> PreparedRequest[EncodedAttempt]:
         """Retain the original method and attach the call's sole declared idempotency key."""
         self.method = request.method
-        if self.settings.redirects.enabled or self.auth is not None:
+        if self.settings.redirects.enabled:
             target = absolute_target(request.url)
             self.initial_origin = self.current_origin = target.origin
             request = PreparedRequest(method=request.method, url=target.url, headers=request.headers, body=request.body)
+        elif self.auth is not None:
+            self.initial_origin = self.current_origin = request_origin(request.url)
         if self.idempotency is None:
             return request
         name = self.idempotency.header_name

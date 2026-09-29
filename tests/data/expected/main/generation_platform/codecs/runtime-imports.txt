@@ -29,7 +29,7 @@ client/scopes.py: __future__, re, typing
 client/security.py: __future__, dataclasses, typing
 client/timing.py: .errors, __future__, dataclasses, threading, time
 client/transports.py: .bodies, .errors, .evidence, .responses, .timing, __future__, collections.abc, dataclasses, time, typing, typing_extensions
-client/urls.py: __future__, dataclasses, functools, httpx2, typing
+client/urls.py: __future__, dataclasses, functools, httpx2, re, typing
 model_codecs/__init__.py: -
 model_codecs/adapters.py: .capabilities, .context, .errors, .parameters, .patterns, .schema, .unset, .values, .views, .wire, __future__, collections.abc, decimal, re, types, typing, typing_extensions, urllib.parse
 model_codecs/bindings.py: .context, __future__, dataclasses, typing

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Final
@@ -11,6 +12,7 @@ import httpx2
 Origin = tuple[str, str, int]
 URLValidationError = httpx2.InvalidURL
 _PORT_MAX: Final = 65535
+_AUTHORITY: Final = re.compile(r"[^:/?#]+://[^/?#]*")
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +38,13 @@ def _origin(url: httpx2.URL) -> Origin:
 def canonical_origin(value: str) -> Origin:
     """Canonicalize a structurally validated configured origin using native URL semantics."""
     return _origin(httpx2.URL(value))
+
+
+def request_origin(url: str) -> Origin:
+    """Return the origin of an absolute URL the SDK built, interpreting each distinct scheme and authority once."""
+    match = _AUTHORITY.match(url)
+    assert match is not None
+    return canonical_origin(match.group())
 
 
 def absolute_target(url: str) -> URLTarget:
