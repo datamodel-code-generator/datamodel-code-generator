@@ -231,9 +231,11 @@ their potentially sensitive messages.
 exchange each request's code once, without redirects or retries, through a token transport of their own that must
 verify TLS. `DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` run one device authorization per flow, polling
 at the server's interval within the response's lifetime and the `SessionOptions` limits. No flow opens a browser or a
-verification URI; the returned `TokenSet` omits its tokens from repr. Client credentials, refresh-token providers,
-token persistence, shared refresh, Basic charset overrides, resource audience metadata, and generated OAuth factories
-are not available yet. Providers are explicit.
+verification URI; the returned `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and
+`AsyncClientCredentialsProvider` acquire a client's own token when a call first needs it, share one acquisition among
+concurrent callers within `OAuthProviderOptions` limits, and renew the token before it expires. Refresh-token
+providers, token persistence, token exchange budgets and counters, Basic charset overrides, resource audience
+metadata, and generated OAuth factories are not available yet. Providers are explicit.
 
 ## Counters and cleanup
 

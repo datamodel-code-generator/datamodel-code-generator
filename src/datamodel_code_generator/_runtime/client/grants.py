@@ -12,12 +12,22 @@ import weakref
 from contextlib import suppress
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar, final
+from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, TypeVar, final
 
-from typing_extensions import Self
+from typing_extensions import Self, TypeAliasType
 
 from ..model_codecs.unset import UNSET, Unset
-from .auth import AccessToken, AsyncCredentialProvider, CredentialProvider, checked_scopes, checked_type
+from .auth import (
+    AccessToken,
+    AsyncCredentialProvider,
+    BearerCredential,
+    CredentialContext,
+    CredentialProvider,
+    RefreshInfo,
+    TokenVersion,
+    checked_scopes,
+    checked_type,
+)
 from .errors import (
     AuthConfigurationError,
     AuthProviderClosedError,
@@ -32,29 +42,36 @@ from .errors import (
     RequestCancelledError,
     TokenExpiredError,
 )
-from .options import SessionOptions, TimeoutOptions, TransportOptions
-from .timing import CancelToken, Deadline, absolute_deadline, finite_number
+from .options import OAuthProviderOptions, SessionOptions
+from .timing import TOKEN_INTERVAL, CancelToken, Deadline, absolute_deadline
 
 if TYPE_CHECKING:
     from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, Progress, Session, TokenEndpoint
     from .transports import AsyncTransportAdapter, OwnedTransportAdapter, TransportAdapter
 
     EndpointT = TypeVar("EndpointT", bound=TokenEndpoint | AsyncTokenEndpoint)
+    TokenTransport: TypeAlias = TransportAdapter | OwnedTransportAdapter[TransportAdapter]
+    AsyncTokenTransport: TypeAlias = AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter]
 else:
     EndpointT = TypeVar("EndpointT")
+    TokenTransport = TypeAliasType("TokenTransport", "TransportAdapter | OwnedTransportAdapter[TransportAdapter]")
+    AsyncTokenTransport = TypeAliasType(
+        "AsyncTokenTransport", "AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter]"
+    )
 
 __all__ = (
     "AsyncAuthorizationCodeFlow",
+    "AsyncClientCredentialsProvider",
     "AsyncDeviceAuthorizationFlow",
     "AuthorizationCodeFlow",
     "AuthorizationRequest",
+    "ClientCredentialsProvider",
     "DeviceAuthorization",
     "DeviceAuthorizationFlow",
     "OAuthProviderOptions",
     "TokenSet",
 )
 
-_PHASE_DEFAULTS: Final = {"connect": 5.0, "read": 15.0, "write": 15.0, "pool": 5.0}
 _VERIFIER_BYTES: Final = 32
 RequestState = Literal[
     "CREATED", "EXCHANGING", "SUCCEEDED", "EXCHANGE_REJECTED", "REAUTH_REQUIRED", "UNCERTAIN", "FAILED_NOT_SENT"
@@ -72,59 +89,13 @@ DeviceState = Literal[
 _OK: Final = 200
 _DEVICE_SENDS: Final = 128
 _SLOW_DOWN: Final = 5.0
-_CANCEL_CHECK: Final = 0.05
 _WAITING: Final = frozenset({"authorization_pending", "slow_down"})
 _ENDED: Final = frozenset({"access_denied", "expired_token"})
-
-
-def _positive_seconds(value: object, path: tuple[str, ...]) -> float:
-    if (number := finite_number(value)) is None or number <= 0:
-        raise AuthConfigurationError(field_path=path, condition="invalid_value")
-    return number
-
-
-def _positive_count(value: object, path: tuple[str, ...]) -> None:
-    if type(value) is not int or value <= 0:
-        raise AuthConfigurationError(field_path=path, condition="invalid_value")
 
 
 def _refresh_token(value: object) -> None:
     if value is not None and (not isinstance(value, str) or not value):
         raise AuthConfigurationError(field_path=("refresh_token",), condition="invalid_value")
-
-
-@final
-@dataclass(frozen=True, slots=True, kw_only=True)
-class OAuthProviderOptions:
-    """Fixed session limits and token transport settings of an OAuth provider or flow.
-
-    Every value is finite and explicit: omitted phase timeouts take the OAuth defaults, and None is never accepted.
-    """
-
-    refresh_timeout: float = 30.0
-    phase_timeout: TimeoutOptions = field(default_factory=lambda: TimeoutOptions(**_PHASE_DEFAULTS))
-    max_concurrent_refreshes: int = 1
-    max_pending_refreshes: int = 32
-    max_waiters: int = 1024
-    allow_insecure_loopback: bool = False
-    transport: TransportOptions = field(default_factory=TransportOptions)
-
-    def __post_init__(self) -> None:
-        """Validate every limit and resolve omitted phase timeouts before any provider uses them."""
-        object.__setattr__(self, "refresh_timeout", _positive_seconds(self.refresh_timeout, ("refresh_timeout",)))
-        checked_type(self.phase_timeout, (TimeoutOptions,), ("phase_timeout",))
-        phases = {
-            name: _positive_seconds(
-                default if isinstance(value := getattr(self.phase_timeout, name), Unset) else value,
-                ("phase_timeout", name),
-            )
-            for name, default in _PHASE_DEFAULTS.items()
-        }
-        object.__setattr__(self, "phase_timeout", TimeoutOptions(**phases))
-        for name in ("max_concurrent_refreshes", "max_pending_refreshes", "max_waiters"):
-            _positive_count(getattr(self, name), (name,))
-        checked_type(self.allow_insecure_loopback, (bool,), ("allow_insecure_loopback",))
-        checked_type(self.transport, (TransportOptions,), ("transport",))
 
 
 @final
@@ -414,7 +385,7 @@ class AuthorizationCodeFlow(_CodeFlow["TokenEndpoint"]):
         client_secret: CredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         options: OAuthProviderOptions | None = None,
-        token_transport: TransportAdapter | OwnedTransportAdapter[TransportAdapter] | Unset = UNSET,
+        token_transport: TokenTransport | Unset = UNSET,
     ) -> None:
         """Validate the endpoints, client authentication, and transport without I/O or an HTTP client."""
         from .auth_policy import sync_provider  # noqa: PLC0415
@@ -476,7 +447,7 @@ class AsyncAuthorizationCodeFlow(_CodeFlow["AsyncTokenEndpoint"]):
         client_secret: AsyncCredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         options: OAuthProviderOptions | None = None,
-        token_transport: AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter] | Unset = UNSET,
+        token_transport: AsyncTokenTransport | Unset = UNSET,
     ) -> None:
         """Validate the endpoints, client authentication, and transport without I/O or an HTTP client."""
         from .auth_policy import async_provider  # noqa: PLC0415
@@ -780,7 +751,7 @@ class _DeviceFlow(_Flow[EndpointT]):
         if (send_limit := transaction.send_limit) is not None and transaction.sends >= send_limit:
             raise BudgetExceededError(budget_kind="network", limit=send_limit, used=transaction.sends)
         remaining = max(0.0, transaction.next_send - now)
-        return remaining if cancel_token is None or remaining == 0 else min(remaining, _CANCEL_CHECK)
+        return remaining if cancel_token is None or remaining == 0 else min(remaining, TOKEN_INTERVAL)
 
     @staticmethod
     def _begin_form(scopes: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
@@ -811,7 +782,7 @@ class DeviceAuthorizationFlow(_DeviceFlow["TokenEndpoint"]):
         client_secret: CredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         options: OAuthProviderOptions | None = None,
-        token_transport: TransportAdapter | OwnedTransportAdapter[TransportAdapter] | Unset = UNSET,
+        token_transport: TokenTransport | Unset = UNSET,
     ) -> None:
         """Validate the endpoints, client authentication, and transport without I/O or an HTTP client."""
         from .auth_policy import sync_provider  # noqa: PLC0415
@@ -907,7 +878,7 @@ class AsyncDeviceAuthorizationFlow(_DeviceFlow["AsyncTokenEndpoint"]):
         client_secret: AsyncCredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         options: OAuthProviderOptions | None = None,
-        token_transport: AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter] | Unset = UNSET,
+        token_transport: AsyncTokenTransport | Unset = UNSET,
     ) -> None:
         """Validate the endpoints, client authentication, and transport without I/O or an HTTP client."""
         import asyncio  # noqa: PLC0415
@@ -984,6 +955,129 @@ class AsyncDeviceAuthorizationFlow(_DeviceFlow["AsyncTokenEndpoint"]):
 
     async def __aexit__(self, *exc_info: object) -> None:
         """Close the flow."""
+        await self.aclose()
+
+
+class ClientCredentialsProvider:
+    """The OAuth client credentials grant: a confidential client's own token, acquired when first needed and shared.
+
+    Concurrent callers join one acquisition, which runs on a worker of the provider under its own deadline, so a caller
+    leaving never cancels it. The token is renewed once a tenth of its lifetime, at most thirty seconds, remains; a
+    failed acquisition leaves nothing behind, and a later call acquires again. Close it to release its transport.
+    """
+
+    __slots__ = ("_credentials",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        token_url: str,
+        *,
+        client_id: str,
+        client_secret: CredentialProvider,
+        client_auth_method: Literal["client_secret_basic", "client_secret_post"] = "client_secret_basic",
+        scopes: tuple[str, ...] = (),
+        audience: str | None = None,
+        options: OAuthProviderOptions | None = None,
+        token_transport: TokenTransport | Unset = UNSET,
+    ) -> None:
+        """Validate the endpoint, client authentication, scopes, audience, and transport without I/O or threads."""
+        from .auth_policy import sync_provider  # noqa: PLC0415
+        from .oauth import TokenEndpoint, client_authentication  # noqa: PLC0415
+        from .refresh import ClientCredentialsGrant, SyncClientCredentials  # noqa: PLC0415
+
+        resolved = _options(options)
+        grant = ClientCredentialsGrant(client_auth_method, scopes, audience)
+        authentication = client_authentication(client_id, client_auth_method, client_secret, sync_provider)
+        endpoint = TokenEndpoint(
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+        )
+        self._credentials = SyncClientCredentials(resolved, endpoint, grant)
+
+    def get(self, context: CredentialContext) -> BearerCredential:
+        """Return the shared token, joining or starting its acquisition when none is usable."""
+        return self._credentials.obtain(context, force=False)
+
+    def refresh(self, context: CredentialContext) -> BearerCredential:
+        """Acquire a new token, or join the acquisition already running, whatever the cache holds."""
+        return self._credentials.obtain(context, force=True)
+
+    def invalidate(self, version: TokenVersion) -> None:
+        """Forget the cached token if it is the version a resource rejected; another version stays usable."""
+        self._credentials.invalidate(version)
+
+    def refresh_snapshot(self, refresh_id: str) -> RefreshInfo | None:
+        """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
+        return self._credentials.snapshot(refresh_id)
+
+    def close(self) -> None:
+        """Refuse new acquisitions, let a running one finish within its deadline, then close the owned transport."""
+        self._credentials.close()
+
+    def __enter__(self) -> Self:
+        """Return the provider."""
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        """Close the provider."""
+        self.close()
+
+
+class AsyncClientCredentialsProvider:
+    """The asyncio client credentials grant, bound to the event loop it was created on or first used from."""
+
+    __slots__ = ("_credentials",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        token_url: str,
+        *,
+        client_id: str,
+        client_secret: AsyncCredentialProvider,
+        client_auth_method: Literal["client_secret_basic", "client_secret_post"] = "client_secret_basic",
+        scopes: tuple[str, ...] = (),
+        audience: str | None = None,
+        options: OAuthProviderOptions | None = None,
+        token_transport: AsyncTokenTransport | Unset = UNSET,
+    ) -> None:
+        """Validate the endpoint, client authentication, scopes, audience, and transport without I/O or tasks."""
+        from .auth_policy import async_provider  # noqa: PLC0415
+        from .oauth import AsyncTokenEndpoint, client_authentication  # noqa: PLC0415
+        from .refresh import AsyncClientCredentials, ClientCredentialsGrant  # noqa: PLC0415
+
+        resolved = _options(options)
+        grant = ClientCredentialsGrant(client_auth_method, scopes, audience)
+        authentication = client_authentication(client_id, client_auth_method, client_secret, async_provider)
+        endpoint = AsyncTokenEndpoint(
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+        )
+        self._credentials = AsyncClientCredentials(resolved, endpoint, grant)
+
+    async def get(self, context: CredentialContext) -> BearerCredential:
+        """Return the shared token, joining or starting its acquisition when none is usable."""
+        return await self._credentials.obtain(context, force=False)
+
+    async def refresh(self, context: CredentialContext) -> BearerCredential:
+        """Acquire a new token, or join the acquisition already running, whatever the cache holds."""
+        return await self._credentials.obtain(context, force=True)
+
+    async def invalidate(self, version: TokenVersion) -> None:
+        """Forget the cached token if it is the version a resource rejected; another version stays usable."""
+        self._credentials.invalidate(version)
+
+    def refresh_snapshot(self, refresh_id: str) -> RefreshInfo | None:
+        """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
+        return self._credentials.snapshot(refresh_id)
+
+    async def aclose(self) -> None:
+        """Close once in a task of its own; a cancelled caller leaves it running for a later aclose to await."""
+        await self._credentials.aclose()
+
+    async def __aenter__(self) -> Self:
+        """Return the provider."""
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        """Close the provider."""
         await self.aclose()
 
 

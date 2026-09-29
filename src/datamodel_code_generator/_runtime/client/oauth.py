@@ -704,8 +704,8 @@ class AsyncTokenEndpoint:
         if self.closed:
             raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
 
-    def prepare(self) -> None:
-        """Refuse other loops and backends, then create the SDK-owned transport once unless already closed."""
+    def bind(self) -> None:
+        """Refuse a caller outside asyncio or on another event loop than the one the endpoint belongs to."""
         import asyncio  # noqa: PLC0415
 
         try:
@@ -716,6 +716,10 @@ class AsyncTokenEndpoint:
             self._loop = loop
         elif self._loop is not loop:
             raise UnsupportedAsyncBackendError(loop_mismatch=True)
+
+    def prepare(self) -> None:
+        """Refuse other loops and backends, then create the SDK-owned transport once unless already closed."""
+        self.bind()
         self._open()
         if self._adapter is None:
             from .native import AsyncHttpx2Transport, native_async_client  # noqa: PLC0415
@@ -751,6 +755,8 @@ class AsyncTokenEndpoint:
                 secret = _secret_value(await provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error, state) from None
+            if session.deadline.remaining() <= 0:
+                return expired(session, DeliveryState.NOT_SENT)
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace()
         context, caps = session.context(trace)

@@ -4,6 +4,8 @@
 from ._runtime.client.errors import (
     AdapterContractError,
     AdapterExecutionError,
+    AuthBudgetExceededError,
+    AuthConcurrencyLimitError,
     AuthConfigurationError,
     AuthProviderClosedError,
     AuthProviderExecutionError,
@@ -58,6 +60,8 @@ from ._runtime.client.errors import (
 __all__ = [
     'AdapterContractError',
     'AdapterExecutionError',
+    'AuthBudgetExceededError',
+    'AuthConcurrencyLimitError',
     'AuthConfigurationError',
     'AuthProviderClosedError',
     'AuthProviderExecutionError',

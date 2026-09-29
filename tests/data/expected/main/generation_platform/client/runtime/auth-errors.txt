@@ -402,6 +402,78 @@
   undeclared AuthStateConflictError.oauth_error TypeError secondary []
   undeclared AuthStateConflictError.retry_stop_reason TypeError secondary []
   positional AuthStateConflictError TypeError secondary []
+  family AuthConcurrencyLimitError bases=('AuthRefreshError',) code=auth_concurrency_limit_error
+  signature AuthConcurrencyLimitError keyword-only=True required=('limit_kind', 'limit')
+  hints AuthConcurrencyLimitError ('limit_kind', 'limit', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthConcurrencyLimitError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('limit_kind', 'waiters'), ('limit', 3)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  metadata AuthConcurrencyLimitError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
+  supplied AuthConcurrencyLimitError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('limit_kind', 'waiters'), ('limit', 3))
+  safe AuthConcurrencyLimitError True text="AuthConcurrencyLimitError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', limit_kind='waiters', limit=3)"
+  readonly AuthConcurrencyLimitError.resource_attempt_count AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.redirect_count AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.auth_exchange_count AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.network_send_count AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.network_send_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.auth_refresh_ids AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.auth_refresh_pending AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.wire_send_count AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.provider_id AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.refresh_id AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.state AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.delivery_state AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.phase AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.limit_kind AttributeError secondary [] unchanged=True
+  readonly AuthConcurrencyLimitError.limit AttributeError secondary [] unchanged=True
+  property hints AuthConcurrencyLimitError.provider_id ('return',)
+  property hints AuthConcurrencyLimitError.refresh_id ('return',)
+  property hints AuthConcurrencyLimitError.state ('return',)
+  property hints AuthConcurrencyLimitError.delivery_state ('return',)
+  property hints AuthConcurrencyLimitError.phase ('return',)
+  property hints AuthConcurrencyLimitError.limit_kind ('return',)
+  property hints AuthConcurrencyLimitError.limit ('return',)
+  undeclared AuthConcurrencyLimitError.message TypeError secondary []
+  undeclared AuthConcurrencyLimitError.status_code TypeError secondary []
+  undeclared AuthConcurrencyLimitError.oauth_error TypeError secondary []
+  undeclared AuthConcurrencyLimitError.retry_stop_reason TypeError secondary []
+  positional AuthConcurrencyLimitError TypeError secondary []
+  family AuthBudgetExceededError bases=('AuthRefreshError',) code=auth_budget_exceeded_error
+  signature AuthBudgetExceededError keyword-only=True required=('budget_kind', 'limit', 'used')
+  hints AuthBudgetExceededError ('budget_kind', 'limit', 'used', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthBudgetExceededError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('budget_kind', 'auth_exchange'), ('limit', 2), ('used', 2)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  metadata AuthBudgetExceededError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
+  supplied AuthBudgetExceededError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('budget_kind', 'auth_exchange'), ('limit', 2), ('used', 2))
+  safe AuthBudgetExceededError True text="AuthBudgetExceededError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', budget_kind='auth_exchange', limit=2, used=2)"
+  readonly AuthBudgetExceededError.resource_attempt_count AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.redirect_count AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.auth_exchange_count AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.network_send_count AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.network_send_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.auth_refresh_ids AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.auth_refresh_pending AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.wire_send_count AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.provider_id AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.refresh_id AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.state AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.delivery_state AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.phase AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.budget_kind AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.limit AttributeError secondary [] unchanged=True
+  readonly AuthBudgetExceededError.used AttributeError secondary [] unchanged=True
+  property hints AuthBudgetExceededError.provider_id ('return',)
+  property hints AuthBudgetExceededError.refresh_id ('return',)
+  property hints AuthBudgetExceededError.state ('return',)
+  property hints AuthBudgetExceededError.delivery_state ('return',)
+  property hints AuthBudgetExceededError.phase ('return',)
+  property hints AuthBudgetExceededError.budget_kind ('return',)
+  property hints AuthBudgetExceededError.limit ('return',)
+  property hints AuthBudgetExceededError.used ('return',)
+  undeclared AuthBudgetExceededError.message TypeError secondary []
+  undeclared AuthBudgetExceededError.status_code TypeError secondary []
+  undeclared AuthBudgetExceededError.oauth_error TypeError secondary []
+  undeclared AuthBudgetExceededError.retry_stop_reason TypeError secondary []
+  positional AuthBudgetExceededError TypeError secondary []
   closed inherited state default='CLOSED'
   closed state omitted = AuthProviderClosedError: AuthProviderClosedError(state='CLOSED', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown'] auth_provider_closed_error
   missing required AuthProviderExecutionError TypeError secondary []
@@ -411,6 +483,8 @@
   missing required AuthStateUncertainError TypeError secondary []
   missing required AuthReauthorizationRequiredError TypeError secondary []
   missing required AuthStateConflictError TypeError secondary []
+  missing required AuthConcurrencyLimitError TypeError secondary []
+  missing required AuthBudgetExceededError TypeError secondary []
   oauth values OAuthExchangeError {'status_code': 400, 'oauth_error': 'invalid_client'} returned "OAuthExchangeError(state='UNKNOWN', delivery_state='MAYBE_SENT', phase='unknown', status_code=400, oauth_error='invalid_client')"
   oauth values OAuthExchangeError {'status_code': 600} ValueError secondary []
   oauth values OAuthExchangeError {'status_code': True} ValueError secondary []
@@ -420,6 +494,10 @@
   oauth values AuthStateUncertainError {'failure_kind': 'unknown'} ValueError secondary []
   oauth values AuthReauthorizationRequiredError {'condition': 'expired'} ValueError secondary []
   oauth values AuthStateConflictError {'action': 'delete'} ValueError secondary []
+  oauth values AuthConcurrencyLimitError {'limit_kind': 'threads', 'limit': 1} ValueError secondary []
+  oauth values AuthConcurrencyLimitError {'limit_kind': 'pending_refreshes', 'limit': -1} ValueError secondary []
+  oauth values AuthBudgetExceededError {'budget_kind': 'tokens', 'limit': 1, 'used': 1} ValueError secondary []
+  oauth values AuthBudgetExceededError {'budget_kind': 'parent_network', 'limit': 1, 'used': True} ValueError secondary []
   auth state UNKNOWN = 'UNKNOWN'
   closed rejects UNKNOWN ! ValueError: state must be one of its declared values []
   auth state UNINITIALIZED = 'UNINITIALIZED'

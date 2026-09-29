@@ -54,6 +54,8 @@ OAuthErrorCode: TypeAlias = Literal[
     "invalid_scope",
 ]
 AuthTimeoutKind: TypeAlias = Literal["phase", "provider"]
+AuthLimitKind: TypeAlias = Literal["pending_refreshes", "waiters"]
+AuthBudgetKind: TypeAlias = Literal["auth_exchange", "network", "parent_network"]
 AuthFailureKind: TypeAlias = Literal[
     "transport", "deadline", "http_status", "malformed_response", "invalid_token_response", "stopped"
 ]
@@ -1328,6 +1330,157 @@ class AuthStateConflictError(AuthRefreshError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("action", self.action))
+
+
+class AuthConcurrencyLimitError(AuthRefreshError):
+    """A provider refused a new shared refresh job or waiter because its configured limit was reached."""
+
+    __slots__ = ("_limit", "_limit_kind")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        limit_kind: AuthLimitKind,
+        limit: int,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep which limit refused the caller and its configured value."""
+        _error_choice(limit_kind, get_args(AuthLimitKind), "limit_kind")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._limit_kind: AuthLimitKind = limit_kind
+        self._limit = _error_count(limit, "limit")
+
+    @property
+    def limit_kind(self) -> AuthLimitKind:
+        """Return whether pending jobs or waiters reached their limit."""
+        return self._limit_kind
+
+    @property
+    def limit(self) -> int:
+        """Return the configured limit."""
+        return self._limit
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("limit_kind", self.limit_kind), ("limit", self.limit))
+
+
+class AuthBudgetExceededError(AuthRefreshError):
+    """A call could not reserve the token exchange or network send a new token acquisition needs."""
+
+    __slots__ = ("_budget_kind", "_limit", "_used")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        budget_kind: AuthBudgetKind,
+        limit: int,
+        used: int,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the exhausted budget and how many slots were already consumed."""
+        _error_choice(budget_kind, get_args(AuthBudgetKind), "budget_kind")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._budget_kind: AuthBudgetKind = budget_kind
+        self._limit = _error_count(limit, "limit")
+        self._used = _error_count(used, "used")
+
+    @property
+    def budget_kind(self) -> AuthBudgetKind:
+        """Return the budget that refused the acquisition."""
+        return self._budget_kind
+
+    @property
+    def limit(self) -> int:
+        """Return the configured number of available slots."""
+        return self._limit
+
+    @property
+    def used(self) -> int:
+        """Return the slots already reserved before this acquisition."""
+        return self._used
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("budget_kind", self.budget_kind), ("limit", self.limit), ("used", self.used))
 
 
 class AuthProviderClosedError(AuthRefreshError):
