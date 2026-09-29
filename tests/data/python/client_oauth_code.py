@@ -416,7 +416,8 @@ def _faults(auth: ModuleType, transports: ModuleType, responses: ModuleType, err
     request = flow.authorization_request(_REDIRECT, ())
     lines.append(f"  foreign request = {token_outcome(lambda: other.exchange_code('code', request.state, request))}")
     lines.append(f"  empty code = {token_outcome(lambda: flow.exchange_code('', request.state, request))}")
-    lines.append(f"  code outside visible ASCII = {token_outcome(lambda: flow.exchange_code('c\ud800', request.state, request))}")
+    surrogate = "c\ud800"
+    lines.append(f"  code outside visible ASCII = {token_outcome(lambda: flow.exchange_code(surrogate, request.state, request))}")
     lines.append(f"  state outside ASCII = {token_outcome(lambda: flow.exchange_code('code', 'é', request))}")
     lines.append(f"  state mismatch = {token_outcome(lambda: flow.exchange_code('code', request.state + 'x', request))}")
     lines.append(f"  non-string state = {token_outcome(lambda: flow.exchange_code('code', None, request))}")
@@ -516,7 +517,8 @@ async def _async_flows(
         started = time.monotonic()
         lines.append(f"  async slow secret = {await atoken_outcome(lambda: flow.exchange_code('code', request.state, request))}")
         lines.append(f"    stopped at the session deadline = {time.monotonic() - started < 2}")
-    held = AsyncAdapter(transports, AsyncResponse(responses, 200, granted), hold=asyncio.Event())
+    release = asyncio.Event()
+    held = AsyncAdapter(transports, AsyncResponse(responses, 200, granted), hold=release)
     async with auth.AsyncAuthorizationCodeFlow(
         _AUTHORIZE, token, client_id="c", client_auth_method="none", token_transport=held
     ) as flow:
@@ -524,8 +526,7 @@ async def _async_flows(
         exchanging = asyncio.create_task(flow.exchange_code("code", request.state, request))
         await asyncio.to_thread(held.entered.wait)
         lines.append(f"  async concurrent exchange = {await atoken_outcome(lambda: flow.exchange_code('code', request.state, request))}")
-        assert held.hold is not None
-        held.hold.set()
+        release.set()
         lines.append(f"    first exchange = {await atoken_outcome(lambda: exchanging)}")
     hold = asyncio.Event()
     slow = AsyncAdapter(transports, AsyncResponse(responses, 200, granted), hold=hold)
