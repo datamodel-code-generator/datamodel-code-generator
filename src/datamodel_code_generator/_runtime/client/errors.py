@@ -62,6 +62,10 @@ AuthFailureKind: TypeAlias = Literal[
 ReauthorizationCondition: TypeAlias = Literal[
     "invalid_grant", "missing_token", "no_refresh_token", "unusable_loaded_token"
 ]
+TokenLoadPurpose: TypeAlias = Literal["initial_load", "before_refresh", "invalid_grant_reload", "reload"]
+TokenStoreAction: TypeAlias = Literal["store", "retry_store", "replace", "load"]
+TokenPersistencePurpose: TypeAlias = Literal[TokenLoadPurpose, "store", "retry_store", "replace"]
+PERSISTENCE_PURPOSES: Final = get_args(TokenPersistencePurpose)
 AuthAction: TypeAlias = Literal[
     "get",
     "refresh",
@@ -244,7 +248,7 @@ def set_error_counters(  # noqa: PLR0913
         _error_count(auth_exchange_budget_used, "auth_exchange_budget_used"),
         _error_ids(auth_refresh_ids),
         _error_count(auth_refresh_pending, "auth_refresh_pending"),
-        None if wire_send_count is None else _error_count(wire_send_count, "wire_send_count"),
+        _error_optional_count(wire_send_count, "wire_send_count"),
     )
     object.__setattr__(error, "_counters", counters)  # noqa: PLC2801 - Finalize the readonly snapshot.
 
@@ -292,6 +296,10 @@ def _error_count(value: object, field: str) -> int:
         msg = f"{field} must be a nonnegative integer"
         raise ValueError(msg)
     return value
+
+
+def _error_optional_count(value: object, field: str) -> int | None:
+    return None if value is None else _error_count(value, field)
 
 
 def _error_delivery(value: object) -> DeliveryState:
@@ -636,7 +644,7 @@ class SigningExecutionError(SDKError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-        self._signer_index = None if signer_index is None else _error_count(signer_index, "signer_index")
+        self._signer_index = _error_optional_count(signer_index, "signer_index")
 
     @property
     def signer_index(self) -> int | None:
@@ -1330,6 +1338,228 @@ class AuthStateConflictError(AuthRefreshError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("action", self.action))
+
+
+class AuthTokenLoadError(AuthRefreshError):
+    """Loading a token family's persisted token set failed, or what the load returned is unusable."""
+
+    __slots__ = ("_purpose",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        purpose: TokenLoadPurpose,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep why the provider loaded the token set; the loaded value itself is never kept."""
+        _error_choice(purpose, get_args(TokenLoadPurpose), "purpose")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._purpose: TokenLoadPurpose = purpose
+
+    @property
+    def purpose(self) -> TokenLoadPurpose:
+        """Return why the provider loaded the token set."""
+        return self._purpose
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("purpose", self.purpose))
+
+
+class AuthTokenStoreError(AuthRefreshError):
+    """Storing a token set failed or has an unknown outcome; the token set waiting to be stored is never exposed."""
+
+    __slots__ = ("_action", "_expected_revision", "_pending_revision")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        action: TokenStoreAction = "store",
+        expected_revision: int | None = None,
+        pending_revision: int | None = None,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the persistence action and the revisions it compared and tried to store."""
+        _error_choice(action, get_args(TokenStoreAction), "action")
+        expected = _error_optional_count(expected_revision, "expected_revision")
+        pending = _error_optional_count(pending_revision, "pending_revision")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._action: TokenStoreAction = action
+        self._expected_revision = expected
+        self._pending_revision = pending
+
+    @property
+    def action(self) -> TokenStoreAction:
+        """Return the persistence action that failed."""
+        return self._action
+
+    @property
+    def expected_revision(self) -> int | None:
+        """Return the stored revision the action expected, or None when it expected nothing stored."""
+        return self._expected_revision
+
+    @property
+    def pending_revision(self) -> int | None:
+        """Return the revision the action tried to store, or None."""
+        return self._pending_revision
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (
+            *super()._details(),
+            ("action", self.action),
+            ("expected_revision", self.expected_revision),
+            ("pending_revision", self.pending_revision),
+        )
+
+
+class AuthTokenStoreConflictError(AuthTokenStoreError):
+    """A token store refused a token set its stored revision conflicts with, or a load conflicted with the held one."""
+
+    __slots__ = ("_observed_revision",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        observed_revision: int | None = None,
+        action: TokenStoreAction = "store",
+        expected_revision: int | None = None,
+        pending_revision: int | None = None,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: AuthPhase = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the revision found instead of the expected one, when the store or the load reported it."""
+        observed = _error_optional_count(observed_revision, "observed_revision")
+        super().__init__(
+            action=action,
+            expected_revision=expected_revision,
+            pending_revision=pending_revision,
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._observed_revision = observed
+
+    @property
+    def observed_revision(self) -> int | None:
+        """Return the revision found instead of the expected one, or None when unknown."""
+        return self._observed_revision
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("observed_revision", self.observed_revision))
 
 
 class AuthConcurrencyLimitError(AuthRefreshError):

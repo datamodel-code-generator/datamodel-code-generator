@@ -169,6 +169,36 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
             f"context invalid {name}",
             lambda name=name, value=value: auth.CredentialContext(**{**parameters, name: value}),
         )
+    persistence = {
+        "provider_id": "provider",
+        "cache_key": "oauth-refresh-v1:key",
+        "session_id": "session",
+        "deadline": deadline,
+        "purpose": "store",
+    }
+    stored = auth.TokenPersistenceContext(**persistence)
+    lines.append(
+        f"  persistence context fields={(stored.provider_id, stored.cache_key, stored.session_id, stored.purpose)}"
+        f" deadline identity={stored.deadline is deadline}"
+    )
+    record(lines, "persistence context frozen", lambda: setattr(stored, "purpose", "reload"))
+    record(
+        lines,
+        "persistence context requires keywords",
+        lambda: auth.TokenPersistenceContext("provider", "key", "session", deadline, "store"),
+    )
+    for name, value in (
+        ("provider_id", None),
+        ("cache_key", 1),
+        ("session_id", b"session"),
+        ("deadline", 30),
+        ("purpose", "load"),
+    ):
+        record(
+            lines,
+            f"persistence context invalid {name}",
+            lambda name=name, value=value: auth.TokenPersistenceContext(**{**persistence, name: value}),
+        )
     for name in ("allowed_origins", "managed_headers", "managed_query"):
         for value in ("name", [1]):
             record(

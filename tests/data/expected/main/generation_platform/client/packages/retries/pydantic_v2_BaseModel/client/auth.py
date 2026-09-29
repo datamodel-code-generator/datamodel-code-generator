@@ -11,6 +11,8 @@ from ._runtime.client.auth import (
     AsyncRequestSigner,
     AsyncStaticCredentialProvider,
     AsyncStaticTokenProvider,
+    AsyncTokenLoad,
+    AsyncTokenStore,
     AuthConfig,
     BasicCredential,
     BearerCredential,
@@ -29,6 +31,9 @@ from ._runtime.client.auth import (
     SigningInput,
     StaticCredentialProvider,
     StaticTokenProvider,
+    TokenLoad,
+    TokenPersistenceContext,
+    TokenStore,
     TokenVersion,
 )
 from ._runtime.client.grants import (
@@ -60,6 +65,8 @@ __all__ = [
     'AsyncRequestSigner',
     'AsyncStaticCredentialProvider',
     'AsyncStaticTokenProvider',
+    'AsyncTokenLoad',
+    'AsyncTokenStore',
     'AuthConfig',
     'AuthorizationCodeFlow',
     'AuthorizationRequest',
@@ -85,6 +92,9 @@ __all__ = [
     'SigningInput',
     'StaticCredentialProvider',
     'StaticTokenProvider',
+    'TokenLoad',
+    'TokenPersistenceContext',
     'TokenSet',
+    'TokenStore',
     'TokenVersion',
 ]

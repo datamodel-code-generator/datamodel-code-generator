@@ -12,7 +12,13 @@ from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, final
 from typing_extensions import TypeIs
 
 from ..model_codecs.unset import UNSET, Unset
-from .errors import AuthConfigurationError, ConfigurationError, SigningConfigurationError
+from .errors import (
+    PERSISTENCE_PURPOSES,
+    AuthConfigurationError,
+    ConfigurationError,
+    SigningConfigurationError,
+    TokenPersistencePurpose,
+)
 from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
 from .timing import CancelToken, Deadline
@@ -27,6 +33,8 @@ __all__ = (
     "AsyncRequestSigner",
     "AsyncStaticCredentialProvider",
     "AsyncStaticTokenProvider",
+    "AsyncTokenLoad",
+    "AsyncTokenStore",
     "AuthConfig",
     "BasicCredential",
     "BearerCredential",
@@ -45,6 +53,9 @@ __all__ = (
     "SigningInput",
     "StaticCredentialProvider",
     "StaticTokenProvider",
+    "TokenLoad",
+    "TokenPersistenceContext",
+    "TokenStore",
     "TokenVersion",
 )
 
@@ -163,6 +174,65 @@ class TokenSet:
         _refresh_token(self.refresh_token)
         if type(self.revision) is not int or self.revision < 0:
             raise AuthConfigurationError(field_path=("revision",), condition="invalid_value")
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TokenPersistenceContext:
+    """What a token load or store serves: its provider, family, session, and deadline, and why it runs.
+
+    The cache key fingerprints the family's fixed configuration without tokens or secrets. It identifies no persistent
+    family on its own: each callback is bound to the namespace of one family.
+    """
+
+    provider_id: str
+    cache_key: str
+    session_id: str
+    deadline: Deadline
+    purpose: TokenPersistencePurpose
+
+    def __post_init__(self) -> None:
+        """Refuse values of other types and purposes the SDK does not declare."""
+        checked_type(self.provider_id, (str,), ("provider_id",))
+        checked_type(self.cache_key, (str,), ("cache_key",))
+        checked_type(self.session_id, (str,), ("session_id",))
+        checked_type(self.deadline, (Deadline,), ("deadline",))
+        if self.purpose not in PERSISTENCE_PURPOSES:
+            raise AuthConfigurationError(field_path=("purpose",), condition="invalid_value")
+
+
+class TokenLoad(Protocol):
+    """A synchronous callback reading the persisted token set of the family namespace it is bound to."""
+
+    def load(self, context: TokenPersistenceContext) -> TokenSet | None:
+        """Return the persisted token set, or None when nothing is stored."""
+
+
+class AsyncTokenLoad(Protocol):
+    """An asyncio callback reading the persisted token set of the family namespace it is bound to."""
+
+    async def load(self, context: TokenPersistenceContext) -> TokenSet | None:
+        """Return the persisted token set, or None when nothing is stored."""
+
+
+class TokenStore(Protocol):
+    """A synchronous callback durably storing a token set in the family namespace it is bound to."""
+
+    def store(self, token_set: TokenSet, *, expected_revision: int | None, context: TokenPersistenceContext) -> None:
+        """Store the token set if the stored one has the expected revision, or if nothing is stored for None.
+
+        An identical stored token set succeeds whatever the expected revision; any other conflict raises
+        AuthTokenStoreConflictError.
+        """
+
+
+class AsyncTokenStore(Protocol):
+    """An asyncio callback durably storing a token set in the family namespace it is bound to."""
+
+    async def store(
+        self, token_set: TokenSet, *, expected_revision: int | None, context: TokenPersistenceContext
+    ) -> None:
+        """Store the token set as the synchronous callback does."""
 
 
 CredentialMaterial: TypeAlias = ApiKeyCredential | BasicCredential | BearerCredential
