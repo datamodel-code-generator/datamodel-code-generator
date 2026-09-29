@@ -288,6 +288,8 @@ def _error_expiry(value: object) -> datetime | None:
 class ConfigurationError(SDKError):
     """A setting or argument the client rejected before sending anything."""
 
+    _shows_field_path: ClassVar[bool] = True
+
     def __init__(  # noqa: PLR0913
         self,
         *,
@@ -335,21 +337,20 @@ class ConfigurationError(SDKError):
         self.source_pointer = source_pointer
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("field_path", ".".join(self.field_path) or None), ("condition", self.condition))
+        path = (("field_path", ".".join(self.field_path) or None),) if self._shows_field_path else ()
+        return (*super()._details(), *path, ("condition", self.condition))
 
 
 class AuthConfigurationError(ConfigurationError):
     """Authentication settings are invalid before credential acquisition or sending."""
 
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super(ConfigurationError, self)._details(), ("condition", self.condition))
+    _shows_field_path = False
 
 
 class SigningConfigurationError(ConfigurationError):
     """Signing metadata or body capabilities cannot satisfy the configured signer."""
 
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super(ConfigurationError, self)._details(), ("condition", self.condition))
+    _shows_field_path = False
 
 
 class RequestEncodingError(SDKError):

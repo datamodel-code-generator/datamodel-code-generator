@@ -414,11 +414,9 @@ def owned_providers(config: AuthConfig) -> tuple[_CloseableProvider, ...]:
 
 
 def _material(value: object) -> CredentialMaterial:
-    match value:
-        case ApiKeyCredential() | BasicCredential() | BearerCredential():
-            return value
-        case _:
-            raise AuthConfigurationError(field_path=("material",), condition="invalid_type")
+    if isinstance(value, (ApiKeyCredential, BasicCredential, BearerCredential)):
+        return value
+    raise AuthConfigurationError(field_path=("material",), condition="invalid_type")
 
 
 class _StaticCredentials:
