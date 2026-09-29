@@ -34,6 +34,10 @@ if TYPE_CHECKING:
     from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, Session, TokenEndpoint
     from .transports import AsyncTransportAdapter, OwnedTransportAdapter, TransportAdapter
 
+    EndpointT = TypeVar("EndpointT", bound=TokenEndpoint | AsyncTokenEndpoint)
+else:
+    EndpointT = TypeVar("EndpointT")
+
 __all__ = (
     "AsyncAuthorizationCodeFlow",
     "AuthorizationCodeFlow",
@@ -44,7 +48,6 @@ __all__ = (
 
 _PHASE_DEFAULTS: Final = {"connect": 5.0, "read": 15.0, "write": 15.0, "pool": 5.0}
 _VERIFIER_BYTES: Final = 32
-EndpointT = TypeVar("EndpointT", bound="TokenEndpoint | AsyncTokenEndpoint")
 RequestState = Literal[
     "CREATED", "EXCHANGING", "SUCCEEDED", "EXCHANGE_REJECTED", "REAUTH_REQUIRED", "UNCERTAIN", "FAILED_NOT_SENT"
 ]
