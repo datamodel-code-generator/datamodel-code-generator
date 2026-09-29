@@ -350,8 +350,9 @@ seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counte
 without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is
 never implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
 
-Credential/signature values do not appear in repr or automatic hooks/logs; causes are retained without automatically
-formatting their potentially sensitive messages. Builtin OAuth flows, token persistence, shared refresh, Basic
+Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
+request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
+their potentially sensitive messages. Builtin OAuth flows, token persistence, shared refresh, Basic
 charset overrides, resource audience metadata, and generated OAuth factories are not available yet.
 Providers are explicit.
 

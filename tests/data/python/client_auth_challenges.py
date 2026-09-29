@@ -26,6 +26,7 @@ _CHALLENGES: Final = (
     ("wrong error case", ('Bearer error="INVALID_TOKEN"',)),
     ("quoted padding", ('Bearer error=" invalid_token "',)),
     ("description only", ('Bearer error_description="invalid_token"',)),
+    ("utf-8 description", ('Bearer error="invalid_token", error_description="期限切れ"'.encode(),)),
     ("scope", ('Bearer error="insufficient_scope"',)),
     ("scope veto", ('Bearer error="invalid_token", Bearer error="insufficient_scope"',)),
     ("scope field veto", ('Bearer error="invalid_token"', 'Bearer error="insufficient_scope"')),

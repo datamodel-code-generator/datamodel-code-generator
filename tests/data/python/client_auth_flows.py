@@ -168,8 +168,9 @@ class _Signer:
         *,
         failure: Exception | None = None,
         origins: tuple[str, ...] = (),
+        managed: tuple[str, ...] = ("X-Sig",),
     ) -> None:
-        self.capabilities = auth.SignerCapabilities(origins, ("X-Sig",), ("sig",), False)
+        self.capabilities = auth.SignerCapabilities(origins, managed, ("sig",), False)
         self.result = auth.SignatureFields((("X-Sig", "signed"),), ()) if result is None else result
         self.failure = failure
         self.calls = 0
@@ -242,16 +243,48 @@ class _AsyncLimiter(_Limiter):
         return _AsyncPermit(self.log)
 
 
-class _Hook:
-    """Record the names of a call's events, failing on the named one."""
+class _Lagging(_Limiter):
+    """Grant every permit only after a token minted when it was requested has expired."""
 
-    def __init__(self, failing: str | None = None) -> None:
+    def _wait(self) -> float:
+        self.log.append("acquire")
+        return _LIFETIME + 0.05
+
+
+class _AsyncLagging(_AsyncLimiter):
+    _wait = _Lagging._wait
+
+
+class _Minting:
+    """A provider whose every token expires before the next permit arrives."""
+
+    def __init__(self, auth: ModuleType) -> None:
+        self.auth = auth
+        self.calls: list[str] = []
+
+    def get(self, context: object) -> object:
+        del context
+        self.calls.append("get")
+        token, _ = _soon(self.auth)
+        return self.auth.BearerCredential(token, self.auth.TokenVersion())
+
+
+class _AsyncMinting(_Minting):
+    async def get(self, context: object) -> object:  # ty: ignore[invalid-method-override]
+        return _Minting.get(self, context)
+
+
+class _Hook:
+    """Record the names of a call's events, failing on the named one once it has passed it `spared` times."""
+
+    def __init__(self, failing: str | None = None, *, spared: int = 0) -> None:
         self.failing = failing
+        self.spared = spared
         self.names: list[str] = []
 
     def on_event(self, event: Any) -> None:
         self.names.append(event.name)
-        if event.name == self.failing:
+        if event.name == self.failing and self.names.count(event.name) > self.spared:
             msg = f"{event.name} hook failed"
             raise RuntimeError(msg)
 
@@ -352,6 +385,9 @@ def _placement(package: ModuleType, auth: ModuleType, options: ModuleType, lines
         ("cookie key", {"cookie_key": static(auth.ApiKeyCredential("cookie-secret"))}, "api_key_cookie", {}),
         ("cookie key separator", {"cookie_key": static(auth.ApiKeyCredential("a;b"))}, "api_key_cookie", {}),
         ("header key CRLF", {"header_key": static(auth.ApiKeyCredential("k\r\nX-Evil: 1"))}, "api_key_header", {}),
+        ("header key inner space", {"header_key": static(auth.ApiKeyCredential("in ner"))}, "api_key_header", {}),
+        ("bearer token trailing space", {"bearer": auth.StaticTokenProvider(auth.AccessToken("secret "))}, "bearer",
+         {}),
         (
             "and alternative",
             {"header_key": static(auth.ApiKeyCredential("and-key")), "bearer": auth.StaticTokenProvider(
@@ -439,6 +475,16 @@ def _configuration(package: ModuleType, auth: ModuleType, options: ModuleType, l
 
     mapped = _Signer(auth)
     mapped.capabilities = {"not": "capabilities"}
+
+    class _Unknowable(_Signer):
+        @property
+        def capabilities(self) -> object:  # ty: ignore[invalid-method-override]
+            msg = "capabilities unavailable"
+            raise RuntimeError(msg)
+
+        @capabilities.setter
+        def capabilities(self, value: object) -> None:
+            del value
     cases: tuple[tuple[str, Callable[[], object], str], ...] = (
         ("async provider on sync client", lambda: auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(
             auth.AccessToken("t"))}), "bearer"),
@@ -462,6 +508,8 @@ def _configuration(package: ModuleType, auth: ModuleType, options: ModuleType, l
         ("anonymous without schemes or signers", lambda: auth.AuthConfig({}, send_on_anonymous=True), "anonymous"),
         ("signer capabilities mapping", lambda: auth.AuthConfig({}, send_on_anonymous=True, signers=(mapped,)),
          "anonymous"),
+        ("signer capabilities raising", lambda: auth.AuthConfig({}, send_on_anonymous=True,
+                                                                  signers=(_Unknowable(auth),)), "anonymous"),
         ("two credentials one header", lambda: auth.AuthConfig(
             {"bearer": token, "basic": auth.StaticCredentialProvider(auth.BasicCredential("u", "p"))},
             send_on_anonymous=True, anonymous_schemes=("bearer", "basic")), "anonymous"),
@@ -589,14 +637,31 @@ def _gates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: li
             ),
         ) as api,
     ):
-        record(lines, "raw invalidate failure", lambda: _outcome(lambda: api.auth.with_raw_response.bearer().raise_for_status()))
+        record(lines, "raw invalidate failure", lambda: _outcome(api.auth.with_raw_response.bearer))
 
         def streamed() -> None:
             with api.auth.with_streaming_response.bearer() as response:
-                response.raise_for_status()
+                del response
 
         exchange.respond(_rejected())
         record(lines, "streamed invalidate failure", lambda: _outcome(streamed))
+        exchange.respond(_rejected())
+        record(lines, "request_raw invalidate failure", lambda: _outcome(lambda: api.request_raw(
+            "GET", f"{_ORIGIN}/bearer", options=_raw_auth(auth, options, failing))))
+    exchange = Exchange(lines)
+    exchange.respond(_rejected())
+    refreshable, hook = _Provider(_bearer(auth)), _Hook("auth_start", spared=1)
+    with (
+        exchange.client() as native,
+        package.Client(
+            http_client=native,
+            options=options.ClientOptions(
+                auth=auth.AuthConfig({"bearer": refreshable}), retry=options.RetryOptions(initial_delay=0), hooks=(hook,)
+            ),
+        ) as api,
+    ):
+        record(lines, "hook fails on the invalidation span", lambda: _outcome(api.auth.with_raw_response.bearer))
+    lines.append(f"    callbacks={refreshable.calls} events={hook.names}")
     signer = _Signer(auth)
     exchange = Exchange(lines)
     exchange.respond(_rejected())
@@ -612,6 +677,51 @@ def _gates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: li
     ):
         record(lines, "signed anonymous rejected", lambda: _outcome(api.auth.with_response.anonymous))
     _after_send(package, auth, options, lines)
+
+
+def _rejected_after(until: float) -> Callable[[Any], Any]:
+    """Answer 401 invalid_token only once the given monotonic time has passed, as a slow server would."""
+    rejected = _rejected()
+
+    def reply(request: Any) -> Any:
+        time.sleep(max(0.0, until - monotonic()))
+        return rejected(request)
+
+    return reply
+
+
+def _in_flight(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    """Refresh a cached token that expired while its request was in flight, instead of refusing it as expired."""
+    exchange = Exchange(lines)
+    with (
+        exchange.client() as native,
+        package.Client(
+            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+        ) as api,
+    ):
+        token, until = _soon(auth)
+        provider = _Provider(auth.BearerCredential(token, auth.TokenVersion()), refreshed=_bearer(auth, "lasting"))
+        exchange.respond(_rejected_after(until), _ok())
+        expiring = options.RequestOptions(auth=auth.AuthConfig({"bearer": provider}))
+        record(lines, "token expired in flight", lambda: _outcome(lambda: api.auth.with_response.bearer(options=expiring)))
+    lines.append(f"    callbacks={provider.calls}")
+
+
+async def _ain_flight(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(
+            http_client=native, options=options.ClientOptions(retry=options.RetryOptions(initial_delay=0))
+        ) as api,
+    ):
+        token, until = _soon(auth)
+        provider = _AsyncProvider(auth.BearerCredential(token, auth.TokenVersion()), refreshed=_bearer(auth, "lasting"))
+        exchange.respond(_rejected_after(until), _ok())
+        expiring = options.RequestOptions(auth=auth.AuthConfig({"bearer": provider}))
+        outcome = await _aoutcome(lambda: api.auth.with_response.bearer(options=expiring))
+    lines.append(f"  async token expired in flight = {outcome}")
+    lines.append(f"    callbacks={provider.calls}")
 
 
 def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -671,19 +781,30 @@ async def _agates(package: ModuleType, auth: ModuleType, options: ModuleType, li
     ):
 
         async def raised() -> None:
-            response = await api.auth.with_raw_response.bearer()
-            await response.raise_for_status()
+            await api.auth.with_raw_response.bearer()
 
         async def streamed() -> None:
             async with api.auth.with_streaming_response.bearer() as response:
-                await response.raise_for_status()
+                del response
 
         lines.append(f"  async raw invalidate failure = {await _aoutcome(raised)}")
         exchange.respond(_rejected())
         lines.append(f"  async streamed invalidate failure = {await _aoutcome(streamed)}")
+        exchange.respond(_rejected())
+        raw = await _aoutcome(lambda: api.request_raw("GET", f"{_ORIGIN}/bearer", options=_raw_auth(auth, options, failing)))
+        lines.append(f"  async request_raw invalidate failure = {raw}")
         exchange.respond(_ok())
         lines.append(f"  async anonymous without opt-in = {await _aoutcome(api.auth.with_response.empty_security)}")
     lines.append(f"    callbacks={failing.calls}")
+
+
+def _raw_auth(auth: ModuleType, options: ModuleType, provider: object) -> object:
+    """Send the bearer credential on raw requests to the server origin."""
+    return options.RequestOptions(
+        auth=auth.AuthConfig(
+            {"bearer": provider}, send_on_anonymous=True, anonymous_schemes=("bearer",), allowed_origins=(_ORIGIN,)
+        )
+    )
 
 
 def _soon(auth: ModuleType) -> tuple[object, float]:
@@ -708,10 +829,15 @@ def _expiring(
         token, until = _soon(auth)
         return static(token), limiter(0.0), (late(auth, until),)
 
+    def minting() -> tuple[Any, _Limiter, tuple[object, ...]]:
+        lagging = _Lagging if limiter is _Limiter else _AsyncLagging
+        return (_Minting if limiter is _Limiter else _AsyncMinting)(auth), lagging(0.0), ()
+
     return (
         ("token expires while waiting for a permit", renewed),
         ("static token expires while waiting for a permit", expired),
         ("signer outlives the token", outlived),
+        ("every token expires while waiting for a permit", minting),
     )
 
 
@@ -906,6 +1032,8 @@ def _signatures(package: ModuleType, auth: ModuleType, options: ModuleType, line
         ("signer raises", _Signer(auth, failure=RuntimeError("sign failed"))),
         ("signature header undeclared", _Signer(auth, fields((("X-Other", "v"),), ()))),
         ("signature header CRLF", _Signer(auth, fields((("X-Sig", "a\r\nInjected: 1"),), ()))),
+        ("signature header leading space", _Signer(auth, fields((("X-Sig", " signed"),), ()))),
+        ("signature header name folding to a token", _Signer(auth, fields((("\u212a-Sig", "v"),), ()), managed=("K-Sig",))),
         ("signature query undeclared", _Signer(auth, fields((), (("other", "v"),)))),
         ("signature query lone surrogate", _Signer(auth, fields((), (("sig", "\ud800"),)))),
         ("signer returns a mapping", _Signer(auth, {"X-Sig": "v"})),
@@ -952,6 +1080,8 @@ def auth_flows(package: ModuleType, lines: list[str]) -> None:
     _configuration(package, auth, options, lines)
     _gates(package, auth, options, lines)
     run(lambda: _agates(package, auth, options, lines))
+    _in_flight(package, auth, options, lines)
+    run(lambda: _ain_flight(package, auth, options, lines))
     _permits(package, auth, options, lines)
     run(lambda: _apermits(package, auth, options, lines))
     _hooks(package, auth, options, lines)

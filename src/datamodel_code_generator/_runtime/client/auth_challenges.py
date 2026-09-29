@@ -9,7 +9,8 @@ if TYPE_CHECKING:
     from .responses import HeadersView
 
 _WORD: Final = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
-_PARAMETER: Final = re.compile(rf'({_WORD})[ \t]*=[ \t]*({_WORD}|"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t !-~\x80-\xff])*")')
+_TEXT: Final = r"[^\x00-\x08\x0a-\x1f\x7f]"
+_PARAMETER: Final = re.compile(rf'({_WORD})[ \t]*=[ \t]*({_WORD}|"(?:(?![\\"]){_TEXT}|\\{_TEXT})*")')
 _CHALLENGE: Final = re.compile(rf"({_WORD})(?: +(.+))?")
 _TOKEN68: Final = re.compile(r"[A-Za-z0-9._~+/-]+=*")
 _INVALID: Final = 1

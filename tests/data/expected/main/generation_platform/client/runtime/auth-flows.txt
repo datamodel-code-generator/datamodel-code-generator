@@ -14,6 +14,10 @@
   cookie key = ('returned', 200)
   cookie key separator = ('AuthConfigurationError', 'invalid_cookie', None, None, 'NoneType', (), 0, None, 0)
   header key CRLF = ('AuthConfigurationError', 'invalid_header', None, None, 'NoneType', (), 0, None, 0)
+  > GET https://api.example.com/api-key/header
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: in ner] b''
+  header key inner space = ('returned', 200)
+  bearer token trailing space = ('AuthConfigurationError', 'invalid_header', None, None, 'NoneType', (), 0, None, 0)
   > GET https://api.example.com/and
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-api-key: and-key, authorization: Bearer and-token] b''
   and alternative = ('returned', 200)
@@ -62,6 +66,7 @@
   anonymous scheme without credential = ('AuthConfigurationError', 'missing_credentials', None, None, 'NoneType', (), 0, None, 0)
   anonymous without schemes or signers = ('AuthConfigurationError', 'empty_selection', None, None, 'NoneType', (), 0, None, 0)
   signer capabilities mapping = ('SigningConfigurationError', 'invalid_capabilities', None, None, 'NoneType', (), 0, None, 0)
+  signer capabilities raising = ('SigningConfigurationError', 'invalid_capabilities', None, None, 'RuntimeError', (), 0, None, 0)
   two credentials one header = ('AuthConfigurationError', 'name_collision', None, None, 'NoneType', (), 0, None, 0)
   signer header beside credential header = ('SigningConfigurationError', 'name_collision', None, None, 'NoneType', (), 0, None, 0)
   two signers one query name = ('SigningConfigurationError', 'name_collision', None, None, 'NoneType', (), 0, None, 0)
@@ -124,6 +129,13 @@
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   streamed invalidate failure = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
+  request_raw invalidate failure = ('HTTPStatusError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
+  hook fails on the invalidation span = ('HookExecutionError', None, None, None, 'RuntimeError', (), 1, 'RESPONSE_STARTED', 0)
+    callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_start', 'response_headers', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   > GET https://api.example.com/anonymous
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, x-sig: signed] b''
   signed anonymous rejected = ('AnonymousHTTPError', None, None, 'status_not_retryable', 'NoneType', (), 1, None, 8)
@@ -184,10 +196,25 @@
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer token] b''
   async streamed invalidate failure = ('BearerHTTPError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token] b''
+  async request_raw invalidate failure = ('HTTPStatusError', None, None, 'disabled', 'NoneType', ('AuthProviderExecutionError',), 1, None, 8)
   > GET https://api.example.com/empty
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream] b''
   async anonymous without opt-in = ('returned', 200)
-    callbacks=['get', 'invalidate', 'get', 'invalidate']
+    callbacks=['get', 'invalidate', 'get', 'invalidate', 'get', 'invalidate']
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer soon] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
+  token expired in flight = ('returned', 200)
+    callbacks=['get', 'invalidate', 'get', 'refresh']
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer soon] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
+  async token expired in flight = ('returned', 200)
+    callbacks=['get', 'invalidate', 'get', 'refresh']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
   token expires while waiting for a permit = ('returned', 200)
@@ -196,6 +223,8 @@
     limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   signer outlives the token = ('TokenExpiredError', 'expired', None, None, 'NoneType', (), 0, 'NOT_SENT', 0)
     limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'attempt_end', 'call_end']
+  every token expires while waiting for a permit = ('TokenExpiredError', 'expired', None, None, 'NoneType', (), 0, 'NOT_SENT', 0)
+    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_end', 'call_end']
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer lasting] b''
   async token expires while waiting for a permit = ('returned', 200)
@@ -204,6 +233,8 @@
     limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   async signer outlives the token = ('TokenExpiredError', 'expired', None, None, 'NoneType', (), 0, 'NOT_SENT', 0)
     limiter=['acquire', 'release'] callbacks=() events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_start', 'attempt_end', 'call_end']
+  async every token expires while waiting for a permit = ('TokenExpiredError', 'expired', None, None, 'NoneType', (), 0, 'NOT_SENT', 0)
+    limiter=['acquire', 'release', 'acquire', 'release'] callbacks=['get', 'get'] events=['call_start', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'auth_start', 'auth_end', 'limiter_wait', 'limiter_acquired', 'attempt_end', 'call_end']
   provider and auth_end hook fail = ('AuthProviderExecutionError', None, 'get', None, 'ValueError', ('HookExecutionError',), 0, 'NOT_SENT', 0)
     callbacks=['get'] events=['call_start', 'auth_start', 'auth_end', 'attempt_end', 'call_end']
   auth_start hook fails = ('HookExecutionError', None, None, None, 'RuntimeError', (), 0, 'NOT_SENT', 0)
@@ -251,6 +282,8 @@
   signer raises = ('SigningExecutionError', None, None, None, 'RuntimeError', (), 0, None, 0)
   signature header undeclared = ('SigningConfigurationError', 'undeclared_header', None, None, 'NoneType', (), 0, None, 0)
   signature header CRLF = ('SigningConfigurationError', 'invalid_header', None, None, 'NoneType', (), 0, None, 0)
+  signature header leading space = ('SigningConfigurationError', 'invalid_header', None, None, 'NoneType', (), 0, None, 0)
+  signature header name folding to a token = ('SigningConfigurationError', 'invalid_header', None, None, 'NoneType', (), 0, None, 0)
   signature query undeclared = ('SigningConfigurationError', 'undeclared_query', None, None, 'NoneType', (), 0, None, 0)
   signature query lone surrogate = ('SigningConfigurationError', 'invalid_query', None, None, 'UnicodeEncodeError', (), 0, None, 0)
   signer returns a mapping = ('SigningConfigurationError', 'invalid_result', None, None, 'NoneType', (), 0, None, 0)

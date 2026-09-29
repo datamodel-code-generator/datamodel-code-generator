@@ -73,6 +73,12 @@
     callbacks=[('get', 'bearer', ())] unused=1
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  challenge utf-8 description = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
   challenge scope ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
     callbacks=[('get', 'bearer', ())] unused=1
   > GET https://api.example.com/bearer
@@ -249,6 +255,12 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
   async challenge description only ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error
     callbacks=[('get', 'bearer', ())] unused=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer second-material] b''
+  async challenge utf-8 description = Response(b'accepted', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '8')])
+    callbacks=[('get', 'bearer', ()), ('invalidate', True, True), ('get', 'bearer', ()), ('refresh', 'bearer')] unused=0
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer first-material] b''
   async challenge scope ! BearerHTTPError: BearerHTTPError(status_code=401, operation_id='bearer', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='bearer', status_code=401, error_decoded=True, error_data=b'rejected', body_bytes=b'rejected', truncated=False] bearer_http_error

@@ -68,7 +68,7 @@ __all__ = ("invalid_token",)
 BodyT = TypeVar("BodyT", bound="BodyAttempt | AsyncBodyAttempt")
 _NAME: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _ORIGIN: Final = re.compile(r"https?://[^\s/?#\\\x00-\x1f\x7f]+", re.IGNORECASE)
-_HEADER_VALUE: Final = re.compile(r"[^\x00-\x08\x0a-\x1f\x7f\ud800-\udfff]*")
+_HEADER_VALUE: Final = re.compile(r"(?:[^\x00-\x20\x7f\ud800-\udfff](?:[ \t]*[^\x00-\x20\x7f\ud800-\udfff])*)?")
 _COOKIE_VALUE: Final = re.compile(r"[\x21\x23-\x2b\x2d-\x3a\x3c-\x5b\x5d-\x7e]*")
 _CONTROL: Final = re.compile(r"[\x00-\x1f\x7f]")
 _RESERVED: Final = frozenset({"host", "content-length", "transfer-encoding"})
@@ -277,6 +277,16 @@ def _requirements(
     return selected
 
 
+def _signer_capabilities(signer: RequestSigner | AsyncRequestSigner) -> SignerCapabilities:
+    try:
+        value = signer.capabilities
+    except Exception as cause:  # noqa: BLE001 - A missing or failing capability record is a signer defect.
+        raise SigningConfigurationError(
+            field_path=("auth", "signers"), condition="invalid_capabilities", cause=cause
+        ) from None
+    return _capabilities(value)
+
+
 def _capabilities(value: object) -> SignerCapabilities:
     if not isinstance(value, SignerCapabilities):
         raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_capabilities")
@@ -325,7 +335,7 @@ def bind_auth(
     signers: list[BoundSigner] = []
     for index, signer in enumerate(config.signers):
         assert _sync_signer(signer)
-        capabilities = _capabilities(signer.capabilities)
+        capabilities = _signer_capabilities(signer)
         signers.append(
             BoundSigner(
                 signer=signer,
@@ -368,7 +378,7 @@ def bind_async_auth(
     signers: list[AsyncBoundSigner] = []
     for index, signer in enumerate(config.signers):
         assert _async_signer(signer)
-        capabilities = _capabilities(signer.capabilities)
+        capabilities = _signer_capabilities(signer)
         signers.append(
             AsyncBoundSigner(
                 signer=signer,
@@ -516,19 +526,27 @@ _INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, "invali
 _REFRESH: Final = _provider_calls("refresh")
 
 
-def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> AcquiredCredential:
-    """Acquire one synchronous credential, retaining classified auth failures."""
+def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
+    """Ask a synchronous provider for material, retaining classified auth failures; the caller validates it."""
     with _GET[delivery]:
-        value = binding.provider.get(context)
-    return _material(value, binding.scheme, context, delivery)
+        return binding.provider.get(context)
 
 
-async def aget_credential(
-    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState
+async def aget_credential(binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
+    """Ask an asynchronous provider for material in the existing caller-owned operation; the caller validates it."""
+    with _GET[delivery]:
+        return await binding.provider.get(context)
+
+
+def rejected_version(value: object, version: TokenVersion) -> bool:
+    """Return whether a provider handed back the bearer version the server rejected, however stale it has become."""
+    return isinstance(value, BearerCredential) and value.version is version
+
+
+def accept_credential(
+    value: object, binding: BoundCredential | AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState
 ) -> AcquiredCredential:
-    """Acquire one asynchronous credential in the existing caller-owned operation."""
-    with _GET[delivery]:
-        value = await binding.provider.get(context)
+    """Validate the material that will be sent: its kind, token type, known scopes, and expiry."""
     return _material(value, binding.scheme, context, delivery)
 
 
@@ -687,10 +705,10 @@ def apply_signature(
     """Apply only declared ordered signature fields, encoding new query atoms once."""
     names = frozenset(name.lower() for name in capabilities.managed_headers)
     for name, value in fields.headers:
+        if _NAME.fullmatch(name) is None or _HEADER_VALUE.fullmatch(value) is None:
+            raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_header")
         if name.lower() not in names:
             raise SigningConfigurationError(field_path=("auth", "signers"), condition="undeclared_header")
-        if _HEADER_VALUE.fullmatch(value) is None:
-            raise SigningConfigurationError(field_path=("auth", "signers"), condition="invalid_header")
     if any(name not in capabilities.managed_query for name, _ in fields.query):
         raise SigningConfigurationError(field_path=("auth", "signers"), condition="undeclared_query")
     try:

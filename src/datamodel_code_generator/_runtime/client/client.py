@@ -46,6 +46,7 @@ from .errors import (
     CleanupError,
     ConfigurationError,
     DeliveryState,
+    HookExecutionError,
     HTTPStatusError,
     LimiterExecutionError,
     PhaseTimeoutError,
@@ -720,6 +721,11 @@ def _expired_credentials(call: _Call) -> bool:
 def _reauthorizing(call: _Call) -> bool:
     """Return whether the call's credentials expired while it waited for a permit."""
     return call.auth is not None and _expired_credentials(call)
+
+
+def _auth_failed(call: _Call) -> bool:
+    """Return whether a local invalidation failed, which a raw call raises instead of returning its response."""
+    return call.auth is not None and bool(call.auth.secondary_errors)
 
 
 def _usable_credentials(call: _Call) -> None:
@@ -2010,6 +2016,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 body = operation.bound(body, fields, media_type)
             result = self._run(call, body, prepare, receive, options)
             call.check("send")
+            if _auth_failed(call):
+                result.raise_for_status()
             if stream:
                 self._scope.handoff(result)
                 handed = True
@@ -2086,6 +2094,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             result = self._run(call, body, prepare, receive, options)
             call.check("send")
+            if _auth_failed(call):
+                result.raise_for_status()
             if stream:
                 self._scope.handoff(result)
                 handed = True
@@ -2338,8 +2348,15 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
     @staticmethod
     def _authenticate(call: _Call) -> None:
-        from .auth import BearerCredential  # noqa: PLC0415
-        from .auth_policy import BoundAuth, HopCredentials, authorize_hop, get_credential, refresh_credential  # noqa: PLC0415
+        from .auth_policy import (  # noqa: PLC0415
+            BoundAuth,
+            HopCredentials,
+            accept_credential,
+            authorize_hop,
+            get_credential,
+            refresh_credential,
+            rejected_version,
+        )
 
         auth = call.auth
         assert auth is not None
@@ -2356,14 +2373,17 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             for index, binding in enumerate(bound.credentials):
                 call.check("auth")
                 context = _credential_context(binding, call)
-                acquired = get_credential(binding, context, delivery)
+                value = get_credential(binding, context, delivery)
                 call.check("auth")
-                if auth.pending is not None and auth.pending[0] == index:
-                    assert isinstance(acquired.material, BearerCredential)
-                    if acquired.material.version is auth.pending[1]:
-                        acquired = refresh_credential(binding, context, delivery)
-                        call.check("auth")
-                values.append(acquired)
+                if (
+                    (pending := auth.pending) is not None
+                    and pending[0] == index
+                    and rejected_version(value, pending[1])
+                ):
+                    values.append(refresh_credential(binding, context, delivery))
+                    call.check("auth")
+                else:
+                    values.append(accept_credential(value, binding, context, delivery))
             auth.credentials = HopCredentials(tuple(values))
             auth.pending = None
 
@@ -2425,6 +2445,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             with _auth_work(call):
                 invalidate_credential(bound.credentials[rejected[0]], rejected[1])
+        except HookExecutionError:
+            raise
         except Exception as error:  # noqa: BLE001
             call.check("auth")
             call.retry_blocked = True
@@ -2448,6 +2470,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.check("encode")
             call.retained()
             self._authorize(source, call)
+            renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
                     permit = _acquire(limiter, call, request.url, events)
@@ -2456,6 +2479,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                         events.emit(events.event("limiter_acquired"))
                 if permit is None or not _reauthorizing(call):
                     break
+                if renewed:
+                    _usable_credentials(call)
+                renewed = True
                 releasing, permit = permit, None
                 _released(partial(_release_permit, releasing), call.operation_id, call.call_id)
                 self._authenticate(call)
@@ -2764,6 +2790,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
+            if _auth_failed(call):
+                await result.raise_for_status()
             if stream:
                 self._scope.handoff(result)
                 handed = True
@@ -2843,6 +2871,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
+            if _auth_failed(call):
+                await result.raise_for_status()
             if stream:
                 self._scope.handoff(result)
                 handed = True
@@ -3095,13 +3125,14 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
     @staticmethod
     async def _authenticate(call: _Call) -> None:
-        from .auth import BearerCredential  # noqa: PLC0415
         from .auth_policy import (  # noqa: PLC0415
             AsyncBoundAuth,
             AsyncHopCredentials,
+            accept_credential,
             aget_credential,
             arefresh_credential,
             authorize_hop,
+            rejected_version,
         )
 
         auth = call.auth
@@ -3119,14 +3150,17 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             for index, binding in enumerate(bound.credentials):
                 call.check("auth")
                 context = _credential_context(binding, call)
-                acquired = await aget_credential(binding, context, delivery)
+                value = await aget_credential(binding, context, delivery)
                 call.check("auth")
-                if auth.pending is not None and auth.pending[0] == index:
-                    assert isinstance(acquired.material, BearerCredential)
-                    if acquired.material.version is auth.pending[1]:
-                        acquired = await arefresh_credential(binding, context, delivery)
-                        call.check("auth")
-                values.append(acquired)
+                if (
+                    (pending := auth.pending) is not None
+                    and pending[0] == index
+                    and rejected_version(value, pending[1])
+                ):
+                    values.append(await arefresh_credential(binding, context, delivery))
+                    call.check("auth")
+                else:
+                    values.append(accept_credential(value, binding, context, delivery))
             auth.credentials = AsyncHopCredentials(tuple(values))
             auth.pending = None
 
@@ -3191,6 +3225,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             async with _aauth_work(call):
                 await ainvalidate_credential(bound.credentials[rejected[0]], rejected[1])
+        except HookExecutionError:
+            raise
         except Exception as error:  # noqa: BLE001
             call.check("auth")
             call.retry_blocked = True
@@ -3214,6 +3250,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.check("encode")
             call.retained()
             await self._authorize(source, call)
+            renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
                     permit = await _aacquire(limiter, call, request.url, events)
@@ -3222,6 +3259,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                         await events.aemit(events.event("limiter_acquired"))
                 if permit is None or not _reauthorizing(call):
                     break
+                if renewed:
+                    _usable_credentials(call)
+                renewed = True
                 releasing, permit = permit, None
                 await call.cleanup(partial(_arelease_permit, releasing))
                 await self._authenticate(call)
