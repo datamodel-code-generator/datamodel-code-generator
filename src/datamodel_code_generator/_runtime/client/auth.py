@@ -143,6 +143,28 @@ class BearerCredential:
         checked_type(self.version, (TokenVersion,), ("version",))
 
 
+def _refresh_token(value: object) -> None:
+    if value is not None and (not isinstance(value, str) or not value):
+        raise AuthConfigurationError(field_path=("refresh_token",), condition="invalid_value")
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class TokenSet:
+    """An access token with the refresh token and revision of its token family; its repr omits both tokens."""
+
+    access_token: AccessToken = field(repr=False)
+    refresh_token: str | None = field(repr=False)
+    revision: int = 0
+
+    def __post_init__(self) -> None:
+        """Refuse other token types, empty refresh tokens, and revisions that are not nonnegative integers."""
+        checked_type(self.access_token, (AccessToken,), ("access_token",))
+        _refresh_token(self.refresh_token)
+        if type(self.revision) is not int or self.revision < 0:
+            raise AuthConfigurationError(field_path=("revision",), condition="invalid_value")
+
+
 CredentialMaterial: TypeAlias = ApiKeyCredential | BasicCredential | BearerCredential
 
 

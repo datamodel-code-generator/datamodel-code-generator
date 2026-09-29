@@ -1,0 +1,197 @@
+# auth pydantic_v2.BaseModel
+  missing token set = AuthConfigurationError condition=missing_value field_path=('token_set',)
+  token set type = AuthConfigurationError condition=invalid_type field_path=('token_set',)
+  naive expiry = AuthConfigurationError condition=invalid_value field_path=('token_set', 'access_token', 'expires_at')
+  token type other than Bearer = AuthConfigurationError condition=unsupported_token_type field_path=('token_set', 'access_token', 'token_type')
+  public client with a secret = AuthConfigurationError condition=forbidden_value field_path=('client_secret',)
+  missing secret = AuthConfigurationError condition=missing_value field_path=('client_secret',)
+  async secret = AuthConfigurationError condition=invalid_mode field_path=('client_secret',)
+  sync secret of an async provider = AuthConfigurationError condition=invalid_mode field_path=('client_secret',)
+  sync transport of an async provider = AuthConfigurationError condition=invalid_mode field_path=('token_transport',)
+  lone scope string = AuthConfigurationError condition=invalid_scope field_path=('scopes',)
+  empty audience = AuthConfigurationError condition=invalid_value field_path=('audience',)
+  options type = AuthConfigurationError condition=invalid_type field_path=('options',)
+  workers after construction = 0
+  context type = AuthConfigurationError condition=invalid_type field_path=('context',)
+  audience of another resource = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
+  invalidate with another type = AuthConfigurationError condition=invalid_type field_path=('version',)
+  snapshot of an unknown id = None
+  replace with another type = AuthConfigurationError condition=invalid_type field_path=('token_set',)
+  replace at the same revision = AuthConfigurationError condition=stale_revision field_path=('token_set', 'revision')
+  replace without a usable token = AuthConfigurationError condition=unusable_token field_path=('token_set',)
+  replace before the first acquisition = None
+  get = access-2 scopes=None expires_in_minutes=60
+  workers after close = 0 sends=0
+  get after close = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=admission
+  replace after close = AuthStateConflictError state=CLOSED delivery_state=NOT_SENT phase=unknown action=replace_token_set
+  close again = None
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  basic = access-2 scopes=('read', 'write') expires_in_minutes=60
+    cached for the configured audience = True
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-2'
+    refresh keeping the refresh token = access-3 scopes=('read',) expires_in_minutes=60
+    write caller = InsufficientScopeError state=READY delivery_state=NOT_SENT phase=admission
+    stale invalidation keeps the token = True
+    replace at the current revision = AuthConfigurationError condition=stale_revision field_path=('token_set', 'revision')
+    replace with a spent refresh token = AuthConfigurationError condition=spent_token field_path=('token_set', 'refresh_token')
+    replace with a newer token set = None
+    get after the replacement = access-4 scopes=None expires_in_minutes=60
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 93] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=client+id&client_secret=se%3Acr+et'
+  post = lasting scopes=None expires_in_minutes=None
+    cached without expiry = True
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, content-length: 68] b'grant_type=refresh_token&refresh_token=refresh-1&client_id=client+id'
+  public client keeping its refresh token = public scopes=None expires_in_minutes=60
+    no refresh token was spent = None
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  invalid grant = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant refresh_id=<call>
+    snapshot = RefreshInfo(refresh_id='<call>', state='REAUTH_REQUIRED', token_send_count=1, failure='auth_reauthorization_required_error')
+    later get = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant refresh_id=<call>
+    later refresh = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant refresh_id=<call>
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  rejected scope = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_scope refresh_id=<call>
+    snapshot = RefreshInfo(refresh_id='<call>', state='EXCHANGE_REJECTED', token_send_count=1, failure='oauth_exchange_error')
+    later get = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_scope refresh_id=<call>
+    later refresh = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=400 oauth_error=invalid_scope refresh_id=<call>
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  rejected client = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=401 oauth_error=invalid_client refresh_id=<call>
+    snapshot = RefreshInfo(refresh_id='<call>', state='EXCHANGE_REJECTED', token_send_count=1, failure='oauth_exchange_error')
+    later get = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=401 oauth_error=invalid_client refresh_id=<call>
+    later refresh = OAuthExchangeError state=EXCHANGE_REJECTED delivery_state=RESPONSE_STARTED phase=unknown status_code=401 oauth_error=invalid_client refresh_id=<call>
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  unauthorized without invalid_client = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=401 failure_kind=http_status refresh_id=<call>
+    snapshot = RefreshInfo(refresh_id='<call>', state='UNCERTAIN', token_send_count=1, failure='auth_state_uncertain_error')
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=401 failure_kind=http_status refresh_id=<call>
+    later refresh = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=401 failure_kind=http_status refresh_id=<call>
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  unknown error code = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response refresh_id=<call>
+    snapshot = RefreshInfo(refresh_id='<call>', state='UNCERTAIN', token_send_count=1, failure='auth_state_uncertain_error')
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response refresh_id=<call>
+    later refresh = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response refresh_id=<call>
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  unavailable = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=503 failure_kind=http_status refresh_id=<call>
+    snapshot = RefreshInfo(refresh_id='<call>', state='UNCERTAIN', token_send_count=1, failure='auth_state_uncertain_error')
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=503 failure_kind=http_status refresh_id=<call>
+    later refresh = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=503 failure_kind=http_status refresh_id=<call>
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  error without JSON = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response refresh_id=<call> cause=ValueError
+    snapshot = RefreshInfo(refresh_id='<call>', state='UNCERTAIN', token_send_count=1, failure='auth_state_uncertain_error')
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response refresh_id=<call> cause=ValueError
+    later refresh = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=400 failure_kind=malformed_response refresh_id=<call> cause=ValueError
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  success without JSON = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response refresh_id=<call> cause=ValueError
+    snapshot = RefreshInfo(refresh_id='<call>', state='UNCERTAIN', token_send_count=1, failure='auth_state_uncertain_error')
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response refresh_id=<call> cause=ValueError
+    later refresh = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=malformed_response refresh_id=<call> cause=ValueError
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  missing access token = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response refresh_id=<call> cause=InvalidTokenResponseError
+    snapshot = RefreshInfo(refresh_id='<call>', state='UNCERTAIN', token_send_count=1, failure='auth_state_uncertain_error')
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response refresh_id=<call> cause=InvalidTokenResponseError
+    later refresh = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response refresh_id=<call> cause=InvalidTokenResponseError
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  zero lifetime = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response refresh_id=<call> cause=TokenExpiredError
+    snapshot = RefreshInfo(refresh_id='<call>', state='UNCERTAIN', token_send_count=1, failure='auth_state_uncertain_error')
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response refresh_id=<call> cause=TokenExpiredError
+    later refresh = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response refresh_id=<call> cause=TokenExpiredError
+    exchange needed = False
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-2'
+  spent refresh token returned = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=validate status_code=200 failure_kind=invalid_token_response refresh_id=<call> cause=InvalidTokenResponseError
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  generated call = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  rejected token refreshed = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
+  write operation beyond the known grants ! InsufficientScopeError: InsufficientScopeError(operation_id='oauth_scopes', call_id='<call>', state='READY', delivery_state='NOT_SENT', phase='admission') [operation_id='oauth_scopes', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='admission'] insufficient_scope_error
+  lifetime 100s with refresh token refresh-1 after 95s = access-2 scopes=None expires_in_minutes=60 same=None
+    after 101s = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+  lifetime 100s with refresh token None after 95s = access-1 scopes=None expires_in_minutes=2 same=True
+    after 101s = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token sent=[]
+  connect failure proven unsent = OAuthExchangeError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=connect refresh_id=<call> cause=TransportError
+    later get = access-2 scopes=None expires_in_minutes=60
+    refresh tokens sent = ['refresh-1', 'refresh-1']
+  phase timeout after sending = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=read failure_kind=transport refresh_id=<call> cause=PhaseTimeoutError
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=read failure_kind=transport refresh_id=<call> cause=PhaseTimeoutError
+    refresh tokens sent = ['refresh-1']
+  adapter failure = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=transport refresh_id=<call> cause=RuntimeError
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=transport refresh_id=<call> cause=RuntimeError
+    refresh tokens sent = ['refresh-1']
+  body slower than the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=200 failure_kind=deadline refresh_id=<call>
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=200 failure_kind=deadline refresh_id=<call>
+    refresh tokens sent = ['refresh-1']
+  interrupted send = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=stopped refresh_id=<call> cause=KeyboardInterrupt
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=stopped refresh_id=<call> cause=KeyboardInterrupt
+    refresh tokens sent = ['refresh-1']
+  secret failure = AuthProviderExecutionError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown callback=get refresh_id=<call> cause=RuntimeError
+    later get = access-2 scopes=None expires_in_minutes=60
+    refresh tokens sent = ['refresh-1']
+  secret slower than the session = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider refresh_id=<call>
+    later get = access-2 scopes=None expires_in_minutes=60
+    refresh tokens sent = ['refresh-1']
+  answer after the session and its grace = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline refresh_id=<call>
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline refresh_id=<call> sent=['refresh-1']
+  public refresh held past its session = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider refresh_id=<call>
+    later get = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+  interrupted once its worker started = KeyboardInterrupt
+    later get = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+  worker thread refusing to start = AuthProviderExecutionError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown callback=get refresh_id=<call> cause=RuntimeError
+    later get = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+  worker starting once the session ended = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider refresh_id=<call>
+    sent meanwhile = []
+    later get = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+  replace while a refresh runs = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=replace_token_set
+    exchange needed meanwhile = False
+  one refresh for concurrent callers = access-2 scopes=None expires_in_minutes=60 / access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
+    exchange needed for the current version = True
+    exchange needed for another version = False
+  without a refresh token = access-1 scopes=None expires_in_minutes=60
+    exchange needed = False
+    get once invalidated = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token
+    later refresh = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token sends=0
+  forced refresh without a refresh token = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token
+  expired token without a scope = InsufficientScopeError state=READY delivery_state=NOT_SENT phase=admission sends=0
+    caller within its grants = access-2 scopes=('read',) expires_in_minutes=60
+  refresh narrowing the grants = InsufficientScopeError state=READY delivery_state=NOT_SENT phase=admission
+    caller within the new grants = access-2 scopes=('read',) expires_in_minutes=60 sends=1
+  token for audience other with audience api = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
+  token for audience other with audience other = access-1 scopes=None expires_in_minutes=60
+  expired token for audience other with audience api = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
+    later get = AuthConfigurationError condition=audience_mismatch field_path=('audience',) sent=[]
+  async rotation = access-2 scopes=None expires_in_minutes=60
+    cached = True
+    invalid grant = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant refresh_id=<call>
+    later get = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant refresh_id=<call> sends=2
+    replace = None
+    get after the replacement = access-9 scopes=None expires_in_minutes=60
+    get after close = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=admission
+  async refresh starting once its session ended = access-2 scopes=None expires_in_minutes=60
+    first caller = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider refresh_id=<call> sends=1

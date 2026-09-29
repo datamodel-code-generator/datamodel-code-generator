@@ -405,7 +405,7 @@ blocked = {"httpx2", "httpcore2", "anyio", "asyncio", "pydantic", "msgspec", "da
 blocked.add(sys.argv[2] + "_models")
 execution = {
     sys.argv[2] + "._runtime.client." + name
-    for name in ("auth_policy", "auth_challenges", "client", "logical", "native", "bodies", "oauth", "refresh")
+    for name in ("auth_policy", "auth_challenges", "client", "logical", "native", "bodies", "oauth", "refresh", "rotation")
 }
 
 class Blocked(importlib.abc.MetaPathFinder):

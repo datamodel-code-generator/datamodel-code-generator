@@ -14,7 +14,7 @@ client/coding.py: .errors, .responses, __future__, collections.abc, typing, zlib
 client/errors.py: ..model_codecs.unset, .responses, .scopes, __future__, datetime, enum, re, typing, typing_extensions
 client/events.py: ..model_codecs.unset, ..model_codecs.wire, .errors, .hooks, .logical, .options, .responses, __future__, asyncio, collections.abc, dataclasses, inspect, time, types, typing, urllib.parse
 client/evidence.py: __future__, dataclasses, errno, socket, ssl, sys, typing, typing_extensions
-client/grants.py: ..model_codecs.unset, .admission, .auth, .auth_policy, .errors, .oauth, .options, .refresh, .timing, .transports, __future__, asyncio, base64, concurrent.futures, contextlib, dataclasses, hashlib, hmac, secrets, threading, time, typing, typing_extensions, weakref
+client/grants.py: ..model_codecs.unset, .admission, .auth, .auth_policy, .errors, .oauth, .options, .refresh, .rotation, .timing, .transports, __future__, asyncio, base64, concurrent.futures, contextlib, dataclasses, hashlib, hmac, secrets, threading, time, typing, typing_extensions, weakref
 client/hooks.py: ..model_codecs.wire, .errors, .timing, __future__, collections.abc, dataclasses, types, typing
 client/lifecycle.py: .admission, .auth, .auth_policy, .errors, __future__, asyncio, collections.abc, concurrent.futures, contextvars, functools, threading, time, typing
 client/logical.py: .admission, .errors, .lifecycle, .options, .timing, .transports, __future__, _thread, asyncio, collections.abc, dataclasses, functools, sys, time, typing, uuid
@@ -26,9 +26,10 @@ client/operations.py: ..model_codecs.context, ..model_codecs.errors, ..model_cod
 client/options.py: ..model_codecs.media, ..model_codecs.unset, ..model_codecs.wire, .auth, .errors, .hooks, .timing, __future__, collections.abc, dataclasses, datetime, decimal, inspect, math, re, ssl, types, typing, typing_extensions, urllib.parse, uuid
 client/raw.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .coding, .errors, .events, .lifecycle, .logical, .media, .operations, .options, .responses, __future__, collections.abc, errno, os, pathlib, types, typing, typing_extensions
 client/redirects.py: .errors, .options, .responses, .retry, .urls, __future__, dataclasses, typing
-client/refresh.py: .admission, .auth, .errors, .oauth, .options, .timing, __future__, asyncio, collections, collections.abc, concurrent.futures, contextlib, contextvars, dataclasses, functools, inspect, threading, time, typing, uuid
+client/refresh.py: .admission, .auth, .errors, .oauth, .options, .timing, __future__, abc, asyncio, collections, collections.abc, concurrent.futures, contextlib, contextvars, dataclasses, functools, inspect, threading, time, typing, uuid
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
 client/retry.py: ..model_codecs.unset, .errors, .hooks, .options, .responses, __future__, collections.abc, dataclasses, datetime, math, re, typing
+client/rotation.py: .admission, .auth, .errors, .oauth, .options, .refresh, __future__, dataclasses, datetime, hashlib, time, typing
 client/scopes.py: __future__, re, typing
 client/security.py: __future__, dataclasses, typing
 client/timing.py: .errors, __future__, dataclasses, math, threading, time, typing

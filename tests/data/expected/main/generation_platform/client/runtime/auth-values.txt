@@ -141,7 +141,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -168,6 +168,13 @@
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshTokenProvider=()
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.aclose async=True hints=('return',)
   hints AsyncRefreshableTokenProvider=()
   method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
@@ -227,6 +234,13 @@
   hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
   constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
   init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
+  hints RefreshTokenProvider=()
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method RefreshTokenProvider.get async=False hints=('context', 'return')
+  method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshTokenProvider.refresh async=False hints=('context', 'return')
+  method RefreshTokenProvider.close async=False hints=('return',)
   hints RefreshableTokenProvider=()
   method RefreshableTokenProvider.get async=False hints=('context', 'return')
   method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
@@ -401,7 +415,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -428,6 +442,13 @@
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshTokenProvider=()
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.aclose async=True hints=('return',)
   hints AsyncRefreshableTokenProvider=()
   method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
@@ -487,6 +508,13 @@
   hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
   constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
   init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
+  hints RefreshTokenProvider=()
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method RefreshTokenProvider.get async=False hints=('context', 'return')
+  method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshTokenProvider.refresh async=False hints=('context', 'return')
+  method RefreshTokenProvider.close async=False hints=('return',)
   hints RefreshableTokenProvider=()
   method RefreshableTokenProvider.get async=False hints=('context', 'return')
   method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
@@ -661,7 +689,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -688,6 +716,13 @@
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshTokenProvider=()
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.aclose async=True hints=('return',)
   hints AsyncRefreshableTokenProvider=()
   method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
@@ -747,6 +782,13 @@
   hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
   constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
   init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
+  hints RefreshTokenProvider=()
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method RefreshTokenProvider.get async=False hints=('context', 'return')
+  method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshTokenProvider.refresh async=False hints=('context', 'return')
+  method RefreshTokenProvider.close async=False hints=('return',)
   hints RefreshableTokenProvider=()
   method RefreshableTokenProvider.get async=False hints=('context', 'return')
   method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
@@ -921,7 +963,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -948,6 +990,13 @@
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshTokenProvider=()
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.aclose async=True hints=('return',)
   hints AsyncRefreshableTokenProvider=()
   method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
@@ -1007,6 +1056,13 @@
   hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
   constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
   init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
+  hints RefreshTokenProvider=()
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method RefreshTokenProvider.get async=False hints=('context', 'return')
+  method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshTokenProvider.refresh async=False hints=('context', 'return')
+  method RefreshTokenProvider.close async=False hints=('return',)
   hints RefreshableTokenProvider=()
   method RefreshableTokenProvider.get async=False hints=('context', 'return')
   method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
@@ -1181,7 +1237,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -1208,6 +1264,13 @@
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshTokenProvider=()
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
+  method AsyncRefreshTokenProvider.aclose async=True hints=('return',)
   hints AsyncRefreshableTokenProvider=()
   method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
@@ -1267,6 +1330,13 @@
   hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
   constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
   init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
+  hints RefreshTokenProvider=()
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  method RefreshTokenProvider.get async=False hints=('context', 'return')
+  method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshTokenProvider.refresh async=False hints=('context', 'return')
+  method RefreshTokenProvider.close async=False hints=('return',)
   hints RefreshableTokenProvider=()
   method RefreshableTokenProvider.get async=False hints=('context', 'return')
   method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')

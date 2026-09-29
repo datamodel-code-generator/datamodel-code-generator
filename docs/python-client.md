@@ -1497,5 +1497,55 @@ async provider belongs to the event loop it was created on or first used from, a
 own that a later `aclose` awaits when the first was cancelled. Client authentication, endpoints, and the token transport
 otherwise follow the authorization code flow.
 
-Refresh-token providers, token persistence, Basic charset overrides, resource audience metadata, and generated OAuth
-provider factories are not available yet; applications construct providers explicitly.
+### Refresh a token family
+
+`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token family current with the OAuth refresh token grant,
+starting from the `TokenSet` an authorization produced. The provider alone refreshes its family: no other provider,
+process, or event loop may send the same refresh token. It serves the access token while it lasts, and a call refreshes
+it once a tenth of its lifetime, at most thirty seconds, remains, or after a resource rejected it.
+
+```python
+from pets import Client
+from pets.auth import AuthConfig, OwnedCredentialProvider, RefreshTokenProvider, TokenSet
+from pets.options import ClientOptions
+
+
+def user_client(tokens: TokenSet) -> Client:
+    provider = RefreshTokenProvider(
+        "https://auth.example.com/token", client_id="pets-app", token_set=tokens, client_auth_method="none"
+    )
+    return Client(options=ClientOptions(auth=AuthConfig({"oauth": OwnedCredentialProvider(provider)})))
+```
+
+The refresh request sends the refresh token with the client authentication, never the configured `scopes` or `audience`:
+`none` sends the `client_id` of a public client, and `client_secret_basic` (the default) and `client_secret_post` need a
+`client_secret`. A caller whose context requires another audience than the configured one fails with
+`AuthConfigurationError`, as does a token whose own `audience` differs from it, leaving the family as it was. A token
+set needs the Bearer type, and a timezone-aware `expires_at` when its access token expires.
+
+Each refresh replaces the token set with one of the next revision. The response's refresh token rotates the family, and
+a response without one keeps the refresh token sent; a response without `scope` keeps the grants of the access token it
+replaces, known or unknown. A caller requiring a scope that known grants lack fails with `InsufficientScopeError` before
+any request, since a refresh never widens them, and a caller whose refresh narrowed them fails the same way. A refresh
+token the family rotated away from, or sent in a request that may have been delivered without a usable answer, is spent:
+the family never sends it again, and a response returning a spent one is unusable.
+
+A refresh that may have spent its refresh token stops the family: `invalid_grant` raises
+`AuthReauthorizationRequiredError` in the `REAUTH_REQUIRED` state, another known error code `OAuthExchangeError` in the
+`EXCHANGE_REJECTED` state, and any other answer, an unusable one, or a lost request `AuthStateUncertainError` in the
+`UNCERTAIN` state, as does a refresh still running a second after its `refresh_timeout`. Every later `get` and `refresh`
+raises a new instance of that error without a request, until `replace_token_set` adopts a token set of a higher
+revision; it refuses one whose refresh token the family spent, or that has neither a refresh token nor an unexpired
+access token, with `AuthConfigurationError`. A new authorization's token set has revision 0, and the family's current
+revision is not exposed, so a stopped family is restarted with a new provider from that token set. A refresh that
+provably sent nothing, as when the client secret provider fails, raises its error in the `FAILED_NOT_SENT` state and
+leaves the family as it was, so the next call sends the same refresh token. A token set without a refresh token serves
+its access token until it expires or a resource rejects it, then stops the family with
+`AuthReauthorizationRequiredError`, as a forced `refresh` does at once.
+
+Concurrent callers, `OAuthProviderOptions`, snapshots, call accounting, and closing follow the client credentials
+provider. `replace_token_set` raises `AuthStateConflictError` while a refresh runs or once the provider is closing; its
+`persist` argument has no effect without a token store.
+
+Token persistence, Basic charset overrides, resource audience metadata, and generated OAuth provider factories are not
+available yet; applications construct providers explicitly.

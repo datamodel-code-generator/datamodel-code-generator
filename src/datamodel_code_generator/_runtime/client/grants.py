@@ -19,22 +19,19 @@ from typing_extensions import Self, TypeAliasType
 from ..model_codecs.unset import UNSET, Unset
 from .admission import AsyncTokenAcquirer, TokenAcquirer
 from .auth import (
-    AccessToken,
     AsyncCredentialProvider,
     BearerCredential,
     CredentialContext,
     CredentialProvider,
     RefreshInfo,
+    TokenSet,
     TokenVersion,
     checked_scopes,
-    checked_type,
 )
 from .errors import (
     AuthConfigurationError,
     AuthProviderClosedError,
-    AuthReauthorizationRequiredError,
     AuthStateConflictError,
-    AuthStateUncertainError,
     AuthTimeoutError,
     BudgetExceededError,
     DeadlineExceededError,
@@ -51,6 +48,7 @@ if TYPE_CHECKING:
 
     from .admission import CallAdmission
     from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, Progress, Session, TokenEndpoint
+    from .refresh import AsyncTokens, SyncTokens
     from .transports import AsyncTransportAdapter, OwnedTransportAdapter, TransportAdapter
 
     EndpointT = TypeVar("EndpointT", bound=TokenEndpoint | AsyncTokenEndpoint)
@@ -67,12 +65,14 @@ __all__ = (
     "AsyncAuthorizationCodeFlow",
     "AsyncClientCredentialsProvider",
     "AsyncDeviceAuthorizationFlow",
+    "AsyncRefreshTokenProvider",
     "AuthorizationCodeFlow",
     "AuthorizationRequest",
     "ClientCredentialsProvider",
     "DeviceAuthorization",
     "DeviceAuthorizationFlow",
     "OAuthProviderOptions",
+    "RefreshTokenProvider",
     "TokenSet",
 )
 
@@ -95,28 +95,6 @@ _DEVICE_SENDS: Final = 128
 _SLOW_DOWN: Final = 5.0
 _WAITING: Final = frozenset({"authorization_pending", "slow_down"})
 _ENDED: Final = frozenset({"access_denied", "expired_token"})
-
-
-def _refresh_token(value: object) -> None:
-    if value is not None and (not isinstance(value, str) or not value):
-        raise AuthConfigurationError(field_path=("refresh_token",), condition="invalid_value")
-
-
-@final
-@dataclass(frozen=True, slots=True)
-class TokenSet:
-    """An access token with the refresh token and revision of its token family; its repr omits both tokens."""
-
-    access_token: AccessToken = field(repr=False)
-    refresh_token: str | None = field(repr=False)
-    revision: int = 0
-
-    def __post_init__(self) -> None:
-        """Refuse other token types, empty refresh tokens, and revisions that are not nonnegative integers."""
-        checked_type(self.access_token, (AccessToken,), ("access_token",))
-        _refresh_token(self.refresh_token)
-        if type(self.revision) is not int or self.revision < 0:
-            raise AuthConfigurationError(field_path=("revision",), condition="invalid_value")
 
 
 def _random() -> str:
@@ -297,78 +275,21 @@ class _CodeFlow(_Flow[EndpointT]):
 
     def _completed(self, exchanged: Exchanged, issued: _Issued) -> TokenSet:
         """Commit the request's terminal state from the answer, then return its token set or raise its failure."""
-        from .oauth import failure_kind, token_material  # noqa: PLC0415
+        from .oauth import consumable_failure, token_material, unusable_success  # noqa: PLC0415
 
         if exchanged.outcome != "success":
-            raise self._failure(exchanged, issued)
+            state, error = consumable_failure(exchanged)
+            self._finish(issued, state)
+            raise error
         assert exchanged.fields is not None
         assert exchanged.received is not None
         try:
             access, refresh, _ = token_material(exchanged.fields, exchanged.received, issued.scopes)
         except (ValueError, TokenExpiredError) as cause:
             self._finish(issued, "UNCERTAIN")
-            raise AuthStateUncertainError(
-                failure_kind=failure_kind(cause),
-                status_code=exchanged.status_code,
-                state="UNCERTAIN",
-                delivery_state=exchanged.delivery,
-                phase="validate",
-                cause=cause,
-            ) from None
+            raise unusable_success(exchanged, cause) from None
         self._finish(issued, "SUCCEEDED")
         return TokenSet(access, refresh)
-
-    def _failure(self, exchanged: Exchanged, issued: _Issued) -> Exception:
-        """Commit the terminal state of an exchange that did not succeed and return the error it raises."""
-        delivery = exchanged.delivery
-        if exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant":
-            self._finish(issued, "REAUTH_REQUIRED")
-            return AuthReauthorizationRequiredError(
-                condition="invalid_grant", state="REAUTH_REQUIRED", delivery_state=delivery
-            )
-        if exchanged.outcome == "rejected" and exchanged.oauth_error is not None:
-            self._finish(issued, "EXCHANGE_REJECTED")
-            return OAuthExchangeError(
-                status_code=exchanged.status_code,
-                oauth_error=exchanged.oauth_error,
-                state="EXCHANGE_REJECTED",
-                delivery_state=delivery,
-            )
-        if exchanged.outcome == "unsent":
-            self._finish(issued, "FAILED_NOT_SENT")
-            if exchanged.timeout_kind is None:
-                return OAuthExchangeError(
-                    state="FAILED_NOT_SENT", delivery_state=delivery, phase=exchanged.phase, cause=exchanged.cause
-                )
-            assert exchanged.timeout is not None
-            return AuthTimeoutError(
-                effective_timeout=exchanged.timeout,
-                timeout_kind=exchanged.timeout_kind,
-                state="FAILED_NOT_SENT",
-                delivery_state=delivery,
-                phase=exchanged.phase,
-                cause=exchanged.cause,
-            )
-        self._finish(issued, "UNCERTAIN")
-        return AuthStateUncertainError(
-            failure_kind=_uncertain_kind(exchanged),
-            status_code=exchanged.status_code,
-            state="UNCERTAIN",
-            delivery_state=delivery,
-            phase="validate" if exchanged.outcome in {"malformed_response", "rejected"} else exchanged.phase,
-            cause=exchanged.cause,
-        )
-
-
-def _uncertain_kind(exchanged: Exchanged) -> Literal["transport", "deadline", "http_status", "malformed_response"]:
-    """Name what left an exchange's outcome unknown: the session deadline, the transport, or the answer."""
-    if exchanged.timeout_kind == "provider":
-        return "deadline"
-    if exchanged.outcome == "lost":
-        return "transport"
-    if exchanged.outcome == "http_status":
-        return "http_status"
-    return "malformed_response"
 
 
 class AuthorizationCodeFlow(_CodeFlow["TokenEndpoint"]):
@@ -962,8 +883,108 @@ class AsyncDeviceAuthorizationFlow(_DeviceFlow["AsyncTokenEndpoint"]):
         await self.aclose()
 
 
+class _SharedTokens(TokenAcquirer):
+    """What the SDK's synchronous token providers share: one family's shared acquisitions, and its release."""
+
+    __slots__ = ("_tokens",)
+
+    def __init__(self, tokens: SyncTokens) -> None:
+        self._tokens = tokens
+
+    def get(self, context: CredentialContext) -> BearerCredential:
+        """Return the shared token, joining or starting its acquisition when none is usable."""
+        return self._tokens.obtain(context, force=False)
+
+    def refresh(self, context: CredentialContext) -> BearerCredential:
+        """Acquire a new token, or join the acquisition already running, whatever the cache holds."""
+        return self._tokens.obtain(context, force=True)
+
+    def invalidate(self, version: TokenVersion) -> None:
+        """Forget the cached token if it is the version a resource rejected; another version stays usable."""
+        self._tokens.invalidate(version)
+
+    def refresh_snapshot(self, refresh_id: str) -> RefreshInfo | None:
+        """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
+        return self._tokens.snapshot(refresh_id)
+
+    def acquire_for(self, context: CredentialContext, admission: CallAdmission) -> BearerCredential:
+        """Return the shared token for a client call, which accounts for a new acquisition it starts."""
+        return self._tokens.obtain(context, force=False, admission=admission)
+
+    def exchange_needed(self, version: TokenVersion) -> bool:
+        """Return whether replacing a rejected version needs a new acquisition rather than a running or newer one."""
+        return self._tokens.exchange_needed(version)
+
+    def close(self) -> None:
+        """Refuse new acquisitions, let a running one finish within its deadline, then close the owned transport.
+
+        Every close raises the failure of that release.
+        """
+        self._tokens.close()
+
+    def request_close(self) -> Future[None]:
+        """Start closing without waiting, and return the release every close awaits.
+
+        The owned transport closes once no acquisition runs, or once the running one's session ended.
+        """
+        return self._tokens.request_close()
+
+    def __enter__(self) -> Self:
+        """Return the provider."""
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        """Close the provider."""
+        self.close()
+
+
+class _AsyncSharedTokens(AsyncTokenAcquirer):
+    """What the SDK's asyncio token providers share, bound to the event loop they were created on or first used from."""
+
+    __slots__ = ("_tokens",)
+
+    def __init__(self, tokens: AsyncTokens) -> None:
+        self._tokens = tokens
+
+    async def get(self, context: CredentialContext) -> BearerCredential:
+        """Return the shared token, joining or starting its acquisition when none is usable."""
+        return await self._tokens.obtain(context, force=False)
+
+    async def refresh(self, context: CredentialContext) -> BearerCredential:
+        """Acquire a new token, or join the acquisition already running, whatever the cache holds."""
+        return await self._tokens.obtain(context, force=True)
+
+    async def invalidate(self, version: TokenVersion) -> None:
+        """Forget the cached token if it is the version a resource rejected; another version stays usable."""
+        self._tokens.invalidate(version)
+
+    def refresh_snapshot(self, refresh_id: str) -> RefreshInfo | None:
+        """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
+        return self._tokens.snapshot(refresh_id)
+
+    async def acquire_for(self, context: CredentialContext, admission: CallAdmission) -> BearerCredential:
+        """Return the shared token for a client call, which accounts for a new acquisition it starts."""
+        return await self._tokens.obtain(context, force=False, admission=admission)
+
+    def exchange_needed(self, version: TokenVersion) -> bool:
+        """Return whether replacing a rejected version needs a new acquisition rather than a running or newer one."""
+        return self._tokens.exchange_needed(version)
+
+    async def aclose(self) -> None:
+        """Close once in a task of its own; a cancelled caller leaves it running for a later aclose to await."""
+        await self._tokens.aclose()
+
+    async def __aenter__(self) -> Self:
+        """Return the provider."""
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        """Close the provider."""
+        await self.aclose()
+
+
 @final
-class ClientCredentialsProvider(TokenAcquirer):
+class ClientCredentialsProvider(_SharedTokens):
     """The OAuth client credentials grant: a confidential client's own token, acquired when first needed and shared.
 
     Concurrent callers join one acquisition, which runs on a worker of the provider under its own deadline, so a caller
@@ -971,7 +992,7 @@ class ClientCredentialsProvider(TokenAcquirer):
     failed acquisition leaves nothing behind, and a later call acquires again. Close it to release its transport.
     """
 
-    __slots__ = ("_credentials",)
+    __slots__ = ()
 
     def __init__(  # noqa: PLR0913
         self,
@@ -996,60 +1017,14 @@ class ClientCredentialsProvider(TokenAcquirer):
         endpoint = TokenEndpoint(
             _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
         )
-        self._credentials = SyncClientCredentials(resolved, endpoint, grant)
-
-    def get(self, context: CredentialContext) -> BearerCredential:
-        """Return the shared token, joining or starting its acquisition when none is usable."""
-        return self._credentials.obtain(context, force=False)
-
-    def refresh(self, context: CredentialContext) -> BearerCredential:
-        """Acquire a new token, or join the acquisition already running, whatever the cache holds."""
-        return self._credentials.obtain(context, force=True)
-
-    def invalidate(self, version: TokenVersion) -> None:
-        """Forget the cached token if it is the version a resource rejected; another version stays usable."""
-        self._credentials.invalidate(version)
-
-    def refresh_snapshot(self, refresh_id: str) -> RefreshInfo | None:
-        """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
-        return self._credentials.snapshot(refresh_id)
-
-    def acquire_for(self, context: CredentialContext, admission: CallAdmission) -> BearerCredential:
-        """Return the shared token for a client call, which accounts for a new acquisition it starts."""
-        return self._credentials.obtain(context, force=False, admission=admission)
-
-    def exchange_needed(self, version: TokenVersion) -> bool:
-        """Return whether replacing a rejected version needs a new acquisition rather than a running or newer one."""
-        return self._credentials.exchange_needed(version)
-
-    def close(self) -> None:
-        """Refuse new acquisitions, let a running one finish within its deadline, then close the owned transport.
-
-        Every close raises the failure of that release.
-        """
-        self._credentials.close()
-
-    def request_close(self) -> Future[None]:
-        """Start closing without waiting, and return the release every close awaits.
-
-        The owned transport closes once no acquisition runs, or once the running one's session ended.
-        """
-        return self._credentials.request_close()
-
-    def __enter__(self) -> Self:
-        """Return the provider."""
-        return self
-
-    def __exit__(self, *exc_info: object) -> None:
-        """Close the provider."""
-        self.close()
+        super().__init__(SyncClientCredentials(resolved, endpoint, grant))
 
 
 @final
-class AsyncClientCredentialsProvider(AsyncTokenAcquirer):
+class AsyncClientCredentialsProvider(_AsyncSharedTokens):
     """The asyncio client credentials grant, bound to the event loop it was created on or first used from."""
 
-    __slots__ = ("_credentials",)
+    __slots__ = ()
 
     def __init__(  # noqa: PLR0913
         self,
@@ -1074,43 +1049,107 @@ class AsyncClientCredentialsProvider(AsyncTokenAcquirer):
         endpoint = AsyncTokenEndpoint(
             _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
         )
-        self._credentials = AsyncClientCredentials(resolved, endpoint, grant)
+        super().__init__(AsyncClientCredentials(resolved, endpoint, grant))
 
-    async def get(self, context: CredentialContext) -> BearerCredential:
-        """Return the shared token, joining or starting its acquisition when none is usable."""
-        return await self._credentials.obtain(context, force=False)
 
-    async def refresh(self, context: CredentialContext) -> BearerCredential:
-        """Acquire a new token, or join the acquisition already running, whatever the cache holds."""
-        return await self._credentials.obtain(context, force=True)
+def _family(token_set: object, scopes: object, audience: object) -> tuple[TokenSet, str | None]:
+    """Validate a refresh token family's token set, configured scopes, and audience."""
+    from .refresh import checked_audience  # noqa: PLC0415
+    from .rotation import checked_token_set  # noqa: PLC0415
 
-    async def invalidate(self, version: TokenVersion) -> None:
-        """Forget the cached token if it is the version a resource rejected; another version stays usable."""
-        self._credentials.invalidate(version)
+    if token_set is None:
+        raise AuthConfigurationError(field_path=("token_set",), condition="missing_value")
+    initial = checked_token_set(token_set)
+    checked_scopes(scopes, "scopes")
+    return initial, checked_audience(audience)
 
-    def refresh_snapshot(self, refresh_id: str) -> RefreshInfo | None:
-        """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
-        return self._credentials.snapshot(refresh_id)
 
-    async def acquire_for(self, context: CredentialContext, admission: CallAdmission) -> BearerCredential:
-        """Return the shared token for a client call, which accounts for a new acquisition it starts."""
-        return await self._credentials.obtain(context, force=False, admission=admission)
+@final
+class RefreshTokenProvider(_SharedTokens):
+    """The OAuth refresh token grant for one token family, which this provider alone renews, following its rotation.
 
-    def exchange_needed(self, version: TokenVersion) -> bool:
-        """Return whether replacing a rejected version needs a new acquisition rather than a running or newer one."""
-        return self._credentials.exchange_needed(version)
+    Concurrent callers join one refresh, which runs on a worker of the provider under its own deadline, so a caller
+    leaving never cancels it. The access token is renewed once a tenth of its lifetime, at most thirty seconds, remains.
+    A refresh token a request may have delivered is never sent again: a refresh whose outcome is unknown, rejected, or
+    requiring reauthorization stops the family until `replace_token_set`. Close it to release its transport.
+    """
 
-    async def aclose(self) -> None:
-        """Close once in a task of its own; a cancelled caller leaves it running for a later aclose to await."""
-        await self._credentials.aclose()
+    __slots__ = ("_rotation",)
 
-    async def __aenter__(self) -> Self:
-        """Return the provider."""
-        return self
+    def __init__(  # noqa: PLR0913
+        self,
+        token_url: str,
+        *,
+        client_id: str,
+        token_set: TokenSet | None = None,
+        client_secret: CredentialProvider | None = None,
+        client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
+        scopes: tuple[str, ...] = (),
+        audience: str | None = None,
+        options: OAuthProviderOptions | None = None,
+        token_transport: TokenTransport | Unset = UNSET,
+    ) -> None:
+        """Validate the endpoint, client authentication, token set, scopes, audience, and transport without I/O."""
+        from .auth_policy import sync_provider  # noqa: PLC0415
+        from .oauth import TokenEndpoint, client_authentication  # noqa: PLC0415
+        from .rotation import SyncRotation  # noqa: PLC0415
 
-    async def __aexit__(self, *exc_info: object) -> None:
-        """Close the provider."""
-        await self.aclose()
+        resolved = _options(options)
+        initial, checked = _family(token_set, scopes, audience)
+        authentication = client_authentication(client_id, client_auth_method, client_secret, sync_provider)
+        endpoint = TokenEndpoint(
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+        )
+        self._rotation = SyncRotation(resolved, endpoint, initial, checked)
+        super().__init__(self._rotation)
+
+    def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:
+        """Adopt a token set of a higher revision, restarting a stopped family.
+
+        Its refresh token must not be one the family spent, and without one its access token must be unexpired.
+        Without a token store, `persist` changes nothing.
+        """
+        del persist
+        self._rotation.replace(token_set)
+
+
+@final
+class AsyncRefreshTokenProvider(_AsyncSharedTokens):
+    """The asyncio refresh token grant, bound to the event loop it was created on or first used from."""
+
+    __slots__ = ("_rotation",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        token_url: str,
+        *,
+        client_id: str,
+        token_set: TokenSet | None = None,
+        client_secret: AsyncCredentialProvider | None = None,
+        client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
+        scopes: tuple[str, ...] = (),
+        audience: str | None = None,
+        options: OAuthProviderOptions | None = None,
+        token_transport: AsyncTokenTransport | Unset = UNSET,
+    ) -> None:
+        """Validate the endpoint, client authentication, token set, scopes, audience, and transport without I/O."""
+        from .auth_policy import async_provider  # noqa: PLC0415
+        from .oauth import AsyncTokenEndpoint, client_authentication  # noqa: PLC0415
+        from .rotation import AsyncRotation  # noqa: PLC0415
+
+        resolved = _options(options)
+        initial, checked = _family(token_set, scopes, audience)
+        authentication = client_authentication(client_id, client_auth_method, client_secret, async_provider)
+        endpoint = AsyncTokenEndpoint(
+            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
+        )
+        self._rotation = AsyncRotation(resolved, endpoint, initial, checked)
+        super().__init__(self._rotation)
+
+    async def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:
+        """Adopt a newer token set as the synchronous provider does, on the event loop the provider is bound to."""
+        del persist
+        self._rotation.replace(token_set)
 
 
 def _options(options: object) -> OAuthProviderOptions:
