@@ -372,6 +372,7 @@
     poll again = AuthStateConflictError state=UNCERTAIN delivery_state=NOT_SENT phase=unknown action=poll
   interrupted secret = KeyboardInterrupt
     poll again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=poll
+  device code outlived by closing its response = DeadlineExceededError delivery_state=NOT_SENT phase=sleep unsent replies=1
   cancelled while waiting = RequestCancelledError delivery_state=NOT_SENT source=cancel_token
   closed while waiting = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
     poll again = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
