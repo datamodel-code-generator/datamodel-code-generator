@@ -1525,9 +1525,10 @@ continue from, including an invalid token response, an unexpected status, or a m
 `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` implement the OAuth client credentials grant for a
 confidential client acting on its own behalf. Each is a refreshable token provider for an OAuth scheme of `AuthConfig`:
 the first call that needs a token acquires it, later calls share it, and a call renews it once a tenth of its lifetime,
-at most thirty seconds, remains. A renewal that fails before the token expires leaves the calls using the token until it
-expires, each later call renewing it again; a forced `refresh` raises the failure. A token without `expires_in` is kept
-until a resource rejects it, when 401 recovery invalidates that exact version and acquires another.
+at most thirty seconds, remains. Until the token expires, such a call keeps using it and starts the renewal in the
+background, which later calls share, so a slow or failing renewal delays no call before expiry; a forced `refresh` waits
+for the renewal and raises its failure. A token without `expires_in` is kept until a resource rejects it, when 401
+recovery invalidates that exact version and acquires another.
 
 ```python
 from pets import Client
@@ -1584,24 +1585,26 @@ acquisition, whatever the provider holds; `invalidate(version)` forgets the held
 Closing the provider refuses new acquisitions with `AuthProviderClosedError`, ends a queued one, lets a running one
 finish within its session, and then closes an owned token transport; a concurrent `close` returns once that is done, and
 every `close` raises that release's failure. The synchronous provider's `request_close()` does the same without waiting
-and returns a `concurrent.futures.Future` of the release: an idle provider releases on its worker, or in the calling
-thread when it never started one, and a busy one in a thread of its own once its running acquisition returns or its
-session ends. A client that owns the provider through `OwnedCredentialProvider` starts that release, or the async
-provider's `aclose`, and waits for it only until its `cleanup_timeout`, measured from the start of its close, runs out;
-otherwise it raises `CleanupError` with `pending_providers`, a later close waits again, and each release failure is
-reported once. A synchronous call waiting for a shared acquisition stops with its own error, `ClientClosedError` once
-its client closes, checking its client and cancel token every 50 milliseconds and waking at its deadline; an asyncio
-call stops as soon as its client closes or its deadline passes, and within 50 milliseconds of its cancel token. The
-async provider belongs to the event loop it was created on or first used from, and its `aclose` runs in a task of its
-own that a later `aclose` awaits when the first was cancelled. Client authentication, endpoints, and the token transport
-otherwise follow the authorization code flow.
+and returns a `concurrent.futures.Future` of the release: an idle provider releases on its worker, or in a thread of its
+own when it never started one (in the calling thread only when no thread can start), and a busy one in a thread of its
+own once its running acquisition returns or its session ends. A client that owns the provider through
+`OwnedCredentialProvider` starts that release, or the async provider's `aclose`, and waits for it only until its
+`cleanup_timeout`, measured from the start of its close, runs out; otherwise it raises `CleanupError` with
+`pending_providers`, a later close waits again, and each release failure is reported once. A synchronous call waiting
+for a shared acquisition stops with its own error, `ClientClosedError` once its client closes, checking its client and
+cancel token every 50 milliseconds and waking at its deadline; an asyncio call stops as soon as its client closes or its
+deadline passes, and within 50 milliseconds of its cancel token. The async provider belongs to the event loop it was
+created on or first used from, and its `aclose` runs in a task of its own that a later `aclose` awaits when the first
+was cancelled. Client authentication, endpoints, and the token transport otherwise follow the authorization code flow.
 
 ### Refresh a token family
 
 `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token family current with the OAuth refresh token grant,
 starting from the `TokenSet` an authorization produced. The provider alone refreshes its family: no other provider,
 process, or event loop may send the same refresh token. It serves the access token while it lasts, and a call refreshes
-it once a tenth of its lifetime, at most thirty seconds, remains, or after a resource rejected it.
+it once a tenth of its lifetime, at most thirty seconds, remains, or after a resource rejected it. A call past that
+renewal point keeps using the unexpired token while the refresh runs in the background, as with the client credentials
+provider.
 
 ```python
 from pets import Client

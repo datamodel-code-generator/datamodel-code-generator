@@ -404,6 +404,17 @@ def _recoveries(harness: _Harness, lines: list[str]) -> None:
         gate.set()
         for thread in cancellers:
             thread.join(LIMIT)
+    gate = threading.Event()
+    provider, adapter = harness.provider("access-1", gate=gate, refresh_timeout=0.05)
+    with provider:
+        deadline = harness.options.Deadline.after(0.05)
+        left = _token(lambda: provider.get(credential_context(harness.auth, deadline=deadline)))
+        time.sleep(1.2)
+        lines.append(
+            f"  exchange needed once a stuck acquisition outlived its session ="
+            f" {provider.exchange_needed(harness.auth.TokenVersion())} after {left}"
+        )
+        gate.set()
 
 
 async def _async_calls(harness: _Harness, lines: list[str]) -> None:
