@@ -409,7 +409,7 @@ class RotationFamily(SharedRefresh):
             return adopted
         if (material := _material(slot.token_set)) is None:
             return Reloaded(slot.token_set)
-        return Adopted(material.material, material.refresh_at, slot.token_set)
+        return Adopted(material.material, material.refresh_at, slot.token_set, expires_at=material.expires_at)
 
     def _pending(self, job: RotationJob, slot: Slot, cause: BaseException) -> Pending:
         """Keep a token set whose store failed, timed out, or stopped in the slot, as PERSIST_PENDING.
