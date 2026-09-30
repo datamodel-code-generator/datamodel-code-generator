@@ -2,14 +2,14 @@
 #   filename:  constrained-union.json
 
 from __future__ import annotations
-from pydantic import Field, constr
-from typing_extensions import TypeAliasType
+from pydantic import Field, StringConstraints
 from typing import Annotated
+from typing_extensions import TypeAliasType
 from pydantic.dataclasses import dataclass
 
 
 
-ValueObject = TypeAliasType("ValueObject", dict[constr(pattern=r'^x'), int])
+ValueObject = TypeAliasType("ValueObject", dict[Annotated[str, StringConstraints(pattern=r'^x')], int])
 
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Dict
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, StringConstraints, conint
 from typing_extensions import TypeAliasType
 
 NestedMapAdditionalProperty = TypeAliasType(
@@ -128,7 +128,10 @@ class Payload(BaseModel):
     titledMap: Annotated[TitledMap, Field(title='TitledMap')]
     titledRefMap: dict[str, TitledRefMapAdditionalProperty]
     localTitleRefMap: dict[str, LocalTitleRefMapAdditionalProperty]
-    namedMap: dict[constr(pattern=r'^[a-z]+$'), NamedMapAdditionalProperty]
+    namedMap: dict[
+        Annotated[str, StringConstraints(pattern=r'^[a-z]+$')],
+        NamedMapAdditionalProperty,
+    ]
     rootMap: RootMap
     nullableValueMap: dict[str, NullableValueMapAdditionalProperty]
     closedArrayValueMap: dict[str, ClosedArrayValueMapAdditionalProperty]

@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "title": "SomeSpec",
+  "patternProperties": {
+    "^x(?=_[0-9]+$)": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
