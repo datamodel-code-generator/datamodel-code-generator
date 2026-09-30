@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import Annotated
-from pydantic import Field, constr
+from pydantic import Field, StringConstraints
 from typing_extensions import TypeAliasType
 from pydantic.dataclasses import dataclass
 
@@ -21,7 +21,7 @@ ValueObjectAdditionalProperty = TypeAliasType("ValueObjectAdditionalProperty", V
 
 
 
-ValueObject = TypeAliasType("ValueObject", dict[constr(pattern=r'^x'), ValueObjectAdditionalProperty])
+ValueObject = TypeAliasType("ValueObject", dict[Annotated[str, StringConstraints(pattern=r'^x')], ValueObjectAdditionalProperty])
 
 
 
