@@ -39,6 +39,7 @@ _FIELDS: Final = (
     "limit",
     "used",
     "source",
+    "event_name",
     "refresh_id",
 )
 
@@ -103,6 +104,55 @@ def delayed(delay: float, reply: Callable[[httpx2.Request], httpx2.Response]) ->
 
 
 GRANTED: Final = {"access_token": "access-1", "token_type": "Bearer", "expires_in": 3600, "refresh_token": "refresh-1"}
+LIMIT: Final = 10.0
+
+
+def credential_context(auth: ModuleType, *, deadline: object = None, cancel_token: object = None) -> Any:
+    return auth.CredentialContext(
+        scheme="oauth",
+        required_scopes=(),
+        audience=None,
+        origin="https://api.example.com",
+        deadline=deadline,
+        cancel_token=cancel_token,
+    )
+
+
+def watched(options: ModuleType) -> Any:
+    """Return a cancel token telling when a waiting caller first checks it, which it does once it joined a job."""
+
+    class Watched(options.CancelToken):
+        def __init__(self) -> None:
+            super().__init__()
+            self.checked = threading.Event()
+
+        @property
+        def cancelled(self) -> bool:
+            self.checked.set()
+            return super().cancelled
+
+    return Watched()
+
+
+class Caller(threading.Thread):
+    """A thread running one call, keeping the line that reports its outcome."""
+
+    def __init__(self, call: Callable[[], object], report: Callable[[Callable[[], object]], str]) -> None:
+        super().__init__()
+        self.call = call
+        self.report = report
+        self.line = ""
+
+    def run(self) -> None:
+        self.line = self.report(self.call)
+
+
+def started(call: Callable[[], object], signal: threading.Event, report: Callable[[Callable[[], object]], str]) -> Caller:
+    """Start a caller and return it once the signal says it reached the point the scenario waits for."""
+    caller = Caller(call, report)
+    caller.start()
+    signal.wait(LIMIT)
+    return caller
 
 
 class Response:

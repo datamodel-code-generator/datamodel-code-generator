@@ -33,6 +33,7 @@ from tests.data.python.client_limiters import limiters
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_native import native_faults, native_wire
 from tests.data.python.client_native_signing import native_signing
+from tests.data.python.client_oauth_accounting import oauth_accounting
 from tests.data.python.client_oauth_client_credentials import oauth_client_credentials
 from tests.data.python.client_oauth_code import oauth_code
 from tests.data.python.client_oauth_device import oauth_device
@@ -671,6 +672,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "oauth-device": ("auth", ("pydantic_v2.BaseModel",), oauth_device),
     "oauth-client-credentials": ("auth", ("pydantic_v2.BaseModel",), oauth_client_credentials),
     "oauth-shared": ("auth", ("pydantic_v2.BaseModel",), oauth_shared),
+    "oauth-accounting": ("auth", ("pydantic_v2.BaseModel",), oauth_accounting),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),
     "body-replay-faults": ("media", ("pydantic_v2.BaseModel",), body_replay_faults),
     "multipart-replay": ("media", ("pydantic_v2.BaseModel",), multipart_replay),

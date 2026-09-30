@@ -14,6 +14,7 @@ from urllib.parse import quote, unquote_plus, urlsplit, urlunsplit
 from typing_extensions import TypeIs
 
 from ..model_codecs.unset import Unset
+from .admission import AsyncTokenAcquirer, TokenAcquirer
 from .auth import (
     ApiKeyCredential,
     BasicCredential,
@@ -28,10 +29,12 @@ from .errors import (
     AuthProviderExecutionError,
     AuthRefreshError,
     DeliveryState,
+    HookExecutionError,
     InsufficientScopeError,
     SigningConfigurationError,
     SigningExecutionError,
     TokenExpiredError,
+    UnsupportedAsyncBackendError,
 )
 from .responses import HeadersView
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
@@ -41,6 +44,7 @@ from .urls import URLValidationError, canonical_origin
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
+    from .admission import CallAdmission
     from .auth import (
         AccessToken,
         AsyncCloseableCredentialProvider,
@@ -82,6 +86,7 @@ class BoundCredential:
     required_scopes: tuple[str, ...]
     provider: CredentialProvider
     refreshable: RefreshableTokenProvider | None
+    acquirer: TokenAcquirer | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, repr=False)
@@ -92,6 +97,7 @@ class AsyncBoundCredential:
     required_scopes: tuple[str, ...]
     provider: AsyncCredentialProvider
     refreshable: AsyncRefreshableTokenProvider | None
+    acquirer: AsyncTokenAcquirer | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, repr=False)
@@ -357,6 +363,7 @@ def bind_auth(
                 required_scopes=requirement.required_scopes,
                 provider=provider,
                 refreshable=provider if _sync_refreshable(provider) else None,
+                acquirer=provider if isinstance(provider, TokenAcquirer) else None,
             )
         )
     return BoundAuth(
@@ -400,6 +407,7 @@ def bind_async_auth(
                 required_scopes=requirement.required_scopes,
                 provider=provider,
                 refreshable=provider if _async_refreshable(provider) else None,
+                acquirer=provider if isinstance(provider, AsyncTokenAcquirer) else None,
             )
         )
     return AsyncBoundAuth(
@@ -517,25 +525,42 @@ def _provider_failure(
     return AuthProviderExecutionError(callback=callback, delivery_state=delivery, cause=cause)
 
 
-def _provider_calls(callback: Literal["get", "refresh"]) -> dict[DeliveryState, _Wrapped]:
+def _provider_calls(
+    callback: Literal["get", "refresh"], kept: tuple[type[Exception], ...]
+) -> dict[DeliveryState, _Wrapped]:
     """Prepare one callback wrapper per delivery state the call may have reached, so no call allocates one."""
-    return {state: _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, callback, state)) for state in DeliveryState}
+    return {state: _Wrapped(kept, partial(_provider_failure, callback, state)) for state in DeliveryState}
 
 
 _PROVIDER_KEPT: Final = (AuthConfigurationError, AuthRefreshError)
-_GET: Final = _provider_calls("get")
+_GET: Final = _provider_calls("get", _PROVIDER_KEPT)
+_ACQUIRE: Final = _provider_calls("get", (*_PROVIDER_KEPT, HookExecutionError, UnsupportedAsyncBackendError))
 _INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, "invalidate", DeliveryState.RESPONSE_STARTED))
-_REFRESH: Final = _provider_calls("refresh")
+_REFRESH: Final = _provider_calls("refresh", _PROVIDER_KEPT)
 
 
-def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
-    """Ask a synchronous provider for material, retaining classified auth failures; the caller validates it."""
+def get_credential(
+    binding: BoundCredential, context: CredentialContext, delivery: DeliveryState, admission: CallAdmission
+) -> object:
+    """Ask a synchronous provider for material, retaining classified auth failures; the caller validates it.
+
+    A provider of the SDK acquires on the call's account, and a failure of the call's own hooks stays the call's; a
+    caller's deadline or cancellation it observed is left for the call to report with its own delivery state.
+    """
+    if (acquirer := binding.acquirer) is not None:
+        with _ACQUIRE[delivery]:
+            return acquirer.acquire_for(context, admission)
     with _GET[delivery]:
         return binding.provider.get(context)
 
 
-async def aget_credential(binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
+async def aget_credential(
+    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState, admission: CallAdmission
+) -> object:
     """Ask an asynchronous provider for material in the existing caller-owned operation; the caller validates it."""
+    if (acquirer := binding.acquirer) is not None:
+        with _ACQUIRE[delivery]:
+            return await acquirer.acquire_for(context, admission)
     with _GET[delivery]:
         return await binding.provider.get(context)
 

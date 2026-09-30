@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, TypeVar, f
 from typing_extensions import Self, TypeAliasType
 
 from ..model_codecs.unset import UNSET, Unset
+from .admission import AsyncTokenAcquirer, TokenAcquirer
 from .auth import (
     AccessToken,
     AsyncCredentialProvider,
@@ -46,6 +47,7 @@ from .options import OAuthProviderOptions, SessionOptions
 from .timing import TOKEN_INTERVAL, CancelToken, Deadline, absolute_deadline
 
 if TYPE_CHECKING:
+    from .admission import CallAdmission
     from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, Progress, Session, TokenEndpoint
     from .transports import AsyncTransportAdapter, OwnedTransportAdapter, TransportAdapter
 
@@ -958,7 +960,8 @@ class AsyncDeviceAuthorizationFlow(_DeviceFlow["AsyncTokenEndpoint"]):
         await self.aclose()
 
 
-class ClientCredentialsProvider:
+@final
+class ClientCredentialsProvider(TokenAcquirer):
     """The OAuth client credentials grant: a confidential client's own token, acquired when first needed and shared.
 
     Concurrent callers join one acquisition, which runs on a worker of the provider under its own deadline, so a caller
@@ -1009,6 +1012,14 @@ class ClientCredentialsProvider:
         """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
         return self._credentials.snapshot(refresh_id)
 
+    def acquire_for(self, context: CredentialContext, admission: CallAdmission) -> BearerCredential:
+        """Return the shared token for a client call, which accounts for a new acquisition it starts."""
+        return self._credentials.obtain(context, force=False, admission=admission)
+
+    def exchange_needed(self, version: TokenVersion) -> bool:
+        """Return whether replacing a rejected version needs a new acquisition rather than a running or newer one."""
+        return self._credentials.exchange_needed(version)
+
     def close(self) -> None:
         """Refuse new acquisitions, let a running one finish within its deadline, then close the owned transport."""
         self._credentials.close()
@@ -1022,7 +1033,8 @@ class ClientCredentialsProvider:
         self.close()
 
 
-class AsyncClientCredentialsProvider:
+@final
+class AsyncClientCredentialsProvider(AsyncTokenAcquirer):
     """The asyncio client credentials grant, bound to the event loop it was created on or first used from."""
 
     __slots__ = ("_credentials",)
@@ -1067,6 +1079,14 @@ class AsyncClientCredentialsProvider:
     def refresh_snapshot(self, refresh_id: str) -> RefreshInfo | None:
         """Return a recent acquisition's snapshot by its refresh id, or None once it is unknown or evicted."""
         return self._credentials.snapshot(refresh_id)
+
+    async def acquire_for(self, context: CredentialContext, admission: CallAdmission) -> BearerCredential:
+        """Return the shared token for a client call, which accounts for a new acquisition it starts."""
+        return await self._credentials.obtain(context, force=False, admission=admission)
+
+    def exchange_needed(self, version: TokenVersion) -> bool:
+        """Return whether replacing a rejected version needs a new acquisition rather than a running or newer one."""
+        return self._credentials.exchange_needed(version)
 
     async def aclose(self) -> None:
         """Close once in a task of its own; a cancelled caller leaves it running for a later aclose to await."""

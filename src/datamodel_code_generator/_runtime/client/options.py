@@ -788,11 +788,15 @@ class Settings:
     auth: AuthConfig | None = field(default=None, repr=False)
 
 
-def network_send_limit(settings: Settings) -> int | None:
-    """Derive only an omitted send cap, after all retry and redirect fields have been merged."""
+def network_send_limit(settings: Settings, *, exchanges: int = 0) -> int | None:
+    """Derive only an omitted send cap, after all retry and redirect fields have been merged.
+
+    `exchanges` adds room for the token requests of the SDK's own OAuth providers.
+    """
     if not isinstance(settings.max_network_sends, Unset):
         return settings.max_network_sends
-    return 1 + settings.retry.max_retries + (settings.redirects.max_redirects if settings.redirects.enabled else 0)
+    redirects = settings.redirects.max_redirects if settings.redirects.enabled else 0
+    return 1 + settings.retry.max_retries + redirects + exchanges
 
 
 _PHASE_DEFAULTS: Final = {"connect": 5.0, "read": 15.0, "write": 15.0, "pool": 5.0}
