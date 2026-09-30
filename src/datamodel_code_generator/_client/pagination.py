@@ -345,6 +345,7 @@ class _Pages:
         """Check that the cursor reads a declared value whose types its target accepts, and that its ends are typed."""
         at, name, label = f"{helper.at}.continuation", helper.name, _label(spec)
         read = continuation["read"]
+        types: frozenset[str] | None = frozenset({"integer"})
         match read["from"]:
             case "body":
                 reached = self.walk(binding, pointer := read["pointer"])
@@ -368,8 +369,6 @@ class _Pages:
                     yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
                     return
                 types = frozenset({"string"})
-            case _:
-                types = frozenset({"integer"})
         write = continuation["write"]
         target = next(
             (item for item in spec.parameters if (item.location, item.wire_name) == (write["in"], write["name"])), None

@@ -473,7 +473,6 @@ async def _async_backends(package: ModuleType, lines: list[str]) -> None:
         await adrained(lines, "async user pages", api.protocols.users.all.iterate().iter_pages())
 
 
-
 def pagination_limits(package: ModuleType, lines: list[str]) -> None:
     """Send a server's cursor as it came, past its parameter's schema, while a caller's start cursor is validated."""
     harness = Harness(package)

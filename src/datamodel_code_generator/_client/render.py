@@ -2240,13 +2240,12 @@ class _Helpers:
         runtime = "_runtime.protocols.pagination"
         helper, continuation = spec.helper, spec.continuation
         read = continuation["read"]
+        selector = f"{module.local(records, 'StatusSelector')}()"
         match read["from"]:
             case "body":
                 selector = f"{module.local(records, 'BodySelector')}(pointer={read['pointer']!r})"
             case "header":
                 selector = f"{module.local(records, 'HeaderSelector')}(name={read['name']!r})"
-            case _:
-                selector = f"{module.local(records, 'StatusSelector')}()"
         write = continuation["write"]
         ends = [end["kind"] for end in continuation["end"]]
         values = [repr(end["value"]) for end in continuation["end"] if end["kind"] == "value"]
