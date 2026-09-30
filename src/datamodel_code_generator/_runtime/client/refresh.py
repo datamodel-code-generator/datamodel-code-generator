@@ -10,7 +10,7 @@ from __future__ import annotations
 import contextvars
 import threading
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol
@@ -102,10 +102,14 @@ def refresh_margin(ttl: float) -> float:
 
 @dataclass(frozen=True, slots=True)
 class Published:
-    """Material a job obtained, and the monotonic time from which a caller renews it instead."""
+    """Material a job obtained, the monotonic time from which a caller renews it, and when its token expires.
+
+    A renewal that fails before the token expires leaves the material serving callers; None keeps no such time.
+    """
 
     material: BearerCredential
     refresh_at: float | None
+    expires_at: float | None = field(default=None, kw_only=True)
 
 
 @dataclass(frozen=True, slots=True)
@@ -493,6 +497,16 @@ def _outcome(outcome: Outcome) -> BearerCredential:
     return outcome.material
 
 
+def _served(shared: SharedRefresh, outcome: Outcome, *, force: bool) -> BearerCredential:
+    """Return a job's material, or the cached one while its token lasts after an unforced renewal failed."""
+    if isinstance(outcome, Failed) and not force:
+        with shared.lock:
+            cache = shared.cache
+        if cache is not None and (expires_at := cache.expires_at) is not None and monotonic() < expires_at:
+            return cache.material
+    return _outcome(outcome)
+
+
 def _waited(context: CredentialContext, started: float) -> float | None:
     """Return how long a caller may wait before checking again, raising once it was cancelled or ran out of time."""
     if (token := context.cancel_token) is not None and token.cancelled:
@@ -556,7 +570,7 @@ class SyncSharedRefresh:
                     shared.expire(job)
             finally:
                 shared.leave(waiter, job)
-        return _outcome(outcome)
+        return _served(shared, outcome, force=force)
 
     def _start(self, job: Job) -> None:
         """Submit an admitted job to the provider's workers, outside every caller's context.
@@ -669,7 +683,7 @@ class AsyncSharedRefresh:
         finally:
             with shared.lock:
                 shared.leave(waiter, job)
-        return _outcome(future.result())
+        return _served(shared, future.result(), force=force)
 
     def _start(self, job: Job) -> None:
         """Run an admitted job as a task outside every caller's context, failing it once its session and grace end."""
@@ -787,11 +801,12 @@ class ClientCredentialsGrant:
                 access, _, _ = token_material(exchanged.fields, exchanged.received, self.scopes)
             except (ValueError, TokenExpiredError) as cause:
                 return _rejected(job, provider_id, exchanged, phase="validate", cause=cause)
-            refresh_at = None
-            if (expires_at := access.expires_at) is not None:
-                ttl = (expires_at - exchanged.received).total_seconds()
-                refresh_at = exchanged.receipt + ttl - refresh_margin(ttl)
-            return Published(BearerCredential(access, TokenVersion()), refresh_at)
+            if (expires_at := access.expires_at) is None:
+                return Published(BearerCredential(access, TokenVersion()), None)
+            expires = exchanged.receipt + (ttl := (expires_at - exchanged.received).total_seconds())
+            return Published(
+                BearerCredential(access, TokenVersion()), expires - refresh_margin(ttl), expires_at=expires
+            )
         if exchanged.outcome in {"rejected", "http_status", "malformed_response"}:
             phase: Literal["validate", "unknown"] = (
                 "validate" if exchanged.outcome == "malformed_response" else "unknown"
