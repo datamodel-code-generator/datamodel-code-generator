@@ -11,6 +11,7 @@ render pydantic_v2.BaseModel
   write client/bodies.py
   write client/model_codecs.py
   write client/transports.py
+  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -67,6 +68,7 @@ render pydantic_v2.dataclass
   write client/bodies.py
   write client/model_codecs.py
   write client/transports.py
+  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -123,6 +125,7 @@ render dataclasses.dataclass
   write client/bodies.py
   write client/model_codecs.py
   write client/transports.py
+  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -179,6 +182,7 @@ render typing.TypedDict
   write client/bodies.py
   write client/model_codecs.py
   write client/transports.py
+  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py
@@ -235,6 +239,7 @@ render msgspec.Struct
   write client/bodies.py
   write client/model_codecs.py
   write client/transports.py
+  write client/protocols/__init__.py
   write client/resources/__init__.py
   write client/resources/pets/__init__.py
   write client/resources/pets/_sync.py

@@ -17,9 +17,12 @@ from ._runtime.client.errors import (
     HookExecutionError,
     HTTPStatusError,
     IOPhase,
+    ProtocolConfigurationError,
     ProtocolDataError,
     ProtocolError,
     ProtocolSizeError,
+    ProtocolStoreError,
+    ReplayStoreFullError,
     RequestEncodingError,
     ResponseConsumedError,
     ResponseDecodeError,
@@ -34,6 +37,9 @@ from ._runtime.client.errors import (
     UnexpectedStatusError,
     UnsupportedAsyncBackendError,
     UnsupportedContentCodingError,
+    WebhookReplayError,
+    WebhookStoreError,
+    WebhookVerificationError,
 )
 
 __all__ = [
@@ -52,9 +58,12 @@ __all__ = [
     'HTTPStatusError',
     'HookExecutionError',
     'IOPhase',
+    'ProtocolConfigurationError',
     'ProtocolDataError',
     'ProtocolError',
     'ProtocolSizeError',
+    'ProtocolStoreError',
+    'ReplayStoreFullError',
     'RequestEncodingError',
     'ResponseConsumedError',
     'ResponseDecodeError',
@@ -69,4 +78,7 @@ __all__ = [
     'UnexpectedStatusError',
     'UnsupportedAsyncBackendError',
     'UnsupportedContentCodingError',
+    'WebhookReplayError',
+    'WebhookStoreError',
+    'WebhookVerificationError',
 ]
