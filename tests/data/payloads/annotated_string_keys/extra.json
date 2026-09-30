@@ -1,0 +1,15 @@
+{
+  "valid": {
+    "name": "known",
+    "valid": 1
+  },
+  "invalid": [
+    {
+      "value": {
+        "name": "known",
+        "valid": []
+      },
+      "error": "int_type"
+    }
+  ]
+}
