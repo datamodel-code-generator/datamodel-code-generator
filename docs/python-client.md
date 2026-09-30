@@ -1525,8 +1525,9 @@ continue from, including an invalid token response, an unexpected status, or a m
 `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` implement the OAuth client credentials grant for a
 confidential client acting on its own behalf. Each is a refreshable token provider for an OAuth scheme of `AuthConfig`:
 the first call that needs a token acquires it, later calls share it, and a call renews it once a tenth of its lifetime,
-at most thirty seconds, remains. A token without `expires_in` is kept until a resource rejects it, when 401 recovery
-invalidates that exact version and acquires another.
+at most thirty seconds, remains. A renewal that fails before the token expires leaves the calls using the token until it
+expires, each later call renewing it again; a forced `refresh` raises the failure. A token without `expires_in` is kept
+until a resource rejects it, when 401 recovery invalidates that exact version and acquires another.
 
 ```python
 from pets import Client
