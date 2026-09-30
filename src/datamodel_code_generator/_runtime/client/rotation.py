@@ -2,7 +2,7 @@
 
 The family keeps its current token set, the refresh tokens it spent, and the failure that stopped it. A refresh token a
 request may have delivered is spent: the family never sends it again, whatever the answer. A family with a token load
-reads its persisted token set before its first acquisition, and again on request.
+reads its persisted token set before its first acquisition, before each refresh, after invalid_grant, and on request.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import monotonic
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from .auth import BearerCredential, TokenPersistenceContext, TokenSet, TokenVersion
 from .errors import (
@@ -25,7 +25,14 @@ from .errors import (
     InsufficientScopeError,
     TokenExpiredError,
 )
-from .oauth import InvalidTokenResponseError, consumable_failure, token_material, unusable_success, within
+from .oauth import (
+    Exchanged,
+    InvalidTokenResponseError,
+    consumable_failure,
+    token_material,
+    unusable_success,
+    within,
+)
 from .refresh import (
     Again,
     AsyncTokens,
@@ -42,10 +49,12 @@ from .refresh import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from .admission import CallAdmission
     from .auth import AccessToken, AsyncTokenLoad, CredentialContext, RefreshState, TokenLoad
-    from .errors import AuthFailureKind, ReauthorizationCondition, SDKError
-    from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, TokenEndpoint
+    from .errors import AuthFailureKind, ReauthorizationCondition, SDKError, TokenLoadPurpose, TokenPersistencePurpose
+    from .oauth import AsyncTokenEndpoint, Endpoint, TokenEndpoint
     from .options import OAuthProviderOptions
     from .refresh import Outcome
 
@@ -75,15 +84,41 @@ class Refused(Again):
     error: SDKError
 
 
-class RotationJob(Job):
-    """A job of a refresh token family: its initial load, a refresh, or an explicit reload."""
+@dataclass(frozen=True, slots=True)
+class Loading:
+    """A step of a job reading the persisted token set, for its runner to perform."""
 
-    __slots__ = ("kind",)
+    context: TokenPersistenceContext
+
+
+@dataclass(frozen=True, slots=True)
+class Sending:
+    """A step of a job sending the refresh request, for its runner to perform."""
+
+    form: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class Unread:
+    """What a load step returns once the load raised."""
+
+    error: Exception
+
+
+class RotationJob(Job):
+    """A job of a refresh token family: its initial load, a refresh, or an explicit reload.
+
+    A refresh records under the family's lock which read of the persisted token set it runs, if any, so a read that
+    outlives its session or stops fails the job as that read's failure.
+    """
+
+    __slots__ = ("kind", "reading")
 
     def __init__(self, kind: Literal["load", "refresh", "reload"]) -> None:
         """Start queued; only a refresh sends a token request."""
         super().__init__(exchanges=kind == "refresh")
         self.kind = kind
+        self.reading: Literal["before_refresh", "invalid_grant_reload"] | None = None
 
     @property
     def purpose(self) -> Literal["initial_load", "reload"]:
@@ -239,54 +274,139 @@ class RotationFamily(SharedRefresh):
             expires_at=expires,
         )
 
-    def persistence(self, job: RotationJob) -> TokenPersistenceContext:
-        """Return the context of a load job's callback: this provider, the family's key, and the job's session."""
+    def running(self, job: RotationJob) -> Generator[Loading | Sending, object, Outcome]:
+        """Run a job as the steps its runner performs, and return the outcome the job commits.
+
+        A refresh of a family with a load reads the persisted token set right before its request, and again once the
+        endpoint answers invalid_grant.
+        """
+        if job.kind != "refresh":
+            return self.loaded(job, (yield Loading(self._persistence(job, job.purpose))))
+        if (used := self.spending(job)) is None:
+            assert job.outcome is not None
+            return job.outcome
+        if self._loads:
+            reply = yield self._reading(job, "before_refresh")
+            if not isinstance(chosen := self._using(job, self.preloaded(job, reply, used)), TokenSet):
+                return chosen
+            used = chosen
+        assert used.refresh_token is not None
+        exchanged = yield Sending(_form(used.refresh_token))
+        assert isinstance(exchanged, Exchanged)
+        if not (self._loads and exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant"):
+            return self.outcome(exchanged, job, used)
+        if (ended := self._rejecting(job, used.refresh_token)) is not None:
+            return ended
+        reply = yield self._reading(job, "invalid_grant_reload")
+        return self.regranted(job, reply, used)  # noqa: B901 - Its runner receives the outcome as the generator's value.
+
+    def _reading(self, job: RotationJob, purpose: Literal["before_refresh", "invalid_grant_reload"]) -> Loading:
+        with self.lock:
+            job.reading = purpose
+        return Loading(self._persistence(job, purpose))
+
+    def _using(self, job: RotationJob, chosen: TokenSet | Outcome) -> TokenSet | Outcome:
+        """Make the token set a refresh sends current once its read ended, or return how the job ended instead."""
+        if not isinstance(chosen, TokenSet):
+            return chosen
+        with self.lock:
+            if (ended := job.outcome) is not None:
+                return ended
+            self.tokens = chosen
+            job.reading = None
+        return chosen
+
+    def _rejecting(self, job: RotationJob, token: str) -> Outcome | None:
+        """Spend a refresh token answered invalid_grant and commit REAUTH_REQUIRED before reading again.
+
+        Return the job's outcome once it already ended.
+        """
+        with self.lock:
+            self._spent.add(_digest(token))
+            if job.outcome is None:
+                job.reading = "invalid_grant_reload"
+                self.state = "REAUTH_REQUIRED"
+                self.cache = None
+            return job.outcome
+
+    def _persistence(self, job: RotationJob, purpose: TokenPersistencePurpose) -> TokenPersistenceContext:
         assert job.session is not None
         return TokenPersistenceContext(
             provider_id=self.provider_id,
             cache_key=self._cache_key,
             session_id=job.refresh_id,
             deadline=job.session.deadline,
-            purpose=job.purpose,
+            purpose=purpose,
         )
 
-    def loaded(self, job: RotationJob, value: object) -> Outcome:
+    def loaded(self, job: RotationJob, reply: object) -> Outcome:
         """Make the newer of the persisted and the current token set current, by revision.
 
         The same revision must hold the same token set. A family made current keeps a newer one only if it does not
         bring back a spent refresh token; one that can serve nothing stops for reauthorization, except that a family
         stopped by a refresh keeps its state.
         """
-        try:
-            loaded = None if value is None else checked_token_set(value)
-        except AuthConfigurationError as error:
-            return self.unloaded(job, error)
-        return self._merged(job, loaded)
-
-    def _merged(self, job: RotationJob, loaded: TokenSet | None) -> Outcome:
+        if isinstance(loaded := _stored(reply), Exception):
+            return self.unloaded(job, loaded)
         current = self.tokens or self._initial
         if loaded is not None and current is not None and loaded.revision == current.revision and loaded != current:
-            return _refused(
-                job,
-                AuthTokenStoreConflictError(
-                    action="load",
-                    expected_revision=current.revision,
-                    observed_revision=loaded.revision,
-                    state=self._load_state(job),
-                    delivery_state=DeliveryState.NOT_SENT,
-                    phase="load",
-                    provider_id=self.provider_id,
-                    refresh_id=job.refresh_id,
-                ),
-            )
+            return _refused(job, self._conflict(job, current, loaded, self._load_state(job)))
         newer = loaded is not None and (current is None or loaded.revision > current.revision)
         chosen = loaded if newer else current
         if chosen is None:
             return self._reauthorization("missing_token", "load", job)
-        spent = chosen.refresh_token is not None and self._reused(chosen.refresh_token)
-        if spent or (not newer and self._initialized):
+        if self._spends(chosen) or (not newer and self._initialized):
             return Again()
         return self._adoptable(job, chosen, newer=newer)
+
+    def preloaded(self, job: RotationJob, reply: object, used: TokenSet) -> TokenSet | Outcome:
+        """Return the token set a refresh sends, after reading the persisted one right before it, or end the job.
+
+        A failed read, or another token set at the same revision, ends the job without a request and leaves the family
+        as it was; an older token set, or one bringing back a spent refresh token, changes nothing. A newer token set
+        that can serve needs no request, although the admission the refresh paid for is kept; a newer expired one is
+        refreshed instead, and one that can never serve stops the family.
+        """
+        if isinstance(loaded := _stored(reply), Exception):
+            return self._unread(job, loaded)
+        if loaded is None or loaded.revision < used.revision or loaded == used:
+            return used
+        if loaded.revision == used.revision:
+            return Failed(self._conflict(job, used, loaded, "FAILED_NOT_SENT"), "FAILED_NOT_SENT")
+        if self._spends(loaded):
+            return used
+        if loaded.refresh_token is not None and _material(loaded) is None:
+            return loaded
+        return self._adoptable(job, loaded, newer=True)
+
+    def regranted(self, job: RotationJob, reply: object, used: TokenSet) -> Outcome:
+        """Make a newer usable persisted token set current after invalid_grant, or require reauthorization.
+
+        Only a newer token set with an unexpired access token and a refresh token the family never spent recovers; a
+        failed read or a conflict becomes the cause of the reauthorization error.
+        """
+        if isinstance(loaded := _stored(reply), Exception):
+            return self._unread(job, loaded)
+        cause: BaseException | None = None
+        if loaded is not None and loaded.revision == used.revision and loaded != used:
+            cause = self._conflict(job, used, loaded, "REAUTH_REQUIRED")
+        elif (
+            loaded is not None
+            and loaded.revision > used.revision
+            and not self._spends(loaded)
+            and (material := _material(loaded)) is not None
+        ):
+            return Adopted(material.material, material.refresh_at, loaded, expires_at=material.expires_at)
+        return self._ungranted(job, cause)
+
+    def _unread(self, job: RotationJob, cause: BaseException) -> Failed:
+        """Fail a refresh whose read of the persisted token set failed, outlived its session, or stopped.
+
+        A failed read before the request leaves the family as it was; one after invalid_grant requires reauthorization.
+        """
+        if job.reading == "before_refresh":
+            return Failed(self._load_error(job, "before_refresh", "FAILED_NOT_SENT", cause), "FAILED_NOT_SENT")
+        return self._ungranted(job, self._load_error(job, "invalid_grant_reload", "REAUTH_REQUIRED", cause))
 
     def _adoptable(self, job: RotationJob, chosen: TokenSet, *, newer: bool) -> Outcome:
         """Return how a load makes a token set current: with its material, to refresh, or stopping the family.
@@ -304,18 +424,7 @@ class RotationFamily(SharedRefresh):
 
     def unloaded(self, job: RotationJob, cause: BaseException) -> Outcome:
         """Fail a load that raised, returned something else than a token set or None, or outlived its session."""
-        return _refused(
-            job,
-            AuthTokenLoadError(
-                purpose=job.purpose,
-                state=self._load_state(job),
-                delivery_state=DeliveryState.NOT_SENT,
-                phase="load",
-                cause=cause,
-                provider_id=self.provider_id,
-                refresh_id=job.refresh_id,
-            ),
-        )
+        return _refused(job, self._load_error(job, job.purpose, self._load_state(job), cause))
 
     def reloading(self, waiter: SyncWaiter | AsyncWaiter) -> RotationJob:
         """Admit an explicit reload as the family's job, refused while the family is closing or any job runs."""
@@ -352,7 +461,7 @@ class RotationFamily(SharedRefresh):
             return self._settled(outcome)
         used = None if job.kind != "refresh" or self.tokens is None else self.tokens.refresh_token
         if isinstance(outcome, Adopted):
-            if used is not None and outcome.token_set.refresh_token != used:
+            if job.progress.sent and used is not None and outcome.token_set.refresh_token != used:
                 self._spent.add(_digest(used))
             self._adopt(outcome.token_set, outcome)
             return "READY", None
@@ -384,6 +493,8 @@ class RotationFamily(SharedRefresh):
         assert isinstance(job, RotationJob)
         if job.kind != "refresh":
             return self.unloaded(job, TimeoutError())
+        if job.reading is not None:
+            return self._unread(job, TimeoutError())
         return self._uncertain(job, "deadline") if job.progress.sent else super().timed_out(job)
 
     def failed(self, error: BaseException, job: Job) -> Outcome:
@@ -391,6 +502,8 @@ class RotationFamily(SharedRefresh):
         assert isinstance(job, RotationJob)
         if job.kind != "refresh":
             return self.unloaded(job, error)
+        if job.reading is not None:
+            return self._unread(job, error)
         return self._uncertain(job, "stopped", error) if job.progress.sent else super().failed(error, job)
 
     def exchange_needed(self, version: object) -> bool:
@@ -431,15 +544,52 @@ class RotationFamily(SharedRefresh):
     def _load_state(self, job: RotationJob) -> str:
         return "LOAD_FAILED" if job.kind == "load" else self.state
 
+    def _load_error(
+        self, job: RotationJob, purpose: TokenLoadPurpose, state: str, cause: BaseException
+    ) -> AuthTokenLoadError:
+        return AuthTokenLoadError(
+            purpose=purpose,
+            state=state,
+            delivery_state=DeliveryState.NOT_SENT,
+            phase="load",
+            cause=cause,
+            provider_id=self.provider_id,
+            refresh_id=job.refresh_id,
+        )
+
+    def _conflict(
+        self, job: RotationJob, current: TokenSet, loaded: TokenSet, state: str
+    ) -> AuthTokenStoreConflictError:
+        return AuthTokenStoreConflictError(
+            action="load",
+            expected_revision=current.revision,
+            observed_revision=loaded.revision,
+            state=state,
+            delivery_state=DeliveryState.NOT_SENT,
+            phase="load",
+            provider_id=self.provider_id,
+            refresh_id=job.refresh_id,
+        )
+
+    def _ungranted(self, job: RotationJob, cause: BaseException | None) -> Failed:
+        return self._reauthorization("invalid_grant", "unknown", job, delivery_state=job.progress.delivery, cause=cause)
+
     def _reauthorization(
-        self, condition: ReauthorizationCondition, phase: Literal["admission", "load"], job: Job | None = None
+        self,
+        condition: ReauthorizationCondition,
+        phase: Literal["admission", "load", "unknown"],
+        job: Job | None = None,
+        *,
+        delivery_state: DeliveryState = DeliveryState.NOT_SENT,
+        cause: BaseException | None = None,
     ) -> Failed:
         return Failed(
             AuthReauthorizationRequiredError(
                 condition=condition,
                 state="REAUTH_REQUIRED",
-                delivery_state=DeliveryState.NOT_SENT,
+                delivery_state=delivery_state,
                 phase=phase,
+                cause=cause,
                 provider_id=self.provider_id,
                 refresh_id=None if job is None else job.refresh_id,
             ),
@@ -476,6 +626,11 @@ class RotationFamily(SharedRefresh):
     def _reused(self, token: str) -> bool:
         return _digest(token) in self._spent
 
+    def _spends(self, token_set: TokenSet) -> bool:
+        """Return whether a token set brings back a refresh token the family spent."""
+        with self.lock:
+            return token_set.refresh_token is not None and self._reused(token_set.refresh_token)
+
     def _adopt(self, token_set: TokenSet, material: Published | None) -> None:
         self.tokens = token_set
         self.cache = material
@@ -493,6 +648,18 @@ class RotationFamily(SharedRefresh):
 def _refused(job: RotationJob, error: SDKError) -> Outcome:
     """Fail an initial load, leaving the family LOAD_FAILED, or keep a reload's failure for its caller alone."""
     return Failed(error, "LOAD_FAILED") if job.kind == "load" else Refused(error)
+
+
+def _stored(reply: object) -> TokenSet | Exception | None:
+    """Return the token set a load step read, None when nothing is stored, or why the read failed."""
+    if isinstance(reply, Unread):
+        return reply.error
+    if reply is None:
+        return None
+    try:
+        return checked_token_set(reply)
+    except AuthConfigurationError as error:
+        return error
 
 
 def _material(token_set: TokenSet) -> Published | None:
@@ -546,25 +713,29 @@ class SyncRotation(SyncTokens):
         return self._family.reloaded(job)
 
     def _acquire(self, job: Job) -> Outcome:
-        """Load or refresh on a worker, unless the job ended before the worker started."""
+        """Perform a job's steps on a worker: its loads and its refresh request."""
         assert isinstance(job, RotationJob)
-        family = self._family
-        if job.kind != "refresh":
-            assert self._load is not None
+        steps = self._family.running(job)
+        reply: object = None
+        while True:
             try:
-                value = self._load.load(family.persistence(job))
-            except Exception as error:  # noqa: BLE001 - A failing load is its job's outcome.
-                return family.unloaded(job, error)
-            return family.loaded(job, value)
-        if (used := family.spending(job)) is None:
-            assert job.outcome is not None
-            return job.outcome
+                step = steps.send(reply)
+            except StopIteration as done:
+                return cast("Outcome", done.value)
+            reply = self._read(step.context) if isinstance(step, Loading) else self._send(step, job)
+
+    def _read(self, context: TokenPersistenceContext) -> object:
+        assert self._load is not None
+        try:
+            return self._load.load(context)
+        except Exception as error:  # noqa: BLE001 - A failing load is its step's reply.
+            return Unread(error)
+
+    def _send(self, step: Sending, job: Job) -> Exchanged:
         endpoint = self._endpoint
         endpoint.prepare()
         assert job.session is not None
-        assert used.refresh_token is not None
-        exchanged = endpoint.exchange(_form(used.refresh_token), job.session, job.progress, "FAILED_NOT_SENT")
-        return family.outcome(exchanged, job, used)
+        return endpoint.exchange(step.form, job.session, job.progress, "FAILED_NOT_SENT")
 
 
 class AsyncRotation(AsyncTokens):
@@ -609,23 +780,26 @@ class AsyncRotation(AsyncTokens):
         return self._family.reloaded(job)
 
     async def _acquire(self, job: Job) -> Outcome:
-        """Load or refresh in a task, unless the job ended before the task started, as behind a blocked event loop."""
+        """Perform a job's steps in a task: its loads and its refresh request."""
         assert isinstance(job, RotationJob)
-        family = self._family
-        if job.kind != "refresh":
-            assert self._load is not None
-            context = family.persistence(job)
+        steps = self._family.running(job)
+        reply: object = None
+        while True:
             try:
-                value = await within(self._load.load(context), context.deadline.remaining())
-            except Exception as error:  # noqa: BLE001 - A failing load is its job's outcome.
-                return family.unloaded(job, error)
-            return family.loaded(job, value)
-        if (used := family.spending(job)) is None:
-            assert job.outcome is not None
-            return job.outcome
+                step = steps.send(reply)
+            except StopIteration as done:
+                return cast("Outcome", done.value)
+            reply = await (self._read(step.context) if isinstance(step, Loading) else self._send(step, job))
+
+    async def _read(self, context: TokenPersistenceContext) -> object:
+        assert self._load is not None
+        try:
+            return await within(self._load.load(context), context.deadline.remaining())
+        except Exception as error:  # noqa: BLE001 - A failing load is its step's reply.
+            return Unread(error)
+
+    async def _send(self, step: Sending, job: Job) -> Exchanged:
         endpoint = self._endpoint
         endpoint.prepare()
         assert job.session is not None
-        assert used.refresh_token is not None
-        exchanged = await endpoint.exchange(_form(used.refresh_token), job.session, job.progress, "FAILED_NOT_SENT")
-        return family.outcome(exchanged, job, used)
+        return await endpoint.exchange(step.form, job.session, job.progress, "FAILED_NOT_SENT")
