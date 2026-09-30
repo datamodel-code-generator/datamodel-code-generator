@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextvars
 import threading
 from collections import OrderedDict
+from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial
 from time import monotonic
@@ -38,6 +39,7 @@ from .timing import TOKEN_INTERVAL
 if TYPE_CHECKING:
     from asyncio import Future, Task, TimerHandle
     from collections.abc import Awaitable, Callable, Coroutine
+    from concurrent.futures import Future as WorkFuture
     from concurrent.futures import ThreadPoolExecutor
 
     from .admission import CallAdmission
@@ -497,6 +499,10 @@ class SharedRefresh:
                 or (cache.refresh_at is not None and monotonic() >= cache.refresh_at)
             )
 
+    def busy(self) -> bool:
+        """Return whether an admitted job's work has not returned yet."""
+        return bool(self._running)
+
     def drained(self, now: float) -> float | None:
         """Expire running jobs whose session ended, and return how long closing still waits for the others."""
         waits: list[float] = []
@@ -537,7 +543,7 @@ def _waited(context: CredentialContext, started: float) -> float | None:
 class SyncSharedRefresh:
     """Runs a family's jobs on a lazily created worker pool and lets synchronous callers wait for them."""
 
-    __slots__ = ("_acquire", "_close", "_executor", "_releasing", "shared")
+    __slots__ = ("_acquire", "_close", "_executor", "_released", "_releasing", "shared")
 
     def __init__(
         self,
@@ -550,6 +556,7 @@ class SyncSharedRefresh:
         self._acquire = acquire
         self._close = close
         self._executor: ThreadPoolExecutor | None = None
+        self._released: WorkFuture[None] | None = None
         self._releasing = False
 
     def obtain(
@@ -580,7 +587,15 @@ class SyncSharedRefresh:
         with shared.lock:
             try:
                 while (outcome := waiter.outcome) is None:
-                    remaining = _waited(context, started)
+                    if admission is None:
+                        remaining = _waited(context, started)
+                    else:
+                        admission.observe()
+                        remaining = (
+                            TOKEN_INTERVAL
+                            if (deadline := context.deadline) is None
+                            else min(TOKEN_INTERVAL, deadline.at - monotonic())
+                        )
                     if (until := job.until) is not None:
                         left = until - monotonic()
                         remaining = left if remaining is None else min(remaining, left)
@@ -630,32 +645,108 @@ class SyncSharedRefresh:
     def _finish(self, job: Job, outcome: Outcome) -> None:
         with self.shared.lock:
             queued = self.shared.finish(job, outcome)
+            release = self._release_due()
         if queued is not None:
             self._start(queued)
+        if release:
+            self._release()
+
+    def _requested(self) -> WorkFuture[None]:
+        """Stop admitting jobs and return the release every closer awaits; the caller holds the lock."""
+        from concurrent.futures import Future as WorkFuture  # noqa: PLC0415
+
+        self.shared.closing()
+        if (released := self._released) is None:
+            released = self._released = WorkFuture()
+            released.set_running_or_notify_cancel()
+        return released
+
+    def _release_due(self) -> bool:
+        """Return whether closing was requested and no admitted job's work runs; the caller holds the lock."""
+        return self._released is not None and not self._releasing and not self.shared.busy()
+
+    def _release(self) -> None:
+        """Close the owned transport and the worker pool once, then complete the release for every closer.
+
+        Whichever closer or worker claims the release first runs it, and an interruption propagates once settled.
+        """
+        with self.shared.lock:
+            if self._releasing:
+                return
+            self._releasing = True
+        try:
+            self._close()
+        except Exception as error:  # noqa: BLE001 - Every closer receives the failure through the release.
+            self._settle(error)
+        except BaseException as error:
+            self._settle(error)
+            raise
+        else:
+            self._settle(None)
+
+    def _settle(self, failure: BaseException | None) -> None:
+        if (executor := self._executor) is not None:
+            executor.shutdown(wait=False)
+        shared = self.shared
+        with shared.lock:
+            shared.lifecycle = "CLOSED"
+            shared.changed.notify_all()
+        released = self._released
+        assert released is not None
+        if failure is None:
+            released.set_result(None)
+        else:
+            released.set_exception(failure)
+
+    def _drain(self, released: WorkFuture[None]) -> None:
+        """Release once the running jobs return or their sessions end, unless another closer already released."""
+        shared = self.shared
+        with shared.lock:
+            while not released.done() and (left := shared.drained(monotonic())) is not None:
+                shared.changed.wait(min(left, threading.TIMEOUT_MAX))
+        self._release()
+
+    def request_close(self) -> WorkFuture[None]:
+        """Refuse new jobs and end the queued one without waiting, and return the release every closer awaits.
+
+        An idle provider releases on its worker or a thread of its own, and in the calling thread only when neither
+        can start, leaving any failure on the release. Otherwise a thread of its own releases once the running jobs
+        return or their sessions end.
+        """
+        with self.shared.lock:
+            first = self._released is None
+            released = self._requested()
+            busy = self.shared.busy()
+        if not first:
+            return released
+        if busy:
+            with suppress(RuntimeError):
+                threading.Thread(target=self._drain, args=(released,), name="oauth-release", daemon=True).start()
+            return released
+        if (executor := self._executor) is not None:
+            with suppress(RuntimeError):
+                executor.submit(self._release)
+                return released
+        with suppress(RuntimeError):
+            threading.Thread(target=self._release_quietly, name="oauth-release", daemon=True).start()
+            return released
+        self._release_quietly()
+        return released
+
+    def _release_quietly(self) -> None:
+        """Release without raising, since every closer receives the failure through the release."""
+        with suppress(BaseException):
+            self._release()
 
     def close(self) -> None:
         """Refuse new jobs, end the queued one, wait for running jobs until their sessions end, then release once.
 
-        A concurrent close returns once that release has finished.
+        Work still running past its session does not delay the release, and every close raises its failure.
         """
-        shared = self.shared
-        with shared.lock:
-            shared.closing()
-            while (left := shared.drained(monotonic())) is not None:
-                shared.changed.wait(min(left, threading.TIMEOUT_MAX))
-            releasing, self._releasing = self._releasing, True
-            if releasing:
-                while shared.lifecycle != "CLOSED":
-                    shared.changed.wait()
-                return
-        try:
-            self._close()
-        finally:
-            if (executor := self._executor) is not None:
-                executor.shutdown(wait=False)
-            with shared.lock:
-                shared.lifecycle = "CLOSED"
-                shared.changed.notify_all()
+        with self.shared.lock:
+            released = self._requested()
+        self._drain(released)
+        released.result()
 
 
 class AsyncSharedRefresh:
@@ -701,7 +792,7 @@ class AsyncSharedRefresh:
             if joined and admission is not None:
                 await admission.awaiting()
             while not future.done():
-                await wait({future}, timeout=_waited(context, started))
+                await wait({future}, timeout=None if admission is not None else _waited(context, started))
         finally:
             with shared.lock:
                 shared.leave(waiter, job)
@@ -918,6 +1009,10 @@ class SyncClientCredentials:
     def close(self) -> None:
         """Close the family and its owned transport."""
         self._refresh.close()
+
+    def request_close(self) -> WorkFuture[None]:
+        """Start closing the family without waiting."""
+        return self._refresh.request_close()
 
     def _acquire(self, job: Job) -> Outcome:
         endpoint = self._endpoint

@@ -47,6 +47,8 @@ from .options import OAuthProviderOptions, SessionOptions
 from .timing import TOKEN_INTERVAL, CancelToken, Deadline, absolute_deadline
 
 if TYPE_CHECKING:
+    from concurrent.futures import Future
+
     from .admission import CallAdmission
     from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, Progress, Session, TokenEndpoint
     from .transports import AsyncTransportAdapter, OwnedTransportAdapter, TransportAdapter
@@ -1021,8 +1023,18 @@ class ClientCredentialsProvider(TokenAcquirer):
         return self._credentials.exchange_needed(version)
 
     def close(self) -> None:
-        """Refuse new acquisitions, let a running one finish within its deadline, then close the owned transport."""
+        """Refuse new acquisitions, let a running one finish within its deadline, then close the owned transport.
+
+        Every close raises the failure of that release.
+        """
         self._credentials.close()
+
+    def request_close(self) -> Future[None]:
+        """Start closing without waiting, and return the release every close awaits.
+
+        The owned transport closes once no acquisition runs, or once the running one's session ended.
+        """
+        return self._credentials.request_close()
 
     def __enter__(self) -> Self:
         """Return the provider."""

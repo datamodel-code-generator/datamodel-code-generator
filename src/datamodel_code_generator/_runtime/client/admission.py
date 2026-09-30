@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
+    from concurrent.futures import Future
+
     from .auth import BearerCredential, CredentialContext, TokenVersion
     from .errors import AuthBudgetKind
 
@@ -32,6 +34,9 @@ class CallAdmission(Protocol):
     def exchanged(self) -> None:
         """Count the token request that an acquisition charged to the call sent."""
 
+    def observe(self) -> None:
+        """Raise the call's own error once its client closes, its deadline passes, or it is cancelled."""
+
     def waiting(self) -> None:
         """Report that the call waits for an acquisition another caller started."""
 
@@ -51,6 +56,10 @@ class TokenAcquirer(ABC):
     @abstractmethod
     def exchange_needed(self, version: TokenVersion) -> bool:
         """Return whether replacing a rejected version needs a new acquisition rather than a running or newer one."""
+
+    @abstractmethod
+    def request_close(self) -> Future[None]:
+        """Start closing without waiting, and return the release that follows the running work or its session."""
 
 
 class AsyncTokenAcquirer(ABC):

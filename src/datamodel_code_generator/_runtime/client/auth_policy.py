@@ -28,9 +28,12 @@ from .errors import (
     AuthConfigurationError,
     AuthProviderExecutionError,
     AuthRefreshError,
+    ClientClosedError,
+    DeadlineExceededError,
     DeliveryState,
     HookExecutionError,
     InsufficientScopeError,
+    RequestCancelledError,
     SigningConfigurationError,
     SigningExecutionError,
     TokenExpiredError,
@@ -534,7 +537,17 @@ def _provider_calls(
 
 _PROVIDER_KEPT: Final = (AuthConfigurationError, AuthRefreshError)
 _GET: Final = _provider_calls("get", _PROVIDER_KEPT)
-_ACQUIRE: Final = _provider_calls("get", (*_PROVIDER_KEPT, HookExecutionError, UnsupportedAsyncBackendError))
+_ACQUIRE: Final = _provider_calls(
+    "get",
+    (
+        *_PROVIDER_KEPT,
+        ClientClosedError,
+        DeadlineExceededError,
+        HookExecutionError,
+        RequestCancelledError,
+        UnsupportedAsyncBackendError,
+    ),
+)
 _INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, "invalidate", DeliveryState.RESPONSE_STARTED))
 _REFRESH: Final = _provider_calls("refresh", _PROVIDER_KEPT)
 
@@ -544,8 +557,8 @@ def get_credential(
 ) -> object:
     """Ask a synchronous provider for material, retaining classified auth failures; the caller validates it.
 
-    A provider of the SDK acquires on the call's account, and a failure of the call's own hooks stays the call's; a
-    caller's deadline or cancellation it observed is left for the call to report with its own delivery state.
+    A provider of the SDK acquires on the call's account, and the call's own stop and hook failures stay the call's: a
+    waiting call observes its client, deadline, and cancel token itself, never through the provider's own checks.
     """
     if (acquirer := binding.acquirer) is not None:
         with _ACQUIRE[delivery]:

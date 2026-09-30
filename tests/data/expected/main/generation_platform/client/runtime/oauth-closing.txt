@@ -1,0 +1,42 @@
+# auth pydantic_v2.BaseModel
+  idle owned provider = closed transport closes=1
+    get afterwards = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=admission
+  idle owned provider whose transport close blocks = CleanupError pending_calls=0 pending_providers=1 cause=NoneType
+    close again = closed transport closes=1
+  idle provider unable to start a thread = None transport closes=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  call = ok
+  used owned provider = closed transport closes=1
+  > GET https://api.example.com/bearer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
+  call = ok
+  worker pool refusing the release = closed transport closes=1
+  failing release = CleanupError pending_calls=0 pending_providers=0 cause=RuntimeError
+    close again = closed transport closes=1
+  concurrent closes = ['CleanupError pending_calls=0 pending_providers=0 cause=RuntimeError', 'closed'] transport closes=1
+  failing releases in adoption order = CleanupError pending_calls=0 pending_providers=0 cause=RuntimeError secondary=['ValueError']
+  interrupted release beside another = KeyboardInterrupt transport closes=[1, 1]
+    close again = closed
+  interrupted release = KeyboardInterrupt
+    close again = KeyboardInterrupt transport closes=1
+    get afterwards = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=admission
+  provider with a running acquisition = CleanupError pending_calls=0 pending_providers=1 cause=NoneType
+    release cancelled = False
+    waiting call = ClientClosedError state=CLOSING
+    starter = access-1
+    provider close = None
+    close again = closed transport closes=1
+  unbounded cleanup time = closed transport closes=1
+    starter = access-1
+  provider with a stuck acquisition = CleanupError pending_calls=0 pending_providers=1 cause=NoneType
+    released once its session ends = None transport closes=1
+    starter = AuthTimeoutError state=EXCHANGE_REJECTED delivery_state=MAYBE_SENT phase=unknown timeout_kind=provider refresh_id=<call>
+    close again = closed
+  borrowed provider = closed
+    get afterwards = access-1
+  async provider with a running acquisition = CleanupError pending_calls=0 pending_providers=1 cause=NoneType
+    starter = access-1
+    close again = closed transport closes=1
+  async failing release = CleanupError pending_calls=0 pending_providers=0 cause=RuntimeError
+    close again = closed transport closes=1

@@ -885,6 +885,10 @@ class _Call(LogicalCallContext):
             body=request.body,
         )
 
+    def observe(self) -> None:
+        """Raise the call's own error once its client closes, its deadline passes, or it is cancelled."""
+        self.check("auth")
+
     def waiting(self) -> None:
         """Report that the call waits for a token acquisition another caller started."""
         _auth_event(self, "auth_wait")
@@ -2594,6 +2598,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         if not scope.begin_close():
             return
         timeout = self._settings.cleanup_timeout
+        deadline = monotonic() + timeout
         remaining = scope.drain(timeout)
         failures = [failure for handle in remaining if (failure := quiet_close(handle.close)) is not None]
         shared = self._shared
@@ -2601,11 +2606,14 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             shared.adapter_closed = True
             if (failure := quiet_close(shared.adapter.close)) is not None:
                 failures.append(failure)
+        providers = 0
         if scope.owner is None and isinstance(shared.providers, OwnedProviders):
-            failures.extend(shared.providers.close())
+            closed, providers = shared.providers.close(deadline)
+            failures.extend(closed)
         pending, _ = scope.pending()
-        if (error := _cleanup(pending, len(remaining), timeout, _finished_closes(failures))) is not None:
-            raise error
+        cleanup = _cleanup(pending, len(remaining), timeout, _finished_closes(failures), providers=providers)
+        if cleanup is not None:
+            raise cleanup
         scope.finish()
 
 
