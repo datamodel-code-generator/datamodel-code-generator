@@ -210,11 +210,13 @@ class _AsyncLocalBackend(httpcore2.AsyncNetworkBackend):
 class LocalTransport(httpx2.HTTPTransport):
     """HTTPX2's transport over a pool that reaches the fixture server, except for injected failures."""
 
-    def __init__(self, exchange: Any) -> None:
+    def __init__(self, exchange: Any, connections: int = 10) -> None:
         """Replace the pool's network backend; injected responders answer through the exchange in-process."""
         client = _contexts()[1]
         super().__init__(verify=client)
-        self._pool = httpcore2.ConnectionPool(ssl_context=client, network_backend=_LocalBackend(exchange.port()))
+        self._pool = httpcore2.ConnectionPool(
+            ssl_context=client, network_backend=_LocalBackend(exchange.port()), max_connections=connections
+        )
         self.exchange = exchange
 
     def handle_request(self, request: httpx2.Request) -> httpx2.Response:
@@ -230,12 +232,12 @@ class LocalTransport(httpx2.HTTPTransport):
 class AsyncLocalTransport(httpx2.AsyncHTTPTransport):
     """HTTPX2's asyncio transport over a pool that reaches the fixture server, except for injected failures."""
 
-    def __init__(self, exchange: Any) -> None:
+    def __init__(self, exchange: Any, connections: int = 10) -> None:
         """Replace the pool's network backend; injected responders answer through the exchange in-process."""
         client = _contexts()[1]
         super().__init__(verify=client)
         self._pool = httpcore2.AsyncConnectionPool(
-            ssl_context=client, network_backend=_AsyncLocalBackend(exchange.port())
+            ssl_context=client, network_backend=_AsyncLocalBackend(exchange.port()), max_connections=connections
         )
         self.exchange = exchange
 

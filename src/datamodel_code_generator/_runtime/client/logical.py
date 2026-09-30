@@ -22,8 +22,9 @@ from .errors import (
     add_secondary,
     set_error_counters,
 )
-from .lifecycle import LEFT_WORK, TaskInterruptionError, cleanup_secondary, task_failure, task_result
+from .lifecycle import cleanup_secondary
 from .options import network_send_limit
+from .tasks import LEFT_WORK, TaskInterruptionError, task_failure, task_result
 from .timing import TOKEN_INTERVAL, absolute_deadline
 from .transports import AttemptIOContext, ResolvedTimeoutOptions, set_io_timing
 
@@ -640,7 +641,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
             raise self.failure(error, phase, delivery_state) from None
         return await self._checked(result, phase, delivery_state, cleanup)
 
-    async def bounded(
+    async def bounded(  # noqa: PLR0913
         self,
         operation: Callable[[], Awaitable[T]],
         *,
@@ -648,18 +649,20 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         delivery_state: DeliveryState | None = None,
         cleanup: Callable[[T], Awaitable[None]] | None = None,
         idle_timeout: float | None = None,
+        idle: bool = True,
     ) -> T:
         """Await SDK work in the caller's task, cancelling it only when the call's token, closing, or limits stop it.
 
         Work nested in a guarded call runs directly under that guard. A result the stopped work still returned, such
-        as a response whose close a callback delayed, is released through cleanup.
+        as a response whose close a callback delayed, is released through cleanup. Stream work that waits for no
+        bytes, such as a download's disk write, passes `idle=False` to stay outside the stream's idle limit.
         """
         self.check(phase, delivery_state)
         if self._guard is not None and idle_timeout is None and not (self.streaming and phase == "stream"):
             return await self._nested(operation, phase, delivery_state, cleanup)
-        if self.streaming and phase == "stream" and idle_timeout is None:
-            read, idle = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
-            idle_timeout = idle if read is None else read if idle is None else min(read, idle)
+        if self.streaming and phase == "stream" and idle_timeout is None and idle:
+            read, limit = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
+            idle_timeout = limit if read is None else read if limit is None else min(read, limit)
         guard = self._guard = _Guard(self, idle_timeout)
         if self._task is None:
             self._task = guard.task

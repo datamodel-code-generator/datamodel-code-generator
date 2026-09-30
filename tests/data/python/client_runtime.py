@@ -90,15 +90,19 @@ class Exchange:
         """Queue the responders of the next requests."""
         self.responders.extend(responders)
 
-    def client(self, **options: Any) -> httpx2.Client:
-        """Return an HTTPX2 client that sends through this exchange's server."""
+    def client(
+        self, connections: int = 10, kind: type[httpx2.Client] = httpx2.Client, **options: Any
+    ) -> httpx2.Client:
+        """Return an HTTPX2 client of a kind that sends through this exchange's server over at most `connections`."""
         self.transports += 1
-        return httpx2.Client(transport=LocalTransport(self), **options)
+        return kind(transport=LocalTransport(self, connections), **options)
 
-    def async_client(self, **options: Any) -> httpx2.AsyncClient:
-        """Return an asyncio HTTPX2 client that sends through this exchange's server."""
+    def async_client(
+        self, connections: int = 10, kind: type[httpx2.AsyncClient] = httpx2.AsyncClient, **options: Any
+    ) -> httpx2.AsyncClient:
+        """Return an asyncio HTTPX2 client of a kind that sends through this exchange's server over `connections`."""
         self.transports += 1
-        return httpx2.AsyncClient(transport=AsyncLocalTransport(self), **options)
+        return kind(transport=AsyncLocalTransport(self, connections), **options)
 
     def port(self) -> int:
         """Return the port of the server, starting it first."""

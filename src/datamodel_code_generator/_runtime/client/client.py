@@ -61,7 +61,7 @@ from .errors import (
 )
 from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
-from .lifecycle import AsyncOwnedProviders, OwnedProviders, Scope, TaskInterruptionError, cleanup_secondary, task_result
+from .lifecycle import AsyncOwnedProviders, OwnedProviders, Scope, cleanup_secondary
 from .logical import LogicalCallContext
 from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary, quiet_aclose, quiet_close
@@ -108,6 +108,7 @@ from .retry import (
     should_retry,
     status_retry_reason,
 )
+from .tasks import TaskInterruptionError, task_result
 from .transports import (
     AttemptTrace,
     OwnedTransportAdapter,
