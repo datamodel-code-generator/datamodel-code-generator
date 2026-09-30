@@ -8,6 +8,104 @@
 Settings of the generated client that change how its methods are declared or checked do not change the models: the
 same OpenAPI document and model settings produce the same model files whichever client settings you choose.
 
+## Webhook contracts and replay stores
+
+Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where
+`pkg` is the generated package name. These imports need no HTTP or cryptography library. API-specific signature
+verification and event-decoding helpers are still being implemented; constructing a signature or event record
+does not verify received data.
+
+All records below are immutable and keyword-only. `KeySet` retains the original tuple and key objects without
+inspecting or copying the keys. Its representation excludes key material. `VerifiedWebhook` excludes event data
+from its representation.
+
+| Type | Fields |
+|---|---|
+| `OperationRef` | `pointer: str`, `document: str \| None = None` |
+| `KeySet[K]` | `keys: tuple[K, ...]`; an empty tuple is valid; a list or another iterable raises `TypeError` |
+| `VerifiedSignature` | `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`; all fields are required |
+| `VerifiedWebhook[T]` | `data: T`, `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`, `duplicate: bool`; all fields are required |
+
+`Verifier[K]` is a borrowed, synchronous protocol with this method:
+
+```python
+def verify(
+    raw_body: bytes,
+    ordered_headers: tuple[tuple[str, str], ...],
+    keys: KeySet[K],
+    now: datetime,
+    limits: ResolvedWebhookOptions,
+) -> VerifiedSignature: ...
+```
+
+The key type is invariant and must match `KeySet[K]`. Implementations authenticate the complete received body
+and every returned fact, perform no networking, and retain ownership of their application keys. The same
+synchronous verifier contract applies to asynchronous consumers.
+
+`WebhookOptions` has the fields below. Every constructor default is `UNSET`, imported from `pkg.options`;
+the effective values are the standalone verification defaults. `ResolvedWebhookOptions` has the same fields with
+`Unset` removed and every argument required. Both types are exported from `pkg.protocols`.
+`ResolvedWebhookOptions` records limits already validated and resolved by the consuming helper. Helpers must
+validate `WebhookOptions` before constructing this record and passing it to an application verifier.
+
+| Field | Type | Effective default | Valid values |
+|---|---|---|---|
+| `max_body_bytes` | `int \| Unset` | `8388608` | Positive integer |
+| `max_header_bytes` | `int \| Unset` | `16384` | Positive integer |
+| `max_keys` | `int \| Unset` | `8` | Positive integer |
+| `max_signatures` | `int \| Unset` | `8` | Positive integer |
+| `past_tolerance` | `float \| Unset` | `300` seconds | Finite, nonnegative number |
+| `future_tolerance` | `float \| Unset` | `30` seconds | Finite, nonnegative number |
+| `replay_ttl` | `float \| Unset` | `300` seconds | Finite, positive number |
+
+Options reject `None`, booleans, negative values, nonfinite durations, zero count limits, and zero `replay_ttl`
+with `ProtocolConfigurationError`. For example, `WebhookOptions(past_tolerance=0)` is valid, while
+`WebhookOptions(max_keys=0)` and `WebhookOptions(replay_ttl=None)` are invalid.
+
+`ReplayStore.claim(namespace: str, delivery_id: str, expires_at: datetime) -> bool` atomically returns `True`
+for a new claim and `False` for an unexpired duplicate. `AsyncReplayStore` declares the same method as `async def`.
+The store retains the claim until its aware datetime expires. Namespaces separate applications that share a store.
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from pkg.protocols import AsyncMemoryReplayStore, MemoryReplayStore
+
+store = MemoryReplayStore(max_entries=10000)
+expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
+first = store.claim("application", "delivery-42", expiry)
+duplicate = store.claim("application", "delivery-42", expiry)
+
+
+async def claim_delivery() -> bool:
+    async_store = AsyncMemoryReplayStore(max_entries=10000)
+    return await async_store.claim("application", "delivery-42", expiry)
+```
+
+The memory stores are loaded when their public classes are requested and allocated only by explicit construction.
+Each instance is independent. Both constructors accept `max_entries: int = 10000`, which must be a positive
+integer, excluding booleans. They retain live entries at capacity and raise `ReplayStoreFullError` for another
+new live claim. Expired entries release capacity. Claims whose expiry has already passed are not retained.
+These stores coordinate callers in one process; a shared external adapter supplies multiprocess atomicity.
+They create no HTTP clients, workers, or background tasks and require no close method.
+
+Webhook exceptions have keyword-only constructors and the following additional fields:
+
+| Exception | Direct base | Fields |
+|---|---|---|
+| `ProtocolConfigurationError` | `ConfigurationError` | `field_path: tuple[str, ...]`, `condition: Literal['unknown_field', 'invalid_value', 'missing_metadata', 'missing_adapter', 'wrong_capability', 'security_partition', 'binding_mismatch']` |
+| `WebhookVerificationError` | `ProtocolError` | `condition: Literal['malformed_signature', 'invalid_signature', 'missing_key', 'timestamp_window', 'missing_delivery_id']` |
+| `WebhookReplayError` | `ProtocolError` | `delivery_id: str`, `namespace: str` |
+| `ProtocolStoreError` | `ProtocolError` | `action: Literal['lookup', 'fingerprint_vary', 'compare_exchange', 'delete', 'invalidate', 'claim', 'put', 'get', 'open', 'read', 'close', 'purge_terminal', 'admit', 'record', 'reset', 'snapshot']`, `entry_id: str \| None = None` |
+| `WebhookStoreError` | `ProtocolStoreError` | No additional fields |
+| `ReplayStoreFullError` | `WebhookStoreError` | `max_entries: int` |
+
+All fields without a displayed default are required. They also accept the shared context fields
+`helper_id: str | None = None`, `operation: OperationRef | None = None`, `info: ResponseInfo | None = None`,
+`cause: BaseException | None = None`, and `secondary_errors: tuple[BaseException, ...] = ()`, together with inherited
+SDK error fields. `reason_code` is the concrete class name in snake case. Error strings and representations exclude
+delivery IDs, namespaces, operation references, entry IDs, and causes; callers may read those attributes explicitly.
+
 ## Signature style
 
 `signature_style` chooses how every operation method of the generated package declares its keyword arguments.
