@@ -1,6 +1,9 @@
 # auth pydantic_v2.BaseModel
   idle owned provider = closed transport closes=1
     get afterwards = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=admission
+  idle owned provider whose transport close blocks = CleanupError pending_calls=0 pending_providers=1 cause=NoneType
+    close again = closed transport closes=1
+  idle provider unable to start a thread = None transport closes=1
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
   call = ok

@@ -691,9 +691,9 @@ class SyncSharedRefresh:
     def request_close(self) -> WorkFuture[None]:
         """Refuse new jobs and end the queued one without waiting, and return the release every closer awaits.
 
-        An idle provider releases on its worker, or in the calling thread when it has none that takes work, and leaves
-        any failure on the release. Otherwise a thread of its own releases once the running jobs return or their
-        sessions end.
+        An idle provider releases on its worker or a thread of its own, and in the calling thread only when neither
+        can start, leaving any failure on the release. Otherwise a thread of its own releases once the running jobs
+        return or their sessions end.
         """
         with self.shared.lock:
             first = self._released is None
@@ -709,9 +709,16 @@ class SyncSharedRefresh:
             with suppress(RuntimeError):
                 executor.submit(self._release)
                 return released
+        with suppress(RuntimeError):
+            threading.Thread(target=self._release_quietly, name="oauth-release", daemon=True).start()
+            return released
+        self._release_quietly()
+        return released
+
+    def _release_quietly(self) -> None:
+        """Release without raising, since every closer receives the failure through the release."""
         with suppress(BaseException):
             self._release()
-        return released
 
     def close(self) -> None:
         """Refuse new jobs, end the queued one, wait for running jobs until their sessions end, then release once.

@@ -100,6 +100,18 @@ class _InvalidClose(_FailingClose):
     failure = ValueError
 
 
+class _BlockingClose(Adapter):
+    """An owned transport whose close waits until released."""
+
+    def __init__(self, transports: ModuleType) -> None:
+        super().__init__(transports)
+        self.released = threading.Event()
+
+    def close(self) -> None:
+        self.released.wait(LIMIT)
+        super().close()
+
+
 class _InterruptedClose(Adapter):
     def close(self) -> None:
         super().close()
@@ -145,6 +157,20 @@ def _closing(package: ModuleType, lines: list[str]) -> None:
         api = client(native, auth.OwnedCredentialProvider(idle))
         lines.append(f"  idle owned provider = {_cleanup(api.close)} transport closes={idle_adapter.closes}")
     lines.append(f"    get afterwards = {_outcome(lambda: idle.get(credential_context(auth)))}")
+    blocking_adapter = _BlockingClose(transports)
+    with exchange.client() as native:
+        api = client(native, auth.OwnedCredentialProvider(provider(blocking_adapter)), cleanup_timeout=0.2)
+        lines.append(f"  idle owned provider whose transport close blocks = {_cleanup(api.close)}")
+        blocking_adapter.released.set()
+        lines.append(f"    close again = {_cleanup(api.close)} transport closes={blocking_adapter.closes}")
+    unthreaded_adapter = Adapter(transports)
+    unthreaded = provider(unthreaded_adapter)
+    with patch.object(threading.Thread, "start", side_effect=RuntimeError("can't start new thread")):
+        released = unthreaded.request_close()
+    lines.append(
+        f"  idle provider unable to start a thread = {_outcome(lambda: released.result(LIMIT))}"
+        f" transport closes={unthreaded_adapter.closes}"
+    )
     used_adapter = Adapter(transports, Response(responses, 200, _ISSUED))
     used = provider(used_adapter)
     exchange.respond(_ok())
