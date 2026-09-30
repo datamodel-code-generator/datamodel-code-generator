@@ -1,0 +1,22 @@
+# auth-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_METADATA_REQUIRED target /paths/~1unsupported/get: The security of GET /unsupported requires the unavailable scheme 'digest'
+  E_METADATA_REQUIRED target /paths/~1unknown/get: The security of GET /unknown requires the unavailable scheme 'missing'
+  E_METADATA_REQUIRED target /paths/~1unobserved/get: The security of GET /unobserved requires the unavailable scheme 'external'
+  E_METADATA_REQUIRED target /paths/~1missing-pointer/get: The security of GET /missing-pointer requires the unavailable scheme 'missing_pointer'
+  E_METADATA_REQUIRED target /paths/~1invalid-pointer/get: The security of GET /invalid-pointer requires the unavailable scheme 'invalid_pointer'
+  E_METADATA_REQUIRED target /paths/~1invalid-target/get: The security of GET /invalid-target requires the unavailable scheme 'invalid_target'
+  E_METADATA_REQUIRED target /paths/~1cycle/get: The security of GET /cycle requires the unavailable scheme 'cycle_a'
+  E_METADATA_REQUIRED target /paths/~1invalid-key-location/get: The security of GET /invalid-key-location requires the unavailable scheme 'bad_location'
+  E_METADATA_REQUIRED target /paths/~1invalid-key-name/get: The security of GET /invalid-key-name requires the unavailable scheme 'bad_name'
+  E_METADATA_REQUIRED target /paths/~1empty-key-name/get: The security of GET /empty-key-name requires the unavailable scheme 'empty_name'
+  E_METADATA_REQUIRED target /paths/~1invalid-key-token/get: The security of GET /invalid-key-token requires the unavailable scheme 'bad_token'
+  E_METADATA_REQUIRED target /paths/~1scheme-type/get: The security of GET /scheme-type requires the unavailable scheme 'bad_scheme'
+  E_METADATA_REQUIRED target /paths/~1invalid-scopes/get: The security of GET /invalid-scopes requires valid scope tokens for scheme 'bearer'
+  E_METADATA_REQUIRED target /paths/~1scope-shape/get: The security of GET /scope-shape requires valid scope tokens for scheme 'bearer'
+  E_METADATA_REQUIRED target /paths/~1scope-item/get: The security of GET /scope-item requires valid scope tokens for scheme 'bearer'
+  E_CONFIG_CONFLICT target /paths/~1overlap/get: The security of GET /overlap has overlapping header ownership in one AND alternative
+  E_METADATA_REQUIRED target /paths/~1mapping/get: The security of GET /mapping must be an array of requirement objects
+  E_METADATA_REQUIRED target /paths/~1alternative/get: The security of GET /alternative must contain only requirement objects
+  E_METADATA_REQUIRED target /paths/~1key/get: The security of GET /key requires the unavailable scheme 1

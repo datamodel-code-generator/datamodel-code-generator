@@ -10,6 +10,12 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
+from tests.data.python.client_auth_challenges import auth_challenges
+from tests.data.python.client_auth_errors import auth_errors
+from tests.data.python.client_auth_flows import auth_flows
+from tests.data.python.client_auth_options import auth_options
+from tests.data.python.client_auth_values import auth_values
+from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
@@ -24,9 +30,10 @@ from tests.data.python.client_headers import headers
 from tests.data.python.client_hooks import hooks
 from tests.data.python.client_limiter_faults import limiter_faults
 from tests.data.python.client_limiters import limiters
-from tests.data.python.client_query import query
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_native import native_faults, native_wire
+from tests.data.python.client_native_signing import native_signing
+from tests.data.python.client_query import query
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_retry_boundaries import retry_boundaries
@@ -35,12 +42,6 @@ from tests.data.python.client_retry_errors import retry_errors
 from tests.data.python.client_retry_options import retry_options
 from tests.data.python.client_retry_ownership import retry_ownership
 from tests.data.python.client_retry_policy import retry_policy
-from tests.data.python.client_selectors import selectors
-from tests.data.python.client_signatures import keywords, signatures
-from tests.data.python.client_transports import lifecycle, transports
-from tests.data.python.client_validation import arguments, validation
-from tests.data.python.client_webhook_contracts import webhook_contracts
-from tests.data.python.client_webhook_errors import webhook_errors
 from tests.data.python.client_runtime import (
     Exchange,
     abroken,
@@ -55,6 +56,12 @@ from tests.data.python.client_runtime import (
     record,
     run,
 )
+from tests.data.python.client_selectors import selectors
+from tests.data.python.client_signatures import keywords, signatures
+from tests.data.python.client_transports import lifecycle, transports
+from tests.data.python.client_validation import arguments, validation
+from tests.data.python.client_webhook_contracts import webhook_contracts
+from tests.data.python.client_webhook_errors import webhook_errors
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -634,6 +641,12 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
+    "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
+    "auth-values": ("auth", BACKENDS, auth_values),
+    "auth-challenges": ("auth", ("pydantic_v2.BaseModel",), auth_challenges),
+    "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
+    "auth-options": ("auth", ("pydantic_v2.BaseModel",), auth_options),
+    "body-digest": ("auth", ("pydantic_v2.BaseModel",), body_digest),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
     "deadline-files": ("pets", ("pydantic_v2.BaseModel",), deadline_files),
@@ -649,6 +662,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "redirect-head": ("pets", ("pydantic_v2.BaseModel",), head_redirects),
     "native-wire": ("retries", ("pydantic_v2.BaseModel",), native_wire),
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
+    "native-signing": ("auth", ("pydantic_v2.BaseModel",), native_signing),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),
     "body-replay-faults": ("media", ("pydantic_v2.BaseModel",), body_replay_faults),
     "multipart-replay": ("media", ("pydantic_v2.BaseModel",), multipart_replay),

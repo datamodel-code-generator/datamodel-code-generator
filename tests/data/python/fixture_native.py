@@ -33,18 +33,28 @@ class _Handler(BaseRequestHandler):
         connection.initiate_connection()
         stream.sendall(connection.data_to_send())
         self.server.protocols.append(stream.selected_alpn_protocol())
+        pending: dict[int, tuple[tuple[tuple[bytes, bytes], ...], bytearray]] = {}
         while data := stream.recv(65536):
             for event in connection.receive_data(data):
                 if isinstance(event, h2.events.RequestReceived):
-                    fields = dict(event.headers)
-                    self.server.requests.append((fields[b":method"], fields[b":path"], b""))
-                    self.server.request_headers.append(tuple(event.headers))
-                    headers = [(b":status", str(self.server.status).encode()), (b"content-type", b"text/plain")]
+                    pending[event.stream_id] = tuple(event.headers), bytearray()
+                elif isinstance(event, h2.events.DataReceived):
+                    pending[event.stream_id][1].extend(event.data)
+                    connection.acknowledge_received_data(event.flow_controlled_length, event.stream_id)
+                elif isinstance(event, h2.events.StreamEnded):
+                    request_headers, body = pending.pop(event.stream_id)
+                    fields = dict(request_headers)
+                    self.server.requests.append((fields[b":method"], fields[b":path"], bytes(body)))
+                    self.server.request_headers.append(request_headers)
+                    headers = [
+                        (b":status", str(self.server.status).encode()),
+                        (b"content-type", self.server.content_type),
+                    ]
                     if self.server.location is not None:
                         headers.append((b"location", self.server.location))
                     headers.extend(self.server.extra_headers)
                     connection.send_headers(event.stream_id, headers)
-                    connection.send_data(event.stream_id, b"ready", end_stream=True)
+                    connection.send_data(event.stream_id, self.server.body, end_stream=True)
             outgoing = connection.data_to_send()
             if outgoing:
                 stream.sendall(outgoing)
@@ -63,11 +73,33 @@ class _Handler(BaseRequestHandler):
             header_fields = tuple((name, value) for name, value in (field.split(b":", 1) for field in fields))
             headers = dict(header_fields)
             length = int(next((value for name, value in headers.items() if name.lower() == b"content-length"), b"0"))
-            while len(body) < length:
-                received = stream.recv(length - len(body))
-                if not received:
-                    return
-                body += received
+            transfer = next((value for name, value in headers.items() if name.lower() == b"transfer-encoding"), b"")
+            if transfer.strip().lower() == b"chunked":
+                payload = bytearray()
+                while True:
+                    while b"\r\n" not in body:
+                        received = stream.recv(65536)
+                        if not received:
+                            return
+                        body += received
+                    size, body = body.split(b"\r\n", 1)
+                    length = int(size.split(b";", 1)[0], 16)
+                    while len(body) < length + 2:
+                        received = stream.recv(65536)
+                        if not received:
+                            return
+                        body += received
+                    if not length:
+                        break
+                    payload.extend(body[:length])
+                    body = body[length + 2 :]
+                body = bytes(payload)
+            else:
+                while len(body) < length:
+                    received = stream.recv(length - len(body))
+                    if not received:
+                        return
+                    body += received
             if method == b"CONNECT" and self.server.proxy:
                 self.server.connects += 1
                 if self.server.proxy == "tunnel":
@@ -89,12 +121,16 @@ class _Handler(BaseRequestHandler):
             response = (
                 b"HTTP/1.1 "
                 + str(self.server.status).encode()
-                + b" Fixture\r\nContent-Length: 5\r\nContent-Type: text/plain\r\n"
+                + b" Fixture\r\nContent-Length: "
+                + str(len(self.server.body)).encode()
+                + b"\r\nContent-Type: "
+                + self.server.content_type
+                + b"\r\n"
             )
             if self.server.location is not None:
                 response += b"Location: " + self.server.location + b"\r\n"
             response += b"".join(name + b": " + value + b"\r\n" for name, value in self.server.extra_headers)
-            stream.sendall(response + b"\r\nready")
+            stream.sendall(response + b"\r\n" + self.server.body)
 
 
 class NativeFixture(ThreadingTCPServer):
@@ -118,6 +154,8 @@ class NativeFixture(ThreadingTCPServer):
         self.malformed = malformed
         self.tls = proxy is None
         self.status = 200
+        self.body = b"ready"
+        self.content_type = b"text/plain"
         self.location: bytes | None = None
         self.extra_headers: tuple[tuple[bytes, bytes], ...] = ()
         self.connects = 0

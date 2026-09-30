@@ -588,6 +588,10 @@ class MultipartAttempt:
             else:
                 yield from piece.iter_bytes()
 
+    def digest_pieces(self) -> Iterator[bytes | BodyAttempt]:
+        """Visit the frozen wire framing and opened parts without consuming their iterators."""
+        return iter(self._pieces)
+
     def close(self) -> None:
         """Close every file part's attempt, preserving native interruption before ordinary failures."""
         pieces, self._pieces = self._pieces, []
@@ -621,6 +625,10 @@ class AsyncMultipartAttempt:
             else:
                 async for chunk in piece.aiter_bytes():
                     yield chunk
+
+    def digest_pieces(self) -> Iterator[bytes | AsyncBodyAttempt]:
+        """Visit this attempt's retained framing and parts before asynchronous upload."""
+        return iter(self._pieces)
 
     async def aclose(self) -> None:
         """Close every file part's attempt, preserving native interruption before ordinary failures."""

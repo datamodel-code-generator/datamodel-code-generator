@@ -1,0 +1,660 @@
+openapi: 3.1.0
+info:
+  title: Explicit authentication
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+security:
+  - bearer: []
+paths:
+  /inherited:
+    get:
+      operationId: inherited_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /anonymous:
+    get:
+      operationId: anonymous
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - {}
+  /empty:
+    get:
+      operationId: empty_security
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security: []
+  /optional:
+    get:
+      operationId: optional_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - {}
+        - bearer: []
+  /optional-token-first:
+    get:
+      operationId: optional_token_first
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer: []
+        - {}
+  /and:
+    get:
+      operationId: and_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - header_key: []
+          bearer: []
+  /or:
+    get:
+      operationId: or_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - header_key: []
+        - bearer: []
+  /authorization-or:
+    get:
+      operationId: authorization_or
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - basic: []
+        - bearer: []
+  /api-key/header:
+    get:
+      operationId: api_key_header
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - header_key: []
+  /api-key/query:
+    get:
+      operationId: api_key_query
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - query_key: []
+  /api-key/cookie:
+    get:
+      operationId: api_key_cookie
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - cookie_key: []
+  /api-key/cookie-parameters:
+    get:
+      operationId: cookie_parameters
+      tags: [auth]
+      parameters:
+        - name: theme
+          in: cookie
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: X-Trace
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              kind:
+                type: string
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - cookie_key: []
+  /basic:
+    get:
+      operationId: basic
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - basic: []
+  /bearer:
+    get:
+      operationId: bearer
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer: []
+  /alias:
+    get:
+      operationId: alias_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer_alias: []
+  /oauth/read:
+    get:
+      operationId: oauth_read
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - oauth: [read]
+  /oauth/scopes:
+    get:
+      operationId: oauth_scopes
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - oauth: [write, read, read]
+  /oauth/empty:
+    get:
+      operationId: oauth_empty
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - oauth: []
+  /openid/read:
+    get:
+      operationId: openid_read
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - openid: [read]
+  /challenge-less:
+    get:
+      operationId: challenge_less
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer: []
+  /unsafe:
+    post:
+      operationId: unsafe_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer: []
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+  /idempotent:
+    post:
+      operationId: idempotent_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer: []
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+  /never:
+    get:
+      operationId: never_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer: []
+  /vendor:
+    get:
+      operationId: vendor_auth
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - bearer: []
+  /signed:
+    put:
+      operationId: signed_body
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - {}
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+  /signed-multipart:
+    post:
+      operationId: signed_multipart
+      tags: [auth]
+      responses:
+        '200':
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Binary result
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - {}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                note:
+                  type: string
+              required: [file]
+              additionalProperties: false
+components:
+  securitySchemes:
+    header_key:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    query_key:
+      type: apiKey
+      in: query
+      name: api_key
+    cookie_key:
+      type: apiKey
+      in: cookie
+      name: session_key
+    cookie_header:
+      type: apiKey
+      in: header
+      name: Cookie
+    spaced_query:
+      type: apiKey
+      in: query
+      name: api key
+    basic:
+      type: http
+      scheme: basic
+    bearer:
+      type: http
+      scheme: bearer
+    bearer_alias:
+      $ref: '#/components/securitySchemes/bearer'
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            read: Read access
+            write: Write access
+    openid:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+    unused_digest:
+      type: http
+      scheme: digest
+    unused_external:
+      $ref: auth-unobserved.yaml#/components/securitySchemes/unobserved

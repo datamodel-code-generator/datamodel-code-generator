@@ -233,10 +233,10 @@
   init hints TransportOptions=('verify', 'ssl_context', 'proxy', 'trust_env', 'http2', 'max_connections', 'max_keepalive_connections', 'keepalive_expiry', 'retry_owner', 'return')
   hints IdempotencyKey=('value', 'first_used_at')
   init hints IdempotencyKey=('value', 'first_used_at', 'return')
-  hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'transport')
-  init hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'transport', 'return')
-  hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key')
-  init hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'return')
+  hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'transport')
+  init hints ClientOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'transport', 'return')
+  hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth')
+  init hints RequestOptions=('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'return')
   new hints=('return',)
   key signature=(('value', 'POSITIONAL_OR_KEYWORD'), ('first_used_at', 'KEYWORD_ONLY'))
   option omitted ClientOptions=(True, True, True, True)
@@ -353,6 +353,7 @@
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
   automatic key suppressed = FieldKeyedPostResponse(root='accepted')
   explicit undeclared key ! ConfigurationError: ConfigurationError(operation_id='getSafe', call_id='<call>', field_path='idempotency_key', condition='not_declared') [operation_id='getSafe', field_path=('idempotency_key',), condition='not_declared'] configuration_error
+  signer claiming the key header ! AuthConfigurationError: AuthConfigurationError(operation_id='postKeyed', call_id='<call>', condition='name_collision') [operation_id='postKeyed', field_path=('auth',), condition='name_collision'] auth_configuration_error
   automatic keys count=4 same retry=True fresh call=True suppressed=True
   > POST https://api.example.com/keyed
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''

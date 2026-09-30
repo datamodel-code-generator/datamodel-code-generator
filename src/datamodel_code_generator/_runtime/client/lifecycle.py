@@ -16,10 +16,14 @@ from .errors import CleanupError, ClientClosedError, add_secondary
 
 if TYPE_CHECKING:
     import asyncio
+    from collections.abc import Callable
+
+    from .auth import AsyncCloseableCredentialProvider, CloseableCredentialProvider
 
 State: TypeAlias = Literal["OPEN", "CLOSING", "CLOSED"]
 HandleT = TypeVar("HandleT")
 TaskT = TypeVar("TaskT")
+ProviderT = TypeVar("ProviderT")
 LEFT_WORK: ContextVar[list[asyncio.Task[None]] | None] = ContextVar("left_work", default=None)
 
 
@@ -82,6 +86,100 @@ def cleanup_secondary(error: BaseException, failure: BaseException) -> None:
             add_secondary(error, secondary)
         return
     add_secondary(error, failure)
+
+
+class _Providers(Generic[ProviderT]):
+    __slots__ = ("providers",)
+
+    def __init__(self) -> None:
+        self.providers: dict[int, ProviderT] = {}
+
+    def adopt(self, provider: ProviderT) -> None:
+        """Retain an explicitly transferred provider once by identity, with the root lock held."""
+        self.providers.setdefault(id(provider), provider)
+
+
+class OwnedProviders(_Providers["CloseableCredentialProvider | AsyncCloseableCredentialProvider"]):
+    """The root's transferred synchronous providers, independent of native-client ownership."""
+
+    __slots__ = ("closed",)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.closed = False
+
+    def close(self) -> tuple[BaseException, ...]:
+        """Give every adopted provider one close opportunity before publishing any interruption."""
+        if self.closed:
+            return ()
+        self.closed = True
+        return tuple(
+            failure for provider in self.providers.values() if (failure := _close_failure(provider)) is not None
+        )
+
+
+def _close_failure(provider: CloseableCredentialProvider | AsyncCloseableCredentialProvider) -> BaseException | None:
+    from .auth_policy import is_sync_closeable  # noqa: PLC0415
+
+    try:
+        assert is_sync_closeable(provider)
+        provider.close()
+    except BaseException as error:  # noqa: BLE001
+        return error
+    return None
+
+
+def _finalized(task: asyncio.Task[None]) -> BaseException | None:
+    try:
+        task_result(task)
+    except BaseException as error:  # noqa: BLE001
+        return error
+    return None
+
+
+async def _provider_closed(provider: CloseableCredentialProvider | AsyncCloseableCredentialProvider) -> None:
+    from .auth_policy import is_async_closeable  # noqa: PLC0415
+
+    try:
+        assert is_async_closeable(provider)
+        await provider.aclose()
+    except BaseException as error:  # noqa: BLE001
+        raise TaskInterruptionError(error) from None
+
+
+def _provider_observed(task: asyncio.Task[None]) -> None:
+    task_failure(task)
+
+
+class AsyncOwnedProviders(_Providers["CloseableCredentialProvider | AsyncCloseableCredentialProvider"]):
+    """Retained provider finalizers that survive cancellation of a root close waiter."""
+
+    __slots__ = ("tasks",)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.tasks: tuple[asyncio.Task[None], ...] | None = None
+
+    def start_aclose(self) -> None:
+        """Start every adopted finalizer once, so one pending close cannot block the others."""
+        import asyncio  # noqa: PLC0415
+
+        assert self.tasks is None
+        self.tasks = tuple(asyncio.create_task(_provider_closed(provider)) for provider in self.providers.values())
+        for task in self.tasks:
+            task.add_done_callback(_provider_observed)
+
+    async def drain(self) -> tuple[BaseException, ...]:
+        """Observe all admitted finalizers without propagating a waiting caller's cancellation into them."""
+        import asyncio  # noqa: PLC0415
+
+        assert self.tasks is not None
+        await asyncio.wait(self.tasks)
+        return tuple(failure for task in self.tasks if (failure := _finalized(task)) is not None)
+
+    def pending(self) -> int:
+        """Count provider identities whose admitted close has not finished."""
+        return len(self.providers) if self.tasks is None else sum(not task.done() for task in self.tasks)
 
 
 class Scope(Generic[HandleT]):
@@ -156,13 +254,22 @@ class Scope(Generic[HandleT]):
                 del scope.cleanups[task]
                 scope.settle()
 
-    def admit(self) -> None:
+    def admit(self, accept: Callable[[], None] | None = None) -> None:
         """Count a new call, or raise ClientClosedError when closing."""
         with self.lock:
             if (error := self.closing()) is not None:
                 raise error
+            if accept is not None:
+                accept()
             for scope in self.scopes:
                 scope.calls += 1
+
+    def adopt(self, accept: Callable[[], None]) -> None:
+        """Accept validated ownership while the root and this view still allow admission."""
+        with self.lock:
+            if (error := self.closing()) is not None:
+                raise error
+            accept()
 
     def release(self) -> None:
         """Uncount a finished call."""

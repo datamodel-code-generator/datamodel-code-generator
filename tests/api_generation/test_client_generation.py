@@ -21,6 +21,11 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
     "case",
     [
         "pets",
+        "auth",
+        "auth-no-root",
+        "auth-errors",
+        "auth-context",
+        "auth-wire-conflicts",
         "pets-unpack",
         "retries",
         "retry-headers",
@@ -78,10 +83,16 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize("case", ["retries", "default-server", "empty"])
+@pytest.mark.parametrize("case", ["retries", "default-server", "empty", "auth"])
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""
     assert_output(client_documentation_report(case, tmp_path), EXPECTED / "documentation" / f"{case}.txt")
+
+
+@pytest.mark.parametrize("variant", ["auth-no-challenge", "auth-changed", "auth-cosmetic"])
+def test_client_auth_digests(variant: str, tmp_path: Path) -> None:
+    """Keep authentication semantics in the security digest and exclude descriptions and scope ordering."""
+    assert_output(client_digest_report("auth", variant, tmp_path), EXPECTED / "digests" / f"{variant}.txt")
 
 
 def test_client_validation_digests(tmp_path: Path) -> None:
@@ -102,6 +113,13 @@ def test_client_body_arguments_digests(tmp_path: Path) -> None:
     "case",
     [
         "defaults",
+        "auth-values",
+        "auth-invalid",
+        "auth-unknown",
+        "toml-auth-values",
+        "toml-auth-type",
+        "toml-auth-location",
+        "toml-auth-unknown",
         "values",
         "invalid-values",
         "invalid-urls",

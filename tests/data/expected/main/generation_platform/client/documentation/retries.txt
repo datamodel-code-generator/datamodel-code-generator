@@ -6,6 +6,7 @@
   write client/hooks.py
   write client/errors.py
   write client/responses.py
+  write client/auth.py
   write client/bodies.py
   write client/model_codecs.py
   write client/transports.py
@@ -83,7 +84,10 @@ See the [runtime reference](runtime.md) for defaults, ownership, cancellation, r
 
 These declarations come from the finalized operation selection and generation configuration. A key contract does
 not guarantee exactly-once execution. A null idempotency declaration or a false replay guarantee cannot make an
-unsafe method replay-safe. No vendor retry-header name is inferred.
+unsafe method replay-safe. No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
 
 ```json
 [
@@ -94,7 +98,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.post_unsafe",
@@ -103,7 +109,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.post_idempotent",
@@ -112,7 +120,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
     "retry_safety": "idempotent",
     "idempotency": null,
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.post_keyed",
@@ -126,7 +136,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
       "scope": "orders-v1"
     },
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.post_key_only",
@@ -140,7 +152,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
       "scope": "orders-v1"
     },
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.get_never",
@@ -149,7 +163,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
     "retry_safety": "never",
     "idempotency": null,
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.post_never",
@@ -158,7 +174,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
     "retry_safety": "never",
     "idempotency": null,
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.get_vendor",
@@ -167,7 +185,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": "X-Retry-In-Ms",
-    "should_retry_header": "X-Retry-Permitted"
+    "should_retry_header": "X-Retry-Permitted",
+    "security": null,
+    "auth_challenge_less_401": false
   },
   {
     "operation": "retry.get_keyed_safe",
@@ -181,7 +201,9 @@ unsafe method replay-safe. No vendor retry-header name is inferred.
       "scope": "orders-v1"
     },
     "retry_after_ms_header": null,
-    "should_retry_header": null
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
   }
 ]
 ```
@@ -223,9 +245,10 @@ Native cancellation remains the original exception. No work starts after an obse
 
 ## Retry decisions and delays
 
-GET, HEAD, OPTIONS, PUT, and DELETE are safe by default; POST/PATCH require an explicit idempotent declaration or a
-valid key contract. Proven unsent failures from the SDK-owned native transport may permit an otherwise unsafe retry;
-`retry_safety="never"` forbids every resend. All candidates still need replayable input and available budgets.
+GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
+declaration or a valid key contract. Proven unsent failures from the SDK-owned native transport may permit an
+otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input and
+available budgets.
 Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
 decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
 
@@ -277,6 +300,62 @@ its dependency. Injected native clients retain their pool/proxy/TLS construction
 are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
 `retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
 contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
+
+## Explicit authentication and signing
+
+Import `AuthConfig`, credential values, providers, and signers from `client.auth`.
+`auth=UNSET` inherits, an `AuthConfig` replaces the inherited configuration as a whole, and `auth=None` disables it.
+Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
+alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
+That choice stays fixed through a call and its retries.
+
+```python
+from client.auth import AccessToken, AuthConfig, StaticTokenProvider
+from client.options import RequestOptions
+
+
+def bearer_options(token: str) -> RequestOptions:
+    return RequestOptions(auth=AuthConfig({"bearer": StaticTokenProvider(AccessToken(token, scopes=None))}))
+```
+
+Use the API's declared scheme name in place of `bearer`, and pass the options to an operation requiring it.
+Async clients use `AsyncStaticTokenProvider` or another async provider. API keys use `ApiKeyCredential`; Basic uses
+`BasicCredential` with UTF-8. OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery
+or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called;
+its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
+
+Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
+Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
+Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
+Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
+cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
+
+Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
+explicit `anonymous_schemes`; signer-only calls also need the opt-in. Raw destinations require explicit auth origins.
+Authentication, redirect, and signer origin permissions are independent. Every hop reconstructs credentials and
+signatures for its current origin. Generic patches cannot change managed credential/signature names.
+
+Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
+the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
+Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
+retry counts, send slots, and the original deadline still apply. Zero retries prevents recovery resends, while first
+acquisition remains allowed. These callbacks start no builtin token exchange.
+
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
+They receive final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing,
+before attempt hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop.
+`SigningExecutionError` preserves callback failures without transport retry. No effective auth means no provider,
+signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
+seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
+without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is
+never implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+
+Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
+request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
+their potentially sensitive messages. Builtin OAuth flows, token persistence, shared refresh, Basic
+charset overrides, resource audience metadata, and generated OAuth factories are not available yet.
+Providers are explicit.
 
 ## Counters and cleanup
 

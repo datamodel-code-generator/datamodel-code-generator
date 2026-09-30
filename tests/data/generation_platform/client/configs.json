@@ -483,7 +483,7 @@
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nretry_safety = false\n"
   },
   "toml-retry-unknown": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nauth_challenge_less_401 = true\n"
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nunknown_runtime_setting = true\n"
   },
   "toml-retry-idempotency-unknown": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nretention_seconds = 86400\nscope = \"orders-v1\"\nextra = 1\n"
@@ -508,5 +508,65 @@
   },
   "toml-retry-scope-missing": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nretention_seconds = 86400\n"
+  },
+  "auth-values": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/get",
+        "runtime": {
+          "auth_challenge_less_401": false
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "auth_challenge_less_401": true
+        }
+      }
+    ]
+  },
+  "auth-invalid": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/get",
+        "runtime": {
+          "auth_challenge_less_401": null
+        }
+      },
+      {
+        "ref": "/paths/~1pets/get",
+        "runtime": {
+          "auth_challenge_less_401": 1
+        }
+      },
+      {
+        "ref": "/paths/~1pets/get",
+        "runtime": {
+          "auth_challenge_less_401": "yes"
+        }
+      }
+    ]
+  },
+  "auth-unknown": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/get",
+        "runtime": {
+          "security": []
+        }
+      }
+    ]
+  },
+  "toml-auth-values": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nauth_challenge_less_401 = true\n"
+  },
+  "toml-auth-type": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nauth_challenge_less_401 = 1\n"
+  },
+  "toml-auth-location": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\nauth_challenge_less_401 = true\n"
+  },
+  "toml-auth-unknown": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nsecurity = []\n"
   }
 }

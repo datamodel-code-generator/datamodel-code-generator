@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from enum import Enum
-from typing import Final, Generic, Literal, TypeAlias
+from typing import ClassVar, Final, Generic, Literal, TypeAlias
 
 from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.unset import UNSET, Unset
 from ..protocols.references import OperationRef
 from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
+from .scopes import scope_tuple
 
 E_co = TypeVar("E_co", covariant=True, default=object)
 T_co = TypeVar("T_co", covariant=True, default=object)
@@ -239,8 +241,8 @@ def set_error_counters(  # noqa: PLR0913
     object.__setattr__(error, "_counters", counters)  # noqa: PLC2801 - Finalize the readonly snapshot.
 
 
-def _condition(value: str) -> str:
-    if not _CONDITION.fullmatch(value):
+def _condition(value: object) -> str:
+    if not isinstance(value, str) or not _CONDITION.fullmatch(value):
         msg = "A condition must be an SDK-defined lowercase symbol"
         raise ValueError(msg)
     return value
@@ -297,6 +299,20 @@ def _error_ids(value: object) -> tuple[str, ...]:
     raise ValueError(msg)
 
 
+def _error_identifier(value: object, field: str) -> str | None:
+    if value is None or isinstance(value, str):
+        return value
+    msg = f"{field} must be a string or None"
+    raise ValueError(msg)
+
+
+def _error_expiry(value: object) -> datetime | None:
+    if value is None or isinstance(value, datetime):
+        return value
+    msg = "expires_at must be a datetime or None"
+    raise ValueError(msg)
+
+
 def _string(value: object, field: str, *, optional: bool = False) -> None:
     if isinstance(value, str) or (optional and value is None):
         return
@@ -313,6 +329,8 @@ def _protocol_context(helper_id: object, operation: object) -> None:
 
 class ConfigurationError(SDKError):
     """A setting or argument the client rejected before sending anything."""
+
+    _shows_field_path: ClassVar[bool] = True
 
     def __init__(  # noqa: PLR0913
         self,
@@ -361,7 +379,20 @@ class ConfigurationError(SDKError):
         self.source_pointer = source_pointer
 
     def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("field_path", ".".join(self.field_path) or None), ("condition", self.condition))
+        path = (("field_path", ".".join(self.field_path) or None),) if self._shows_field_path else ()
+        return (*super()._details(), *path, ("condition", self.condition))
+
+
+class AuthConfigurationError(ConfigurationError):
+    """Authentication settings are invalid before credential acquisition or sending."""
+
+    _shows_field_path = False
+
+
+class SigningConfigurationError(ConfigurationError):
+    """Signing metadata or body capabilities cannot satisfy the configured signer."""
+
+    _shows_field_path = False
 
 
 class ProtocolConfigurationError(ConfigurationError):
@@ -612,6 +643,449 @@ class BodyFactoryError(SDKError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("attempt_index", self.attempt_index), ("hop_index", self.hop_index))
+
+
+class SigningExecutionError(SDKError):
+    """A signing callback failed before the request was sent."""
+
+    __slots__ = ("_signer_index",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        signer_index: int | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the signer position and original callback failure without retaining signing inputs."""
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._signer_index = None if signer_index is None else _error_count(signer_index, "signer_index")
+
+    @property
+    def signer_index(self) -> int | None:
+        """Return the failed signer's zero-based position, when known."""
+        return self._signer_index
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("signer_index", self.signer_index))
+
+
+class AuthRefreshError(SDKError):
+    """Credential acquisition failed with safe provider state and observed delivery evidence."""
+
+    __slots__ = ("_delivery_state", "_phase", "_provider_id", "_refresh_id", "_state")
+
+    _states: ClassVar[tuple[str, ...]] = (
+        "UNKNOWN",
+        "UNINITIALIZED",
+        "LOAD_FAILED",
+        "READY",
+        "PERSIST_PENDING",
+        "EXCHANGE_REJECTED",
+        "UNCERTAIN",
+        "REAUTH_REQUIRED",
+        "CLOSING",
+        "CLOSED",
+        "CREATED",
+        "EXCHANGING",
+        "SUCCEEDED",
+        "FAILED_NOT_SENT",
+    )
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: Literal[
+            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+        ] = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep provider identifiers, the SDK state, and the phase without exposing credential material."""
+        _error_choice(state, self._states, "state")
+        _error_choice(
+            phase,
+            ("admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"),
+            "phase",
+        )
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._provider_id = _error_identifier(provider_id, "provider_id")
+        self._refresh_id = _error_identifier(refresh_id, "refresh_id")
+        self._state = state
+        self._delivery_state = _error_delivery(delivery_state)
+        self._phase: Literal[
+            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+        ] = phase
+
+    @property
+    def provider_id(self) -> str | None:
+        """Return the provider identifier, when known."""
+        return self._provider_id
+
+    @property
+    def refresh_id(self) -> str | None:
+        """Return the refresh identifier, when the failure belongs to one."""
+        return self._refresh_id
+
+    @property
+    def state(self) -> str:
+        """Return the SDK state observed when credentials became unavailable."""
+        return self._state
+
+    @property
+    def delivery_state(self) -> DeliveryState:
+        """Return the observed delivery evidence for credential acquisition."""
+        return self._delivery_state
+
+    @property
+    def phase(
+        self,
+    ) -> Literal["admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"]:
+        """Return the credential acquisition phase that failed."""
+        return self._phase
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (
+            *super()._details(),
+            ("state", self.state),
+            ("delivery_state", self.delivery_state.value),
+            ("phase", self.phase),
+        )
+
+
+class AuthProviderExecutionError(AuthRefreshError):
+    """An application credential provider raised an ordinary callback failure."""
+
+    __slots__ = ("_callback",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        callback: Literal["get", "invalidate", "refresh"],
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: Literal[
+            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+        ] = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Identify the failed callback while preserving its exact exception as the cause."""
+        _error_choice(callback, ("get", "invalidate", "refresh"), "callback")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._callback: Literal["get", "invalidate", "refresh"] = callback
+
+    @property
+    def callback(self) -> Literal["get", "invalidate", "refresh"]:
+        """Return the provider callback category that failed."""
+        return self._callback
+
+
+class InsufficientScopeError(AuthRefreshError):
+    """Known credential grants do not contain the caller's required scopes."""
+
+    __slots__ = ("_granted_scopes", "_missing_scopes", "_required_scopes")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        required_scopes: tuple[str, ...],
+        granted_scopes: tuple[str, ...],
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: Literal[
+            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+        ] = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Copy canonical known scope tuples and retain their ordered difference for explicit inspection."""
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._required_scopes = scope_tuple(required_scopes)
+        self._granted_scopes = scope_tuple(granted_scopes)
+        granted = frozenset(self._granted_scopes)
+        self._missing_scopes = tuple(scope for scope in self._required_scopes if scope not in granted)
+
+    @property
+    def required_scopes(self) -> tuple[str, ...]:
+        """Return the canonical scopes requested by this caller."""
+        return self._required_scopes
+
+    @property
+    def granted_scopes(self) -> tuple[str, ...]:
+        """Return the credential's known canonical grants."""
+        return self._granted_scopes
+
+    @property
+    def missing_scopes(self) -> tuple[str, ...]:
+        """Return required scopes absent from the grants, in canonical required order."""
+        return self._missing_scopes
+
+
+class TokenExpiredError(AuthRefreshError):
+    """Credential material has expired or carries an invalid expiry declaration."""
+
+    __slots__ = ("_condition", "_expires_at")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        condition: Literal["expired", "nonpositive_expiry", "invalid_expiry"],
+        expires_at: datetime | None = None,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: str = "UNKNOWN",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: Literal[
+            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+        ] = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the expiry category and an actual datetime, never an invalid raw expiry value."""
+        _error_choice(condition, ("expired", "nonpositive_expiry", "invalid_expiry"), "condition")
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._condition: Literal["expired", "nonpositive_expiry", "invalid_expiry"] = condition
+        self._expires_at = _error_expiry(expires_at)
+
+    @property
+    def condition(self) -> Literal["expired", "nonpositive_expiry", "invalid_expiry"]:
+        """Return the safe symbol identifying the expiry defect."""
+        return self._condition
+
+    @property
+    def expires_at(self) -> datetime | None:
+        """Return the declared expiry when it was a valid datetime."""
+        return self._expires_at
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("condition", self.condition))
+
+
+class AuthProviderClosedError(AuthRefreshError):
+    """The provider is closing or closed and cannot supply credentials."""
+
+    __slots__ = ()
+
+    _states = ("CLOSED", "CLOSING")
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        provider_id: str | None = None,
+        refresh_id: str | None = None,
+        state: Literal["CLOSED", "CLOSING"] = "CLOSED",
+        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
+        phase: Literal[
+            "admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"
+        ] = "unknown",
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Default to the closed state, the only states a closing or closed provider reports."""
+        super().__init__(
+            provider_id=provider_id,
+            refresh_id=refresh_id,
+            state=state,
+            delivery_state=delivery_state,
+            phase=phase,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
 
 
 class TransportError(SDKError):

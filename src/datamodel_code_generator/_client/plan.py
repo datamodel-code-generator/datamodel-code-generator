@@ -23,9 +23,9 @@ from datamodel_code_generator._client.naming import (
     pascal,
     snake,
 )
+from datamodel_code_generator._client.security import SecurityPlanner
 from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._generation_contract import (
-    LiteralMapping,
     LiteralScalar,
     LiteralSequence,
     SourceLocation,
@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.client.multipart import PartKind
+    from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
@@ -226,6 +227,8 @@ class OperationSpec:
     idempotency: IdempotencyMetadata | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
+    security: SecurityBinding | None = None
+    auth_challenge_less_401: bool = False
 
     @property
     def head(self) -> bool:
@@ -263,6 +266,7 @@ class ClientPlan:
 
     operations: tuple[OperationSpec, ...]
     resources: tuple[ResourceSpec, ...]
+    security_schemes: tuple[SecuritySchemeEntry, ...] = ()
 
     @property
     def roots(self) -> tuple[ResourceSpec, ...]:
@@ -353,6 +357,7 @@ class Planner:
         self.documents = {document.id: document.uri for document in request.batch.documents}
         self.resource_names = {item.tag: item.namespace for item in config.resource_names}
         self.problems: list[Diagnostic] = []
+        self.security = SecurityPlanner(request.batch, self.problems)
         self.settings = self.resolved()
         self.raise_problems()
 
@@ -391,7 +396,7 @@ class Planner:
         self.raise_problems()
         resources = self.resources(specs)
         self.raise_problems()
-        return ClientPlan(operations=specs, resources=resources)
+        return ClientPlan(operations=specs, resources=resources, security_schemes=self.security.root)
 
     def operation(self, index: int, operation: OperationContract) -> OperationSpec:
         """Plan one operation's names, arguments, media, responses, and servers."""
@@ -400,8 +405,9 @@ class Planner:
         parameters = self.parameters(operation, setting)
         body = None if operation.request_body is None else self.body(operation, operation.request_body, setting)
         runtime = None if setting is None else setting.runtime
+        security = self.security.binding(operation)
         if setting is not None and setting.runtime.idempotency is not None:
-            self._idempotency_header(operation, setting, parameters)
+            self._idempotency_header(operation, setting, parameters, security)
         success_statuses = () if runtime is None else runtime.success_statuses
         responses = tuple(
             self.response(operation, declaration, success_statuses) for declaration in operation.responses
@@ -436,35 +442,28 @@ class Planner:
             idempotency=None if runtime is None else runtime.idempotency,
             retry_after_ms_header=None if runtime is None else runtime.retry_after_ms_header,
             should_retry_header=None if runtime is None else runtime.should_retry_header,
+            security=security,
+            auth_challenge_less_401=False if runtime is None else runtime.auth_challenge_less_401,
         )
 
     def _idempotency_header(
-        self, operation: OperationContract, setting: ClientOperationConfig, parameters: tuple[ParameterSpec, ...]
+        self,
+        operation: OperationContract,
+        setting: ClientOperationConfig,
+        parameters: tuple[ParameterSpec, ...],
+        security: SecurityBinding | None,
     ) -> None:
         """Reject ownership shared by the key contract and an effective request header or security scheme."""
         metadata = setting.runtime.idempotency
         assert metadata is not None
         owners = {item.wire_name.lower() for item in parameters if item.location == "header"}
-        requirements = {
-            str(key.value)
-            for name, value in operation.facts
-            if name == "security" and isinstance(value, LiteralSequence)
-            for requirement in value.items
-            if isinstance(requirement, LiteralMapping)
-            for key, _ in requirement.entries
-            if isinstance(key, LiteralScalar)
-        }
-        document = (
-            operation.declaration.location.document if operation.security_declared else operation.id.use_site.document
-        )
-        for scheme in self.request.batch.security_schemes:
-            if scheme.use_site.document != document or scheme.name not in requirements:
-                continue
-            kind = fact(scheme, "type")
-            if kind == "apiKey" and fact(scheme, "in") == "header":
-                owners.add(str(fact(scheme, "name")).lower())
-            elif kind in {"http", "oauth2", "openIdConnect"}:
-                owners.add("authorization")
+        if security is not None:
+            owners.update(
+                requirement.scheme.wire_name.lower()
+                for alternative in security.alternatives
+                for requirement in alternative
+                if requirement.scheme.location == "header"
+            )
         if metadata.header_name.lower() in owners:
             index = self.config.operations.index(setting)
             message = (

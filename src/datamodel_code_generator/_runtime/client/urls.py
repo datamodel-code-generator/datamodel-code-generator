@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Final
 
 import httpx2
@@ -10,6 +12,7 @@ import httpx2
 Origin = tuple[str, str, int]
 URLValidationError = httpx2.InvalidURL
 _PORT_MAX: Final = 65535
+_AUTHORITY: Final = re.compile(r"[^:/?#]+://[^/?#]*")
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,9 +34,17 @@ def _origin(url: httpx2.URL) -> Origin:
     return url.scheme, url.raw_host.decode("ascii"), port if port is not None else 443 if url.scheme == "https" else 80
 
 
+@lru_cache(maxsize=256)
 def canonical_origin(value: str) -> Origin:
     """Canonicalize a structurally validated configured origin using native URL semantics."""
     return _origin(httpx2.URL(value))
+
+
+def request_origin(url: str) -> Origin:
+    """Return the origin of an absolute URL the SDK built, interpreting each distinct scheme and authority once."""
+    match = _AUTHORITY.match(url)
+    assert match is not None
+    return canonical_origin(match.group())
 
 
 def absolute_target(url: str) -> URLTarget:
@@ -41,6 +52,18 @@ def absolute_target(url: str) -> URLTarget:
     parsed = httpx2.URL(url)
     origin = _origin(parsed)
     return URLTarget(str(parsed.copy_with(fragment=None)) if "#" in url else str(parsed), origin)
+
+
+@lru_cache(maxsize=256)
+def origin_text(origin: Origin) -> str:
+    """Serialize a canonical HTTP origin, including native IPv6 and default-port formatting."""
+    scheme, host, port = origin
+    return str(httpx2.URL(scheme=scheme, host=host, port=port))
+
+
+def signing_query(url: str) -> bytes:
+    """Read the finalized native URL's raw query without decoding or rebuilding its fields."""
+    return httpx2.URL(url).query
 
 
 def redirect_target(current_url: str, location: str) -> URLTarget:

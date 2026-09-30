@@ -1,0 +1,1125 @@
+# auth pydantic_v2.BaseModel
+  version identity same=True distinct=True hash entries=2 fields=() slots=True
+  token retains expiry=True aware=False
+  token retains expiry=True aware=True
+  scopes unknown=None empty=() canonical=('Read', 'read', 'write') equal=True unknown differs=True
+  context scopes=('read', 'write') deadline identity=True cancellation identity=True audience=None
+  context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 7 were given []
+  signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
+  signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
+  immutable AccessToken.value unchanged=True
+  immutable ApiKeyCredential.value unchanged=True
+  immutable BasicCredential.username unchanged=True
+  immutable BearerCredential.version unchanged=True
+  immutable CredentialContext.required_scopes unchanged=True
+  immutable SigningInput.query unchanged=True
+  immutable SignatureFields.headers unchanged=True
+  immutable SignerCapabilities.requires_body_digest unchanged=True
+  token invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  token invalid token_type ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token_type',), condition='invalid_type'] auth_configuration_error
+  token invalid expires_at ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('expires_at',), condition='invalid_type'] auth_configuration_error
+  token invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  API key invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  Basic invalid username ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('username',), condition='invalid_type'] auth_configuration_error
+  Basic invalid password ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('password',), condition='invalid_type'] auth_configuration_error
+  bearer invalid token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  bearer invalid version ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('version',), condition='invalid_type'] auth_configuration_error
+  context invalid scheme ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('scheme',), condition='invalid_type'] auth_configuration_error
+  context invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
+  context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
+  context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
+  capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid digest flag ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('requires_body_digest',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs None ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs 'header' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [['name']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 'value', 'extra']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 1]] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature empty fields = SignatureFields()
+  token scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  known requirements reject None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  scopes reject iterator ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  rejected iterator untouched='read'
+  accepted canonical scopes=()
+  accepted canonical scopes=('read', 'read,write')
+  accepted canonical scopes=('!', '#', '[', ']', '~')
+  auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
+  provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
+  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
+  immutable AuthConfig.selection unchanged=True
+  immutable OwnedCredentialProvider.provider unchanged=True
+  auth invalid credentials NoneType ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials list ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid selection None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
+  auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
+  auth default selection=True budget=2 explicit=(0, 0, True)
+  ClientOptions auth omitted=True identity=True clear=True
+  ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  RequestOptions auth omitted=True identity=True clear=True
+  RequestOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  static ApiKeyCredential identity=True
+  static BasicCredential identity=True
+  static BearerCredential identity=True
+  static invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('material',), condition='invalid_type'] auth_configuration_error
+  static token invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  static token identity=True token=True version=True scopes=None refresh=False
+  static token identity=True token=True version=True scopes=() refresh=False
+  static token identity=True token=True version=True scopes=('read',) refresh=False
+  async static ApiKeyCredential identity=True
+  async static BasicCredential identity=True
+  async static BearerCredential identity=True
+  async static token identity=True token=True version=True scopes=None refresh=False
+  async static token identity=True token=True version=True scopes=() refresh=False
+  async static token identity=True token=True version=True scopes=('read',) refresh=False
+  EnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  missing environment construction succeeded
+  missing environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  environment current=('', '') grants=None expiry=None version=TokenVersion
+  missing async environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  async environment current=('', '') grants=None expiry=None version=TokenVersion
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenVersion']
+  hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
+  constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
+  init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
+  hints ApiKeyCredential=('value',)
+  constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
+  init hints ApiKeyCredential=('value', 'return')
+  hints AsyncCloseableCredentialProvider=()
+  method AsyncCloseableCredentialProvider.get async=True hints=('context', 'return')
+  method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
+  hints AsyncCredentialProvider=()
+  method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncEnvironmentCredentialProvider=()
+  constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshableTokenProvider=()
+  method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshableTokenProvider.refresh async=True hints=('context', 'return')
+  hints AsyncRequestSigner=()
+  method AsyncRequestSigner.sign async=True hints=('request', 'return')
+  hints AsyncStaticCredentialProvider=()
+  constructor AsyncStaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticCredentialProvider=('material', 'return')
+  method AsyncStaticCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncStaticTokenProvider=()
+  constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticTokenProvider=('token', 'return')
+  method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
+  hints BasicCredential=('username', 'password')
+  constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
+  init hints BasicCredential=('username', 'password', 'return')
+  hints BearerCredential=('token', 'version')
+  constructor BearerCredential=(('token', 'POSITIONAL_OR_KEYWORD'), ('version', 'POSITIONAL_OR_KEYWORD'))
+  init hints BearerCredential=('token', 'version', 'return')
+  hints CloseableCredentialProvider=()
+  method CloseableCredentialProvider.get async=False hints=('context', 'return')
+  method CloseableCredentialProvider.close async=False hints=('return',)
+  hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token')
+  constructor CredentialContext=(('scheme', 'KEYWORD_ONLY'), ('required_scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('origin', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('cancel_token', 'KEYWORD_ONLY'))
+  init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
+  hints CredentialProvider=()
+  method CredentialProvider.get async=False hints=('context', 'return')
+  hints EnvironmentCredentialProvider=()
+  constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
+  hints OwnedCredentialProvider=('provider',)
+  constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
+  init hints OwnedCredentialProvider=('provider', 'return')
+  hints RefreshableTokenProvider=()
+  method RefreshableTokenProvider.get async=False hints=('context', 'return')
+  method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshableTokenProvider.refresh async=False hints=('context', 'return')
+  hints RequestSigner=()
+  method RequestSigner.sign async=False hints=('request', 'return')
+  hints SignatureFields=('headers', 'query')
+  constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignatureFields=('headers', 'query', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints StaticCredentialProvider=()
+  constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticCredentialProvider=('material', 'return')
+  method StaticCredentialProvider.get async=False hints=('context', 'return')
+  hints StaticTokenProvider=()
+  constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticTokenProvider=('token', 'return')
+  method StaticTokenProvider.get async=False hints=('context', 'return')
+  hints TokenVersion=()
+  constructor TokenVersion=()
+  init hints TokenVersion=('return',)
+  isolated auth imports=True
+  auth execution remains unloaded=True
+# auth pydantic_v2.dataclass
+  version identity same=True distinct=True hash entries=2 fields=() slots=True
+  token retains expiry=True aware=False
+  token retains expiry=True aware=True
+  scopes unknown=None empty=() canonical=('Read', 'read', 'write') equal=True unknown differs=True
+  context scopes=('read', 'write') deadline identity=True cancellation identity=True audience=None
+  context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 7 were given []
+  signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
+  signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
+  immutable AccessToken.value unchanged=True
+  immutable ApiKeyCredential.value unchanged=True
+  immutable BasicCredential.username unchanged=True
+  immutable BearerCredential.version unchanged=True
+  immutable CredentialContext.required_scopes unchanged=True
+  immutable SigningInput.query unchanged=True
+  immutable SignatureFields.headers unchanged=True
+  immutable SignerCapabilities.requires_body_digest unchanged=True
+  token invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  token invalid token_type ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token_type',), condition='invalid_type'] auth_configuration_error
+  token invalid expires_at ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('expires_at',), condition='invalid_type'] auth_configuration_error
+  token invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  API key invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  Basic invalid username ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('username',), condition='invalid_type'] auth_configuration_error
+  Basic invalid password ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('password',), condition='invalid_type'] auth_configuration_error
+  bearer invalid token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  bearer invalid version ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('version',), condition='invalid_type'] auth_configuration_error
+  context invalid scheme ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('scheme',), condition='invalid_type'] auth_configuration_error
+  context invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
+  context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
+  context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
+  capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid digest flag ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('requires_body_digest',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs None ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs 'header' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [['name']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 'value', 'extra']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 1]] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature empty fields = SignatureFields()
+  token scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  known requirements reject None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  scopes reject iterator ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  rejected iterator untouched='read'
+  accepted canonical scopes=()
+  accepted canonical scopes=('read', 'read,write')
+  accepted canonical scopes=('!', '#', '[', ']', '~')
+  auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
+  provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
+  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
+  immutable AuthConfig.selection unchanged=True
+  immutable OwnedCredentialProvider.provider unchanged=True
+  auth invalid credentials NoneType ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials list ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid selection None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
+  auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
+  auth default selection=True budget=2 explicit=(0, 0, True)
+  ClientOptions auth omitted=True identity=True clear=True
+  ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  RequestOptions auth omitted=True identity=True clear=True
+  RequestOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  static ApiKeyCredential identity=True
+  static BasicCredential identity=True
+  static BearerCredential identity=True
+  static invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('material',), condition='invalid_type'] auth_configuration_error
+  static token invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  static token identity=True token=True version=True scopes=None refresh=False
+  static token identity=True token=True version=True scopes=() refresh=False
+  static token identity=True token=True version=True scopes=('read',) refresh=False
+  async static ApiKeyCredential identity=True
+  async static BasicCredential identity=True
+  async static BearerCredential identity=True
+  async static token identity=True token=True version=True scopes=None refresh=False
+  async static token identity=True token=True version=True scopes=() refresh=False
+  async static token identity=True token=True version=True scopes=('read',) refresh=False
+  EnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  missing environment construction succeeded
+  missing environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  environment current=('', '') grants=None expiry=None version=TokenVersion
+  missing async environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  async environment current=('', '') grants=None expiry=None version=TokenVersion
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenVersion']
+  hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
+  constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
+  init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
+  hints ApiKeyCredential=('value',)
+  constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
+  init hints ApiKeyCredential=('value', 'return')
+  hints AsyncCloseableCredentialProvider=()
+  method AsyncCloseableCredentialProvider.get async=True hints=('context', 'return')
+  method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
+  hints AsyncCredentialProvider=()
+  method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncEnvironmentCredentialProvider=()
+  constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshableTokenProvider=()
+  method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshableTokenProvider.refresh async=True hints=('context', 'return')
+  hints AsyncRequestSigner=()
+  method AsyncRequestSigner.sign async=True hints=('request', 'return')
+  hints AsyncStaticCredentialProvider=()
+  constructor AsyncStaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticCredentialProvider=('material', 'return')
+  method AsyncStaticCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncStaticTokenProvider=()
+  constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticTokenProvider=('token', 'return')
+  method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
+  hints BasicCredential=('username', 'password')
+  constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
+  init hints BasicCredential=('username', 'password', 'return')
+  hints BearerCredential=('token', 'version')
+  constructor BearerCredential=(('token', 'POSITIONAL_OR_KEYWORD'), ('version', 'POSITIONAL_OR_KEYWORD'))
+  init hints BearerCredential=('token', 'version', 'return')
+  hints CloseableCredentialProvider=()
+  method CloseableCredentialProvider.get async=False hints=('context', 'return')
+  method CloseableCredentialProvider.close async=False hints=('return',)
+  hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token')
+  constructor CredentialContext=(('scheme', 'KEYWORD_ONLY'), ('required_scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('origin', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('cancel_token', 'KEYWORD_ONLY'))
+  init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
+  hints CredentialProvider=()
+  method CredentialProvider.get async=False hints=('context', 'return')
+  hints EnvironmentCredentialProvider=()
+  constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
+  hints OwnedCredentialProvider=('provider',)
+  constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
+  init hints OwnedCredentialProvider=('provider', 'return')
+  hints RefreshableTokenProvider=()
+  method RefreshableTokenProvider.get async=False hints=('context', 'return')
+  method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshableTokenProvider.refresh async=False hints=('context', 'return')
+  hints RequestSigner=()
+  method RequestSigner.sign async=False hints=('request', 'return')
+  hints SignatureFields=('headers', 'query')
+  constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignatureFields=('headers', 'query', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints StaticCredentialProvider=()
+  constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticCredentialProvider=('material', 'return')
+  method StaticCredentialProvider.get async=False hints=('context', 'return')
+  hints StaticTokenProvider=()
+  constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticTokenProvider=('token', 'return')
+  method StaticTokenProvider.get async=False hints=('context', 'return')
+  hints TokenVersion=()
+  constructor TokenVersion=()
+  init hints TokenVersion=('return',)
+  isolated auth imports=True
+  auth execution remains unloaded=True
+# auth dataclasses.dataclass
+  version identity same=True distinct=True hash entries=2 fields=() slots=True
+  token retains expiry=True aware=False
+  token retains expiry=True aware=True
+  scopes unknown=None empty=() canonical=('Read', 'read', 'write') equal=True unknown differs=True
+  context scopes=('read', 'write') deadline identity=True cancellation identity=True audience=None
+  context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 7 were given []
+  signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
+  signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
+  immutable AccessToken.value unchanged=True
+  immutable ApiKeyCredential.value unchanged=True
+  immutable BasicCredential.username unchanged=True
+  immutable BearerCredential.version unchanged=True
+  immutable CredentialContext.required_scopes unchanged=True
+  immutable SigningInput.query unchanged=True
+  immutable SignatureFields.headers unchanged=True
+  immutable SignerCapabilities.requires_body_digest unchanged=True
+  token invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  token invalid token_type ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token_type',), condition='invalid_type'] auth_configuration_error
+  token invalid expires_at ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('expires_at',), condition='invalid_type'] auth_configuration_error
+  token invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  API key invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  Basic invalid username ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('username',), condition='invalid_type'] auth_configuration_error
+  Basic invalid password ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('password',), condition='invalid_type'] auth_configuration_error
+  bearer invalid token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  bearer invalid version ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('version',), condition='invalid_type'] auth_configuration_error
+  context invalid scheme ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('scheme',), condition='invalid_type'] auth_configuration_error
+  context invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
+  context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
+  context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
+  capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid digest flag ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('requires_body_digest',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs None ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs 'header' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [['name']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 'value', 'extra']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 1]] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature empty fields = SignatureFields()
+  token scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  known requirements reject None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  scopes reject iterator ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  rejected iterator untouched='read'
+  accepted canonical scopes=()
+  accepted canonical scopes=('read', 'read,write')
+  accepted canonical scopes=('!', '#', '[', ']', '~')
+  auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
+  provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
+  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
+  immutable AuthConfig.selection unchanged=True
+  immutable OwnedCredentialProvider.provider unchanged=True
+  auth invalid credentials NoneType ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials list ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid selection None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
+  auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
+  auth default selection=True budget=2 explicit=(0, 0, True)
+  ClientOptions auth omitted=True identity=True clear=True
+  ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  RequestOptions auth omitted=True identity=True clear=True
+  RequestOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  static ApiKeyCredential identity=True
+  static BasicCredential identity=True
+  static BearerCredential identity=True
+  static invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('material',), condition='invalid_type'] auth_configuration_error
+  static token invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  static token identity=True token=True version=True scopes=None refresh=False
+  static token identity=True token=True version=True scopes=() refresh=False
+  static token identity=True token=True version=True scopes=('read',) refresh=False
+  async static ApiKeyCredential identity=True
+  async static BasicCredential identity=True
+  async static BearerCredential identity=True
+  async static token identity=True token=True version=True scopes=None refresh=False
+  async static token identity=True token=True version=True scopes=() refresh=False
+  async static token identity=True token=True version=True scopes=('read',) refresh=False
+  EnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  missing environment construction succeeded
+  missing environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  environment current=('', '') grants=None expiry=None version=TokenVersion
+  missing async environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  async environment current=('', '') grants=None expiry=None version=TokenVersion
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenVersion']
+  hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
+  constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
+  init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
+  hints ApiKeyCredential=('value',)
+  constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
+  init hints ApiKeyCredential=('value', 'return')
+  hints AsyncCloseableCredentialProvider=()
+  method AsyncCloseableCredentialProvider.get async=True hints=('context', 'return')
+  method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
+  hints AsyncCredentialProvider=()
+  method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncEnvironmentCredentialProvider=()
+  constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshableTokenProvider=()
+  method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshableTokenProvider.refresh async=True hints=('context', 'return')
+  hints AsyncRequestSigner=()
+  method AsyncRequestSigner.sign async=True hints=('request', 'return')
+  hints AsyncStaticCredentialProvider=()
+  constructor AsyncStaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticCredentialProvider=('material', 'return')
+  method AsyncStaticCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncStaticTokenProvider=()
+  constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticTokenProvider=('token', 'return')
+  method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
+  hints BasicCredential=('username', 'password')
+  constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
+  init hints BasicCredential=('username', 'password', 'return')
+  hints BearerCredential=('token', 'version')
+  constructor BearerCredential=(('token', 'POSITIONAL_OR_KEYWORD'), ('version', 'POSITIONAL_OR_KEYWORD'))
+  init hints BearerCredential=('token', 'version', 'return')
+  hints CloseableCredentialProvider=()
+  method CloseableCredentialProvider.get async=False hints=('context', 'return')
+  method CloseableCredentialProvider.close async=False hints=('return',)
+  hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token')
+  constructor CredentialContext=(('scheme', 'KEYWORD_ONLY'), ('required_scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('origin', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('cancel_token', 'KEYWORD_ONLY'))
+  init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
+  hints CredentialProvider=()
+  method CredentialProvider.get async=False hints=('context', 'return')
+  hints EnvironmentCredentialProvider=()
+  constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
+  hints OwnedCredentialProvider=('provider',)
+  constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
+  init hints OwnedCredentialProvider=('provider', 'return')
+  hints RefreshableTokenProvider=()
+  method RefreshableTokenProvider.get async=False hints=('context', 'return')
+  method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshableTokenProvider.refresh async=False hints=('context', 'return')
+  hints RequestSigner=()
+  method RequestSigner.sign async=False hints=('request', 'return')
+  hints SignatureFields=('headers', 'query')
+  constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignatureFields=('headers', 'query', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints StaticCredentialProvider=()
+  constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticCredentialProvider=('material', 'return')
+  method StaticCredentialProvider.get async=False hints=('context', 'return')
+  hints StaticTokenProvider=()
+  constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticTokenProvider=('token', 'return')
+  method StaticTokenProvider.get async=False hints=('context', 'return')
+  hints TokenVersion=()
+  constructor TokenVersion=()
+  init hints TokenVersion=('return',)
+  isolated auth imports=True
+  auth execution remains unloaded=True
+# auth typing.TypedDict
+  version identity same=True distinct=True hash entries=2 fields=() slots=True
+  token retains expiry=True aware=False
+  token retains expiry=True aware=True
+  scopes unknown=None empty=() canonical=('Read', 'read', 'write') equal=True unknown differs=True
+  context scopes=('read', 'write') deadline identity=True cancellation identity=True audience=None
+  context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 7 were given []
+  signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
+  signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
+  immutable AccessToken.value unchanged=True
+  immutable ApiKeyCredential.value unchanged=True
+  immutable BasicCredential.username unchanged=True
+  immutable BearerCredential.version unchanged=True
+  immutable CredentialContext.required_scopes unchanged=True
+  immutable SigningInput.query unchanged=True
+  immutable SignatureFields.headers unchanged=True
+  immutable SignerCapabilities.requires_body_digest unchanged=True
+  token invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  token invalid token_type ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token_type',), condition='invalid_type'] auth_configuration_error
+  token invalid expires_at ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('expires_at',), condition='invalid_type'] auth_configuration_error
+  token invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  API key invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  Basic invalid username ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('username',), condition='invalid_type'] auth_configuration_error
+  Basic invalid password ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('password',), condition='invalid_type'] auth_configuration_error
+  bearer invalid token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  bearer invalid version ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('version',), condition='invalid_type'] auth_configuration_error
+  context invalid scheme ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('scheme',), condition='invalid_type'] auth_configuration_error
+  context invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
+  context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
+  context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
+  capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid digest flag ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('requires_body_digest',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs None ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs 'header' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [['name']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 'value', 'extra']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 1]] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature empty fields = SignatureFields()
+  token scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  known requirements reject None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  scopes reject iterator ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  rejected iterator untouched='read'
+  accepted canonical scopes=()
+  accepted canonical scopes=('read', 'read,write')
+  accepted canonical scopes=('!', '#', '[', ']', '~')
+  auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
+  provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
+  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
+  immutable AuthConfig.selection unchanged=True
+  immutable OwnedCredentialProvider.provider unchanged=True
+  auth invalid credentials NoneType ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials list ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid selection None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
+  auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
+  auth default selection=True budget=2 explicit=(0, 0, True)
+  ClientOptions auth omitted=True identity=True clear=True
+  ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  RequestOptions auth omitted=True identity=True clear=True
+  RequestOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  static ApiKeyCredential identity=True
+  static BasicCredential identity=True
+  static BearerCredential identity=True
+  static invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('material',), condition='invalid_type'] auth_configuration_error
+  static token invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  static token identity=True token=True version=True scopes=None refresh=False
+  static token identity=True token=True version=True scopes=() refresh=False
+  static token identity=True token=True version=True scopes=('read',) refresh=False
+  async static ApiKeyCredential identity=True
+  async static BasicCredential identity=True
+  async static BearerCredential identity=True
+  async static token identity=True token=True version=True scopes=None refresh=False
+  async static token identity=True token=True version=True scopes=() refresh=False
+  async static token identity=True token=True version=True scopes=('read',) refresh=False
+  EnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  missing environment construction succeeded
+  missing environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  environment current=('', '') grants=None expiry=None version=TokenVersion
+  missing async environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  async environment current=('', '') grants=None expiry=None version=TokenVersion
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenVersion']
+  hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
+  constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
+  init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
+  hints ApiKeyCredential=('value',)
+  constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
+  init hints ApiKeyCredential=('value', 'return')
+  hints AsyncCloseableCredentialProvider=()
+  method AsyncCloseableCredentialProvider.get async=True hints=('context', 'return')
+  method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
+  hints AsyncCredentialProvider=()
+  method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncEnvironmentCredentialProvider=()
+  constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshableTokenProvider=()
+  method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshableTokenProvider.refresh async=True hints=('context', 'return')
+  hints AsyncRequestSigner=()
+  method AsyncRequestSigner.sign async=True hints=('request', 'return')
+  hints AsyncStaticCredentialProvider=()
+  constructor AsyncStaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticCredentialProvider=('material', 'return')
+  method AsyncStaticCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncStaticTokenProvider=()
+  constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticTokenProvider=('token', 'return')
+  method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
+  hints BasicCredential=('username', 'password')
+  constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
+  init hints BasicCredential=('username', 'password', 'return')
+  hints BearerCredential=('token', 'version')
+  constructor BearerCredential=(('token', 'POSITIONAL_OR_KEYWORD'), ('version', 'POSITIONAL_OR_KEYWORD'))
+  init hints BearerCredential=('token', 'version', 'return')
+  hints CloseableCredentialProvider=()
+  method CloseableCredentialProvider.get async=False hints=('context', 'return')
+  method CloseableCredentialProvider.close async=False hints=('return',)
+  hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token')
+  constructor CredentialContext=(('scheme', 'KEYWORD_ONLY'), ('required_scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('origin', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('cancel_token', 'KEYWORD_ONLY'))
+  init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
+  hints CredentialProvider=()
+  method CredentialProvider.get async=False hints=('context', 'return')
+  hints EnvironmentCredentialProvider=()
+  constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
+  hints OwnedCredentialProvider=('provider',)
+  constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
+  init hints OwnedCredentialProvider=('provider', 'return')
+  hints RefreshableTokenProvider=()
+  method RefreshableTokenProvider.get async=False hints=('context', 'return')
+  method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshableTokenProvider.refresh async=False hints=('context', 'return')
+  hints RequestSigner=()
+  method RequestSigner.sign async=False hints=('request', 'return')
+  hints SignatureFields=('headers', 'query')
+  constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignatureFields=('headers', 'query', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints StaticCredentialProvider=()
+  constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticCredentialProvider=('material', 'return')
+  method StaticCredentialProvider.get async=False hints=('context', 'return')
+  hints StaticTokenProvider=()
+  constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticTokenProvider=('token', 'return')
+  method StaticTokenProvider.get async=False hints=('context', 'return')
+  hints TokenVersion=()
+  constructor TokenVersion=()
+  init hints TokenVersion=('return',)
+  isolated auth imports=True
+  auth execution remains unloaded=True
+# auth msgspec.Struct
+  version identity same=True distinct=True hash entries=2 fields=() slots=True
+  token retains expiry=True aware=False
+  token retains expiry=True aware=True
+  scopes unknown=None empty=() canonical=('Read', 'read', 'write') equal=True unknown differs=True
+  context scopes=('read', 'write') deadline identity=True cancellation identity=True audience=None
+  context requires keywords ! TypeError: CredentialContext.__init__() takes 1 positional argument but 7 were given []
+  signing bytes=b'q=secret' headers identity=True indexes=(1, 2)
+  signature copied=(('X-Signature', 'signature-secret'), ('X-Signature', 'second-secret')) query=(('signature', 'query-secret'),)
+  capabilities copied=(('https://example.com',), ('X-Signature',), ('signature',)) digest=True
+  secret-free records=('TokenVersion()', 'AccessToken()', 'ApiKeyCredential()', 'BasicCredential()', 'BearerCredential()', 'CredentialContext()', 'SigningInput()', 'SignatureFields()', 'SignerCapabilities()')
+  immutable AccessToken.value unchanged=True
+  immutable ApiKeyCredential.value unchanged=True
+  immutable BasicCredential.username unchanged=True
+  immutable BearerCredential.version unchanged=True
+  immutable CredentialContext.required_scopes unchanged=True
+  immutable SigningInput.query unchanged=True
+  immutable SignatureFields.headers unchanged=True
+  immutable SignerCapabilities.requires_body_digest unchanged=True
+  token invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  token invalid token_type ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token_type',), condition='invalid_type'] auth_configuration_error
+  token invalid expires_at ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('expires_at',), condition='invalid_type'] auth_configuration_error
+  token invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  API key invalid value ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('value',), condition='invalid_type'] auth_configuration_error
+  Basic invalid username ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('username',), condition='invalid_type'] auth_configuration_error
+  Basic invalid password ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('password',), condition='invalid_type'] auth_configuration_error
+  bearer invalid token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  bearer invalid version ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('version',), condition='invalid_type'] auth_configuration_error
+  context invalid scheme ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('scheme',), condition='invalid_type'] auth_configuration_error
+  context invalid audience ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('audience',), condition='invalid_type'] auth_configuration_error
+  context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
+  context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
+  context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
+  capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_headers [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid managed_query [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_query',), condition='invalid_type'] signing_configuration_error
+  capabilities invalid digest flag ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('requires_body_digest',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs None ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs 'header' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature invalid pairs [['name']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 'value', 'extra']] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] signing_configuration_error
+  signature invalid pairs [['name', 1]] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('headers',), condition='invalid_type'] signing_configuration_error
+  signature empty fields = SignatureFields()
+  token scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid 'read' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid {'read'} ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [1] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [None] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid [''] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read"write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\\write'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\twrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['read\x7fwrite'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  token scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  required scopes invalid ['réad'] ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  known requirements reject None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('required_scopes',), condition='invalid_scope'] auth_configuration_error
+  scopes reject iterator ! AuthConfigurationError: AuthConfigurationError(condition='invalid_scope') [field_path=('scopes',), condition='invalid_scope'] auth_configuration_error
+  rejected iterator untouched='read'
+  accepted canonical scopes=()
+  accepted canonical scopes=('read', 'read,write')
+  accepted canonical scopes=('!', '#', '[', ']', '~')
+  auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
+  provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
+  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
+  immutable AuthConfig.selection unchanged=True
+  immutable OwnedCredentialProvider.provider unchanged=True
+  auth invalid credentials NoneType ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials list ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid credentials dict ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'credentials'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid allowed_origins member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'allowed_origins'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid anonymous_schemes member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'anonymous_schemes'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers text ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid signers member ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'signers'), condition='invalid_type'] auth_configuration_error
+  auth invalid selection None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
+  auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
+  auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
+  auth default selection=True budget=2 explicit=(0, 0, True)
+  ClientOptions auth omitted=True identity=True clear=True
+  ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  RequestOptions auth omitted=True identity=True clear=True
+  RequestOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
+  static ApiKeyCredential identity=True
+  static BasicCredential identity=True
+  static BearerCredential identity=True
+  static invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('material',), condition='invalid_type'] auth_configuration_error
+  static token invalid material ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('token',), condition='invalid_type'] auth_configuration_error
+  static token identity=True token=True version=True scopes=None refresh=False
+  static token identity=True token=True version=True scopes=() refresh=False
+  static token identity=True token=True version=True scopes=('read',) refresh=False
+  async static ApiKeyCredential identity=True
+  async static BasicCredential identity=True
+  async static BearerCredential identity=True
+  async static token identity=True token=True version=True scopes=None refresh=False
+  async static token identity=True token=True version=True scopes=() refresh=False
+  async static token identity=True token=True version=True scopes=('read',) refresh=False
+  EnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  EnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('variable_name',), condition='invalid_type'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable '' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad=name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid variable 'bad\x00name' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('variable_name',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind 'basic' ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  AsyncEnvironmentCredentialProvider invalid kind None ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('kind',), condition='invalid_value'] auth_configuration_error
+  missing environment construction succeeded
+  missing environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  environment current=('', '') grants=None expiry=None version=TokenVersion
+  missing async environment get ! AuthConfigurationError: AuthConfigurationError(condition='missing_value') [field_path=('variable_name',), condition='missing_value'] auth_configuration_error
+  async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
+  async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
+  async environment current=('', '') grants=None expiry=None version=TokenVersion
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenVersion']
+  hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
+  constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
+  init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
+  hints ApiKeyCredential=('value',)
+  constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
+  init hints ApiKeyCredential=('value', 'return')
+  hints AsyncCloseableCredentialProvider=()
+  method AsyncCloseableCredentialProvider.get async=True hints=('context', 'return')
+  method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
+  hints AsyncCredentialProvider=()
+  method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncEnvironmentCredentialProvider=()
+  constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncRefreshableTokenProvider=()
+  method AsyncRefreshableTokenProvider.get async=True hints=('context', 'return')
+  method AsyncRefreshableTokenProvider.invalidate async=True hints=('version', 'return')
+  method AsyncRefreshableTokenProvider.refresh async=True hints=('context', 'return')
+  hints AsyncRequestSigner=()
+  method AsyncRequestSigner.sign async=True hints=('request', 'return')
+  hints AsyncStaticCredentialProvider=()
+  constructor AsyncStaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticCredentialProvider=('material', 'return')
+  method AsyncStaticCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncStaticTokenProvider=()
+  constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints AsyncStaticTokenProvider=('token', 'return')
+  method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
+  hints BasicCredential=('username', 'password')
+  constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
+  init hints BasicCredential=('username', 'password', 'return')
+  hints BearerCredential=('token', 'version')
+  constructor BearerCredential=(('token', 'POSITIONAL_OR_KEYWORD'), ('version', 'POSITIONAL_OR_KEYWORD'))
+  init hints BearerCredential=('token', 'version', 'return')
+  hints CloseableCredentialProvider=()
+  method CloseableCredentialProvider.get async=False hints=('context', 'return')
+  method CloseableCredentialProvider.close async=False hints=('return',)
+  hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token')
+  constructor CredentialContext=(('scheme', 'KEYWORD_ONLY'), ('required_scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('origin', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('cancel_token', 'KEYWORD_ONLY'))
+  init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
+  hints CredentialProvider=()
+  method CredentialProvider.get async=False hints=('context', 'return')
+  hints EnvironmentCredentialProvider=()
+  constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
+  init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
+  method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
+  hints OwnedCredentialProvider=('provider',)
+  constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
+  init hints OwnedCredentialProvider=('provider', 'return')
+  hints RefreshableTokenProvider=()
+  method RefreshableTokenProvider.get async=False hints=('context', 'return')
+  method RefreshableTokenProvider.invalidate async=False hints=('version', 'return')
+  method RefreshableTokenProvider.refresh async=False hints=('context', 'return')
+  hints RequestSigner=()
+  method RequestSigner.sign async=False hints=('request', 'return')
+  hints SignatureFields=('headers', 'query')
+  constructor SignatureFields=(('headers', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignatureFields=('headers', 'query', 'return')
+  hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest')
+  constructor SignerCapabilities=(('allowed_origins', 'POSITIONAL_OR_KEYWORD'), ('managed_headers', 'POSITIONAL_OR_KEYWORD'), ('managed_query', 'POSITIONAL_OR_KEYWORD'), ('requires_body_digest', 'POSITIONAL_OR_KEYWORD'))
+  init hints SignerCapabilities=('allowed_origins', 'managed_headers', 'managed_query', 'requires_body_digest', 'return')
+  hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index')
+  constructor SigningInput=(('method', 'POSITIONAL_OR_KEYWORD'), ('url', 'POSITIONAL_OR_KEYWORD'), ('origin', 'POSITIONAL_OR_KEYWORD'), ('query', 'POSITIONAL_OR_KEYWORD'), ('headers', 'POSITIONAL_OR_KEYWORD'), ('body_digest', 'POSITIONAL_OR_KEYWORD'), ('attempt_index', 'POSITIONAL_OR_KEYWORD'), ('hop_index', 'POSITIONAL_OR_KEYWORD'))
+  init hints SigningInput=('method', 'url', 'origin', 'query', 'headers', 'body_digest', 'attempt_index', 'hop_index', 'return')
+  hints StaticCredentialProvider=()
+  constructor StaticCredentialProvider=(('material', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticCredentialProvider=('material', 'return')
+  method StaticCredentialProvider.get async=False hints=('context', 'return')
+  hints StaticTokenProvider=()
+  constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
+  init hints StaticTokenProvider=('token', 'return')
+  method StaticTokenProvider.get async=False hints=('context', 'return')
+  hints TokenVersion=()
+  constructor TokenVersion=()
+  init hints TokenVersion=('return',)
+  isolated auth imports=True
+  auth execution remains unloaded=True

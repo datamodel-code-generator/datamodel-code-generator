@@ -108,6 +108,7 @@ class RuntimeOperationMetadata:
     idempotency: IdempotencyMetadata | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
+    auth_challenge_less_401: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -351,6 +352,10 @@ def _runtime_problems(runtime: object, at: str) -> Iterator[Diagnostic]:
         )
     if runtime.idempotency is not None:
         yield from _idempotency_problems(runtime.idempotency, f"{at}.idempotency")
+    if type(runtime.auth_challenge_less_401) is not bool:
+        yield _diagnostic(
+            "E_CONFIG_VALUE", f"{at}.auth_challenge_less_401", "auth_challenge_less_401 must be a boolean"
+        )
     if (
         isinstance(runtime.retry_after_ms_header, str)
         and isinstance(runtime.should_retry_header, str)
@@ -456,6 +461,7 @@ def _runtime(value: object, base: Path, option_path: str) -> RuntimeOperationMet
             "idempotency",
             "retry_after_ms_header",
             "should_retry_header",
+            "auth_challenge_less_401",
         }),
     )
     statuses = _array(table.get("success_statuses", []), f"{option_path}.success_statuses")
@@ -475,6 +481,9 @@ def _runtime(value: object, base: Path, option_path: str) -> RuntimeOperationMet
         else None,
         retry_after_ms_header=_optional(table, "retry_after_ms_header", base, option_path),
         should_retry_header=_optional(table, "should_retry_header", base, option_path),
+        auth_challenge_less_401=_boolean(
+            table.get("auth_challenge_less_401", False), base, f"{option_path}.auth_challenge_less_401"
+        ),
     )
 
 

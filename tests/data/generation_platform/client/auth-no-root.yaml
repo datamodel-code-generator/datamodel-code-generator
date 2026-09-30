@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Authentication generation
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /absent:
+    get:
+      operationId: absent
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+  /empty:
+    get:
+      operationId: empty
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security: []
+  /anonymous:
+    get:
+      operationId: anonymous
+      tags: [auth]
+      responses:
+        '204':
+          description: Accepted
+      security:
+        - {}

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from ._generated import model_bindings
+from ._generated import model_bindings, security
 from ._runtime.client.operations import (
     Encoder,
     OperationPlan,
@@ -104,6 +104,7 @@ OPERATION_1: Final[OperationPlan[ApiKeyResponse, ApiKeyErrorData]] = OperationPl
         (),
         ApiKeyHTTPError,
     ),
+    security=security.OPERATION_1,
     codecs=ApiKeyRequestCodecs,
 )
 
@@ -124,6 +125,7 @@ OPERATION_2: Final[OperationPlan[BearerResponse, BearerErrorData]] = OperationPl
         (),
         BearerHTTPError,
     ),
+    security=security.OPERATION_2,
     codecs=BearerRequestCodecs,
 )
 
@@ -144,6 +146,7 @@ OPERATION_3: Final[OperationPlan[OauthResponse, OauthErrorData]] = OperationPlan
         (),
         OauthHTTPError,
     ),
+    security=security.OPERATION_3,
     codecs=OauthRequestCodecs,
 )
 
@@ -164,6 +167,7 @@ OPERATION_4: Final[OperationPlan[OpenidResponse, OpenidErrorData]] = OperationPl
         (),
         OpenidHTTPError,
     ),
+    security=security.OPERATION_4,
     codecs=OpenidRequestCodecs,
 )
 
@@ -190,6 +194,7 @@ OPERATION_5: Final[OperationPlan[CookieResponse, CookieErrorData]] = OperationPl
         retention_seconds=86400.0,
         scope='orders-v1',
     ),
+    security=security.OPERATION_5,
     codecs=CookieRequestCodecs,
 )
 
@@ -216,6 +221,7 @@ OPERATION_6: Final[OperationPlan[QueryResponse, QueryErrorData]] = OperationPlan
         retention_seconds=86400.0,
         scope='orders-v1',
     ),
+    security=security.OPERATION_6,
     codecs=QueryRequestCodecs,
 )
 
@@ -307,5 +313,6 @@ OPERATION_9: Final[OperationPlan[UnusedResponse, UnusedErrorData]] = OperationPl
         retention_seconds=86400.0,
         scope='orders-v1',
     ),
+    security=security.OPERATION_9,
     codecs=UnusedRequestCodecs,
 )

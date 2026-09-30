@@ -1,0 +1,4 @@
+APIGenerationError
+  E_CONFIG_VALUE config operations[0].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean
+  E_CONFIG_VALUE config operations[1].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean
+  E_CONFIG_VALUE config operations[2].runtime.auth_challenge_less_401: auth_challenge_less_401 must be a boolean

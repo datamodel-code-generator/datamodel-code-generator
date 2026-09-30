@@ -21,7 +21,8 @@ from typing_extensions import TypeIs
 from ..model_codecs.media import encode_json
 from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
-from .errors import ConfigurationError
+from .auth import AuthConfig
+from .errors import AuthConfigurationError, ConfigurationError
 from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import CancelToken, Deadline, ResolvedTimeoutOptions, seconds
 
@@ -212,6 +213,11 @@ def _typed(value: object, kinds: tuple[type, ...], path: tuple[str, ...]) -> Non
     """Refuse an option value of another type."""
     if not isinstance(value, kinds):
         raise ConfigurationError(field_path=path, condition="invalid_type")
+
+
+def _auth_type(value: object) -> None:
+    if not isinstance(value, (AuthConfig, Unset, type(None))):
+        raise AuthConfigurationError(field_path=("auth",), condition="invalid_type")
 
 
 def is_base_url(value: str) -> bool:
@@ -657,6 +663,7 @@ class _Options:
     retry: RetryOptions | Unset = UNSET
     redirects: RedirectOptions | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
+    auth: AuthConfig | Unset | None = field(default=UNSET, repr=False)
 
     def _check_timing(self) -> None:
         _typed(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
@@ -672,6 +679,7 @@ class _Options:
 
     def __post_init__(self) -> None:
         self._check_timing()
+        _auth_type(self.auth)
         _typed(self.validation, (ValidationOptions, Unset), ("validation",))
         _typed(self.retry, (RetryOptions, Unset), ("retry",))
         _typed(self.redirects, (RedirectOptions, Unset), ("redirects",))
@@ -756,6 +764,7 @@ class Settings:
     retry: ResolvedRetryOptions = DEFAULT_RETRY
     redirects: ResolvedRedirectOptions = DEFAULT_REDIRECTS
     idempotency_key: IdempotencyKey | Unset | None = UNSET
+    auth: AuthConfig | None = field(default=None, repr=False)
 
 
 def network_send_limit(settings: Settings) -> int | None:

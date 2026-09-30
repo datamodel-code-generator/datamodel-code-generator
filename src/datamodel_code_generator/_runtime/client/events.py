@@ -518,6 +518,24 @@ class CallEvents:
             add_secondary(error, failure)
 
 
+def auth_ended(events: CallEvents, started: float, error: BaseException | None = None) -> None:
+    """Complete actual credential work while retaining an existing callback or termination failure."""
+    event = events.event("auth_end", sent=events.sent, duration=monotonic() - started)
+    if error is None:
+        events.emit(event)
+    elif failures := events.notify(event, terminal=True, error=error):
+        add_secondary(error, events.failed(event.name, failures))
+
+
+async def aauth_ended(events: CallEvents, started: float, error: BaseException | None = None) -> None:
+    """Complete an asynchronous credential span without losing its primary failure."""
+    event = events.event("auth_end", sent=events.sent, duration=monotonic() - started)
+    if error is None:
+        await events.aemit(event)
+    elif failures := await events.anotify(event, terminal=True, error=error):
+        add_secondary(error, events.failed(event.name, failures))
+
+
 def call_events(
     settings: Settings, *, call: LogicalCallContext, path: str | None, asynchronous: bool
 ) -> CallEvents | None:

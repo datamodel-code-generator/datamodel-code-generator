@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final, NoReturn
 
 import httpcore2
 import httpx2
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, TypeVar
 
 from .errors import (
     AdapterContractError,
@@ -22,14 +22,16 @@ from .errors import (
 )
 from .evidence import cause_graph, connect_failure, transient_connect
 from .responses import HeadersView
-from .transports import TransportCapabilities, attempt_trace
+from .transports import PreparedRequest, TransportCapabilities, attempt_trace
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
 
     from .bodies import AsyncBodyAttempt, BodyAttempt
     from .hooks import RetryReason
-    from .transports import AttemptIOContext, AttemptTrace, PreparedRequest
+    from .transports import AttemptIOContext, AttemptTrace
+
+AttemptT = TypeVar("AttemptT", bound="BodyAttempt | AsyncBodyAttempt")
 
 _BORROWED: Final = TransportCapabilities(internal_retry_limit=None, delivery_evidence=False, http_versions=())
 _NATIVE: Final = TransportCapabilities(internal_retry_limit=0, delivery_evidence=True, http_versions=("HTTP/1.1",))
@@ -79,6 +81,7 @@ _REDIRECT: Final = frozenset({301, 302, 303, 307, 308})
 _PAIR_SIZE: Final = 2
 _HTTP11_HEAD_SIZE: Final = 4
 _HTTP2_HEAD_SIZE: Final = 2
+_ZERO_LENGTH_METHODS: Final = frozenset({"POST", "PUT", "PATCH", "QUERY"})
 
 
 def _is_list(value: object) -> TypeIs[list[object]]:
@@ -309,6 +312,25 @@ class _NativeTrace:
         self(name, info)
 
 
+def _body_framing(body: BodyAttempt | AsyncBodyAttempt) -> tuple[str, str]:
+    """Describe one opened body's framing from its cached length in either execution mode."""
+    length = body.content_length
+    return ("Transfer-Encoding", "chunked") if length is None else ("Content-Length", str(length))
+
+
+def finalize_unsigned(prepared: PreparedRequest[AttemptT]) -> PreparedRequest[AttemptT]:
+    """Finalize canonical resource headers before signing, retaining the already opened body unchanged."""
+    url = httpx2.URL(prepared.url)
+    headers = [("Host", url.netloc.decode("ascii"))]
+    body = prepared.body
+    if body is None and prepared.method in _ZERO_LENGTH_METHODS:
+        headers.append(("Content-Length", "0"))
+    headers.extend(prepared.headers)
+    if body is not None:
+        headers.append(_body_framing(body))
+    return PreparedRequest(method=prepared.method, url=str(url), headers=HeadersView(headers), body=prepared.body)
+
+
 def _request(
     prepared: PreparedRequest[BodyAttempt] | PreparedRequest[AsyncBodyAttempt],
     context: AttemptIOContext,
@@ -318,7 +340,11 @@ def _request(
 ) -> httpx2.Request:
     """Build one request with live phase caps and a public, mode-correct trace callback."""
     headers = [(name.encode(), value.encode()) for name, value in prepared.headers]
-    if (body := prepared.body) is not None and (length := body.content_length) is not None:
+    if (
+        (body := prepared.body) is not None
+        and not any(name.lower() in {b"content-length", b"transfer-encoding"} for name, _ in headers)
+        and (length := body.content_length) is not None
+    ):
         headers.append((b"Content-Length", str(length).encode()))
     request = httpx2.Request(
         prepared.method, prepared.url, headers=headers, content=content, extensions={"timeout": _timeouts(context)}

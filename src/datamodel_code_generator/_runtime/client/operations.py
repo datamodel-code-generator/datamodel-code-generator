@@ -68,6 +68,7 @@ if TYPE_CHECKING:
     from .options import RequestValidation
     from .responses import ResponseInfo
     from .retry import IdempotencyPlan
+    from .security import SecurityBinding
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
@@ -935,6 +936,8 @@ class OperationPlan(Generic[T_co, E_co]):
     idempotency: IdempotencyPlan | None = None
     retry_after_ms_header: str | None = None
     should_retry_header: str | None = None
+    security: SecurityBinding | None = None
+    auth_challenge_less_401: bool = False
 
     def bound(self, body: object, values: tuple[object, ...], media_type: str | MediaSelector | None) -> object:
         """Return the body a call gives, or the fields it gives of the selected media instead.
