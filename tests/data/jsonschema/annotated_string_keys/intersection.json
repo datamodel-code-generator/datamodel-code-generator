@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "title": "SomeSpec",
+  "properties": {
+    "services": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string"
+        }
+      },
+      "propertyNames": {
+        "pattern": "^x_[0-9]+$"
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "services"
+  ]
+}

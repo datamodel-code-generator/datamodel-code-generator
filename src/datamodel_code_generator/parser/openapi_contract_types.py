@@ -236,7 +236,12 @@ class FinalTypeProjector:
         if recipe.import_ is not None:
             imported = _imported_type(recipe.import_, recipe.atom)
             if "function" in recipe.modifiers and recipe.kwargs:
-                return ConstructorType(imported, tuple((name, freeze_argument(value)) for name, value in recipe.kwargs))
+                keywords = tuple((name, freeze_argument(value)) for name, value in recipe.kwargs)
+                return (
+                    AnnotatedType(BuiltinType("str"), (MetadataCall(recipe.import_, keywords),))
+                    if "annotated_string" in recipe.modifiers
+                    else ConstructorType(imported, keywords)
+                )
             return imported
         if recipe.atom is not None:
             return _project_atom(recipe.atom)

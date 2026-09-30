@@ -11,7 +11,9 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
+from datamodel_code_generator.enums import TargetPydanticVersion
 from datamodel_code_generator.imports import (
+    IMPORT_ANNOTATED,
     IMPORT_ANY,
     IMPORT_DATE,
     IMPORT_DATETIME,
@@ -40,6 +42,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONINT,
     IMPORT_CONSTR,
     IMPORT_EMAIL_STR,
+    IMPORT_FIELD,
     IMPORT_FUTURE_DATE,
     IMPORT_FUTURE_DATETIME,
     IMPORT_IPV4ADDRESS,
@@ -64,11 +67,13 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_STRICT_FLOAT,
     IMPORT_STRICT_INT,
     IMPORT_STRICT_STR,
+    IMPORT_STRING_CONSTRAINTS,
     IMPORT_UUID1,
     IMPORT_UUID3,
     IMPORT_UUID4,
     IMPORT_UUID5,
 )
+from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_VERSION_TUPLE
 from datamodel_code_generator.python_literal import PythonCode
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -177,6 +182,7 @@ number_kwargs: tuple[str, ...] = (
 )
 
 string_kwargs: tuple[str, ...] = ("pattern", "minLength", "maxLength", "minItems", "maxItems")
+_ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
 
 bytes_kwargs: tuple[str, ...] = ("minLength", "maxLength")
 
@@ -295,7 +301,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             use_object_type,
         )
 
-    def transform_kwargs(self, kwargs: dict[str, Any], filter_: Collection[str]) -> dict[str, str]:
+    def transform_kwargs(self, kwargs: dict[str, Any], filter_: Collection[str]) -> dict[str, Any]:
         """Transform schema kwargs to Pydantic field kwargs.
 
         Iterates whichever side is smaller. Output order is identical either way
@@ -386,15 +392,36 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             )
         return self.copy_data_type(self.type_map[types])
 
-    def get_data_str_type(self, types: Types, **kwargs: Any) -> DataType:
-        """Get string data type with constraints (constr)."""
-        data_type_kwargs: dict[str, Any] = self.transform_kwargs(kwargs, string_kwargs)
+    def get_data_str_type(
+        self,
+        types: Types,
+        *,
+        use_annotated: bool = False,
+        target_pydantic_version: TargetPydanticVersion | None = None,
+        **kwargs: Any,
+    ) -> DataType:
+        """Get a string type with constraints in the requested annotation style."""
         strict = StrictTypes.str in self.strict_types
-        if data_type_kwargs:
+        if data_type_kwargs := self.transform_kwargs(kwargs, string_kwargs):
             if strict:
                 data_type_kwargs["strict"] = True
             if self.PATTERN_KEY in data_type_kwargs:
                 data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
+            if use_annotated:
+                from datamodel_code_generator.model.pydantic_v2._annotated_types import (  # noqa: PLC0415
+                    AnnotatedStringDataType,
+                )
+
+                match target_pydantic_version:
+                    case TargetPydanticVersion.V2:
+                        constraint_import = IMPORT_FIELD
+                    case None if PYDANTIC_VERSION_TUPLE < (2, 1, 0):
+                        constraint_import = IMPORT_FIELD
+                    case _:
+                        constraint_import = IMPORT_STRING_CONSTRAINTS
+                data_type = AnnotatedStringDataType.from_import(constraint_import, kwargs=data_type_kwargs)
+                data_type._set_runtime_expression_imports(_ANNOTATED_STRING_IMPORTS)  # noqa: SLF001
+                return data_type
             return self.data_type.from_import(IMPORT_CONSTR, kwargs=data_type_kwargs)
         if strict:
             return self.copy_data_type(self.strict_type_map[StrictTypes.str])

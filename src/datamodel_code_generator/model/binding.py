@@ -1100,6 +1100,7 @@ class _ArtifactIndexBuilder:
                 "typing.TypeAliasType",
                 "typing_extensions.TypeAliasType",
                 "pydantic.Field",
+                "pydantic.StringConstraints",
                 "pydantic.constr",
                 "pydantic.conint",
                 "pydantic.confloat",
