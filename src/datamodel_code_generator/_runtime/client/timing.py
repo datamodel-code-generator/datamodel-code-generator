@@ -1,4 +1,4 @@
-"""Deadline and cancellation values shared by options and extension protocols."""
+"""Deadline, cancellation, and session-limit values and the option checks shared by options and protocol helpers."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from time import monotonic
 from typing import Final
 
+from ..model_codecs.unset import UNSET, Unset
 from .errors import ConfigurationError
 
 TOKEN_INTERVAL: Final = 0.05
@@ -31,6 +32,18 @@ def seconds(value: object, path: tuple[str, ...]) -> float:
 
 
 _seconds = seconds
+
+
+def checked_count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
+    """Refuse an option count that is not an integer in its range, including booleans."""
+    if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
+        raise ConfigurationError(field_path=path, condition="out_of_range")
+
+
+def checked_instance(value: object, kinds: tuple[type, ...], path: tuple[str, ...]) -> None:
+    """Refuse an option value of another type."""
+    if not isinstance(value, kinds):
+        raise ConfigurationError(field_path=path, condition="invalid_type")
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -95,3 +108,23 @@ class ResolvedTimeoutOptions:
     read: float | None
     write: float | None
     pool: float | None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SessionOptions:
+    """Limits of a session spanning several requests: UNSET keeps the session's default and None removes that limit.
+
+    The session ends at the earlier of its total timeout, counted from its start, and its absolute deadline.
+    """
+
+    total_timeout: float | Unset | None = UNSET
+    deadline: Deadline | Unset | None = UNSET
+    max_network_sends: int | Unset | None = UNSET
+
+    def __post_init__(self) -> None:
+        """Refuse booleans, negative or nonfinite durations, negative counts, and deadlines of other types."""
+        if (timeout := self.total_timeout) is not None and not isinstance(timeout, Unset):
+            object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))
+        checked_instance(self.deadline, (Deadline, Unset, type(None)), ("session_options", "deadline"))
+        if (sends := self.max_network_sends) is not None and not isinstance(sends, Unset):
+            checked_count(sends, ("session_options", "max_network_sends"))

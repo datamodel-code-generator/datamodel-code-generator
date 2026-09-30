@@ -20,7 +20,7 @@ def client_typing_report(
     root: Path,
     backend: DataModelType,
     case_name: str = "pets",
-    samples: tuple[str, ...] = ("clients", "signatures", "webhooks"),
+    samples: tuple[str, ...] = ("clients", "signatures", "webhooks", "protocols"),
 ) -> str:
     """Check a case's package with the positive samples, then their negative samples line by line."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]

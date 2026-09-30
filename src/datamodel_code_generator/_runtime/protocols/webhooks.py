@@ -4,33 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime  # noqa: TC003 - Public annotations support get_type_hints().
-from sys import float_info
 from typing import Generic, Protocol
 
 from typing_extensions import TypeVar
 
-from ..client.errors import ProtocolConfigurationError
 from ..model_codecs.unset import UNSET, Unset
+from .options import WEBHOOK_LIMITS, check_limits
 
 K = TypeVar("K")
 T_co = TypeVar("T_co", covariant=True)
-
-
-def positive_count(value: object, name: str) -> None:
-    """Validate a positive integer at a public configuration boundary."""
-    if type(value) is not int or value <= 0:
-        raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")
-
-
-def _seconds(value: object, name: str, *, allow_zero: bool) -> None:
-    match value:
-        case bool():
-            pass
-        case int() | float() if 0 <= value <= float_info.max and (allow_zero or value > 0):
-            return
-        case _:
-            pass
-    raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")
 
 
 def _key_tuple(value: object) -> None:
@@ -84,21 +66,7 @@ class WebhookOptions:
 
     def __post_init__(self) -> None:
         """Reject invalid counts and durations without accepting bool or disabled limits."""
-        for name, count in (
-            ("max_body_bytes", self.max_body_bytes),
-            ("max_header_bytes", self.max_header_bytes),
-            ("max_keys", self.max_keys),
-            ("max_signatures", self.max_signatures),
-        ):
-            if not isinstance(count, Unset):
-                positive_count(count, name)
-        for name, seconds in (
-            ("past_tolerance", self.past_tolerance),
-            ("future_tolerance", self.future_tolerance),
-            ("replay_ttl", self.replay_ttl),
-        ):
-            if not isinstance(seconds, Unset):
-                _seconds(seconds, name, allow_zero=name != "replay_ttl")
+        check_limits(self, WEBHOOK_LIMITS)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

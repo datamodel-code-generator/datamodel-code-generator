@@ -9,7 +9,7 @@ from time import time_ns
 from typing import Final
 
 from ..client.errors import ProtocolConfigurationError, ReplayStoreFullError
-from .webhooks import positive_count
+from .options import positive_count
 
 _EPOCH: Final = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
