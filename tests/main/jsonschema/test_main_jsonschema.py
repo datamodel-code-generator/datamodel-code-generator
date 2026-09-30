@@ -78,6 +78,7 @@ from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_DATACLASS_ALIAS_NEEDS_FALLBACK,
     PYDANTIC_V2_DATACLASS_TYPE_ALIAS_NEEDS_FALLBACK,
     PYDANTIC_V2_ROOT_MODEL_DICT_KEY_FORWARD_REF_NEEDS_SORTING,
+    PYDANTIC_VERSION_TUPLE,
 )
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from tests.conftest import (
@@ -6460,7 +6461,8 @@ def test_jsonschema_pattern_properties_use_annotated(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="pattern_properties_use_annotated.py",
+        expected_file=("pydantic20/" if PYDANTIC_VERSION_TUPLE < (2, 1, 0) else "")
+        + "pattern_properties_use_annotated.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"],
     )
 
@@ -7404,6 +7406,11 @@ def test_main_jsonschema_additional_properties_value_constraints_annotated(
     expected_file: str,
 ) -> None:
     """Preserve constrained mapping values across every additionalProperties path."""
+    if PYDANTIC_VERSION_TUPLE < (2, 1, 0) and output_model_type in {
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+    }:
+        expected_file = f"pydantic20/{expected_file}"
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "additional_properties_value_constraints_annotated.json",
         output_path=output_file,
@@ -7617,7 +7624,8 @@ def test_main_jsonschema_additional_properties_value_constraints_annotated_py312
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="additional_properties_value_constraints_annotated_pydantic_v2_py312.py",
+        expected_file=("pydantic20/" if PYDANTIC_VERSION_TUPLE < (2, 1, 0) else "")
+        + "additional_properties_value_constraints_annotated_pydantic_v2_py312.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -7641,7 +7649,8 @@ def test_main_jsonschema_additional_properties_value_constraints_schema_validato
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        expected_file="additional_properties_value_constraints_annotated_schema_validators.py",
+        expected_file=("pydantic20/" if PYDANTIC_VERSION_TUPLE < (2, 1, 0) else "")
+        + "additional_properties_value_constraints_annotated_schema_validators.py",
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",

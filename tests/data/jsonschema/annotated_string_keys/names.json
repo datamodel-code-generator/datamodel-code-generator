@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "title": "SomeSpec",
+  "properties": {
+    "services": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z]+$",
+        "minLength": 2,
+        "maxLength": 4
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "services"
+  ]
+}

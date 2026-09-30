@@ -1,0 +1,16 @@
+{
+  "valid": {
+    "Annotated": "native",
+    "StringConstraints": "native",
+    "valid": 1
+  },
+  "invalid": [
+    {
+      "value": {
+        "Annotated": "native",
+        "valid": []
+      },
+      "error": "int_type"
+    }
+  ]
+}

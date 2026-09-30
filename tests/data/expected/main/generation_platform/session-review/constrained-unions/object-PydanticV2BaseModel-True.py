@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 from typing import Annotated, Any
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, Field, StringConstraints
 from typing_extensions import TypeAliasType
 
 
 
-ValueObject = TypeAliasType("ValueObject", dict[constr(pattern=r'^x'), Any])
+ValueObject = TypeAliasType("ValueObject", dict[Annotated[str, StringConstraints(pattern=r'^x')], Any])
 
 
 
