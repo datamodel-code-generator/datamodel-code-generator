@@ -862,7 +862,7 @@ async def _async_loads(auth: ModuleType, transports: ModuleType, responses: Modu
         ("async load before a refresh outliving its session", 1, ()),
         ("async invalid grant reload outliving its session", 2, (rejected,)),
     ):
-        load = _AsyncLoad(None, None, None, delay=0.3, held=held)
+        load = _AsyncLoad(None, None, None, delay=1.0, held=held)
         adapter = AsyncAdapter(transports, *replies)
         async with auth.AsyncRefreshTokenProvider(
             _TOKEN,
@@ -870,7 +870,7 @@ async def _async_loads(auth: ModuleType, transports: ModuleType, responses: Modu
             token_set=_tokens(auth),
             load=load,
             client_auth_method="none",
-            options=auth.OAuthProviderOptions(refresh_timeout=0.1),
+            options=auth.OAuthProviderOptions(refresh_timeout=0.5),
             token_transport=adapter,
         ) as family:
             await family.invalidate((await family.get(_context(auth))).version)
