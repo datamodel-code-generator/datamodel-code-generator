@@ -643,13 +643,14 @@ class TokenEndpoint:
         try:
             status, headers = _head(response.status_code, response.headers)
             body = _read(response.iter_raw_bytes(), session.deadline)
+            received = datetime.now(timezone.utc)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             return _failed(error, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
             _quiet(response.close)
-        return _answered(status, headers, body, datetime.now(timezone.utc))
+        return _answered(status, headers, body, received)
 
     def close(self) -> None:
         """Close an owned transport once; a borrowed one stays open, and no transport is created afterwards."""
@@ -745,13 +746,14 @@ class AsyncTokenEndpoint:
         try:
             status, headers = _head(response.status_code, response.headers)
             body = await _aread(response.iter_raw_bytes(), session.deadline)
+            received = datetime.now(timezone.utc)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             return _failed(error, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
             await _aquiet(response.aclose)
-        return _answered(status, headers, body, datetime.now(timezone.utc))
+        return _answered(status, headers, body, received)
 
     async def aclose(self) -> None:
         """Close an owned transport once; a borrowed one stays open, and no transport is created afterwards."""
