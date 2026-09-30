@@ -132,6 +132,25 @@ def _expiry(package: ModuleType, auth: ModuleType, transports: ModuleType, respo
                 )
                 now = start + 101
                 lines.append(f"    after 101s = {_outcome(lambda family=family: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+        errors = importlib.import_module(f"{package.__name__}.errors")
+        unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+        adapter = _Sent(transports, unsent, unsent, unsent, evidence=True)
+        with auth.RefreshTokenProvider(
+            _TOKEN,
+            client_id="c",
+            token_set=_tokens(auth, minutes=100 / 60),
+            client_auth_method="none",
+            token_transport=adapter,
+        ) as family:
+            start = now
+            first = family.get(_context(auth))
+            now = start + 95
+            lines.append(
+                f"  refresh proven unsent before the token expires = {_outcome(lambda: family.get(_context(auth)))}"
+                f" same={family.get(_context(auth)) is first}"
+            )
+            now = start + 101
+            lines.append(f"    once the token expired = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
 
 
 class _Once(Secret):

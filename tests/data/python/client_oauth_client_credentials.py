@@ -352,6 +352,19 @@ def _expiry(package: ModuleType, auth: ModuleType, transports: ModuleType, respo
                 lines.append(
                     f"  lifetime {ttl}s kept for {ttl - margin:g}s = {cached}, then {_outcome(lambda shared=shared: shared.get(_context(auth)))}"
                 )
+        unavailable = Response(responses, 503, b"")
+        adapter = Adapter(transports, _reply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}), *(unavailable,) * 4)
+        with auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, token_transport=adapter) as shared:
+            start = now
+            first = shared.get(_context(auth))
+            now = start + 90
+            lines.append(
+                f"  renewal failing before the token expires = {_outcome(lambda shared=shared: shared.get(_context(auth)))}"
+                f" same={shared.get(_context(auth)) is first}"
+            )
+            lines.append(f"    forced refresh = {_outcome(lambda shared=shared: shared.refresh(_context(auth)))}")
+            now = start + 100
+            lines.append(f"    once the token expired = {_outcome(lambda shared=shared: shared.get(_context(auth)))} sends={adapter.sends}")
         adapter = Adapter(transports, RuntimeError("adapter"), RuntimeError("adapter"))
         with auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, token_transport=adapter) as shared:
             old = _failure(lambda: shared.get(_context(auth))).refresh_id
