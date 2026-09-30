@@ -575,25 +575,31 @@ class RotationFamily(SharedRefresh):
     def retrying(self, waiter: SyncWaiter | AsyncWaiter, expected: int | Unset | None) -> tuple[RotationJob, bool]:
         """Admit a store of the pending token set, or join the one running; return the job and whether to start it.
 
-        The store expects the revision the failed one did unless the caller names another, as after a conflict. It is
-        refused without a pending store, while the family is closing, or while another job runs, including a retry
-        expecting another revision.
+        The store expects the revision the failed one did unless the caller names another below the pending token set's,
+        as after a conflict. It is refused without a pending store, while the family is closing, or while another job
+        runs, including a retry expecting another revision.
         """
         with self.lock:
+            stopped = self._stopped
+            named = not isinstance(expected, Unset)
+            if isinstance(expected, Unset) and isinstance(stopped, Pending):
+                expected = stopped.slot.expected_revision
             if (active := self._retry(expected)) is not None:
                 self.join(active, waiter)
                 return active, False
             self._refuse_explicit("retry_store")
-            if not isinstance(stopped := self._stopped, Pending):
+            if not isinstance(stopped, Pending):
                 raise AuthStateConflictError(
                     action="retry_store",
                     state=self.state,
                     delivery_state=DeliveryState.NOT_SENT,
                     provider_id=self.provider_id,
                 )
-            pending = stopped.slot
-            revision = pending.expected_revision if isinstance(expected, Unset) else expected
-            return self._admitted(RotationJob("retry", Slot(pending.token_set, revision, "retry_store")), waiter), True
+            pending = stopped.slot.token_set
+            if named and isinstance(expected, int) and expected >= pending.revision:
+                raise AuthConfigurationError(field_path=("expected_revision",), condition="stale_revision")
+            assert not isinstance(expected, Unset)
+            return self._admitted(RotationJob("retry", Slot(pending, expected, "retry_store")), waiter), True
 
     def _retry(self, expected: int | Unset | None) -> RotationJob | None:
         """Return the retry running with the revision a new retry expects, which it joins; the caller holds the lock."""
@@ -601,7 +607,7 @@ class RotationFamily(SharedRefresh):
             return None
         slot = active.storing
         assert slot is not None
-        return active if isinstance(expected, Unset) or slot.expected_revision == expected else None
+        return active if slot.expected_revision == expected else None
 
     def _refuse_explicit(self, action: AuthAction, *, pending: bool = False, admitting: bool = True) -> None:
         """Refuse an explicit operation while the family is closing, a job runs, or, if asked, a store is pending.

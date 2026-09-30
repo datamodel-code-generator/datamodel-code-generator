@@ -1684,15 +1684,17 @@ interrupted keeps the token set pending in the `PERSIST_PENDING` state: the refr
 store failure without a request, while callers arriving during a store wait for it. `retry_store()` stores the same
 token set once more, expecting the same revision, and returns it once current; concurrent retries expecting the same
 revision share one store. Since a conflict repeats until the expected revision changes,
-`retry_store(expected_revision=...)` expects another one instead, such as the `observed_revision` of the conflict once
-the application has checked what is stored, and keeps the pending token set. It raises `AuthStateConflictError` without
-a pending store, while a refresh, load, reload, or store runs, including one whose session ended before its work
-returned, or once the provider is closing. `replace_token_set` needs a revision above the pending one too, and by
-default stores the token set first under the same conditions, expecting the confirmed revision; one whose store fails is
-pending as a refreshed one is. With `persist=False` it becomes current at once and is not stored, leaving the stored
-revision as it is. A refresh that already failed, as one whose work outlived its session by more than a second, stores
-nothing, and a pending token set lives only in its provider, which drops it once closed. Load and store callbacks must
-not call their own provider, which waits for them.
+`retry_store(expected_revision=...)` stores the same pending token set expecting another revision, such as the
+`observed_revision` of the conflict once the application has checked what is stored; a revision that is negative or not
+an integer, or one at or above the pending token set's, which storing would roll back, raises `AuthConfigurationError`,
+and a newer stored token set is adopted with `replace_token_set(..., persist=False)` instead. It raises
+`AuthStateConflictError` without a pending store, while a refresh, load, reload, or store runs, including one whose
+session ended before its work returned, or once the provider is closing. `replace_token_set` needs a revision above the
+pending one too, and by default stores the token set first under the same conditions, expecting the confirmed revision;
+one whose store fails is pending as a refreshed one is. With `persist=False` it becomes current at once and is not
+stored, leaving the stored revision as it is. A refresh that already failed, as one whose work outlived its session by
+more than a second, stores nothing, and a pending token set lives only in its provider, which drops it once closed. Load
+and store callbacks must not call their own provider, which waits for them.
 
 Basic charset overrides, resource audience metadata, and generated OAuth provider factories are not available yet;
 applications construct providers explicitly.

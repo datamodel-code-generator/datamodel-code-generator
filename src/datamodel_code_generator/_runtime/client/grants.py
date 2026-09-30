@@ -1198,16 +1198,13 @@ class AsyncRefreshTokenProvider(_AsyncSharedTokens):
 
 def _expected_revision(value: object) -> int | Unset | None:
     """Accept a stored revision to expect, None for none stored, or UNSET to keep the one the failed store expected."""
-    if (
-        value is None
-        or isinstance(value, Unset)
-        or (isinstance(value, int) and not isinstance(value, bool) and value >= 0)
-    ):
+    if value is None or isinstance(value, Unset):
         return value
-    condition: Literal["invalid_type", "invalid_value"] = (
-        "invalid_value" if isinstance(value, int) and not isinstance(value, bool) else "invalid_type"
-    )
-    raise AuthConfigurationError(field_path=("expected_revision",), condition=condition)
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise AuthConfigurationError(field_path=("expected_revision",), condition="invalid_type")
+    if value < 0:
+        raise AuthConfigurationError(field_path=("expected_revision",), condition="invalid_value")
+    return value
 
 
 def _options(options: object) -> OAuthProviderOptions:

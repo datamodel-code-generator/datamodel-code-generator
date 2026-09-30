@@ -320,7 +320,7 @@ def _replacements(
         (
             "persisted replacement beside another stored token set",
             _Persisted(errors, _tokens(auth, "other", "refresh-7", revision=3), reads=(RuntimeError("load"),)),
-            ({}, {"expected_revision": 3}),
+            ({}, {"expected_revision": 5}, {"expected_revision": 3}),
         ),
         ("persisted replacement of a loaded token set", _Persisted(errors, _tokens(auth, revision=2)), ()),
         (
@@ -416,7 +416,7 @@ def _store_concurrency(  # noqa: PLR0915
         first = started(family.retry_store, persisted.entered, _reloaded)
         lines.append(
             f"  retry expecting another revision during a retry ="
-            f" {_reloaded(lambda: family.retry_store(expected_revision=7))}"
+            f" {_reloaded(lambda: family.retry_store(expected_revision=0))}"
         )
 
         def opening(call: Callable[[], object]) -> str:
@@ -424,7 +424,10 @@ def _store_concurrency(  # noqa: PLR0915
                 gate.set()
             return line
 
-        callers = [Caller(family.retry_store, opening) for _ in range(2)]
+        callers = [
+            Caller(family.retry_store, opening),
+            Caller(lambda: family.retry_store(expected_revision=None), opening),
+        ]
         for caller in callers:
             caller.start()
         for caller in (first, *callers):
@@ -527,7 +530,7 @@ async def _async_stores(
         lines.append(f"  async store failure = {await _aoutcome(lambda: family.get(_context(auth)))}")
         retries = await asyncio.gather(
             _areloaded(family.retry_store),
-            _areloaded(family.retry_store),
+            _areloaded(lambda: family.retry_store(expected_revision=None)),
             _aoutcome(lambda: family.get(_context(auth))),
         )
         lines.append(f"    concurrent retries and a get = {retries} {_kept(persisted)}")

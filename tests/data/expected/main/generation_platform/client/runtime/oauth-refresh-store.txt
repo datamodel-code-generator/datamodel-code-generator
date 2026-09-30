@@ -54,6 +54,8 @@
     get = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=replace pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError stores=[(5, None, 'replace')] record=revision=3 access=other refresh=refresh-7 loads=1
     retry {} = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError stores=[(5, None, 'replace'), (5, None, 'retry_store')] record=revision=3 access=other refresh=refresh-7
     get = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError
+    retry {'expected_revision': 5} = AuthConfigurationError condition=stale_revision field_path=('expected_revision',) stores=[(5, None, 'replace'), (5, None, 'retry_store')] record=revision=3 access=other refresh=refresh-7
+    get = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError
     retry {'expected_revision': 3} = revision=5 access=replaced refresh=refresh-9 stores=[(5, None, 'replace'), (5, None, 'retry_store'), (5, 3, 'retry_store')] record=revision=5 access=replaced refresh=refresh-9
     get = replaced scopes=None expires_in_minutes=60
   persisted replacement of a loaded token set = None
