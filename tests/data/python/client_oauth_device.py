@@ -70,6 +70,13 @@ def _reply(responses: ModuleType, status: int, payload: object) -> Response:
     return Response(responses, status, json.dumps(payload).encode())
 
 
+class _SlowClose(Response):
+    """A response whose close takes longer than the device code it carries lives."""
+
+    def close(self) -> None:
+        time.sleep(0.6)
+
+
 def _areply(responses: ModuleType, status: int, payload: object) -> AsyncResponse:
     return AsyncResponse(responses, status, json.dumps(payload).encode())
 
@@ -338,6 +345,16 @@ def _faults(
             except KeyboardInterrupt:
                 lines.append(f"  {label} = KeyboardInterrupt")
             lines.append(f"    poll again = {_outcome(device.poll)}")
+    adapter = Adapter(
+        transports,
+        _SlowClose(responses, 200, json.dumps({**_QUICK, "expires_in": 0.5}).encode()),
+        _reply(responses, 200, GRANTED),
+    )
+    with auth.DeviceAuthorizationFlow(
+        _DEVICE, _TOKEN, client_id="c", client_auth_method="none", token_transport=adapter
+    ) as device:
+        device.begin(())
+        lines.append(f"  device code outlived by closing its response = {_outcome(device.poll)} unsent replies={len(adapter.replies)}")
     slow = _reply(responses, 200, {**_QUICK, "interval": 5})
     token = options.CancelToken()
     with flow(slow) as device:
