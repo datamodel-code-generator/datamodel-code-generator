@@ -329,6 +329,8 @@
   async secret failure = AuthProviderExecutionError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown callback=get cause=RuntimeError
   async secret outlives the session = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider cause=TimeoutError
   async body slower than the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown failure_kind=deadline cause=TimeoutError
+  async body arriving after the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=200 failure_kind=deadline
+  async body ending after the session = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown status_code=200 failure_kind=deadline
   async slow secret = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider cause=TimeoutError
     stopped at the session deadline = True
   async closed while the secret is fetched = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=unknown
