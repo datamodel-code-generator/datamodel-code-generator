@@ -1,0 +1,32 @@
+{
+  "valid": {
+    "services": {
+      "my-service_01": "ok"
+    }
+  },
+  "invalid": [
+    {
+      "value": {
+        "services": {
+          "bad key": "ok"
+        }
+      },
+      "error": "string_pattern_mismatch"
+    },
+    {
+      "value": {
+        "services": {
+          "my-service_01": 123
+        }
+      },
+      "error": "string_type"
+    },
+    {
+      "value": {
+        "unknown": true
+      },
+      "error": "extra_forbidden",
+      "pydantic_v2.dataclass_error": "unexpected_keyword_argument"
+    }
+  ]
+}
