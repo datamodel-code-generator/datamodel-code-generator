@@ -107,7 +107,7 @@ def refresh_margin(ttl: float) -> float:
 class Published:
     """Material a job obtained, the monotonic time from which a caller renews it, and when its token expires.
 
-    A renewal that fails before the token expires leaves the material serving callers; None keeps no such time.
+    Until its token expires, the material serves unforced callers while a renewal runs; None keeps no such time.
     """
 
     material: BearerCredential
@@ -273,12 +273,16 @@ class SharedRefresh:
         self._outstanding: set[Job] = set()
         self._running: set[Job] = set()
 
-    def claim(self, waiter: _Waiter, context: CredentialContext, *, force: bool) -> Published | tuple[Job, bool, bool]:
+    def claim(
+        self, waiter: _Waiter, context: CredentialContext, *, force: bool
+    ) -> Published | tuple[Job, bool, bool, Published | None]:
         """Return usable cached material, or attach the waiter to the family's job.
 
-        The result says whether to start the job and whether another caller started it. The caller holds the lock. A
-        new job is admitted at once while fewer jobs than the concurrency limit run. A call that may pay for an
-        admission, starting a job or joining a queued one, needs room in its budgets first.
+        The result says whether to start the job, whether another caller started it, and the material that serves the
+        caller while the job renews it. Past its renewal time, a token that has not expired serves an unforced caller
+        without waiting, which starts the renewal only when it can be admitted and paid for at once. The caller holds
+        the lock. A new job is admitted at once while fewer jobs than the concurrency limit run. A call that may pay for
+        an admission, starting a job or joining a queued one, needs room in its budgets first.
         """
         options = self.options
         if (lifecycle := self.lifecycle) != "OPEN":
@@ -292,12 +296,19 @@ class SharedRefresh:
             self.expire(active)
         if (usable := self.usable(context, force=force)) is not None:
             return usable
+        if (
+            not force
+            and (cache := self.cache) is not None
+            and cache.expires_at is not None
+            and monotonic() < cache.expires_at
+        ):
+            return self._renewing(waiter, cache)
         admission = waiter.admission
         if (job := self._active) is None:
             job = self.next_job()
             if job.exchanges and admission is not None and (shortfall := admission.shortfall()) is not None:
                 raise self.over_budget(shortfall)
-            return job, self.enlist(job, waiter), False
+            return job, self.enlist(job, waiter), False, None
         if job.session is None and job.exchanges and admission is not None and (shortfall := admission.shortfall()):
             raise self.over_budget(shortfall, job.refresh_id)
         if len(job.waiters) >= options.max_waiters:
@@ -313,7 +324,7 @@ class SharedRefresh:
         job.waiters.append(waiter)
         if admission is not None:
             admission.joined(job)
-        return job, False, True
+        return job, False, True, None
 
     def next_job(self) -> Job:  # noqa: PLR6301 - A family of another grant starts other kinds of jobs.
         """Return the job a claim starts when none is active; the caller holds the lock."""
@@ -343,6 +354,19 @@ class SharedRefresh:
         if start := len(self._running) < options.max_concurrent_refreshes:
             self.admit(job)
         return start
+
+    def _renewing(self, waiter: _Waiter, cache: Published) -> Published | tuple[Job, bool, bool, Published]:
+        """Serve a token past its renewal time, starting its renewal only if it can be admitted and paid for at once."""
+        options = self.options
+        if (
+            self._active is not None
+            or len(self._running) >= options.max_concurrent_refreshes
+            or len(self._outstanding) >= options.max_pending_refreshes
+            or ((admission := waiter.admission) is not None and admission.shortfall() is not None)
+        ):
+            return cache
+        job = self.next_job()
+        return job, self.enlist(job, waiter), False, cache
 
     def usable(self, context: CredentialContext, *, force: bool) -> Published | None:
         """Return the cached material a caller may use without an acquisition, or None; the caller holds the lock."""
@@ -518,9 +542,12 @@ class SharedRefresh:
     def exchange_needed(self, version: object) -> bool:
         """Return whether replacing a rejected version needs a new acquisition.
 
-        None is needed while an admitted job runs, or while a newer usable token is held.
+        None is needed while an admitted job runs, unless its session and grace ended, or while a newer usable token is
+        held.
         """
         with self.lock:
+            if (active := self._active) is not None:
+                self.expire(active)
             if (active := self._active) is not None and active.session is not None and active.exchanges:
                 return False
             return (
@@ -563,16 +590,6 @@ def _within(context: CredentialContext, started: float, admission: CallAdmission
         _waited(context, started)
     else:
         admission.observe()
-
-
-def _served(shared: SharedRefresh, outcome: Published | Failed, *, force: bool) -> BearerCredential:
-    """Return a job's material, or the cached one while its token lasts after an unforced renewal failed."""
-    if isinstance(outcome, Failed) and not force:
-        with shared.lock:
-            cache = shared.cache
-        if cache is not None and (expires_at := cache.expires_at) is not None and monotonic() < expires_at:
-            return cache.material
-    return _outcome(outcome)
 
 
 def _waited(context: CredentialContext, started: float) -> float | None:
@@ -619,9 +636,13 @@ class SyncSharedRefresh:
                 claimed = shared.claim(waiter, context, force=force)
                 if isinstance(claimed, Published):
                     return claimed.material
-                job, start, joined = claimed
+                job, start, joined, serving = claimed
             if start:
                 self._start(job)
+            if serving is not None:
+                with shared.lock:
+                    shared.leave(waiter, job)
+                return serving.material
             if joined and admission is not None and not announced:
                 announced = True
                 try:
@@ -631,7 +652,7 @@ class SyncSharedRefresh:
                         shared.leave(waiter, job)
                     raise
             if not isinstance(outcome := self._awaited(context, started, waiter, job), Again):
-                return _served(self.shared, outcome, force=force)
+                return _outcome(outcome)
             _within(context, started, admission)
 
     def _awaited(self, context: CredentialContext, started: float, waiter: SyncWaiter, job: Job) -> Outcome:
@@ -852,9 +873,13 @@ class AsyncSharedRefresh:
                 claimed = shared.claim(waiter, context, force=force)
                 if isinstance(claimed, Published):
                     return claimed.material
-                job, start, joined = claimed
+                job, start, joined, serving = claimed
             if start:
                 self._start(job)
+            if serving is not None:
+                with shared.lock:
+                    shared.leave(waiter, job)
+                return serving.material
             future = waiter.future
             try:
                 if joined and admission is not None and not announced:
@@ -866,7 +891,7 @@ class AsyncSharedRefresh:
                 with shared.lock:
                     shared.leave(waiter, job)
             if not isinstance(outcome := future.result(), Again):
-                return _served(shared, outcome, force=force)
+                return _outcome(outcome)
             _within(context, started, admission)
 
     async def perform(self, job: Job, waiter: AsyncWaiter) -> Outcome:
