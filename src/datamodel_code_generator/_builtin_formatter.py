@@ -1045,12 +1045,13 @@ def _format_annotated(  # noqa: PLR0913
     wrap_string_literal: bool = False,
 ) -> str:
     continuation_indent = f"{indent}    "
+    name = _source_segment(source, annotation.value)
     inline_elements = [_source_segment(source, element) for element in _iter_subscript_elements(annotation)]
     joined_elements = ", ".join(inline_elements)
     if len(f"{continuation_indent}{joined_elements}") <= line_length:
-        return f"Annotated[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
+        return f"{name}[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
 
-    formatted_lines: list[str] = ["Annotated["]
+    formatted_lines: list[str] = [f"{name}["]
     for element in _iter_subscript_elements(annotation):
         if _is_call(element, "Field") or _is_call(element, "Meta"):
             inline_field = _source_segment(source, element)
@@ -1439,7 +1440,11 @@ def _format_subscript_value(
     formatted_lines = [f"{value}["]
     for element in elements:
         element_source = _source_segment(source, element)
-        if isinstance(element, ast.BinOp) and isinstance(element.op, ast.BitOr):
+        if (
+            isinstance(element, ast.BinOp)
+            and isinstance(element.op, ast.BitOr)
+            and len(f"{continuation_indent}{element_source}{',' if trailing_comma else ''}") > line_length
+        ):
             element_lines = _format_bit_or_elements(element, continuation_indent, line_length, source)
             if trailing_comma:
                 element_lines[-1] = f"{element_lines[-1]},"

@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import DataModelType, Formatter, InputFileType
+from datamodel_code_generator import DataModelType, Formatter, InputFileType, PythonVersion
+from datamodel_code_generator.format import CodeFormatter
 from datamodel_code_generator.model.pydantic_v2.version import PYDANTIC_VERSION_TUPLE
 from tests.main.conftest import (
     DATA_PATH,
@@ -97,4 +98,23 @@ def test_annotated_string_keys(
             valid_json=json.dumps(invalid.get("valid", payloads["valid"])),
             invalid_json=json.dumps(invalid["value"]),
             expected_error_type=invalid.get(f"{backend}_error", invalid["error"]),
+        )
+
+
+@pytest.mark.parametrize("formatters", [[Formatter.BUILTIN], [Formatter.BLACK, Formatter.ISORT]])
+def test_annotated_alias_formatting(output_file: Path, formatters: list[Formatter]) -> None:
+    """Keep aliased annotations loadable across compact, expanded and union layouts."""
+    source = (DATA_PATH / "python/annotated_string_key_aliases.py").read_text()
+    formatter = CodeFormatter(PythonVersion.PY_310, formatters=formatters, builtin_format_line_length=88)
+    output_file.write_text(formatter.format_code(source), encoding="utf-8")
+    assert_file_content(output_file, "annotated_string_keys/formatter_alias.py")
+    payloads = json.loads((PAYLOADS / "formatter_alias.json").read_text())
+    for invalid in payloads["invalid"]:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="annotated_alias_formatting",
+            model_name="SomeSpec",
+            valid_json=json.dumps(payloads["valid"]),
+            invalid_json=json.dumps(invalid["value"]),
+            expected_error_type=invalid["error"],
         )
