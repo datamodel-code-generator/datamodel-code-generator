@@ -235,10 +235,13 @@ _ERROR_NAMES: Final = (
     "LimiterExecutionError",
     "OAuthExchangeError",
     "PhaseTimeoutError",
+    "ProtocolConfigurationError",
     "ProtocolDataError",
     "ProtocolError",
     "ProtocolSizeError",
+    "ProtocolStoreError",
     "RedirectPolicyError",
+    "ReplayStoreFullError",
     "RequestEncodingError",
     "RequestCancelledError",
     "ResponseConsumedError",
@@ -257,6 +260,9 @@ _ERROR_NAMES: Final = (
     "UnexpectedStatusError",
     "UnsupportedAsyncBackendError",
     "UnsupportedContentCodingError",
+    "WebhookReplayError",
+    "WebhookStoreError",
+    "WebhookVerificationError",
 )
 _ERRORS: Final = (
     '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n'
@@ -272,6 +278,55 @@ from ._runtime.client.raw import AsyncRawResponse, RawResponse
 from ._runtime.client.responses import HeadersView, Response, ResponseInfo
 
 __all__ = ["AsyncRawResponse", "HeadersView", "RawResponse", "Response", "ResponseInfo"]
+'''
+_PROTOCOLS: Final = '''"""Public contracts for standalone webhook verification and atomic replay stores."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from .._runtime.protocols.references import OperationRef
+from .._runtime.protocols.webhooks import (
+    AsyncReplayStore,
+    KeySet,
+    ReplayStore,
+    ResolvedWebhookOptions,
+    VerifiedSignature,
+    VerifiedWebhook,
+    Verifier,
+    WebhookOptions,
+)
+
+if TYPE_CHECKING:
+    from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
+
+__all__ = [
+    "AsyncMemoryReplayStore",
+    "AsyncReplayStore",
+    "KeySet",
+    "MemoryReplayStore",
+    "OperationRef",
+    "ReplayStore",
+    "ResolvedWebhookOptions",
+    "VerifiedSignature",
+    "VerifiedWebhook",
+    "Verifier",
+    "WebhookOptions",
+]
+
+
+def __getattr__(name: str) -> object:
+    """Load a memory-store implementation only when its public class is requested."""
+    if name == "MemoryReplayStore":
+        from .._runtime.protocols.replay import MemoryReplayStore
+
+        return MemoryReplayStore
+    if name == "AsyncMemoryReplayStore":
+        from .._runtime.protocols.replay import AsyncMemoryReplayStore
+
+        return AsyncMemoryReplayStore
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
 '''
 _BODY_NAMES: Final = (
     "AsyncBinaryBody",
@@ -2286,6 +2341,7 @@ wait for retained cleanup; it does not authorize another send or restore an expi
             self.file(PurePosixPath("bodies.py"), "bodies", _BODIES),
             self.file(PurePosixPath("model_codecs.py"), "model_codecs", render_model_codecs("client")),
             self.file(PurePosixPath("transports.py"), "transports", _TRANSPORTS),
+            self.file(PurePosixPath("protocols", "__init__.py"), "protocols", _PROTOCOLS),
             self.file(PurePosixPath("resources", "__init__.py"), "package", '"""The resources of the clients."""\n'),
         ]
         for resource in self.plan.resources:
