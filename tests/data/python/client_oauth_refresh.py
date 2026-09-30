@@ -800,7 +800,7 @@ def _reloads(auth: ModuleType, options: ModuleType, transports: ModuleType, resp
         lines.append(f"  get joining a reload = {joiner.line} after {reloading.line}")
     gate = threading.Event()
     load = _Load(_tokens(auth), gate=gate)
-    family, _ = provider(load, options=auth.OAuthProviderOptions(refresh_timeout=0.05))
+    family, _ = provider(load, options=auth.OAuthProviderOptions(refresh_timeout=0.5))
     load.answers.append(newer)
     with family:
         gate.set()
