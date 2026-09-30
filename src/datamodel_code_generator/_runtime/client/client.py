@@ -65,7 +65,14 @@ from .lifecycle import AsyncOwnedProviders, OwnedProviders, Scope, TaskInterrupt
 from .logical import LogicalCallContext
 from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary, quiet_aclose, quiet_close
-from .native import AsyncHttpx2Response, AsyncHttpx2Transport, Httpx2Transport, transport_retry_reason
+from .native import (
+    AsyncHttpx2Response,
+    AsyncHttpx2Transport,
+    Httpx2Transport,
+    native_async_client,
+    native_client,
+    transport_retry_reason,
+)
 from .operations import DATA_ERRORS, ResponseDecoder
 from .options import (
     DEFAULT_TRANSPORT,
@@ -106,6 +113,8 @@ from .transports import (
     PreparedRequest,
     ResolvedTimeoutOptions,
     TransportCapabilities,
+    is_adapter,
+    is_async_adapter,
     response_head,
 )
 from .urls import URLValidationError, absolute_target, canonical_origin, request_origin
@@ -1420,17 +1429,6 @@ def _declared(adapter: object) -> None:
         raise AdapterContractError(delivery_state=DeliveryState.NOT_SENT)
 
 
-def _is_adapter(value: object) -> TypeIs[TransportAdapter]:
-    send, close = getattr(value, "send", None), getattr(value, "close", None)
-    return callable(send) and callable(close) and not inspect.iscoroutinefunction(send)
-
-
-def _is_async_adapter(value: object) -> TypeIs[AsyncTransportAdapter]:
-    return inspect.iscoroutinefunction(getattr(value, "send", None)) and inspect.iscoroutinefunction(
-        getattr(value, "aclose", None)
-    )
-
-
 def _transport(options: ClientOptions | None, http_client: object, adapter: object) -> ResolvedTransportOptions:
     resolved = resolve_transport_options(UNSET if options is None else options.transport)
     if resolved.retry_owner == "transport" and isinstance(adapter, Unset):
@@ -1451,40 +1449,6 @@ def _transport(options: ClientOptions | None, http_client: object, adapter: obje
     return resolved
 
 
-def _native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
-    try:
-        return httpx2.Client(
-            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
-            proxy=transport.proxy,
-            trust_env=transport.trust_env,
-            http2=transport.http2,
-            limits=httpx2.Limits(
-                max_connections=transport.max_connections,
-                max_keepalive_connections=transport.max_keepalive_connections,
-                keepalive_expiry=transport.keepalive_expiry,
-            ),
-        )
-    except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), condition="unavailable", cause=error) from None
-
-
-def _native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClient:
-    try:
-        return httpx2.AsyncClient(
-            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
-            proxy=transport.proxy,
-            trust_env=transport.trust_env,
-            http2=transport.http2,
-            limits=httpx2.Limits(
-                max_connections=transport.max_connections,
-                max_keepalive_connections=transport.max_keepalive_connections,
-                keepalive_expiry=transport.keepalive_expiry,
-            ),
-        )
-    except ImportError as error:
-        raise ConfigurationError(field_path=("transport", "http2"), condition="unavailable", cause=error) from None
-
-
 def _adapter(
     http_client: httpx2.Client | Unset,
     ownership: str,
@@ -1501,7 +1465,7 @@ def _adapter(
     match adapter:
         case Unset():
             pass
-        case _ if _is_adapter(adapter):
+        case _ if is_adapter(adapter):
             _declared(adapter)
             return adapter, owned
         case _:
@@ -1510,7 +1474,7 @@ def _adapter(
         case httpx2.Client():
             return Httpx2Transport(http_client), ownership == "owned"
         case Unset():
-            return Httpx2Transport(_native_client(transport), trusted_default=True, http2=transport.http2), True
+            return Httpx2Transport(native_client(transport), trusted_default=True, http2=transport.http2), True
         case _:
             pass
     raise ConfigurationError(field_path=("http_client",), condition="invalid_type")
@@ -1532,7 +1496,7 @@ def _async_adapter(
     match adapter:
         case Unset():
             pass
-        case _ if _is_async_adapter(adapter):
+        case _ if is_async_adapter(adapter):
             _declared(adapter)
             return adapter, owned
         case _:
@@ -1542,7 +1506,7 @@ def _async_adapter(
             return AsyncHttpx2Transport(http_client), ownership == "owned"
         case Unset():
             return AsyncHttpx2Transport(
-                _native_async_client(transport), trusted_default=True, http2=transport.http2
+                native_async_client(transport), trusted_default=True, http2=transport.http2
             ), True
         case _:
             pass

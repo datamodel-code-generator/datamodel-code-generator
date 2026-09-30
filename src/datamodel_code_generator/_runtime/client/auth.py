@@ -48,12 +48,14 @@ __all__ = (
 )
 
 
-def _typed(value: object, types: tuple[type[object], ...], path: tuple[str, ...]) -> None:
+def checked_type(value: object, types: tuple[type[object], ...], path: tuple[str, ...]) -> None:
+    """Refuse an auth value of another type at its field path."""
     if not isinstance(value, types):
         raise AuthConfigurationError(field_path=path, condition="invalid_type")
 
 
-def _scopes(value: object, name: str) -> tuple[str, ...]:
+def checked_scopes(value: object, name: str) -> tuple[str, ...]:
+    """Normalize explicit scopes, refusing invalid ones at the named field."""
     try:
         return scope_tuple(value)
     except ValueError:
@@ -95,12 +97,12 @@ class AccessToken:
 
     def __post_init__(self) -> None:
         """Validate scalar shapes and freeze confirmed scope information without inferring grants."""
-        _typed(self.value, (str,), ("value",))
-        _typed(self.token_type, (str,), ("token_type",))
-        _typed(self.expires_at, (datetime, type(None)), ("expires_at",))
-        _typed(self.audience, (str, type(None)), ("audience",))
+        checked_type(self.value, (str,), ("value",))
+        checked_type(self.token_type, (str,), ("token_type",))
+        checked_type(self.expires_at, (datetime, type(None)), ("expires_at",))
+        checked_type(self.audience, (str, type(None)), ("audience",))
         if self.scopes is not None:
-            object.__setattr__(self, "scopes", _scopes(self.scopes, "scopes"))
+            object.__setattr__(self, "scopes", checked_scopes(self.scopes, "scopes"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +113,7 @@ class ApiKeyCredential:
 
     def __post_init__(self) -> None:
         """Retain the string unchanged for the selected scheme's wire validation."""
-        _typed(self.value, (str,), ("value",))
+        checked_type(self.value, (str,), ("value",))
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,8 +125,8 @@ class BasicCredential:
 
     def __post_init__(self) -> None:
         """Keep both strings unchanged until Basic encoding."""
-        _typed(self.username, (str,), ("username",))
-        _typed(self.password, (str,), ("password",))
+        checked_type(self.username, (str,), ("username",))
+        checked_type(self.password, (str,), ("password",))
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,8 +138,8 @@ class BearerCredential:
 
     def __post_init__(self) -> None:
         """Require the public token and nominal version records."""
-        _typed(self.token, (AccessToken,), ("token",))
-        _typed(self.version, (TokenVersion,), ("version",))
+        checked_type(self.token, (AccessToken,), ("token",))
+        checked_type(self.version, (TokenVersion,), ("version",))
 
 
 CredentialMaterial: TypeAlias = ApiKeyCredential | BasicCredential | BearerCredential
@@ -156,12 +158,12 @@ class CredentialContext:
 
     def __post_init__(self) -> None:
         """Freeze requirements and retain the caller's exact deadline and cancellation references."""
-        _typed(self.scheme, (str,), ("scheme",))
-        _typed(self.audience, (str, type(None)), ("audience",))
-        _typed(self.origin, (str,), ("origin",))
-        _typed(self.deadline, (Deadline, type(None)), ("deadline",))
-        _typed(self.cancel_token, (CancelToken, type(None)), ("cancel_token",))
-        object.__setattr__(self, "required_scopes", _scopes(self.required_scopes, "required_scopes"))
+        checked_type(self.scheme, (str,), ("scheme",))
+        checked_type(self.audience, (str, type(None)), ("audience",))
+        checked_type(self.origin, (str,), ("origin",))
+        checked_type(self.deadline, (Deadline, type(None)), ("deadline",))
+        checked_type(self.cancel_token, (CancelToken, type(None)), ("cancel_token",))
+        object.__setattr__(self, "required_scopes", checked_scopes(self.required_scopes, "required_scopes"))
 
 
 class CredentialProvider(Protocol):
@@ -398,7 +400,7 @@ class AuthConfig:
         if not isinstance(self.selection, Unset):
             _count(self.selection, ("auth", "selection"))
         _count(self.max_token_exchanges, ("auth", "max_token_exchanges"))
-        _typed(self.send_on_anonymous, (bool,), ("auth", "send_on_anonymous"))
+        checked_type(self.send_on_anonymous, (bool,), ("auth", "send_on_anonymous"))
         owned: list[_CloseableProvider] = []
         identities: set[int] = set()
         for configured in credentials.values():
@@ -481,7 +483,7 @@ class _EnvironmentCredentials:
     __slots__ = ("_kind", "_last", "_variable_name")
 
     def __init__(self, variable_name: str, *, kind: Literal["api_key", "bearer"] = "api_key") -> None:
-        _typed(variable_name, (str,), ("variable_name",))
+        checked_type(variable_name, (str,), ("variable_name",))
         if not variable_name or "=" in variable_name or "\0" in variable_name:
             raise AuthConfigurationError(field_path=("variable_name",), condition="invalid_value")
         match kind:

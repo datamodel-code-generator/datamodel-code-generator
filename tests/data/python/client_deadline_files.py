@@ -10,7 +10,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 from unittest.mock import patch
 
 from tests.data.python.client_runtime import Exchange, arecord, raw_response, record, run
@@ -38,6 +38,18 @@ class _DiskGate:
                 raise TimeoutError(msg)
         finally:
             self.loop.call_soon_threadsafe(self.finished.set)
+
+
+async def _close_released(api: Any, errors: ModuleType) -> None:
+    """Close a client whose retained file work was released, waiting while that work still returns to the loop."""
+    for _ in range(500):
+        try:
+            await api.aclose()
+        except errors.CleanupError:
+            await asyncio.sleep(0.01)
+        else:
+            return
+    await api.aclose()
 
 
 class _BlockedFile(io.BytesIO):
@@ -190,6 +202,7 @@ async def _preparation(
     reading: bool = False,
 ) -> None:
     bodies = importlib.import_module(f"{package.__name__}.bodies")
+    errors = importlib.import_module(f"{package.__name__}.errors")
     options = importlib.import_module(f"{package.__name__}.options")
     transports = importlib.import_module(f"{package.__name__}.transports")
     gate = _DiskGate()
@@ -251,7 +264,7 @@ async def _preparation(
                 await asyncio.wait_for(closing.started.wait(), 5)
                 await arecord(lines, f"{label} closing retained", api.aclose)
                 closing.proceed.set()
-            await api.aclose()
+            await _close_released(api, errors)
             record(
                 lines,
                 f"{label} released",
@@ -312,6 +325,7 @@ async def _path(
     deadline: bool = False,
 ) -> None:
     bodies = importlib.import_module(f"{package.__name__}.bodies")
+    errors = importlib.import_module(f"{package.__name__}.errors")
     options = importlib.import_module(f"{package.__name__}.options")
     transports = importlib.import_module(f"{package.__name__}.transports")
     gate = _DiskGate()
@@ -352,7 +366,7 @@ async def _path(
                 await arecord(lines, f"{label} retained", api.aclose)
                 gate.proceed.set()
                 await asyncio.wait_for(gate.finished.wait(), 5)
-                await api.aclose()
+                await _close_released(api, errors)
                 record(
                     lines,
                     f"{label} released",
@@ -512,6 +526,7 @@ async def _queued(  # noqa: PLR0914
 ) -> None:
     """Cancel queued disk work; an existing file snapshots at entry before its per-hop rewind and read."""
     bodies = importlib.import_module(f"{package.__name__}.bodies")
+    errors = importlib.import_module(f"{package.__name__}.errors")
     options = importlib.import_module(f"{package.__name__}.options")
     transports = importlib.import_module(f"{package.__name__}.transports")
     blocker, ready = _DiskGate(), _DiskGate()
@@ -584,7 +599,7 @@ async def _queued(  # noqa: PLR0914
                 await arecord(lines, f"{label} retained", api.aclose)
                 blocker.proceed.set()
                 await asyncio.wrap_future(blockers[0])
-                await api.aclose()
+                await _close_released(api, errors)
                 record(
                     lines,
                     f"{label} released",

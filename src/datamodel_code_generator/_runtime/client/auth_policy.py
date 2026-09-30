@@ -166,22 +166,24 @@ def _method(value: object, name: str, *, asynchronous: bool) -> bool:
     return callable(callback) and inspect.iscoroutinefunction(callback) == asynchronous
 
 
-def _sync_provider(value: object) -> TypeIs[CredentialProvider]:
+def sync_provider(value: object) -> TypeIs[CredentialProvider]:
+    """Recognize a credential provider whose get method is synchronous."""
     return _method(value, "get", asynchronous=False)
 
 
-def _async_provider(value: object) -> TypeIs[AsyncCredentialProvider]:
+def async_provider(value: object) -> TypeIs[AsyncCredentialProvider]:
+    """Recognize a credential provider whose get method is a coroutine function."""
     return _method(value, "get", asynchronous=True)
 
 
 def is_sync_closeable(value: object) -> TypeIs[CloseableCredentialProvider]:
     """Validate synchronous ownership capability only at an adoption boundary."""
-    return _sync_provider(value) and _method(value, "close", asynchronous=False)
+    return sync_provider(value) and _method(value, "close", asynchronous=False)
 
 
 def is_async_closeable(value: object) -> TypeIs[AsyncCloseableCredentialProvider]:
     """Validate asynchronous ownership capability only at an adoption boundary."""
-    return _async_provider(value) and _method(value, "aclose", asynchronous=True)
+    return async_provider(value) and _method(value, "aclose", asynchronous=True)
 
 
 def _sync_refreshable(value: object) -> TypeIs[RefreshableTokenProvider]:
@@ -211,7 +213,7 @@ def validate_auth_mode(config: AuthConfig, *, asynchronous: bool) -> None:
         if isinstance(value, OwnedCredentialProvider):
             valid = is_async_closeable(provider) if asynchronous else is_sync_closeable(provider)
         else:
-            valid = _async_provider(provider) if asynchronous else _sync_provider(provider)
+            valid = async_provider(provider) if asynchronous else sync_provider(provider)
         if not valid:
             raise AuthConfigurationError(field_path=("auth", "credentials"), condition="invalid_mode")
         if any(getattr(provider, name, None) is not None for name in ("invalidate", "refresh")):
@@ -348,7 +350,7 @@ def bind_auth(
     credentials: list[BoundCredential] = []
     for requirement in requirements:
         provider = _provider(config.credentials[requirement.scheme.name])
-        assert _sync_provider(provider)
+        assert sync_provider(provider)
         credentials.append(
             BoundCredential(
                 scheme=requirement.scheme,
@@ -391,7 +393,7 @@ def bind_async_auth(
     credentials: list[AsyncBoundCredential] = []
     for requirement in requirements:
         provider = _provider(config.credentials[requirement.scheme.name])
-        assert _async_provider(provider)
+        assert async_provider(provider)
         credentials.append(
             AsyncBoundCredential(
                 scheme=requirement.scheme,
