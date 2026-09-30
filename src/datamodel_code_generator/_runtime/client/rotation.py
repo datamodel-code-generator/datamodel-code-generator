@@ -157,15 +157,18 @@ def cache_key(endpoint: Endpoint, client_id: str, method: str, audience: str | N
     return "oauth-refresh-v1:" + hashlib.sha256(canonical.encode()).hexdigest()
 
 
-def _renewal(access: AccessToken, received: datetime, receipt: float, *, renewable: bool = True) -> float | None:
-    """Return the monotonic time from which an access token is no longer served, or None when it does not expire.
+def _renewal(
+    access: AccessToken, received: datetime, receipt: float, *, renewable: bool = True
+) -> tuple[float | None, float | None]:
+    """Return the monotonic times from which an access token is no longer served and at which it expires.
 
-    A token a refresh can renew is renewed a tenth of its lifetime, at most thirty seconds, before it expires.
+    Both are None when it does not expire. A token a refresh can renew is renewed a tenth of its lifetime, at most
+    thirty seconds, before it expires.
     """
     if (expires_at := access.expires_at) is None:
-        return None
-    ttl = (expires_at - received).total_seconds()
-    return receipt + ttl - (refresh_margin(ttl) if renewable else 0.0)
+        return None, None
+    expires = receipt + (ttl := (expires_at - received).total_seconds())
+    return expires - (refresh_margin(ttl) if renewable else 0.0), expires
 
 
 def _digest(token: str) -> bytes:
@@ -263,10 +266,12 @@ class RotationFamily(SharedRefresh):
             if reused:
                 msg = "The token response returns a refresh token the family spent."
                 raise InvalidTokenResponseError(msg)
+        refresh_at, expires = _renewal(access, exchanged.received, exchanged.receipt)
         return Adopted(
             BearerCredential(access, TokenVersion()),
-            _renewal(access, exchanged.received, exchanged.receipt),
+            refresh_at,
             TokenSet(access, used.refresh_token if issued is None else issued, used.revision + 1),
+            expires_at=expires,
         )
 
     def running(self, job: RotationJob) -> Generator[Loading | Sending, object, Outcome]:
@@ -409,7 +414,7 @@ class RotationFamily(SharedRefresh):
         A family a refresh stopped keeps its state instead of adopting a token set that can never serve.
         """
         if (material := _material(chosen)) is not None:
-            return Adopted(material.material, material.refresh_at, chosen)
+            return Adopted(material.material, material.refresh_at, chosen, expires_at=material.expires_at)
         if chosen.refresh_token is not None:
             return Reloaded(chosen)
         if (stopped := self._stopped) is not None and stopped.state != "LOAD_FAILED":
@@ -663,8 +668,8 @@ def _material(token_set: TokenSet) -> Published | None:
     received, receipt = datetime.now(timezone.utc), monotonic()
     if (expires_at := access.expires_at) is not None and expires_at <= received:
         return None
-    renewal = _renewal(access, received, receipt, renewable=token_set.refresh_token is not None)
-    return Published(BearerCredential(access, TokenVersion()), renewal)
+    refresh_at, expires = _renewal(access, received, receipt, renewable=token_set.refresh_token is not None)
+    return Published(BearerCredential(access, TokenVersion()), refresh_at, expires_at=expires)
 
 
 def _form(refresh_token: str) -> tuple[tuple[str, str], ...]:
