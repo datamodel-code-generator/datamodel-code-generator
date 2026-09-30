@@ -231,6 +231,7 @@ lint.per-file-ignores."src/datamodel_code_generator/_fastapi/_compiled_templates
 lint.per-file-ignores."src/datamodel_code_generator/_runtime/client/*.py" = [
   "TID252", # Generated packages copy the runtime, so the client runtime imports its sibling runtime relatively.
 ]
+lint.per-file-ignores."src/datamodel_code_generator/_runtime/protocols/*.py" = [ "TID252" ]
 lint.per-file-ignores."src/datamodel_code_generator/_runtime/server/*.py" = [
   "TID252", # Generated packages copy the runtime, so the server runtime imports its sibling runtime relatively.
 ]
