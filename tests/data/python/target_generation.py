@@ -118,7 +118,7 @@ def _model(values: dict[str, Any], root: Path) -> GenerateConfig:
                 resolved = value
             case _:
                 converted[key] = value
-    config = GenerateConfig(**converted)
+    config = GenerateConfig(**{"target_python_version": "3.11", **converted})
     if resolved is not None:
         config.resolve_remote_lock(
             RemoteReferenceLock.open(root / "resolved.lock", update=resolved == "update", locked=False)

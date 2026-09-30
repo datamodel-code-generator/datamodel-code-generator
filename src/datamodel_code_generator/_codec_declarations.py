@@ -126,7 +126,7 @@ class BuiltinCodecCompatibility:
     schemas: tuple[SchemaRef, ...] = ()
     contract: Literal["builtin-v1"] = "builtin-v1"
     dependencies: tuple[str, ...] = ()
-    python_requires: str = ">=3.10"
+    python_requires: str = ">=3.11"
 
     def __post_init__(self) -> None:
         """Require a name, the builtin-v1 contract, and valid requirements."""

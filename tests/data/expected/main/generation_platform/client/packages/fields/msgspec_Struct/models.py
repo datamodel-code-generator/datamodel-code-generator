@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import TypeAlias
 
 from msgspec import UNSET, Struct, UnsetType
 
 
-class Kind(Enum):
+class Kind(StrEnum):
     cat = 'cat'
     dog = 'dog'
 

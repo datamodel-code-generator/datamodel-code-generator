@@ -16,10 +16,10 @@ The only choice is `fastapi`.
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml # (1)!
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml --check # (2)!
     ```
 
@@ -31,6 +31,10 @@ document, then publishes both together. `--check` exits with 1 when a file would
 error. Diagnostics go to stderr, and the generated code is never printed; a generation ends by printing the
 command that adds the package to your project, as [`--dependency-format`](dependency-format.md#dependency-format)
 chooses.
+
+The server needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python version, which
+`--target-python-version` or a preset sets. On Python 3.10 the run stops with `E_PYTHON_UNSUPPORTED`, and a target
+Python version below 3.11, including the default 3.10, stops it with `E_CONFIG_VALUE`.
 
 `--generate-server` cannot be combined with `--watch`, `--diff-against`, `--input-model`,
 `--output-format json`, `--job`, or `--all-jobs` (`E_CONFIG_CONFLICT`), nor with an option that only prints

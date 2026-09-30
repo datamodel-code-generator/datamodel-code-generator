@@ -3,18 +3,18 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import TypeAlias
 
 from msgspec import UNSET, Struct, UnsetType
 
 
-class Status(Enum):
+class Status(StrEnum):
     open = 'open'
     closed = 'closed'
 
 
-class Channel(Enum):
+class Channel(StrEnum):
     web = 'web'
     store = 'store'
 
@@ -47,6 +47,6 @@ class Problem(Struct):
 FieldOrdersOrderIdGetPathOrderIdParameter: TypeAlias = int
 
 
-class FieldOrdersOrderIdGetQueryViewParameter(Enum):
+class FieldOrdersOrderIdGetQueryViewParameter(StrEnum):
     full = 'full'
     brief = 'brief'

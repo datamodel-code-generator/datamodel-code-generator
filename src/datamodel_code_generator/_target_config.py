@@ -284,7 +284,7 @@ def _compatibility(value: object, base: Path, option_path: str) -> BuiltinCodecC
             ),
             contract=contract,
             dependencies=_strings(table.get("dependencies", []), base, f"{option_path}.dependencies"),
-            python_requires=_string(table.get("python_requires", ">=3.10"), base, f"{option_path}.python_requires"),
+            python_requires=_string(table.get("python_requires", ">=3.11"), base, f"{option_path}.python_requires"),
         )
     except ValueError as error:
         raise _ConfigValueError(option_path, str(error)) from None

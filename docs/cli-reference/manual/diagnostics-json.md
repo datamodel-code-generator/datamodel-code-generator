@@ -9,7 +9,7 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --diagnostics-json diagnostics.json
     ```

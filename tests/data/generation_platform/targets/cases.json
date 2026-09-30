@@ -560,11 +560,25 @@
       {"render": {"config": {"custom_formatters": ["tests.data.python.custom_formatters.break_syntax"]}}}
     ]
   },
-  "target-grammar": {
+  "python-floor": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"render": {"model": {"target_python_version": "3.10"}}}
+    ]
+  },
+  "python-runtime": {
+    "input": {"path": "api.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"target_python_version": "3.11"}}}
+    ]
+  },
+  "target-grammar": {
+    "input": {"path": "api.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"render": {"model": {"target_python_version": "3.11"}}}
     ],
     "config": {"templates": "templates/modern"}
   },

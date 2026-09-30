@@ -18,6 +18,8 @@ CLI = SOURCE / "cli"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "fastapi"
 PACKAGE = EXPECTED / "packages" / "pets" / "pydantic_v2_BaseModel"
 OPTIONS = [
+    "--target-python-version",
+    "3.11",
     "--openapi-scopes",
     "schemas",
     "api",
@@ -316,6 +318,41 @@ def test_fastapi_cli_schemas_scope(
         output_should_not_exist=True,
     )
     assert_output(capsys.readouterr().err, EXPECTED / "cli" / "schemas-scope.txt")
+
+
+def test_fastapi_cli_target_python(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a server generation left at the default target Python version, before writing anything."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS[2:], "--generate-server", "fastapi", "--target-config", "fastapi.toml"],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "E_CONFIG_VALUE error config model_config.target_python_version: "
+            "The fastapi target needs a target Python version of 3.11 or later\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+def test_fastapi_cli_target_python_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Take the target Python version from pyproject.toml when the command line leaves it out."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS[2:], "--generate-server", "fastapi", "--target-config", "fastapi.toml"],
+        copy_files=[*_inputs(tmp_path), (CLI / "pyproject-target.toml", tmp_path / "pyproject.toml")],
+        assert_func=assert_file_content,
+        expected_file=PACKAGE / "models.py",
+    )
 
 
 def test_fastapi_cli_input_model(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

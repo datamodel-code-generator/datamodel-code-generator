@@ -10,7 +10,7 @@ Write the selected target to a directory instead of the `output` its target conf
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --output src/example/models.py \
+      --openapi-scopes schemas api --target-python-version 3.12 --output src/example/models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --target-output src/example/server
     ```

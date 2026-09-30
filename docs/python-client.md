@@ -5,6 +5,9 @@
     configuration file and of `ClientGenerationConfig`; the `--generate-client` command line entry point and the
     matching `--client-*` options ship with its release, together with a link to this page from the navigation.
 
+Like the server, the client needs Python 3.11 or later, both to run `datamodel-codegen` and as the target Python
+version; a target below 3.11, including the default 3.10, is refused with `E_CONFIG_VALUE`.
+
 Settings of the generated client that change how its methods are declared or checked do not change the models: the
 same OpenAPI document and model settings produce the same model files whichever client settings you choose.
 

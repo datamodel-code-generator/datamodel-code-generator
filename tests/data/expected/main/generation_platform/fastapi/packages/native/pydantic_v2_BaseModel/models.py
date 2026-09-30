@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Dict, Literal
 
 from pydantic import (
@@ -48,7 +48,7 @@ class Bounded(BaseModel):
     name: str | None = None
 
 
-class Color(Enum):
+class Color(StrEnum):
     red = 'red'
     blue = 'blue'
 

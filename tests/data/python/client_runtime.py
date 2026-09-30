@@ -57,6 +57,7 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
         model_config=GenerateConfig(
             output=root / f"{package}_models.py",
             input_file_type="openapi",
+            target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=DataModelType(backend),
             disable_timestamp=True,

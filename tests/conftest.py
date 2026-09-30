@@ -40,6 +40,8 @@ CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weight
 CLI_DOC_SCHEMA_VERSION = 1
 TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 BUILTIN_FORMATTER_VALUE = "builtin"
+TARGET_PYTHON = (3, 11)
+TARGET_TEST_ROOTS = (Path(__file__).parent / "api_generation", Path(__file__).parent / "model_codecs")
 _VERSION_PATTERN = re.compile(r"^\d+\.\d+$")
 _MOCK_PUBLIC_IP = "93.184.216.34"
 
@@ -388,11 +390,17 @@ def pytest_collection_modifyitems(
     config: pytest.Config,
     items: list[pytest.Item],
 ) -> None:
-    """Collect CLI doc metadata from tests with cli_doc marker.
+    """Skip the target tests on Python 3.10 and collect CLI doc metadata from tests with cli_doc marker.
 
-    Always collects metadata for use by test_cli_doc_coverage.py.
-    Only validates markers when --collect-cli-docs is used.
+    The server and client targets need Python 3.11 or later, so their tests and those of the wire codecs they share
+    are skipped on older Pythons, including when a CI shard names their files. CLI doc metadata is always collected
+    for test_cli_doc_coverage.py, and its markers are validated only when --collect-cli-docs is used.
     """
+    if sys.version_info < TARGET_PYTHON:
+        skip = pytest.mark.skip(reason="The server and client targets need Python 3.11 or later")
+        for item in items:
+            if any(item.path.is_relative_to(root) for root in TARGET_TEST_ROOTS):
+                item.add_marker(skip)
     collect_cli_docs = config.getoption("--collect-cli-docs", default=False)
     validation_errors: list[tuple[str, list[str]]] = []
 

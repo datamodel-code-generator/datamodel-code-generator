@@ -171,6 +171,7 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
     model = {
         "output": root / "models.py",
         "input_file_type": "openapi",
+        "target_python_version": "3.11",
         "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
         "output_model_type": DataModelType(backend),
         "disable_timestamp": True,
@@ -222,6 +223,7 @@ def _generate(overrides: dict[str, Any], root: Path) -> list[str]:
     model = GenerateConfig(
         output=root / "models.py",
         input_file_type="openapi",
+        target_python_version="3.11",
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType.PydanticV2BaseModel,
         disable_timestamp=True,
@@ -305,6 +307,7 @@ def fastapi_api_report(root: Path) -> str:
     model = GenerateConfig(
         output=root / "models.py",
         input_file_type="openapi",
+        target_python_version="3.11",
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
         output_model_type=DataModelType.PydanticV2BaseModel,
         disable_timestamp=True,

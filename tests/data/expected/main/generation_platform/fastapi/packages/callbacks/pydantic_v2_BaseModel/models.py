@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, RootModel
@@ -65,7 +65,7 @@ class FieldSecureGetResponse401wwwAuthenticateHeader(RootModel[str]):
     root: str
 
 
-class State(Enum):
+class State(StrEnum):
     up = 'up'
     down = 'down'
 

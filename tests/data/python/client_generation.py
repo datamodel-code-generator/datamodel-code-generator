@@ -123,6 +123,7 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
     model = {
         "output": root / "models.py",
         "input_file_type": "openapi",
+        "target_python_version": "3.11",
         "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
         "output_model_type": DataModelType(backend),
         "disable_timestamp": True,
@@ -168,6 +169,7 @@ def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]
         model_config=GenerateConfig(
             output=root / "models.py",
             input_file_type="openapi",
+            target_python_version="3.11",
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
             output_model_type=DataModelType.PydanticV2BaseModel,
             disable_timestamp=True,

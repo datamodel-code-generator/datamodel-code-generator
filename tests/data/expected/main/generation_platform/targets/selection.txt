@@ -233,6 +233,12 @@ render
         "digest": "<sha256>",
         "identity": null,
         "opaque": false,
+        "option_path": "model_config.target_python_version"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
         "option_path": "model_config.disable_timestamp"
       },
       {

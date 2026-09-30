@@ -121,7 +121,7 @@ def json_projection(value: YamlValue) -> JSONValue:
     return value
 
 
-def config_error(*, code: str, option_path: str, message: str) -> APIGenerationError:
+def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
     """Raise one configuration diagnostic as an API generation error."""
     return APIGenerationError((
         Diagnostic(code=code, severity="error", stage="config", message=message, option_path=option_path),
