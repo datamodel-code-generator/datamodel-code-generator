@@ -1602,7 +1602,9 @@ was cancelled. Client authentication, endpoints, and the token transport otherwi
 `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token family current with the OAuth refresh token grant,
 starting from the `TokenSet` an authorization produced. The provider alone refreshes its family: no other provider,
 process, or event loop may send the same refresh token. It serves the access token while it lasts, and a call refreshes
-it once a tenth of its lifetime, at most thirty seconds, remains, or after a resource rejected it.
+it once a tenth of its lifetime, at most thirty seconds, remains, or after a resource rejected it. A call past that
+renewal point keeps using the unexpired token while the refresh runs in the background, as with the client credentials
+provider.
 
 ```python
 from pets import Client
