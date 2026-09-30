@@ -49,6 +49,13 @@ _FAMILIES = (
         {"budget_kind": "auth_exchange", "limit": 2, "used": 2},
         ("budget_kind", "limit", "used"),
     ),
+    ("AuthTokenLoadError", {"purpose": "initial_load"}, ("purpose",)),
+    ("AuthTokenStoreError", {}, ("action", "expected_revision", "pending_revision")),
+    (
+        "AuthTokenStoreConflictError",
+        {},
+        ("action", "expected_revision", "pending_revision", "observed_revision"),
+    ),
 )
 
 
@@ -143,6 +150,7 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
         "AuthStateConflictError",
         "AuthConcurrencyLimitError",
         "AuthBudgetExceededError",
+        "AuthTokenLoadError",
     ):
         lines.append(f"  missing required {name} {outcome(getattr(errors, name))}")
     for name, values in (
@@ -159,6 +167,13 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
         ("AuthConcurrencyLimitError", {"limit_kind": "pending_refreshes", "limit": -1}),
         ("AuthBudgetExceededError", {"budget_kind": "tokens", "limit": 1, "used": 1}),
         ("AuthBudgetExceededError", {"budget_kind": "parent_network", "limit": 1, "used": True}),
+        ("AuthTokenLoadError", {"purpose": "retry_store"}),
+        ("AuthTokenStoreError", {"action": "retry_store", "expected_revision": 2, "pending_revision": 3}),
+        ("AuthTokenStoreError", {"action": "reload"}),
+        ("AuthTokenStoreError", {"expected_revision": -1}),
+        ("AuthTokenStoreError", {"pending_revision": True}),
+        ("AuthTokenStoreConflictError", {"action": "load", "expected_revision": 1, "observed_revision": 1}),
+        ("AuthTokenStoreConflictError", {"observed_revision": 1.0}),
     ):
         lines.append(f"  oauth values {name} {values} {outcome(lambda name=name, values=values: str(getattr(errors, name)(**values)))}")
 

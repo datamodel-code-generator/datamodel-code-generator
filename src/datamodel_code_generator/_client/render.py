@@ -151,6 +151,8 @@ _AUTH_NAMES: Final = (
     "AsyncRequestSigner",
     "AsyncStaticCredentialProvider",
     "AsyncStaticTokenProvider",
+    "AsyncTokenLoad",
+    "AsyncTokenStore",
     "AuthConfig",
     "BasicCredential",
     "BearerCredential",
@@ -169,6 +171,9 @@ _AUTH_NAMES: Final = (
     "SigningInput",
     "StaticCredentialProvider",
     "StaticTokenProvider",
+    "TokenLoad",
+    "TokenPersistenceContext",
+    "TokenStore",
     "TokenVersion",
 )
 _OAUTH_NAMES: Final = (
@@ -208,6 +213,9 @@ _ERROR_NAMES: Final = (
     "AuthStateConflictError",
     "AuthStateUncertainError",
     "AuthTimeoutError",
+    "AuthTokenLoadError",
+    "AuthTokenStoreConflictError",
+    "AuthTokenStoreError",
     "BodyChangedError",
     "BodyFactoryError",
     "BodyNotReplayableError",

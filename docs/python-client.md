@@ -1649,5 +1649,15 @@ Concurrent callers, `OAuthProviderOptions`, snapshots, call accounting, and clos
 provider. `replace_token_set` raises `AuthStateConflictError` while a refresh runs or once the provider is closing; its
 `persist` argument has no effect without a token store.
 
-Token persistence, Basic charset overrides, resource audience metadata, and generated OAuth provider factories are not
-available yet; applications construct providers explicitly.
+`TokenLoad` and `TokenStore`, with `AsyncTokenLoad` and `AsyncTokenStore`, declare the callbacks that will persist a
+token family, each bound to the storage namespace of one family: `load(context)` returns the stored `TokenSet` or None,
+and `store(token_set, expected_revision=..., context=...)` saves it durably only if the stored revision is
+`expected_revision`, or if nothing is stored for None, treating an identical stored token set as success and raising
+`AuthTokenStoreConflictError` on any other conflict. Their `TokenPersistenceContext` names the provider, the session,
+its deadline, the `purpose`, and the `cache_key` fingerprinting the family's configuration without tokens or secrets;
+the key alone is no global store key, since families of different users share it. A failed load is reported as
+`AuthTokenLoadError`, a failed or unknown store as `AuthTokenStoreError`, and a revision conflict of a store, or of a
+load against the current token set, as `AuthTokenStoreConflictError` with the `observed_revision` when known.
+
+Persisting through these callbacks, Basic charset overrides, resource audience metadata, and generated OAuth provider
+factories are not available yet; applications construct providers explicitly.
