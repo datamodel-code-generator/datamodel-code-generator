@@ -48,6 +48,11 @@ optional = ('httpx2', 'httpcore2', 'cryptography', 'asyncio', 'pydantic', 'msgsp
 print('optional imports=' + repr([name for name in optional if name in sys.modules]))
 print('import threads unchanged=' + repr(threading.active_count() == before))
 print('replay loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.replay' in sys.modules))
+print('pagination loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.pagination' in sys.modules))
+pagination = importlib.import_module(sys.argv[2] + '._runtime.protocols.pagination')
+print('pagination types=' + repr(tuple(getattr(module, name) is getattr(pagination, name) for name in ('Page', 'Pager', 'AsyncPager'))))
+print('pagination optional imports=' + repr([name for name in optional if name in sys.modules]))
+print('client protocols=' + repr(hasattr(importlib.import_module(sys.argv[2]).Client, 'protocols')))
 runtime = importlib.import_module(sys.argv[2] + '._runtime.protocols.options')
 print('option identities=' + repr((options.ProtocolClientOptions is runtime.ProtocolClientOptions, module.ProtocolDefaults is runtime.ProtocolDefaults)))
 state = module.ResumeState(helper_fingerprint='helper', security_fingerprint='security', state={'page': 1})
@@ -706,8 +711,10 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
     for label, module in (("options", options), ("errors", importlib.import_module(f"{package.__name__}.errors")), ("names", names)):
         record(lines, f"unknown {label} attribute", lambda module=module: getattr(module, "MissingProtocolType"))
         record(lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")])
-    _calls(package, options, client_options, lines)
-    run(lambda: _async_calls(package, options, client_options, lines))
+    record(lines, "client with defaults of helpers it lacks", lambda: package.Client(options=client_options))
+    secured = options.ClientOptions(protocols=options.ProtocolClientOptions(security=security))
+    _calls(package, options, secured, lines)
+    run(lambda: _async_calls(package, options, secured, lines))
 
 
 def _trace(package: ModuleType) -> object:

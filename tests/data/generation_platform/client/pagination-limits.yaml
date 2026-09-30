@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: Pagination limits
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /codes:
+    get:
+      operationId: listCodes
+      tags: [codes]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string, maxLength: 4}
+      responses:
+        '200':
+          description: One page of codes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CodePage'}
+components:
+  schemas:
+    Code:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    CodePage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Code'}
+        next: {type: string}

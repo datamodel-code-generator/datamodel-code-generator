@@ -1,0 +1,149 @@
+# pagination pydantic_v2.BaseModel
+  iterate with pagination options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('pagination_options',), condition='invalid_value'] protocol_configuration_error
+  page with pagination options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('pagination_options',), condition='invalid_value'] protocol_configuration_error
+  iterate with request options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  page with request options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  iterate with session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
+  page with session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
+  iterate with fixed idempotency key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
+  page with fixed idempotency key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
+  next page of options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  iterate with a fixed key from scoped options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
+  page with a fixed key from client options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
+  no send slot [] ! SessionLimitError: SessionLimitError(kind='network_sends', limit=0) [kind='network_sends', limit=0] session_limit_error
+    progress {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0} session=True
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  one send slot ['1'] ! SessionLimitError: SessionLimitError(kind='network_sends', limit=1) [kind='network_sends', limit=1] session_limit_error
+    progress {'pages': 1, 'items': 1, 'network_send_count': 1, 'network_send_budget_used': 1}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  retry without a send slot ! ListUsersHTTPError: ListUsersHTTPError(status_code=503, operation_id='listUsers', call_id='<call>', retry_stop_reason='parent_budget_exhausted') [operation_id='listUsers', status_code=503, error_decoded=False, body_bytes=b'{"message":"busy"}', truncated=False] list_users_http_error stop=parent_budget_exhausted
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  redirect without a send slot ! SessionLimitError: SessionLimitError(operation_id='listUsers', call_id='<call>', kind='network_sends', limit=1) [operation_id='listUsers', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error cause=BudgetExceededError counters=1/1 session=True
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  no send limit ['1', '2']
+  call without a send slot [] ! BudgetExceededError: BudgetExceededError(operation_id='listUsers', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='listUsers', limit=0] budget_exceeded_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  typed error after retries ! ListUsersHTTPError: ListUsersHTTPError(status_code=500, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', status_code=500, error_decoded=True, error_data=Error(message='down'), body_bytes=b'{"message":"down"}', truncated=False] list_users_http_error data=Error(message='down')
+  after the typed error ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+  session timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error session=True {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
+  earlier session timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error session=True {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
+  earlier session deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error session=True {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  first item before the deadline = '1'
+  next page after the deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  no session timeout ['1']
+  page timeout [] ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page before an expired session = [1] continuation=Continuation(kind='cursor') status=200 sends=1
+  next page in an expired session ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item before cancelling = '1'
+  item after cancelling ! RequestCancelledError: RequestCancelledError(operation_id='listUsers', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  item after the cancelled page ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  interrupted page: KeyboardInterrupt
+  item after the interruption ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+    progress {'pages': 0, 'items': 0, 'network_send_count': 1, 'network_send_budget_used': 1}
+  item while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='next') [] protocol_state_error
+  close while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='close') [] protocol_state_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  items after the concurrent steps ['1']
+  limiter sessions 1 named=True
+  client with defaults of an unknown helper ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.everyone'), condition='unknown_field'] protocol_configuration_error
+  async client with defaults of an unknown helper ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.everyone'), condition='unknown_field'] protocol_configuration_error
+  client with defaults of an options of another kind ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('protocols', 'defaults', 'users.all', 'options'), condition='invalid_value'] protocol_configuration_error
+  async client with defaults of an options of another kind ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('protocols', 'defaults', 'users.all', 'options'), condition='invalid_value'] protocol_configuration_error
+  client with no defaults = None
+  client with empty defaults = None
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default item limit ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [kind='items', limit=1] session_limit_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty call options keep defaults ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [kind='items', limit=1] session_limit_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  call item limit ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default send limit ['[1]', '[2]'] ! SessionLimitError: SessionLimitError(kind='network_sends', limit=2) [kind='network_sends', limit=2] session_limit_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  call send limit ['[1]', '[2]', '[3]']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  helper without defaults ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  view keeps defaults ['1'] ! SessionLimitError: SessionLimitError(kind='items', limit=1) [kind='items', limit=1] session_limit_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  hooked items ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  another pager ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  ordinary call = 1
+  one session per pager=True named=True ordinary={None}
+  limiter sessions 3 ordinary=None
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  failed page ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next')] protocol_data_error same session=True
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  call end hook failure ! HookExecutionError: HookExecutionError(operation_id='listUsers', call_id='<call>', event_name='call_end', sent=True) [operation_id='listUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('hook failed on call_end')] hook_execution_error completed=1 session=True
+  after the hook failure ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item before closing the client = '1'
+  item after closing the client ! ClientClosedError: ClientClosedError(operation_id='listUsers', call_id='<call>', state='CLOSED', owner='client') [operation_id='listUsers'] client_closed_error
+  item after the closed client ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async hooked items ['1', '2']
+  async sessions 1 named=True
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async redirect without a send slot [] ! SessionLimitError: SessionLimitError(operation_id='listUsers', call_id='<call>', kind='network_sends', limit=1) [operation_id='listUsers', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async page redirected without a send slot ! SessionLimitError: SessionLimitError(operation_id='listUsers', call_id='<call>', kind='network_sends', limit=1) [operation_id='listUsers', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async failed page [] ! ProtocolDataError: ProtocolDataError(operation_id='listLoose', call_id='<call>', condition='missing') [operation_id='listLoose', condition='missing', location=BodySelector(pointer='/next')] protocol_data_error
+  async item while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='anext') [] protocol_state_error
+  async close while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='aclose') [] protocol_state_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async items after the concurrent steps ['1']
+  async cancelled page: CancelledError
+  async after the cancellation [] ! ProtocolStateError: ProtocolStateError(state='failed', action='aiter') [] protocol_state_error

@@ -302,11 +302,12 @@ explicitly before using it as a model.
 ## Protocol helper configuration
 
 Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the
-client target reads through its `protocols` setting. The helpers themselves are still being implemented: generation
-validates every helper, resolves its references against the selected API, and records it in the target manifest,
-but an enabled helper fails with `E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the
-same as without it. The `websocket`, `webhook`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with
-`E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet.
+client target reads through its `protocols` setting. The helpers are still being implemented: generation validates
+every helper, resolves its references against the selected API, and records it in the target manifest. An enabled
+cursor pagination helper generates the [pagination helper](#pagination-helpers) below; any other enabled helper fails
+with `E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the same as without it. The
+`websocket`, `webhook`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED`
+whether they are enabled or not, and their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -522,10 +523,148 @@ ClientGenerationConfig(
 ```
 
 The manifest lists every helper in declaration order in `protocol_helpers`, disabled ones included, with its name,
-kind, `enabled`, the pointer of its metadata, and the digest of its contract, which is empty while it generates
-nothing. `inputs.target_config.protocol_metadata` holds each helper's settings with the defaults filled in and each
+kind, `enabled`, the pointer of its metadata, and the digest of its contract. A generated helper's digest covers its
+signature and settings, its operation, its item schema, and the type use of its page; a disabled helper's contract is
+empty. `inputs.target_config.protocol_metadata` holds each helper's settings with the defaults filled in and each
 reference replaced by the manifest's reference to the accepted input, so a file and the equal Python records record
 the same metadata. The `protocols` setting itself is not recorded among the public options.
+
+## Pagination helpers
+
+An enabled pagination helper with a `cursor` continuation is generated at `client.protocols.<name>` on `Client` and
+`AsyncClient` alike; the property exists only when the package has a helper. `page` fetches the first page,
+`next_page` the page after one the helper returned, and `iterate` returns a pager, which sends nothing until it is
+iterated. A helper takes the operation's parameters and its body as keywords, never field arguments, then
+`pagination_options`, `options`, and `session_options`:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.helper -->
+<!-- fmt: off -->
+
+```python
+    def page(
+        self,
+        *,
+        cursor: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        limit: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        x_snapshot: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Page[_dcg_type_3, ListUsersResponse]:
+        """Fetch the first page of GET /users."""
+        return first_page(
+            self._core,
+            _plans.PLAN_0,
+            (cursor, limit, x_snapshot),
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.pagination.helper -->
+
+```python
+with Client() as client:
+    helper = client.protocols.users.all
+    for user in helper.iterate():
+        print(user.id)
+    first = helper.page()
+    following = helper.next_page(first)
+```
+
+A `Page[T, P]` holds its `items` as a tuple of the item type, the decoded response as `data`, the response's
+`ResponseInfo`, and the `continuation` after it, or None on the last page. `Pager[T, P]` iterates over the items and
+`iter_pages()` over the pages; `AsyncPager[T, P]` does the same with `async for`, and its `iter_pages()` is not
+awaited. `Page`, `Pager`, and `AsyncPager` are imported from `pkg.protocols`, in every package. A pager fetches a page
+only once the previous one is consumed and reads, decodes, and closes each page inside its own call, so leaving a loop
+early holds no response. Its `progress` reports the pages fetched, the items delivered, and the session's sends.
+
+### Cursors and end conditions
+
+A page's items must be a JSON array at the `items` pointer; an empty array does not end the traversal. The cursor is
+read from the page's body, a response header, or its status, and written to the query or path parameter of `write`.
+A cursor the server returned is sent as it came, without that parameter's schema checks even under `request="schema"`
+validation, while a start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing or null where the helper
+declares that end, is one of its end values, or is empty with `empty_string: end`. A missing or null cursor that no end
+covers, missing or null items, and a header repeated for a single cursor raise `ProtocolDataError`, and a cursor over
+its size limit raises `ProtocolSizeError`, each as a failure of the page's call. A continuation returned by an earlier
+page of the same pager, or an earlier page `next_page` continued from, ends it with `PaginationCycleError` after the
+repeating page.
+
+### Limits and sessions
+
+A pager, and each `page` or `next_page` call, is one session. Every page is its own call, with its own retries, total
+timeout, and idempotency key, and the session bounds all of them: a page's deadline is the earlier of its own and the
+session's, and each of its sends, token requests included, takes a slot of the session too. Each limit comes from the
+call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `PaginationOptions.max_pages` | 1000 pages | Removes the limit |
+| `PaginationOptions.max_items` | 100000 items; 0 ends a pager at once without sending | Removes the limit |
+| `PaginationOptions.max_page_bytes` | 8 MiB of decoded body per page | Not allowed |
+| `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise | Not allowed |
+| `SessionOptions.total_timeout` | 300 seconds from the first fetch | Removes the limit |
+| `SessionOptions.deadline` | None | No deadline |
+| `SessionOptions.max_network_sends` | 3000 sends | Removes the limit |
+
+A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally
+even exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page
+that crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises
+`SessionLimitError(kind="items", limit=0)` without sending. A retry the session has no slot for is not made, and the page's error keeps
+`retry_stop_reason="parent_budget_exhausted"`; so does a rejected token's recovery when the session lacks slots for
+the new token request and the resend. Defaults naming a helper the package lacks, or giving it another kind's options,
+fail the client's construction with `ProtocolConfigurationError`, and so do options of another type, and an idempotency
+key fixed by the client's options, `with_options`, or the call, when a helper is called.
+
+A pager is used by one consumer at a time and in one mode: stepping it while it fetches, closing it then, and
+mixing items with pages raise `ProtocolStateError`. After a failure, cancellation included, and after `close()`,
+every step raises `ProtocolStateError`, and nothing is fetched again. Hooks and limiters see each page's call with the
+session's `parent_session_id`, which its errors carry too; an error `next_page` raises before its session starts, such
+as for a page it did not return, has `parent_session_id=None`.
+
+### Generation checks
+
+The operation must declare exactly one success response with one JSON media type and a schema, read natively, so an
+operation that also declares a `204` or another success status is refused. The items pointer must name, through the
+fields of the page's models, a JSON array whose items schema is `item_schema`. The cursor must read a declared property
+or header, whose JSON types the target parameter accepts; a cursor that can be null needs a `null` end, and each end
+value must be of a type the cursor reads. Helper names whose classes collide, such as `users.all_items` and
+`users_all.items`, fail with `E_NAME_COLLISION`. Bindings, cursors written to a header, a cookie, the querystring, or
+the body, request bodies other than JSON, envelope-projected responses, and items or cursor pointers that read through
+a union or a map are not supported yet:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_NAME_COLLISION target protocols.helpers['users_all.items'] /paths/~1users/get: The helper name 'users_all.items' gives the class name 'UsersAllItemsPagination', which 'users.all_items' already gives
+E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.given'].bindings[0] /paths/~1users/get: The pagination helper 'bindings.given' with a binding to a header target is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['write.header'].continuation.write /paths/~1users/get: The pagination helper 'write.header' writing its cursor to a header target is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['responses.twice'].operation /paths/~1twice/get: GET /twice must declare exactly one JSON success response for the pagination helper 'responses.twice'
+E_CLIENT_UNSUPPORTED target protocols.helpers['responses.hidden'] /paths/~1hidden/get: The pagination helper 'responses.hidden' reads an envelope-projected response, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['items.union'].items /paths/~1users/get: The items pointer '/either/data' of 'items.union' reads through a union or map, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['items.map'].items /paths/~1users/get: The items pointer '/grouped/admins' of 'items.map' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['items.absent'].items /paths/~1users/get: The items pointer '/data/id' of 'items.absent' names no property of the GET /users response
+E_CONFIG_VALUE config protocols.helpers['items.scalar'].items /paths/~1users/get: The items pointer '/count' of 'items.scalar' selects no JSON array of the GET /users response
+E_CONFIG_VALUE config protocols.helpers['items.unknown_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Nobody' of 'items.unknown_schema' does not exist in its document
+E_CONFIG_VALUE config protocols.helpers['items.other_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Label' of 'items.other_schema' is not the item schema of the array its items pointer selects
+E_CONFIG_VALUE config protocols.helpers['cursor.absent'].continuation.read /paths/~1users/get: The cursor pointer '/nothing' of 'cursor.absent' names no property of the GET /users response
+E_CONFIG_VALUE config protocols.helpers['cursor.header'].continuation.read /paths/~1users/get: The cursor of 'cursor.header' reads the header 'X-Missing', which GET /users does not declare
+E_CONFIG_VALUE config protocols.helpers['cursor.types'].continuation.write /paths/~1users/get: The cursor of 'cursor.types' reads array, boolean, integer, number, or object values, which the query parameter 'cursor' of GET /users does not accept
+E_CONFIG_VALUE config protocols.helpers['cursor.null'].continuation.end /paths/~1users/get: The cursor of 'cursor.null' can read null, which no end condition covers
+E_CONFIG_VALUE config protocols.helpers['cursor.null'].continuation.end[1].value /paths/~1users/get: The end value 5 of 'cursor.null' is integer, which its cursor never reads
+E_CONFIG_VALUE config protocols.helpers['cursor.number'].continuation.end[1].value /paths/~1users/get: The end value 2.0 of 'cursor.number' is number, which its cursor never reads
+E_CONFIG_VALUE config protocols.helpers['cursor.union'].continuation.write /paths/~1users/get: The cursor of 'cursor.union' reads integer values, which the query parameter 'cursor' of GET /users does not accept
+E_CONFIG_VALUE config protocols.helpers['cursor.union'].continuation.end /paths/~1users/get: The cursor of 'cursor.union' can read null, which no end condition covers
+E_CLIENT_UNSUPPORTED target protocols.helpers['cursor.map'].continuation.read /paths/~1users/get: The cursor pointer '/grouped/admins' of 'cursor.map' reads through a union or map, which is not supported yet
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
 
 ## Signature style
 

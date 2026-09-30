@@ -1,0 +1,13 @@
+schema_version: 1
+helpers:
+  users.all:
+    kind: pagination
+    operation: {pointer: /paths/~1users/get, document: ../pagination.yaml}
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User, document: ../pagination.yaml}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: value

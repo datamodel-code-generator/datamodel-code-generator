@@ -11,6 +11,7 @@ from tests.data.python.client_generation import (
     client_config_report,
     client_digest_report,
     client_documentation_report,
+    client_helper_digest_report,
     client_render,
 )
 
@@ -62,6 +63,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "fields-cycle",
         "fields-optional-models",
         "helpers",
+        "pagination",
+        "pagination-plans",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -104,6 +107,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-stream-errors",
         "protocols-references",
         "protocols-querystring",
+        "protocols-pagination-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -115,6 +119,14 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
     assert_output(report, EXPECTED / "protocols" / f"{report.splitlines()[0].removeprefix('# ')}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / "helpers" / backend)
+
+
+def test_client_helper_digests(tmp_path: Path) -> None:
+    """Digest a helper's normalized settings, so an explicit root document and an omitted one digest alike."""
+    assert_output(
+        client_helper_digest_report("pagination", "pagination-documents", tmp_path),
+        EXPECTED / "digests" / "helper-documents.txt",
+    )
 
 
 def test_client_signature_style_digests(tmp_path: Path) -> None:
@@ -129,7 +141,7 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize("case", ["retries", "default-server", "empty", "auth"])
+@pytest.mark.parametrize("case", ["retries", "default-server", "empty", "auth", "pagination"])
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""
     assert_output(client_documentation_report(case, tmp_path), EXPECTED / "documentation" / f"{case}.txt")

@@ -60,6 +60,15 @@ class {{ name }}:
 
         return {{ resource.class_name }}(self._core)
 {%- endfor %}
+{%- if protocols %}
+
+    @{{ cached_property }}
+    def protocols(self) -> {{ protocols }}:
+        """The protocol helpers of this API, by their dotted names."""
+        from {{ protocols_module }} import {{ protocols }}
+
+        return {{ protocols }}(self._core)
+{%- endif %}
 
 {{ lifecycle }}
 

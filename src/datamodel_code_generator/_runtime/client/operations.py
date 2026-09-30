@@ -420,9 +420,12 @@ def _sent(concrete: str, declared: str) -> str:
 
 
 class Branch(Generic[T_co]):
-    """Decode one declared response: a status key and one of its media types, or its absence of a body."""
+    """Decode one declared response: a status key and one of its media types, or its absence of a body.
 
-    __slots__ = ("_convert", "_decode", "media_type", "status")
+    A model branch also decodes a page, keeping the wire value its protocol helper's selectors read.
+    """
+
+    __slots__ = ("_convert", "_decode", "_paged", "media_type", "status")
 
     def __init__(
         self,
@@ -430,16 +433,23 @@ class Branch(Generic[T_co]):
         media_type: str | None,
         decode: Callable[[bytes, ResponseInfo], T_co],
         convert: Callable[[bytes, ResponseInfo], T_co] | None = None,
+        paged: Callable[[bytes, ResponseInfo, bool], tuple[T_co, WireValue]] | None = None,
     ) -> None:
-        """Bind the status key, the declared media type (None for no body), the decoder, and any native converter."""
+        """Bind the status key, the declared media type (None for no body), and its decoders of values and pages."""
         self.status = status
         self.media_type = media_type
         self._decode = decode
         self._convert = decode if convert is None else convert
+        self._paged = paged
 
     def decode(self, body: bytes, info: ResponseInfo, *, native: bool = False) -> T_co:
         """Decode a complete body of this branch; native reads a model body through its converter alone."""
         return (self._convert if native else self._decode)(body, info)
+
+    def page(self, body: bytes, info: ResponseInfo, *, native: bool) -> tuple[T_co, WireValue]:
+        """Decode a complete page body of this model branch into its value and the wire value it was read from."""
+        assert self._paged is not None
+        return self._paged(body, info, native)
 
 
 class _InvalidBodyError(Exception):
@@ -620,6 +630,15 @@ class _Native(Generic[T_co]):
         except DATA_ERRORS as error:
             raise _BodyValueError(error) from None
 
+    def paged(self, body: bytes, info: ResponseInfo, native: bool) -> tuple[T_co, WireValue]:  # noqa: FBT001
+        wire = self._reader.read(body, info)
+        codec = self._codec()
+        try:
+            value = codec.convert(wire, self._context) if native else codec.decode(wire, self._context).require_model()
+        except DATA_ERRORS as error:
+            raise _BodyValueError(error) from None
+        return value, wire
+
 
 class _Envelope(Generic[T]):
     __slots__ = ("_codec", "_context", "_reader")
@@ -651,7 +670,7 @@ def model_branch(  # noqa: PLR0913
 ) -> Branch[T]:
     """Return a branch that decodes its body through a model codec into the native value."""
     native = _Native(_Reader(kind, fields, additional, parts, additional_part), codec, context)
-    return Branch(status, media_type, native, native.convert)
+    return Branch(status, media_type, native, native.convert, native.paged)
 
 
 def envelope_branch(  # noqa: PLR0913
@@ -824,6 +843,27 @@ class ResponseDecoder(Generic[T_co, E_co]):
         """
         if self.success(info.status_code):
             return self._decoded(info, body, self._branch(info, body), native=native)
+        raise self.failure(info, body, truncated=truncated, problem=problem, native=native)
+
+    def decode_page(
+        self,
+        info: ResponseInfo,
+        body: bytes,
+        *,
+        truncated: bool = False,
+        problem: BaseException | None = None,
+        native: bool = False,
+    ) -> tuple[T_co, WireValue]:
+        """Return a page's success value with the wire value it was read from, parsing its body once.
+
+        Any other response raises its typed failure, as `decode` does.
+        """
+        if self.success(info.status_code):
+            branch = self._branch(info, body)
+            try:
+                return branch.page(body, info, native=native)
+            except _InvalidBodyError as error:
+                raise error.failure(info, body) from None
         raise self.failure(info, body, truncated=truncated, problem=problem, native=native)
 
     def failure(

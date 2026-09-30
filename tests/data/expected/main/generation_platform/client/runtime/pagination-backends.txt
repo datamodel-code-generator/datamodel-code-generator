@@ -1,0 +1,270 @@
+# pagination pydantic_v2.BaseModel
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next page = [3] continuation=None status=200 sends=1
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/nested?cursor=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  nested ['1']
+  > GET https://api.example.com/labels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/label-sets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/label-sets?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  loose ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async user pages ['[1,2]', '[3]']
+# pagination pydantic_v2.dataclass
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next page = [3] continuation=None status=200 sends=1
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/nested?cursor=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  nested ['1']
+  > GET https://api.example.com/labels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/label-sets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/label-sets?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  loose ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async user pages ['[1,2]', '[3]']
+# pagination dataclasses.dataclass
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next page = [3] continuation=None status=200 sends=1
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/nested?cursor=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  nested ['1']
+  > GET https://api.example.com/labels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/label-sets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/label-sets?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  loose ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async user pages ['[1,2]', '[3]']
+# pagination typing.TypedDict
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next page = [3] continuation=None status=200 sends=1
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/nested?cursor=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  nested ['1']
+  > GET https://api.example.com/labels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/label-sets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/label-sets?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  loose ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async user pages ['[1,2]', '[3]']
+# pagination msgspec.Struct
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page = [1,2] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next page = [3] continuation=None status=200 sends=1
+  > GET https://api.example.com/nested
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/nested?cursor=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  nested ['1']
+  > GET https://api.example.com/labels
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/label-sets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/label-sets?after=n
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels ['a']
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/loose?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  loose ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  native loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema users of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listUsers', call_id='<call>') [operation_id='listUsers', body_bytes=b'{"data":"users"}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/loose
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema loose of another type [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":"users","next":null}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data')] response_validation_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async users ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async user pages ['[1,2]', '[3]']

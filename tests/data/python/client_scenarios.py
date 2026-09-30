@@ -41,6 +41,8 @@ from tests.data.python.client_oauth_device import oauth_device
 from tests.data.python.client_oauth_refresh import oauth_refresh, oauth_refresh_load
 from tests.data.python.client_oauth_shared import oauth_shared
 from tests.data.python.client_oauth_store import oauth_refresh_store
+from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
+from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
@@ -709,6 +711,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-contracts": ("pets", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets", ("pydantic_v2.BaseModel",), webhook_errors),
     "protocol-contracts": ("pets", BACKENDS, protocol_contracts),
+    "pagination": ("pagination", ("pydantic_v2.BaseModel",), pagination),
+    "pagination-backends": ("pagination", BACKENDS, pagination_backends),
+    "pagination-sessions": ("pagination", ("pydantic_v2.BaseModel",), pagination_sessions),
+    "pagination-auth": ("pagination", ("pydantic_v2.BaseModel",), pagination_auth),
+    "pagination-limits": ("pagination-limits", ("pydantic_v2.BaseModel",), pagination_limits),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (

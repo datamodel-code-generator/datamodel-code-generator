@@ -13,6 +13,8 @@ cli-reference.template-customization.custom-template-dir.example: template-custo
 python-client.protocols.toml: python-client.md
 python-client.protocols.yaml: python-client.md
 python-client.protocols.diagnostics: python-client.md
+python-client.pagination.helper: python-client.md
+python-client.pagination.diagnostics: python-client.md
 python-client.signature-style.explicit: python-client.md
 python-client.signature-style.unpack: python-client.md
 python-client.signature-style.records: python-client.md

@@ -17,7 +17,7 @@ from datamodel_code_generator._api_generation import generate_target
 from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
-from tests.data.python.client_generation import SOURCE, client_config
+from tests.data.python.client_generation import SOURCE, client_config, copy_references
 from tests.data.python.fixture_server import AsyncLocalTransport, FixtureServer, Injected, LocalTransport
 from tests.data.python.generated_packages import forget_generated, import_generated
 
@@ -52,6 +52,7 @@ _ERROR_FIELDS: Final = (
 
 
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
+    copy_references(case, root)
     generate_target(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
         model_config=GenerateConfig(

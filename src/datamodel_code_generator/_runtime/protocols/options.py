@@ -231,3 +231,23 @@ class ProtocolClientOptions:
         _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
         if not isinstance(self.defaults, Unset):
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
+
+
+_KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
+    "pagination": PaginationOptions,
+    "polling": PollOptions,
+    "sse": StreamOptions,
+    "ndjson": StreamOptions,
+})
+
+
+def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tuple[str, str], ...]) -> None:
+    """Refuse helper defaults for a helper the package lacks, or whose options belong to another kind."""
+    kinds = dict(helpers)
+    for name, item in defaults.items():
+        if (kind := kinds.get(name)) is None:
+            raise ProtocolConfigurationError(field_path=("protocols", "defaults", name), condition="unknown_field")
+        if not isinstance(item.options, (Unset, _KIND_OPTIONS[kind])):
+            raise ProtocolConfigurationError(
+                field_path=("protocols", "defaults", name, "options"), condition="invalid_value"
+            )

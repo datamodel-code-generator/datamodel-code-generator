@@ -1,0 +1,961 @@
+"""Cursor pagination: pages, the pagers over them, and the helper session their child calls share.
+
+A pager sends nothing until it is iterated and fetches a page only once the previous one is consumed. Every page is
+read, decoded, and closed inside its own child call, so abandoning a pager holds no response.
+"""
+
+from __future__ import annotations
+
+import threading
+from contextlib import contextmanager
+from dataclasses import dataclass, field, replace
+from enum import Enum
+from hashlib import sha256
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
+
+from typing_extensions import Self, TypeVar
+
+from ..client.errors import BudgetExceededError, ProtocolConfigurationError, ProtocolSizeError
+from ..client.options import RequestOptions
+from ..client.responses import ResponseInfo
+from ..client.timing import SessionOptions
+from ..model_codecs.unset import UNSET, Unset
+from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
+from .options import PaginationOptions
+from .records import (
+    BodySelector,
+    Continuation,
+    HeaderSelector,
+    ParameterTarget,
+    ProtocolProgress,
+    Sealed,
+    Selector,
+    canonical_json,
+    continuation_json,
+    record_instance,
+)
+from .values import MISSING, Missing, resolve
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
+    from types import TracebackType
+
+    from ..client.client import AsyncClientCore, ClientCore
+    from ..client.logical import OperationSession
+    from ..client.operations import OperationPlan
+    from ..client.timing import Deadline
+    from ..model_codecs.selectors import MediaSelector
+    from ..model_codecs.wire import WireValue
+    from .references import OperationRef
+
+__all__ = (
+    "AsyncPager",
+    "CursorPlan",
+    "Page",
+    "Pager",
+    "PaginationPlan",
+    "afirst_page",
+    "afollowing_page",
+    "aiterate_pages",
+    "first_page",
+    "following_page",
+    "iterate_pages",
+)
+
+T = TypeVar("T")
+P = TypeVar("P")
+R = TypeVar("R")
+V = TypeVar("V")
+T_co = TypeVar("T_co", covariant=True, default=object)
+P_co = TypeVar("P_co", covariant=True, default=object)
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CursorPlan:
+    """How a helper reads the next cursor from a page, where it writes it, and which values end the traversal.
+
+    An absent cursor, JSON null, or the empty string ends it only when its end condition says so; `end_values` are
+    compared by their canonical JSON, so their JSON types must match exactly.
+    """
+
+    read: Selector
+    write: ParameterTarget
+    end_missing: bool = False
+    end_null: bool = False
+    end_values: tuple[WireValue, ...] = ()
+    empty_string_ends: bool = False
+    ends: frozenset[bytes] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Keep the canonical JSON of each end value."""
+        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PaginationPlan(Generic[T, P]):
+    """Everything fixed about one generated pagination helper: its identity, call, items, and continuation.
+
+    Pages after the first call `continued`, the same operation taking the cursor as the wire value the server sent:
+    it is encoded for the wire without its parameter's schema or argument checks, since the server chose it.
+    """
+
+    helper_id: str
+    operation: OperationRef
+    call: OperationPlan[P, object]
+    items: Callable[[P], Sequence[T] | None]
+    items_selector: BodySelector
+    continuation: CursorPlan
+    fingerprint: str
+    position: int = field(init=False)
+    continued: OperationPlan[P, object] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Find the argument the cursor is written to, and derive the operation pages after the first call."""
+        target = self.continuation.write
+        parameters = list(self.call.parameters)
+        position = next(
+            index
+            for index, spec in enumerate(parameters)
+            if (spec.plan.location, spec.plan.name) == (target.location, target.name)
+        )
+        parameters[position] = replace(parameters[position], encoder=None)
+        object.__setattr__(self, "position", position)
+        object.__setattr__(self, "continued", replace(self.call, parameters=tuple(parameters), checks=()))
+
+
+@dataclass(frozen=True, slots=True)
+class _Request:
+    """The typed arguments, body, and body media type the first page of a helper call was requested with."""
+
+    arguments: tuple[object, ...]
+    body: object
+    media_type: str | MediaSelector | None
+
+
+class _History:
+    """The continuations the pages of one line of a helper call returned, by digest, and the index of its last page.
+
+    Pages continued from an earlier page than the last one start a line of their own with the history up to it.
+    """
+
+    __slots__ = ("last", "seen")
+
+    def __init__(self, seen: dict[bytes, int], last: int) -> None:
+        """Keep the index of the page that first returned each continuation, and the last page's index."""
+        self.seen = seen
+        self.last = last
+
+
+@dataclass(frozen=True, slots=True)
+class _Link:
+    """Where a page stands among the pages of one helper call, and what continuing after it takes.
+
+    `digest` is the SHA-256 of the canonical JSON of the page's continuation, None on the last page, and `seen` the
+    index of an earlier page that returned the same continuation. Only the page itself keeps its link, so a pager
+    holds its last link and the digests of its line, never the earlier pages.
+    """
+
+    fingerprint: str
+    request: _Request
+    index: int
+    items: int
+    cursor: WireValue
+    digest: bytes | None
+    seen: int | None
+    response: ResponseInfo
+    history: _History
+
+
+@final
+class Page(Sealed, Generic[T_co, P_co]):
+    """One page of a helper: its items, its decoded response, the response's metadata, and the continuation after it.
+
+    A page equals only itself, and its representation names its item count but never its data or items. Only a page
+    a helper fetched can be continued with its `next_page`.
+    """
+
+    __slots__ = ("_continuation", "_data", "_items", "_link", "_response")
+
+    _items: tuple[T_co, ...]
+    _data: P_co
+    _response: ResponseInfo
+    _continuation: Continuation | None
+    _link: _Link | None
+
+    def __init__(
+        self,
+        *,
+        items: tuple[T_co, ...],
+        data: P_co,
+        response: ResponseInfo,
+        continuation: Continuation | None = None,
+    ) -> None:
+        """Keep the page's values; the items must be a tuple and the continuation a Continuation or None."""
+        record_instance(items, tuple, "items must be a tuple")
+        record_instance(response, ResponseInfo, "response must be a ResponseInfo")
+        record_instance(continuation, (Continuation, type(None)), "continuation must be a Continuation or None")
+        for name, value in (
+            ("_items", items),
+            ("_data", data),
+            ("_response", response),
+            ("_continuation", continuation),
+            ("_link", None),
+        ):
+            object.__setattr__(self, name, value)
+
+    @property
+    def items(self) -> tuple[T_co, ...]:
+        """Return the page's items."""
+        return self._items
+
+    @property
+    def data(self) -> P_co:
+        """Return the page's decoded response."""
+        return self._data
+
+    @property
+    def response(self) -> ResponseInfo:
+        """Return the metadata of the page's response."""
+        return self._response
+
+    @property
+    def continuation(self) -> Continuation | None:
+        """Return the position after this page, or None on the last page."""
+        return self._continuation
+
+    def __repr__(self) -> str:
+        """Name the item count, the response metadata, and the continuation's kind only."""
+        return f"Page(items={len(self._items)}, response={self._response!r}, continuation={self._continuation!r})"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _Limits:
+    """The effective limits of one helper call, each from the first layer that sets it; None removes a limit."""
+
+    max_pages: int | None = 1000
+    max_items: int | None = 100000
+    max_page_bytes: int = 8 * 1024 * 1024
+    max_cursor_bytes: int = 64 * 1024
+    total_timeout: float | None = 300.0
+    deadline: Deadline | None = None
+    max_network_sends: int | None = 3000
+    options: RequestOptions | None = None
+
+
+_DEFAULTS: Final = _Limits()
+
+
+def _first(layers: tuple[object, ...], name: str, default: V) -> V:
+    """Return a limit from the first options layer that sets it, or its default."""
+    for layer in layers:
+        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
+            return cast("V", value)
+    return default
+
+
+def _invalid(plan: PaginationPlan[T, P], path: tuple[str, ...]) -> ProtocolConfigurationError:
+    return ProtocolConfigurationError(
+        field_path=path, condition="invalid_value", helper_id=plan.helper_id, operation=plan.operation
+    )
+
+
+def _limits(
+    core: ClientCore | AsyncClientCore,
+    plan: PaginationPlan[T, P],
+    pagination_options: object,
+    options: object,
+    session_options: object,
+) -> _Limits:
+    """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
+
+    Effective options fixing an idempotency key, the client's or a view's included, are refused, since every page is
+    a request of its own that needs its own key.
+    """
+    for name, value, kind in (
+        ("pagination_options", pagination_options, PaginationOptions),
+        ("options", options, RequestOptions),
+        ("session_options", session_options, SessionOptions),
+    ):
+        if value is not None and not isinstance(value, kind):
+            raise _invalid(plan, (name,))
+    request = options if isinstance(options, RequestOptions) else None
+    if core.fixes_key(request):
+        raise _invalid(plan, ("options", "idempotency_key"))
+    defaults = core.protocol_defaults(plan.helper_id)
+    kinds = (pagination_options, UNSET if defaults is None else defaults.options)
+    sessions = (session_options, UNSET if defaults is None else defaults.session)
+    return _Limits(
+        max_pages=_first(kinds, "max_pages", _DEFAULTS.max_pages),
+        max_items=_first(kinds, "max_items", _DEFAULTS.max_items),
+        max_page_bytes=_first(kinds, "max_page_bytes", _DEFAULTS.max_page_bytes),
+        max_cursor_bytes=_first(kinds, "max_cursor_bytes", _DEFAULTS.max_cursor_bytes),
+        total_timeout=_first(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        deadline=_first(sessions, "deadline", _DEFAULTS.deadline),
+        max_network_sends=_first(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
+        options=request,
+    )
+
+
+def _data_error(
+    plan: PaginationPlan[T, P],
+    info: ResponseInfo,
+    condition: Literal["missing", "null", "malformed"],
+    location: Selector,
+) -> ProtocolDataError:
+    return ProtocolDataError(
+        condition=condition, location=location, helper_id=plan.helper_id, operation=plan.operation, info=info
+    )
+
+
+def _absence(value: WireValue | Missing) -> Literal["missing", "null"]:
+    return "missing" if value is MISSING else "null"
+
+
+def _cursor(plan: PaginationPlan[T, P], wire: WireValue, info: ResponseInfo, limit: int) -> WireValue | Missing:
+    """Return the cursor a page gives, or MISSING when an end condition ends the traversal at this page.
+
+    A cursor over its size limit, in UTF-8 bytes for a string and canonical JSON bytes otherwise, is refused.
+    """
+    rule = plan.continuation
+    read = rule.read
+    value: WireValue | Missing
+    if isinstance(read, BodySelector):
+        value = resolve(wire, read.pointer)
+    elif isinstance(read, HeaderSelector):
+        if len(values := info.headers.get_all(read.name)) > 1:
+            raise _data_error(plan, info, "malformed", read)
+        value = values[0] if values else MISSING
+    else:
+        value = info.status_code
+    if value is MISSING or value is None:
+        if rule.end_missing if value is MISSING else rule.end_null:
+            return MISSING
+        raise _data_error(plan, info, _absence(value), read)
+    encoded = canonical_json(value)
+    if (isinstance(value, str) and not value and rule.empty_string_ends) or encoded in rule.ends:
+        return MISSING
+    if (size := len(value.encode()) if isinstance(value, str) else len(encoded)) > limit:
+        raise ProtocolSizeError(
+            kind="cursor",
+            limit=limit,
+            observed=size,
+            unit="bytes",
+            helper_id=plan.helper_id,
+            operation=plan.operation,
+            info=info,
+        )
+    return value
+
+
+class _Walk(Generic[T, P]):
+    """The pages of one helper call: its request, limits, session, the last page's link, and the items delivered.
+
+    Its continuations are remembered by digest along the line of pages it extends.
+    """
+
+    __slots__ = ("delivered", "limits", "link", "plan", "request", "session")
+
+    def __init__(
+        self, plan: PaginationPlan[T, P], request: _Request, limits: _Limits, link: _Link | None = None
+    ) -> None:
+        """Start after a page's link, or before the first page."""
+        self.plan = plan
+        self.request = request
+        self.limits = limits
+        self.link = link
+        self.delivered = 0 if link is None else link.items
+        self.session: OperationSession | None = None
+
+    def progress(self) -> ProtocolProgress:
+        """Return the pages fetched, the items delivered, and the session's sends so far."""
+        session = self.session
+        return MappingProxyType({
+            "pages": 0 if (link := self.link) is None else link.index + 1,
+            "items": self.delivered,
+            "network_send_count": 0 if session is None else session.network_send_count,
+            "network_send_budget_used": 0 if session is None else session.network_send_budget_used,
+        })
+
+    def session_id(self) -> str | None:
+        """Return the identifier of the walk's session once it started."""
+        return None if (session := self.session) is None else session.session_id
+
+    def limit(
+        self, limit: int, kind: Literal["items", "pages", "network_sends"], refused: BudgetExceededError | None = None
+    ) -> SessionLimitError:
+        """Return the error of a session limit reached while pages remain, with the child call a send was refused."""
+        plan = self.plan
+        if refused is None:
+            return SessionLimitError(
+                kind=kind,
+                limit=limit,
+                progress=self.progress(),
+                helper_id=plan.helper_id,
+                operation=plan.operation,
+                parent_session_id=self.session_id(),
+            )
+        return SessionLimitError(
+            kind=kind,
+            limit=limit,
+            progress=self.progress(),
+            helper_id=plan.helper_id,
+            operation=plan.operation,
+            operation_id=refused.operation_id,
+            call_id=refused.call_id,
+            parent_session_id=refused.parent_session_id,
+            info=refused.info,
+            cause=refused,
+            resource_attempt_count=refused.resource_attempt_count,
+            redirect_count=refused.redirect_count,
+            auth_exchange_count=refused.auth_exchange_count,
+            network_send_count=refused.network_send_count,
+            network_send_budget_used=refused.network_send_budget_used,
+            auth_exchange_budget_used=refused.auth_exchange_budget_used,
+            auth_refresh_ids=refused.auth_refresh_ids,
+            auth_refresh_pending=refused.auth_refresh_pending,
+            wire_send_count=refused.wire_send_count,
+        )
+
+    def state_error(self, action: str, state: str) -> ProtocolStateError:
+        """Return the refusal of an action the pager's state forbids."""
+        plan = self.plan
+        return ProtocolStateError(
+            state=state,
+            action=action,
+            helper_id=plan.helper_id,
+            operation=plan.operation,
+            parent_session_id=self.session_id(),
+        )
+
+    def ready(self) -> OperationSession | None:
+        """Return the session the next page is fetched in, or None when no page remains.
+
+        A limit reached while pages remain and a continuation seen before raise instead, sending nothing; the session
+        starts with the first fetch.
+        """
+        link = self.link
+        if link is not None and link.digest is None:
+            return None
+        limits = self.limits
+        if (limit := limits.max_items) is not None and self.delivered >= limit:
+            if link is None:
+                return None
+            raise self.limit(limit, "items")
+        if link is not None and (limit := limits.max_pages) is not None and link.index + 1 >= limit:
+            raise self.limit(limit, "pages")
+        if link is not None and link.seen is not None:
+            plan = self.plan
+            raise PaginationCycleError(
+                page_index=link.index,
+                first_seen_page_index=link.seen,
+                location=plan.continuation.read,
+                helper_id=plan.helper_id,
+                operation=plan.operation,
+                parent_session_id=self.session_id(),
+                info=link.response,
+            )
+        if (session := self.session) is None:
+            from ..client.logical import OperationSession  # noqa: PLC0415 - Only a fetch loads the call runtime.
+
+            session = self.session = OperationSession(
+                total_timeout=limits.total_timeout,
+                deadline=limits.deadline,
+                max_network_sends=limits.max_network_sends,
+            )
+        if (limit := session.send_limit) is not None and session.network_send_budget_used >= limit:
+            raise self.limit(limit, "network_sends")
+        return session
+
+    def operation(self) -> OperationPlan[P, object]:
+        """Return the operation the next page calls: the helper's for the first page, its continued one after it."""
+        return self.plan.call if self.link is None else self.plan.continued
+
+    def arguments(self) -> tuple[object, ...]:
+        """Return the next page's arguments: the first page's, with the last page's cursor as its wire value."""
+        arguments = self.request.arguments
+        if (link := self.link) is None:
+            return arguments
+        position = self.plan.position
+        return (*arguments[:position], link.cursor, *arguments[position + 1 :])
+
+    def build(self, data: P, wire: WireValue, info: ResponseInfo) -> tuple[Page[T, P], WireValue | Missing]:
+        """Return a decoded page and its cursor, refusing missing or null items and an invalid cursor.
+
+        The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
+        another type fails its response's validation first, in every mode.
+        """
+        plan = self.plan
+        selector = plan.items_selector
+        if (
+            (selected := resolve(wire, selector.pointer)) is MISSING
+            or selected is None
+            or (native := plan.items(data)) is None
+        ):
+            raise _data_error(plan, info, _absence(selected), selector)
+        cursor = _cursor(plan, wire, info, self.limits.max_cursor_bytes)
+        continuation = None if isinstance(cursor, Missing) else Continuation(kind="cursor", value=cursor)
+        return Page(items=tuple(native), data=data, response=info, continuation=continuation), cursor
+
+    def record(self, page: Page[T, P], cursor: WireValue | Missing) -> Page[T, P]:
+        """Link a fetched page after the last one, noting whether its continuation was seen before on its line."""
+        previous = self.link
+        index = 0 if previous is None else previous.index + 1
+        continuation = page.continuation
+        digest = None if continuation is None else sha256(continuation_json(continuation)).digest()
+        history = _line(previous)
+        first = None if digest is None else history.seen.setdefault(digest, index)
+        history.last = index
+        link = self.link = _Link(
+            self.plan.fingerprint,
+            self.request,
+            index,
+            len(page.items) + (0 if previous is None else previous.items),
+            None if isinstance(cursor, Missing) else cursor,
+            digest,
+            None if first == index else first,
+            page.response,
+            history,
+        )
+        object.__setattr__(page, "_link", link)  # noqa: PLC2801 - Link the sealed page once, as its helper fetched it.
+        return page
+
+    @contextmanager
+    def mapped(self) -> Generator[None, None, None]:
+        """Raise a child call's refusal for want of a session send slot as the session's limit error."""
+        try:
+            yield
+        except BudgetExceededError as error:
+            if error.budget_kind != "parent_network":
+                raise
+            raise self.limit(error.limit, "network_sends", error) from None
+
+
+def _line(link: _Link | None) -> _History:
+    """Return the history a page after a link extends: its line's, or a copy up to it for an earlier page."""
+    if link is None:
+        return _History({}, -1)
+    history = link.history
+    if history.last == link.index:
+        return history
+    return _History({digest: index for digest, index in history.seen.items() if index <= link.index}, link.index)
+
+
+def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
+    """Return the link of a page this helper fetched, refusing any other page."""
+    link = page._link if isinstance(page, Page) else None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    if link is None or link.fingerprint != plan.fingerprint:
+        raise ProtocolConfigurationError(
+            field_path=("page",), condition="binding_mismatch", helper_id=plan.helper_id, operation=plan.operation
+        )
+    return link
+
+
+class _State(Enum):
+    READY = "ready"
+    FAILED = "failed"
+    CLOSED = "closed"
+
+
+class _Traversal(Generic[T, P]):
+    """What the synchronous and asyncio pagers share: their state, mode, buffered page, and walk."""
+
+    __slots__ = ("_items", "_lock", "_mode", "_position", "_state", "_walk")
+
+    def __init__(self, walk: _Walk[T, P]) -> None:
+        """Keep the walk; nothing is sent until the first page is requested."""
+        self._walk = walk
+        self._lock = threading.Lock()
+        self._mode: Literal["items", "pages"] | None = None
+        self._state = _State.READY
+        self._items: tuple[T, ...] = ()
+        self._position = 0
+
+    @property
+    def progress(self) -> ProtocolProgress:
+        """Return the pages fetched, the items delivered, and the session's sends so far."""
+        return self._walk.progress()
+
+    def _enter(self, mode: Literal["items", "pages"], action: str) -> None:
+        """Take the pager for one step in a mode, fixing the mode on first use.
+
+        A concurrent step, a closed or failed pager, and then a step in the other mode are refused, in that order.
+        """
+        if not self._lock.acquire(blocking=False):
+            raise self._walk.state_error(action, "fetching")
+        if (state := self._state) is not _State.READY:
+            self._lock.release()
+            raise self._walk.state_error(action, state.value)
+        if (current := self._mode) is not None and current != mode:
+            self._lock.release()
+            raise self._walk.state_error(action, current)
+        self._mode = mode
+
+    def _select(self, mode: Literal["items", "pages"], action: str) -> None:
+        """Fix the pager's mode without stepping it."""
+        self._enter(mode, action)
+        self._lock.release()
+
+    def _ready(self) -> OperationSession | None:
+        """Return the session of the next fetch, or None once no page remains; a refusal fails the pager."""
+        try:
+            return self._walk.ready()
+        except (SessionLimitError, PaginationCycleError):
+            self._state = _State.FAILED
+            raise
+
+    def _take(self) -> T:
+        """Return the next buffered item, refusing it once the delivered items reached the item limit."""
+        walk = self._walk
+        if (limit := walk.limits.max_items) is not None and walk.delivered >= limit:
+            self._state = _State.FAILED
+            raise walk.limit(limit, "items")
+        walk.delivered += 1
+        self._position += 1
+        return self._items[self._position - 1]
+
+    def _buffer(self, page: Page[T, P]) -> None:
+        self._items = page.items
+        self._position = 0
+
+    def _close(self, action: str) -> None:
+        if not self._lock.acquire(blocking=False):
+            raise self._walk.state_error(action, "fetching")
+        self._state = _State.CLOSED
+        self._lock.release()
+
+
+@final
+class _PageIterator(Generic[R]):
+    """Iterate over a pager's pages through the pager itself."""
+
+    __slots__ = ("_step",)
+
+    def __init__(self, step: Callable[[], R]) -> None:
+        """Keep the pager's step that returns its next page."""
+        self._step = step
+
+    def __iter__(self) -> Self:
+        """Return this iterator."""
+        return self
+
+    def __next__(self) -> R:
+        """Return the next page."""
+        return self._step()
+
+
+@final
+class _AsyncPageIterator(Generic[R]):
+    """Iterate over an asyncio pager's pages through the pager itself."""
+
+    __slots__ = ("_step",)
+
+    def __init__(self, step: Callable[[], Awaitable[R]]) -> None:
+        """Keep the pager's step that returns its next page."""
+        self._step = step
+
+    def __aiter__(self) -> Self:
+        """Return this iterator."""
+        return self
+
+    async def __anext__(self) -> R:
+        """Return the next page."""
+        return await self._step()
+
+
+@final
+class Pager(_Traversal[T, P]):
+    """Iterate over a helper's items, or over its pages with `iter_pages`, fetching each page only when it is needed.
+
+    A pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration or
+    consuming it from two threads at once raises ProtocolStateError.
+    """
+
+    __slots__ = ("_core",)
+
+    def __init__(self, core: ClientCore, walk: _Walk[T, P]) -> None:
+        """Keep the client core the pages are fetched through."""
+        super().__init__(walk)
+        self._core = core
+
+    def __iter__(self) -> Self:
+        """Iterate over the items."""
+        self._select("items", "iter")
+        return self
+
+    def __next__(self) -> T:
+        """Return the next item, fetching the next page once the current one is consumed."""
+        self._enter("items", "next")
+        try:
+            while self._position >= len(self._items):
+                if (session := self._ready()) is None:
+                    raise StopIteration
+                self._buffer(self._fetch(session))
+            return self._take()
+        finally:
+            self._lock.release()
+
+    def iter_pages(self) -> Iterator[Page[T, P]]:
+        """Return an iterator over the pages, each fetched when it is requested."""
+        self._select("pages", "iter_pages")
+        return _PageIterator(self._page)
+
+    def _page(self) -> Page[T, P]:
+        self._enter("pages", "next")
+        try:
+            if (session := self._ready()) is None:
+                raise StopIteration
+            page = self._fetch(session)
+            self._walk.delivered += len(page.items)
+            return page
+        finally:
+            self._lock.release()
+
+    def _fetch(self, session: OperationSession) -> Page[T, P]:
+        walk = self._walk
+        try:
+            with walk.mapped():
+                return walk.record(*_fetch(self._core, walk, session))
+        except BaseException:
+            self._state = _State.FAILED
+            raise
+
+    def close(self) -> None:
+        """Stop the pager; later steps raise ProtocolStateError, and closing again does nothing."""
+        self._close("close")
+
+    def __enter__(self) -> Self:
+        """Return this pager, which leaving the block closes."""
+        return self
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close the pager."""
+        self.close()
+
+
+@final
+class AsyncPager(_Traversal[T, P]):
+    """Iterate over a helper's items with asyncio, or over its pages with `iter_pages`, fetching pages when needed.
+
+    An asyncio pager is one helper session. After a failure it refuses to continue, and mixing item and page iteration
+    or consuming it from two tasks at once raises ProtocolStateError.
+    """
+
+    __slots__ = ("_core",)
+
+    def __init__(self, core: AsyncClientCore, walk: _Walk[T, P]) -> None:
+        """Keep the asyncio client core the pages are fetched through."""
+        super().__init__(walk)
+        self._core = core
+
+    def __aiter__(self) -> Self:
+        """Iterate over the items."""
+        self._select("items", "aiter")
+        return self
+
+    async def __anext__(self) -> T:
+        """Return the next item, fetching the next page once the current one is consumed."""
+        self._enter("items", "anext")
+        try:
+            while self._position >= len(self._items):
+                if (session := self._ready()) is None:
+                    raise StopAsyncIteration
+                self._buffer(await self._fetch(session))
+            return self._take()
+        finally:
+            self._lock.release()
+
+    def iter_pages(self) -> AsyncIterator[Page[T, P]]:
+        """Return an asyncio iterator over the pages, each fetched when it is requested."""
+        self._select("pages", "iter_pages")
+        return _AsyncPageIterator(self._page)
+
+    async def _page(self) -> Page[T, P]:
+        self._enter("pages", "anext")
+        try:
+            if (session := self._ready()) is None:
+                raise StopAsyncIteration
+            page = await self._fetch(session)
+            self._walk.delivered += len(page.items)
+            return page
+        finally:
+            self._lock.release()
+
+    async def _fetch(self, session: OperationSession) -> Page[T, P]:
+        walk = self._walk
+        try:
+            with walk.mapped():
+                return walk.record(*await _afetch(self._core, walk, session))
+        except BaseException:
+            self._state = _State.FAILED
+            raise
+
+    async def aclose(self) -> None:
+        """Stop the pager; later steps raise ProtocolStateError, and closing again does nothing."""
+        self._close("aclose")
+
+    async def __aenter__(self) -> Self:
+        """Return this pager, which leaving the block closes."""
+        return self
+
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close the pager."""
+        await self.aclose()
+
+
+def _fetch(core: ClientCore, walk: _Walk[T, P], session: OperationSession) -> tuple[Page[T, P], WireValue | Missing]:
+    """Fetch the walk's next page as a child call of its session."""
+    request, limits = walk.request, walk.limits
+    return core.execute_page(
+        walk.plan,
+        walk.operation(),
+        walk.arguments,
+        walk.build,
+        body=request.body,
+        media_type=request.media_type,
+        options=limits.options,
+        session=session,
+        max_page_bytes=limits.max_page_bytes,
+    )
+
+
+async def _afetch(
+    core: AsyncClientCore, walk: _Walk[T, P], session: OperationSession
+) -> tuple[Page[T, P], WireValue | Missing]:
+    """Fetch the walk's next page as an asyncio child call of its session."""
+    request, limits = walk.request, walk.limits
+    return await core.execute_page(
+        walk.plan,
+        walk.operation(),
+        walk.arguments,
+        walk.build,
+        body=request.body,
+        media_type=request.media_type,
+        options=limits.options,
+        session=session,
+        max_page_bytes=limits.max_page_bytes,
+    )
+
+
+def first_page(  # noqa: PLR0913
+    core: ClientCore,
+    plan: PaginationPlan[T, P],
+    arguments: tuple[object, ...],
+    *,
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    pagination_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> Page[T, P]:
+    """Fetch the first page of a helper in a session of its own."""
+    walk = _Walk(
+        plan, _Request(arguments, body, media_type), _limits(core, plan, pagination_options, options, session_options)
+    )
+    if (session := walk.ready()) is None:
+        raise walk.limit(0, "items")
+    with walk.mapped():
+        return walk.record(*_fetch(core, walk, session))
+
+
+async def afirst_page(  # noqa: PLR0913
+    core: AsyncClientCore,
+    plan: PaginationPlan[T, P],
+    arguments: tuple[object, ...],
+    *,
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    pagination_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> Page[T, P]:
+    """Fetch the first page of a helper with asyncio, in a session of its own."""
+    walk = _Walk(
+        plan, _Request(arguments, body, media_type), _limits(core, plan, pagination_options, options, session_options)
+    )
+    if (session := walk.ready()) is None:
+        raise walk.limit(0, "items")
+    with walk.mapped():
+        return walk.record(*await _afetch(core, walk, session))
+
+
+def iterate_pages(  # noqa: PLR0913
+    core: ClientCore,
+    plan: PaginationPlan[T, P],
+    arguments: tuple[object, ...],
+    *,
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    pagination_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> Pager[T, P]:
+    """Return a pager over a helper's items, checking its options now; it sends nothing until it is iterated."""
+    limits = _limits(core, plan, pagination_options, options, session_options)
+    return Pager(core, _Walk(plan, _Request(arguments, body, media_type), limits))
+
+
+def aiterate_pages(  # noqa: PLR0913
+    core: AsyncClientCore,
+    plan: PaginationPlan[T, P],
+    arguments: tuple[object, ...],
+    *,
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    pagination_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> AsyncPager[T, P]:
+    """Return an asyncio pager over a helper's items, checking its options now; it sends nothing until iterated."""
+    limits = _limits(core, plan, pagination_options, options, session_options)
+    return AsyncPager(core, _Walk(plan, _Request(arguments, body, media_type), limits))
+
+
+def following_page(  # noqa: PLR0913
+    core: ClientCore,
+    plan: PaginationPlan[T, P],
+    page: object,
+    *,
+    pagination_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> Page[T, P] | None:
+    """Fetch the page after a page this helper fetched, in a session of its own, or return None after the last one.
+
+    The pages before it count toward the item and page limits, and a continuation they returned is a cycle.
+    """
+    limits = _limits(core, plan, pagination_options, options, session_options)
+    link = _page_link(plan, page)
+    walk = _Walk(plan, link.request, limits, link)
+    if (session := walk.ready()) is None:
+        return None
+    with walk.mapped():
+        return walk.record(*_fetch(core, walk, session))
+
+
+async def afollowing_page(  # noqa: PLR0913
+    core: AsyncClientCore,
+    plan: PaginationPlan[T, P],
+    page: object,
+    *,
+    pagination_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> Page[T, P] | None:
+    """Fetch the page after a page this helper fetched with asyncio, or return None after the last one.
+
+    The pages before it count toward the item and page limits, and a continuation they returned is a cycle.
+    """
+    limits = _limits(core, plan, pagination_options, options, session_options)
+    link = _page_link(plan, page)
+    walk = _Walk(plan, link.request, limits, link)
+    if (session := walk.ready()) is None:
+        return None
+    with walk.mapped():
+        return walk.record(*await _afetch(core, walk, session))

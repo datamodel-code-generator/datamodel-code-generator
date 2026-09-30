@@ -188,8 +188,40 @@ class _Guard:
         return self.reason is not None and _uncancel(self.task) <= self.level
 
 
+class OperationSession:
+    """The state one protocol helper session shares with its child calls: its identity, deadline, and send slots.
+
+    The session ends at the earlier of its total timeout, counted from its start, and its absolute deadline; every
+    child call also reserves each send here, and none is admitted once the session has no slot left.
+    """
+
+    __slots__ = ("deadline", "network_send_budget_used", "network_send_count", "send_limit", "session_id", "started")
+
+    def __init__(
+        self, *, total_timeout: float | None, deadline: Deadline | None, max_network_sends: int | None
+    ) -> None:
+        """Start the session now, with its effective deadline and send limit."""
+        self.started = monotonic()
+        self.session_id = str(uuid4())
+        if total_timeout is not None and (deadline is None or self.started + total_timeout < deadline.at):
+            deadline = absolute_deadline(self.started + total_timeout)
+        self.deadline = deadline
+        self.send_limit = max_network_sends
+        self.network_send_budget_used = 0
+        self.network_send_count = 0
+
+    def room(self, *, exchange: bool = False) -> bool:
+        """Return whether the session can still admit a send, and a token request before it for an exchange."""
+        return (limit := self.send_limit) is None or self.network_send_budget_used + exchange < limit
+
+
 class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of one call.
-    """Keep all state belonging to a call, through stream handoff and the release of its owned work."""
+    """Keep all state belonging to a call, through stream handoff and the release of its owned work.
+
+    A child call of a helper session also reserves its sends in that session's budget.
+    """
+
+    session: OperationSession | None = None
 
     __slots__ = (
         "_guard",
@@ -233,7 +265,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
             total_at = self.started + settings.total_timeout
             if deadline is None or total_at < deadline.at:
                 deadline = absolute_deadline(total_at)
-        self.deadline = deadline
+        self.deadline: Deadline | None = deadline
         self.resource_attempt_count = 0
         self.redirect_count = 0
         self.auth_exchange_count = 0
@@ -261,10 +293,16 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         """Return how many acquisitions the call started or waited for are still queued or running."""
         return sum(refresh.outstanding for refresh in refreshes) if (refreshes := self._refreshes) else 0
 
+    @property
+    def parent_session_id(self) -> str | None:
+        """Return the identifier of the helper session the call belongs to, or None for an ordinary call."""
+        return None if (session := self.session) is None else session.session_id
+
     def shortfall(self) -> tuple[AuthBudgetKind, int, int] | None:
         """Return the budget without room for a new acquisition, or None.
 
-        An acquisition needs a token exchange and two network sends: its token request and the request it serves.
+        An acquisition needs a token exchange and two network sends, from the call and from its session: its token
+        request and the request it serves.
         """
         config = self.settings.auth
         assert config is not None
@@ -273,6 +311,12 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
                 return "auth_exchange", limit, used
             if (sends := self.send_limit) is not None and (used := self.network_send_budget_used) + 1 >= sends:
                 return "network", sends, used
+            if (
+                (session := self.session) is not None
+                and (sends := session.send_limit) is not None
+                and (used := session.network_send_budget_used) + 1 >= sends
+            ):
+                return "parent_network", sends, used
         return None
 
     def exchange_room(self) -> bool:
@@ -282,10 +326,12 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         return self.auth_exchange_budget_used < config.max_token_exchanges
 
     def charge(self) -> None:
-        """Consume the token exchange and the network send of an acquisition admitted for the call."""
+        """Consume the token exchange and the network send of an acquisition admitted for the call and its session."""
         with self._scope.lock:
             self.auth_exchange_budget_used += 1
             self.network_send_budget_used += 1
+            if (session := self.session) is not None:
+                session.network_send_budget_used += 1
 
     def joined(self, refresh: RefreshRecord) -> None:
         """Record an acquisition the call started or waits for."""
@@ -293,10 +339,12 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         self.auth_refresh_ids = (*self.auth_refresh_ids, refresh.refresh_id)
 
     def exchanged(self) -> None:
-        """Count the token request that an acquisition charged to the call sent."""
+        """Count the token request that an acquisition charged to the call sent, in its session too."""
         with self._scope.lock:
             self.auth_exchange_count += 1
             self.network_send_count += 1
+            if (session := self.session) is not None:
+                session.network_send_count += 1
 
     def remaining(self) -> float | None:
         """Return the current call or stream deadline's remaining seconds, never negative."""
@@ -307,9 +355,10 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         return self._scope.closing_signals()
 
     def snapshot_error(self, error: ErrorT) -> ErrorT:
-        """Attach this call's identity and a readonly counter snapshot to an error before publication."""
+        """Attach this call's identity, its session's, and a readonly counter snapshot to an error to publish."""
         error.operation_id = self.operation_id
         error.call_id = self.call_id
+        error.parent_session_id = self.parent_session_id
         set_error_counters(
             error,
             resource_attempt_count=self.resource_attempt_count,
@@ -390,7 +439,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         return self.snapshot_error(error) if isinstance(error, SDKError) else error
 
     def admit_send(self, *, redirect: bool = False) -> None:
-        """Atomically consume one nonrefundable send slot immediately before the adapter invocation."""
+        """Atomically consume one nonrefundable send slot, and its session's, immediately before the adapter call."""
         with self._scope.lock:
             self.check("send")
             limit = self.send_limit
@@ -398,6 +447,8 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
                 raise self.snapshot_error(
                     BudgetExceededError(budget_kind="network", limit=limit, used=self.network_send_budget_used)
                 )
+            if (session := self.session) is not None:
+                self._reserve(session)
             self.network_send_budget_used += 1
             if redirect:
                 self.redirect_count += 1
@@ -405,6 +456,13 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
                 self.resource_attempt_count += 1
             self.network_send_count += 1
             self.delivery_state = DeliveryState.MAYBE_SENT
+
+    def _reserve(self, session: OperationSession) -> None:
+        """Consume a send slot of the call's session, refusing the send once none is left; the lock is held."""
+        if (limit := session.send_limit) is not None and (used := session.network_send_budget_used) >= limit:
+            raise self.snapshot_error(BudgetExceededError(budget_kind="parent_network", limit=limit, used=used))
+        session.network_send_budget_used += 1
+        session.network_send_count += 1
 
     def observe_send(self, trace: AttemptTrace) -> None:
         """Count resource header evidence once after the adapter invocation, before publishing its outcome."""

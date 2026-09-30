@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._api_manifest import canonical_bytes, document_identity, portable, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
-from datamodel_code_generator._client.naming import HELPER_ARGUMENTS
+from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._client.plan import fact
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
@@ -154,11 +154,17 @@ def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> 
     return None if present else f"{_label(operation)} has no {location} parameter {name!r}"
 
 
-def helper_problems(protocols: Protocols | None, plan: ClientPlan) -> Iterator[Diagnostic]:
-    """Refuse enabled helpers whose entry operation takes a reserved argument, then every enabled helper for now."""
+def helper_problems(
+    protocols: Protocols | None, plan: ClientPlan, checked: Mapping[str, list[Diagnostic]]
+) -> Iterator[Diagnostic]:
+    """Refuse enabled helpers whose entry operation takes a reserved argument or whose name gives a taken class name.
+
+    Then report each enabled helper's own problems in declaration order: those of a checked helper, or else that its
+    kind is not supported yet.
+    """
     if protocols is None:
         return
-    enabled = [helper for helper in protocols.helpers if helper.enabled]
+    enabled = tuple(helper for helper in protocols.helpers if helper.enabled)
     specs = {spec.contract.id: spec for spec in plan.operations}
     for helper in enabled:
         spec = specs[protocols.operations[helper.links[0].ref].id]
@@ -171,15 +177,37 @@ def helper_problems(protocols: Protocols | None, plan: ClientPlan) -> Iterator[D
             )
             entry = OperationRef(pointer=spec.contract.id.use_site.pointer)
             yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
+    yield from _class_problems(enabled, protocols)
     for helper in enabled:
+        if (problems := checked.get(helper.name)) is not None:
+            yield from problems
+            continue
         tree = helper.tree
         continuation = f" with {tree['continuation']['kind']} continuation" if helper.kind == "pagination" else ""
         message = f"The {helper.kind} helper {helper.name!r}{continuation} is not supported yet"
         yield _problem("E_CLIENT_UNSUPPORTED", "target", helper.at, message)
 
 
-def protocol_helpers(protocols: Protocols | None) -> list[JSONValue]:
-    """Return the manifest record of each helper in declaration order, disabled ones included."""
+def _class_problems(helpers: tuple[Helper, ...], protocols: Protocols) -> Iterator[Diagnostic]:
+    """Refuse an enabled helper whose name gives a namespace or helper class name another name already gave."""
+    owners: dict[str, tuple[str, ...]] = {}
+    for helper in helpers:
+        for parts, class_name in helper_classes(helper.name, helper.kind):
+            if (owner := owners.setdefault(class_name, parts)) != parts:
+                message = (
+                    f"The helper name {helper.name!r} gives the class name {class_name!r}, which {'.'.join(owner)!r} "
+                    "already gives"
+                )
+                entry = OperationRef(pointer=protocols.operations[helper.links[0].ref].id.use_site.pointer)
+                yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
+                break
+
+
+def protocol_helpers(protocols: Protocols | None, fingerprints: Mapping[str, str]) -> list[JSONValue]:
+    """Return the manifest record of each helper in declaration order, disabled ones included.
+
+    A rendered helper's contract digest is its fingerprint; a disabled one's is that of an empty contract closure.
+    """
     if protocols is None:
         return []
     return [
@@ -188,7 +216,7 @@ def protocol_helpers(protocols: Protocols | None) -> list[JSONValue]:
             "kind": helper.kind,
             "enabled": helper.enabled,
             "metadata_ref": _METADATA + helper.name.replace("~", "~0").replace("/", "~1"),
-            "contract_sha256": _contract(helper),
+            "contract_sha256": fingerprints.get(helper.name) or _contract(helper),
         }
         for helper in protocols.helpers
     ]
@@ -200,8 +228,11 @@ def _contract(helper: Helper) -> str:
     return sha256(canonical_bytes(closure))
 
 
-def protocol_metadata(protocols: Protocols | None, request: TargetRequest) -> JSONObject:
-    """Return the normalized helper metadata, with references as the manifest's source references."""
+def helper_metadata(protocols: Protocols | None, request: TargetRequest) -> dict[str, JSONValue]:
+    """Return each helper's normalized settings, with references as the manifest's source references.
+
+    Equivalent spellings of a reference, such as an omitted or explicit root document, give equal settings.
+    """
     if protocols is None:
         return {}
 
@@ -210,5 +241,9 @@ def protocol_metadata(protocols: Protocols | None, request: TargetRequest) -> JS
             return {"document": protocols.documents[reference], "pointer": reference.pointer}
         return request.documents.operation(protocols.operations[reference].id)
 
-    helpers = {helper.name: portable(helper.tree, Path.as_posix, refer) for helper in protocols.helpers}
-    return {"schema_version": 1, "helpers": helpers}
+    return {helper.name: portable(helper.tree, Path.as_posix, refer) for helper in protocols.helpers}
+
+
+def protocol_metadata(metadata: dict[str, JSONValue], protocols: Protocols | None) -> JSONObject:
+    """Return the manifest's helper metadata: every helper's normalized settings, nothing without helper settings."""
+    return {} if protocols is None else {"schema_version": 1, "helpers": metadata}

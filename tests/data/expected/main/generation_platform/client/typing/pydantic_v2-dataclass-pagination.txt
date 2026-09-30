@@ -1,0 +1,37 @@
+mypy pets and pagination.py: clean
+pyright pets and pagination.py: clean
+ty pets and pagination.py: clean
+pagination_negative.py 10 marked lines
+mypy pagination_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
+  14 call-overload
+  15 misc
+  16 assignment
+  17 assignment
+  18 arg-type
+  19 call-arg
+  20 arg-type
+  21 arg-type
+  22 misc
+  23 attr-defined
+pyright pagination_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
+  14 reportArgumentType
+  15 reportGeneralTypeIssues
+  16 reportAssignmentType
+  17 reportAssignmentType
+  18 reportArgumentType
+  19 reportCallIssue
+  20 reportArgumentType
+  21 reportArgumentType
+  22 reportAttributeAccessIssue
+  23 reportAttributeAccessIssue
+ty pagination_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
+  14 invalid-argument-type
+  15 invalid-await
+  16 invalid-assignment
+  17 invalid-assignment
+  18 invalid-argument-type
+  19 unknown-argument
+  20 invalid-argument-type
+  21 invalid-argument-type
+  22 invalid-assignment
+  23 unresolved-attribute
