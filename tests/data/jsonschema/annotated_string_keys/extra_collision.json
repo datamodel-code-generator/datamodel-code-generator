@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "title": "SomeSpec",
+  "properties": {
+    "Annotated": {
+      "type": "string"
+    },
+    "StringConstraints": {
+      "type": "string"
+    }
+  },
+  "propertyNames": {
+    "pattern": "^[A-Za-z_]+$"
+  },
+  "additionalProperties": {
+    "type": "integer"
+  }
+}
