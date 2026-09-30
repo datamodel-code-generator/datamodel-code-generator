@@ -77,7 +77,7 @@ def test_annotated_string_keys(
                 expected_file=expected,
                 force_exec_validation=True,
             )
-        case "api":
+        case _:
             run_generate_file_and_assert(
                 input_path=source,
                 output_path=output_file,
