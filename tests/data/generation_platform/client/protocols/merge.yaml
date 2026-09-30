@@ -1,0 +1,5 @@
+schema_version: 1
+helpers:
+  users.all:
+    <<: {kind: pagination}
+    enabled: false

@@ -61,6 +61,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "fields-errors",
         "fields-cycle",
         "fields-optional-models",
+        "helpers",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -69,6 +70,51 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "protocols-disabled",
+        "protocols-python",
+        "protocols-toml",
+        "protocols-relative",
+        "protocols-empty",
+        "protocols-unsupported",
+        "protocols-unsupported-kinds",
+        "protocols-file-missing",
+        "protocols-not-utf8",
+        "protocols-not-yaml",
+        "protocols-control",
+        "protocols-complex-key",
+        "protocols-deep",
+        "protocols-duplicate",
+        "protocols-alias",
+        "protocols-alias-key",
+        "protocols-anchor",
+        "protocols-merge",
+        "protocols-not-mapping",
+        "protocols-empty-file",
+        "protocols-envelope",
+        "protocols-envelope-missing",
+        "protocols-names",
+        "protocols-shared-errors",
+        "protocols-pagination-errors",
+        "protocols-polling-errors",
+        "protocols-stream-errors",
+        "protocols-references",
+        "protocols-querystring",
+    ],
+)
+def test_client_protocols(case: str, tmp_path: Path) -> None:
+    """Load helper settings from YAML, TOML, or Python records, validate and record them, and keep the package.
+
+    Cases that give the same settings another way report under the name of the case they equal.
+    """
+    report, rendered = client_render(case, tmp_path)
+    assert_output(report, EXPECTED / "protocols" / f"{report.splitlines()[0].removeprefix('# ')}.txt")
+    for backend, modules in rendered.items():
+        assert_generated_modules_output(modules, EXPECTED / "packages" / "helpers" / backend)
 
 
 def test_client_signature_style_digests(tmp_path: Path) -> None:
@@ -158,6 +204,13 @@ def test_client_body_arguments_digests(tmp_path: Path) -> None:
         "toml-retry-header-missing",
         "toml-retry-replay-missing",
         "toml-retry-scope-missing",
+        "protocols-path",
+        "protocols-type",
+        "protocols-records",
+        "protocols-records-invalid",
+        "protocols-records-shape",
+        "toml-protocols",
+        "toml-protocols-type",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:

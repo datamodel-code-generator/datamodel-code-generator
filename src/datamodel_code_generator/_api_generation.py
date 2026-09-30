@@ -135,7 +135,7 @@ class RenderedFile:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetRequest:
-    """Everything a target renders from: settings, the accepted model contracts, and the selection."""
+    """Everything a target renders from: settings, the accepted model contracts, the selection, and the cwd."""
 
     config: TargetConfig
     layout: TargetLayout
@@ -149,6 +149,7 @@ class TargetRequest:
     documents: DocumentTable
     state: TargetState
     resolve: Callable[[OperationRef], OperationContract | None]
+    cwd: Path
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -860,6 +861,7 @@ class _Planner:
                 documents=self.documents,
                 state=state,
                 resolve=self.operation,
+                cwd=self.cwd,
             )
         )
         if verifying := config.model_mode == "verify":

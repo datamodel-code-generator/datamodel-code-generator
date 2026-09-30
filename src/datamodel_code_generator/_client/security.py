@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._client.config import token
+from datamodel_code_generator._client.naming import token
 from datamodel_code_generator._generation_contract import LiteralMapping, LiteralScalar, LiteralSequence
 from datamodel_code_generator._runtime.client.scopes import scope_tuple
 from datamodel_code_generator._runtime.client.security import (

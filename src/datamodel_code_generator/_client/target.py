@@ -22,6 +22,12 @@ from datamodel_code_generator._client.plan import (
     plan_uses,
     style_uses,
 )
+from datamodel_code_generator._client.protocol_plan import (
+    helper_problems,
+    plan_protocols,
+    protocol_helpers,
+    protocol_metadata,
+)
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
@@ -40,6 +46,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
+    from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
@@ -75,6 +82,7 @@ class ClientTarget:
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         backend = _BACKENDS[request.model_config.output_model_type]
+        protocols = plan_protocols(request, config.protocols)
         wire = _wire(request, request.batch)
         try:
             plan = Planner(request, config, wire).plan()
@@ -104,7 +112,11 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         plan, named = plan_fields(plan, codecs, batch, wire)
-        if refused := (*named, *admission_problems(config.validation, codecs, argument_uses(plan))):
+        if refused := (
+            *named,
+            *admission_problems(config.validation, codecs, argument_uses(plan)),
+            *helper_problems(protocols, plan),
+        ):
             raise APIGenerationError(
                 tuple(
                     replace(item, source_uri=request.documents.root_uri, target_id=request.target_id)
@@ -117,7 +129,7 @@ class ClientTarget:
         validation = config.validation
         return TargetRender(
             files=renderer.files(),
-            target_data=_TargetData(plan, config, request, codecs, wire).data(),
+            target_data=_TargetData(plan, config, request, codecs, wire).data(protocols),
             dependencies=(
                 *DEPENDENCIES,
                 *(VALIDATION if codecs.bindings else ()),
@@ -133,6 +145,7 @@ class ClientTarget:
                 *model_dependencies(request.models),
             ),
             bindings=_bindings(codecs, backend),
+            protocol_metadata=protocol_metadata(protocols, request),
         )
 
 
@@ -209,13 +222,13 @@ class _TargetData:
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
-    def data(self) -> JSONObject:
-        """Return the client manifest data."""
+    def data(self, protocols: Protocols | None) -> JSONObject:
+        """Return the client manifest data with the target's helpers."""
         extensions = int(self.config.formatter_settings is not None) + len(self.config.custom_formatters)
         return {
             "namespace": self.config.package,
             "public_api": [self.operation(spec) for spec in self.plan.operations],
-            "protocol_helpers": [],
+            "protocol_helpers": protocol_helpers(protocols),
             "runtime_defaults_ref": "/inputs/target_config/runtime_defaults",
             "selection_ref": "/selection",
             "binding_refs": [f"/bindings/{index}" for index in range(len(self.codecs.bindings))],

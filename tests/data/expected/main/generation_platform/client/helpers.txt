@@ -1,0 +1,88 @@
+# helpers
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/tags/__init__.py
+  write client/resources/tags/_sync.py
+  write client/resources/tags/_async.py
+  write client/resources/labels/__init__.py
+  write client/resources/labels/_sync.py
+  write client/resources/labels/_async.py
+  write client/resources/jobs/__init__.py
+  write client/resources/jobs/_sync.py
+  write client/resources/jobs/_async.py
+  write client/resources/events/__init__.py
+  write client/resources/events/_sync.py
+  write client/resources/events/_async.py
+  write client/resources/records/__init__.py
+  write client/resources/records/_sync.py
+  write client/resources/records/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/tags/__init__.py
+  write client/types/tags/_operations.py
+  write client/types/labels/__init__.py
+  write client/types/labels/_operations.py
+  write client/types/jobs/__init__.py
+  write client/types/jobs/_operations.py
+  write client/types/events/__init__.py
+  write client/types/events/_operations.py
+  write client/types/records/__init__.py
+  write client/types/records/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 26
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:offset=offset, query:page=page, header:Snapshot=snapshot)
+    exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 users.search_users()
+    exports client.types.users.SearchUsersResponse client.types.users.SearchUsersErrorData client.types.users.SearchUsersHTTPError
+    exports client.types.users.SearchUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 tags.list_tags(query:items=items, query:cursor=cursor)
+    exports client.types.tags.ListTagsResponse client.types.tags.ListTagsErrorData client.types.tags.ListTagsHTTPError
+    exports client.types.tags.ListTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 labels.list_labels(query:items=items)
+    exports client.types.labels.ListLabelsResponse client.types.labels.ListLabelsErrorData client.types.labels.ListLabelsHTTPError
+    exports client.types.labels.ListLabelsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 jobs.run_job()
+    exports client.types.jobs.RunJobResponse client.types.jobs.RunJobErrorData client.types.jobs.RunJobHTTPError
+    exports client.types.jobs.RunJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 jobs.get_job(path:jobId=job_id)
+    exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 jobs.cancel_job(path:jobId=job_id)
+    exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
+    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 jobs.get_job_result(path:jobId=job_id)
+    exports client.types.jobs.GetJobResultResponse client.types.jobs.GetJobResultErrorData client.types.jobs.GetJobResultHTTPError
+    exports client.types.jobs.GetJobResultRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 events.stream_events(header:Last-Event-ID=last_event_id)
+    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
+    exports client.types.events.StreamEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 records.stream_records(query:after=after)
+    exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
+    exports client.types.records.StreamRecordsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  S_OPERATION_EXCLUDED selection /paths/~1admin~1audit/get: GET /admin/audit is excluded by exclude_tags 'admin': Administration stays internal

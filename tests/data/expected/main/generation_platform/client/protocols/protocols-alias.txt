@@ -1,0 +1,4 @@
+# protocols-alias
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols: The protocol configuration file uses a YAML anchor or alias

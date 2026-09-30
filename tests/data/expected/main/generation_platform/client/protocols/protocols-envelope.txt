@@ -1,0 +1,6 @@
+# protocols-envelope
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_UNKNOWN config protocols.extra: protocols has no key 'extra'
+  E_CONFIG_VALUE config protocols.schema_version: protocols.schema_version must be 1
+  E_CONFIG_VALUE config protocols.helpers: protocols.helpers must be a mapping

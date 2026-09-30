@@ -1,0 +1,246 @@
+openapi: 3.1.0
+info:
+  title: Helpers
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: offset
+          in: query
+          schema: {type: integer}
+        - name: page
+          in: query
+          schema: {type: integer}
+        - name: Snapshot
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            Link:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /users/search:
+    post:
+      operationId: searchUsers
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                cursor: {type: string}
+      responses:
+        '200':
+          description: One page of matching users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /tags:
+    get:
+      operationId: listTags
+      tags: [tags]
+      parameters:
+        - name: items
+          in: query
+          schema: {type: integer}
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of tags.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NamePage'}
+  /labels:
+    get:
+      operationId: listLabels
+      tags: [labels]
+      parameters:
+        - name: items
+          in: query
+          schema: {type: integer}
+      responses:
+        '200':
+          description: One page of labels.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NamePage'}
+  /jobs:
+    post:
+      operationId: runJob
+      tags: [jobs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/JobRequest'}
+      responses:
+        '202':
+          description: The job was accepted.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /jobs/{jobId}:
+    parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema: {type: string}
+    get:
+      operationId: getJob
+      tags: [jobs]
+      responses:
+        '200':
+          description: The job.
+          headers:
+            Retry-After:
+              schema: {type: integer}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+    delete:
+      operationId: cancelJob
+      tags: [jobs]
+      responses:
+        '202':
+          description: Cancellation was requested.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /jobs/{jobId}/result:
+    get:
+      operationId: getJobResult
+      tags: [jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The job's result.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/JobResult'}
+  /events:
+    get:
+      operationId: streamEvents
+      tags: [events]
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: Server-sent events.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /records:
+    get:
+      operationId: streamRecords
+      tags: [records]
+      parameters:
+        - name: after
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One record per line.
+          content:
+            application/x-ndjson:
+              schema: {type: string}
+            application/json:
+              schema: {$ref: 'helpers-external.yaml#/components/schemas/Record'}
+  /admin/audit:
+    get:
+      operationId: listAudit
+      tags: [admin]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of audit entries.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NamePage'}
+webhooks:
+  userCreated:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/User'}
+      responses:
+        '200':
+          description: Received.
+components:
+  schemas:
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        name: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next_cursor: {type: [string, 'null']}
+        next_url: {type: string}
+        has_more: {type: boolean}
+        total: {type: integer}
+    NamePage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {type: string}
+        next_cursor: {type: [string, 'null']}
+    JobRequest:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        state: {type: string}
+    Job:
+      type: object
+      required: [id, status]
+      properties:
+        id: {type: string}
+        status: {type: string}
+        expires: {type: string}
+    JobResult:
+      type: object
+      properties:
+        output: {type: string}
+    UserEvent:
+      type: object
+      properties:
+        id: {type: string}
+    StreamError:
+      type: object
+      properties:
+        message: {type: string}

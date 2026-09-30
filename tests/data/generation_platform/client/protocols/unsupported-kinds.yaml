@@ -1,0 +1,8 @@
+schema_version: 1
+helpers:
+  chat.connect: {kind: websocket, channel: /chat}
+  users.created: {kind: webhook, enabled: false}
+  users.cached: {kind: cache}
+  files.upload: {kind: resumable_upload}
+  users.bulk: {kind: batch}
+  users.queue: {kind: queue}
