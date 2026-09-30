@@ -150,7 +150,7 @@ def _expiry(package: ModuleType, auth: ModuleType, transports: ModuleType, respo
                 f" same={family.get(_context(auth)) is first}"
             )
             now = start + 101
-            lines.append(f"    once the token expired = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+            lines.append(f"    once the token expired = {_outcome(lambda: family.get(_context(auth)))}")
 
 
 class _Once(Secret):
