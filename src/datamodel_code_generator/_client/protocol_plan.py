@@ -91,7 +91,12 @@ class _Resolver:
 
     def identity(self, document: str | None) -> str | None:
         """Return a named document's identity relative to the base; a malformed name raises ValueError."""
-        return None if document is None else document_identity(document, self.base)
+        if document is None:
+            return None
+        if "\x00" in document:
+            msg = "A document name must not contain NUL"
+            raise ValueError(msg)
+        return document_identity(document, self.base)
 
     def link(self, helper: Helper, link: Link) -> Iterator[Diagnostic]:
         """Resolve one operation reference, and check its selection and each request target it takes."""
