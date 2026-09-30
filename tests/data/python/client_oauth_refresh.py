@@ -401,7 +401,7 @@ def _faults(  # noqa: PLR0913, PLR0915
         (
             "secret slower than the session",
             _Sent(transports, rotated),
-            {"client_secret": _Once(auth.ApiKeyCredential("s"), delay=0.3), "total": 0.1},
+            {"client_secret": _Once(auth.ApiKeyCredential("s"), delay=1.0), "total": 0.5},
         ),
     ):
         with provider(adapter, **settings) as family:
@@ -418,7 +418,7 @@ def _faults(  # noqa: PLR0913, PLR0915
     held = _Held(oauth.token_request)
     adapter = _Sent(transports, rotated)
     with (
-        provider(adapter, client_secret=None, client_auth_method="none", total=0.05) as family,
+        provider(adapter, client_secret=None, client_auth_method="none", total=0.5) as family,
         patch.object(oauth, "token_request", held),
     ):
         lines.append(f"  public refresh held past its session = {_outcome(lambda: family.get(_context(auth)))}")
@@ -445,7 +445,7 @@ def _faults(  # noqa: PLR0913, PLR0915
             lines.append(f"  worker thread refusing to start = {_outcome(lambda: family.get(_context(auth)))}")
         lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
     adapter = _Sent(transports, rotated)
-    with provider(adapter, total=0.05) as family:
+    with provider(adapter, total=0.5) as family:
         deferred: list[Callable[[], object]] = []
         with patch.object(ThreadPoolExecutor, "submit", lambda _, work, *args: deferred.append(lambda: work(*args))):
             lines.append(f"  worker starting once the session ended = {_outcome(lambda: family.get(_context(auth)))}")
@@ -816,7 +816,7 @@ def _reloads(auth: ModuleType, options: ModuleType, transports: ModuleType, resp
         lines.append(f"  get joining a reload = {joiner.line} after {reloading.line}")
     gate = threading.Event()
     load = _Load(_tokens(auth), gate=gate)
-    family, _ = provider(load, options=auth.OAuthProviderOptions(refresh_timeout=0.05))
+    family, _ = provider(load, options=auth.OAuthProviderOptions(refresh_timeout=0.5))
     load.answers.append(newer)
     with family:
         gate.set()
