@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "title": "SomeSpec",
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "propertyNames": {
+    "anyOf": [
+      {
+        "pattern": "^[a-m]"
+      },
+      {
+        "pattern": "^[n-z]"
+      }
+    ]
+  },
+  "additionalProperties": {
+    "type": "integer"
+  }
+}

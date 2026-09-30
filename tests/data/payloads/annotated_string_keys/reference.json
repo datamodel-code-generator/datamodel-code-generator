@@ -1,0 +1,17 @@
+{
+  "valid": {
+    "services": {
+      "my-service_01": "ok"
+    }
+  },
+  "invalid": [
+    {
+      "value": {
+        "services": {
+          "bad key": "ok"
+        }
+      },
+      "error": "string_pattern_mismatch"
+    }
+  ]
+}

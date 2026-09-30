@@ -34,6 +34,7 @@ IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER = Import.from_full_path("pydantic.Validat
 
 # Shared Pydantic type imports (moved from model/pydantic/imports.py)
 IMPORT_CONSTR = Import.from_full_path("pydantic.constr")
+IMPORT_STRING_CONSTRAINTS = Import.from_full_path("pydantic.StringConstraints")
 IMPORT_CONINT = Import.from_full_path("pydantic.conint")
 IMPORT_CONFLOAT = Import.from_full_path("pydantic.confloat")
 IMPORT_CONDECIMAL = Import.from_full_path("pydantic.condecimal")

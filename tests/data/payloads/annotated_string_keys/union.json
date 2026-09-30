@@ -1,0 +1,30 @@
+{
+  "valid": {
+    "services": {
+      "s_a": "ok"
+    }
+  },
+  "invalid": [
+    {
+      "value": {
+        "services": {
+          "bad": "ok"
+        }
+      },
+      "error": "string_pattern_mismatch"
+    },
+    {
+      "valid": {
+        "services": {
+          "i_a": 1
+        }
+      },
+      "value": {
+        "services": {
+          "bad": 1
+        }
+      },
+      "error": "string_pattern_mismatch"
+    }
+  ]
+}
