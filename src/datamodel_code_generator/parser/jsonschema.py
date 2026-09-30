@@ -10151,6 +10151,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             key_type = self.data_type_manager.get_data_type(
                 Types.string,
                 pattern=merged_pattern,
+                use_annotated=self.use_annotated,
+                target_pydantic_version=self.target_pydantic_version,
             )
             if isinstance(property_names, JsonSchemaObject):
                 merged_property_names = property_names.model_copy(deep=True)
@@ -10212,7 +10214,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 kwargs["minLength"] = property_names.minLength
             if property_names.maxLength is not None:
                 kwargs["maxLength"] = property_names.maxLength
-            return self.data_type_manager.get_data_type(Types.string, **kwargs)
+            return self.data_type_manager.get_data_type(
+                Types.string,
+                use_annotated=self.use_annotated,
+                target_pydantic_version=self.target_pydantic_version,
+                **kwargs,
+            )
         return self.data_type_manager.get_data_type(Types.string)
 
     def _parse_string_property_name_union(

@@ -1,0 +1,18 @@
+{
+  "valid": {
+    "services": {
+      "x_a": "ok",
+      "y_b": "ok"
+    }
+  },
+  "invalid": [
+    {
+      "value": {
+        "services": {
+          "z_a": "ok"
+        }
+      },
+      "error": "string_pattern_mismatch"
+    }
+  ]
+}

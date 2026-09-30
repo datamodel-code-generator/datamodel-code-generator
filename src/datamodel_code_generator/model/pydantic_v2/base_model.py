@@ -64,6 +64,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_FIELD_VALIDATOR,
     IMPORT_MISSING,
     IMPORT_MODEL_VALIDATOR,
+    IMPORT_STRING_CONSTRAINTS,
     IMPORT_TYPE_ADAPTER,
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
@@ -104,6 +105,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataTypeManager as DataTypeManagerBase
 
 
+_CONSTRAINED_STRING_IMPORTS = frozenset({IMPORT_CONSTR, IMPORT_STRING_CONSTRAINTS, IMPORT_FIELD})
+
+
 class _RawRepr:
     """Wrapper to prevent repr() from adding quotes around a value."""
 
@@ -141,8 +145,10 @@ def _supports_pydantic_typed_extra_dict_key(data_type: DataType) -> bool:  # noq
 
     match data_type.literals:
         case [] if (
-            data_type.type == IMPORT_CONSTR.import_
-            and data_type.import_ == IMPORT_CONSTR
+            (import_ := data_type.import_)
+            and import_ in _CONSTRAINED_STRING_IMPORTS
+            and data_type.type == import_.import_
+            and (import_ != IMPORT_FIELD or data_type.base_type_hint == "str")
             and data_type.is_func
             and data_type.kwargs
             and data_type.alias is None
