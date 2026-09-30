@@ -136,6 +136,8 @@
     after 101s = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
   lifetime 100s with refresh token None after 95s = access-1 scopes=None expires_in_minutes=2 same=True
     after 101s = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token sent=[]
+  refresh proven unsent before the token expires = access-1 scopes=None expires_in_minutes=2 same=True
+    once the token expired = OAuthExchangeError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=connect refresh_id=<call> cause=TransportError sent=['refresh-1', 'refresh-1', 'refresh-1']
   connect failure proven unsent = OAuthExchangeError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=connect refresh_id=<call> cause=TransportError
     later get = access-2 scopes=None expires_in_minutes=60
     refresh tokens sent = ['refresh-1', 'refresh-1']
