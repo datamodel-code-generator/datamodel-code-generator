@@ -188,6 +188,11 @@ def _store_configuration(auth: ModuleType, errors: ModuleType, transports: Modul
         lines.append(f"  retry before the first acquisition = {_reloaded(family.retry_store)}")
         family.get(_context(auth))
         lines.append(f"  retry with nothing pending = {_reloaded(family.retry_store)} {_kept(persisted)}")
+        for label, expected in (("a negative revision", -1), ("a revision of another type", True)):
+            lines.append(
+                f"  retry expecting {label} ="
+                f" {_reloaded(lambda expected=expected: family.retry_store(expected_revision=expected))}"
+            )
     lines.append(f"  retry once closed = {_reloaded(family.retry_store)}")
 
 
@@ -311,17 +316,17 @@ def _replacements(
     """Store a replacing token set before it becomes current, expecting the confirmed revision, unless not persisted."""
     replaced = _tokens(auth, "replaced", "refresh-9", revision=5)
     for label, persisted, retries in (
-        ("persisted replacement after a failed initial load", _Persisted(errors, reads=(RuntimeError("load"),)), 0),
+        ("persisted replacement after a failed initial load", _Persisted(errors, reads=(RuntimeError("load"),)), ()),
         (
             "persisted replacement beside another stored token set",
             _Persisted(errors, _tokens(auth, "other", "refresh-7", revision=3), reads=(RuntimeError("load"),)),
-            1,
+            ({}, {"expected_revision": 3}),
         ),
-        ("persisted replacement of a loaded token set", _Persisted(errors, _tokens(auth, revision=2)), 0),
+        ("persisted replacement of a loaded token set", _Persisted(errors, _tokens(auth, revision=2)), ()),
         (
             "persisted replacement with a failing store",
             _Persisted(errors, _tokens(auth, revision=2), RuntimeError("store"), RuntimeError("store")),
-            2,
+            ({}, {}),
         ),
     ):
         with _family(auth, persisted, _Sent(transports)) as family:
@@ -331,8 +336,12 @@ def _replacements(
                 f"    get = {_outcome(lambda family=family: family.get(_context(auth)))} {_kept(persisted)}"
                 f" loads={sum(context.purpose == 'initial_load' for context in persisted.contexts)}"
             )
-            for _ in range(retries):
-                lines.append(f"    retry = {_reloaded(family.retry_store)} {_kept(persisted)}")
+            for arguments in retries:
+                lines.append(
+                    f"    retry {arguments} ="
+                    f" {_reloaded(lambda family=family, arguments=arguments: family.retry_store(**arguments))}"
+                    f" {_kept(persisted)}"
+                )
                 lines.append(f"    get = {_outcome(lambda family=family: family.get(_context(auth)))}")
     persisted = _Persisted(errors, _tokens(auth, revision=2))
     adapter = _Sent(transports, _reply(responses, _ROTATED))
@@ -405,6 +414,10 @@ def _store_concurrency(  # noqa: PLR0915
         _failure(lambda: family.get(_context(auth)))
         persisted.entered.clear()
         first = started(family.retry_store, persisted.entered, _reloaded)
+        lines.append(
+            f"  retry expecting another revision during a retry ="
+            f" {_reloaded(lambda: family.retry_store(expected_revision=7))}"
+        )
 
         def opening(call: Callable[[], object]) -> str:
             if "limit_kind=waiters" in (line := _reloaded(call)):

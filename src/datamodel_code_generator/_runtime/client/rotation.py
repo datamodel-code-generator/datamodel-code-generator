@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from time import monotonic
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from ..model_codecs.unset import Unset
 from .auth import BearerCredential, TokenPersistenceContext, TokenSet, TokenVersion
 from .errors import (
     AuthConfigurationError,
@@ -571,13 +572,15 @@ class RotationFamily(SharedRefresh):
             self._refuse_explicit("reload_token_set", pending=True)
             return self._admitted(RotationJob("reload"), waiter)
 
-    def retrying(self, waiter: SyncWaiter | AsyncWaiter) -> tuple[RotationJob, bool]:
+    def retrying(self, waiter: SyncWaiter | AsyncWaiter, expected: int | Unset | None) -> tuple[RotationJob, bool]:
         """Admit a store of the pending token set, or join the one running; return the job and whether to start it.
 
-        It is refused without a pending store, while the family is closing, or while another job runs.
+        The store expects the revision the failed one did unless the caller names another, as after a conflict. It is
+        refused without a pending store, while the family is closing, or while another job runs, including a retry
+        expecting another revision.
         """
         with self.lock:
-            if self.lifecycle == "OPEN" and isinstance(active := self._active, RotationJob) and active.kind == "retry":
+            if (active := self._retry(expected)) is not None:
                 self.join(active, waiter)
                 return active, False
             self._refuse_explicit("retry_store")
@@ -588,8 +591,17 @@ class RotationFamily(SharedRefresh):
                     delivery_state=DeliveryState.NOT_SENT,
                     provider_id=self.provider_id,
                 )
-            slot = Slot(stopped.slot.token_set, stopped.slot.expected_revision, "retry_store")
-            return self._admitted(RotationJob("retry", slot), waiter), True
+            pending = stopped.slot
+            revision = pending.expected_revision if isinstance(expected, Unset) else expected
+            return self._admitted(RotationJob("retry", Slot(pending.token_set, revision, "retry_store")), waiter), True
+
+    def _retry(self, expected: int | Unset | None) -> RotationJob | None:
+        """Return the retry running with the revision a new retry expects, which it joins; the caller holds the lock."""
+        if self.lifecycle != "OPEN" or not isinstance(active := self._active, RotationJob) or active.kind != "retry":
+            return None
+        slot = active.storing
+        assert slot is not None
+        return active if isinstance(expected, Unset) or slot.expected_revision == expected else None
 
     def _refuse_explicit(self, action: AuthAction, *, pending: bool = False, admitting: bool = True) -> None:
         """Refuse an explicit operation while the family is closing, a job runs, or, if asked, a store is pending.
@@ -891,10 +903,10 @@ class SyncRotation(SyncTokens):
             self._refresh.perform(job, waiter)
             job.stored()
 
-    def retry_store(self) -> TokenSet:
+    def retry_store(self, expected: int | Unset | None) -> TokenSet:
         """Store the pending token set again, or join the store running, and return the stored token set."""
         waiter = SyncWaiter()
-        job, start = self._family.retrying(waiter)
+        job, start = self._family.retrying(waiter, expected)
         self._refresh.perform(job, waiter, start=start)
         return job.stored()
 
@@ -980,10 +992,10 @@ class AsyncRotation(AsyncTokens):
             await self._refresh.perform(job, waiter)
             job.stored()
 
-    async def retry_store(self) -> TokenSet:
+    async def retry_store(self, expected: int | Unset | None) -> TokenSet:
         """Store the pending token set again on the family's event loop, as the synchronous family does."""
         waiter = self._waiter()
-        job, start = self._family.retrying(waiter)
+        job, start = self._family.retrying(waiter, expected)
         await self._refresh.perform(job, waiter, start=start)
         return job.stored()
 

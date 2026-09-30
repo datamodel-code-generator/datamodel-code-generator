@@ -5,6 +5,8 @@
   async store without a load = AuthConfigurationError condition=missing_value field_path=('load',)
   retry before the first acquisition = AuthStateConflictError state=UNINITIALIZED delivery_state=NOT_SENT phase=unknown action=retry_store
   retry with nothing pending = AuthStateConflictError state=READY delivery_state=NOT_SENT phase=unknown action=retry_store stores=[] record=revision=1 access=access-1 refresh=refresh-1
+  retry expecting a negative revision = AuthConfigurationError condition=invalid_value field_path=('expected_revision',)
+  retry expecting a revision of another type = AuthConfigurationError condition=invalid_type field_path=('expected_revision',)
   retry once closed = AuthStateConflictError state=CLOSED delivery_state=NOT_SENT phase=unknown action=retry_store
   constructor token set with nothing stored = access-1 scopes=None expires_in_minutes=60 stores=[] record=None
   first refresh = access-2 scopes=None expires_in_minutes=60 stores=[(1, None, 'store')] record=revision=1 access=access-2 refresh=refresh-2
@@ -50,15 +52,17 @@
     get = replaced scopes=None expires_in_minutes=60 stores=[(5, None, 'replace')] record=revision=5 access=replaced refresh=refresh-9 loads=1
   persisted replacement beside another stored token set = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=replace pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError
     get = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=replace pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError stores=[(5, None, 'replace')] record=revision=3 access=other refresh=refresh-7 loads=1
-    retry = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError stores=[(5, None, 'replace'), (5, None, 'retry_store')] record=revision=3 access=other refresh=refresh-7
+    retry {} = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError stores=[(5, None, 'replace'), (5, None, 'retry_store')] record=revision=3 access=other refresh=refresh-7
     get = AuthTokenStoreConflictError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store pending_revision=5 observed_revision=3 refresh_id=<call> cause=AuthTokenStoreConflictError
+    retry {'expected_revision': 3} = revision=5 access=replaced refresh=refresh-9 stores=[(5, None, 'replace'), (5, None, 'retry_store'), (5, 3, 'retry_store')] record=revision=5 access=replaced refresh=refresh-9
+    get = replaced scopes=None expires_in_minutes=60
   persisted replacement of a loaded token set = None
     get = replaced scopes=None expires_in_minutes=60 stores=[(5, 2, 'replace')] record=revision=5 access=replaced refresh=refresh-9 loads=1
   persisted replacement with a failing store = AuthTokenStoreError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=replace expected_revision=2 pending_revision=5 refresh_id=<call> cause=RuntimeError
     get = AuthTokenStoreError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=replace expected_revision=2 pending_revision=5 refresh_id=<call> cause=RuntimeError stores=[(5, 2, 'replace')] record=revision=2 access=access-1 refresh=refresh-1 loads=1
-    retry = AuthTokenStoreError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store expected_revision=2 pending_revision=5 refresh_id=<call> cause=RuntimeError stores=[(5, 2, 'replace'), (5, 2, 'retry_store')] record=revision=2 access=access-1 refresh=refresh-1
+    retry {} = AuthTokenStoreError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store expected_revision=2 pending_revision=5 refresh_id=<call> cause=RuntimeError stores=[(5, 2, 'replace'), (5, 2, 'retry_store')] record=revision=2 access=access-1 refresh=refresh-1
     get = AuthTokenStoreError state=PERSIST_PENDING delivery_state=NOT_SENT phase=store action=retry_store expected_revision=2 pending_revision=5 refresh_id=<call> cause=RuntimeError
-    retry = revision=5 access=replaced refresh=refresh-9 stores=[(5, 2, 'replace'), (5, 2, 'retry_store'), (5, 2, 'retry_store')] record=revision=5 access=replaced refresh=refresh-9
+    retry {} = revision=5 access=replaced refresh=refresh-9 stores=[(5, 2, 'replace'), (5, 2, 'retry_store'), (5, 2, 'retry_store')] record=revision=5 access=replaced refresh=refresh-9
     get = replaced scopes=None expires_in_minutes=60
   replacement not persisted = None stores=[] record=revision=2 access=access-1 refresh=refresh-1
     refresh = access-2 scopes=None expires_in_minutes=60 stores=[(6, 2, 'store')] record=revision=6 access=access-2 refresh=refresh-2 sent=['refresh-9']
@@ -67,6 +71,7 @@
   retry during a refresh = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=retry_store
   replace during a refresh = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=replace_token_set
   get joining a store = access-2 scopes=None expires_in_minutes=60 after access-2 scopes=None expires_in_minutes=60 stores=[(1, None, 'store')] record=revision=1 access=access-2 refresh=refresh-2 sent=['refresh-1']
+  retry expecting another revision during a retry = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=retry_store
   concurrent retries = revision=1 access=access-2 refresh=refresh-2 / ['AuthConcurrencyLimitError state=PERSIST_PENDING delivery_state=NOT_SENT phase=admission limit_kind=waiters limit=2 refresh_id=<call>', 'revision=1 access=access-2 refresh=refresh-2'] stores=[(1, None, 'store'), (1, None, 'retry_store')] record=revision=1 access=access-2 refresh=refresh-2
   retry while closing = AuthStateConflictError state=CLOSING delivery_state=NOT_SENT phase=unknown action=retry_store
   provider closing while its store runs = access-2 scopes=None expires_in_minutes=60 released=None stores=[(1, None, 'store')] record=revision=1 access=access-2 refresh=refresh-2

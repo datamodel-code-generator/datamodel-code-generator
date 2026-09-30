@@ -1130,12 +1130,14 @@ class RefreshTokenProvider(_SharedTokens):
         """
         self._rotation.replace(token_set, persist=persist)
 
-    def retry_store(self) -> TokenSet:
-        """Store the token set whose store failed once more, expecting the same revision, and return it once current.
+    def retry_store(self, *, expected_revision: int | Unset | None = UNSET) -> TokenSet:
+        """Store the token set whose store failed once more, and return it once current.
 
-        Concurrent calls share one store; it sends no token request, and needs a failed store and no other job.
+        The store expects the revision the failed one did, or `expected_revision` when given, such as the
+        `observed_revision` of a conflict the application resolved. Concurrent calls expecting the same revision share
+        one store; it sends no token request, and needs a failed store and no other job.
         """
-        return self._rotation.retry_store()
+        return self._rotation.retry_store(_expected_revision(expected_revision))
 
     def reload_token_set(self) -> TokenSet | None:
         """Load the persisted token set once, keeping it if it is newer, and return the current token set.
@@ -1185,13 +1187,27 @@ class AsyncRefreshTokenProvider(_AsyncSharedTokens):
         """Adopt a newer token set as the synchronous provider does, on the event loop the provider is bound to."""
         await self._rotation.replace(token_set, persist=persist)
 
-    async def retry_store(self) -> TokenSet:
+    async def retry_store(self, *, expected_revision: int | Unset | None = UNSET) -> TokenSet:
         """Store the token set whose store failed once more as the synchronous provider does, on the provider's loop."""
-        return await self._rotation.retry_store()
+        return await self._rotation.retry_store(_expected_revision(expected_revision))
 
     async def reload_token_set(self) -> TokenSet | None:
         """Load the persisted token set once as the synchronous provider does, on the provider's event loop."""
         return await self._rotation.reload()
+
+
+def _expected_revision(value: object) -> int | Unset | None:
+    """Accept a stored revision to expect, None for none stored, or UNSET to keep the one the failed store expected."""
+    if (
+        value is None
+        or isinstance(value, Unset)
+        or (isinstance(value, int) and not isinstance(value, bool) and value >= 0)
+    ):
+        return value
+    condition: Literal["invalid_type", "invalid_value"] = (
+        "invalid_value" if isinstance(value, int) and not isinstance(value, bool) else "invalid_type"
+    )
+    raise AuthConfigurationError(field_path=("expected_revision",), condition=condition)
 
 
 def _options(options: object) -> OAuthProviderOptions:
