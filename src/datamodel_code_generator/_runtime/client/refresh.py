@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextvars
 import threading
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -253,7 +254,9 @@ class SharedRefresh:
         self._outstanding: set[Job] = set()
         self._running: set[Job] = set()
 
-    def claim(self, waiter: _Waiter, *, force: bool) -> Published | tuple[Job, bool, bool, Published | None]:
+    def claim(
+        self, waiter: _Waiter, context: CredentialContext, *, force: bool
+    ) -> Published | tuple[Job, bool, bool, Published | None]:
         """Return usable cached material, or attach the waiter to the family's job.
 
         The result says whether to start the job, whether another caller started it, and the material that serves the
@@ -272,10 +275,14 @@ class SharedRefresh:
             )
         if (active := self._active) is not None:
             self.expire(active)
-        now, cache = monotonic(), self.cache
-        if not force and cache is not None and (cache.refresh_at is None or now < cache.refresh_at):
-            return cache
-        if not force and cache is not None and cache.expires_at is not None and now < cache.expires_at:
+        if (usable := self.usable(context, force=force)) is not None:
+            return usable
+        if (
+            not force
+            and (cache := self.cache) is not None
+            and cache.expires_at is not None
+            and monotonic() < cache.expires_at
+        ):
             return self._renewing(waiter, cache)
         admission = waiter.admission
         start = joined = False
@@ -336,6 +343,17 @@ class SharedRefresh:
         self.receipts.started(job)
         return job
 
+    def usable(self, context: CredentialContext, *, force: bool) -> Published | None:
+        """Return the cached material a caller may use without an acquisition, or None; the caller holds the lock."""
+        del context
+        if (
+            not force
+            and (cache := self.cache) is not None
+            and (cache.refresh_at is None or monotonic() < cache.refresh_at)
+        ):
+            return cache
+        return None
+
     def over_budget(self, shortfall: tuple[AuthBudgetKind, int, int], refresh_id: str | None = None) -> SDKError:
         """Return the refusal of a call without room for the acquisition it would pay for."""
         kind, limit, used = shortfall
@@ -354,10 +372,19 @@ class SharedRefresh:
         """Start a job's provider-owned session, charged to the call of its oldest waiter; the caller holds the lock."""
         options = self.options
         job.session = Session.start(options.refresh_timeout, options.phase_timeout)
+        job.progress.guard = partial(self._sending, job)
         self._running.add(job)
         if (charged := job.waiters[0].admission) is not None:
             charged.charge()
             job.charged = charged
+
+    def _sending(self, job: Job) -> bool:
+        """Mark a job's token request sent, unless the job already ended; its expiry reads this under the lock."""
+        with self.lock:
+            if job.outcome is not None:
+                return False
+            job.progress.sent = True
+            return True
 
     def commit(self, job: Job, outcome: Outcome) -> None:
         """Commit a job's outcome once, publish material before anyone wakes, and deliver it in arrival order."""
@@ -365,18 +392,22 @@ class SharedRefresh:
             return
         job.outcome = outcome
         self._active = None
-        state: RefreshState
-        if isinstance(outcome, Published):
-            self.cache = outcome
-            state, failure = "READY", None
-        else:
-            state, failure = outcome.state, outcome.error.reason_code
-        self.state = state
+        state, failure = self.settle(job, outcome)
         self.receipts.completed(job, RefreshInfo(job.refresh_id, state, int(job.progress.sent), failure))
         waiters, job.waiters = job.waiters, []
         for waiter in waiters:
             waiter.deliver(outcome)
         self.changed.notify_all()
+
+    def settle(self, job: Job, outcome: Outcome) -> tuple[RefreshState, str | None]:
+        """Apply a job's outcome to the family, and return the state its receipt reports with its failure."""
+        del job
+        if isinstance(outcome, Published):
+            self.cache = outcome
+            self.state = "READY"
+            return "READY", None
+        self.state = outcome.state
+        return outcome.state, outcome.error.reason_code
 
     def leave(self, waiter: _Waiter, job: Job) -> None:
         """Detach a departing waiter, counting the token request its call paid for, if the job sent it by now.
@@ -545,14 +576,9 @@ class SyncSharedRefresh:
 
     __slots__ = ("_acquire", "_close", "_executor", "_released", "_releasing", "shared")
 
-    def __init__(
-        self,
-        options: OAuthProviderOptions,
-        acquire: Callable[[Job], Outcome],
-        close: Callable[[], None],
-    ) -> None:
-        """Keep how a job acquires and how the owned transport closes; no thread exists yet."""
-        self.shared = SharedRefresh(options)
+    def __init__(self, shared: SharedRefresh, acquire: Callable[[Job], Outcome], close: Callable[[], None]) -> None:
+        """Keep the family, how a job acquires, and how the owned transport closes; no thread exists yet."""
+        self.shared = shared
         self._acquire = acquire
         self._close = close
         self._executor: ThreadPoolExecutor | None = None
@@ -567,7 +593,7 @@ class SyncSharedRefresh:
         shared = self.shared
         waiter = SyncWaiter(admission)
         with shared.lock:
-            claimed = shared.claim(waiter, force=force)
+            claimed = shared.claim(waiter, context, force=force)
             if isinstance(claimed, Published):
                 return claimed.material
             job, start, joined, serving = claimed
@@ -755,13 +781,10 @@ class AsyncSharedRefresh:
     __slots__ = ("_acquire", "_close", "_finalizer", "_tasks", "shared")
 
     def __init__(
-        self,
-        options: OAuthProviderOptions,
-        acquire: Callable[[Job], Awaitable[Outcome]],
-        close: Callable[[], Awaitable[None]],
+        self, shared: SharedRefresh, acquire: Callable[[Job], Awaitable[Outcome]], close: Callable[[], Awaitable[None]]
     ) -> None:
-        """Keep how a job acquires and how the owned transport closes; no task exists yet."""
-        self.shared = SharedRefresh(options)
+        """Keep the family, how a job acquires, and how the owned transport closes; no task exists yet."""
+        self.shared = shared
         self._acquire = acquire
         self._close = close
         self._tasks: set[Task[None]] = set()
@@ -777,7 +800,7 @@ class AsyncSharedRefresh:
         shared = self.shared
         waiter = AsyncWaiter(get_running_loop().create_future(), admission)
         with shared.lock:
-            claimed = shared.claim(waiter, force=force)
+            claimed = shared.claim(waiter, context, force=force)
             if isinstance(claimed, Published):
                 return claimed.material
             job, start, joined, serving = claimed
@@ -876,6 +899,22 @@ def _invalidate(shared: SharedRefresh, version: object) -> None:
             shared.cache = None
 
 
+def checked_audience(audience: object) -> str | None:
+    """Refuse a fixed audience that is neither None nor a nonempty string."""
+    if audience is not None and (not isinstance(audience, str) or not audience):
+        raise AuthConfigurationError(field_path=("audience",), condition="invalid_value")
+    return audience
+
+
+def checked_context(context: object, audience: str | None) -> CredentialContext:
+    """Refuse a context of another type or one requiring an audience other than the configured one."""
+    if not isinstance(context, CredentialContext):
+        raise AuthConfigurationError(field_path=("context",), condition="invalid_type")
+    if context.audience is not None and context.audience != audience:
+        raise AuthConfigurationError(field_path=("audience",), condition="audience_mismatch")
+    return context
+
+
 class ClientCredentialsGrant:
     """The client credentials grant's configuration, its request form, and how an answer becomes an outcome."""
 
@@ -886,22 +925,12 @@ class ClientCredentialsGrant:
         if method == "none":
             raise AuthConfigurationError(field_path=("client_auth_method",), condition="invalid_value")
         self.scopes = checked_scopes(scopes, "scopes")
-        if audience is not None and (not isinstance(audience, str) or not audience):
-            raise AuthConfigurationError(field_path=("audience",), condition="invalid_value")
-        self.audience: str | None = audience
+        self.audience = checked_audience(audience)
         self.form = (
             ("grant_type", "client_credentials"),
             *((("scope", " ".join(self.scopes)),) if self.scopes else ()),
-            *((("audience", audience),) if audience is not None else ()),
+            *((("audience", self.audience),) if self.audience is not None else ()),
         )
-
-    def checked(self, context: object) -> CredentialContext:
-        """Refuse a context of another type or one requiring an audience other than the configured one."""
-        if not isinstance(context, CredentialContext):
-            raise AuthConfigurationError(field_path=("context",), condition="invalid_type")
-        if context.audience is not None and context.audience != self.audience:
-            raise AuthConfigurationError(field_path=("audience",), condition="audience_mismatch")
-        return context
 
     def outcome(self, exchanged: Exchanged, job: Job, provider_id: str) -> Outcome:
         """Publish a valid token, or fail the job: client credentials never leave anything consumed behind."""
@@ -977,20 +1006,24 @@ def _rejected(
     )
 
 
-class SyncClientCredentials:
-    """A synchronous client credentials family: the shared job engine around one token endpoint."""
+class SyncTokens(ABC):
+    """A synchronous token family of a provider of the SDK: the shared job engine around one token endpoint."""
 
-    __slots__ = ("_endpoint", "_grant", "_refresh")
+    __slots__ = ("_audience", "_endpoint", "_refresh")
 
-    def __init__(self, options: OAuthProviderOptions, endpoint: TokenEndpoint, grant: ClientCredentialsGrant) -> None:
-        """Keep the endpoint and grant; nothing runs until the first acquisition."""
+    def __init__(self, shared: SharedRefresh, endpoint: TokenEndpoint, audience: str | None) -> None:
+        """Keep the family, its endpoint, and its audience; nothing runs until the first acquisition."""
         self._endpoint = endpoint
-        self._grant = grant
-        self._refresh = SyncSharedRefresh(options, self._acquire, endpoint.close)
+        self._audience = audience
+        self._refresh = SyncSharedRefresh(shared, self._acquire, endpoint.close)
+
+    @abstractmethod
+    def _acquire(self, job: Job) -> Outcome:
+        """Run one admitted job's exchange on a worker and return its outcome."""
 
     def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
         """Return usable material or acquire it, after checking the caller's context."""
-        return self._refresh.obtain(self._grant.checked(context), force=force, admission=admission)
+        return self._refresh.obtain(checked_context(context, self._audience), force=force, admission=admission)
 
     def exchange_needed(self, version: object) -> bool:
         """Return whether replacing a rejected version needs a new acquisition."""
@@ -1014,30 +1047,25 @@ class SyncClientCredentials:
         """Start closing the family without waiting."""
         return self._refresh.request_close()
 
-    def _acquire(self, job: Job) -> Outcome:
-        endpoint = self._endpoint
-        endpoint.prepare()
-        assert job.session is not None
-        exchanged = endpoint.exchange(self._grant.form, job.session, job.progress, "FAILED_NOT_SENT")
-        return self._grant.outcome(exchanged, job, self._refresh.shared.provider_id)
 
+class AsyncTokens(ABC):
+    """An asyncio token family of a provider of the SDK, bound to one event loop."""
 
-class AsyncClientCredentials:
-    """An asyncio client credentials family, bound to the event loop it was created on or first used from."""
+    __slots__ = ("_audience", "_endpoint", "_refresh")
 
-    __slots__ = ("_endpoint", "_grant", "_refresh")
-
-    def __init__(
-        self, options: OAuthProviderOptions, endpoint: AsyncTokenEndpoint, grant: ClientCredentialsGrant
-    ) -> None:
-        """Keep the endpoint and grant; nothing runs until the first acquisition."""
+    def __init__(self, shared: SharedRefresh, endpoint: AsyncTokenEndpoint, audience: str | None) -> None:
+        """Keep the family, its endpoint, and its audience; nothing runs until the first acquisition."""
         self._endpoint = endpoint
-        self._grant = grant
-        self._refresh = AsyncSharedRefresh(options, self._acquire, endpoint.aclose)
+        self._audience = audience
+        self._refresh = AsyncSharedRefresh(shared, self._acquire, endpoint.aclose)
+
+    @abstractmethod
+    async def _acquire(self, job: Job) -> Outcome:
+        """Run one admitted job's exchange in a task and return its outcome."""
 
     async def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
         """Return usable material or acquire it, after checking the caller's context and event loop."""
-        checked = self._grant.checked(context)
+        checked = checked_context(context, self._audience)
         self._endpoint.bind()
         return await self._refresh.obtain(checked, force=force, admission=admission)
 
@@ -1059,6 +1087,37 @@ class AsyncClientCredentials:
         """Close the family and its owned transport."""
         self._endpoint.bind()
         await self._refresh.aclose()
+
+
+class SyncClientCredentials(SyncTokens):
+    """A synchronous client credentials family."""
+
+    __slots__ = ("_grant",)
+
+    def __init__(self, options: OAuthProviderOptions, endpoint: TokenEndpoint, grant: ClientCredentialsGrant) -> None:
+        """Keep the endpoint and grant; nothing runs until the first acquisition."""
+        self._grant = grant
+        super().__init__(SharedRefresh(options), endpoint, grant.audience)
+
+    def _acquire(self, job: Job) -> Outcome:
+        endpoint = self._endpoint
+        endpoint.prepare()
+        assert job.session is not None
+        exchanged = endpoint.exchange(self._grant.form, job.session, job.progress, "FAILED_NOT_SENT")
+        return self._grant.outcome(exchanged, job, self._refresh.shared.provider_id)
+
+
+class AsyncClientCredentials(AsyncTokens):
+    """An asyncio client credentials family."""
+
+    __slots__ = ("_grant",)
+
+    def __init__(
+        self, options: OAuthProviderOptions, endpoint: AsyncTokenEndpoint, grant: ClientCredentialsGrant
+    ) -> None:
+        """Keep the endpoint and grant; nothing runs until the first acquisition."""
+        self._grant = grant
+        super().__init__(SharedRefresh(options), endpoint, grant.audience)
 
     async def _acquire(self, job: Job) -> Outcome:
         endpoint = self._endpoint
