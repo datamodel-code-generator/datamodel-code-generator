@@ -1,0 +1,159 @@
+[
+  {
+    "name": "issue",
+    "schema": "issue",
+    "options": {
+      "use_annotated": true
+    }
+  },
+  {
+    "name": "legacy",
+    "schema": "issue",
+    "options": {
+      "use_annotated": false
+    }
+  },
+  {
+    "name": "strict",
+    "schema": "issue",
+    "options": {
+      "use_annotated": true,
+      "strict_types": [
+        "str"
+      ]
+    }
+  },
+  {
+    "name": "names",
+    "schema": "names",
+    "options": {
+      "use_annotated": true
+    }
+  },
+  {
+    "name": "lengths",
+    "schema": "lengths",
+    "options": {
+      "use_annotated": true
+    }
+  },
+  {
+    "name": "merged",
+    "schema": "merged",
+    "options": {
+      "use_annotated": true
+    }
+  },
+  {
+    "name": "intersection",
+    "schema": "intersection",
+    "options": {
+      "use_annotated": true
+    },
+    "minimum_pydantic_version": [
+      2,
+      5,
+      0
+    ]
+  },
+  {
+    "name": "collision",
+    "schema": "collision",
+    "options": {
+      "use_annotated": true
+    }
+  },
+  {
+    "name": "root",
+    "schema": "root",
+    "options": {
+      "use_annotated": true,
+      "target_python_version": "3.10"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "minimum_pydantic_version": [
+      2,
+      5,
+      0
+    ]
+  },
+  {
+    "name": "extra",
+    "schema": "extra",
+    "options": {
+      "use_annotated": true
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  {
+    "name": "reference",
+    "schema": "reference",
+    "options": {
+      "use_annotated": true,
+      "collapse_root_models": true
+    }
+  },
+  {
+    "name": "extra_union",
+    "schema": "extra_union",
+    "options": {
+      "use_annotated": true
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  {
+    "name": "extra_collision",
+    "schema": "extra_collision",
+    "options": {
+      "use_annotated": true
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  {
+    "name": "generic",
+    "schema": "issue",
+    "options": {
+      "use_annotated": true,
+      "use_generic_container_types": true
+    }
+  },
+  {
+    "name": "union",
+    "schema": "union",
+    "options": {
+      "use_annotated": true
+    }
+  },
+  {
+    "name": "target_v2",
+    "schema": "names",
+    "options": {
+      "use_annotated": true,
+      "target_pydantic_version": "2"
+    }
+  },
+  {
+    "name": "target_v211",
+    "schema": "names",
+    "options": {
+      "use_annotated": true,
+      "target_pydantic_version": "2.11"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "minimum_pydantic_version": [
+      2,
+      11,
+      0
+    ]
+  }
+]
