@@ -82,6 +82,7 @@
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
   recovery cancelled while acquiring = RequestCancelledError delivery_state=RESPONSE_STARTED source=cancel_token cause=AuthProviderExecutionError exchanges=2 sends=3 budgets=2/3 refreshes=2 pending=1
+  exchange needed once a stuck acquisition outlived its session = True after DeadlineExceededError delivery_state=NOT_SENT phase=auth
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-1] b''
   async first call = 200 exchanges=1 sends=2 budgets=1/2 refreshes=1 pending=0

@@ -483,9 +483,12 @@ class SharedRefresh:
     def exchange_needed(self, version: object) -> bool:
         """Return whether replacing a rejected version needs a new acquisition.
 
-        None is needed while an admitted job runs, or while a newer usable token is held.
+        None is needed while an admitted job runs, unless its session and grace ended, or while a newer usable token is
+        held.
         """
         with self.lock:
+            if (active := self._active) is not None:
+                self.expire(active)
             if (active := self._active) is not None and active.session is not None:
                 return False
             return (
