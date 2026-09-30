@@ -563,22 +563,32 @@ def _read(chunks: Iterator[bytes], deadline: Deadline) -> bytes | None:
     """Read at most the body limit, checking the session deadline at every chunk and once the body ends."""
     body = bytearray()
     for chunk in chunks:
-        if deadline.remaining() <= 0:
-            raise _SessionExpiredError
-        body.extend(chunk)
-        if len(body) > _MAX_BODY:
+        if not _taken(body, chunk, deadline):
             return None
-    if deadline.remaining() <= 0:
-        raise _SessionExpiredError
-    return bytes(body)
+    return _ended(body, deadline)
 
 
-async def _aread(chunks: AsyncIterator[bytes]) -> bytes | None:
+async def _aread(chunks: AsyncIterator[bytes], deadline: Deadline) -> bytes | None:
+    """Read at most the body limit as the synchronous endpoint does, checking the session deadline the same way."""
     body = bytearray()
     async for chunk in chunks:
-        body.extend(chunk)
-        if len(body) > _MAX_BODY:
+        if not _taken(body, chunk, deadline):
             return None
+    return _ended(body, deadline)
+
+
+def _taken(body: bytearray, chunk: bytes, deadline: Deadline) -> bool:
+    """Append a chunk received within the session, and return whether the body stays within its limit."""
+    if deadline.remaining() <= 0:
+        raise _SessionExpiredError
+    body.extend(chunk)
+    return len(body) <= _MAX_BODY
+
+
+def _ended(body: bytearray, deadline: Deadline) -> bytes:
+    """Return a body that ended within the session."""
+    if deadline.remaining() <= 0:
+        raise _SessionExpiredError
     return bytes(body)
 
 
@@ -786,7 +796,9 @@ class AsyncTokenEndpoint:
         status = None
         try:
             status, headers = _head(response.status_code, response.headers)
-            body = await _aread(response.iter_raw_bytes())
+            body = await _aread(response.iter_raw_bytes(), session.deadline)
+        except _SessionExpiredError:
+            return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             return _failed(error, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
