@@ -13,7 +13,7 @@ client/coding.py: .errors, .responses, __future__, collections.abc, typing, zlib
 client/errors.py: ..model_codecs.unset, ..protocols.references, .responses, .scopes, __future__, datetime, enum, re, typing, typing_extensions
 client/events.py: ..model_codecs.unset, ..model_codecs.wire, .errors, .hooks, .logical, .options, .responses, __future__, asyncio, collections.abc, dataclasses, inspect, time, types, typing, urllib.parse
 client/evidence.py: __future__, dataclasses, errno, socket, ssl, sys, typing, typing_extensions
-client/grants.py: ..model_codecs.unset, .auth, .auth_policy, .errors, .oauth, .options, .timing, .transports, __future__, base64, dataclasses, hashlib, hmac, secrets, threading, typing, typing_extensions, weakref
+client/grants.py: ..model_codecs.unset, .auth, .auth_policy, .errors, .oauth, .options, .timing, .transports, __future__, asyncio, base64, contextlib, dataclasses, hashlib, hmac, secrets, threading, time, typing, typing_extensions, weakref
 client/hooks.py: ..model_codecs.wire, .errors, .timing, __future__, collections.abc, dataclasses, types, typing
 client/lifecycle.py: .auth, .auth_policy, .errors, __future__, asyncio, collections.abc, contextvars, functools, threading, time, typing
 client/logical.py: .errors, .lifecycle, .options, .timing, .transports, __future__, _thread, asyncio, collections.abc, dataclasses, functools, sys, time, typing, uuid

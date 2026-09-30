@@ -32,8 +32,11 @@ from ._runtime.client.auth import (
 )
 from ._runtime.client.grants import (
     AsyncAuthorizationCodeFlow,
+    AsyncDeviceAuthorizationFlow,
     AuthorizationCodeFlow,
     AuthorizationRequest,
+    DeviceAuthorization,
+    DeviceAuthorizationFlow,
     OAuthProviderOptions,
     TokenSet,
 )
@@ -44,6 +47,7 @@ __all__ = [
     'AsyncAuthorizationCodeFlow',
     'AsyncCloseableCredentialProvider',
     'AsyncCredentialProvider',
+    'AsyncDeviceAuthorizationFlow',
     'AsyncEnvironmentCredentialProvider',
     'AsyncRefreshableTokenProvider',
     'AsyncRequestSigner',
@@ -59,6 +63,8 @@ __all__ = [
     'CredentialMaterial',
     'CredentialProvider',
     'CredentialProviderInput',
+    'DeviceAuthorization',
+    'DeviceAuthorizationFlow',
     'EnvironmentCredentialProvider',
     'OAuthProviderOptions',
     'OwnedCredentialProvider',

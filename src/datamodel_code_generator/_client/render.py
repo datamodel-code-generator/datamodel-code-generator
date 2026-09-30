@@ -115,6 +115,7 @@ from ._runtime.client.options import (
     RequestOptions,
     RetryOptions,
     ServerSelection,
+    SessionOptions,
     TimeoutOptions,
     TransportOptions,
     ValidationOptions,
@@ -133,6 +134,7 @@ __all__ = [
     "RequestOptions",
     "RetryOptions",
     "ServerSelection",
+    "SessionOptions",
     "TimeoutOptions",
     "TransportOptions",
     "Unset",
@@ -170,8 +172,11 @@ _AUTH_NAMES: Final = (
 )
 _OAUTH_NAMES: Final = (
     "AsyncAuthorizationCodeFlow",
+    "AsyncDeviceAuthorizationFlow",
     "AuthorizationCodeFlow",
     "AuthorizationRequest",
+    "DeviceAuthorization",
+    "DeviceAuthorizationFlow",
     "OAuthProviderOptions",
     "TokenSet",
 )
@@ -2264,9 +2269,11 @@ their potentially sensitive messages.
 
 `AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` create PKCE S256 authorization requests without I/O and
 exchange each request's code once, without redirects or retries, through a token transport of their own that must
-verify TLS. They never open a browser; the returned `TokenSet` omits its tokens from repr. Device authorization, client
-credentials, refresh-token providers, token persistence, shared refresh, Basic charset overrides, resource audience
-metadata, and generated OAuth factories are not available yet. Providers are explicit.
+verify TLS. `DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` run one device authorization per flow, polling
+at the server's interval within the response's lifetime and the `SessionOptions` limits. No flow opens a browser or a
+verification URI; the returned `TokenSet` omits its tokens from repr. Client credentials, refresh-token providers,
+token persistence, shared refresh, Basic charset overrides, resource audience metadata, and generated OAuth factories
+are not available yet. Providers are explicit.
 
 ## Counters and cleanup
 

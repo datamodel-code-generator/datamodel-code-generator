@@ -1,4 +1,4 @@
-"""OAuth grants: token sets, provider options, and the explicit authorization code flow.
+"""OAuth grants: token sets, provider options, and the explicit authorization code and device authorization flows.
 
 Constructors and authorization requests perform no I/O. Token HTTP uses a provider-owned transport that verifies TLS,
 never follows redirects, never retries, and never reuses resource credentials, signers, or resource settings.
@@ -9,7 +9,9 @@ from __future__ import annotations
 import base64
 import threading
 import weakref
+from contextlib import suppress
 from dataclasses import dataclass, field
+from time import monotonic
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar, final
 
 from typing_extensions import Self
@@ -23,15 +25,18 @@ from .errors import (
     AuthStateConflictError,
     AuthStateUncertainError,
     AuthTimeoutError,
+    BudgetExceededError,
+    DeadlineExceededError,
     DeliveryState,
     OAuthExchangeError,
+    RequestCancelledError,
     TokenExpiredError,
 )
-from .options import TimeoutOptions, TransportOptions
-from .timing import finite_number
+from .options import SessionOptions, TimeoutOptions, TransportOptions
+from .timing import CancelToken, Deadline, absolute_deadline, finite_number
 
 if TYPE_CHECKING:
-    from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, Session, TokenEndpoint
+    from .oauth import AsyncTokenEndpoint, Endpoint, Exchanged, Progress, Session, TokenEndpoint
     from .transports import AsyncTransportAdapter, OwnedTransportAdapter, TransportAdapter
 
     EndpointT = TypeVar("EndpointT", bound=TokenEndpoint | AsyncTokenEndpoint)
@@ -40,8 +45,11 @@ else:
 
 __all__ = (
     "AsyncAuthorizationCodeFlow",
+    "AsyncDeviceAuthorizationFlow",
     "AuthorizationCodeFlow",
     "AuthorizationRequest",
+    "DeviceAuthorization",
+    "DeviceAuthorizationFlow",
     "OAuthProviderOptions",
     "TokenSet",
 )
@@ -51,6 +59,22 @@ _VERIFIER_BYTES: Final = 32
 RequestState = Literal[
     "CREATED", "EXCHANGING", "SUCCEEDED", "EXCHANGE_REJECTED", "REAUTH_REQUIRED", "UNCERTAIN", "FAILED_NOT_SENT"
 ]
+DeviceState = Literal[
+    "UNINITIALIZED",
+    "EXCHANGING",
+    "READY",
+    "SUCCEEDED",
+    "EXCHANGE_REJECTED",
+    "REAUTH_REQUIRED",
+    "UNCERTAIN",
+    "FAILED_NOT_SENT",
+]
+_OK: Final = 200
+_DEVICE_SENDS: Final = 128
+_SLOW_DOWN: Final = 5.0
+_CANCEL_CHECK: Final = 0.05
+_WAITING: Final = frozenset({"authorization_pending", "slow_down"})
+_ENDED: Final = frozenset({"access_denied", "expired_token"})
 
 
 def _positive_seconds(value: object, path: tuple[str, ...]) -> float:
@@ -194,10 +218,10 @@ class _Flow(Generic[EndpointT]):
         if self._endpoint.closed:
             raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
 
-    def _session(self) -> Session:
+    def _session(self, limit: Deadline | None = None) -> Session:
         from .oauth import Session  # noqa: PLC0415
 
-        return Session.start(self._options.refresh_timeout, self._options.phase_timeout)
+        return Session.start(self._options.refresh_timeout, self._options.phase_timeout, limit)
 
 
 def _endpoint(value: object, field: str, options: OAuthProviderOptions) -> Endpoint:
@@ -327,7 +351,7 @@ class _CodeFlow(_Flow[EndpointT]):
             return AuthReauthorizationRequiredError(
                 condition="invalid_grant", state="REAUTH_REQUIRED", delivery_state=delivery
             )
-        if exchanged.outcome == "rejected":
+        if exchanged.outcome == "rejected" and exchanged.oauth_error is not None:
             self._finish(issued, "EXCHANGE_REJECTED")
             return OAuthExchangeError(
                 status_code=exchanged.status_code,
@@ -356,20 +380,20 @@ class _CodeFlow(_Flow[EndpointT]):
             status_code=exchanged.status_code,
             state="UNCERTAIN",
             delivery_state=delivery,
-            phase="validate" if exchanged.outcome == "malformed_response" else exchanged.phase,
+            phase="validate" if exchanged.outcome in {"malformed_response", "rejected"} else exchanged.phase,
             cause=exchanged.cause,
         )
 
 
 def _uncertain_kind(exchanged: Exchanged) -> Literal["transport", "deadline", "http_status", "malformed_response"]:
-    """Name what left an exchange's outcome unknown: the session deadline, the answer, or the transport."""
+    """Name what left an exchange's outcome unknown: the session deadline, the transport, or the answer."""
     if exchanged.timeout_kind == "provider":
         return "deadline"
+    if exchanged.outcome == "lost":
+        return "transport"
     if exchanged.outcome == "http_status":
         return "http_status"
-    if exchanged.outcome == "malformed_response":
-        return "malformed_response"
-    return "transport"
+    return "malformed_response"
 
 
 class AuthorizationCodeFlow(_CodeFlow["TokenEndpoint"]):
@@ -488,6 +512,471 @@ class AsyncAuthorizationCodeFlow(_CodeFlow["AsyncTokenEndpoint"]):
     async def aclose(self) -> None:
         """Close the token transport this flow owns; later requests and exchanges raise AuthProviderClosedError."""
         await self._endpoint.aclose()
+
+    async def __aenter__(self) -> Self:
+        """Return the flow."""
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        """Close the flow."""
+        await self.aclose()
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DeviceAuthorization:
+    """What the application shows the user to approve this device; its repr shows only the timing.
+
+    `expires_in` is the lifetime the server declared and `interval` the initial wait between polls. `deadline` ends
+    the transaction: the declared lifetime from the response's receipt, or an earlier session limit.
+    """
+
+    user_code: str = field(repr=False)
+    verification_uri: str = field(repr=False)
+    verification_uri_complete: str | None = field(repr=False)
+    expires_in: float
+    interval: float
+    deadline: Deadline = field(repr=False)
+
+
+@dataclass(slots=True)
+class _Transaction:
+    """The one device transaction a flow owns: its progress, and what each poll repeats, waits for, and spends."""
+
+    status: DeviceState = "UNINITIALIZED"
+    started: float = 0.0
+    send_limit: int | None = _DEVICE_SENDS
+    sends: int = 0
+    scopes: tuple[str, ...] = ()
+    device_code: str = field(default="", repr=False)
+    deadline: Deadline | None = None
+    interval: float = 0.0
+    next_send: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class _Begin:
+    """A begin that passed its preflight: the requested scopes and the session's start and limits."""
+
+    scopes: tuple[str, ...]
+    started: float
+    limit: Deadline | None
+    send_limit: int | None
+
+
+def _session_limits(options: object, started: float) -> tuple[Deadline | None, int | None]:
+    """Resolve a session's explicit deadline, the earlier of its two limits, and its network send limit."""
+    if options is None:
+        return None, _DEVICE_SENDS
+    if not isinstance(options, SessionOptions):
+        raise AuthConfigurationError(field_path=("session_options",), condition="invalid_type")
+    limits = [
+        *((started + options.total_timeout,) if isinstance(options.total_timeout, float) else ()),
+        *((options.deadline.at,) if isinstance(options.deadline, Deadline) else ()),
+    ]
+    sends = _DEVICE_SENDS if isinstance(options.max_network_sends, Unset) else options.max_network_sends
+    return (absolute_deadline(min(limits)) if limits else None), sends
+
+
+def _cancel_token(value: object) -> CancelToken | None:
+    if value is not None and not isinstance(value, CancelToken):
+        raise AuthConfigurationError(field_path=("cancel_token",), condition="invalid_type")
+    return value
+
+
+class _DeviceFlow(_Flow[EndpointT]):
+    """What both device authorization flows share: the transaction's state machine and its classification."""
+
+    __slots__ = ("_device", "_transaction")
+
+    def __init__(self, device_url: object, endpoint: EndpointT, options: OAuthProviderOptions) -> None:
+        super().__init__(endpoint, options)
+        self._device = _endpoint(device_url, "device_authorization_url", options)
+        self._transaction = _Transaction()
+
+    def _preflight(self, scopes: object, session_options: object) -> _Begin:
+        """Refuse a second begin first, then validate the input and limits before the transaction starts.
+
+        A begin refused by its input or limits leaves the flow UNINITIALIZED, so it can be retried.
+        """
+        self._open()
+        with self._lock:
+            if (status := self._transaction.status) != "UNINITIALIZED":
+                raise AuthStateConflictError(action="begin", state=status, delivery_state=DeliveryState.NOT_SENT)
+        requested = checked_scopes(scopes, "scopes")
+        started = monotonic()
+        limit, send_limit = _session_limits(session_options, started)
+        if send_limit == 0:
+            raise BudgetExceededError(budget_kind="network", limit=0, used=0)
+        if limit is not None and limit.at <= started:
+            raise DeadlineExceededError(
+                deadline_at=limit.at, elapsed=0.0, delivery_state=DeliveryState.NOT_SENT, phase="auth"
+            )
+        return _Begin(requested, started, limit, send_limit)
+
+    def _claim(self, action: Literal["begin", "poll"], expected: DeviceState) -> _Transaction:
+        """Move to EXCHANGING once from the expected state; the caller holds the lock."""
+        transaction = self._transaction
+        if transaction.status != expected:
+            raise AuthStateConflictError(action=action, state=transaction.status, delivery_state=DeliveryState.NOT_SENT)
+        transaction.status = "EXCHANGING"
+        return transaction
+
+    def _start(self, begin: _Begin) -> _Transaction:
+        """Start the flow's only transaction with the begin's scope snapshot and session limits."""
+        with self._lock:
+            transaction = self._claim("begin", "UNINITIALIZED")
+            transaction.started, transaction.send_limit, transaction.scopes = (
+                begin.started,
+                begin.send_limit,
+                begin.scopes,
+            )
+            return transaction
+
+    def _resume(self) -> _Transaction:
+        """Start polling a READY transaction, refusing a concurrent or later poll."""
+        with self._lock:
+            return self._claim("poll", "READY")
+
+    def _finish(self, transaction: _Transaction, status: DeviceState) -> None:
+        with self._lock:
+            transaction.status = status
+
+    def _interrupted(self, transaction: _Transaction, *, sent: bool) -> None:
+        """End a transaction that an exception left mid-exchange, keeping any state already committed."""
+        with self._lock:
+            if transaction.status == "EXCHANGING":
+                transaction.status = "UNCERTAIN" if sent else "FAILED_NOT_SENT"
+
+    def _counted(self, transaction: _Transaction, progress: Progress) -> None:
+        """Count an exchange against the session's sends once it reached the transport."""
+        if progress.sent:
+            with self._lock:
+                transaction.sends += 1
+
+    def _rejected(
+        self, transaction: _Transaction, exchanged: Exchanged, cause: BaseException | None = None
+    ) -> OAuthExchangeError:
+        """End the transaction on a response it cannot continue from, keeping only safe response facts."""
+        self._finish(transaction, "EXCHANGE_REJECTED")
+        return OAuthExchangeError(
+            status_code=exchanged.status_code,
+            oauth_error=exchanged.oauth_error,
+            state="EXCHANGE_REJECTED",
+            delivery_state=exchanged.delivery,
+            phase="unknown" if exchanged.outcome in {"rejected", "http_status"} else "validate",
+            cause=exchanged.cause if cause is None else cause,
+        )
+
+    def _failed(self, transaction: _Transaction, exchanged: Exchanged, session: Session) -> Exception:
+        """End the transaction on a transport failure: no send is repeated after one may have been lost."""
+        state: DeviceState = "FAILED_NOT_SENT" if exchanged.outcome == "unsent" else "UNCERTAIN"
+        self._finish(transaction, state)
+        delivery = exchanged.delivery
+        if exchanged.timeout_kind == "provider" and session.limited:
+            return DeadlineExceededError(
+                deadline_at=session.deadline.at,
+                elapsed=monotonic() - transaction.started,
+                delivery_state=delivery,
+                phase="send",
+                cause=exchanged.cause,
+            )
+        if exchanged.timeout_kind is not None:
+            assert exchanged.timeout is not None
+            return AuthTimeoutError(
+                effective_timeout=exchanged.timeout,
+                timeout_kind=exchanged.timeout_kind,
+                state=state,
+                delivery_state=delivery,
+                phase=exchanged.phase,
+                cause=exchanged.cause,
+            )
+        return OAuthExchangeError(state=state, delivery_state=delivery, phase=exchanged.phase, cause=exchanged.cause)
+
+    def _began(
+        self, transaction: _Transaction, exchanged: Exchanged, session: Session, limit: Deadline | None
+    ) -> DeviceAuthorization:
+        """Publish READY only for a complete, valid device authorization response."""
+        from .oauth import device_grant  # noqa: PLC0415
+
+        if exchanged.outcome not in {"success", "rejected", "http_status", "malformed_response"}:
+            raise self._failed(transaction, exchanged, session)
+        if exchanged.outcome != "success" or exchanged.status_code != _OK:
+            raise self._rejected(transaction, exchanged)
+        assert exchanged.fields is not None
+        assert exchanged.receipt is not None
+        try:
+            grant = device_grant(exchanged.fields)
+        except ValueError as cause:
+            raise self._rejected(transaction, exchanged, cause) from None
+        expiry = exchanged.receipt + grant.expires_in
+        deadline = limit if limit is not None and limit.at < expiry else absolute_deadline(expiry)
+        with self._lock:
+            transaction.device_code, transaction.deadline = grant.device_code, deadline
+            transaction.interval, transaction.next_send = grant.interval, exchanged.receipt + grant.interval
+            transaction.status = "READY"
+        return DeviceAuthorization(
+            user_code=grant.user_code,
+            verification_uri=grant.verification_uri,
+            verification_uri_complete=grant.verification_uri_complete,
+            expires_in=grant.expires_in,
+            interval=grant.interval,
+            deadline=deadline,
+        )
+
+    def _polled(self, transaction: _Transaction, exchanged: Exchanged, session: Session) -> TokenSet | None:
+        """Return the token set, or None to wait again for a pending authorization; any other answer ends it."""
+        from .oauth import token_material  # noqa: PLC0415
+
+        if exchanged.outcome == "rejected" and exchanged.error in _WAITING:
+            assert exchanged.receipt is not None
+            with self._lock:
+                transaction.interval += _SLOW_DOWN if exchanged.error == "slow_down" else 0.0
+                transaction.next_send = exchanged.receipt + transaction.interval
+            return None
+        if exchanged.outcome != "success":
+            raise self._ended(transaction, exchanged, session)
+        assert exchanged.fields is not None
+        assert exchanged.received is not None
+        try:
+            access, refresh, _ = token_material(exchanged.fields, exchanged.received, transaction.scopes)
+        except (ValueError, TokenExpiredError) as cause:
+            raise self._rejected(transaction, exchanged, cause) from None
+        self._finish(transaction, "SUCCEEDED")
+        return TokenSet(access, refresh)
+
+    def _ended(self, transaction: _Transaction, exchanged: Exchanged, session: Session) -> Exception:
+        """Commit the end of a transaction whose poll did not succeed and return the error it raises."""
+        from .oauth import DeviceAuthorizationEndedError  # noqa: PLC0415
+
+        if exchanged.outcome == "rejected" and exchanged.error in _ENDED:
+            assert exchanged.error is not None
+            self._finish(transaction, "REAUTH_REQUIRED")
+            return OAuthExchangeError(
+                status_code=exchanged.status_code,
+                state="REAUTH_REQUIRED",
+                delivery_state=exchanged.delivery,
+                cause=DeviceAuthorizationEndedError(exchanged.error),
+            )
+        if exchanged.outcome in {"rejected", "http_status", "malformed_response"}:
+            return self._rejected(transaction, exchanged)
+        return self._failed(transaction, exchanged, session)
+
+    def _pause(self, transaction: _Transaction, cancel_token: CancelToken | None) -> float:
+        """Return how long to wait before the next poll, refusing a poll the limits no longer allow."""
+        self._open()
+        if cancel_token is not None and cancel_token.cancelled:
+            raise RequestCancelledError(source="cancel_token", delivery_state=DeliveryState.NOT_SENT)
+        deadline = transaction.deadline
+        assert deadline is not None
+        now = monotonic()
+        if transaction.next_send >= deadline.at or now >= deadline.at:
+            raise DeadlineExceededError(
+                deadline_at=deadline.at,
+                elapsed=now - transaction.started,
+                delivery_state=DeliveryState.NOT_SENT,
+                phase="sleep",
+            )
+        if (send_limit := transaction.send_limit) is not None and transaction.sends >= send_limit:
+            raise BudgetExceededError(budget_kind="network", limit=send_limit, used=transaction.sends)
+        remaining = max(0.0, transaction.next_send - now)
+        return remaining if cancel_token is None or remaining == 0 else min(remaining, _CANCEL_CHECK)
+
+    @staticmethod
+    def _begin_form(scopes: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
+        return (("scope", " ".join(scopes)),) if scopes else ()
+
+    @staticmethod
+    def _poll_form(transaction: _Transaction) -> tuple[tuple[str, str], ...]:
+        from .oauth import DEVICE_GRANT_TYPE  # noqa: PLC0415
+
+        return (("grant_type", DEVICE_GRANT_TYPE), ("device_code", transaction.device_code))
+
+
+class DeviceAuthorizationFlow(_DeviceFlow["TokenEndpoint"]):
+    """The OAuth device authorization grant: one instance owns exactly one begin and its polls.
+
+    It never opens the verification URI; the application shows the user code and URI, then polls until the user
+    approves. Close it to release the token transport it owns and to end a poll that is waiting.
+    """
+
+    __slots__ = ("_wake",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        device_authorization_url: str,
+        token_url: str,
+        *,
+        client_id: str,
+        client_secret: CredentialProvider | None = None,
+        client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
+        options: OAuthProviderOptions | None = None,
+        token_transport: TransportAdapter | OwnedTransportAdapter[TransportAdapter] | Unset = UNSET,
+    ) -> None:
+        """Validate the endpoints, client authentication, and transport without I/O or an HTTP client."""
+        from .auth_policy import sync_provider  # noqa: PLC0415
+        from .oauth import TokenEndpoint, client_authentication  # noqa: PLC0415
+
+        resolved = _options(options)
+        authentication = client_authentication(client_id, client_auth_method, client_secret, sync_provider)
+        endpoint = _endpoint(token_url, "token_url", resolved)
+        super().__init__(
+            device_authorization_url,
+            TokenEndpoint(endpoint, authentication, resolved.transport, token_transport),
+            resolved,
+        )
+        self._wake = threading.Event()
+
+    def begin(self, scopes: tuple[str, ...], *, session_options: SessionOptions | None = None) -> DeviceAuthorization:
+        """Request a device authorization for the scopes, and return what the application shows the user.
+
+        The session starts now: `session_options` can end it earlier than the response's lifetime and limits the
+        network sends of the begin and every poll, 128 by default.
+        """
+        from .oauth import Progress  # noqa: PLC0415
+
+        begin = self._preflight(scopes, session_options)
+        endpoint = self._endpoint
+        endpoint.prepare()
+        session, progress = self._session(begin.limit), Progress()
+        transaction = self._start(begin)
+        try:
+            exchanged = endpoint.exchange(
+                self._begin_form(begin.scopes), session, progress, "FAILED_NOT_SENT", self._device
+            )
+            self._counted(transaction, progress)
+            return self._began(transaction, exchanged, session, begin.limit)
+        except BaseException:
+            self._interrupted(transaction, sent=progress.sent)
+            raise
+
+    def poll(self, *, cancel_token: CancelToken | None = None) -> TokenSet:
+        """Poll the token endpoint at the server's interval until the user approves, returning the token set.
+
+        Pending answers wait within this call; slow_down adds five seconds to the interval. Any other outcome, the
+        deadline, the send limit, the cancel token, or closing the flow ends the transaction.
+        """
+        from .oauth import Progress  # noqa: PLC0415
+
+        self._open()
+        token = _cancel_token(cancel_token)
+        endpoint = self._endpoint
+        transaction = self._resume()
+        progress = Progress()
+        try:
+            while True:
+                progress = Progress()
+                while (pause := self._pause(transaction, token)) > 0:
+                    self._wake.wait(min(pause, threading.TIMEOUT_MAX))
+                session = self._session(transaction.deadline)
+                exchanged = endpoint.exchange(self._poll_form(transaction), session, progress, "FAILED_NOT_SENT")
+                self._counted(transaction, progress)
+                if (tokens := self._polled(transaction, exchanged, session)) is not None:
+                    return tokens
+        except BaseException:
+            self._interrupted(transaction, sent=progress.sent)
+            raise
+
+    def close(self) -> None:
+        """End a waiting poll and close the owned token transport; later calls raise AuthProviderClosedError."""
+        try:
+            self._endpoint.close()
+        finally:
+            self._wake.set()
+
+    def __enter__(self) -> Self:
+        """Return the flow."""
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        """Close the flow."""
+        self.close()
+
+
+class AsyncDeviceAuthorizationFlow(_DeviceFlow["AsyncTokenEndpoint"]):
+    """The asyncio device authorization grant, bound to the event loop it was created on or first used from."""
+
+    __slots__ = ("_wake",)
+
+    def __init__(  # noqa: PLR0913
+        self,
+        device_authorization_url: str,
+        token_url: str,
+        *,
+        client_id: str,
+        client_secret: AsyncCredentialProvider | None = None,
+        client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
+        options: OAuthProviderOptions | None = None,
+        token_transport: AsyncTransportAdapter | OwnedTransportAdapter[AsyncTransportAdapter] | Unset = UNSET,
+    ) -> None:
+        """Validate the endpoints, client authentication, and transport without I/O or an HTTP client."""
+        import asyncio  # noqa: PLC0415
+
+        from .auth_policy import async_provider  # noqa: PLC0415
+        from .oauth import AsyncTokenEndpoint, client_authentication  # noqa: PLC0415
+
+        resolved = _options(options)
+        authentication = client_authentication(client_id, client_auth_method, client_secret, async_provider)
+        endpoint = _endpoint(token_url, "token_url", resolved)
+        super().__init__(
+            device_authorization_url,
+            AsyncTokenEndpoint(endpoint, authentication, resolved.transport, token_transport),
+            resolved,
+        )
+        self._wake = asyncio.Event()
+
+    async def begin(
+        self, scopes: tuple[str, ...], *, session_options: SessionOptions | None = None
+    ) -> DeviceAuthorization:
+        """Request a device authorization for the scopes, as the synchronous flow does."""
+        from .oauth import Progress  # noqa: PLC0415
+
+        begin = self._preflight(scopes, session_options)
+        endpoint = self._endpoint
+        endpoint.prepare()
+        session, progress = self._session(begin.limit), Progress()
+        transaction = self._start(begin)
+        try:
+            exchanged = await endpoint.exchange(
+                self._begin_form(begin.scopes), session, progress, "FAILED_NOT_SENT", self._device
+            )
+            self._counted(transaction, progress)
+            return self._began(transaction, exchanged, session, begin.limit)
+        except BaseException:
+            self._interrupted(transaction, sent=progress.sent)
+            raise
+
+    async def poll(self, *, cancel_token: CancelToken | None = None) -> TokenSet:
+        """Poll until the user approves, as the synchronous flow does, on the loop the flow is bound to."""
+        from .oauth import Progress, within  # noqa: PLC0415
+
+        self._open()
+        token = _cancel_token(cancel_token)
+        endpoint = self._endpoint
+        endpoint.prepare()
+        transaction = self._resume()
+        progress = Progress()
+        try:
+            while True:
+                progress = Progress()
+                while (pause := self._pause(transaction, token)) > 0:
+                    with suppress(TimeoutError):
+                        await within(self._wake.wait(), pause)
+                session = self._session(transaction.deadline)
+                exchanged = await endpoint.exchange(self._poll_form(transaction), session, progress, "FAILED_NOT_SENT")
+                self._counted(transaction, progress)
+                if (tokens := self._polled(transaction, exchanged, session)) is not None:
+                    return tokens
+        except BaseException:
+            self._interrupted(transaction, sent=progress.sent)
+            raise
+
+    async def aclose(self) -> None:
+        """End a waiting poll and close the owned token transport; later calls raise AuthProviderClosedError."""
+        try:
+            await self._endpoint.aclose()
+        finally:
+            self._wake.set()
 
     async def __aenter__(self) -> Self:
         """Return the flow."""

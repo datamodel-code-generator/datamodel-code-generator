@@ -141,7 +141,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -155,6 +155,8 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncDeviceAuthorizationFlow=()
+  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -193,6 +195,11 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
+  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
+  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
+  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
+  hints DeviceAuthorizationFlow=()
+  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -377,7 +384,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -391,6 +398,8 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncDeviceAuthorizationFlow=()
+  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -429,6 +438,11 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
+  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
+  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
+  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
+  hints DeviceAuthorizationFlow=()
+  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -613,7 +627,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -627,6 +641,8 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncDeviceAuthorizationFlow=()
+  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -665,6 +681,11 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
+  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
+  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
+  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
+  hints DeviceAuthorizationFlow=()
+  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -849,7 +870,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -863,6 +884,8 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncDeviceAuthorizationFlow=()
+  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -901,6 +924,11 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
+  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
+  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
+  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
+  hints DeviceAuthorizationFlow=()
+  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -1085,7 +1113,7 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
@@ -1099,6 +1127,8 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
+  hints AsyncDeviceAuthorizationFlow=()
+  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
@@ -1137,6 +1167,11 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
+  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
+  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
+  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
+  hints DeviceAuthorizationFlow=()
+  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')

@@ -34,6 +34,7 @@ from tests.data.python.client_multipart import multipart
 from tests.data.python.client_native import native_faults, native_wire
 from tests.data.python.client_native_signing import native_signing
 from tests.data.python.client_oauth_code import oauth_code
+from tests.data.python.client_oauth_device import oauth_device
 from tests.data.python.client_query import query
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
@@ -665,6 +666,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
     "native-signing": ("auth", ("pydantic_v2.BaseModel",), native_signing),
     "oauth-code": ("auth", ("pydantic_v2.BaseModel",), oauth_code),
+    "oauth-device": ("auth", ("pydantic_v2.BaseModel",), oauth_device),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),
     "body-replay-faults": ("media", ("pydantic_v2.BaseModel",), body_replay_faults),
     "multipart-replay": ("media", ("pydantic_v2.BaseModel",), multipart_replay),

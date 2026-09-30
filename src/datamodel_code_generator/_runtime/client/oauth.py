@@ -1,4 +1,4 @@
-"""Send one OAuth token request through a provider-owned transport and classify what the endpoint answered.
+"""Send one OAuth request through a provider-owned transport and classify what the token or device endpoint answered.
 
 Errors built here keep no token value, client secret, response body, or OAuth error description.
 """
@@ -79,6 +79,7 @@ _AUTHORIZATION_PARAMETERS: Final = frozenset({
 _MAX_BODY: Final = 65536
 _UNSAFE: Final = re.compile(r"[\x00-\x20\x7f]")
 _VSCHAR: Final = re.compile(r"[\x20-\x7e]+")
+_ERROR_CODE: Final = re.compile(r"[\x20\x21\x23-\x5b\x5d-\x7e]+")
 _ERROR_TEXT: Final = re.compile(r"[\x20\x21\x23-\x5b\x5d-\x7e]*")
 _URI_TEXT: Final = re.compile(r"(?:[A-Za-z0-9\-._~!$&'()*+,;=:@/?#\[\]]|%[0-9A-Fa-f]{2})*")
 _AUTHORITY: Final = re.compile(r"(?:[^@]*@)?(?:\[[^\]]*\]|[^:@\[\]]*)(?::[0-9]*)?")
@@ -87,6 +88,8 @@ _BAD_REQUEST: Final = 400
 _UNAUTHORIZED: Final = 401
 _SUCCESS: Final = range(200, 300)
 _PHASES: Final[tuple[str, ...]] = ("connect", "read", "write", "pool")
+_DEFAULT_INTERVAL: Final = 5.0
+DEVICE_GRANT_TYPE: Final = "urn:ietf:params:oauth:grant-type:device_code"
 
 
 @dataclass(frozen=True, slots=True)
@@ -316,16 +319,19 @@ class Session:
     deadline: Deadline
     total: float
     phases: tuple[float, float, float, float]
+    limited: bool = False
 
     @classmethod
-    def start(cls, refresh_timeout: float, phase_timeout: TimeoutOptions) -> Session:
-        """Start the budget now, independently of any resource caller's deadline."""
+    def start(cls, refresh_timeout: float, phase_timeout: TimeoutOptions, limit: Deadline | None = None) -> Session:
+        """Start the budget now, independently of any resource caller's deadline, ending by an explicit limit."""
         phases = (
             _phase(phase_timeout.connect),
             _phase(phase_timeout.read),
             _phase(phase_timeout.write),
             _phase(phase_timeout.pool),
         )
+        if limit is not None and limit.at < monotonic() + refresh_timeout:
+            return cls(limit, refresh_timeout, phases, limited=True)
         return cls(absolute_deadline(monotonic() + refresh_timeout), refresh_timeout, phases)
 
     def context(self, trace: AttemptTrace) -> tuple[AttemptIOContext, tuple[bool, ...]]:
@@ -362,7 +368,9 @@ class Exchanged:
     status_code: int | None = None
     fields: Mapping[str, object] | None = field(default=None, repr=False)
     oauth_error: OAuthErrorCode | None = None
+    error: str | None = None
     received: datetime | None = None
+    receipt: float | None = None
     cause: BaseException | None = None
     phase: Literal["connect", "read", "write", "pool", "unknown"] = "unknown"
     timeout: float | None = None
@@ -377,14 +385,14 @@ def _unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
     fields: dict[str, object] = {}
     for name, value in pairs:
         if name in fields:
-            msg = "The token response repeats a member."
+            msg = "The response repeats a member."
             raise ValueError(msg)
         fields[name] = value
     return fields
 
 
 def _constant(value: str) -> object:
-    msg = f"The token response contains the non-standard number {value}."
+    msg = f"The response contains the non-standard number {value}."
     raise ValueError(msg)
 
 
@@ -397,17 +405,17 @@ def _json_value(body: bytes) -> object:
     try:
         return json.loads(body.decode("utf-8"), object_pairs_hook=_unique, parse_constant=_constant)
     except UnicodeDecodeError as error:
-        failure = ValueError(f"The token response is not UTF-8 at byte {error.start}.")
+        failure = ValueError(f"The response is not UTF-8 at byte {error.start}.")
     except json.JSONDecodeError as error:
-        failure = ValueError(f"The token response is not JSON at character {error.pos}.")
+        failure = ValueError(f"The response is not JSON at character {error.pos}.")
     except RecursionError:
-        failure = ValueError("The token response nests too deeply.")
+        failure = ValueError("The response nests too deeply.")
     raise failure
 
 
 def _json_object(headers: HeadersView, body: bytes) -> Mapping[str, object]:
     if any(value.strip().lower() not in {"", "identity"} for value in headers.get_all("content-encoding")):
-        msg = "The token response carries a content coding the request did not accept."
+        msg = "The response carries a content coding the request did not accept."
         raise ValueError(msg)
     media, _, parameters = (headers.get("content-type") or "").partition(";")
     charset = next(
@@ -419,45 +427,54 @@ def _json_object(headers: HeadersView, body: bytes) -> Mapping[str, object]:
         "utf-8",
     )
     if media.strip().lower() != "application/json" or charset != "utf-8":
-        msg = "The token response is not UTF-8 JSON."
+        msg = "The response is not UTF-8 JSON."
         raise ValueError(msg)
     if not _is_object(parsed := _json_value(body)):
-        msg = "The token response is not a JSON object."
+        msg = "The response is not a JSON object."
         raise ValueError(msg)
     return parsed
 
 
-def _oauth_error(fields: Mapping[str, object]) -> OAuthErrorCode | None:
-    """Return a well-formed RFC 6749 section 5.2 error code, or None for any defect in the error object."""
+def _error_code(fields: Mapping[str, object]) -> str | None:
+    """Return the code of a well-formed RFC 6749 section 5.2 error object, known or not, or None for any defect."""
     error = fields.get("error")
-    if not isinstance(error, str) or "access_token" in fields or "refresh_token" in fields:
+    if (
+        not isinstance(error, str)
+        or not _ERROR_CODE.fullmatch(error)
+        or "access_token" in fields
+        or "refresh_token" in fields
+    ):
         return None
     description, uri = fields.get("error_description", ""), fields.get("error_uri", "")
     if not isinstance(description, str) or not _ERROR_TEXT.fullmatch(description):
         return None
     if not isinstance(uri, str) or not uri_reference(uri):
         return None
-    return error if _is_oauth_error(error) else None
+    return error
 
 
-def _answered(status: int, headers: HeadersView, body: bytes | None, received: datetime) -> Exchanged:
-    """Classify a complete response by status, then by its body's conformance to the success or error format."""
+def _answered(status: int, headers: HeadersView, body: bytes | None, received: datetime, receipt: float) -> Exchanged:
+    """Classify a complete response by status, then by its body's conformance to the success or error format.
+
+    A well-formed error object is a rejection whatever its code; each grant decides which codes it accepts.
+    """
     delivery = DeliveryState.RESPONSE_STARTED
     if status not in _SUCCESS and status not in {_BAD_REQUEST, _UNAUTHORIZED}:
         return Exchanged("http_status", delivery, status)
     defect: Outcome = "http_status" if status == _UNAUTHORIZED else "malformed_response"
     if body is None:
-        return Exchanged(defect, delivery, status, cause=ValueError("The token response exceeds its size limit."))
+        return Exchanged(defect, delivery, status, cause=ValueError("The response exceeds its size limit."))
     try:
         fields = _json_object(headers, body)
     except ValueError as error:
         return Exchanged(defect, delivery, status, cause=error)
     if status in _SUCCESS:
-        return Exchanged("success", delivery, status, fields, received=received)
-    code = _oauth_error(fields)
+        return Exchanged("success", delivery, status, fields, received=received, receipt=receipt)
+    code = _error_code(fields)
     if code is None or (status == _UNAUTHORIZED and code != "invalid_client"):
         return Exchanged(defect, delivery, status)
-    return Exchanged("rejected", delivery, status, oauth_error=code)
+    known = code if _is_oauth_error(code) else None
+    return Exchanged("rejected", delivery, status, oauth_error=known, error=code, receipt=receipt)
 
 
 def _head(status: object, headers: object) -> tuple[int, HeadersView]:
@@ -559,16 +576,16 @@ def _ended(body: bytearray, deadline: Deadline) -> bytes:
     return bytes(body)
 
 
-async def _within(operation: Coroutine[object, object, T], deadline: Deadline) -> T:
-    """Await the operation until the deadline, raising TimeoutError there without swallowing a cancellation."""
+async def within(operation: Coroutine[object, object, T], seconds: float) -> T:
+    """Await the operation for at most the seconds, raising TimeoutError then without swallowing a cancellation."""
     import asyncio  # noqa: PLC0415
 
     if sys.version_info >= (3, 11):
-        async with asyncio.timeout(deadline.remaining()):
+        async with asyncio.timeout(seconds):
             return await operation
     else:  # pragma: <3.11 cover
         try:
-            return await asyncio.wait_for(operation, deadline.remaining())
+            return await asyncio.wait_for(operation, seconds)
         except asyncio.TimeoutError as error:
             raise TimeoutError from error
 
@@ -611,22 +628,29 @@ class TokenEndpoint:
                 )
 
     def exchange(
-        self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress, state: str
+        self,
+        fields: tuple[tuple[str, str], ...],
+        session: Session,
+        progress: Progress,
+        state: str,
+        endpoint: Endpoint | None = None,
     ) -> Exchanged:
         """Acquire the client secret, then send the form once, without redirects or retries, reading a bounded body.
 
-        A secret provider's failure propagates; `state` names the state it leaves the caller in.
+        The form goes to the token endpoint unless another endpoint of the grant is given. A secret provider's
+        failure propagates; `state` names the state it leaves the caller in.
         """
+        target = endpoint or self.endpoint
         authentication = self.authentication
         secret = None
         if (provider := authentication.secret) is not None:
             try:
-                secret = _secret_value(provider.get(_secret_context(self.endpoint.origin, session.deadline)))
+                secret = _secret_value(provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error, state) from None
             if session.deadline.remaining() <= 0:
                 return expired(session, DeliveryState.NOT_SENT)
-        request = token_request(self.endpoint.url, authentication.client_id, authentication.method, fields, secret)
+        request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace()
         context, caps = session.context(trace)
         with self._lock:
@@ -643,14 +667,14 @@ class TokenEndpoint:
         try:
             status, headers = _head(response.status_code, response.headers)
             body = _read(response.iter_raw_bytes(), session.deadline)
-            received = datetime.now(timezone.utc)
+            received, receipt = datetime.now(timezone.utc), monotonic()
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             return _failed(error, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
             _quiet(response.close)
-        return _answered(status, headers, body, received)
+        return _answered(status, headers, body, received, receipt)
 
     def close(self) -> None:
         """Close an owned transport once; a borrowed one stays open, and no transport is created afterwards."""
@@ -712,25 +736,33 @@ class AsyncTokenEndpoint:
             )
 
     async def exchange(
-        self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress, state: str
+        self,
+        fields: tuple[tuple[str, str], ...],
+        session: Session,
+        progress: Progress,
+        state: str,
+        endpoint: Endpoint | None = None,
     ) -> Exchanged:
         """Acquire the client secret and send the form once, both within the session deadline."""
         try:
-            return await _within(self._exchange(fields, session, progress, state), session.deadline)
+            return await within(
+                self._exchange(fields, session, progress, state, endpoint or self.endpoint),
+                session.deadline.remaining(),
+            )
         except TimeoutError as error:
             return expired(session, progress.delivery, cause=error)
 
     async def _exchange(
-        self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress, state: str
+        self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress, state: str, target: Endpoint
     ) -> Exchanged:
         authentication = self.authentication
         secret = None
         if (provider := authentication.secret) is not None:
             try:
-                secret = _secret_value(await provider.get(_secret_context(self.endpoint.origin, session.deadline)))
+                secret = _secret_value(await provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error, state) from None
-        request = token_request(self.endpoint.url, authentication.client_id, authentication.method, fields, secret)
+        request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace()
         context, caps = session.context(trace)
         self._open()
@@ -746,14 +778,14 @@ class AsyncTokenEndpoint:
         try:
             status, headers = _head(response.status_code, response.headers)
             body = await _aread(response.iter_raw_bytes(), session.deadline)
-            received = datetime.now(timezone.utc)
+            received, receipt = datetime.now(timezone.utc), monotonic()
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             return _failed(error, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
             await _aquiet(response.aclose)
-        return _answered(status, headers, body, received)
+        return _answered(status, headers, body, received, receipt)
 
     async def aclose(self) -> None:
         """Close an owned transport once; a borrowed one stays open, and no transport is created afterwards."""
@@ -836,3 +868,73 @@ def failure_kind(error: BaseException) -> Literal["malformed_response", "invalid
     if isinstance(error, (InvalidTokenResponseError, TokenExpiredError)):
         return "invalid_token_response"
     return "malformed_response"
+
+
+class InvalidDeviceResponseError(ValueError):
+    """A device authorization response whose members cannot start a device transaction."""
+
+
+class DeviceAuthorizationEndedError(Exception):
+    """The authorization server ended a device transaction: the user denied it, or its device code expired."""
+
+    def __init__(self, reason: str) -> None:
+        """Keep the server's error code, one of the two RFC 8628 codes that end a transaction."""
+        super().__init__(f"The authorization server ended the device authorization with {reason}.")
+        self.reason = reason
+
+
+@dataclass(frozen=True, slots=True)
+class DeviceGrant:
+    """A validated device authorization response: the codes, where the user goes, and the transaction's timing."""
+
+    device_code: str = field(repr=False)
+    user_code: str = field(repr=False)
+    verification_uri: str
+    verification_uri_complete: str | None
+    expires_in: float
+    interval: float
+
+
+def _device_invalid(name: str) -> InvalidDeviceResponseError:
+    return InvalidDeviceResponseError(f"The device authorization response has no valid {name}.")
+
+
+def _device_code(fields: Mapping[str, object], name: str) -> str:
+    """Return a code the device sends or shows, which RFC 8628 leaves to visible ASCII characters in practice."""
+    value = fields.get(name)
+    if not isinstance(value, str) or not _VSCHAR.fullmatch(value):
+        raise _device_invalid(name)
+    return value
+
+
+def _device_uri(fields: Mapping[str, object], name: str) -> str:
+    value = fields.get(name)
+    if not isinstance(value, str) or not uri_reference(value, absolute=True):
+        raise _device_invalid(name)
+    return value
+
+
+def _device_seconds(value: object, name: str) -> float:
+    if (number := finite_number(value)) is None or number <= 0:
+        raise _device_invalid(name)
+    return number
+
+
+def device_grant(fields: Mapping[str, object]) -> DeviceGrant:
+    """Validate every RFC 8628 section 3.2 member before a transaction may start, ignoring unknown members.
+
+    expires_in is required with no fallback lifetime; only an omitted interval takes the five-second default.
+    """
+    if "error" in fields:
+        msg = "The device authorization response mixes success and error members."
+        raise ValueError(msg)
+    return DeviceGrant(
+        device_code=_device_code(fields, "device_code"),
+        user_code=_device_code(fields, "user_code"),
+        verification_uri=_device_uri(fields, "verification_uri"),
+        verification_uri_complete=(
+            _device_uri(fields, "verification_uri_complete") if "verification_uri_complete" in fields else None
+        ),
+        expires_in=_device_seconds(fields.get("expires_in"), "expires_in"),
+        interval=_device_seconds(fields["interval"], "interval") if "interval" in fields else _DEFAULT_INTERVAL,
+    )
