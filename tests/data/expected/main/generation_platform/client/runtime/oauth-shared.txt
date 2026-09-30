@@ -1,0 +1,44 @@
+# auth pydantic_v2.BaseModel
+  workers once a job runs = 1
+  joiner out of time = DeadlineExceededError delivery_state=NOT_SENT phase=auth
+  joiner already cancelled = RequestCancelledError delivery_state=NOT_SENT source=cancel_token
+  joiner cancelled while waiting = RequestCancelledError delivery_state=NOT_SENT source=cancel_token
+  joiner with a cancel token out of time = DeadlineExceededError delivery_state=NOT_SENT phase=auth
+  waiter beyond the limit = AuthConcurrencyLimitError state=UNINITIALIZED delivery_state=NOT_SENT phase=admission limit_kind=waiters limit=3 refresh_id=<call>
+    snapshot while sending = RefreshInfo(refresh_id='<call>', state='PENDING', token_send_count=1, failure=None)
+  first caller and joiners = ['access-1', 'access-1', 'access-1']
+    snapshot = RefreshInfo(refresh_id='<call>', state='READY', token_send_count=1, failure=None)
+    cached = access-1 sends=1
+  only caller out of time = DeadlineExceededError delivery_state=NOT_SENT phase=auth
+    job it left published = access-1 sends=1
+  job outliving its session = AuthTimeoutError state=EXCHANGE_REJECTED delivery_state=MAYBE_SENT phase=unknown timeout_kind=provider refresh_id=<call>
+  new job while the expired one holds the only pending slot = AuthConcurrencyLimitError state=EXCHANGE_REJECTED delivery_state=NOT_SENT phase=admission limit_kind=pending_refreshes limit=1
+    once it returns, its late token is discarded = access-1 sends=2
+  queued caller out of time = DeadlineExceededError delivery_state=NOT_SENT phase=auth
+  waiter of a queued job beyond the limit = AuthConcurrencyLimitError state=EXCHANGE_REJECTED delivery_state=NOT_SENT phase=admission limit_kind=waiters limit=2 refresh_id=<call>
+    snapshot of a queued job = RefreshInfo(refresh_id='<call>', state='PENDING', token_send_count=0, failure=None)
+    queued job once the expired one returns = ['access-1', 'access-1']
+    snapshot = RefreshInfo(refresh_id='<call>', state='READY', token_send_count=1, failure=None) sends=2
+  queued job when the provider closes = AuthProviderClosedError state=CLOSING delivery_state=NOT_SENT phase=wait refresh_id=<call>
+  close waits for a running job until its session ends = AuthTimeoutError state=EXCHANGE_REJECTED delivery_state=MAYBE_SENT phase=unknown timeout_kind=provider refresh_id=<call>
+    get after close = AuthProviderClosedError state=CLOSED delivery_state=NOT_SENT phase=admission
+  snapshots kept = 128, oldest evicted = True
+  async joiner out of time = DeadlineExceededError delivery_state=NOT_SENT phase=auth
+  async joiner cancelled by its token = RequestCancelledError delivery_state=NOT_SENT source=cancel_token
+  async joiner cancelled = CancelledError
+  async waiter beyond the limit = AuthConcurrencyLimitError state=UNINITIALIZED delivery_state=NOT_SENT phase=admission limit_kind=waiters limit=3 refresh_id=<call>
+    snapshot while sending = RefreshInfo(refresh_id='<call>', state='PENDING', token_send_count=1, failure=None)
+  async first task and joiners = ['access-1', 'access-1', 'access-1'] sends=1
+    snapshot = RefreshInfo(refresh_id='<call>', state='READY', token_send_count=1, failure=None)
+  async job outliving its session = ['AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider refresh_id=<call>', 'AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider refresh_id=<call>']
+  async queued job once the expired one returns = access-1 sends=1
+  async queued job when the provider closes = AuthProviderClosedError state=CLOSING delivery_state=NOT_SENT phase=wait refresh_id=<call>
+  async get while closing = AuthProviderClosedError state=CLOSING delivery_state=NOT_SENT phase=admission
+  async close cancelled = CancelledError
+  async close waits for the running job = access-1
+  async owned transport close failure = RuntimeError
+    close again = RuntimeError closes=1
+  job cancelled with its event loop = RefreshInfo(refresh_id='<call>', state='EXCHANGE_REJECTED', token_send_count=1, failure='auth_provider_execution_error')
+  job cancelled before it started = RefreshInfo(refresh_id='<call>', state='FAILED_NOT_SENT', token_send_count=0, failure='auth_provider_execution_error') sends=0
+  close whose finalizer was cancelled = ['CancelledError', 'CancelledError'], close again = None
+  eager tasks = access-1, close = None

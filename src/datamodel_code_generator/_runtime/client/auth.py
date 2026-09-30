@@ -37,6 +37,7 @@ __all__ = (
     "CredentialProviderInput",
     "EnvironmentCredentialProvider",
     "OwnedCredentialProvider",
+    "RefreshInfo",
     "RefreshableTokenProvider",
     "RequestSigner",
     "SignatureFields",
@@ -524,3 +525,30 @@ class AsyncEnvironmentCredentialProvider(_EnvironmentCredentials):
         """Read the current value without worker delegation or inferred bearer grants."""
         del context
         return self._read()
+
+
+RefreshState: TypeAlias = Literal[
+    "PENDING",
+    "READY",
+    "PERSIST_PENDING",
+    "LOAD_FAILED",
+    "EXCHANGE_REJECTED",
+    "UNCERTAIN",
+    "REAUTH_REQUIRED",
+    "FAILED_NOT_SENT",
+]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class RefreshInfo:
+    """A snapshot of one shared token acquisition, without tokens, bodies, URLs, or scopes.
+
+    `state` is PENDING while the job is queued or runs, then the state it ended in; `token_send_count` says whether it
+    sent a token request, and `failure` is the reason code of its error.
+    """
+
+    refresh_id: str
+    state: RefreshState
+    token_send_count: int
+    failure: str | None

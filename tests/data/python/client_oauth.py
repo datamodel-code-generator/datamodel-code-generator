@@ -35,9 +35,11 @@ _FIELDS: Final = (
     "field_path",
     "loop_mismatch",
     "budget_kind",
+    "limit_kind",
     "limit",
     "used",
     "source",
+    "refresh_id",
 )
 
 
@@ -187,10 +189,12 @@ class Adapter:
         )
         self.replies = list(replies)
         self.closes = 0
+        self.sends = 0
         self.gate = gate
         self.entered = threading.Event()
 
     def _reply(self, context: Any) -> object:
+        self.sends += 1
         reply = self.replies.pop(0)
         if isinstance(reply, Late):
             time.sleep(reply.delay)
@@ -208,7 +212,7 @@ class Adapter:
         del request
         self.entered.set()
         if self.gate is not None:
-            self.gate.wait()
+            self.gate.wait(30)
         return self._reply(context)
 
     def close(self) -> None:

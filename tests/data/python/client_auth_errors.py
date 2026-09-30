@@ -43,6 +43,12 @@ _FAMILIES = (
     ("AuthStateUncertainError", {"failure_kind": "transport"}, ("failure_kind", "status_code")),
     ("AuthReauthorizationRequiredError", {"condition": "invalid_grant"}, ("condition",)),
     ("AuthStateConflictError", {"action": "exchange_code"}, ("action",)),
+    ("AuthConcurrencyLimitError", {"limit_kind": "waiters", "limit": 3}, ("limit_kind", "limit")),
+    (
+        "AuthBudgetExceededError",
+        {"budget_kind": "auth_exchange", "limit": 2, "used": 2},
+        ("budget_kind", "limit", "used"),
+    ),
 )
 
 
@@ -135,6 +141,8 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
         "AuthStateUncertainError",
         "AuthReauthorizationRequiredError",
         "AuthStateConflictError",
+        "AuthConcurrencyLimitError",
+        "AuthBudgetExceededError",
     ):
         lines.append(f"  missing required {name} {outcome(getattr(errors, name))}")
     for name, values in (
@@ -147,6 +155,10 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
         ("AuthStateUncertainError", {"failure_kind": "unknown"}),
         ("AuthReauthorizationRequiredError", {"condition": "expired"}),
         ("AuthStateConflictError", {"action": "delete"}),
+        ("AuthConcurrencyLimitError", {"limit_kind": "threads", "limit": 1}),
+        ("AuthConcurrencyLimitError", {"limit_kind": "pending_refreshes", "limit": -1}),
+        ("AuthBudgetExceededError", {"budget_kind": "tokens", "limit": 1, "used": 1}),
+        ("AuthBudgetExceededError", {"budget_kind": "parent_network", "limit": 1, "used": True}),
     ):
         lines.append(f"  oauth values {name} {values} {outcome(lambda name=name, values=values: str(getattr(errors, name)(**values)))}")
 

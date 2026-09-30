@@ -5,8 +5,11 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from time import monotonic
+from typing import Final
 
 from .errors import ConfigurationError
+
+TOKEN_INTERVAL: Final = 0.05
 
 
 def finite_number(value: object) -> float | None:

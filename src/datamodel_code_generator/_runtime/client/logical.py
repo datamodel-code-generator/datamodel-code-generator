@@ -24,7 +24,7 @@ from .errors import (
 )
 from .lifecycle import LEFT_WORK, TaskInterruptionError, cleanup_secondary, task_failure, task_result
 from .options import network_send_limit
-from .timing import absolute_deadline
+from .timing import TOKEN_INTERVAL, absolute_deadline
 from .transports import AttemptIOContext, ResolvedTimeoutOptions, set_io_timing
 
 if TYPE_CHECKING:
@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
 StopReason: TypeAlias = Literal["token", "closing", "deadline", "idle"]
-TOKEN_INTERVAL = 0.05
 
 
 class _Scope(Protocol):

@@ -1519,6 +1519,63 @@ continue from, including an invalid token response, an unexpected status, or a m
 `AuthTimeoutError` when a time limit ran out, in the `UNCERTAIN` state when the request may have been sent and in the
 `FAILED_NOT_SENT` state otherwise.
 
-Client credentials, refresh-token providers, token persistence, shared refresh, Basic charset overrides, resource
+### Acquire client credentials
+
+`ClientCredentialsProvider` and `AsyncClientCredentialsProvider` implement the OAuth client credentials grant for a
+confidential client acting on its own behalf. Each is a refreshable token provider for an OAuth scheme of `AuthConfig`:
+the first call that needs a token acquires it, later calls share it, and a call renews it once a tenth of its lifetime,
+at most thirty seconds, remains. Until the token expires, such a call keeps using it and starts the renewal in the
+background, which later calls share, so a slow or failing renewal delays no call before expiry; a forced `refresh` waits
+for the renewal and raises its failure. A token without `expires_in` is kept until a resource rejects it, when 401
+recovery invalidates that exact version and acquires another.
+
+```python
+from pets import Client
+from pets.auth import AuthConfig, ClientCredentialsProvider, CredentialProvider, OwnedCredentialProvider
+from pets.options import ClientOptions
+
+
+def service_client(secret: CredentialProvider) -> Client:
+    provider = ClientCredentialsProvider(
+        "https://auth.example.com/token",
+        client_id="pets-service",
+        client_secret=secret,
+        scopes=("pets.read",),
+    )
+    return Client(options=ClientOptions(auth=AuthConfig({"oauth": OwnedCredentialProvider(provider)})))
+```
+
+The token request sends the configured `scopes` in canonical order, and `audience` when one is configured. The client
+authenticates with `client_secret_basic` (the default) or `client_secret_post`; `none` is refused, since a public
+client has no credentials of its own. The configured scopes become the token's scopes when the response omits its
+`scope` member, and a caller whose context requires another audience than the configured one fails with
+`AuthConfigurationError` before any request.
+
+Concurrent callers share one acquisition. It runs on a worker thread of the provider, or in a task on its event loop,
+under the provider's own `refresh_timeout`; callers only wait for it, each within its own deadline and cancel token, so
+a caller that leaves never cancels it and its token still serves later calls. `OAuthProviderOptions` bound the sharing:
+`max_concurrent_refreshes` acquisitions run at once (one by default), `max_pending_refreshes` (32) counts the running
+and queued ones, and `max_waiters` (1024) callers may wait for one; a caller beyond a limit gets
+`AuthConcurrencyLimitError`. An acquisition still running a second after its `refresh_timeout` fails its waiters with
+`AuthTimeoutError` and keeps its slot until it returns, and its late token is discarded.
+
+A failed acquisition leaves nothing behind: each waiter receives its own instance of the same error, and the next call
+acquires again. A rejection, an unexpected status, or an unusable response raises `OAuthExchangeError` in the
+`EXCHANGE_REJECTED` state; a transport failure raises `OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran
+out, in the `FAILED_NOT_SENT` state when the request provably never left and in the `EXCHANGE_REJECTED` state
+otherwise. The auth refresh errors of an acquisition carry its `refresh_id`, unless a client secret provider's own error
+already names another one, and `refresh_snapshot(refresh_id)` returns its `RefreshInfo`: `PENDING` while it is queued
+or runs, then the state it ended in, whether it sent a token request, and its failure's reason code, without tokens.
+Snapshots of the latest 128 ended acquisitions are kept for five minutes.
+
+`get` returns the shared token, waiting for it when none is usable; `refresh` acquires a new one, or joins the running
+acquisition, whatever the provider holds; `invalidate(version)` forgets the held token only if it is that version.
+Closing the provider refuses new acquisitions with `AuthProviderClosedError`, ends a queued one, lets a running one
+finish within its session, and then closes an owned token transport; a concurrent `close` returns once that is done. The
+async provider belongs to the event loop it was created on or first used from, and its `aclose` runs in a task of its
+own that a later `aclose` awaits when the first was cancelled. Client authentication, endpoints, and the token transport
+otherwise follow the authorization code flow.
+
+Refresh-token providers, token persistence, token exchange budgets and counters, Basic charset overrides, resource
 audience metadata, and generated OAuth provider factories are not available yet; applications construct providers
 explicitly.
