@@ -202,6 +202,7 @@ def _type_recipe(data_type: DataType, ledger: BindingLedger, active: set[int]) -
                 ("sequence", data_type.is_sequence),
                 ("tuple", data_type.is_tuple),
                 ("function", data_type.is_func),
+                ("annotated_string", getattr(data_type, "annotated_string", False)),
                 ("custom", data_type.is_custom_type),
                 ("standard_collections", data_type.use_standard_collections),
                 ("generic_container", data_type.use_generic_container),
