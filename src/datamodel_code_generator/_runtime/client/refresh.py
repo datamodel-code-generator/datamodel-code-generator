@@ -276,7 +276,6 @@ class SharedRefresh:
         new job is admitted at once while fewer jobs than the concurrency limit run. A call that may pay for an
         admission, starting a job or joining a queued one, needs room in its budgets first.
         """
-        options = self.options
         if (lifecycle := self.lifecycle) != "OPEN":
             raise AuthProviderClosedError(
                 state="CLOSING" if lifecycle == "CLOSING" else "CLOSED",
@@ -296,10 +295,15 @@ class SharedRefresh:
             return job, self.enlist(job, waiter), False
         if job.session is None and job.exchanges and admission is not None and (shortfall := admission.shortfall()):
             raise self.over_budget(shortfall, job.refresh_id)
-        if len(job.waiters) >= options.max_waiters:
+        self.join(job, waiter)
+        return job, False, True
+
+    def join(self, job: Job, waiter: _Waiter) -> None:
+        """Attach a waiter to the active job, within the waiter limit; the caller holds the lock."""
+        if len(job.waiters) >= (limit := self.options.max_waiters):
             raise AuthConcurrencyLimitError(
                 limit_kind="waiters",
-                limit=options.max_waiters,
+                limit=limit,
                 state=self.state,
                 delivery_state=DeliveryState.NOT_SENT,
                 phase="admission",
@@ -307,9 +311,8 @@ class SharedRefresh:
                 refresh_id=job.refresh_id,
             )
         job.waiters.append(waiter)
-        if admission is not None:
+        if (admission := waiter.admission) is not None:
             admission.joined(job)
-        return job, False, True
 
     def next_job(self) -> Job:  # noqa: PLR6301 - A family of another grant starts other kinds of jobs.
         """Return the job a claim starts when none is active; the caller holds the lock."""
@@ -645,9 +648,10 @@ class SyncSharedRefresh:
                 shared.leave(waiter, job)
         return outcome
 
-    def perform(self, job: Job, waiter: SyncWaiter) -> Outcome:
-        """Run an explicit operation's admitted job and wait for its outcome, bounded by the job's own session."""
-        self._start(job)
+    def perform(self, job: Job, waiter: SyncWaiter, *, start: bool = True) -> Outcome:
+        """Run an explicit operation's admitted job, or join it, and wait for its outcome, bounded by its session."""
+        if start:
+            self._start(job)
         shared = self.shared
         with shared.lock:
             try:
@@ -848,11 +852,12 @@ class AsyncSharedRefresh:
                 return _outcome(outcome)
             _within(context, started, admission)
 
-    async def perform(self, job: Job, waiter: AsyncWaiter) -> Outcome:
-        """Run an explicit operation's admitted job and await its outcome, bounded by the job's own session."""
+    async def perform(self, job: Job, waiter: AsyncWaiter, *, start: bool = True) -> Outcome:
+        """Run an explicit operation's admitted job, or join it, and await its outcome, bounded by its session."""
         from asyncio import wait  # noqa: PLC0415
 
-        self._start(job)
+        if start:
+            self._start(job)
         try:
             await wait({waiter.future})
         finally:
