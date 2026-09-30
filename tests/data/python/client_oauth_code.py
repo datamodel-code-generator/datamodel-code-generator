@@ -38,7 +38,7 @@ from tests.data.python.client_runtime import Exchange, run
 from tests.data.python.fixture_server import _contexts
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator, Callable
     from types import ModuleType
 
 _AUTHORIZE: Final = "https://auth.example.com/authorize"
@@ -498,6 +498,17 @@ def _faults(auth: ModuleType, transports: ModuleType, responses: ModuleType, err
         lines.append(f"    first exchange = {first[0]}")
 
 
+class _Blocking(AsyncResponse):
+    """An asyncio token response whose pauses block the event loop, so only the endpoint's own checks see them end."""
+
+    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:  # ty: ignore[invalid-method-override]
+        half = len(self.body) // 2
+        yield self.body[:half]
+        time.sleep(self.pause)
+        yield self.body[half:]
+        time.sleep(self.tail)
+
+
 async def _async_flows(
     auth: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, errors: ModuleType,
     lines: list[str], masks: _Masks,
@@ -527,6 +538,8 @@ async def _async_flows(
         ("async secret failure", (), AsyncSecret(failure=RuntimeError("secret")), 30.0),
         ("async secret outlives the session", (), AsyncSecret(auth.ApiKeyCredential("s"), delay=0.15), 0.1),
         ("async body slower than the session", (AsyncResponse(responses, 200, granted, pause=0.3),), None, 0.1),
+        ("async body arriving after the session", (_Blocking(responses, 200, granted, pause=0.3),), None, 0.1),
+        ("async body ending after the session", (_Blocking(responses, 200, granted, tail=0.3),), None, 0.1),
     ):
         adapter = AsyncAdapter(transports, *replies)
         async with auth.AsyncAuthorizationCodeFlow(
