@@ -12,7 +12,7 @@ import threading
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol
@@ -105,10 +105,14 @@ def refresh_margin(ttl: float) -> float:
 
 @dataclass(frozen=True, slots=True)
 class Published:
-    """Material a job obtained, and the monotonic time from which a caller renews it instead."""
+    """Material a job obtained, the monotonic time from which a caller renews it, and when its token expires.
+
+    A renewal that fails before the token expires leaves the material serving callers; None keeps no such time.
+    """
 
     material: BearerCredential
     refresh_at: float | None
+    expires_at: float | None = field(default=None, kw_only=True)
 
 
 @dataclass(frozen=True, slots=True)
@@ -564,6 +568,16 @@ def _within(context: CredentialContext, started: float, admission: CallAdmission
         admission.observe()
 
 
+def _served(shared: SharedRefresh, outcome: Published | Failed, *, force: bool) -> BearerCredential:
+    """Return a job's material, or the cached one while its token lasts after an unforced renewal failed."""
+    if isinstance(outcome, Failed) and not force:
+        with shared.lock:
+            cache = shared.cache
+        if cache is not None and (expires_at := cache.expires_at) is not None and monotonic() < expires_at:
+            return cache.material
+    return _outcome(outcome)
+
+
 def _waited(context: CredentialContext, started: float) -> float | None:
     """Return how long a caller may wait before checking again, raising once it was cancelled or ran out of time."""
     if (token := context.cancel_token) is not None and token.cancelled:
@@ -620,7 +634,7 @@ class SyncSharedRefresh:
                         shared.leave(waiter, job)
                     raise
             if not isinstance(outcome := self._awaited(context, started, waiter, job), Again):
-                return _outcome(outcome)
+                return _served(self.shared, outcome, force=force)
             _within(context, started, admission)
 
     def _awaited(self, context: CredentialContext, started: float, waiter: SyncWaiter, job: Job) -> Outcome:
@@ -768,9 +782,9 @@ class SyncSharedRefresh:
     def request_close(self) -> WorkFuture[None]:
         """Refuse new jobs and end the queued one without waiting, and return the release every closer awaits.
 
-        An idle provider releases on its worker, or in the calling thread when it has none that takes work, and leaves
-        any failure on the release. Otherwise a thread of its own releases once the running jobs return or their
-        sessions end.
+        An idle provider releases on its worker or a thread of its own, and in the calling thread only when neither
+        can start, leaving any failure on the release. Otherwise a thread of its own releases once the running jobs
+        return or their sessions end.
         """
         with self.shared.lock:
             first = self._released is None
@@ -786,9 +800,16 @@ class SyncSharedRefresh:
             with suppress(RuntimeError):
                 executor.submit(self._release)
                 return released
+        with suppress(RuntimeError):
+            threading.Thread(target=self._release_quietly, name="oauth-release", daemon=True).start()
+            return released
+        self._release_quietly()
+        return released
+
+    def _release_quietly(self) -> None:
+        """Release without raising, since every closer receives the failure through the release."""
         with suppress(BaseException):
             self._release()
-        return released
 
     def close(self) -> None:
         """Refuse new jobs, end the queued one, wait for running jobs until their sessions end, then release once.
@@ -849,7 +870,7 @@ class AsyncSharedRefresh:
                 with shared.lock:
                     shared.leave(waiter, job)
             if not isinstance(outcome := future.result(), Again):
-                return _outcome(outcome)
+                return _served(shared, outcome, force=force)
             _within(context, started, admission)
 
     async def perform(self, job: Job, waiter: AsyncWaiter, *, start: bool = True) -> Outcome:
@@ -987,11 +1008,12 @@ class ClientCredentialsGrant:
                 access, _, _ = token_material(exchanged.fields, exchanged.received, self.scopes)
             except (ValueError, TokenExpiredError) as cause:
                 return _rejected(job, provider_id, exchanged, phase="validate", cause=cause)
-            refresh_at = None
-            if (expires_at := access.expires_at) is not None:
-                ttl = (expires_at - exchanged.received).total_seconds()
-                refresh_at = exchanged.receipt + ttl - refresh_margin(ttl)
-            return Published(BearerCredential(access, TokenVersion()), refresh_at)
+            if (expires_at := access.expires_at) is None:
+                return Published(BearerCredential(access, TokenVersion()), None)
+            expires = exchanged.receipt + (ttl := (expires_at - exchanged.received).total_seconds())
+            return Published(
+                BearerCredential(access, TokenVersion()), expires - refresh_margin(ttl), expires_at=expires
+            )
         if exchanged.outcome in {"rejected", "http_status", "malformed_response"}:
             phase: Literal["validate", "unknown"] = (
                 "validate" if exchanged.outcome == "malformed_response" else "unknown"
