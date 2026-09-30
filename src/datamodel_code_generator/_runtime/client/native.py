@@ -44,6 +44,11 @@ def transport_error(error: httpx2.TransportError, *, started: bool) -> Transport
     return TransportError(delivery_state=DeliveryState.RESPONSE_STARTED if started else state, phase=phase, cause=error)
 
 
+def _timeouts(context: AttemptIOContext) -> dict[str, float | None]:
+    timeout = context.timeout
+    return {"connect": timeout.connect, "read": timeout.read, "write": timeout.write, "pool": timeout.pool}
+
+
 def _request(
     prepared: PreparedRequest[BodyAttempt] | PreparedRequest[AsyncBodyAttempt],
     context: AttemptIOContext,
@@ -56,21 +61,20 @@ def _request(
     headers = [(name.encode(), value.encode()) for name, value in prepared.headers]
     if (body := prepared.body) is not None and (length := body.content_length) is not None:
         headers.append((b"Content-Length", str(length).encode()))
-    timeout = context.timeout
-    extensions = {
-        "timeout": {"connect": timeout.connect, "read": timeout.read, "write": timeout.write, "pool": timeout.pool}
-    }
+    extensions = {"timeout": _timeouts(context)}
     return httpx2.Request(prepared.method, prepared.url, headers=headers, content=content, extensions=extensions)
 
 
 class Httpx2Response:
     """A streaming HTTPX2 response whose raw body is read at most once."""
 
-    __slots__ = ("_response", "headers")
+    __slots__ = ("_context", "_response", "_timeout", "headers")
 
-    def __init__(self, response: httpx2.Response) -> None:
+    def __init__(self, response: httpx2.Response, context: AttemptIOContext) -> None:
         """Wrap a response whose headers arrived."""
         self._response = response
+        self._context = context
+        self._timeout = context.timeout
         self.headers = HeadersView(response.headers.multi_items())
 
     @property
@@ -80,6 +84,8 @@ class Httpx2Response:
 
     def iter_raw_bytes(self) -> Iterator[bytes]:
         """Yield the body as it arrived, classifying a failure while it streams."""
+        if self._context.timeout is not self._timeout:
+            self._response.request.extensions["timeout"] = _timeouts(self._context)
         try:
             yield from self._response.iter_raw()
         except httpx2.TransportError as error:
@@ -93,11 +99,13 @@ class Httpx2Response:
 class AsyncHttpx2Response:
     """A streaming HTTPX2 async response whose raw body is read at most once."""
 
-    __slots__ = ("_response", "headers")
+    __slots__ = ("_context", "_response", "_timeout", "headers")
 
-    def __init__(self, response: httpx2.Response) -> None:
+    def __init__(self, response: httpx2.Response, context: AttemptIOContext) -> None:
         """Wrap a response whose headers arrived."""
         self._response = response
+        self._context = context
+        self._timeout = context.timeout
         self.headers = HeadersView(response.headers.multi_items())
 
     @property
@@ -105,8 +113,15 @@ class AsyncHttpx2Response:
         """Return the final status code."""
         return self._response.status_code
 
+    @property
+    def closed(self) -> bool:
+        """Return whether HTTPX2 already released the response, as it does once the body is read to its end."""
+        return self._response.is_closed
+
     async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
         """Yield the body as it arrived, classifying a failure while it streams."""
+        if self._context.timeout is not self._timeout:
+            self._response.request.extensions["timeout"] = _timeouts(self._context)
         try:
             async for chunk in self._response.aiter_raw():
                 yield chunk
@@ -146,7 +161,7 @@ class Httpx2Transport:
         if response.is_stream_consumed:
             response.close()
             raise AdapterContractError(delivery_state=DeliveryState.RESPONSE_STARTED)
-        return Httpx2Response(response)
+        return Httpx2Response(response, context)
 
     def close(self) -> None:
         """Close the HTTPX2 client."""
@@ -177,7 +192,7 @@ class AsyncHttpx2Transport:
         if response.is_stream_consumed:
             await response.aclose()
             raise AdapterContractError(delivery_state=DeliveryState.RESPONSE_STARTED)
-        return AsyncHttpx2Response(response)
+        return AsyncHttpx2Response(response, context)
 
     async def aclose(self) -> None:
         """Close the HTTPX2 async client."""

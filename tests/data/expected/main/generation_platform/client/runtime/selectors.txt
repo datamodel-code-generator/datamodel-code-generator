@@ -17,7 +17,7 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
   csv in UTF-16 sent = None
-  csv its charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='storeFile', location='body') [operation_id='storeFile', location=('body',), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
+  csv its charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='storeFile', call_id='<call>', location='body') [operation_id='storeFile', location=('body',), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: font/woff2, content-length: 4] b'wOF2'
   font sent = None
@@ -52,19 +52,19 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"city":"c"}'
   copy read by the json literal ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=201, operation_id='storeFile', call_id='<call>') [operation_id='storeFile', body_bytes=b'\x89PNG', truncated=False, actual_media_type='image/png'] unexpected_media_type_error
-  selector of an undeclared type ! CodecSelectionError: The declared media type 'video/*' does not stand for 'video/mp4' [] 
-  selector of a range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'image/*' [] 
-  selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' [] 
-  selector of a type a narrower declaration wins ! CodecSelectionError: The declared media type 'application/*' does not stand for 'application/json' [] 
-  selector of no media type ! CodecSelectionError: The declared media type 'image/*' does not stand for 'not a media type' [] 
-  response selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' [] 
-  selector of another operation ! CodecSelectionError: The RequestMedia was selected for another operation or direction [] 
-  response selector as a request's ! CodecSelectionError: The ResponseMedia was selected for another operation or direction [] 
-  request selector as a response's ! CodecSelectionError: The RequestMedia was selected for another operation or direction [] 
-  range named without a selector ! ConfigurationError: ConfigurationError(operation_id='storeFile', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
-  binary codec of its selector ! CodecSelectionError: The operation declares no codec-bearing request body for that media type [] 
-  codec of another operation's selector ! CodecSelectionError: The RequestMedia was selected for another operation or direction [] 
-  selector made by hand ! TypeError: A RequestMedia is made by the select methods of an operation's request codecs [] 
+  selector of an undeclared type ! CodecSelectionError: The declared media type 'video/*' does not stand for 'video/mp4' []
+  selector of a range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'image/*' []
+  selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' []
+  selector of a type a narrower declaration wins ! CodecSelectionError: The declared media type 'application/*' does not stand for 'application/json' []
+  selector of no media type ! CodecSelectionError: The declared media type 'image/*' does not stand for 'not a media type' []
+  response selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' []
+  selector of another operation ! CodecSelectionError: The RequestMedia was selected for another operation or direction []
+  response selector as a request's ! CodecSelectionError: The ResponseMedia was selected for another operation or direction []
+  request selector as a response's ! CodecSelectionError: The RequestMedia was selected for another operation or direction []
+  range named without a selector ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  binary codec of its selector ! CodecSelectionError: The operation declares no codec-bearing request body for that media type []
+  codec of another operation's selector ! CodecSelectionError: The RequestMedia was selected for another operation or direction []
+  selector made by hand ! TypeError: A RequestMedia is made by the select methods of an operation's request codecs []
   selector RequestMedia(declared_media='image/*', concrete_media='image/png') ResponseMedia(declared_media='image/*', concrete_media='image/png') image/* image/png
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: image/png, content-length: 4] b'\x89PNG'
@@ -88,7 +88,7 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, image/*, */*, image/png, content-type: text/csv; charset=utf-16, content-length: 8] b'\xff\xfea\x00,\x00b\x00'
   csv in UTF-16 sent = None
-  csv its charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='storeFile', location='body') [operation_id='storeFile', location=('body',), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
+  csv its charset cannot represent ! RequestEncodingError: RequestEncodingError(operation_id='storeFile', call_id='<call>', location='body') [operation_id='storeFile', location=('body',), cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] request_encoding_error
   > PUT https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: font/woff2, content-length: 4] b'wOF2'
   font sent = None
@@ -123,19 +123,19 @@
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"city":"c"}'
   copy read by the json literal ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=201, operation_id='storeFile', call_id='<call>') [operation_id='storeFile', body_bytes=b'\x89PNG', truncated=False, actual_media_type='image/png'] unexpected_media_type_error
-  selector of an undeclared type ! CodecSelectionError: The declared media type 'video/*' does not stand for 'video/mp4' [] 
-  selector of a range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'image/*' [] 
-  selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' [] 
-  selector of a type a narrower declaration wins ! CodecSelectionError: The declared media type 'application/*' does not stand for 'application/json' [] 
-  selector of no media type ! CodecSelectionError: The declared media type 'image/*' does not stand for 'not a media type' [] 
-  response selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' [] 
-  selector of another operation ! CodecSelectionError: The RequestMedia was selected for another operation or direction [] 
-  response selector as a request's ! CodecSelectionError: The ResponseMedia was selected for another operation or direction [] 
-  request selector as a response's ! CodecSelectionError: The RequestMedia was selected for another operation or direction [] 
-  range named without a selector ! ConfigurationError: ConfigurationError(operation_id='storeFile', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
-  binary codec of its selector ! CodecSelectionError: The operation declares no codec-bearing request body for that media type [] 
-  codec of another operation's selector ! CodecSelectionError: The RequestMedia was selected for another operation or direction [] 
-  selector made by hand ! TypeError: A RequestMedia is made by the select methods of an operation's request codecs [] 
+  selector of an undeclared type ! CodecSelectionError: The declared media type 'video/*' does not stand for 'video/mp4' []
+  selector of a range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'image/*' []
+  selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' []
+  selector of a type a narrower declaration wins ! CodecSelectionError: The declared media type 'application/*' does not stand for 'application/json' []
+  selector of no media type ! CodecSelectionError: The declared media type 'image/*' does not stand for 'not a media type' []
+  response selector of a type outside its range ! CodecSelectionError: The declared media type 'image/*' does not stand for 'text/plain' []
+  selector of another operation ! CodecSelectionError: The RequestMedia was selected for another operation or direction []
+  response selector as a request's ! CodecSelectionError: The ResponseMedia was selected for another operation or direction []
+  request selector as a response's ! CodecSelectionError: The RequestMedia was selected for another operation or direction []
+  range named without a selector ! ConfigurationError: ConfigurationError(operation_id='storeFile', call_id='<call>', field_path='media_type', condition='undeclared') [operation_id='storeFile', field_path=('media_type',), condition='undeclared'] configuration_error
+  binary codec of its selector ! CodecSelectionError: The operation declares no codec-bearing request body for that media type []
+  codec of another operation's selector ! CodecSelectionError: The RequestMedia was selected for another operation or direction []
+  selector made by hand ! TypeError: A RequestMedia is made by the select methods of an operation's request codecs []
   selector RequestMedia(declared_media='image/*', concrete_media='image/png') ResponseMedia(declared_media='image/*', concrete_media='image/png') image/* image/png
   > POST https://media.example.com/api/files
     [host: media.example.com, accept-encoding: gzip, deflate, accept: image/png, content-type: image/png, content-length: 4] b'\x89PNG'

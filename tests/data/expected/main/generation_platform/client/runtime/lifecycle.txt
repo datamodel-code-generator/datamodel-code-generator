@@ -48,7 +48,7 @@
   < closed
   async closing outlasts the cleanup time
   call ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
-  close ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.05) [] cleanup_error
+  close = None
   probe ! ConfigurationError: ConfigurationError(operation_id='getPet', field_path='options', condition='invalid_type') [operation_id='getPet', field_path=('options',), condition='invalid_type'] configuration_error
   refused ! ClientClosedError: ClientClosedError(operation_id='getPet', call_id='<call>', state='CLOSING', owner='client') [operation_id='getPet'] client_closed_error
   async closing outlasts the cleanup time close again = None

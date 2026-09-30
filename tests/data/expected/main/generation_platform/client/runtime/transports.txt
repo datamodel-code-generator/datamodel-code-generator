@@ -41,7 +41,7 @@
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
-  adapter close bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('close failed')] adapter_execution_error
+  adapter close bug ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=RuntimeError('close failed')] cleanup_error
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
@@ -118,7 +118,7 @@
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed
-  async adapter close bug ! AdapterExecutionError: AdapterExecutionError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('close failed')] adapter_execution_error
+  async adapter close bug ! CleanupError: CleanupError(operation_id='getPet', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='getPet', cause=RuntimeError('close failed')] cleanup_error
   > GET https://api.example.com/v1/pets/3 [Accept-Encoding: gzip, deflate, Accept: application/json] None None None
     unknown 5.0/30.0/30.0/5.0
   < closed

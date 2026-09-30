@@ -1,4 +1,4 @@
-"""Call generated clients through HTTPX2 mock transports: every request encoding, response dispatch, and failure."""
+"""Call generated clients through HTTPX2: request encoding, response dispatch, and injected failure paths."""
 
 from __future__ import annotations
 
@@ -11,10 +11,17 @@ from typing import TYPE_CHECKING, Any, Final
 import httpx2
 
 from tests.data.python.client_bodies import bodies
+from tests.data.python.client_deadline_cleanup import deadline_cleanup
+from tests.data.python.client_deadline_files import deadline_files
+from tests.data.python.client_deadline_options import deadline_options
+from tests.data.python.client_deadline_races import deadline_races
+from tests.data.python.client_deadline_streams import deadline_streams
 from tests.data.python.client_evolution import evolution
 from tests.data.python.client_fields import field_arguments, fields, optional_models
 from tests.data.python.client_headers import headers
 from tests.data.python.client_hooks import hooks
+from tests.data.python.client_limiter_faults import limiter_faults
+from tests.data.python.client_limiters import limiters
 from tests.data.python.client_query import query
 from tests.data.python.client_multipart import multipart
 from tests.data.python.client_raw import raw
@@ -605,6 +612,11 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
+    "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
+    "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
+    "deadline-files": ("pets", ("pydantic_v2.BaseModel",), deadline_files),
+    "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),
+    "deadline-streams": ("pets", ("pydantic_v2.BaseModel",), deadline_streams),
     "media": ("media", ("pydantic_v2.BaseModel", "dataclasses.dataclass"), media),
     "querystring": ("querystring", ("pydantic_v2.BaseModel",), querystring),
     "servers": ("servers", ("pydantic_v2.BaseModel",), servers),
@@ -622,6 +634,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
+    "limiters": ("pets", ("pydantic_v2.BaseModel",), limiters),
+    "limiter-faults": ("pets", ("pydantic_v2.BaseModel",), limiter_faults),
     "webhook-contracts": ("pets", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets", ("pydantic_v2.BaseModel",), webhook_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),

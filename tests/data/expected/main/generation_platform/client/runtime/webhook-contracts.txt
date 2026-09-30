@@ -8,29 +8,29 @@
   opaque key representation = KeySet()
   empty keys = KeySet()
   no constructor key limit = 9
-  keys list ! TypeError: keys must be a tuple [] 
-  keys iterator ! TypeError: keys must be a tuple [] 
-  keys mapping ! TypeError: keys must be a tuple [] 
-  keys string ! TypeError: keys must be a tuple [] 
-  keys None ! TypeError: keys must be a tuple [] 
-  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' [] 
-  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given [] 
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
   operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
   document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
-  reference frozen ! FrozenInstanceError: cannot assign to field 'document' [] 
-  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given [] 
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
   signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
-  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' [] 
-  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' [] 
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' [] 
+  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
   omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
   options share UNSET=True
   resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
-  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
-  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
   OperationRef keyword-only=True
   OperationRef hints=('pointer', 'document')
@@ -60,7 +60,7 @@
   MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
   AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
   replay capacity defaults=10000/10000
-  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' [] 
+  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -112,7 +112,7 @@
   zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
-  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' [] 
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
   MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
@@ -162,29 +162,29 @@
   opaque key representation = KeySet()
   empty keys = KeySet()
   no constructor key limit = 9
-  keys list ! TypeError: keys must be a tuple [] 
-  keys iterator ! TypeError: keys must be a tuple [] 
-  keys mapping ! TypeError: keys must be a tuple [] 
-  keys string ! TypeError: keys must be a tuple [] 
-  keys None ! TypeError: keys must be a tuple [] 
-  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' [] 
-  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given [] 
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
   operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
   document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
-  reference frozen ! FrozenInstanceError: cannot assign to field 'document' [] 
-  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given [] 
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
   signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
-  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' [] 
-  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' [] 
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' [] 
+  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
   omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
   options share UNSET=True
   resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
-  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
-  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
   OperationRef keyword-only=True
   OperationRef hints=('pointer', 'document')
@@ -214,7 +214,7 @@
   MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
   AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
   replay capacity defaults=10000/10000
-  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' [] 
+  unknown protocol attribute ! AttributeError: module 'pets_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -266,7 +266,7 @@
   zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
-  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' [] 
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
   MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
@@ -316,29 +316,29 @@
   opaque key representation = KeySet()
   empty keys = KeySet()
   no constructor key limit = 9
-  keys list ! TypeError: keys must be a tuple [] 
-  keys iterator ! TypeError: keys must be a tuple [] 
-  keys mapping ! TypeError: keys must be a tuple [] 
-  keys string ! TypeError: keys must be a tuple [] 
-  keys None ! TypeError: keys must be a tuple [] 
-  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' [] 
-  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given [] 
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
   operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
   document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
-  reference frozen ! FrozenInstanceError: cannot assign to field 'document' [] 
-  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given [] 
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
   signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
-  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' [] 
-  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' [] 
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' [] 
+  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
   omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
   options share UNSET=True
   resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
-  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
-  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
   OperationRef keyword-only=True
   OperationRef hints=('pointer', 'document')
@@ -368,7 +368,7 @@
   MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
   AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
   replay capacity defaults=10000/10000
-  unknown protocol attribute ! AttributeError: module 'pets_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' [] 
+  unknown protocol attribute ! AttributeError: module 'pets_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -420,7 +420,7 @@
   zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
-  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' [] 
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
   MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
@@ -470,29 +470,29 @@
   opaque key representation = KeySet()
   empty keys = KeySet()
   no constructor key limit = 9
-  keys list ! TypeError: keys must be a tuple [] 
-  keys iterator ! TypeError: keys must be a tuple [] 
-  keys mapping ! TypeError: keys must be a tuple [] 
-  keys string ! TypeError: keys must be a tuple [] 
-  keys None ! TypeError: keys must be a tuple [] 
-  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' [] 
-  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given [] 
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
   operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
   document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
-  reference frozen ! FrozenInstanceError: cannot assign to field 'document' [] 
-  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given [] 
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
   signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
-  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' [] 
-  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' [] 
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' [] 
+  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
   omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
   options share UNSET=True
   resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
-  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
-  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
   OperationRef keyword-only=True
   OperationRef hints=('pointer', 'document')
@@ -522,7 +522,7 @@
   MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
   AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
   replay capacity defaults=10000/10000
-  unknown protocol attribute ! AttributeError: module 'pets_typing_typeddict.protocols' has no attribute 'MissingWebhookType' [] 
+  unknown protocol attribute ! AttributeError: module 'pets_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -574,7 +574,7 @@
   zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
-  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' [] 
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
   MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
@@ -624,29 +624,29 @@
   opaque key representation = KeySet()
   empty keys = KeySet()
   no constructor key limit = 9
-  keys list ! TypeError: keys must be a tuple [] 
-  keys iterator ! TypeError: keys must be a tuple [] 
-  keys mapping ! TypeError: keys must be a tuple [] 
-  keys string ! TypeError: keys must be a tuple [] 
-  keys None ! TypeError: keys must be a tuple [] 
-  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' [] 
-  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given [] 
+  keys list ! TypeError: keys must be a tuple []
+  keys iterator ! TypeError: keys must be a tuple []
+  keys mapping ! TypeError: keys must be a tuple []
+  keys string ! TypeError: keys must be a tuple []
+  keys None ! TypeError: keys must be a tuple []
+  keys frozen ! FrozenInstanceError: cannot assign to field 'keys' []
+  keys keyword-only ! TypeError: KeySet.__init__() takes 1 positional argument but 2 were given []
   operation reference = OperationRef(pointer='/paths/~1hooks/post', document=None)
   document reference = OperationRef(pointer='/paths/~1hooks/post', document='api.yaml')
-  reference frozen ! FrozenInstanceError: cannot assign to field 'document' [] 
-  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given [] 
+  reference frozen ! FrozenInstanceError: cannot assign to field 'document' []
+  reference keyword-only ! TypeError: OperationRef.__init__() takes 1 positional argument but 2 were given []
   signature facts = VerifiedSignature(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   signature no optional facts = VerifiedSignature(delivery_id=None, timestamp=None, matched_key_id='active')
-  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' [] 
-  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' [] 
+  signature frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
+  signature fields required ! TypeError: VerifiedSignature.__init__() missing 2 required keyword-only arguments: 'delivery_id' and 'timestamp' []
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active', duplicate=False)
   event data identity=True
-  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' [] 
+  event frozen ! FrozenInstanceError: cannot assign to field 'duplicate' []
   omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET, replay_ttl=UNSET)
   options share UNSET=True
   resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0, replay_ttl=300.0)
-  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
-  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' [] 
+  resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
+  options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
   OperationRef keyword-only=True
   OperationRef hints=('pointer', 'document')
@@ -676,7 +676,7 @@
   MemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=False
   AsyncMemoryReplayStore claim hints=('namespace', 'delivery_id', 'expires_at', 'return') async=True
   replay capacity defaults=10000/10000
-  unknown protocol attribute ! AttributeError: module 'pets_msgspec_struct.protocols' has no attribute 'MissingWebhookType' [] 
+  unknown protocol attribute ! AttributeError: module 'pets_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
   options max_body_bytes bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
   options max_body_bytes negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_body_bytes',), condition='invalid_value'] protocol_configuration_error
@@ -728,7 +728,7 @@
   zero replay TTL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('replay_ttl',), condition='invalid_value'] protocol_configuration_error
   minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0, replay_ttl=0.01)
   integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7, replay_ttl=9)
-  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' [] 
+  unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
   MemoryReplayStore capacity bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   MemoryReplayStore capacity negative ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error

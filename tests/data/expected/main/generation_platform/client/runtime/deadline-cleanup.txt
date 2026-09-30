@@ -1,0 +1,74 @@
+# pets pydantic_v2.BaseModel
+  stream end error counters = (1, 1, 1, None, 1, False)
+  close native cancellation = ('CancelledError', ('close caller cancelled',))
+  close retained = (1, False, False)
+  close completed once = (1, True, False)
+  closed client refuses calls ! ClientClosedError: ClientClosedError(call_id='<call>', state='CLOSED', owner='client') [] client_closed_error
+  close success bounded = True
+  close success timeout = (1, 0, 0.01, 'NoneType')
+  close success remains closing ! ClientClosedError: ClientClosedError(call_id='<call>', state='CLOSING', owner='client') [] client_closed_error
+  close success final result = None
+  close success closed again = None
+  close success resource = (1, False)
+  close late failure bounded = True
+  close late failure timeout = (1, 0, 0.01, 'NoneType')
+  close late failure remains closing ! ClientClosedError: ClientClosedError(call_id='<call>', state='CLOSING', owner='client') [] client_closed_error
+  close late failure final result ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [cause=RuntimeError('adapter close failed')] cleanup_error
+  close late failure closed again = None
+  close late failure resource = (1, False)
+  concurrent close resource = (1, False)
+  view leaves parent transport = 0
+  parent usable after view closes = 200
+  parent closes transport = 1
+  borrowed transport remains open = 0
+  drain caller cancelled = True
+  cancelled drain releases resources = (1, 1)
+  adapter native interruption = ('CancelledError', ('adapter interruption',), 1)
+  adapter interrupted close again = None
+  retained response first close ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.01) [] cleanup_error
+  retained response second close ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.01) [cause=ClientClosedError()] cleanup_error
+  retained response final close ! CleanupError: CleanupError(pending_calls=0, pending_leases=0) [cause=ClientClosedError()] cleanup_error
+  retained response closed again = None
+  retained response resources = (1, 1)
+  terminal caller cancellation = ('CancelledError', ('terminal hook caller cancelled',))
+  terminal events after cancellation = (('call_start', None, 0), ('attempt_start', None, 0), ('response_headers', None, 1), ('attempt_end', None, 1), ('call_end', 'cancel', 1))
+  terminal cancellation closes response = 1
+  terminal cleanup notes = ()
+  terminal late failure caller cancellation = ('CancelledError', ('terminal hook caller cancelled',))
+  terminal late failure events after cancellation = (('call_start', None, 0), ('attempt_start', None, 0), ('response_headers', None, 1), ('attempt_end', None, 1), ('call_end', 'cancel', 1))
+  terminal late failure cancellation closes response = 1
+  terminal late failure cleanup notes = ('Secondary cleanup failure: RuntimeError',)
+  async stream end error counters = (1, 1, 1, None, 1, False)
+  terminal native result = ('CancelledError', ('first terminal native',), True, None, None, None, (), ('Secondary cleanup failure: CancelledError', 'Secondary cleanup failure: ValueError', 'Secondary cleanup failure: LookupError'))
+  terminal native hook order = (('first', 'call_start', None, 0, 0, 0), ('second', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('second', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('second', 'response_headers', None, 1, 1, 1), ('last', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('second', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'cancel', 1, 1, 1), ('second', 'call_end', 'cancel', 1, 1, 1), ('last', 'call_end', 'cancel', 1, 1, 1))
+  terminal native resources = (1, 1)
+  SDK failure then native result = ('HookExecutionError', (), True, 1, 1, 1, ('CancelledError', 'ValueError', 'LookupError'), ())
+  SDK failure then native hook order = (('first', 'call_start', None, 0, 0, 0), ('second', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('second', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('second', 'response_headers', None, 1, 1, 1), ('last', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('second', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'error', 1, 1, 1), ('second', 'call_end', 'error', 1, 1, 1), ('last', 'call_end', 'error', 1, 1, 1))
+  SDK failure then native resources = (1, 1)
+  native already primary result = ('CancelledError', ('original native',), True, None, None, None, (), ('original native note', 'Secondary cleanup failure: CancelledError', 'Secondary cleanup failure: ValueError', 'Secondary cleanup failure: LookupError'))
+  native already primary hook order = (('first', 'call_start', None, 0, 0, 0), ('second', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('second', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('second', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'cancel', 1, 1, 1), ('second', 'call_end', 'cancel', 1, 1, 1), ('last', 'call_end', 'cancel', 1, 1, 1))
+  native already primary resources = (1, 1)
+  same native reused result = ('CancelledError', ('reused native',), True, None, None, None, (), ('Secondary cleanup failure: ValueError', 'Secondary cleanup failure: LookupError'))
+  same native reused hook order = (('first', 'call_start', None, 0, 0, 0), ('second', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('second', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('second', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'cancel', 1, 1, 1), ('second', 'call_end', 'cancel', 1, 1, 1), ('last', 'call_end', 'cancel', 1, 1, 1))
+  same native reused resources = (1, 1)
+  terminal cap result = ('CleanupError', 1, 1, 1, ())
+  terminal cap hook order before release = (('first', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('last', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1))
+  terminal cap final hook order = (('first', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('last', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'success', 1, 1, 1), ('last', 'call_end', 'success', 1, 1, 1))
+  terminal cap late failures = (('HookExecutionError', 'RuntimeError', 1, ()),)
+  terminal cap cause late failures = ()
+  terminal cap resources = (1, 1)
+  expired start cap result = ('DeadlineExceededError', 0, 0, 0, ('CleanupError',))
+  expired start cap hook order before release = (('first', 'call_start', None, 0, 0, 0),)
+  expired start cap final hook order = (('first', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'call_end', 'error', 0, 0, 0), ('last', 'call_end', 'error', 0, 0, 0))
+  expired start cap late failures = (('CleanupError', 'NoneType', 0, ()), ('RuntimeError', 'NoneType', None, ()))
+  expired start cap cause late failures = ()
+  expired start cap resources = (0, 0)
+  stream end cap result = ('HookExecutionError', 1, 1, 1, ())
+  stream end cap hook order before release = (('first', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('last', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'handed_off', 1, 1, 1), ('last', 'call_end', 'handed_off', 1, 1, 1), ('first', 'stream_end', 'cancel', 1, 1, 1))
+  stream end cap final hook order = (('first', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('last', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'handed_off', 1, 1, 1), ('last', 'call_end', 'handed_off', 1, 1, 1), ('first', 'stream_end', 'cancel', 1, 1, 1), ('last', 'stream_end', 'cancel', 1, 1, 1))
+  stream end cap late failures = ()
+  stream end cap cause late failures = (('HookExecutionError', 'RuntimeError', 1),)
+  stream end cap resources = (1, 1)
+  stream cancellation result = ('RequestCancelledError', 1, 1, 1, ('ValueError',))
+  stream cancellation hook order = (('first', 'call_start', None, 0, 0, 0), ('last', 'call_start', None, 0, 0, 0), ('first', 'attempt_start', None, 0, 0, 0), ('last', 'attempt_start', None, 0, 0, 0), ('first', 'response_headers', None, 1, 1, 1), ('last', 'response_headers', None, 1, 1, 1), ('first', 'attempt_end', None, 1, 1, 1), ('last', 'attempt_end', None, 1, 1, 1), ('first', 'call_end', 'handed_off', 1, 1, 1), ('last', 'call_end', 'handed_off', 1, 1, 1), ('first', 'stream_end', 'cancel', 1, 1, 1), ('last', 'stream_end', 'cancel', 1, 1, 1))
+  stream cancellation resources = (1, 1)

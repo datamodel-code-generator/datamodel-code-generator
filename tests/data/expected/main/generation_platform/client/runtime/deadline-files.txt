@@ -1,0 +1,212 @@
+# pets pydantic_v2.BaseModel
+  > POST https://files.example.com/
+    [host: files.example.com, accept-encoding: gzip, deflate, content-length: 6] b'upload'
+  successful owned close = (True, 1)
+  successful owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  successful owned close once = 1
+  owned preparation interruption = 'CancelledError'
+  owned preparation before release = (0, 0)
+  owned preparation claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  owned preparation retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  owned preparation released = (True, 1, 0, True)
+  owned preparation diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), None, True, ())
+  owned preparation owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  owned preparation owned close once = 1
+  borrowed preparation interruption = 'CancelledError'
+  borrowed preparation before release = (0, 0)
+  borrowed preparation claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  borrowed preparation retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  borrowed preparation released = (False, 0, 0, True)
+  borrowed preparation diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), None, True, ())
+  closed borrowed adapter interruption = 'CancelledError'
+  closed borrowed adapter before release = (0, 0)
+  closed borrowed adapter claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  closed borrowed adapter retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  closed borrowed adapter released = (False, 0, 0, True)
+  closed borrowed adapter diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), None, True, ())
+  closed borrowed adapter later attempt refused ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  repeated cancellation interruption = 'CancelledError'
+  repeated cancellation before release = (0, 0)
+  repeated cancellation claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  repeated cancellation retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  repeated cancellation released = (True, 1, 0, True)
+  repeated cancellation diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), None, True, ())
+  repeated cancellation owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  repeated cancellation owned close once = 1
+  deadline preparation interruption = 'DeadlineExceededError'
+  deadline preparation before release = (0, 0)
+  deadline preparation claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  deadline preparation retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  deadline preparation released = (True, 1, 0, True)
+  deadline preparation diagnostics = ((), ('CleanupError',), (), 0, True, ())
+  deadline preparation owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  deadline preparation owned close once = 1
+  token preparation interruption = 'RequestCancelledError'
+  token preparation before release = (0, 0)
+  token preparation claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  token preparation retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  token preparation released = (True, 1, 0, True)
+  token preparation diagnostics = ((), ('CleanupError',), (), 0, True, ())
+  token preparation owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  token preparation owned close once = 1
+  late disk failure interruption = 'CancelledError'
+  late disk failure before release = (0, 0)
+  late disk failure claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  late disk failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  late disk failure released = (True, 1, 0, True)
+  late disk failure diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: OSError'), None, True, ())
+  late disk failure owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  late disk failure owned close once = 1
+  late close failure interruption = 'CancelledError'
+  late close failure before release = (0, 0)
+  late close failure claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  late close failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  late close failure released = (True, 1, 0, True)
+  late close failure diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: OSError'), None, True, ())
+  late close failure owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  late close failure owned close once = 1
+  retained close interruption = 'CancelledError'
+  retained close before release = (0, 0)
+  retained close claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  retained close retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  retained close closing retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  retained close released = (True, 1, 0, True)
+  retained close diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), None, True, ())
+  retained close owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  retained close owned close once = 1
+  deadline close failure interruption = 'DeadlineExceededError'
+  deadline close failure before release = (0, 0)
+  deadline close failure claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  deadline close failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  deadline close failure released = (True, 1, 0, True)
+  deadline close failure diagnostics = ((), ('CleanupError', 'OSError'), (), 0, True, ((False, True),))
+  deadline close failure owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  deadline close failure owned close once = 1
+  token disk failure interruption = 'RequestCancelledError'
+  token disk failure before release = (0, 0)
+  token disk failure claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  token disk failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  token disk failure released = (True, 1, 0, True)
+  token disk failure diagnostics = ((), ('CleanupError', 'OSError'), (), 0, True, ((True, False),))
+  token disk failure owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  token disk failure owned close once = 1
+  deadline disk failure interruption = 'DeadlineExceededError'
+  deadline disk failure before release = (0, 0)
+  deadline disk failure claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  deadline disk failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  deadline disk failure released = (True, 1, 0, True)
+  deadline disk failure diagnostics = ((), ('CleanupError', 'OSError'), (), 0, True, ((True, False),))
+  deadline disk failure owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  deadline disk failure owned close once = 1
+  owned read interruption = 'CancelledError'
+  owned read before release = (0, 1)
+  owned read claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  owned read retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  owned read released = (True, 1, 1, True)
+  owned read diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), None, True, ())
+  owned read owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  owned read owned close once = 1
+  borrowed read interruption = 'CancelledError'
+  borrowed read before release = (0, 1)
+  borrowed read claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  borrowed read retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  borrowed read released = (False, 0, 1, True)
+  borrowed read diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), None, True, ())
+  late read failure interruption = 'CancelledError'
+  late read failure before release = (0, 1)
+  late read failure claim held ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='concurrent') [condition='concurrent'] body_not_replayable_error
+  late read failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  late read failure released = (True, 1, 1, True)
+  late read failure diagnostics = (('file caller cancelled',), (), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: OSError'), None, True, ())
+  late read failure owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  late read failure owned close once = 1
+  late path open before release = (0, 0)
+  late path open retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  late path open released = (True, 1, 0, True)
+  late path open diagnostics = ('CancelledError', ('path caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), True, ())
+  closed adapter late open before release = (0, 0)
+  closed adapter late open retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  closed adapter late open released = (True, 1, 0, True)
+  closed adapter late open diagnostics = ('CancelledError', ('path caller cancelled',), (), ('Secondary cleanup failure: CleanupError',), True, ())
+  closed adapter late open later attempt refused ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  late path stat failure before release = (0, 0)
+  late path stat failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  late path stat failure released = (True, 1, 0, True)
+  late path stat failure diagnostics = ('CancelledError', ('path caller cancelled',), (), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: OSError'), True, ())
+  late path close failure before release = (0, 0)
+  late path close failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  late path close failure released = (True, 1, 0, True)
+  late path close failure diagnostics = ('CancelledError', ('path caller cancelled',), (), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: OSError'), True, ())
+  late path stat and close failures before release = (0, 0)
+  late path stat and close failures retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  late path stat and close failures released = (True, 1, 0, True)
+  late path stat and close failures diagnostics = ('CancelledError', ('path caller cancelled',), (), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: OSError'), True, ())
+  same path stat and close failure before release = (0, 0)
+  same path stat and close failure retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  same path stat and close failure released = (True, 1, 0, True)
+  same path stat and close failure diagnostics = ('CancelledError', ('path caller cancelled',), (), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: OSError'), True, ())
+  deadline path stat and close failures before release = (0, 0)
+  deadline path stat and close failures retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  deadline path stat and close failures released = (True, 1, 0, True)
+  deadline path stat and close failures diagnostics = ('DeadlineExceededError', (), (('CleanupError', ()), ('OSError', ('Secondary cleanup failure: OSError',))), (), True, ((True, False),))
+  preparation OSError = ('BodyFactoryError', False, True, 'OSError', (), True, 1, 0, True)
+  preparation OSError owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  preparation OSError owned close once = 1
+  preparation OSError = ('BodyFactoryError', False, True, 'OSError', ('Secondary cleanup failure: OSError',), True, 1, 0, True)
+  preparation OSError owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  preparation OSError owned close once = 1
+  preparation CancelledError = ('CancelledError', True, False, 'NoneType', (), True, 1, 0, True)
+  preparation CancelledError owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  preparation CancelledError owned close once = 1
+  preparation _Stopped = ('_Stopped', True, False, 'NoneType', (), True, 1, 0, True)
+  preparation _Stopped owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  preparation _Stopped owned close once = 1
+  closed before read = ('BodyFactoryError', False, False, 'BodyNotReplayableError', (), True, 1, 1, True)
+  closed before read owned input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  closed before read owned close once = 1
+  queued path open before release = (True, False, 0, 0)
+  queued path open retained = None
+  queued path open released = ((True,), False, 0, 0, 0, True)
+  queued path open diagnostics = ('CancelledError', ('queued file cancellation',), ())
+  queued owned preparation before release = (True, False, 0, 0)
+  queued owned preparation retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  queued owned preparation released = ((True, False), True, 1, 0, 0, True)
+  queued owned preparation diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError',))
+  queued borrowed preparation before release = (True, False, 0, 0)
+  queued borrowed preparation retained = None
+  queued borrowed preparation released = ((True,), False, 0, 0, 0, True)
+  queued borrowed preparation diagnostics = ('CancelledError', ('queued file cancellation',), ())
+  queued owned read before release = (True, False, 0, 0)
+  queued owned read retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  queued owned read released = ((False, True, False), True, 1, 0, 1, True)
+  queued owned read diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError',))
+  queued borrowed read before release = (True, False, 0, 0)
+  queued borrowed read retained = None
+  queued borrowed read released = ((False, True), False, 0, 0, 1, True)
+  queued borrowed read diagnostics = ('CancelledError', ('queued file cancellation',), ())
+  queued owned close replacement retained = True
+  queued owned close before release = (True, False, 0, 0)
+  queued owned close retained ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.01) [] cleanup_error
+  queued owned close released = ((True, True, False), True, 1, 0, 0, True)
+  queued owned close diagnostics = ('CancelledError', ('queued file cancellation',), ('Secondary cleanup failure: CleanupError', 'Secondary cleanup failure: CancelledError'))
+  completed file preparation diagnostics = ('CancelledError', ('completed file cancellation',), ())
+  completed file preparation resources = ((False, False), True, 1, 0)
+  completed path open diagnostics = ('CancelledError', ('completed file cancellation',), ())
+  completed path open resources = ((False, False), True, 1, 0)
+  completed file failure diagnostics = ('CancelledError', ('completed file cancellation',), ('Secondary cleanup failure: OSError',))
+  completed file failure resources = ((False, False), True, 1, 0)
+  completed path failure diagnostics = ('CancelledError', ('completed file cancellation',), ('Secondary cleanup failure: OSError',))
+  completed path failure resources = ((False,), True, 1, 0)
+  settled read failure = ('CancelledError', ('settled read cancellation',), ('Secondary cleanup failure: OSError',), True, 1, 1)
+  multipart part closed after its deadline = ('DeadlineExceededError', 'CancelledError', ((True, 1), (True, 1)), 0)
+  shared path late opens close = None
+  shared path late opens files = (((True, 1), (True, 1)), 0)
+  shared path late opens diagnostics = (('CancelledError', ('shared path cancellation 1',), ()), ('CancelledError', ('shared path cancellation 2',), ()))
+  shared path late failures close = None
+  shared path late failures files = (((True, 1), (True, 1)), 0)
+  shared path late failures diagnostics = (('CancelledError', ('shared path cancellation 1',), ('Secondary cleanup failure: FileNotFoundError',)), ('CancelledError', ('shared path cancellation 2',), ('Secondary cleanup failure: PermissionError',)))
+  > POST https://files.example.com/
+    [host: files.example.com, accept-encoding: gzip, deflate, content-length: 6] b'upload'
+  native close failure = (True, ('file close interruption',), (), True, 1, True)
+  native close input consumed ! BodyNotReplayableError: BodyNotReplayableError(call_id='<call>', source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  native close runs once = 1

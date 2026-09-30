@@ -16,5 +16,5 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
 
 @pytest.mark.parametrize("case", list(SCENARIOS))
 def test_client_runtime(case: str, tmp_path: Path) -> None:
-    """Generate each client and exchange its calls with a mock transport, synchronously and with asyncio."""
+    """Generate each client and exercise real TLS exchanges and injected failures in both execution modes."""
     assert_output(client_runtime_report(case, tmp_path), EXPECTED / f"{case}.txt")

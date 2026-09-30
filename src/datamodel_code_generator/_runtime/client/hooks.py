@@ -13,8 +13,21 @@ from typing import Literal, Protocol, TypeAlias
 
 from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
 from .errors import IOPhase  # noqa: TC001 - Public annotations support get_type_hints().
+from .timing import CancelToken  # noqa: TC001 - Public annotations support get_type_hints().
 
-__all__ = ("AsyncHook", "CallEvent", "CallOutcome", "EventName", "Hook", "RetryReason")
+__all__ = (
+    "AsyncHook",
+    "AsyncLimiter",
+    "AsyncPermit",
+    "CallEvent",
+    "CallOutcome",
+    "EventName",
+    "Hook",
+    "Limiter",
+    "LimiterContext",
+    "Permit",
+    "RetryReason",
+)
 
 EventName: TypeAlias = Literal[
     "call_start",
@@ -72,6 +85,14 @@ class CallEvent:
     outcome: CallOutcome | None = None
     attempts: int = 0
     sends: int = 0
+    resource_attempt_count: int = 0
+    redirect_count: int = 0
+    auth_exchange_count: int = 0
+    network_send_count: int = 0
+    network_send_budget_used: int = 0
+    auth_exchange_budget_used: int = 0
+    auth_refresh_ids: tuple[str, ...] = ()
+    auth_refresh_pending: int = 0
     options: Mapping[str, JSONScalar] | None = None
     context: Mapping[str, JSONScalar] = field(default_factory=lambda: MappingProxyType({}))
 
@@ -89,4 +110,48 @@ class AsyncHook(Protocol):
 
     async def on_event(self, event: CallEvent) -> None:
         """Observe one event; raising stops the call's further network actions."""
+        ...
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LimiterContext:
+    """The safe identifiers and remaining time of a call entering its application limiter."""
+
+    operation_id: str | None
+    origin: str
+    call_id: str
+    parent_session_id: str | None
+    remaining_timeout: float | None
+    cancel_token: CancelToken | None
+
+
+class Permit(Protocol):
+    """Permission to hold one synchronous request or response until it is released."""
+
+    def release(self) -> None:
+        """Release the permission; repeated calls have no further effect."""
+        ...
+
+
+class AsyncPermit(Protocol):
+    """Permission to hold one asynchronous request or response until it is released."""
+
+    async def release(self) -> None:
+        """Release the permission; repeated calls have no further effect."""
+        ...
+
+
+class Limiter(Protocol):
+    """A synchronous application limiter that admits a call under its remaining budget."""
+
+    def acquire(self, context: LimiterContext) -> Permit:
+        """Wait for and return permission to send and retain the response."""
+        ...
+
+
+class AsyncLimiter(Protocol):
+    """An asyncio application limiter that admits a call under its remaining budget."""
+
+    async def acquire(self, context: LimiterContext) -> AsyncPermit:
+        """Wait for and return permission to send and retain the response."""
         ...

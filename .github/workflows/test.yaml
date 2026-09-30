@@ -306,6 +306,30 @@ jobs:
             name: HTTPX + HTTPX2 HTTP(S) e2e
             os: macos-latest
             coverage: false
+          - tox_env: client-py310-nocov-e2e
+            name: Client deadlines Python 3.10
+            os: ubuntu-24.04
+            coverage: false
+          - tox_env: client-py311-nocov-e2e
+            name: Client deadlines Python 3.11
+            os: ubuntu-24.04
+            coverage: false
+          - tox_env: client-py312-nocov-e2e
+            name: Client deadlines Python 3.12
+            os: ubuntu-24.04
+            coverage: false
+          - tox_env: client-py314-nocov-e2e
+            name: Client deadlines Python 3.14
+            os: ubuntu-24.04
+            coverage: false
+          - tox_env: client-httpx2-min-nocov-e2e
+            name: Client HTTPX2 minimum HTTP/1.1 and HTTP/2
+            os: macos-latest
+            coverage: false
+          - tox_env: client-httpx2-max-nocov-e2e
+            name: Client HTTPX2 latest HTTP/1.1 and HTTP/2
+            os: windows-latest
+            coverage: false
           - tox_env: fastapi-install-nocov-e2e
             name: FastAPI server installation e2e
             os: ubuntu-24.04

@@ -3,11 +3,19 @@
 
 from ._runtime.client.hooks import (
     AsyncHook,
+    AsyncLimiter,
+    AsyncPermit,
     CallEvent,
     CallOutcome,
     EventName,
     Hook,
+    Limiter,
+    LimiterContext,
+    Permit,
     RetryReason,
 )
 
-__all__ = ["AsyncHook", "CallEvent", "CallOutcome", "EventName", "Hook", "RetryReason"]
+__all__ = [
+    "AsyncHook", "AsyncLimiter", "AsyncPermit", "CallEvent", "CallOutcome", "EventName",
+    "Hook", "Limiter", "LimiterContext", "Permit", "RetryReason",
+]

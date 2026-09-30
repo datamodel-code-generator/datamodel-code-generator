@@ -483,11 +483,21 @@ fields, a missing required field, a field of another media type, or fields for a
 
 ```text
 a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields missing a required one ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
-fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='media_type', condition='missing') [operation_id='createPet', field_path=('media_type',), condition='missing'] configuration_error
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
+fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='missing') [operation_id='createPet', field_path=('media_type',), condition='missing'] configuration_error
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
-update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=True context={}
+update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
 ```
 
 <!-- fmt: on -->
@@ -719,3 +729,229 @@ v2 models). msgspec lists them in 132 µs and stdlib dataclasses in 135 µs nati
 `schema`. Pydantic argument validation adds 6–7 µs to a `create_pet` call with Pydantic models, stdlib dataclasses,
 or TypedDicts; with the latter two, the first call that selects it takes about 23 ms to import Pydantic and build its
 validation.
+
+## Timeouts, cancellation, and send limits
+
+The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, `Deadline`,
+and `CancelToken`. These settings apply to typed operations and `request_raw`, including their response and streaming
+views. The following examples use a generated package named `pets` and take the service URL from their caller.
+
+| Option | Effective default | Meaning |
+|---|---|---|
+| `timeout` | `TimeoutOptions(connect=5, read=30, write=30, pool=5)` | Native I/O phase limits, in seconds |
+| `total_timeout` | `60` | Relative budget from call entry through encoding, callbacks, sending, reading, and decoding |
+| `deadline` | `None` | An absolute monotonic deadline created by `Deadline.after(seconds)` |
+| `cancel_token` | `None` | An explicit cancellation signal shared with the call |
+| `max_network_sends` | `1` | Maximum number of send slots the call may reserve |
+| `stream_idle_timeout` | `60` | Read inactivity limit after a streaming response is handed to the caller |
+| `stream_total_timeout` | `None` | Total stream lifetime after handoff |
+| `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
+| `limiter` | `None` | An application-provided `Limiter` or `AsyncLimiter` |
+
+Omitted fields remain `UNSET` until resolution. Each field inherits in this order: request, `with_options` view,
+client, generated default. `TimeoutOptions` merges each phase separately. For example, a client's
+`TimeoutOptions(connect=3, read=5)` and a view's `TimeoutOptions(write=7)` resolve to connect/read/write/pool limits
+of `3/5/7/5` seconds; a request that sets only `pool=2` changes them to `3/5/7/2`.
+
+`timeout=None` clears all four phase limits; `TimeoutOptions(read=None)` clears just the read limit. Neither clears
+the total budget. `total_timeout=None` clears the inherited relative limit, and `deadline=None` clears the inherited
+absolute deadline. With both present, the earlier deadline applies. `stream_idle_timeout=None` and
+`stream_total_timeout=None` clear only their respective stream limits. `cancel_token=None` and `limiter=None` remove
+those inherited objects. `max_network_sends=None` removes the per-call send cap.
+
+Durations must be finite and nonnegative, and send limits must be nonnegative integers; booleans are rejected.
+`cleanup_timeout` must be strictly positive and cannot be `None`. Invalid values raise `ConfigurationError` with the
+option's `field_path`, such as `("timeout", "read")`. `total_timeout=0` raises `DeadlineExceededError` before body
+factories, limiter acquisition, or sending; hooks still receive `call_start` and `call_end` with zero sends.
+`max_network_sends=0` raises `BudgetExceededError` before a send.
+
+### A budget shared by every phase
+
+`Deadline.after(10)` fixes the expiry when it is created. Reusing that object across calls shares the same expiry;
+each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp, and
+`remaining()` returns the seconds left, never a negative number. Do not compare `at` with wall-clock timestamps.
+
+```python
+from pets import Client
+from pets.options import Deadline, RequestOptions, TimeoutOptions
+
+
+def read_with_budget(client: Client, url: str) -> bytes:
+    deadline = Deadline.after(10)
+    options = RequestOptions(total_timeout=20, deadline=deadline, timeout=TimeoutOptions(read=3))
+    with client.with_options(options) as view:
+        response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
+        return response.read()
+```
+
+This call has at most the remaining portion of the ten-second absolute budget. Its connect and read phases also
+have their own two- and three-second caps. A phase is clamped to the remaining total budget when that is smaller.
+
+`PhaseTimeoutError`, a subclass of `TransportError`, means the phase's own cap expired. It carries `phase`,
+`effective_timeout`, `delivery_state`, and the native timeout in `cause`. A cap supplied by the total deadline instead
+raises `DeadlineExceededError`; equal caps favor the deadline. That error is separate from `TransportError` and carries
+`deadline_at`, `elapsed`, `delivery_state`, and the interrupted activity in `phase`. Neither timeout causes a retry.
+
+Synchronous total deadlines are cooperative: the client checks them around callbacks and encoding/decoding, and at
+SDK send and chunk boundaries. A blocking callback, DNS resolution, or native socket operation can return after the
+deadline; the client then raises `DeadlineExceededError` and starts no further network work. Native read caps are
+latched when acquisition or body reading begins, so a sequence of reads or HTTP/2 stream processing can overrun a
+total deadline. There is no background thread that forcibly interrupts a synchronous call.
+
+Async clients require asyncio. Like `asyncio.timeout`, they stop a call at its deadline, explicit cancellation, or
+client closing by cancelling the task that awaits it, and turn that cancellation into the matching SDK error. Native
+task cancellation propagates as `asyncio.CancelledError`; it is never converted into an SDK error, even when a result
+becomes ready at the same time or a callback suppresses or converts it. A hook, limiter, or body factory that
+suppresses cancellation delays the stop until it returns; the call then ends at the SDK's next boundary.
+
+### Explicit cancellation
+
+`CancelToken.cancel()` is thread-safe and idempotent. Its readonly `cancelled` property records whether cancellation
+has been requested; a cancelled token stays cancelled and can stop more than one call. Use a fresh token for later
+work that should proceed.
+
+```python
+from pets import Client
+from pets.errors import RequestCancelledError
+from pets.options import CancelToken, RequestOptions
+
+
+def cancel_before_send(client: Client, url: str) -> int:
+    token = CancelToken()
+    token.cancel()
+    try:
+        client.request_raw("GET", url, options=RequestOptions(cancel_token=token))
+    except RequestCancelledError as error:
+        return error.network_send_count
+    raise RuntimeError("The cancelled call unexpectedly completed")
+```
+
+This example returns `0`. In a running application, another thread or an asyncio task may hold the same token and
+call `cancel()`. Sync calls observe it when control returns to the SDK; async waits check it at intervals of at most
+50 ms. Calls without a token perform no token polling. `RequestCancelledError` carries `source="cancel_token"` and
+the request's `delivery_state`.
+
+When outcomes race, native cancellation or `KeyboardInterrupt` takes precedence, followed by an observed token
+cancellation, client closing, deadline expiry, and the operation result. `SystemExit` also propagates unchanged.
+Cleanup preserves the selected error or native interruption.
+
+### Streaming after handoff
+
+A streaming call uses its ordinary call deadline while acquiring the response. After the context manager yields
+the handle, `stream_idle_timeout` and `stream_total_timeout` apply. The completed acquisition's remaining time is
+not carried into body reads. The ordinary 30-second read default does not apply to this stage; an explicitly
+configured `TimeoutOptions(read=...)` adds a cap alongside the stream limits. The smallest active cap wins.
+
+```python
+from typing import BinaryIO
+
+from pets import Client
+from pets.options import RequestOptions
+
+
+def download(client: Client, url: str, destination: BinaryIO) -> None:
+    options = RequestOptions(total_timeout=10, stream_idle_timeout=60, stream_total_timeout=300)
+    with client.with_streaming_response.request_raw("GET", url, options=options) as response:
+        response.stream_to(destination)
+```
+
+Here acquisition has ten seconds, a stalled body read has sixty seconds, and the stream has five minutes after
+handoff. Idle expiry raises a read `PhaseTimeoutError`; stream-total expiry raises `DeadlineExceededError` with
+`phase="stream"`. Sync streams check total expiry at SDK chunk boundaries and retain the native read-latching limits
+described above. Async streams apply the bounds to each asynchronous read. Always leave the response's context
+manager, including when abandoning a download early.
+
+## Application concurrency limits
+
+There is no default application limiter. Configure one on a client, view, or request through `limiter`. A sync
+`Limiter.acquire(context)` returns a `Permit`; `AsyncLimiter.acquire(context)` is awaited and returns an `AsyncPermit`.
+Their `release()` methods are respectively synchronous and asynchronous, and must be idempotent. A client refuses a
+limiter of the opposite mode with `ConfigurationError` before I/O. The Protocols are exported from `pets.hooks`.
+
+The immutable `LimiterContext` contains exactly `operation_id`, `origin`, `call_id`, `parent_session_id`,
+`remaining_timeout`, and `cancel_token`. The origin has no path or query, and `remaining_timeout` is a snapshot taken
+on entry. Contexts carry no credentials, headers, or bodies. A synchronous limiter must cooperate with these limits
+when it blocks; the SDK cannot forcibly interrupt its callback. Async acquisition is bounded by the call itself.
+
+This asyncio limiter shares four permits across all calls through its configured view:
+
+```python
+import asyncio
+
+from pets import AsyncClient
+from pets.hooks import AsyncLimiter, AsyncPermit, LimiterContext
+from pets.options import RequestOptions
+
+
+class SemaphorePermit:
+    """Release one asyncio semaphore slot exactly once."""
+
+    def __init__(self, semaphore: asyncio.Semaphore) -> None:
+        self._semaphore = semaphore
+        self._released = False
+
+    async def release(self) -> None:
+        if not self._released:
+            self._released = True
+            self._semaphore.release()
+
+
+class SemaphoreLimiter:
+    """Share one concurrency limit among calls made through the configured client or view."""
+
+    def __init__(self, limit: int) -> None:
+        self._semaphore = asyncio.Semaphore(limit)
+
+    async def acquire(self, context: LimiterContext) -> AsyncPermit:
+        await self._semaphore.acquire()
+        return SemaphorePermit(self._semaphore)
+
+
+async def read_limited(client: AsyncClient, urls: tuple[str, ...]) -> tuple[bytes, ...]:
+    limiter: AsyncLimiter = SemaphoreLimiter(4)
+    async with client.with_options(RequestOptions(limiter=limiter)) as view:
+
+        async def read(url: str) -> bytes:
+            response = await view.request_raw("GET", url)
+            return await response.read()
+
+        return tuple(await asyncio.gather(*(read(url) for url in urls)))
+```
+
+The SDK waits for a permit before opening the request body and retains it until the response is released. A streamed
+response retains its permit until the handle closes; buffered responses release it before returning. Cancellation,
+deadline expiry, hook failure, and an abandoned stream all release acquired permits, including a permit an async
+callback returns after cancellation. The SDK releases permits but does not own the limiter itself.
+
+Hooks observe `limiter_wait` followed by `limiter_acquired` when acquisition succeeds. Acquisition failure raises
+`LimiterExecutionError(action="acquire")` with the callback exception as `cause`. Release failure is recorded as
+`LimiterExecutionError(action="release")`: it is the `cause` of a `CleanupError` when no earlier error exists,
+or a secondary error on the error already propagating.
+
+### Counters and cleanup
+
+Each logical call has one `call_id`. `resource_attempt_count` counts attempts at send time, `network_send_count`
+counts adapter send invocations, and `network_send_budget_used` counts reserved send slots. Preparation and hook
+failures before sending do not increment the attempt count. A reserved send slot is never refunded.
+
+`ResponseInfo`, terminal call events, and `SDKError` expose snapshots of these counters, together with
+`redirect_count`, `auth_exchange_count`, `auth_exchange_budget_used`, `auth_refresh_ids`, and `auth_refresh_pending`.
+Errors expose counters even when no response arrived: their `info` remains `None` in that case. The readonly
+`wire_send_count` field on errors is currently `None`; adapter invocations do not prove the number of wire sends
+inside an injected transport. `BudgetExceededError` identifies the exhausted `budget_kind`, its `limit`, and its
+`used` slots.
+
+Closing a client changes it to `CLOSING` immediately. New work is refused, and active calls or stream reads raise
+`ClientClosedError` when the SDK observes closing. A view's close affects that view; closing the owning client
+affects its views too. Already-buffered responses remain usable.
+
+`cleanup_timeout` bounds the SDK's wait to release responses, body resources, permits, and owned work. It does not
+extend the original call deadline or authorize another send. Cleanup failures are attached to an SDK error's
+`secondary_errors`, or as safe notes on a native exception when that Python version supports notes. They do not
+replace the primary failure. Unfinished cleanup stays owned and observed; a repeated `close()` or `aclose()` can wait
+again. A close that exhausts its budget raises `CleanupError` with the unfinished counts. Blocking synchronous cleanup
+has the same cooperative limits as other sync callbacks.
+
+Cancelling an async file upload can return before its current disk operation finishes. The SDK retains that work,
+keeps an open-file input claimed until it settles, and closes an owned handle once. Borrowed handles remain open.
+`aclose()` includes this pending work in its cleanup wait.

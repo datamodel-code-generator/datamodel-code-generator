@@ -137,7 +137,7 @@ black22 = [ "black==22.1" ]
 black24 = [ "black==24.1" ]
 blacklatest = [ "black" ]
 client = [
-  "httpx2>=2.13,<3",
+  "httpx2[http2]>=2.13,<3",
 ]
 coverage = [
   "covdefaults>=2.3",

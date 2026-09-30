@@ -81,29 +81,50 @@ def __getattr__(name: str) -> object:
 '''
 _HOOKS: Final = '''"""Hooks that observe each call's events, and the events they receive."""
 
-from ._runtime.client.hooks import AsyncHook, CallEvent, CallOutcome, EventName, Hook, RetryReason
+from ._runtime.client.hooks import (
+    AsyncHook,
+    AsyncLimiter,
+    AsyncPermit,
+    CallEvent,
+    CallOutcome,
+    EventName,
+    Hook,
+    Limiter,
+    LimiterContext,
+    Permit,
+    RetryReason,
+)
 
-__all__ = ["AsyncHook", "CallEvent", "CallOutcome", "EventName", "Hook", "RetryReason"]
+__all__ = [
+    "AsyncHook", "AsyncLimiter", "AsyncPermit", "CallEvent", "CallOutcome", "EventName",
+    "Hook", "Limiter", "LimiterContext", "Permit", "RetryReason",
+]
 '''
 _OPTIONS: Final = '''"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""
 
 from ._runtime.client.options import (
+    CancelToken,
     ClientOptions,
+    Deadline,
     HeaderPatch,
     QueryPatch,
     RequestOptions,
     ServerSelection,
+    TimeoutOptions,
     ValidationOptions,
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
 
 __all__ = [
     "UNSET",
+    "CancelToken",
     "ClientOptions",
+    "Deadline",
     "HeaderPatch",
     "QueryPatch",
     "RequestOptions",
     "ServerSelection",
+    "TimeoutOptions",
     "Unset",
     "ValidationOptions",
 ]
@@ -115,15 +136,19 @@ _ERROR_NAMES: Final = (
     "BodyFactoryError",
     "BodyNotReplayableError",
     "BodyProtocolError",
+    "BudgetExceededError",
     "CleanupError",
     "ClientClosedError",
     "ConfigurationError",
     "DecodeError",
+    "DeadlineExceededError",
     "DecompressionLimitError",
     "DeliveryState",
     "HTTPStatusError",
     "HookExecutionError",
     "IOPhase",
+    "LimiterExecutionError",
+    "PhaseTimeoutError",
     "ProtocolConfigurationError",
     "ProtocolDataError",
     "ProtocolError",
@@ -131,6 +156,7 @@ _ERROR_NAMES: Final = (
     "ProtocolStoreError",
     "ReplayStoreFullError",
     "RequestEncodingError",
+    "RequestCancelledError",
     "ResponseConsumedError",
     "ResponseDecodeError",
     "ResponseHeaderDecodeError",
