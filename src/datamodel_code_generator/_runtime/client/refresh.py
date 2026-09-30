@@ -123,7 +123,12 @@ class Failed:
     state: RefreshState
 
 
-Outcome = Published | Failed
+@dataclass(frozen=True, slots=True)
+class Again:
+    """A job that changed the family instead of acquiring material for its waiters, who claim again."""
+
+
+Outcome = Published | Failed | Again
 
 
 class _Waiter(Protocol):
@@ -141,10 +146,24 @@ class Job:
     It stays outstanding until its work returns, or until it ends without being admitted.
     """
 
-    __slots__ = ("charged", "finished", "outcome", "outstanding", "progress", "refresh_id", "session", "waiters")
+    __slots__ = (
+        "charged",
+        "exchanges",
+        "finished",
+        "outcome",
+        "outstanding",
+        "progress",
+        "refresh_id",
+        "session",
+        "waiters",
+    )
 
-    def __init__(self) -> None:
-        """Start queued under a new refresh id, without waiters or a session."""
+    def __init__(self, *, exchanges: bool = True) -> None:
+        """Start queued under a new refresh id, without waiters or a session.
+
+        A job that sends no token request is never charged to a call.
+        """
+        self.exchanges = exchanges
         self.refresh_id = str(uuid4())
         self.waiters: list[_Waiter] = []
         self.session: Session | None = None
@@ -285,24 +304,14 @@ class SharedRefresh:
         ):
             return self._renewing(waiter, cache)
         admission = waiter.admission
-        start = joined = False
         if (job := self._active) is None:
-            if admission is not None and (shortfall := admission.shortfall()) is not None:
+            job = self.next_job()
+            if job.exchanges and admission is not None and (shortfall := admission.shortfall()) is not None:
                 raise self.over_budget(shortfall)
-            if len(self._outstanding) >= options.max_pending_refreshes:
-                raise AuthConcurrencyLimitError(
-                    limit_kind="pending_refreshes",
-                    limit=options.max_pending_refreshes,
-                    state=self.state,
-                    delivery_state=DeliveryState.NOT_SENT,
-                    phase="admission",
-                    provider_id=self.provider_id,
-                )
-            job = self._enqueue()
-            start = len(self._running) < options.max_concurrent_refreshes
-        elif job.session is None and admission is not None and (shortfall := admission.shortfall()) is not None:
+            return job, self.enlist(job, waiter), False, None
+        if job.session is None and job.exchanges and admission is not None and (shortfall := admission.shortfall()):
             raise self.over_budget(shortfall, job.refresh_id)
-        elif len(job.waiters) >= options.max_waiters:
+        if len(job.waiters) >= options.max_waiters:
             raise AuthConcurrencyLimitError(
                 limit_kind="waiters",
                 limit=options.max_waiters,
@@ -312,14 +321,39 @@ class SharedRefresh:
                 provider_id=self.provider_id,
                 refresh_id=job.refresh_id,
             )
-        else:
-            joined = True
         job.waiters.append(waiter)
         if admission is not None:
             admission.joined(job)
-        if start:
+        return job, False, True, None
+
+    def next_job(self) -> Job:  # noqa: PLR6301 - A family of another grant starts other kinds of jobs.
+        """Return the job a claim starts when none is active; the caller holds the lock."""
+        return Job()
+
+    def enlist(self, job: Job, waiter: _Waiter) -> bool:
+        """Make a new job the active one with its first waiter, admitting it while fewer jobs than the limit run.
+
+        Return whether it was admitted; the caller holds the lock.
+        """
+        options = self.options
+        if len(self._outstanding) >= options.max_pending_refreshes:
+            raise AuthConcurrencyLimitError(
+                limit_kind="pending_refreshes",
+                limit=options.max_pending_refreshes,
+                state=self.state,
+                delivery_state=DeliveryState.NOT_SENT,
+                phase="admission",
+                provider_id=self.provider_id,
+            )
+        self._active = job
+        self._outstanding.add(job)
+        self.receipts.started(job)
+        job.waiters.append(waiter)
+        if (admission := waiter.admission) is not None:
+            admission.joined(job)
+        if start := len(self._running) < options.max_concurrent_refreshes:
             self.admit(job)
-        return job, start, joined, None
+        return start
 
     def _renewing(self, waiter: _Waiter, cache: Published) -> Published | tuple[Job, bool, bool, Published]:
         """Serve a token past its renewal time, starting its renewal only if it can be admitted and paid for at once."""
@@ -331,17 +365,8 @@ class SharedRefresh:
             or ((admission := waiter.admission) is not None and admission.shortfall() is not None)
         ):
             return cache
-        job = self._enqueue()
-        job.waiters.append(waiter)
-        self.admit(job)
-        return job, True, False, cache
-
-    def _enqueue(self) -> Job:
-        """Make a new job the family's active one; the caller holds the lock."""
-        job = self._active = Job()
-        self._outstanding.add(job)
-        self.receipts.started(job)
-        return job
+        job = self.next_job()
+        return job, self.enlist(job, waiter), False, cache
 
     def usable(self, context: CredentialContext, *, force: bool) -> Published | None:
         """Return the cached material a caller may use without an acquisition, or None; the caller holds the lock."""
@@ -374,7 +399,7 @@ class SharedRefresh:
         job.session = Session.start(options.refresh_timeout, options.phase_timeout)
         job.progress.guard = partial(self._sending, job)
         self._running.add(job)
-        if (charged := job.waiters[0].admission) is not None:
+        if job.exchanges and (charged := job.waiters[0].admission) is not None:
             charged.charge()
             job.charged = charged
 
@@ -406,6 +431,7 @@ class SharedRefresh:
             self.cache = outcome
             self.state = "READY"
             return "READY", None
+        assert isinstance(outcome, Failed)
         self.state = outcome.state
         return outcome.state, outcome.error.reason_code
 
@@ -436,7 +462,7 @@ class SharedRefresh:
         if job.outcome is None:
             self.commit(job, self.timed_out(job))
 
-    def timed_out(self, job: Job) -> Failed:
+    def timed_out(self, job: Job) -> Outcome:
         """Return the failure of a job whose session ended before its work did."""
         sent = job.progress.sent
         state: RefreshState = "EXCHANGE_REJECTED" if sent else "FAILED_NOT_SENT"
@@ -452,7 +478,7 @@ class SharedRefresh:
             state,
         )
 
-    def failed(self, error: BaseException, job: Job) -> Failed:
+    def failed(self, error: BaseException, job: Job) -> Outcome:
         """Keep an SDK error a job raised, naming the job when it names none; any other exception is a provider failure.
 
         Subclasses from outside the SDK are wrapped too, since each waiter receives a copy made by the SDK.
@@ -522,7 +548,7 @@ class SharedRefresh:
         with self.lock:
             if (active := self._active) is not None:
                 self.expire(active)
-            if (active := self._active) is not None and active.session is not None:
+            if (active := self._active) is not None and active.session is not None and active.exchanges:
                 return False
             return (
                 (cache := self.cache) is None
@@ -552,10 +578,18 @@ def _detached(coroutine: Coroutine[object, object, None]) -> Task[None]:
     return contextvars.Context().run(lambda: loop.create_task(coroutine))
 
 
-def _outcome(outcome: Outcome) -> BearerCredential:
+def _outcome(outcome: Published | Failed) -> BearerCredential:
     if isinstance(outcome, Failed):
         raise clone_error(outcome.error)
     return outcome.material
+
+
+def _within(context: CredentialContext, started: float, admission: CallAdmission | None) -> None:
+    """Raise the caller's own error once it was cancelled, ran out of time, or its client closed."""
+    if admission is None:
+        _waited(context, started)
+    else:
+        admission.observe()
 
 
 def _waited(context: CredentialContext, started: float) -> float | None:
@@ -588,28 +622,43 @@ class SyncSharedRefresh:
     def obtain(
         self, context: CredentialContext, *, force: bool, admission: CallAdmission | None = None
     ) -> BearerCredential:
-        """Return usable material, joining or starting the family's job and waiting within the caller's limits."""
+        """Return usable material, joining or starting the family's job and waiting within the caller's limits.
+
+        A job that changed the family instead of acquiring material sends its waiters to claim again within their
+        limits; a call reports waiting for another caller's job once.
+        """
         started = monotonic()
         shared = self.shared
-        waiter = SyncWaiter(admission)
-        with shared.lock:
-            claimed = shared.claim(waiter, context, force=force)
-            if isinstance(claimed, Published):
-                return claimed.material
-            job, start, joined, serving = claimed
-        if start:
-            self._start(job)
-        if serving is not None:
+        announced = False
+        while True:
+            waiter = SyncWaiter(admission)
             with shared.lock:
-                shared.leave(waiter, job)
-            return serving.material
-        if joined and admission is not None:
-            try:
-                admission.waiting()
-            except BaseException:
+                claimed = shared.claim(waiter, context, force=force)
+                if isinstance(claimed, Published):
+                    return claimed.material
+                job, start, joined, serving = claimed
+            if start:
+                self._start(job)
+            if serving is not None:
                 with shared.lock:
                     shared.leave(waiter, job)
-                raise
+                return serving.material
+            if joined and admission is not None and not announced:
+                announced = True
+                try:
+                    admission.waiting()
+                except BaseException:
+                    with shared.lock:
+                        shared.leave(waiter, job)
+                    raise
+            if not isinstance(outcome := self._awaited(context, started, waiter, job), Again):
+                return _outcome(outcome)
+            _within(context, started, admission)
+
+    def _awaited(self, context: CredentialContext, started: float, waiter: SyncWaiter, job: Job) -> Outcome:
+        """Wait for a job's outcome within the caller's limits, expiring the job once its session and grace end."""
+        shared = self.shared
+        admission = waiter.admission
         with shared.lock:
             try:
                 while (outcome := waiter.outcome) is None:
@@ -629,7 +678,22 @@ class SyncSharedRefresh:
                     shared.expire(job)
             finally:
                 shared.leave(waiter, job)
-        return _outcome(outcome)
+        return outcome
+
+    def perform(self, job: Job, waiter: SyncWaiter) -> Outcome:
+        """Run an explicit operation's admitted job and wait for its outcome, bounded by the job's own session."""
+        self._start(job)
+        shared = self.shared
+        with shared.lock:
+            try:
+                while (outcome := waiter.outcome) is None:
+                    until = job.until
+                    assert until is not None
+                    shared.changed.wait(min(until - monotonic(), threading.TIMEOUT_MAX))
+                    shared.expire(job)
+            finally:
+                shared.leave(waiter, job)
+        return outcome
 
     def _start(self, job: Job) -> None:
         """Submit an admitted job to the provider's workers, outside every caller's context.
@@ -793,33 +857,54 @@ class AsyncSharedRefresh:
     async def obtain(
         self, context: CredentialContext, *, force: bool, admission: CallAdmission | None = None
     ) -> BearerCredential:
-        """Return usable material, joining or starting the family's job and awaiting it within the caller's limits."""
+        """Return usable material, joining or starting the family's job and awaiting it within the caller's limits.
+
+        A job that changed the family instead of acquiring material sends its waiters to claim again within their
+        limits; a call reports waiting for another caller's job once.
+        """
         from asyncio import get_running_loop, wait  # noqa: PLC0415
 
         started = monotonic()
         shared = self.shared
-        waiter = AsyncWaiter(get_running_loop().create_future(), admission)
-        with shared.lock:
-            claimed = shared.claim(waiter, context, force=force)
-            if isinstance(claimed, Published):
-                return claimed.material
-            job, start, joined, serving = claimed
-        if start:
-            self._start(job)
-        if serving is not None:
+        announced = False
+        while True:
+            waiter = AsyncWaiter(get_running_loop().create_future(), admission)
             with shared.lock:
-                shared.leave(waiter, job)
-            return serving.material
-        future = waiter.future
+                claimed = shared.claim(waiter, context, force=force)
+                if isinstance(claimed, Published):
+                    return claimed.material
+                job, start, joined, serving = claimed
+            if start:
+                self._start(job)
+            if serving is not None:
+                with shared.lock:
+                    shared.leave(waiter, job)
+                return serving.material
+            future = waiter.future
+            try:
+                if joined and admission is not None and not announced:
+                    announced = True
+                    await admission.awaiting()
+                while not future.done():
+                    await wait({future}, timeout=None if admission is not None else _waited(context, started))
+            finally:
+                with shared.lock:
+                    shared.leave(waiter, job)
+            if not isinstance(outcome := future.result(), Again):
+                return _outcome(outcome)
+            _within(context, started, admission)
+
+    async def perform(self, job: Job, waiter: AsyncWaiter) -> Outcome:
+        """Run an explicit operation's admitted job and await its outcome, bounded by the job's own session."""
+        from asyncio import wait  # noqa: PLC0415
+
+        self._start(job)
         try:
-            if joined and admission is not None:
-                await admission.awaiting()
-            while not future.done():
-                await wait({future}, timeout=None if admission is not None else _waited(context, started))
+            await wait({waiter.future})
         finally:
-            with shared.lock:
-                shared.leave(waiter, job)
-        return _outcome(future.result())
+            with self.shared.lock:
+                self.shared.leave(waiter, job)
+        return waiter.future.result()
 
     def _start(self, job: Job) -> None:
         """Run an admitted job as a task outside every caller's context, failing it once its session and grace end."""

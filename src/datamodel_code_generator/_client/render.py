@@ -2292,9 +2292,9 @@ concurrent callers within `OAuthProviderOptions` limits, and renew the token bef
 new acquisition, or a queued one's oldest waiting call, pays one `AuthConfig.max_token_exchanges` exchange and one
 network send, and joiners report `auth_wait`. `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token
 family current from a `TokenSet`, following the rotation of its refresh token and never sending a spent one again; a
-refresh whose outcome is rejected or unknown stops the family until `replace_token_set`. Token persistence, Basic
-charset overrides, resource audience metadata, and generated OAuth factories are not available yet. Providers are
-explicit.
+refresh whose outcome is rejected or unknown stops the family until `replace_token_set`, or `reload_token_set` with
+a `load` callback supplying the persisted token set. Storing token sets, Basic charset overrides, resource audience
+metadata, and generated OAuth factories are not available yet. Providers are explicit.
 
 ## Counters and cleanup
 

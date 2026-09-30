@@ -20,10 +20,12 @@ from ..model_codecs.unset import UNSET, Unset
 from .admission import AsyncTokenAcquirer, TokenAcquirer
 from .auth import (
     AsyncCredentialProvider,
+    AsyncTokenLoad,
     BearerCredential,
     CredentialContext,
     CredentialProvider,
     RefreshInfo,
+    TokenLoad,
     TokenSet,
     TokenVersion,
     checked_scopes,
@@ -1052,16 +1054,20 @@ class AsyncClientCredentialsProvider(_AsyncSharedTokens):
         super().__init__(AsyncClientCredentials(resolved, endpoint, grant))
 
 
-def _family(token_set: object, scopes: object, audience: object) -> tuple[TokenSet, str | None]:
-    """Validate a refresh token family's token set, configured scopes, and audience."""
+def _family(
+    token_set: object, load: object, scopes: object, audience: object, *, asynchronous: bool
+) -> tuple[TokenSet | None, tuple[str, ...], str | None]:
+    """Validate a refresh token family's token set or load, configured scopes, and audience."""
+    from .auth_policy import async_load, sync_load  # noqa: PLC0415
     from .refresh import checked_audience  # noqa: PLC0415
     from .rotation import checked_token_set  # noqa: PLC0415
 
-    if token_set is None:
+    if token_set is None and load is None:
         raise AuthConfigurationError(field_path=("token_set",), condition="missing_value")
-    initial = checked_token_set(token_set)
-    checked_scopes(scopes, "scopes")
-    return initial, checked_audience(audience)
+    if load is not None and not (async_load(load) if asynchronous else sync_load(load)):
+        raise AuthConfigurationError(field_path=("load",), condition="invalid_mode")
+    initial = None if token_set is None else checked_token_set(token_set)
+    return initial, checked_scopes(scopes, "scopes"), checked_audience(audience)
 
 
 @final
@@ -1082,6 +1088,7 @@ class RefreshTokenProvider(_SharedTokens):
         *,
         client_id: str,
         token_set: TokenSet | None = None,
+        load: TokenLoad | None = None,
         client_secret: CredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         scopes: tuple[str, ...] = (),
@@ -1089,18 +1096,18 @@ class RefreshTokenProvider(_SharedTokens):
         options: OAuthProviderOptions | None = None,
         token_transport: TokenTransport | Unset = UNSET,
     ) -> None:
-        """Validate the endpoint, client authentication, token set, scopes, audience, and transport without I/O."""
+        """Validate the endpoint, client authentication, token set or load, scopes, audience, and transport."""
         from .auth_policy import sync_provider  # noqa: PLC0415
         from .oauth import TokenEndpoint, client_authentication  # noqa: PLC0415
-        from .rotation import SyncRotation  # noqa: PLC0415
+        from .rotation import SyncRotation, cache_key  # noqa: PLC0415
 
         resolved = _options(options)
-        initial, checked = _family(token_set, scopes, audience)
+        initial, requested, checked = _family(token_set, load, scopes, audience, asynchronous=False)
         authentication = client_authentication(client_id, client_auth_method, client_secret, sync_provider)
-        endpoint = TokenEndpoint(
-            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
-        )
-        self._rotation = SyncRotation(resolved, endpoint, initial, checked)
+        url = _endpoint(token_url, "token_url", resolved)
+        key = cache_key(url, authentication.client_id, authentication.method, checked, requested)
+        endpoint = TokenEndpoint(url, authentication, resolved.transport, token_transport)
+        self._rotation = SyncRotation(resolved, endpoint, initial, checked, key=key, load=load)
         super().__init__(self._rotation)
 
     def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:
@@ -1111,6 +1118,14 @@ class RefreshTokenProvider(_SharedTokens):
         """
         del persist
         self._rotation.replace(token_set)
+
+    def reload_token_set(self) -> TokenSet | None:
+        """Load the persisted token set once, keeping it if it is newer, and return the current token set.
+
+        A usable newer token set recovers a family whose initial load failed or that stopped; the result is None once
+        the family stopped. It needs a token load, and no refresh may run.
+        """
+        return self._rotation.reload()
 
 
 @final
@@ -1125,6 +1140,7 @@ class AsyncRefreshTokenProvider(_AsyncSharedTokens):
         *,
         client_id: str,
         token_set: TokenSet | None = None,
+        load: AsyncTokenLoad | None = None,
         client_secret: AsyncCredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         scopes: tuple[str, ...] = (),
@@ -1132,24 +1148,28 @@ class AsyncRefreshTokenProvider(_AsyncSharedTokens):
         options: OAuthProviderOptions | None = None,
         token_transport: AsyncTokenTransport | Unset = UNSET,
     ) -> None:
-        """Validate the endpoint, client authentication, token set, scopes, audience, and transport without I/O."""
+        """Validate the endpoint, client authentication, token set or load, scopes, audience, and transport."""
         from .auth_policy import async_provider  # noqa: PLC0415
         from .oauth import AsyncTokenEndpoint, client_authentication  # noqa: PLC0415
-        from .rotation import AsyncRotation  # noqa: PLC0415
+        from .rotation import AsyncRotation, cache_key  # noqa: PLC0415
 
         resolved = _options(options)
-        initial, checked = _family(token_set, scopes, audience)
+        initial, requested, checked = _family(token_set, load, scopes, audience, asynchronous=True)
         authentication = client_authentication(client_id, client_auth_method, client_secret, async_provider)
-        endpoint = AsyncTokenEndpoint(
-            _endpoint(token_url, "token_url", resolved), authentication, resolved.transport, token_transport
-        )
-        self._rotation = AsyncRotation(resolved, endpoint, initial, checked)
+        url = _endpoint(token_url, "token_url", resolved)
+        key = cache_key(url, authentication.client_id, authentication.method, checked, requested)
+        endpoint = AsyncTokenEndpoint(url, authentication, resolved.transport, token_transport)
+        self._rotation = AsyncRotation(resolved, endpoint, initial, checked, key=key, load=load)
         super().__init__(self._rotation)
 
     async def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:
         """Adopt a newer token set as the synchronous provider does, on the event loop the provider is bound to."""
         del persist
         self._rotation.replace(token_set)
+
+    async def reload_token_set(self) -> TokenSet | None:
+        """Load the persisted token set once as the synchronous provider does, on the provider's event loop."""
+        return await self._rotation.reload()
 
 
 def _options(options: object) -> OAuthProviderOptions:

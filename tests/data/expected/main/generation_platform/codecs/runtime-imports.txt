@@ -29,7 +29,7 @@ client/redirects.py: .errors, .options, .responses, .retry, .urls, __future__, d
 client/refresh.py: .admission, .auth, .errors, .oauth, .options, .timing, __future__, abc, asyncio, collections, collections.abc, concurrent.futures, contextlib, contextvars, dataclasses, functools, inspect, threading, time, typing, uuid
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
 client/retry.py: ..model_codecs.unset, .errors, .hooks, .options, .responses, __future__, collections.abc, dataclasses, datetime, math, re, typing
-client/rotation.py: .admission, .auth, .errors, .oauth, .options, .refresh, __future__, dataclasses, datetime, hashlib, time, typing
+client/rotation.py: .admission, .auth, .errors, .oauth, .options, .refresh, __future__, asyncio, dataclasses, datetime, hashlib, json, time, typing, urllib.parse
 client/scopes.py: __future__, re, typing
 client/security.py: __future__, dataclasses, typing
 client/timing.py: .errors, __future__, dataclasses, math, threading, time, typing
