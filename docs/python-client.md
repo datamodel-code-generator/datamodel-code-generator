@@ -1585,17 +1585,17 @@ acquisition, whatever the provider holds; `invalidate(version)` forgets the held
 Closing the provider refuses new acquisitions with `AuthProviderClosedError`, ends a queued one, lets a running one
 finish within its session, and then closes an owned token transport; a concurrent `close` returns once that is done, and
 every `close` raises that release's failure. The synchronous provider's `request_close()` does the same without waiting
-and returns a `concurrent.futures.Future` of the release: an idle provider releases on its worker, or in the calling
-thread when it never started one, and a busy one in a thread of its own once its running acquisition returns or its
-session ends. A client that owns the provider through `OwnedCredentialProvider` starts that release, or the async
-provider's `aclose`, and waits for it only until its `cleanup_timeout`, measured from the start of its close, runs out;
-otherwise it raises `CleanupError` with `pending_providers`, a later close waits again, and each release failure is
-reported once. A synchronous call waiting for a shared acquisition stops with its own error, `ClientClosedError` once
-its client closes, checking its client and cancel token every 50 milliseconds and waking at its deadline; an asyncio
-call stops as soon as its client closes or its deadline passes, and within 50 milliseconds of its cancel token. The
-async provider belongs to the event loop it was created on or first used from, and its `aclose` runs in a task of its
-own that a later `aclose` awaits when the first was cancelled. Client authentication, endpoints, and the token transport
-otherwise follow the authorization code flow.
+and returns a `concurrent.futures.Future` of the release: an idle provider releases on its worker, or in a thread of its
+own when it never started one (in the calling thread only when no thread can start), and a busy one in a thread of its
+own once its running acquisition returns or its session ends. A client that owns the provider through
+`OwnedCredentialProvider` starts that release, or the async provider's `aclose`, and waits for it only until its
+`cleanup_timeout`, measured from the start of its close, runs out; otherwise it raises `CleanupError` with
+`pending_providers`, a later close waits again, and each release failure is reported once. A synchronous call waiting
+for a shared acquisition stops with its own error, `ClientClosedError` once its client closes, checking its client and
+cancel token every 50 milliseconds and waking at its deadline; an asyncio call stops as soon as its client closes or its
+deadline passes, and within 50 milliseconds of its cancel token. The async provider belongs to the event loop it was
+created on or first used from, and its `aclose` runs in a task of its own that a later `aclose` awaits when the first
+was cancelled. Client authentication, endpoints, and the token transport otherwise follow the authorization code flow.
 
 Refresh-token providers, token persistence, Basic charset overrides, resource audience metadata, and generated OAuth
 provider factories are not available yet; applications construct providers explicitly.
