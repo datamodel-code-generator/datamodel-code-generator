@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 RUNTIME: Final = Path(__file__).parent / "_runtime"
-_RUNTIME_IMPORT: Final = re.compile(r"^from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
+_RUNTIME_IMPORT: Final = re.compile(r"^[ \t]*from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
 _RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)(\w+(?:\.\w+)*) import", re.MULTILINE)
 PATTERNS: Final = "google-re2>=1.1.20251105"
 MODEL_DEPENDENCIES: Final = (

@@ -10,6 +10,7 @@ from typing import ClassVar, Final, Generic, Literal, TypeAlias
 from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.unset import UNSET, Unset
+from ..protocols.references import OperationRef
 from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
 
@@ -41,6 +42,33 @@ RetryStopReason: TypeAlias = Literal[
 IOPhase: TypeAlias = Literal["connect", "read", "write", "pool", "unknown"]
 DeadlinePhase: TypeAlias = Literal[
     "encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"
+]
+_ProtocolCondition: TypeAlias = Literal[
+    "unknown_field",
+    "invalid_value",
+    "missing_metadata",
+    "missing_adapter",
+    "wrong_capability",
+    "security_partition",
+    "binding_mismatch",
+]
+_StoreAction: TypeAlias = Literal[
+    "lookup",
+    "fingerprint_vary",
+    "compare_exchange",
+    "delete",
+    "invalidate",
+    "claim",
+    "put",
+    "get",
+    "open",
+    "read",
+    "close",
+    "purge_terminal",
+    "admit",
+    "record",
+    "reset",
+    "snapshot",
 ]
 
 _CONDITION: Final = re.compile(r"[a-z][a-z0-9_]{0,63}")
@@ -285,6 +313,20 @@ def _error_expiry(value: object) -> datetime | None:
     raise ValueError(msg)
 
 
+def _string(value: object, field: str, *, optional: bool = False) -> None:
+    if isinstance(value, str) or (optional and value is None):
+        return
+    msg = f"{field} must be a string{' or None' if optional else ''}"
+    raise ValueError(msg)
+
+
+def _protocol_context(helper_id: object, operation: object) -> None:
+    _string(helper_id, "helper_id", optional=True)
+    if operation is not None and not isinstance(operation, OperationRef):
+        msg = "operation must be an OperationRef or None"
+        raise ValueError(msg)
+
+
 class ConfigurationError(SDKError):
     """A setting or argument the client rejected before sending anything."""
 
@@ -351,6 +393,59 @@ class SigningConfigurationError(ConfigurationError):
     """Signing metadata or body capabilities cannot satisfy the configured signer."""
 
     _shows_field_path = False
+
+
+class ProtocolConfigurationError(ConfigurationError):
+    """Missing or inconsistent helper configuration, rejected before the helper performs I/O."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        field_path: tuple[str, ...],
+        condition: _ProtocolCondition,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        source_uri: str | None = None,
+        source_pointer: str | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the configuration location, safe rejection category, and helper context."""
+        _error_choice(
+            condition,
+            (
+                "unknown_field",
+                "invalid_value",
+                "missing_metadata",
+                "missing_adapter",
+                "wrong_capability",
+                "security_partition",
+                "binding_mismatch",
+            ),
+            "condition",
+        )
+        _protocol_context(helper_id, operation)
+        super().__init__(
+            field_path=field_path,
+            condition=condition,
+            source_uri=source_uri,
+            source_pointer=source_pointer,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.helper_id = helper_id
+        self.operation = operation
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return tuple((name, value) for name, value in super()._details() if name != "field_path")
 
 
 class RequestEncodingError(SDKError):
@@ -1767,6 +1862,49 @@ class ResponseTooLargeError(SDKError):
 class ProtocolError(SDKError):
     """Base of failures in received protocol data, such as a content coding that does not decode."""
 
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the helper context beside the shared call metadata."""
+        _protocol_context(helper_id, operation)
+        super().__init__(
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.helper_id = helper_id
+        self.operation = operation
+
 
 class ProtocolDataError(ProtocolError):
     """Received data that is missing, null, of another type or value, malformed, or inconsistent."""
@@ -1775,6 +1913,8 @@ class ProtocolDataError(ProtocolError):
         self,
         *,
         condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"] = "value",
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -1793,6 +1933,8 @@ class ProtocolDataError(ProtocolError):
     ) -> None:
         """Keep which rule the received data broke."""
         super().__init__(
+            helper_id=helper_id,
+            operation=operation,
             operation_id=operation_id,
             call_id=call_id,
             parent_session_id=parent_session_id,
@@ -1840,6 +1982,8 @@ class ProtocolSizeError(ProtocolError):
         limit: int,
         observed: int,
         unit: Literal["bytes", "items"],
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -1858,6 +2002,8 @@ class ProtocolSizeError(ProtocolError):
     ) -> None:
         """Keep which record overflowed, its limit, and how much arrived."""
         super().__init__(
+            helper_id=helper_id,
+            operation=operation,
             operation_id=operation_id,
             call_id=call_id,
             parent_session_id=parent_session_id,
@@ -1883,6 +2029,182 @@ class ProtocolSizeError(ProtocolError):
         return (*super()._details(), ("kind", self.kind), ("limit", self.limit), ("observed", self.observed))
 
 
+class WebhookVerificationError(ProtocolError):
+    """A webhook signature or authenticated fact that verification rejected before decoding its event."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        condition: Literal[
+            "malformed_signature", "invalid_signature", "missing_key", "timestamp_window", "missing_delivery_id"
+        ],
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep only the safe rejection category and shared context, never signature or key material."""
+        _error_choice(
+            condition,
+            ("malformed_signature", "invalid_signature", "missing_key", "timestamp_window", "missing_delivery_id"),
+            "condition",
+        )
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.condition = condition
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("condition", self.condition))
+
+
+class WebhookReplayError(ProtocolError):
+    """A previously claimed webhook delivery that the helper's duplicate policy rejects."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        delivery_id: str,
+        namespace: str,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the delivery and namespace for explicit inspection, excluding both from its message."""
+        for field, value in (("delivery_id", delivery_id), ("namespace", namespace)):
+            _string(value, field)
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.delivery_id = delivery_id
+        self.namespace = namespace
+
+
+class ProtocolStoreError(ProtocolError):
+    """A helper store operation that failed; the original cause and entry identity remain available."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        action: _StoreAction,
+        entry_id: str | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the store action and private entry identity alongside the helper context."""
+        _error_choice(
+            action,
+            (
+                "lookup",
+                "fingerprint_vary",
+                "compare_exchange",
+                "delete",
+                "invalidate",
+                "claim",
+                "put",
+                "get",
+                "open",
+                "read",
+                "close",
+                "purge_terminal",
+                "admit",
+                "record",
+                "reset",
+                "snapshot",
+            ),
+            "action",
+        )
+        _string(entry_id, "entry_id", optional=True)
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.action = action
+        self.entry_id = entry_id
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("action", self.action))
+
+
+class WebhookStoreError(ProtocolStoreError):
+    """A replay store operation that failed, so the webhook cannot be accepted."""
+
+
+class ReplayStoreFullError(WebhookStoreError):
+    """A replay store with no space for a new claim while every retained entry is still live."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        max_entries: int,
+        action: _StoreAction,
+        entry_id: str | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the store capacity and action without discarding an existing claim."""
+        if type(max_entries) is not int or max_entries < 0:
+            msg = "max_entries must be a nonnegative integer"
+            raise ValueError(msg)
+        super().__init__(
+            action=action,
+            entry_id=entry_id,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.max_entries = max_entries
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("max_entries", self.max_entries))
+
+
 class UnsupportedContentCodingError(ProtocolError):
     """A response content coding that no decoder handles; its name stays out of the message."""
 
@@ -1890,6 +2212,8 @@ class UnsupportedContentCodingError(ProtocolError):
         self,
         *,
         coding: str,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -1908,6 +2232,8 @@ class UnsupportedContentCodingError(ProtocolError):
     ) -> None:
         """Keep the coding the response named."""
         super().__init__(
+            helper_id=helper_id,
+            operation=operation,
             operation_id=operation_id,
             call_id=call_id,
             parent_session_id=parent_session_id,
@@ -1938,6 +2264,8 @@ class DecompressionLimitError(ProtocolSizeError):
         max_ratio: float,
         limit: int,
         observed: int,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
         operation_id: str | None = None,
         call_id: str | None = None,
         parent_session_id: str | None = None,
@@ -1960,6 +2288,8 @@ class DecompressionLimitError(ProtocolSizeError):
             limit=limit,
             observed=observed,
             unit="bytes",
+            helper_id=helper_id,
+            operation=operation,
             operation_id=operation_id,
             call_id=call_id,
             parent_session_id=parent_session_id,

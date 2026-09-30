@@ -60,6 +60,8 @@ from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_validation import arguments, validation
+from tests.data.python.client_webhook_contracts import webhook_contracts
+from tests.data.python.client_webhook_errors import webhook_errors
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -683,6 +685,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
     "limiters": ("pets", ("pydantic_v2.BaseModel",), limiters),
     "limiter-faults": ("pets", ("pydantic_v2.BaseModel",), limiter_faults),
+    "webhook-contracts": ("pets", BACKENDS, webhook_contracts),
+    "webhook-errors": ("pets", ("pydantic_v2.BaseModel",), webhook_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
         "evolution-schema",
