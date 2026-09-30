@@ -1647,8 +1647,9 @@ a resource rejects it, then stops the family with `AuthReauthorizationRequiredEr
 once.
 
 Concurrent callers, `OAuthProviderOptions`, snapshots, call accounting, and closing follow the client credentials
-provider. `replace_token_set` raises `AuthStateConflictError` while a refresh, load, reload, or store runs, or once the
-provider is closing; its `persist` argument has no effect without a token store.
+provider. `replace_token_set` raises `AuthStateConflictError` while a refresh, load, reload, or store runs, including a
+store whose session ended before its callback returned, or once the provider is closing; its `persist` argument has no
+effect without a token store.
 
 `TokenLoad` and `TokenStore`, with `AsyncTokenLoad` and `AsyncTokenStore`, are the callbacks that persist a token
 family, each bound to the storage namespace of one family: `load(context)` returns the stored `TokenSet` or None, and

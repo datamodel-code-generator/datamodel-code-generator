@@ -729,7 +729,8 @@ class RotationFamily(SharedRefresh):
         """
         checked = checked_token_set(token_set)
         with self.lock:
-            self._refuse_explicit("replace_token_set", admitting=persist and self._stores)
+            storing = any(isinstance(job, RotationJob) and job.storing is not None for job in self._running)
+            self._refuse_explicit("replace_token_set", admitting=(persist and self._stores) or storing)
             pending = stopped.slot.token_set if isinstance(stopped := self._stopped, Pending) else None
             if any(
                 held is not None and checked.revision <= held.revision

@@ -457,6 +457,11 @@ def _store_concurrency(  # noqa: PLR0915
         options=auth.OAuthProviderOptions(refresh_timeout=0.5),
     ) as family:
         lines.append(f"  store outliving its session = {_outcome(lambda: family.get(_context(auth)))}")
+        replaced = _tokens(auth, "replaced", "refresh-9", revision=5)
+        lines.append(
+            f"    replacement not persisted while the store runs ="
+            f" {_reloaded(lambda: family.replace_token_set(replaced, persist=False))}"
+        )
         gate.set()
         lines.append(
             f"    retry once the store returned = {_after_work(family.retry_store)} {_kept(persisted)}"

@@ -78,6 +78,7 @@
   retry while closing = AuthStateConflictError state=CLOSING delivery_state=NOT_SENT phase=unknown action=retry_store
   provider closing while its store runs = access-2 scopes=None expires_in_minutes=60 released=None stores=[(1, None, 'store')] record=revision=1 access=access-2 refresh=refresh-2
   store outliving its session = AuthTokenStoreError state=PERSIST_PENDING delivery_state=RESPONSE_STARTED phase=store action=store pending_revision=1 refresh_id=<call> cause=TimeoutError
+    replacement not persisted while the store runs = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=replace_token_set
     retry once the store returned = revision=1 access=access-2 refresh=refresh-2 stores=[(1, None, 'store'), (1, None, 'retry_store')] record=revision=1 access=access-2 refresh=refresh-2 sent=['refresh-1']
   refresh answered once its session ended = AuthStateUncertainError state=UNCERTAIN delivery_state=RESPONSE_STARTED phase=unknown failure_kind=deadline refresh_id=<call>
     persisted replacement while its work runs = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=replace_token_set
