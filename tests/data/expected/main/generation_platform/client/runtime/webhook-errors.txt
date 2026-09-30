@@ -1,0 +1,118 @@
+# pets pydantic_v2.BaseModel
+  ProtocolError: base=SDKError sdk=True reason=protocol_error
+    fields=call_id,cause,helper_id,info,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=ProtocolError(operation_id='webhook', call_id='call-1') repr=ProtocolError() secret=False
+  ProtocolConfigurationError: base=ConfigurationError sdk=True reason=protocol_configuration_error
+    fields=call_id,cause,condition,field_path,helper_id,info,operation,operation_id,parent_session_id,secondary_errors,source_pointer,source_uri
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=ProtocolConfigurationError(operation_id='webhook', call_id='call-1', condition='binding_mismatch') repr=ProtocolConfigurationError() secret=False
+  ProtocolDataError: base=ProtocolError sdk=True reason=protocol_data_error
+    fields=call_id,cause,condition,helper_id,info,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=ProtocolDataError(operation_id='webhook', call_id='call-1', condition='malformed') repr=ProtocolDataError() secret=False
+  ProtocolSizeError: base=ProtocolError sdk=True reason=protocol_size_error
+    fields=call_id,cause,helper_id,info,kind,limit,observed,operation,operation_id,parent_session_id,secondary_errors,unit
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=ProtocolSizeError(operation_id='webhook', call_id='call-1', kind='keys', limit=8, observed=9) repr=ProtocolSizeError() secret=False
+  WebhookVerificationError: base=ProtocolError sdk=True reason=webhook_verification_error
+    fields=call_id,cause,condition,helper_id,info,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=WebhookVerificationError(operation_id='webhook', call_id='call-1', condition='invalid_signature') repr=WebhookVerificationError() secret=False
+  WebhookReplayError: base=ProtocolError sdk=True reason=webhook_replay_error
+    fields=call_id,cause,delivery_id,helper_id,info,namespace,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=WebhookReplayError(operation_id='webhook', call_id='call-1') repr=WebhookReplayError() secret=False
+  ProtocolStoreError: base=ProtocolError sdk=True reason=protocol_store_error
+    fields=action,call_id,cause,entry_id,helper_id,info,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=ProtocolStoreError(operation_id='webhook', call_id='call-1', action='claim') repr=ProtocolStoreError() secret=False
+  WebhookStoreError: base=ProtocolStoreError sdk=True reason=webhook_store_error
+    fields=action,call_id,cause,entry_id,helper_id,info,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=WebhookStoreError(operation_id='webhook', call_id='call-1', action='claim') repr=WebhookStoreError() secret=False
+  ReplayStoreFullError: base=WebhookStoreError sdk=True reason=replay_store_full_error
+    fields=action,call_id,cause,entry_id,helper_id,info,max_entries,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=ReplayStoreFullError(operation_id='webhook', call_id='call-1', action='claim', max_entries=10) repr=ReplayStoreFullError() secret=False
+  UnsupportedContentCodingError: base=ProtocolError sdk=True reason=unsupported_content_coding_error
+    fields=call_id,cause,coding,helper_id,info,operation,operation_id,parent_session_id,secondary_errors
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=UnsupportedContentCodingError(operation_id='webhook', call_id='call-1') repr=UnsupportedContentCodingError() secret=False
+  DecompressionLimitError: base=ProtocolSizeError sdk=True reason=decompression_limit_error
+    fields=call_id,cause,encoded_bytes,helper_id,info,kind,layer,limit,max_ratio,observed,operation,operation_id,parent_session_id,secondary_errors,unit
+    context=True/True/True/True/True call=webhook/call-1/session-1
+    hints=True/True/True retained=True
+    str=DecompressionLimitError(operation_id='webhook', call_id='call-1', kind='expanded_content', limit=1048576, observed=1048577) repr=DecompressionLimitError() secret=False
+  protocol defaults: (None, None, None, None, None, None, None, ()) ProtocolError()
+  configuration defaults: (None, None, None, None, None, None, None, ()) ProtocolConfigurationError(condition='invalid_value')
+  verification defaults: (None, None, None, None, None, None, None, ()) WebhookVerificationError(condition='missing_key')
+  replay defaults: (None, None, None, None, None, None, None, ()) WebhookReplayError()
+  store defaults: (None, None, None, None, None, None, None, ()) ProtocolStoreError(action='claim')
+  webhook store defaults: (None, None, None, None, None, None, None, ()) WebhookStoreError(action='claim')
+  full defaults: (None, None, None, None, None, None, None, ()) ReplayStoreFullError(action='claim', max_entries=0)
+  configuration condition: unknown_field
+  configuration condition: invalid_value
+  configuration condition: missing_metadata
+  configuration condition: missing_adapter
+  configuration condition: wrong_capability
+  configuration condition: security_partition
+  configuration condition: binding_mismatch
+  verification condition: malformed_signature
+  verification condition: invalid_signature
+  verification condition: missing_key
+  verification condition: timestamp_window
+  verification condition: missing_delivery_id
+  store action: lookup entry=None
+  store action: fingerprint_vary entry=None
+  store action: compare_exchange entry=None
+  store action: delete entry=None
+  store action: invalidate entry=None
+  store action: claim entry=None
+  store action: put entry=None
+  store action: get entry=None
+  store action: open entry=None
+  store action: read entry=None
+  store action: close entry=None
+  store action: purge_terminal entry=None
+  store action: admit entry=None
+  store action: record entry=None
+  store action: reset entry=None
+  store action: snapshot entry=None
+  copied configuration path: True
+  configuration missing path ! TypeError: ProtocolConfigurationError.__init__() missing 1 required keyword-only argument: 'field_path' []
+  configuration missing condition ! TypeError: ProtocolConfigurationError.__init__() missing 1 required keyword-only argument: 'condition' []
+  configuration condition unknown ! ValueError: condition must be one of its declared values []
+  configuration condition type ! ValueError: condition must be one of its declared values []
+  configuration helper type ! ValueError: helper_id must be a string or None []
+  helper type ! ValueError: helper_id must be a string or None []
+  operation type ! ValueError: operation must be an OperationRef or None []
+  verification missing condition ! TypeError: WebhookVerificationError.__init__() missing 1 required keyword-only argument: 'condition' []
+  verification condition unknown ! ValueError: condition must be one of its declared values []
+  verification condition type ! ValueError: condition must be one of its declared values []
+  replay missing delivery ! TypeError: WebhookReplayError.__init__() missing 1 required keyword-only argument: 'delivery_id' []
+  replay missing namespace ! TypeError: WebhookReplayError.__init__() missing 1 required keyword-only argument: 'namespace' []
+  replay delivery type ! ValueError: delivery_id must be a string []
+  replay namespace type ! ValueError: namespace must be a string []
+  store missing action ! TypeError: ProtocolStoreError.__init__() missing 1 required keyword-only argument: 'action' []
+  store action unknown ! ValueError: action must be one of its declared values []
+  store action type ! ValueError: action must be one of its declared values []
+  store entry type ! ValueError: entry_id must be a string or None []
+  full missing action ! TypeError: ReplayStoreFullError.__init__() missing 1 required keyword-only argument: 'action' []
+  full missing capacity ! TypeError: ReplayStoreFullError.__init__() missing 1 required keyword-only argument: 'max_entries' []
+  full bool capacity ! ValueError: max_entries must be a nonnegative integer []
+  full float capacity ! ValueError: max_entries must be a nonnegative integer []
+  full negative capacity ! ValueError: max_entries must be a nonnegative integer []
+  positional message ! TypeError: WebhookVerificationError.__init__() takes 1 positional argument but 2 positional arguments (and 1 keyword-only argument) were given []
+  extra signature ! TypeError: WebhookVerificationError.__init__() got an unexpected keyword argument 'signature' []
+  readonly reason ! AttributeError: property 'reason_code' of 'WebhookStoreError' object has no setter []
