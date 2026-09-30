@@ -11,4 +11,6 @@ from pydantic.dataclasses import dataclass
 
 @dataclass
 class SomeSpec:
-    services: dict[Annotated[str, Field(pattern=r'^[a-z]+$', min_length=2, max_length=4)], str]
+    services: dict[
+        Annotated[str, Field(pattern=r'^[a-z]+$', min_length=2, max_length=4)], str
+    ]

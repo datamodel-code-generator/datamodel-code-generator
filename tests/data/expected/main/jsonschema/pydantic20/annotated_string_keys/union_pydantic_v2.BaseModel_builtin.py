@@ -9,4 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class SomeSpec(BaseModel):
-    services: dict[Annotated[str, Field(pattern=r'^s_')], str] | dict[Annotated[str, Field(pattern=r'^i_')], int]
+    services: (
+        dict[Annotated[str, Field(pattern=r'^s_')], str]
+        | dict[Annotated[str, Field(pattern=r'^i_')], int]
+    )

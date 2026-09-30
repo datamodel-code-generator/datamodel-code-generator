@@ -15,7 +15,10 @@ class SomeSpec(BaseModel):
         extra='allow',
     )
     __annotations__ = {
-        '__pydantic_extra__': Dict[Annotated_aliased[str, StringConstraints_aliased(pattern=r'^[A-Za-z_]+$')], int],
+        '__pydantic_extra__': Dict[
+            Annotated_aliased[str, StringConstraints_aliased(pattern=r'^[A-Za-z_]+$')],
+            int,
+        ],
     }
     Annotated: str | None = None
     StringConstraints: str | None = None

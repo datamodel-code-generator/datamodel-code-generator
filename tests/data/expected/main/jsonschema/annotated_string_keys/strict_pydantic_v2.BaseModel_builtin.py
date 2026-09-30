@@ -14,7 +14,9 @@ class SomeSpec(BaseModel):
     )
     services: (
         dict[
-            Annotated[str, StringConstraints(pattern=r'^[a-zA-Z0-9._-]+$', strict=True)],
+            Annotated[
+                str, StringConstraints(pattern=r'^[a-zA-Z0-9._-]+$', strict=True)
+            ],
             StrictStr,
         ]
         | None

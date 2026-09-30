@@ -12,9 +12,9 @@ class SomeSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    services: dict[Annotated_aliased[str, Field(pattern=r'^[a-zA-Z0-9._-]+$')], str] | None = (
-        None
-    )
+    services: (
+        dict[Annotated_aliased[str, Field(pattern=r'^[a-zA-Z0-9._-]+$')], str] | None
+    ) = None
     """
     Some property.
     """

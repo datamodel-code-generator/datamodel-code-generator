@@ -13,8 +13,7 @@ from pydantic.dataclasses import dataclass
 class SomeSpec:
     services: (
         dict[
-            Annotated[str, Field(pattern=r'^[a-zA-Z0-9._-]+$', strict=True)],
-            StrictStr,
+            Annotated[str, Field(pattern=r'^[a-zA-Z0-9._-]+$', strict=True)], StrictStr
         ]
         | None
     ) = None

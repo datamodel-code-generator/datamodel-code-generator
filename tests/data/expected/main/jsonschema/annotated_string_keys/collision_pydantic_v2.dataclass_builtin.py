@@ -12,9 +12,15 @@ from pydantic.dataclasses import dataclass
 
 @dataclass(config=ConfigDict(extra='forbid'))
 class SomeSpec:
-    services: dict[Annotated_aliased[str, StringConstraints_aliased(pattern=r'^[a-zA-Z0-9._-]+$')], str] | None = (
-        None
-    )
+    services: (
+        dict[
+            Annotated_aliased[
+                str, StringConstraints_aliased(pattern=r'^[a-zA-Z0-9._-]+$')
+            ],
+            str,
+        ]
+        | None
+    ) = None
     """
     Some property.
     """

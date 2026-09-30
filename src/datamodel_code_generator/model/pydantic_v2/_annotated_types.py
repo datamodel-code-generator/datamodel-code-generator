@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 
@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 class AnnotatedStringDataType(PydanticV2DataType):
     """Keep string metadata and its annotation import without a second DataType."""
+
+    annotated_string: ClassVar[bool] = True
 
     @property
     def type_hint(self) -> str:

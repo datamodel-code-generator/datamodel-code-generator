@@ -13,6 +13,8 @@ class SomeSpec(BaseModel):
         extra='allow',
     )
     __annotations__ = {
-        '__pydantic_extra__': Dict[Annotated[str, StringConstraints(pattern=r'^[a-z]+$')], int],
+        '__pydantic_extra__': Dict[
+            Annotated[str, StringConstraints(pattern=r'^[a-z]+$')], int
+        ],
     }
     name: str | None = None

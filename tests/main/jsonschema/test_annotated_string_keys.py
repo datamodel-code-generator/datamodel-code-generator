@@ -63,8 +63,10 @@ def test_annotated_string_keys(
                 match value:
                     case list():
                         args.extend(value)
-                    case str():
-                        args.append(value)
+                    case True:
+                        continue
+                    case _:
+                        args.append(str(value))
             run_main_and_assert(
                 input_path=source,
                 output_path=output_file,

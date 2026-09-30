@@ -9,4 +9,9 @@ from pydantic import BaseModel, StringConstraints
 
 
 class SomeSpec(BaseModel):
-    services: dict[Annotated[str, StringConstraints(pattern=r'^[a-z]+$', min_length=2, max_length=4)], str]
+    services: dict[
+        Annotated[
+            str, StringConstraints(pattern=r'^[a-z]+$', min_length=2, max_length=4)
+        ],
+        str,
+    ]

@@ -20,7 +20,8 @@
       "use_annotated": true,
       "strict_types": [
         "str"
-      ]
+      ],
+      "http_timeout": 30
     }
   },
   {
