@@ -396,7 +396,7 @@ class RotationFamily(SharedRefresh):
             and not self._spends(loaded)
             and (material := _material(loaded)) is not None
         ):
-            return Adopted(material.material, material.refresh_at, loaded)
+            return Adopted(material.material, material.refresh_at, loaded, expires_at=material.expires_at)
         return self._ungranted(job, cause)
 
     def _unread(self, job: RotationJob, cause: BaseException) -> Failed:
