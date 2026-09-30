@@ -2,7 +2,8 @@
 
 The family keeps its current token set, the refresh tokens it spent, and the failure that stopped it. A refresh token a
 request may have delivered is spent: the family never sends it again, whatever the answer. A family with a token load
-reads its persisted token set before its first acquisition, before each refresh, after invalid_grant, and on request.
+reads its persisted token set before its first acquisition, before each refresh, after invalid_grant, and on request;
+one with a token store stores each refreshed or replaced token set before it becomes current.
 """
 
 from __future__ import annotations
@@ -11,8 +12,9 @@ import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import monotonic
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
+from ..model_codecs.unset import Unset
 from .auth import BearerCredential, TokenPersistenceContext, TokenSet, TokenVersion
 from .errors import (
     AuthConfigurationError,
@@ -21,6 +23,7 @@ from .errors import (
     AuthStateUncertainError,
     AuthTokenLoadError,
     AuthTokenStoreConflictError,
+    AuthTokenStoreError,
     DeliveryState,
     InsufficientScopeError,
     TokenExpiredError,
@@ -52,8 +55,23 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from .admission import CallAdmission
-    from .auth import AccessToken, AsyncTokenLoad, CredentialContext, RefreshState, TokenLoad
-    from .errors import AuthFailureKind, ReauthorizationCondition, SDKError, TokenLoadPurpose, TokenPersistencePurpose
+    from .auth import (
+        AccessToken,
+        AsyncTokenLoad,
+        AsyncTokenStore,
+        CredentialContext,
+        RefreshState,
+        TokenLoad,
+        TokenStore,
+    )
+    from .errors import (
+        AuthAction,
+        AuthFailureKind,
+        ReauthorizationCondition,
+        SDKError,
+        TokenLoadPurpose,
+        TokenPersistencePurpose,
+    )
     from .oauth import AsyncTokenEndpoint, Endpoint, TokenEndpoint
     from .options import OAuthProviderOptions
     from .refresh import Outcome
@@ -61,14 +79,14 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class Adopted(Published):
-    """Material of a token set a refresh or a load made the family's current one."""
+    """Material of a token set a refresh, a load, or a store made the family's current one."""
 
     token_set: TokenSet
 
 
 @dataclass(frozen=True, slots=True)
 class Reloaded(Again):
-    """A token set a load made current without material to serve, after which every waiter claims again.
+    """A token set a load or a store made current without material to serve, after which every waiter claims again.
 
     A token set that can never serve is still made current, so no older one comes back, and stops the family.
     """
@@ -99,26 +117,60 @@ class Sending:
 
 
 @dataclass(frozen=True, slots=True)
-class Unread:
-    """What a load step returns once the load raised."""
+class Slot:
+    """A token set to store, with the stored revision its store expects, or None to store it only where none is."""
+
+    token_set: TokenSet
+    expected_revision: int | None
+    action: Literal["store", "retry_store", "replace"]
+
+
+@dataclass(frozen=True, slots=True)
+class Pending(Failed):
+    """A failed or unknown store, whose token set waits in the family's slot for `retry_store`."""
+
+    slot: Slot
+
+
+@dataclass(frozen=True, slots=True)
+class Storing:
+    """A step of a job storing a token set, for its runner to perform."""
+
+    slot: Slot
+    context: TokenPersistenceContext
+
+
+@dataclass(frozen=True, slots=True)
+class Raised:
+    """What a load or store step returns once its callback raised."""
 
     error: Exception
 
 
 class RotationJob(Job):
-    """A job of a refresh token family: its initial load, a refresh, or an explicit reload.
+    """A job of a refresh token family: its initial load, a refresh, an explicit reload, or a store of its own.
 
-    A refresh records under the family's lock which read of the persisted token set it runs, if any, so a read that
-    outlives its session or stops fails the job as that read's failure.
+    A job records under the family's lock the read of the persisted token set or the store it runs, if any, so one
+    that outlives its session or stops fails the job as that step's failure.
     """
 
-    __slots__ = ("kind", "reading")
+    __slots__ = ("kind", "reading", "storing")
 
-    def __init__(self, kind: Literal["load", "refresh", "reload"]) -> None:
-        """Start queued; only a refresh sends a token request."""
+    def __init__(
+        self, kind: Literal["load", "refresh", "reload", "retry", "replace"], slot: Slot | None = None
+    ) -> None:
+        """Start queued; only a refresh sends a token request, and a retry or a replacement stores its slot."""
         super().__init__(exchanges=kind == "refresh")
         self.kind = kind
         self.reading: Literal["before_refresh", "invalid_grant_reload"] | None = None
+        self.storing = slot
+
+    def stored(self) -> TokenSet:
+        """Raise the failure of this retried or replacing store, or return the token set it stored."""
+        if isinstance(outcome := self.outcome, Failed):
+            raise clone_error(outcome.error)
+        assert self.storing is not None
+        return self.storing.token_set
 
     @property
     def purpose(self) -> Literal["initial_load", "reload"]:
@@ -180,13 +232,32 @@ class RotationFamily(SharedRefresh):
 
     Without a token load, the constructor's token set becomes current at the first acquisition; with one, the first
     acquisition loads the persisted token set and keeps the newer of the two. A stopped family raises a new instance of
-    the failure that stopped it until a newer token set replaces the current one.
+    the failure that stopped it until a newer token set replaces the current one. With a token store, the confirmed
+    revision is the stored one a load or a store last reported, which the next store expects.
     """
 
-    __slots__ = ("_audience", "_cache_key", "_initial", "_initialized", "_loads", "_spent", "_stopped", "tokens")
+    __slots__ = (
+        "_audience",
+        "_cache_key",
+        "_confirmed",
+        "_initial",
+        "_initialized",
+        "_loads",
+        "_spent",
+        "_stopped",
+        "_stores",
+        "tokens",
+    )
 
-    def __init__(
-        self, options: OAuthProviderOptions, initial: TokenSet | None, audience: str | None, key: str, *, loads: bool
+    def __init__(  # noqa: PLR0913
+        self,
+        options: OAuthProviderOptions,
+        initial: TokenSet | None,
+        audience: str | None,
+        key: str,
+        *,
+        loads: bool,
+        stores: bool,
     ) -> None:
         """Keep the constructor's token set, the fixed audience, and the cache key; nothing is current yet."""
         super().__init__(options)
@@ -194,7 +265,9 @@ class RotationFamily(SharedRefresh):
         self._audience = audience
         self._cache_key = key
         self._loads = loads
+        self._stores = stores
         self._initialized = False
+        self._confirmed: int | None = None
         self.tokens: TokenSet | None = None
         self._spent: set[bytes] = set()
         self._stopped: Failed | None = None
@@ -231,12 +304,12 @@ class RotationFamily(SharedRefresh):
         self._refuse(material.token, context)
         return material
 
-    def spending(self, job: Job) -> TokenSet | None:
+    def _spending(self, job: Job) -> TokenSet | None:
         """Return the token set whose refresh token an admitted job sends, or None once the job already ended."""
         with self.lock:
             return self.tokens if job.outcome is None else None
 
-    def outcome(self, exchanged: Exchanged, job: Job, used: TokenSet) -> Outcome:
+    def _outcome(self, exchanged: Exchanged, job: Job, used: TokenSet) -> Outcome:
         """Map a refresh exchange to the family's next token set, or to the failure the job commits."""
         provider_id, refresh_id = self.provider_id, job.refresh_id
         if exchanged.outcome != "success":
@@ -274,31 +347,92 @@ class RotationFamily(SharedRefresh):
             expires_at=expires,
         )
 
-    def running(self, job: RotationJob) -> Generator[Loading | Sending, object, Outcome]:
-        """Run a job as the steps its runner performs, and return the outcome the job commits.
+    def running(self, job: RotationJob) -> Generator[Loading | Sending | Storing, object, Outcome]:
+        """Run a job as the steps its runner performs, and return the outcome the job commits."""
+        if job.kind == "refresh":
+            return (yield from self._refreshing(job))
+        if (slot := job.storing) is not None:
+            return (yield from self._storing(job, slot))
+        reply = yield Loading(self._persistence(job, job.purpose))
+        return self._loaded(job, reply)  # noqa: B901 - Its runner receives the outcome.
 
-        A refresh of a family with a load reads the persisted token set right before its request, and again once the
-        endpoint answers invalid_grant.
+    def _refreshing(self, job: RotationJob) -> Generator[Loading | Sending | Storing, object, Outcome]:
+        """Run a refresh, with the reads and the store its family's persistence needs.
+
+        With a load, it reads the persisted token set right before its request, and again once the endpoint answers
+        invalid_grant; with a store, it stores the refreshed token set before it becomes current.
         """
-        if job.kind != "refresh":
-            return self.loaded(job, (yield Loading(self._persistence(job, job.purpose))))
-        if (used := self.spending(job)) is None:
+        if (used := self._spending(job)) is None:
             assert job.outcome is not None
             return job.outcome
         if self._loads:
             reply = yield self._reading(job, "before_refresh")
-            if not isinstance(chosen := self._using(job, self.preloaded(job, reply, used)), TokenSet):
+            if not isinstance(chosen := self._using(job, self._preloaded(job, reply, used)), TokenSet):
                 return chosen
             used = chosen
         assert used.refresh_token is not None
         exchanged = yield Sending(_form(used.refresh_token))
         assert isinstance(exchanged, Exchanged)
-        if not (self._loads and exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant"):
-            return self.outcome(exchanged, job, used)
-        if (ended := self._rejecting(job, used.refresh_token)) is not None:
-            return ended
-        reply = yield self._reading(job, "invalid_grant_reload")
-        return self.regranted(job, reply, used)  # noqa: B901 - Its runner receives the outcome as the generator's value.
+        if self._loads and exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant":
+            if (ended := self._rejecting(job, used.refresh_token)) is not None:
+                return ended
+            return self._regranted(job, (yield self._reading(job, "invalid_grant_reload")), used)
+        outcome = self._outcome(exchanged, job, used)
+        if not (self._stores and isinstance(outcome, Adopted)):
+            return outcome
+        return (yield from self._storing(job, outcome))  # noqa: B901 - Its runner receives the outcome.
+
+    def _storing(self, job: RotationJob, stored: Slot | Adopted) -> Generator[Storing, object, Outcome]:
+        """Store a slot's token set, or a refreshed one expecting the confirmed revision, unless the job ended."""
+        with self.lock:
+            if (ended := job.outcome) is not None:
+                return ended
+            slot = job.storing = (
+                stored if isinstance(stored, Slot) else Slot(stored.token_set, self._confirmed, "store")
+            )
+        reply = yield Storing(slot, self._persistence(job, slot.action))
+        return self._persisted(job, reply, None if isinstance(stored, Slot) else stored)  # noqa: B901 - The outcome.
+
+    def _persisted(self, job: RotationJob, reply: object, adopted: Adopted | None = None) -> Outcome:
+        """Make a stored token set current, or keep it waiting in the family's slot once its store failed.
+
+        A successful store confirms the stored revision the next store expects.
+        """
+        slot = job.storing
+        assert slot is not None
+        if isinstance(reply, Raised):
+            return self._pending(job, slot, reply.error)
+        with self.lock:
+            if job.outcome is None:
+                self._confirmed = slot.token_set.revision
+        if adopted is not None:
+            return adopted
+        if (material := _material(slot.token_set)) is None:
+            return Reloaded(slot.token_set)
+        return Adopted(material.material, material.refresh_at, slot.token_set, expires_at=material.expires_at)
+
+    def _pending(self, job: RotationJob, slot: Slot, cause: BaseException) -> Pending:
+        """Keep a token set whose store failed, timed out, or stopped in the slot, as PERSIST_PENDING.
+
+        A store's own revision conflict becomes the SDK's conflict error, keeping the revision the store observed.
+        """
+        fields: dict[str, Any] = {
+            "action": slot.action,
+            "expected_revision": slot.expected_revision,
+            "pending_revision": slot.token_set.revision,
+            "state": "PERSIST_PENDING",
+            "delivery_state": job.progress.delivery,
+            "phase": "store",
+            "cause": cause,
+            "provider_id": self.provider_id,
+            "refresh_id": job.refresh_id,
+        }
+        error = (
+            AuthTokenStoreConflictError(observed_revision=cause.observed_revision, **fields)
+            if isinstance(cause, AuthTokenStoreConflictError)
+            else AuthTokenStoreError(**fields)
+        )
+        return Pending(error, "PERSIST_PENDING", slot)
 
     def _reading(self, job: RotationJob, purpose: Literal["before_refresh", "invalid_grant_reload"]) -> Loading:
         with self.lock:
@@ -339,7 +473,7 @@ class RotationFamily(SharedRefresh):
             purpose=purpose,
         )
 
-    def loaded(self, job: RotationJob, reply: object) -> Outcome:
+    def _loaded(self, job: RotationJob, reply: object) -> Outcome:
         """Make the newer of the persisted and the current token set current, by revision.
 
         The same revision must hold the same token set. A family made current keeps a newer one only if it does not
@@ -347,7 +481,8 @@ class RotationFamily(SharedRefresh):
         stopped by a refresh keeps its state.
         """
         if isinstance(loaded := _stored(reply), Exception):
-            return self.unloaded(job, loaded)
+            return self._unloaded(job, loaded)
+        self._confirm(job, loaded)
         current = self.tokens or self._initial
         if loaded is not None and current is not None and loaded.revision == current.revision and loaded != current:
             return _refused(job, self._conflict(job, current, loaded, self._load_state(job)))
@@ -359,7 +494,7 @@ class RotationFamily(SharedRefresh):
             return Again()
         return self._adoptable(job, chosen, newer=newer)
 
-    def preloaded(self, job: RotationJob, reply: object, used: TokenSet) -> TokenSet | Outcome:
+    def _preloaded(self, job: RotationJob, reply: object, used: TokenSet) -> TokenSet | Outcome:
         """Return the token set a refresh sends, after reading the persisted one right before it, or end the job.
 
         A failed read, or another token set at the same revision, ends the job without a request and leaves the family
@@ -369,6 +504,7 @@ class RotationFamily(SharedRefresh):
         """
         if isinstance(loaded := _stored(reply), Exception):
             return self._unread(job, loaded)
+        self._confirm(job, loaded)
         if loaded is None or loaded.revision < used.revision or loaded == used:
             return used
         if loaded.revision == used.revision:
@@ -379,7 +515,7 @@ class RotationFamily(SharedRefresh):
             return loaded
         return self._adoptable(job, loaded, newer=True)
 
-    def regranted(self, job: RotationJob, reply: object, used: TokenSet) -> Outcome:
+    def _regranted(self, job: RotationJob, reply: object, used: TokenSet) -> Outcome:
         """Make a newer usable persisted token set current after invalid_grant, or require reauthorization.
 
         Only a newer token set with an unexpired access token and a refresh token the family never spent recovers; a
@@ -387,6 +523,7 @@ class RotationFamily(SharedRefresh):
         """
         if isinstance(loaded := _stored(reply), Exception):
             return self._unread(job, loaded)
+        self._confirm(job, loaded)
         cause: BaseException | None = None
         if loaded is not None and loaded.revision == used.revision and loaded != used:
             cause = self._conflict(job, used, loaded, "REAUTH_REQUIRED")
@@ -422,26 +559,80 @@ class RotationFamily(SharedRefresh):
         condition: ReauthorizationCondition = "unusable_loaded_token" if newer else "no_refresh_token"
         return Reloaded(chosen, self._reauthorization(condition, "load", job))
 
-    def unloaded(self, job: RotationJob, cause: BaseException) -> Outcome:
+    def _confirm(self, job: RotationJob, loaded: TokenSet | None) -> None:
+        """Confirm the stored revision a load of a running job read, None when nothing is stored."""
+        with self.lock:
+            if job.outcome is None:
+                self._confirmed = None if loaded is None else loaded.revision
+
+    def _unloaded(self, job: RotationJob, cause: BaseException) -> Outcome:
         """Fail a load that raised, returned something else than a token set or None, or outlived its session."""
         return _refused(job, self._load_error(job, job.purpose, self._load_state(job), cause))
 
     def reloading(self, waiter: SyncWaiter | AsyncWaiter) -> RotationJob:
-        """Admit an explicit reload as the family's job, refused while the family is closing or any job runs."""
+        """Admit an explicit reload as the family's job, refused while a store is pending, closing, or a job runs."""
         if not self._loads:
             raise AuthConfigurationError(field_path=("load",), condition="missing_value")
         with self.lock:
-            if (lifecycle := self.lifecycle) != "OPEN" or self._active is not None or self.busy():
+            self._refuse_explicit("reload_token_set", pending=True)
+            return self._admitted(RotationJob("reload"), waiter)
+
+    def retrying(self, waiter: SyncWaiter | AsyncWaiter, expected: int | Unset | None) -> tuple[RotationJob, bool]:
+        """Admit a store of the pending token set, or join the one running; return the job and whether to start it.
+
+        The store expects the revision the failed one did unless the caller names another below the pending token set's,
+        as after a conflict. It is refused without a pending store, while the family is closing, or while another job
+        runs, including a retry expecting another revision.
+        """
+        with self.lock:
+            stopped = self._stopped
+            named = not isinstance(expected, Unset)
+            if isinstance(expected, Unset) and isinstance(stopped, Pending):
+                expected = stopped.slot.expected_revision
+            if (active := self._retry(expected)) is not None:
+                self.join(active, waiter)
+                return active, False
+            self._refuse_explicit("retry_store")
+            if not isinstance(stopped, Pending):
                 raise AuthStateConflictError(
-                    action="reload_token_set",
-                    state="EXCHANGING" if lifecycle == "OPEN" else lifecycle,
+                    action="retry_store",
+                    state=self.state,
                     delivery_state=DeliveryState.NOT_SENT,
                     provider_id=self.provider_id,
                 )
-            job = RotationJob("reload")
-            admitted = self.enlist(job, waiter)
-            assert admitted
-            return job
+            pending = stopped.slot.token_set
+            if named and isinstance(expected, int) and expected >= pending.revision:
+                raise AuthConfigurationError(field_path=("expected_revision",), condition="stale_revision")
+            assert not isinstance(expected, Unset)
+            return self._admitted(RotationJob("retry", Slot(pending, expected, "retry_store")), waiter), True
+
+    def _retry(self, expected: int | Unset | None) -> RotationJob | None:
+        """Return the retry running with the revision a new retry expects, which it joins; the caller holds the lock."""
+        if self.lifecycle != "OPEN" or not isinstance(active := self._active, RotationJob) or active.kind != "retry":
+            return None
+        slot = active.storing
+        assert slot is not None
+        return active if slot.expected_revision == expected else None
+
+    def _refuse_explicit(self, action: AuthAction, *, pending: bool = False, admitting: bool = True) -> None:
+        """Refuse an explicit operation while the family is closing, a job runs, or, if asked, a store is pending.
+
+        One admitting a job of its own also waits for the work of jobs whose session ended. The caller holds the lock.
+        """
+        lifecycle = self.lifecycle
+        waiting = pending and isinstance(self._stopped, Pending)
+        if lifecycle != "OPEN" or self._active is not None or (admitting and self.busy()) or waiting:
+            raise AuthStateConflictError(
+                action=action,
+                state=lifecycle if lifecycle != "OPEN" else "PERSIST_PENDING" if waiting else "EXCHANGING",
+                delivery_state=DeliveryState.NOT_SENT,
+                provider_id=self.provider_id,
+            )
+
+    def _admitted(self, job: RotationJob, waiter: SyncWaiter | AsyncWaiter) -> RotationJob:
+        admitted = self.enlist(job, waiter)
+        assert admitted
+        return job
 
     def reloaded(self, job: RotationJob) -> TokenSet | None:
         """Raise a reload's failure, or return the current token set, or None once the family stopped."""
@@ -451,10 +642,10 @@ class RotationFamily(SharedRefresh):
             return None if self._stopped is not None else self.tokens
 
     def settle(self, job: Job, outcome: Outcome) -> tuple[RefreshState, str | None]:
-        """Apply a job's outcome: a refreshed or loaded token set becomes current, and a failure stops the family.
+        """Apply a job's outcome: a refreshed, loaded, or stored token set becomes current; a failure stops the family.
 
-        A refresh failure after a possible send spends the refresh token; one that sent nothing, and a reload's
-        failure, leave the family as it was.
+        A refresh failure after a possible send spends the refresh token unless its pending token set keeps it; one that
+        sent nothing, and a reload's failure, leave the family as it was.
         """
         assert isinstance(job, RotationJob)
         if isinstance(outcome, Again):
@@ -470,7 +661,8 @@ class RotationFamily(SharedRefresh):
             if outcome.state == "FAILED_NOT_SENT":
                 return "FAILED_NOT_SENT", outcome.error.reason_code
             assert used is not None
-            self._spent.add(_digest(used))
+            if not isinstance(outcome, Pending) or outcome.slot.token_set.refresh_token != used:
+                self._spent.add(_digest(used))
         self._stop(outcome)
         return outcome.state, outcome.error.reason_code
 
@@ -489,22 +681,32 @@ class RotationFamily(SharedRefresh):
         return state, None
 
     def timed_out(self, job: Job) -> Outcome:
-        """Fail a job whose session ended: a refresh that may have been delivered leaves its outcome unknown."""
+        """Fail a job whose session ended in its store, load, or read, or a request that may have been delivered.
+
+        A refresh that may have been delivered leaves its outcome unknown.
+        """
         assert isinstance(job, RotationJob)
-        if job.kind != "refresh":
-            return self.unloaded(job, TimeoutError())
-        if job.reading is not None:
-            return self._unread(job, TimeoutError())
+        if (ended := self._stepped(job, TimeoutError())) is not None:
+            return ended
         return self._uncertain(job, "deadline") if job.progress.sent else super().timed_out(job)
 
     def failed(self, error: BaseException, job: Job) -> Outcome:
-        """Fail a job whose work stopped: a refresh that may have been delivered leaves its outcome unknown."""
+        """Fail a job whose work stopped in its store, load, or read, or a request that may have been delivered.
+
+        A refresh that may have been delivered leaves its outcome unknown.
+        """
         assert isinstance(job, RotationJob)
-        if job.kind != "refresh":
-            return self.unloaded(job, error)
-        if job.reading is not None:
-            return self._unread(job, error)
+        if (ended := self._stepped(job, error)) is not None:
+            return ended
         return self._uncertain(job, "stopped", error) if job.progress.sent else super().failed(error, job)
+
+    def _stepped(self, job: RotationJob, cause: BaseException) -> Outcome | None:
+        """Return how a job ends that stopped in its store, its load, or a read around its request, if it did."""
+        if (slot := job.storing) is not None:
+            return self._pending(job, slot, cause)
+        if job.kind != "refresh":
+            return self._unloaded(job, cause)
+        return None if job.reading is None else self._unread(job, cause)
 
     def exchange_needed(self, version: object) -> bool:
         """Return whether replacing a rejected version needs a refresh, which a stopped family never sends.
@@ -518,28 +720,31 @@ class RotationFamily(SharedRefresh):
                 return False
         return super().exchange_needed(version)
 
-    def replace(self, token_set: object) -> None:
+    def replacing(self, token_set: object, waiter: SyncWaiter | AsyncWaiter, *, persist: bool) -> RotationJob | None:
         """Adopt an explicitly supplied token set, restarting a stopped family and completing its initialization.
 
-        It needs a revision above the current one, and a refresh token the family never spent, or no refresh token and
-        an unexpired access token; no job may be running, and the family must be open.
+        It needs a revision above the current and any pending one, and a refresh token the family never spent, or no
+        refresh token and an unexpired access token; no job may be running, and the family must be open. To persist it
+        with a store, return the job storing it first, which expects the confirmed revision.
         """
         checked = checked_token_set(token_set)
         with self.lock:
-            if (lifecycle := self.lifecycle) != "OPEN" or self._active is not None:
-                raise AuthStateConflictError(
-                    action="replace_token_set",
-                    state="EXCHANGING" if lifecycle == "OPEN" else lifecycle,
-                    delivery_state=DeliveryState.NOT_SENT,
-                    provider_id=self.provider_id,
-                )
-            if (current := self.tokens or self._initial) is not None and checked.revision <= current.revision:
+            storing = any(isinstance(job, RotationJob) and job.storing is not None for job in self._running)
+            self._refuse_explicit("replace_token_set", admitting=(persist and self._stores) or storing)
+            pending = stopped.slot.token_set if isinstance(stopped := self._stopped, Pending) else None
+            if any(
+                held is not None and checked.revision <= held.revision
+                for held in (self.tokens or self._initial, pending)
+            ):
                 raise AuthConfigurationError(field_path=("token_set", "revision"), condition="stale_revision")
             if (refresh := checked.refresh_token) is not None and self._reused(refresh):
                 raise AuthConfigurationError(field_path=("token_set", "refresh_token"), condition="spent_token")
             if (material := _material(checked)) is None and refresh is None:
                 raise AuthConfigurationError(field_path=("token_set",), condition="unusable_token")
+            if persist and self._stores:
+                return self._admitted(RotationJob("replace", Slot(checked, self._confirmed, "replace")), waiter)
             self._adopt(checked, material)
+            return None
 
     def _load_state(self, job: RotationJob) -> str:
         return "LOAD_FAILED" if job.kind == "load" else self.state
@@ -652,7 +857,7 @@ def _refused(job: RotationJob, error: SDKError) -> Outcome:
 
 def _stored(reply: object) -> TokenSet | Exception | None:
     """Return the token set a load step read, None when nothing is stored, or why the read failed."""
-    if isinstance(reply, Unread):
+    if isinstance(reply, Raised):
         return reply.error
     if reply is None:
         return None
@@ -679,7 +884,7 @@ def _form(refresh_token: str) -> tuple[tuple[str, str], ...]:
 class SyncRotation(SyncTokens):
     """A synchronous refresh token family."""
 
-    __slots__ = ("_family", "_load")
+    __slots__ = ("_family", "_load", "_store")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -690,10 +895,12 @@ class SyncRotation(SyncTokens):
         *,
         key: str,
         load: TokenLoad | None,
+        store: TokenStore | None,
     ) -> None:
-        """Keep the endpoint, the constructor's token set, and the load; nothing runs until the first acquisition."""
-        self._family = RotationFamily(options, initial, audience, key, loads=load is not None)
+        """Keep the endpoint, the constructor's token set, and the callbacks; nothing runs until first acquired."""
+        self._family = RotationFamily(options, initial, audience, key, loads=load is not None, stores=store is not None)
         self._load = load
+        self._store = store
         super().__init__(self._family, endpoint, audience)
 
     def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
@@ -701,9 +908,19 @@ class SyncRotation(SyncTokens):
         checked = checked_context(context, self._audience)
         return self._family.served(self._refresh.obtain(checked, force=force, admission=admission), checked)
 
-    def replace(self, token_set: object) -> None:
-        """Adopt an explicitly supplied token set."""
-        self._family.replace(token_set)
+    def replace(self, token_set: object, *, persist: bool) -> None:
+        """Adopt an explicitly supplied token set, storing it first when asked and a store exists."""
+        waiter = SyncWaiter()
+        if (job := self._family.replacing(token_set, waiter, persist=persist)) is not None:
+            self._refresh.perform(job, waiter)
+            job.stored()
+
+    def retry_store(self, expected: int | Unset | None) -> TokenSet:
+        """Store the pending token set again, or join the store running, and return the stored token set."""
+        waiter = SyncWaiter()
+        job, start = self._family.retrying(waiter, expected)
+        self._refresh.perform(job, waiter, start=start)
+        return job.stored()
 
     def reload(self) -> TokenSet | None:
         """Load the persisted token set once, keeping it if it is newer, and return the current one."""
@@ -722,14 +939,28 @@ class SyncRotation(SyncTokens):
                 step = steps.send(reply)
             except StopIteration as done:
                 return cast("Outcome", done.value)
-            reply = self._read(step.context) if isinstance(step, Loading) else self._send(step, job)
+            if isinstance(step, Loading):
+                reply = self._read(step.context)
+            elif isinstance(step, Sending):
+                reply = self._send(step, job)
+            else:
+                reply = self._write(step)
 
     def _read(self, context: TokenPersistenceContext) -> object:
         assert self._load is not None
         try:
             return self._load.load(context)
         except Exception as error:  # noqa: BLE001 - A failing load is its step's reply.
-            return Unread(error)
+            return Raised(error)
+
+    def _write(self, step: Storing) -> Raised | None:
+        assert self._store is not None
+        slot = step.slot
+        try:
+            self._store.store(slot.token_set, expected_revision=slot.expected_revision, context=step.context)
+        except Exception as error:  # noqa: BLE001 - A failing store is its step's reply.
+            return Raised(error)
+        return None
 
     def _send(self, step: Sending, job: Job) -> Exchanged:
         endpoint = self._endpoint
@@ -741,7 +972,7 @@ class SyncRotation(SyncTokens):
 class AsyncRotation(AsyncTokens):
     """An asyncio refresh token family."""
 
-    __slots__ = ("_family", "_load")
+    __slots__ = ("_family", "_load", "_store")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -752,10 +983,12 @@ class AsyncRotation(AsyncTokens):
         *,
         key: str,
         load: AsyncTokenLoad | None,
+        store: AsyncTokenStore | None,
     ) -> None:
-        """Keep the endpoint, the constructor's token set, and the load; nothing runs until the first acquisition."""
-        self._family = RotationFamily(options, initial, audience, key, loads=load is not None)
+        """Keep the endpoint, the constructor's token set, and the callbacks; nothing runs until first acquired."""
+        self._family = RotationFamily(options, initial, audience, key, loads=load is not None, stores=store is not None)
         self._load = load
+        self._store = store
         super().__init__(self._family, endpoint, audience)
 
     async def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
@@ -764,20 +997,33 @@ class AsyncRotation(AsyncTokens):
         self._endpoint.bind()
         return self._family.served(await self._refresh.obtain(checked, force=force, admission=admission), checked)
 
-    def replace(self, token_set: object) -> None:
-        """Adopt an explicitly supplied token set on the family's event loop."""
-        self._endpoint.bind()
-        self._family.replace(token_set)
+    async def replace(self, token_set: object, *, persist: bool) -> None:
+        """Adopt an explicitly supplied token set on the family's event loop, as the synchronous family does."""
+        waiter = self._waiter()
+        if (job := self._family.replacing(token_set, waiter, persist=persist)) is not None:
+            await self._refresh.perform(job, waiter)
+            job.stored()
+
+    async def retry_store(self, expected: int | Unset | None) -> TokenSet:
+        """Store the pending token set again on the family's event loop, as the synchronous family does."""
+        waiter = self._waiter()
+        job, start = self._family.retrying(waiter, expected)
+        await self._refresh.perform(job, waiter, start=start)
+        return job.stored()
 
     async def reload(self) -> TokenSet | None:
         """Load the persisted token set once on the family's event loop, as the synchronous family does."""
-        from asyncio import get_running_loop  # noqa: PLC0415
-
-        self._endpoint.bind()
-        waiter = AsyncWaiter(get_running_loop().create_future())
+        waiter = self._waiter()
         job = self._family.reloading(waiter)
         await self._refresh.perform(job, waiter)
         return self._family.reloaded(job)
+
+    def _waiter(self) -> AsyncWaiter:
+        """Bind the family to the running event loop, and return a waiter for an explicit operation on it."""
+        from asyncio import get_running_loop  # noqa: PLC0415
+
+        self._endpoint.bind()
+        return AsyncWaiter(get_running_loop().create_future())
 
     async def _acquire(self, job: Job) -> Outcome:
         """Perform a job's steps in a task: its loads and its refresh request."""
@@ -789,14 +1035,31 @@ class AsyncRotation(AsyncTokens):
                 step = steps.send(reply)
             except StopIteration as done:
                 return cast("Outcome", done.value)
-            reply = await (self._read(step.context) if isinstance(step, Loading) else self._send(step, job))
+            if isinstance(step, Loading):
+                reply = await self._read(step.context)
+            elif isinstance(step, Sending):
+                reply = await self._send(step, job)
+            else:
+                reply = await self._write(step)
 
     async def _read(self, context: TokenPersistenceContext) -> object:
         assert self._load is not None
         try:
             return await within(self._load.load(context), context.deadline.remaining())
         except Exception as error:  # noqa: BLE001 - A failing load is its step's reply.
-            return Unread(error)
+            return Raised(error)
+
+    async def _write(self, step: Storing) -> Raised | None:
+        assert self._store is not None
+        slot = step.slot
+        try:
+            await within(
+                self._store.store(slot.token_set, expected_revision=slot.expected_revision, context=step.context),
+                step.context.deadline.remaining(),
+            )
+        except Exception as error:  # noqa: BLE001 - A failing store is its step's reply.
+            return Raised(error)
+        return None
 
     async def _send(self, step: Sending, job: Job) -> Exchanged:
         endpoint = self._endpoint

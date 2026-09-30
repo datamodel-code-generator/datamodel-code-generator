@@ -21,12 +21,14 @@ from .admission import AsyncTokenAcquirer, TokenAcquirer
 from .auth import (
     AsyncCredentialProvider,
     AsyncTokenLoad,
+    AsyncTokenStore,
     BearerCredential,
     CredentialContext,
     CredentialProvider,
     RefreshInfo,
     TokenLoad,
     TokenSet,
+    TokenStore,
     TokenVersion,
     checked_scopes,
 )
@@ -1054,18 +1056,25 @@ class AsyncClientCredentialsProvider(_AsyncSharedTokens):
         super().__init__(AsyncClientCredentials(resolved, endpoint, grant))
 
 
-def _family(
-    token_set: object, load: object, scopes: object, audience: object, *, asynchronous: bool
+def _family(  # noqa: PLR0913
+    token_set: object, load: object, store: object, scopes: object, audience: object, *, asynchronous: bool
 ) -> tuple[TokenSet | None, tuple[str, ...], str | None]:
-    """Validate a refresh token family's token set or load, configured scopes, and audience."""
-    from .auth_policy import async_load, sync_load  # noqa: PLC0415
+    """Validate a refresh token family's token set or load, its store, configured scopes, and audience.
+
+    A store needs a load, which reads what it stored.
+    """
+    from .auth_policy import async_load, async_store, sync_load, sync_store  # noqa: PLC0415
     from .refresh import checked_audience  # noqa: PLC0415
     from .rotation import checked_token_set  # noqa: PLC0415
 
+    if store is not None and load is None:
+        raise AuthConfigurationError(field_path=("load",), condition="missing_value")
     if token_set is None and load is None:
         raise AuthConfigurationError(field_path=("token_set",), condition="missing_value")
     if load is not None and not (async_load(load) if asynchronous else sync_load(load)):
         raise AuthConfigurationError(field_path=("load",), condition="invalid_mode")
+    if store is not None and not (async_store(store) if asynchronous else sync_store(store)):
+        raise AuthConfigurationError(field_path=("store",), condition="invalid_mode")
     initial = None if token_set is None else checked_token_set(token_set)
     return initial, checked_scopes(scopes, "scopes"), checked_audience(audience)
 
@@ -1077,7 +1086,8 @@ class RefreshTokenProvider(_SharedTokens):
     Concurrent callers join one refresh, which runs on a worker of the provider under its own deadline, so a caller
     leaving never cancels it. The access token is renewed once a tenth of its lifetime, at most thirty seconds, remains.
     A refresh token a request may have delivered is never sent again: a refresh whose outcome is unknown, rejected, or
-    requiring reauthorization stops the family until `replace_token_set`. Close it to release its transport.
+    requiring reauthorization stops the family until `replace_token_set`. With a token store, a refreshed token set
+    becomes current once stored, and one whose store failed waits for `retry_store`. Close it to release its transport.
     """
 
     __slots__ = ("_rotation",)
@@ -1089,6 +1099,7 @@ class RefreshTokenProvider(_SharedTokens):
         client_id: str,
         token_set: TokenSet | None = None,
         load: TokenLoad | None = None,
+        store: TokenStore | None = None,
         client_secret: CredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         scopes: tuple[str, ...] = (),
@@ -1096,28 +1107,37 @@ class RefreshTokenProvider(_SharedTokens):
         options: OAuthProviderOptions | None = None,
         token_transport: TokenTransport | Unset = UNSET,
     ) -> None:
-        """Validate the endpoint, client authentication, token set or load, scopes, audience, and transport."""
+        """Validate the endpoint, client authentication, token set or callbacks, scopes, audience, and transport."""
         from .auth_policy import sync_provider  # noqa: PLC0415
         from .oauth import TokenEndpoint, client_authentication  # noqa: PLC0415
         from .rotation import SyncRotation, cache_key  # noqa: PLC0415
 
         resolved = _options(options)
-        initial, requested, checked = _family(token_set, load, scopes, audience, asynchronous=False)
+        initial, requested, checked = _family(token_set, load, store, scopes, audience, asynchronous=False)
         authentication = client_authentication(client_id, client_auth_method, client_secret, sync_provider)
         url = _endpoint(token_url, "token_url", resolved)
         key = cache_key(url, authentication.client_id, authentication.method, checked, requested)
         endpoint = TokenEndpoint(url, authentication, resolved.transport, token_transport)
-        self._rotation = SyncRotation(resolved, endpoint, initial, checked, key=key, load=load)
+        self._rotation = SyncRotation(resolved, endpoint, initial, checked, key=key, load=load, store=store)
         super().__init__(self._rotation)
 
     def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:
         """Adopt a token set of a higher revision, restarting a stopped family.
 
-        Its refresh token must not be one the family spent, and without one its access token must be unexpired.
-        Without a token store, `persist` changes nothing.
+        Its refresh token must not be one the family spent, and without one its access token must be unexpired. With a
+        token store and `persist`, it becomes current once stored, expecting the stored revision last confirmed; a
+        failed store leaves it waiting for `retry_store`. Otherwise it becomes current at once and nothing is stored.
         """
-        del persist
-        self._rotation.replace(token_set)
+        self._rotation.replace(token_set, persist=persist)
+
+    def retry_store(self, *, expected_revision: int | Unset | None = UNSET) -> TokenSet:
+        """Store the token set whose store failed once more, and return it once current.
+
+        The store expects the revision the failed one did, or `expected_revision` when given, such as the
+        `observed_revision` of a conflict the application resolved. Concurrent calls expecting the same revision share
+        one store; it sends no token request, and needs a failed store and no other job.
+        """
+        return self._rotation.retry_store(_expected_revision(expected_revision))
 
     def reload_token_set(self) -> TokenSet | None:
         """Load the persisted token set once, keeping it if it is newer, and return the current token set.
@@ -1141,6 +1161,7 @@ class AsyncRefreshTokenProvider(_AsyncSharedTokens):
         client_id: str,
         token_set: TokenSet | None = None,
         load: AsyncTokenLoad | None = None,
+        store: AsyncTokenStore | None = None,
         client_secret: AsyncCredentialProvider | None = None,
         client_auth_method: Literal["none", "client_secret_basic", "client_secret_post"] = "client_secret_basic",
         scopes: tuple[str, ...] = (),
@@ -1148,28 +1169,42 @@ class AsyncRefreshTokenProvider(_AsyncSharedTokens):
         options: OAuthProviderOptions | None = None,
         token_transport: AsyncTokenTransport | Unset = UNSET,
     ) -> None:
-        """Validate the endpoint, client authentication, token set or load, scopes, audience, and transport."""
+        """Validate the endpoint, client authentication, token set or callbacks, scopes, audience, and transport."""
         from .auth_policy import async_provider  # noqa: PLC0415
         from .oauth import AsyncTokenEndpoint, client_authentication  # noqa: PLC0415
         from .rotation import AsyncRotation, cache_key  # noqa: PLC0415
 
         resolved = _options(options)
-        initial, requested, checked = _family(token_set, load, scopes, audience, asynchronous=True)
+        initial, requested, checked = _family(token_set, load, store, scopes, audience, asynchronous=True)
         authentication = client_authentication(client_id, client_auth_method, client_secret, async_provider)
         url = _endpoint(token_url, "token_url", resolved)
         key = cache_key(url, authentication.client_id, authentication.method, checked, requested)
         endpoint = AsyncTokenEndpoint(url, authentication, resolved.transport, token_transport)
-        self._rotation = AsyncRotation(resolved, endpoint, initial, checked, key=key, load=load)
+        self._rotation = AsyncRotation(resolved, endpoint, initial, checked, key=key, load=load, store=store)
         super().__init__(self._rotation)
 
     async def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:
         """Adopt a newer token set as the synchronous provider does, on the event loop the provider is bound to."""
-        del persist
-        self._rotation.replace(token_set)
+        await self._rotation.replace(token_set, persist=persist)
+
+    async def retry_store(self, *, expected_revision: int | Unset | None = UNSET) -> TokenSet:
+        """Store the token set whose store failed once more as the synchronous provider does, on the provider's loop."""
+        return await self._rotation.retry_store(_expected_revision(expected_revision))
 
     async def reload_token_set(self) -> TokenSet | None:
         """Load the persisted token set once as the synchronous provider does, on the provider's event loop."""
         return await self._rotation.reload()
+
+
+def _expected_revision(value: object) -> int | Unset | None:
+    """Accept a stored revision to expect, None for none stored, or UNSET to keep the one the failed store expected."""
+    if value is None or isinstance(value, Unset):
+        return value
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise AuthConfigurationError(field_path=("expected_revision",), condition="invalid_type")
+    if value < 0:
+        raise AuthConfigurationError(field_path=("expected_revision",), condition="invalid_value")
+    return value
 
 
 def _options(options: object) -> OAuthProviderOptions:

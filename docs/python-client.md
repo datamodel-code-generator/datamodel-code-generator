@@ -1647,8 +1647,9 @@ a resource rejects it, then stops the family with `AuthReauthorizationRequiredEr
 once.
 
 Concurrent callers, `OAuthProviderOptions`, snapshots, call accounting, and closing follow the client credentials
-provider. `replace_token_set` raises `AuthStateConflictError` while a refresh, load, or reload runs, or once the
-provider is closing; its `persist` argument has no effect without a token store.
+provider. `replace_token_set` raises `AuthStateConflictError` while a refresh, load, reload, or store runs, including a
+store whose session ended before its callback returned, or once the provider is closing; its `persist` argument has no
+effect without a token store.
 
 `TokenLoad` and `TokenStore`, with `AsyncTokenLoad` and `AsyncTokenStore`, are the callbacks that persist a token
 family, each bound to the storage namespace of one family: `load(context)` returns the stored `TokenSet` or None, and
@@ -1673,12 +1674,32 @@ nothing. A failed read, or another token set at the same revision, ends the refr
 and recovers only with a newer token set whose access token has not expired and whose refresh token the family never
 spent; otherwise `AuthReauthorizationRequiredError` keeps a failed read or a conflict as its cause.
 
-`reload_token_set()` loads once more, or raises `AuthStateConflictError` while a refresh, load, or reload runs,
-including one whose session ended before its work returned, or once the provider is closing. It makes a newer token set
-current unless that brings back a spent refresh token, recovering a family that failed its load or stopped once the
-token set can serve; a family a refresh stopped keeps its state otherwise, and any other family stops for
-reauthorization when the newer token set can never serve. It returns the current token set, or None once the family
-stopped, and its own failures are raised to its caller alone, leaving the family as it was.
+`reload_token_set()` loads once more, or raises `AuthStateConflictError` while a refresh, load, reload, or store runs,
+including one whose session ended before its work returned, while a store is pending, or once the provider is closing.
+It makes a newer token set current unless that brings back a spent refresh token, recovering a family that failed its
+load or stopped once the token set can serve; a family a refresh stopped keeps its state otherwise, and any other family
+stops for reauthorization when the newer token set can never serve. It returns the current token set, or None once the
+family stopped, and its own failures are raised to its caller alone, leaving the family as it was.
 
-Storing token sets through a store, Basic charset overrides, resource audience metadata, and generated OAuth provider
-factories are not available yet; applications construct providers explicitly.
+A provider with a `store` needs a `load` too. A refresh that receives a token set stores it once before it becomes
+current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served,
+and their scopes checked, only once it is stored. A store that fails, conflicts, outlives the refresh's session, or is
+interrupted keeps the token set pending in the `PERSIST_PENDING` state: the refresh raises `AuthTokenStoreError`, or
+`AuthTokenStoreConflictError` with the revision the store observed, and later calls raise a new instance of the latest
+store failure without a request, while callers arriving during a store wait for it. `retry_store()` stores the same
+token set once more, expecting the same revision, and returns it once current; concurrent retries expecting the same
+revision share one store. Since a conflict repeats until the expected revision changes,
+`retry_store(expected_revision=...)` stores the same pending token set expecting another revision, such as the
+`observed_revision` of the conflict once the application has checked what is stored; a revision that is negative or not
+an integer, or one at or above the pending token set's, which storing would roll back, raises `AuthConfigurationError`,
+and a newer stored token set is adopted with `replace_token_set(..., persist=False)` instead. It raises
+`AuthStateConflictError` without a pending store, while a refresh, load, reload, or store runs, including one whose
+session ended before its work returned, or once the provider is closing. `replace_token_set` needs a revision above the
+pending one too, and by default stores the token set first under the same conditions, expecting the confirmed revision;
+one whose store fails is pending as a refreshed one is. With `persist=False` it becomes current at once and is not
+stored, leaving the stored revision as it is. A refresh that already failed, as one whose work outlived its session by
+more than a second, stores nothing, and a pending token set lives only in its provider, which drops it once closed. Load
+and store callbacks must not call their own provider, which waits for them.
+
+Basic charset overrides, resource audience metadata, and generated OAuth provider factories are not available yet;
+applications construct providers explicitly.
