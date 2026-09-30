@@ -544,6 +544,8 @@ def _format_nested_literal(
             )
         case ast.Tuple(elts=[_, *_]):
             return _format_tuple_literal(node, indent, source, line_length)
+        case ast.Subscript() if _is_mapping_of_annotated(node):
+            return _format_subscript_value(node, indent, line_length, source)
     return None
 
 
@@ -769,7 +771,16 @@ def _is_datetime_module_call(node: ast.AST | None) -> TypeGuard[ast.Call]:
 
 
 def _is_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
-    return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Annotated")
+    return isinstance(node, ast.Subscript) and (
+        _is_name_or_attr(node.value, "Annotated") or _is_name_or_attr(node.value, "Annotated_aliased")
+    )
+
+
+def _is_mapping_of_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
+    match node:
+        case ast.Subscript(value=value, slice=ast.Tuple(elts=[key, _])):
+            return _is_annotated(key) and any(_is_name_or_attr(value, name) for name in ("dict", "Dict", "Mapping"))
+    return False
 
 
 def _is_list_of_annotated(node: ast.AST) -> TypeGuard[ast.Subscript]:
@@ -883,6 +894,9 @@ def _format_bit_or_element(
     element_source = _source_segment(source, element)
     if not isinstance(element, ast.Subscript) or len(f"{indent}{prefix}{element_source}") <= line_length:
         return [f"{indent}{prefix}{element_source}"]
+    if _is_mapping_of_annotated(element):
+        lines = _split_python_lines(_format_subscript_value(element, indent, line_length, source))
+        return list(_indent_first_line(lines, f"{indent}{prefix}"))
 
     value = _source_segment(source, element.value)
     elements = _iter_subscript_elements(element)
@@ -1031,12 +1045,13 @@ def _format_annotated(  # noqa: PLR0913
     wrap_string_literal: bool = False,
 ) -> str:
     continuation_indent = f"{indent}    "
+    name = _source_segment(source, annotation.value)
     inline_elements = [_source_segment(source, element) for element in _iter_subscript_elements(annotation)]
     joined_elements = ", ".join(inline_elements)
     if len(f"{continuation_indent}{joined_elements}") <= line_length:
-        return f"Annotated[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
+        return f"{name}[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
 
-    formatted_lines: list[str] = ["Annotated["]
+    formatted_lines: list[str] = [f"{name}["]
     for element in _iter_subscript_elements(annotation):
         if _is_call(element, "Field") or _is_call(element, "Meta"):
             inline_field = _source_segment(source, element)
@@ -1255,6 +1270,21 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
             wrap_string_literal=wrap_string_literal,
         )
         return f"{target_prefix}{formatted_annotation}"
+    if _is_mapping_of_annotated(statement.annotation):
+        closing_suffix = "" if statement.value is None else f" = {_source_segment(source, statement.value)}"
+        formatted_annotation = _format_subscript_value(
+            statement.annotation, indent, line_length, source, closing_suffix
+        )
+        return f"{target_prefix}{formatted_annotation}"
+    if (
+        statement.value is None
+        and isinstance(statement.annotation, ast.BinOp)
+        and any(_is_mapping_of_annotated(element) for element in _iter_bit_or_elements(statement.annotation))
+    ):
+        formatted_annotation = _format_parenthesized_bit_or_annotation(
+            statement.annotation, indent, line_length, source
+        )
+        return f"{target_prefix}{formatted_annotation}"
     if statement.value is not None:
         value = _source_segment(source, statement.value)
         return f"{value_prefix}(\n{indent}    {value}\n{indent})"
@@ -1410,12 +1440,19 @@ def _format_subscript_value(
     formatted_lines = [f"{value}["]
     for element in elements:
         element_source = _source_segment(source, element)
-        if isinstance(element, ast.BinOp) and isinstance(element.op, ast.BitOr):
+        if (
+            isinstance(element, ast.BinOp)
+            and isinstance(element.op, ast.BitOr)
+            and len(f"{continuation_indent}{element_source}{',' if trailing_comma else ''}") > line_length
+        ):
             element_lines = _format_bit_or_elements(element, continuation_indent, line_length, source)
             if trailing_comma:
                 element_lines[-1] = f"{element_lines[-1]},"
             formatted_lines.extend(element_lines)
-        elif isinstance(element, ast.Subscript) and len(f"{continuation_indent}{element_source}") > line_length:
+        elif (
+            isinstance(element, ast.Subscript)
+            and len(f"{continuation_indent}{element_source}{',' if trailing_comma else ''}") > line_length
+        ):
             element_lines = _split_python_lines(
                 _format_subscript_value(element, continuation_indent, line_length, source, ",")
             )
@@ -1879,6 +1916,20 @@ def _collect_builtin_replacements(  # noqa: PLR0912, PLR0913
                 if previous_end + 2 < next_start:
                     replacements.append((previous_end + 1, next_start - 1, [""]))
             for statement in node.body:
+                match statement:
+                    case ast.Assign(targets=[ast.Name(id="__annotations__")], value=ast.Dict() as annotations) if any(
+                        _is_mapping_of_annotated(value) for value in annotations.values
+                    ):
+                        indent = _line_indent(lines[statement.lineno - 1])
+                        formatted = _format_dict_literal(
+                            annotations, indent, source, line_length, preserve_trailing_comma=True
+                        )
+                        replacements.append((
+                            statement.lineno,
+                            statement.end_lineno or statement.lineno,
+                            _split_python_lines(f"{indent}__annotations__ = {formatted}"),
+                        ))
+                        continue
                 is_long_function_definition = False
                 if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     replacements.extend(_collect_function_boolean_replacements(statement, lines, line_length))
