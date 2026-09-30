@@ -7,7 +7,12 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import assert_generated_modules_output, assert_output
-from tests.data.python.client_generation import client_config_report, client_digest_report, client_render
+from tests.data.python.client_generation import (
+    client_config_report,
+    client_digest_report,
+    client_documentation_report,
+    client_render,
+)
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"
 
@@ -17,6 +22,11 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
     [
         "pets",
         "pets-unpack",
+        "retries",
+        "retry-headers",
+        "retry-header-conflicts",
+        "retry-security-context",
+        "retry-security-context-conflicts",
         "media",
         "servers",
         "default-server",
@@ -61,6 +71,19 @@ def test_client_signature_style_digests(tmp_path: Path) -> None:
     assert_output(client_digest_report("pets", "pets-unpack", tmp_path), EXPECTED / "digests" / "signature-style.txt")
 
 
+def test_client_retry_metadata_digests(tmp_path: Path) -> None:
+    """Project retry declarations into only the corresponding request or response contracts."""
+    assert_output(
+        client_digest_report("retries-defaults", "retries", tmp_path), EXPECTED / "digests" / "retry-metadata.txt"
+    )
+
+
+@pytest.mark.parametrize("case", ["retries", "default-server", "empty"])
+def test_client_documentation(case: str, tmp_path: Path) -> None:
+    """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""
+    assert_output(client_documentation_report(case, tmp_path), EXPECTED / "documentation" / f"{case}.txt")
+
+
 def test_client_validation_digests(tmp_path: Path) -> None:
     """Keep every operation's contract digests and the models when the same API renders with other validation modes."""
     assert_output(
@@ -100,6 +123,23 @@ def test_client_body_arguments_digests(tmp_path: Path) -> None:
         "body-field-names-invalid",
         "toml-body-fields",
         "toml-body-field-names-unknown",
+        "retry-values",
+        "retry-invalid",
+        "retry-conflicting-controls",
+        "retry-missing-field",
+        "retry-unknown-field",
+        "toml-retry-values",
+        "toml-retry-safety",
+        "toml-retry-type",
+        "toml-retry-unknown",
+        "toml-retry-idempotency-unknown",
+        "toml-retry-idempotency-type",
+        "toml-retry-retention",
+        "toml-retry-retention-infinite",
+        "toml-retry-retention-missing",
+        "toml-retry-header-missing",
+        "toml-retry-replay-missing",
+        "toml-retry-scope-missing",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:

@@ -1,0 +1,116 @@
+# media pydantic_v2.BaseModel
+  file preparation BodyFactoryError cause=True secondary=True closes=1 sends=0
+  factory metadata BodyFactoryError cause=True secondary=['OSError'] closes=1 sends=0
+  unsupported seek = b'ok'
+    wire=[('PUT', b'/', b'streamed')] pending=0
+  unsupported tell = b'ok'
+    wire=[('PUT', b'/', b'streamed')] pending=0
+  past EOF replays empty = b'ok'
+    wire=[('PUT', b'/', b''), ('PUT', b'/', b'')] pending=0
+    offset=2 closes=0
+  partial capture BodyFactoryError secondary=['OSError', 'OSError'] closes=(1, 1)
+  changed length BodyChangedError secondary=['BodyFactoryError'] closes=(1, 1)
+  changed fingerprint ! BodyChangedError: BodyChangedError(call_id='<call>', source_kind='factory', check='fingerprint') [] body_changed_error
+    sends=1 closes=[1, 1]
+  SDK metadata error BodyFactoryError cause=True callbacks=1 closes=1 sends=0
+  partial open BodyFactoryError secondary=['BodyFactoryError'] closes=1 sends=0
+  changed parts = b'ok'
+    closes=(1, 1) sends=1
+  changed parts failed BodyNotReplayableError secondary=['OSError']
+    closes=(1, 1) sends=0
+  native final attempt cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: BodyFactoryError',)
+  native partial attempt cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: BodyFactoryError',)
+  native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
+  native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
+  native metadata cleanup identity=True closes=1 sends=0
+  file replay length changed ! BodyChangedError: BodyChangedError(call_id='<call>', source_kind='file', check='length') [] body_changed_error
+    sends=1 borrowed_open=True
+  file replay seek changed ! BodyFactoryError: BodyFactoryError(call_id='<call>', attempt_index=1, hop_index=0) [cause=OSError('replay seek failed')] body_factory_error
+    sends=1 borrowed_open=True
+  owned stream without close = b'ok'
+    wire=[('PUT', b'/', b'tuple')] pending=0
+  Declared getter failure ! BodyFactoryError: BodyFactoryError(call_id='<call>') [cause=ValueError('factory declaration failed')] body_factory_error
+    callbacks=0 closes=[] sends=0
+  Changed getter failure ! BodyFactoryError: BodyFactoryError(call_id='<call>', attempt_index=0, hop_index=0) [cause=ValueError('factory fingerprint failed')] body_factory_error
+    callbacks=1 closes=[1] sends=0
+  direct file preparation BodyFactoryError identity=False cause=True
+    claim released payload=b'body'
+  direct file preparation _Stopped identity=True cause=False
+    claim released payload=b'body'
+  direct closed file ! BodyNotReplayableError: BodyNotReplayableError(source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  direct owned stream payload=b'one-shot' begins=1 closes=1
+  direct media type getter ! BodyFactoryError: BodyFactoryError(attempt_index=0, hop_index=0) [cause=ValueError('attempt media type failed')] body_factory_error
+    closes=1
+  SDK file rewind BodyFactoryError cause=True failed_calls=1 closes=1 sends=0
+  SDK file capture BodyFactoryError cause=True failed_calls=1 closes=1 sends=0
+  direct SDK file metadata BodyFactoryError cause=True context=(2, 1) failed_calls=1
+  nested owned file failed_close=False repeated=False BodyFactoryError inner=BodyFactoryError closed=True closes=1 secondary=False sends=0
+  nested owned file failed_close=False repeated=True BodyFactoryError inner=BodyNotReplayableError closed=True closes=1 secondary=False sends=0
+  nested owned file failed_close=True repeated=False BodyFactoryError inner=BodyFactoryError closed=True closes=1 secondary=True sends=0
+  nested owned file failed_close=True repeated=True BodyFactoryError inner=BodyNotReplayableError closed=True closes=1 secondary=False sends=0
+  async file preparation BodyFactoryError cause=True secondary=True closes=1 sends=0
+  async factory metadata BodyFactoryError cause=True secondary=['OSError'] closes=1 sends=0
+  async past EOF replays empty = b'ok'
+    wire=[('PUT', b'/', b''), ('PUT', b'/', b'')] pending=0
+    offset=2 closes=0
+  async partial capture BodyFactoryError secondary=['OSError', 'OSError'] closes=(1, 1)
+  async SDK metadata error BodyFactoryError cause=True callbacks=1 closes=1 sends=0
+  direct async metadata BodyFactoryError cause=True secondary=[] closes=1
+  direct async metadata BodyFactoryError cause=True secondary=['OSError'] closes=1
+  async changed parts = b'ok'
+    closes=(1, 1, 1) sends=1
+  async changed parts failed BodyNotReplayableError secondary=['OSError']
+    closes=(1, 1, 1) sends=0
+  async native final attempt cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: BodyFactoryError',)
+  async native partial attempt cleanup identity=False closes=(1, 1, 1) sends=0 notes=()
+  async native final source cleanup identity=True closes=(1, 1, 1) sends=1 notes=('Secondary cleanup failure: OSError',)
+  async native capture source cleanup identity=True closes=(1, 1, 1) sends=0 notes=('Secondary cleanup failure: OSError',)
+  async native metadata cleanup identity=False closes=1 sends=0
+  async file replay length changed ! BodyChangedError: BodyChangedError(call_id='<call>', source_kind='file', check='length') [] body_changed_error
+    sends=1 borrowed_open=True
+  async file replay seek changed ! BodyFactoryError: BodyFactoryError(call_id='<call>', attempt_index=1, hop_index=0) [cause=OSError('replay seek failed')] body_factory_error
+    sends=1 borrowed_open=True
+  async owned stream without close = b'ok'
+    sends=1 payload=b'iterable'
+  direct async file preparation BodyFactoryError identity=False cause=True secondary=True closes=1
+  direct async file preparation _Stopped identity=True cause=False secondary=False closes=1
+  direct stopped worker ! BodyNotReplayableError: BodyNotReplayableError(source_kind='file', condition='consumed') [condition='consumed'] body_not_replayable_error
+  direct async owned stream payload=b'one-shot' begins=1 closes=1
+  async SDK file rewind BodyFactoryError cause=True failed_calls=1 closes=1 sends=0
+  async SDK file capture BodyFactoryError cause=True failed_calls=1 closes=1 sends=0
+  native length cleanup before release closes=1 finished=0 sends=1 failure=CancelledError
+  native length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.005) [] cleanup_error
+    retained_late=None no_cause_cycle=True
+    released closes=1 finished=1 args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: BodyFactoryError',) cause=NoneType secondary=[]
+  native metadata cleanup before release closes=1 finished=0 sends=0 failure=CancelledError
+  native metadata cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.005) [] cleanup_error
+    retained_late=None no_cause_cycle=True
+    released closes=1 finished=1 args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: OSError',) cause=NoneType secondary=[]
+  native multipart cleanup before release closes=1 finished=0 sends=0 failure=CancelledError
+  native multipart cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.005) [] cleanup_error
+    retained_late=None no_cause_cycle=True
+    released closes=1 finished=1 args=('partial cleanup cancellation',) notes=('Secondary cleanup failure: BodyFactoryError',) cause=NoneType secondary=[]
+  deadline length cleanup before release closes=1 finished=0 sends=1 failure=DeadlineExceededError
+  deadline length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
+    retained_late=True no_cause_cycle=True
+    released closes=1 finished=1 args=() notes=() cause=BodyChangedError secondary=['BodyFactoryError']
+  deadline metadata cleanup before release closes=1 finished=0 sends=0 failure=DeadlineExceededError
+  deadline metadata cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
+    retained_late=True no_cause_cycle=True
+    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=['OSError']
+  deadline multipart cleanup before release closes=1 finished=0 sends=0 failure=DeadlineExceededError
+  deadline multipart cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
+    retained_late=True no_cause_cycle=True
+    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=['BodyFactoryError']
+  cancel_token length cleanup before release closes=1 finished=0 sends=1 failure=RequestCancelledError
+  cancel_token length cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
+    retained_late=True no_cause_cycle=True
+    released closes=1 finished=1 args=() notes=() cause=BodyChangedError secondary=['BodyFactoryError']
+  cancel_token metadata cleanup before release closes=1 finished=0 sends=0 failure=RequestCancelledError
+  cancel_token metadata cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
+    retained_late=True no_cause_cycle=True
+    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=['OSError']
+  cancel_token multipart cleanup before release closes=1 finished=0 sends=0 failure=RequestCancelledError
+  cancel_token multipart cleanup drain pending ! CleanupError: CleanupError(pending_calls=1, pending_leases=0, timeout=0.2) [] cleanup_error
+    retained_late=True no_cause_cycle=True
+    released closes=1 finished=1 args=() notes=() cause=BodyFactoryError secondary=['BodyFactoryError']

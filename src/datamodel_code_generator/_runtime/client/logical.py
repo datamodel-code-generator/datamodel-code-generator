@@ -23,6 +23,7 @@ from .errors import (
     set_error_counters,
 )
 from .lifecycle import LEFT_WORK, TaskInterruptionError, cleanup_secondary, task_failure, task_result
+from .options import network_send_limit
 from .timing import absolute_deadline
 from .transports import AttemptIOContext, ResolvedTimeoutOptions, set_io_timing
 
@@ -49,6 +50,8 @@ class _Scope(Protocol):
     def closing(self) -> ClientClosedError | None: ...
 
     def closing_signals(self) -> tuple[asyncio.Future[None], ...]: ...
+
+    def wait(self, timeout: float) -> None: ...
 
     def retain_cleanup(
         self, task: asyncio.Task[object], error: BaseException | None = None, *, owner: CleanupOwner | None = None
@@ -209,6 +212,8 @@ class LogicalCallContext:
         "phase_caps",
         "redirect_count",
         "resource_attempt_count",
+        "retry_blocked",
+        "send_limit",
         "settings",
         "started",
         "streaming",
@@ -233,6 +238,8 @@ class LogicalCallContext:
         self.auth_exchange_count = 0
         self.network_send_count = 0
         self.network_send_budget_used = 0
+        self.send_limit = network_send_limit(settings)
+        self.retry_blocked = False
         self.auth_exchange_budget_used = 0
         self.auth_refresh_ids: tuple[str, ...] = ()
         self.auth_refresh_pending = 0
@@ -339,19 +346,46 @@ class LogicalCallContext:
             return failure
         return self.snapshot_error(error) if isinstance(error, SDKError) else error
 
-    def admit_send(self) -> None:
+    def admit_send(self, *, redirect: bool = False) -> None:
         """Atomically consume one nonrefundable send slot immediately before the adapter invocation."""
         with self._scope.lock:
             self.check("send")
-            limit = self.settings.max_network_sends
+            limit = self.send_limit
             if limit is not None and self.network_send_budget_used >= limit:
                 raise self.snapshot_error(
                     BudgetExceededError(budget_kind="network", limit=limit, used=self.network_send_budget_used)
                 )
             self.network_send_budget_used += 1
-            self.resource_attempt_count += 1
+            if redirect:
+                self.redirect_count += 1
+            else:
+                self.resource_attempt_count += 1
             self.network_send_count += 1
             self.delivery_state = DeliveryState.MAYBE_SENT
+
+    def observe_send(self, trace: AttemptTrace) -> None:
+        """Count resource header evidence once after the adapter invocation, before publishing its outcome."""
+        if self.wire_send_count is not None and trace.headers_started:
+            self.wire_send_count += 1
+
+    def sleep_until(self, not_before: float) -> None:
+        """Wait until a retry target, waking for client close and checking an explicit token when present."""
+        while True:
+            self.check("sleep")
+            remaining = not_before - monotonic()
+            if remaining <= 0:
+                return
+            if (deadline := self.deadline) is not None:
+                remaining = min(remaining, deadline.remaining())
+            if self.settings.cancel_token is not None:
+                remaining = min(remaining, 0.05)
+            self._scope.wait(remaining)
+
+    async def asleep_until(self, not_before: float) -> None:
+        """Wait in the caller's task under the call's guard, keeping its original deadline and cancellation."""
+        import asyncio  # noqa: PLC0415
+
+        await self.bounded(lambda: asyncio.sleep(max(0.0, not_before - monotonic())), phase="sleep")
 
     def timeout(self) -> ResolvedTimeoutOptions:
         """Resolve each native phase and record whether its own cap, stream idle, or the deadline constrained it."""
@@ -386,18 +420,27 @@ class LogicalCallContext:
             cap = self.phase_caps[index]
             if cap.deadline_at is not None:
                 return self._deadline_error(
-                    cap.deadline_at, "stream" if self.streaming else "send", delivery_state, error
+                    cap.deadline_at,
+                    "stream" if self.streaming else "send",
+                    delivery_state,
+                    error.cause if isinstance(error, PhaseTimeoutError) and error.cause is not None else error,
                 )
+            if isinstance(error, PhaseTimeoutError):
+                error.retry_stop_reason = "transport_not_retryable" if self.streaming else None
+                return self.snapshot_error(error)
             if cap.effective is not None and phase != "unknown":
                 return self.snapshot_error(
                     PhaseTimeoutError(
                         effective_timeout=cap.effective,
                         phase=phase,
                         delivery_state=delivery_state,
-                        retry_stop_reason="transport_not_retryable",
+                        retry_stop_reason="transport_not_retryable" if self.streaming else None,
                         cause=error,
                     )
                 )
+        if isinstance(error, PhaseTimeoutError):
+            error.retry_stop_reason = "transport_not_retryable" if self.streaming else None
+            return self.snapshot_error(error)
         return self.snapshot_error(TransportError(delivery_state=delivery_state, phase=phase, cause=error))
 
     def handoff(self) -> None:
@@ -485,6 +528,41 @@ class LogicalCallContext:
             return self.snapshot_error(failure)
         at = monotonic() if self.deadline is None else self.deadline.at
         return self._deadline_error(at, self._phase, delivery, failure)
+
+    def _kept(self, error: BaseException | None) -> BaseException | None:
+        """Return the failure cleanup keeps, the call's stop error in place of the guard's own cancellation."""
+        return (
+            error
+            if error is None or (guard := self._stopper(error)) is None
+            else self._stopped(guard, "unknown", None, None)
+        )
+
+    def _interrupts(self, failure: BaseException) -> bool:
+        """Return whether a cleanup failure interrupts the call ahead of the failure cleanup kept.
+
+        A cancellation the cleanup work raised itself replaces no failure unless the call's task is being cancelled.
+        """
+        import asyncio  # noqa: PLC0415
+
+        return not isinstance(failure, Exception) and (
+            not isinstance(failure, asyncio.CancelledError) or self._pending_native()
+        )
+
+    def _pending_native(self) -> bool:
+        return self._owning() and (guard := self._guard) is not None and guard.external()
+
+    def _cleanup_interruption(self, failure: BaseException) -> BaseException:
+        """Return the call's interruption once cleanup raised one, keeping a recorded or native one that came first.
+
+        Only the task running the call records it for the call.
+        """
+        owning = self._owning()
+        interruption = (
+            self._native(None) if owning and (self._interrupted is not None or self._pending_native()) else failure
+        )
+        self._interrupted = interruption if owning else self._interrupted
+        cleanup_secondary(interruption, failure)
+        return interruption
 
     async def _settle_left(self, failure: BaseException) -> None:
         """Wait within the cleanup cap for the work interrupted callbacks left, retaining what is still running."""
@@ -575,10 +653,15 @@ class LogicalCallContext:
         *,
         error: BaseException | None = None,
         wrap_errors: bool = True,
-    ) -> None:
-        """Release owned work within the cleanup cap, retaining late work and preserving any primary failure."""
+    ) -> bool:
+        """Release owned work within the cleanup cap, retaining late work and preserving any primary failure.
+
+        A primary failure that is the guard's own cancellation becomes the call's stop error first, so late failures
+        stay on the error the caller receives.
+        """
         import asyncio  # noqa: PLC0415
 
+        error = self._kept(error)
         task = asyncio.create_task(_released(operation))
         self._scope.retain_cleanup(task, error, owner=self)
         try:
@@ -600,14 +683,20 @@ class LogicalCallContext:
             failure = self.snapshot_error(CleanupError(pending_calls=1, timeout=self.settings.cleanup_timeout))
             if error is not None:
                 add_secondary(error, failure)
-                return
+                self.retry_blocked = True
+                return False
             task.add_done_callback(partial(_secondary, failure))
             raise failure
         try:
             task_result(task)
         except BaseException as failure:
+            if self._interrupts(failure) and (error is None or isinstance(error, Exception)):
+                raise self._cleanup_interruption(failure) from None
             if error is None:
                 if not wrap_errors or not isinstance(failure, Exception):
                     raise
                 cleanup_error = failure if isinstance(failure, CleanupError) else CleanupError(cause=failure)
                 raise self.snapshot_error(cleanup_error) from None
+            self.retry_blocked = True
+            return False
+        return True

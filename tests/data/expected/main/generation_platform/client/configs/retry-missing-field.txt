@@ -1,0 +1,1 @@
+TypeError: IdempotencyMetadata.__init__() missing 1 required keyword-only argument: 'scope'

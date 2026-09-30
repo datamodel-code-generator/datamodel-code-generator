@@ -182,8 +182,9 @@ class Scope(Generic[HandleT]):
         """Uncount a handle whose response was released."""
         with self.lock:
             for scope in self.scopes:
-                del scope.handles[handle]
-                scope.settle()
+                if handle in scope.handles:
+                    del scope.handles[handle]
+                    scope.settle()
 
     def settle(self) -> None:
         """Wake the closers of a closing scope once none of its calls or handles is left; the lock is held."""
@@ -198,9 +199,17 @@ class Scope(Generic[HandleT]):
             if self.state == "CLOSED":
                 return False
             self.state = "CLOSING"
+            (self.owner or self).condition.notify_all()
             if (signal := self.closing_signal) is not None:
                 signal.get_loop().call_soon_threadsafe(_signal, signal)
             return True
+
+    def wait(self, timeout: float) -> None:
+        """Wait for retry time or a client/view close, sharing the owner's condition instead of polling."""
+        condition = (self.owner or self).condition
+        with condition:
+            if self.closing() is None:
+                condition.wait(min(timeout, threading.TIMEOUT_MAX))
 
     def drain(self, timeout: float) -> tuple[HandleT, ...]:
         """Wait up to the timeout for the calls and handles to finish; return the handles still open."""

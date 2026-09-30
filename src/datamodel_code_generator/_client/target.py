@@ -293,6 +293,15 @@ class _TargetData:
             "path": spec.contract.path,
             "servers": spec.servers,
             "parameters": [(item.plan, self.contract(item.use)) for item in spec.parameters],
+            "retry_safety": spec.retry_safety,
+            "idempotency": None
+            if (idempotency := spec.idempotency) is None
+            else {
+                "header_name": idempotency.header_name,
+                "replay_safe_with_key": idempotency.replay_safe_with_key,
+                "retention_seconds": idempotency.retention_seconds,
+                "scope": idempotency.scope,
+            },
             "body": None
             if body is None
             else [
@@ -312,6 +321,8 @@ class _TargetData:
         response = {
             "success_statuses": spec.success_statuses,
             "request_id_header": spec.request_id_header,
+            "retry_after_ms_header": spec.retry_after_ms_header,
+            "should_retry_header": spec.should_retry_header,
             "responses": [
                 (
                     item.status,

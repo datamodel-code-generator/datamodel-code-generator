@@ -123,6 +123,16 @@ class _UnwindingStream(_AsyncResponse):
         await self.proceed.wait()
 
 
+class _ExpiringResponse(_AsyncResponse):
+    def __init__(self, responses: ModuleType, clock: _Clock) -> None:
+        super().__init__(responses)
+        self.clock = clock
+
+    async def aclose(self) -> None:
+        self.close()
+        self.clock.value = 102.0
+
+
 class _Fault:
     def __init__(self, transports: ModuleType, responses: ModuleType, action: Callable[[], None]) -> None:
         self.capabilities = transports.TransportCapabilities(
@@ -185,6 +195,7 @@ def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -
                         http_client=native,
                         options=options.ClientOptions(
                             timeout=timeout,
+                            retry=options.RetryOptions(max_retries=0),
                             total_timeout=total,
                             deadline=options.Deadline.after(0.5) if label == "absolute" else None,
                         ),
@@ -396,6 +407,28 @@ async def _early_timer(
             )
 
 
+async def _expired_read(
+    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
+    clock = _Clock()
+
+    async def sent() -> None:
+        pass
+
+    adapter = _AsyncFault(transports, responses, sent)
+    adapter.response = _ExpiringResponse(responses, clock)
+    with _clock(package, clock):
+        async with package.AsyncClient(
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=1.0)
+        ) as api:
+            await arecord(
+                lines,
+                "deadline after buffered read",
+                lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/expired")),
+            )
+    record(lines, "deadline after buffered read resources", lambda: (adapter.sent, adapter.response.closed))
+
+
 class _LatePermit:
     def __init__(self, *, failure: bool = False) -> None:
         self.released = 0
@@ -603,6 +636,69 @@ class _GatedChunks:
             raise RuntimeError("late body close failed")
 
 
+class _PartAttempt:
+    content_length = 3
+    content_type = None
+
+    def __init__(self, *, failure: bool) -> None:
+        self.failure = failure
+
+    async def aiter_bytes(self) -> AsyncIterator[bytes]:
+        yield b"abc"
+
+    async def aclose(self) -> None:
+        if self.failure:
+            raise RuntimeError("first part close failed")
+
+
+async def _stopped_binding(
+    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    for reason in ("deadline", "token"):
+        token, opening = options.CancelToken(), asyncio.Event()
+
+        async def first(_context: object) -> _PartAttempt:  # noqa: RUF029
+            return _PartAttempt(failure=True)
+
+        async def second(_context: object) -> _PartAttempt:
+            opening.set()
+            await asyncio.Event().wait()
+            return _PartAttempt(failure=False)
+
+        async def unexpected_send() -> None:
+            raise RuntimeError("send after a stopped binding")
+
+        adapter = _AsyncFault(transports, responses, unexpected_send)
+        api = package.AsyncClient(
+            transport_adapter=adapter,
+            options=options.ClientOptions(
+                total_timeout=0.1 if reason == "deadline" else None,
+                cancel_token=token if reason == "token" else None,
+                retry=options.RetryOptions(max_retries=0),
+                cleanup_timeout=1.0,
+            ),
+        )
+        body = bodies.AsyncMultipartBody((
+            bodies.FilePart("a", bodies.AsyncBodyFactory(first, content_length=3)),
+            bodies.FilePart("b", bodies.AsyncBodyFactory(second, content_length=3)),
+        ))
+        errors: list[BaseException] = []
+        caller = asyncio.create_task(
+            _acaptured(lambda: api.request_raw("POST", "https://race.example/upload", body=body), errors)
+        )
+        await opening.wait()
+        if reason == "token":
+            token.cancel()
+        await arecord(lines, f"{reason} stops multipart binding", lambda: caller)
+        await api.aclose()
+        record(
+            lines,
+            f"{reason} stops multipart binding late failure",
+            lambda: (adapter.sent, tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ()))),
+        )
+
+
 class _Limiter:
     def __init__(self) -> None:
         self.permit = _LatePermit()
@@ -785,12 +881,14 @@ async def _async(
     await _early_timer(package, options, transports, responses, lines)
     await _capped_timeout(package, options, transports, responses, lines)
     await _foreign_cancellation(package, options, transports, responses, lines)
+    await _expired_read(package, options, transports, responses, lines)
     await _nested_waits(package, options, transports, responses, lines)
     await _late_permits(package, options, transports, responses, lines)
     await _retained_responses(package, options, transports, responses, lines)
     await _acompound_cleanup(package, options, transports, responses, lines)
     await _stopped_releases(package, options, transports, responses, lines)
     await _stopped_attempts(package, options, transports, responses, lines)
+    await _stopped_binding(package, options, transports, responses, lines)
     await _startup_cancellation(package, options, transports, responses, lines)
 
 

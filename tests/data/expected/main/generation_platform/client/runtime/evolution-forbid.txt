@@ -25,10 +25,10 @@
   order of a status added since, read raw = {'id': 1, 'status': 'archived'}
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
+  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=NativeValidationError('The native type rejected the value (native.missing) at /code'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
+  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=NativeValidationError('The native type rejected the value (native.missing) at /code'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
 # evolution-forbid msgspec.Struct
   > GET https://evolution.example.com/orders/1?view=brief
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -56,7 +56,7 @@
   order of a status added since, read raw = {'id': 1, 'status': 'archived'}
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
+  problem ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=True, error_data=Problem(code=7), body_bytes=b'{"code":7}', truncated=False] get_order_http_error
   > GET https://evolution.example.com/orders/1
     [host: evolution.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=NativeValidationError('The native type rejected the value (native.validation_error) at /'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error
+  problem that changed its shape ! GetOrderHTTPError: GetOrderHTTPError(status_code=409, operation_id='getOrder', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getOrder', status_code=409, error_decoded=False, error_decode_error=NativeValidationError('The native type rejected the value (native.validation_error) at /'), body_bytes=b'{"message":"gone"}', truncated=False] get_order_http_error

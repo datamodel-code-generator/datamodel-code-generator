@@ -427,6 +427,7 @@ async def _preparation_failure(
                 getattr(error, "cause", None) is failure,
                 type(getattr(error, "cause", None)).__name__,
                 tuple(getattr(failure, "__notes__", ())),
+                tuple((type(item).__name__, item is close_failure) for item in getattr(error, "secondary_errors", ())),
                 file.closed,
                 file.closes,
                 adapter.sends,
@@ -499,7 +500,7 @@ async def _native_close(package: ModuleType, lines: list[str]) -> None:
     body.close()
 
 
-async def _queued(
+async def _queued(  # noqa: PLR0914
     package: ModuleType,
     lines: list[str],
     label: str,
@@ -509,6 +510,7 @@ async def _queued(
     owned: bool = True,
     cancel_close: bool = False,
 ) -> None:
+    """Cancel queued disk work; an existing file snapshots at entry before its per-hop rewind and read."""
     bodies = importlib.import_module(f"{package.__name__}.bodies")
     options = importlib.import_module(f"{package.__name__}.options")
     transports = importlib.import_module(f"{package.__name__}.transports")
@@ -519,7 +521,7 @@ async def _queued(
     api = package.AsyncClient(
         transport_adapter=adapter, options=options.ClientOptions(total_timeout=None, cleanup_timeout=0.01)
     )
-    blocked_index = 2 if reading else 1
+    blocked_index = (2 if path_body else 3) if reading else 1
     submitted: list[tuple[Future[object], asyncio.Task[object]]] = []
     signals = [asyncio.Event() for _ in range(4)]
     blockers: list[Future[None]] = []
@@ -895,6 +897,93 @@ async def _multipart_close(package: ModuleType, lines: list[str]) -> None:
                 shared.close()
 
 
+async def _direct_cancellation(package: ModuleType, lines: list[str]) -> None:
+    """Cancel a direct attempt while its file is measured; its claim and owned close settle once the disk work ends."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    context = bodies.BodyAttemptContext(call_id="direct", attempt_index=0, hop_index=0, remaining_timeout=None)
+    gate = _DiskGate()
+    file = _BlockedFile(gate)
+    body = bodies.AsyncFileBody(file, ownership="owned")
+    attempt = asyncio.create_task(body(context))
+
+    async def settled() -> object:
+        while True:
+            try:
+                return await body(context)
+            except errors.BodyNotReplayableError as error:
+                if error.condition != "concurrent":
+                    raise
+            await asyncio.sleep(0)
+
+    try:
+        await asyncio.wait_for(gate.started.wait(), 5)
+        attempt.cancel("direct attempt cancelled")
+        try:
+            await attempt
+        except asyncio.CancelledError as error:
+            record(lines, "direct attempt cancellation", lambda: (type(error).__name__, error.args, file.closes))
+        gate.proceed.set()
+        await arecord(lines, "direct attempt after release", lambda: asyncio.wait_for(settled(), 5))
+        record(lines, "direct attempt released", lambda: (file.closed, file.closes, len(set(file.threads)) == 1))
+    finally:
+        gate.proceed.set()
+        body.close()
+
+
+async def _direct_close_cancellation(package: ModuleType, lines: list[str]) -> None:
+    """Cancel a direct attempt's close while it waits for another attempt's slow open; the close still happens."""
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    context = bodies.BodyAttemptContext(call_id="direct", attempt_index=0, hop_index=0, remaining_timeout=None)
+    gate = _DiskGate()
+    opened: list[_OpenedFile] = []
+    outcomes: dict[str, str] = {}
+
+    async def outcome(name: str, call: Awaitable[object]) -> None:
+        try:
+            await call
+        except BaseException as error:  # noqa: BLE001
+            outcomes[name] = type(error).__name__
+
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "shared.bin"
+        path.write_bytes(b"upload")
+        body = bodies.AsyncFileBody.from_path(path)
+
+        def open_file(_path: Path, _mode: str) -> _OpenedFile:
+            file = _OpenedFile(path, failure=None, close_failure=None)
+            opened.append(file)
+            if len(opened) == 2:
+                gate.wait()
+            return file
+
+        with patch.object(Path, "open", open_file):
+            try:
+                attempt = await body(context)
+                slow = asyncio.create_task(outcome("slow open", body(context)))
+                await asyncio.wait_for(gate.started.wait(), 5)
+                slow.cancel("slow open cancelled")
+                closer = asyncio.create_task(outcome("close", attempt.aclose()))
+                await asyncio.sleep(0)
+                closer.cancel("close cancelled")
+                await asyncio.wait_for(asyncio.gather(slow, closer), 5)
+                gate.proceed.set()
+                while not all(file.closed for file in opened):  # noqa: ASYNC110
+                    await asyncio.sleep(0)
+                record(
+                    lines,
+                    "direct close cancelled while another open settles",
+                    lambda: (
+                        outcomes["close"],
+                        outcomes["slow open"],
+                        tuple((file.closed, file.closes) for file in opened),
+                    ),
+                )
+            finally:
+                gate.proceed.set()
+                body.close()
+
+
 async def _files(package: ModuleType, lines: list[str]) -> None:
     await _successful_owned(package, lines)
     await _preparation(package, lines, "owned preparation")
@@ -969,6 +1058,8 @@ async def _files(package: ModuleType, lines: list[str]) -> None:
         "shared path late failures",
         (FileNotFoundError("first open failed late"), PermissionError("second open failed late")),
     )
+    await _direct_cancellation(package, lines)
+    await _direct_close_cancellation(package, lines)
     await _native_close(package, lines)
 
 

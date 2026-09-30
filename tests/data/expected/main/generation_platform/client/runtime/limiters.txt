@@ -59,7 +59,7 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
+  status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -71,8 +71,12 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   body read failure ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+    entered=3 granted=3 released=3 release_calls=3 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   body read and release failure: TransportError secondary ['LimiterExecutionError']
@@ -102,9 +106,9 @@
   hook call_start: HookExecutionError secondary []
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[(0, 0, 0)]
   hook limiter_wait: HookExecutionError secondary []
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 call_end:0 ends=[(0, 0, 0)]
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
   hook limiter_acquired: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 call_end:0 ends=[(0, 0, 0)]
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
   hook attempt_start: HookExecutionError secondary []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
   > GET https://api.example.com/v1/pets/3
@@ -201,7 +205,7 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
+  async status failure ! GetPetHTTPError: GetPetHTTPError(status_code=404, operation_id='getPet', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getPet', status_code=404, error_decoded=True, body_bytes=b'', truncated=False] get_pet_http_error
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -213,8 +217,12 @@
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async body read failure ! TransportError: TransportError(operation_id='getPet', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getPet', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1
+    entered=3 granted=3 released=3 release_calls=3 active=0 peak=1
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async body read and release failure: TransportError secondary ['LimiterExecutionError']
@@ -242,9 +250,9 @@
   async hook call_start: HookExecutionError secondary []
     entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 call_end:0 ends=[(0, 0, 0)]
   async hook limiter_wait: HookExecutionError secondary []
-    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 call_end:0 ends=[(0, 0, 0)]
+    entered=0 granted=0 released=0 release_calls=0 active=0 peak=0 events=call_start:0 limiter_wait:0 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
   async hook limiter_acquired: HookExecutionError secondary []
-    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 call_end:0 ends=[(0, 0, 0)]
+    entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
   async hook attempt_start: HookExecutionError secondary []
     entered=1 granted=1 released=1 release_calls=1 active=0 peak=1 events=call_start:0 limiter_wait:0 limiter_acquired:1 attempt_start:1 attempt_end:0 call_end:0 ends=[(0, 0, 0)]
   > GET https://api.example.com/v1/pets/3

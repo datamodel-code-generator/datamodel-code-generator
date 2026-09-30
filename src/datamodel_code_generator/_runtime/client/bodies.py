@@ -1,8 +1,8 @@
 """Request bodies of a generated client: the inputs a call sends, and the attempt a transport reads for each send.
 
 Bytes are sent as they are. Every other input builds the attempt of each send itself, as a body factory does: a file
-is read from its position when the attempt begins, or opened from its path and checked against the file first found
-there; a stream is read once; a factory builds a new attempt. Attempts are read in chunks of at most 64 KiB.
+is read from its position at call entry, or opened from its path and checked against the file first found there;
+a stream is read once; a factory builds a new attempt. Attempts are read in chunks of at most 64 KiB.
 """
 
 from __future__ import annotations
@@ -10,11 +10,12 @@ from __future__ import annotations
 import asyncio
 import os
 import threading
+from io import UnsupportedOperation
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
-from .errors import BodyChangedError, BodyFactoryError, BodyNotReplayableError, add_secondary
+from .errors import BodyChangedError, BodyFactoryError, BodyNotReplayableError, SDKError, add_secondary
 from .lifecycle import LEFT_WORK, TaskInterruptionError, task_failure
 
 if TYPE_CHECKING:
@@ -119,6 +120,14 @@ class AsyncBodyAttemptFactory(Protocol):
 
     async def __call__(self, context: BodyAttemptContext, /) -> AsyncBodyAttempt:
         """Return a new attempt, which the client closes once it is sent or fails."""
+        ...
+
+
+class AsyncBodyCleanup(Protocol):
+    """Retain abnormal body cleanup under the logical call's existing cleanup budget."""
+
+    async def __call__(self, operation: Callable[[], Awaitable[None]], *, error: BaseException | None = None) -> bool:
+        """Join cleanup or retain it for the owning client's later drain."""
         ...
 
 
@@ -227,19 +236,59 @@ def _file_chunks(file: BinaryIO) -> Iterator[bytes]:
         yield chunk
 
 
-def _remaining(file: BinaryIO) -> int | None:
+def _remaining(file: BinaryIO, context: BodyAttemptContext | None = None) -> int | None:
     """Return the bytes from an open file's position to its end, leaving it there; None if it cannot seek.
 
     A closed file, such as an owned one after its call, cannot be sent again.
     """
-    if file.closed:
-        raise BodyNotReplayableError(source_kind="file", condition="consumed")
-    if not file.seekable():
-        return None
-    offset = file.tell()
-    end = file.seek(0, os.SEEK_END)
+    return _snapshot(file, context)[1]
+
+
+def _snapshot(file: BinaryIO, context: BodyAttemptContext | None = None) -> tuple[int | None, int | None]:
+    try:
+        if not file.closed:
+            return _positioned(file)
+    except OSError:
+        raise
+    except Exception as error:  # noqa: BLE001
+        failure = BodyFactoryError(cause=error) if context is None else _failed(context, error)
+        raise failure from None
+    raise BodyNotReplayableError(source_kind="file", condition="consumed")
+
+
+def _positioned(file: BinaryIO) -> tuple[int | None, int | None]:
+    try:
+        offset = file.tell() if file.seekable() else None
+    except (AttributeError, UnsupportedOperation):
+        offset = None
+    if offset is None:
+        return None, None
+    try:
+        end = file.seek(0, os.SEEK_END)
+    except (AttributeError, UnsupportedOperation):
+        return None, None
     file.seek(offset)
-    return end - offset
+    return offset, max(0, end - offset)
+
+
+def _rewound(file: BinaryIO, offset: int | None, length: int | None, context: BodyAttemptContext) -> None:
+    try:
+        if offset is not None:
+            file.seek(offset)
+    except OSError:
+        raise
+    except Exception as error:  # noqa: BLE001
+        raise _failed(context, error) from None
+    if _remaining(file, context) != length:
+        raise BodyChangedError(source_kind="file", check="length")
+
+
+def _kept() -> None:
+    """Leave a call-owned input alive after its individual attempt closes."""
+
+
+async def _akept() -> None:
+    """Leave an async call-owned input alive after its individual attempt closes."""
 
 
 def _unchanged(file: BinaryIO, identity: _Identity) -> None:
@@ -256,7 +305,7 @@ def _opened(path: Path, identity: _Identity) -> BinaryIO:
         try:
             file.close()
         except BaseException as failure:  # noqa: BLE001
-            add_secondary(error, failure)
+            body_secondary(error, failure)
         raise
     return file
 
@@ -295,15 +344,21 @@ class _Claim:
 class _FileAttempt:
     """One attempt's read of a file, which releases the file once closed."""
 
-    __slots__ = ("_context", "_file", "_length", "_release")
+    __slots__ = ("_consume", "_context", "_file", "_length", "_release")
 
     def __init__(
-        self, file: BinaryIO, context: BodyAttemptContext, length: int | None, release: Callable[[], None]
+        self,
+        file: BinaryIO,
+        context: BodyAttemptContext,
+        length: int | None,
+        release: Callable[[], None],
+        consume: Callable[[], None] | None = None,
     ) -> None:
         self._file = file
         self._context = context
         self._length = length
         self._release: Callable[[], None] | None = release
+        self._consume = consume
 
     @property
     def content_length(self) -> int | None:
@@ -316,7 +371,12 @@ class _FileAttempt:
 
     def iter_bytes(self) -> Iterator[bytes]:
         """Yield the file from its position to its end."""
-        return _read(lambda: _file_chunks(self._file), _Counter(self._context, "file", self._length))
+        return _read(self._chunks, _Counter(self._context, "file", self._length))
+
+    def _chunks(self) -> Iterator[bytes]:
+        if self._consume is not None:
+            self._consume()
+        return _file_chunks(self._file)
 
     def close(self) -> None:
         """Release the file once."""
@@ -339,13 +399,14 @@ class _OpenFile:
         """Begin reading the file, refusing one another call reads, one that is closed, or one read once."""
         self.claim.take("file")
         try:
-            length = _remaining(self.file)
-        except OSError as error:
-            self.claim.lock.release()
-            raise _failed(context, error) from None
-        except BaseException:
-            self.claim.lock.release()
-            raise
+            length = _remaining(self.file, context)
+        except BaseException as error:  # noqa: BLE001
+            failure = _failed(context, error) if isinstance(error, OSError) else error
+            try:
+                self.release()
+            except BaseException as secondary:  # noqa: BLE001
+                body_secondary(failure, secondary)
+            raise failure from None
         self.claim.used = length is None
         return _FileAttempt(self.file, context, length, self.release)
 
@@ -353,6 +414,7 @@ class _OpenFile:
         """End a call's read: close an owned file, then let the next call read."""
         try:
             if self.ownership == "owned":
+                self.claim.used = True
                 self.file.close()
         finally:
             self.claim.lock.release()
@@ -379,7 +441,7 @@ class _PathFile:
 class FileBody:
     """A file sent as a whole body: an open binary file, or a path opened for each attempt.
 
-    An open file is read from its position when the attempt begins, by one call at a time; one that cannot seek is
+    An open file is read from its position at call entry, by one call at a time; one that cannot seek is
     read once. A borrowed file is never closed and is left where reading stopped; an owned one is closed after its
     call. A path must still name the file first found there: the same device, inode, size, and modification time.
     """
@@ -399,6 +461,9 @@ class FileBody:
         """Begin one attempt's read of the file."""
         return self._source.attempt(context)
 
+    def _bind(self) -> _FileCall | _PathCall:
+        return _FileCall(self._source) if isinstance(self._source, _OpenFile) else _PathCall(self._source)
+
 
 class _PathFileBody(FileBody):
     __slots__ = ()
@@ -410,12 +475,20 @@ class _PathFileBody(FileBody):
 class _StreamAttempt:
     """The only attempt of a stream, which closes an owned iterator once closed."""
 
-    __slots__ = ("_chunks", "_context", "_owned")
+    __slots__ = ("_chunks", "_consume", "_context", "_owned")
 
-    def __init__(self, chunks: Iterable[bytes], context: BodyAttemptContext, *, owned: bool) -> None:
+    def __init__(
+        self,
+        chunks: Iterable[bytes],
+        context: BodyAttemptContext,
+        *,
+        owned: bool,
+        consume: Callable[[], None] | None = None,
+    ) -> None:
         self._chunks = chunks
         self._context = context
         self._owned = owned
+        self._consume = consume
 
     @property
     def content_length(self) -> None:
@@ -427,7 +500,12 @@ class _StreamAttempt:
 
     def iter_bytes(self) -> Iterator[bytes]:
         """Yield the stream's chunks."""
-        return _read(lambda: self._chunks, _Counter(self._context, "factory", None))
+        return _read(self._begin, _Counter(self._context, "factory", None))
+
+    def _begin(self) -> Iterable[bytes]:
+        if self._consume is not None:
+            self._consume()
+        return self._chunks
 
     def close(self) -> None:
         """Close an owned iterator once."""
@@ -444,7 +522,7 @@ class StreamBody:
     def __init__(self, chunks: Iterable[bytes], *, ownership: Ownership = "borrowed") -> None:
         """Send the chunks once, borrowed unless their ownership moves to the client."""
         self._chunks = chunks
-        self._ownership = ownership
+        self._ownership: Ownership = ownership
         self._claim = _Claim()
 
     def __call__(self, context: BodyAttemptContext, /) -> BodyAttempt:
@@ -454,16 +532,20 @@ class StreamBody:
         self._claim.lock.release()
         return _StreamAttempt(self._chunks, context, owned=self._ownership == "owned")
 
+    def _bind(self) -> _StreamCall:
+        return _StreamCall(self._chunks, self._claim, self._ownership)
+
 
 class _FactoryAttempt:
     """A factory's attempt, read within the length it or its factory declared."""
 
-    __slots__ = ("_attempt", "_context", "_length")
+    __slots__ = ("_attempt", "_closed", "_context", "_length")
 
     def __init__(self, attempt: BodyAttempt, context: BodyAttemptContext, length: int | None) -> None:
         self._attempt = attempt
         self._context = context
         self._length = length
+        self._closed = False
 
     @property
     def content_length(self) -> int | None:
@@ -473,7 +555,7 @@ class _FactoryAttempt:
     @property
     def content_type(self) -> str | None:
         """Return the media type the attempt names."""
-        return self._attempt.content_type
+        return _attempt_type(self._attempt, self._context)
 
     def iter_bytes(self) -> Iterator[bytes]:
         """Yield the attempt's chunks."""
@@ -481,10 +563,18 @@ class _FactoryAttempt:
 
     def close(self) -> None:
         """Close the attempt, turning its failure into BodyFactoryError."""
+        if self._closed:
+            return
+        self._closed = True
         try:
             self._attempt.close()
         except Exception as error:  # noqa: BLE001
             raise _failed(self._context, error) from None
+
+    def check_length(self, length: int | None) -> int | None:
+        """Retain a length already observed by this call for subsequent chunk checks."""
+        self._length = _declared(length, self._length)
+        return self._length
 
 
 class BodyFactory:
@@ -524,22 +614,31 @@ class BodyFactory:
 
     def __call__(self, context: BodyAttemptContext, /) -> BodyAttempt:
         """Build one attempt, refusing the attempt the factory returned last time or one of another length."""
+        return self._open(context)
+
+    def _open(self, context: BodyAttemptContext, history: dict[int, BodyAttempt] | None = None) -> _FactoryAttempt:
         try:
             attempt = self._factory(context)
         except Exception as error:  # noqa: BLE001
             raise _failed(context, error) from None
-        if attempt is self._last:
+        previous, self._last = self._last, attempt
+        if attempt is previous or (history is not None and history.get(id(attempt)) is attempt):
             raise BodyNotReplayableError(source_kind="factory", condition="same_attempt")
-        self._last = attempt
+        if history is not None:
+            history[id(attempt)] = attempt
         try:
-            length = _declared(self._content_length, attempt.content_length)
-        except BodyChangedError as error:
+            length = _declared(self._content_length, _attempt_length(attempt, context))
+        except BaseException as error:  # noqa: BLE001
+            failure = _factory_failure(context, error)
             try:
                 attempt.close()
-            except Exception as failure:  # noqa: BLE001
-                add_secondary(error, failure)
-            raise
+            except BaseException as secondary:  # noqa: BLE001
+                body_secondary(failure, secondary)
+            raise failure from None
         return _FactoryAttempt(attempt, context, length)
+
+    def _bind(self, history: dict[int, BodyAttempt]) -> _FactoryCall:
+        return _FactoryCall(self, self._open, history)
 
 
 async def _carried(work: Awaitable[None]) -> None:
@@ -718,21 +817,24 @@ class _Worker:
 class _AsyncFileAttempt:
     """One async attempt's read of a file on its body's worker, which releases the file once closed."""
 
-    __slots__ = ("_context", "_file", "_length", "_release", "_worker")
+    __slots__ = ("_consume", "_context", "_file", "_length", "_release", "_worker")
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         file: BinaryIO,
         context: BodyAttemptContext,
         length: int | None,
         worker: _Worker,
         release: Callable[[], Awaitable[None]],
+        *,
+        consume: Callable[[], None] | None = None,
     ) -> None:
         self._file = file
         self._context = context
         self._length = length
         self._worker = worker
         self._release: Callable[[], Awaitable[None]] | None = release
+        self._consume = consume
 
     @property
     def content_length(self) -> int | None:
@@ -748,6 +850,8 @@ class _AsyncFileAttempt:
         return _aread(self._chunks, _Counter(self._context, "file", self._length))
 
     async def _chunks(self) -> AsyncIterator[bytes]:
+        if self._consume is not None:
+            self._consume()
         while chunk := await self._worker.run(self._file.read, CHUNK):
             yield chunk
 
@@ -778,18 +882,17 @@ class _AsyncOpenFile:
             self.claim.lock.release()
             raise
         try:
-            length = await self.worker.run(_remaining, self.file)
+            length = await self.worker.run(_remaining, self.file, context)
         except BaseException as error:
             if isinstance(error, asyncio.CancelledError):
                 self.worker.defer(_carried(self.release()), release=True)
                 raise
+            failure = _failed(context, error) if isinstance(error, OSError) else error
             try:
                 await self.release()
-            except BaseException as failure:  # noqa: BLE001
-                add_secondary(error, failure)
-            if isinstance(error, OSError):
-                raise _failed(context, error) from None
-            raise
+            except BaseException as secondary:  # noqa: BLE001
+                body_secondary(failure, secondary)
+            raise failure from None
         self.claim.used = length is None
         return _AsyncFileAttempt(self.file, context, length, self.worker, self.release)
 
@@ -870,6 +973,13 @@ class AsyncFileBody:
         """Begin one attempt's read of the file."""
         return await self._source.attempt(context)
 
+    async def _bind(self) -> _AsyncFileCall | _AsyncPathCall:
+        if isinstance(self._source, _AsyncPathFile):
+            return _AsyncPathCall(self._source)
+        binding = _AsyncFileCall(self._source)
+        await binding.capture()
+        return binding
+
     def close(self) -> None:
         """Stop the worker once its current read ends; the body cannot be sent after that."""
         self._worker.close()
@@ -890,12 +1000,20 @@ class _AsyncPathFileBody(AsyncFileBody):
 class _AsyncStreamAttempt:
     """The only attempt of an async stream, which closes an owned iterator once closed."""
 
-    __slots__ = ("_chunks", "_context", "_owned")
+    __slots__ = ("_chunks", "_consume", "_context", "_owned")
 
-    def __init__(self, chunks: AsyncIterable[bytes], context: BodyAttemptContext, *, owned: bool) -> None:
+    def __init__(
+        self,
+        chunks: AsyncIterable[bytes],
+        context: BodyAttemptContext,
+        *,
+        owned: bool,
+        consume: Callable[[], None] | None = None,
+    ) -> None:
         self._chunks = chunks
         self._context = context
         self._owned = owned
+        self._consume = consume
 
     @property
     def content_length(self) -> None:
@@ -907,7 +1025,12 @@ class _AsyncStreamAttempt:
 
     def aiter_bytes(self) -> AsyncIterator[bytes]:
         """Yield the stream's chunks."""
-        return _aread(lambda: self._chunks, _Counter(self._context, "factory", None))
+        return _aread(self._begin, _Counter(self._context, "factory", None))
+
+    def _begin(self) -> AsyncIterable[bytes]:
+        if self._consume is not None:
+            self._consume()
+        return self._chunks
 
     async def aclose(self) -> None:
         """Close an owned iterator once."""
@@ -924,7 +1047,7 @@ class AsyncStreamBody:
     def __init__(self, chunks: AsyncIterable[bytes], *, ownership: Ownership = "borrowed") -> None:
         """Send the chunks once, borrowed unless their ownership moves to the client."""
         self._chunks = chunks
-        self._ownership = ownership
+        self._ownership: Ownership = ownership
         self._claim = _Claim()
 
     async def __call__(self, context: BodyAttemptContext, /) -> AsyncBodyAttempt:
@@ -934,16 +1057,20 @@ class AsyncStreamBody:
         self._claim.lock.release()
         return _AsyncStreamAttempt(self._chunks, context, owned=self._ownership == "owned")
 
+    def _bind(self) -> _AsyncStreamCall:
+        return _AsyncStreamCall(self._chunks, self._claim, self._ownership)
+
 
 class _AsyncFactoryAttempt:
     """An async factory's attempt, read within the length it or its factory declared."""
 
-    __slots__ = ("_attempt", "_context", "_length")
+    __slots__ = ("_attempt", "_closed", "_context", "_length")
 
     def __init__(self, attempt: AsyncBodyAttempt, context: BodyAttemptContext, length: int | None) -> None:
         self._attempt = attempt
         self._context = context
         self._length = length
+        self._closed = False
 
     @property
     def content_length(self) -> int | None:
@@ -953,7 +1080,7 @@ class _AsyncFactoryAttempt:
     @property
     def content_type(self) -> str | None:
         """Return the media type the attempt names."""
-        return self._attempt.content_type
+        return _attempt_type(self._attempt, self._context)
 
     def aiter_bytes(self) -> AsyncIterator[bytes]:
         """Yield the attempt's chunks."""
@@ -961,10 +1088,18 @@ class _AsyncFactoryAttempt:
 
     async def aclose(self) -> None:
         """Close the attempt, turning its failure into BodyFactoryError."""
+        if self._closed:
+            return
+        self._closed = True
         try:
             await self._attempt.aclose()
         except Exception as error:  # noqa: BLE001
             raise _failed(self._context, error) from None
+
+    def check_length(self, length: int | None) -> int | None:
+        """Retain the call's previously observed length for later reads."""
+        self._length = _declared(length, self._length)
+        return self._length
 
 
 class AsyncBodyFactory:
@@ -1004,22 +1139,365 @@ class AsyncBodyFactory:
 
     async def __call__(self, context: BodyAttemptContext, /) -> AsyncBodyAttempt:
         """Build one attempt, refusing the attempt the factory returned last time or one of another length."""
+        return await self._open(context)
+
+    async def _open(
+        self,
+        context: BodyAttemptContext,
+        history: dict[int, AsyncBodyAttempt] | None = None,
+        cleanup: AsyncBodyCleanup | None = None,
+    ) -> _AsyncFactoryAttempt:
         try:
             attempt = await self._factory(context)
         except Exception as error:  # noqa: BLE001
             raise _failed(context, error) from None
-        if attempt is self._last:
+        previous, self._last = self._last, attempt
+        if attempt is previous or (history is not None and history.get(id(attempt)) is attempt):
             raise BodyNotReplayableError(source_kind="factory", condition="same_attempt")
-        self._last = attempt
+        if history is not None:
+            history[id(attempt)] = attempt
         try:
-            length = _declared(self._content_length, attempt.content_length)
-        except BodyChangedError as error:
-            try:
-                await attempt.aclose()
-            except Exception as failure:  # noqa: BLE001
-                add_secondary(error, failure)
-            raise
+            length = _declared(self._content_length, _attempt_length(attempt, context))
+        except BaseException as error:  # noqa: BLE001
+            failure = _factory_failure(context, error)
+            if cleanup is None:
+                try:
+                    await attempt.aclose()
+                except BaseException as secondary:  # noqa: BLE001
+                    body_secondary(failure, secondary)
+            else:
+                await cleanup(attempt.aclose, error=failure)
+            raise failure from None
         return _AsyncFactoryAttempt(attempt, context, length)
+
+    def _bind(self, history: dict[int, AsyncBodyAttempt], cleanup: AsyncBodyCleanup) -> _AsyncFactoryCall:
+        return _AsyncFactoryCall(self, self._open, history, cleanup)
+
+
+class _FileCall:
+    """An open file claimed from entry through final cleanup, with one retained offset and length."""
+
+    __slots__ = ("_length", "_offset", "_source")
+
+    def __init__(self, source: _OpenFile) -> None:
+        source.claim.take("file")
+        self._source = source
+        try:
+            self._offset, self._length = _snapshot(source.file)
+        except BaseException as error:  # noqa: BLE001
+            failure = BodyFactoryError(cause=error) if isinstance(error, OSError) else error
+            try:
+                self.close()
+            except BaseException as secondary:  # noqa: BLE001
+                body_secondary(failure, secondary)
+            raise failure from None
+
+    @property
+    def replayable(self) -> bool:
+        return self._offset is not None or not self._source.claim.used
+
+    def open(self, context: BodyAttemptContext) -> BodyAttempt:
+        try:
+            _rewound(self._source.file, self._offset, self._length, context)
+        except OSError as error:
+            raise _failed(context, error) from None
+        return _FileAttempt(self._source.file, context, self._length, _kept, self._consumed)
+
+    def _consumed(self) -> None:
+        if self._offset is None:
+            self._source.claim.used = True
+
+    def close(self) -> None:
+        self._source.release()
+
+
+class _AsyncFileCall:
+    """One async call's file claim, retained through disk settlement and owned final close."""
+
+    __slots__ = ("_length", "_offset", "_source")
+
+    def __init__(self, source: _AsyncOpenFile) -> None:
+        source.claim.take("file")
+        try:
+            source.worker.acquire()
+        except BaseException:
+            source.claim.lock.release()
+            raise
+        self._source = source
+        self._offset: int | None = None
+        self._length: int | None = None
+
+    async def capture(self) -> None:
+        try:
+            self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
+        except BaseException as error:
+            if isinstance(error, asyncio.CancelledError):
+                self._source.worker.defer(_carried(self.aclose()), release=True)
+                raise
+            failure = BodyFactoryError(cause=error) if isinstance(error, OSError) else error
+            try:
+                await self.aclose()
+            except BaseException as secondary:  # noqa: BLE001
+                body_secondary(failure, secondary)
+            raise failure from None
+
+    @property
+    def replayable(self) -> bool:
+        return self._offset is not None or not self._source.claim.used
+
+    async def aopen(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
+        source = self._source
+        try:
+            await source.worker.run(_rewound, source.file, self._offset, self._length, context)
+        except OSError as error:
+            raise _failed(context, error) from None
+        return _AsyncFileAttempt(source.file, context, self._length, source.worker, _akept, consume=self._consumed)
+
+    def _consumed(self) -> None:
+        if self._offset is None:
+            self._source.claim.used = True
+
+    async def aclose(self) -> None:
+        await self._source.release()
+
+
+class _PathCall:
+    """Reopen a path against its original identity at each hop."""
+
+    __slots__ = ("_source",)
+
+    def __init__(self, source: _PathFile) -> None:
+        self._source = source
+
+    @property
+    def replayable(self) -> bool:
+        return True
+
+    def open(self, context: BodyAttemptContext) -> BodyAttempt:
+        return self._source.attempt(context)
+
+    def close(self) -> None:
+        """Leave no open handle between attempts."""
+
+
+class _AsyncPathCall:
+    """Reopen a path on its worker, with per-attempt owned descriptor cleanup."""
+
+    __slots__ = ("_source",)
+
+    def __init__(self, source: _AsyncPathFile) -> None:
+        self._source = source
+
+    @property
+    def replayable(self) -> bool:
+        return not self._source.worker.closed
+
+    async def aopen(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
+        return await self._source.attempt(context)
+
+    async def aclose(self) -> None:
+        """Leave the caller's explicitly created worker alive."""
+
+
+class _StreamCall:
+    """Hold a stream's call claim and mark consumption only when iteration begins."""
+
+    __slots__ = ("_chunks", "_claim", "_ownership")
+
+    def __init__(self, chunks: Iterable[bytes], claim: _Claim, ownership: Ownership) -> None:
+        claim.take("stream")
+        self._chunks, self._claim, self._ownership = chunks, claim, ownership
+
+    @property
+    def replayable(self) -> bool:
+        return not self._claim.used
+
+    def open(self, context: BodyAttemptContext) -> BodyAttempt:
+        return _StreamAttempt(self._chunks, context, owned=False, consume=self._consumed)
+
+    def _consumed(self) -> None:
+        self._claim.used = True
+
+    def close(self) -> None:
+        try:
+            if self._ownership == "owned":
+                self._claim.used = True
+                if (close := getattr(self._chunks, "close", None)) is not None:
+                    close()
+        finally:
+            self._claim.lock.release()
+
+
+class _AsyncStreamCall:
+    """Hold an async stream's claim through its final owned cleanup."""
+
+    __slots__ = ("_chunks", "_claim", "_ownership")
+
+    def __init__(self, chunks: AsyncIterable[bytes], claim: _Claim, ownership: Ownership) -> None:
+        claim.take("stream")
+        self._chunks, self._claim, self._ownership = chunks, claim, ownership
+
+    @property
+    def replayable(self) -> bool:
+        return not self._claim.used
+
+    async def aopen(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
+        return _AsyncStreamAttempt(self._chunks, context, owned=False, consume=self._consumed)
+
+    def _consumed(self) -> None:
+        self._claim.used = True
+
+    async def aclose(self) -> None:
+        try:
+            if self._ownership == "owned":
+                self._claim.used = True
+                if (close := getattr(self._chunks, "aclose", None)) is not None:
+                    await close()
+        finally:
+            self._claim.lock.release()
+
+
+class _FactoryCall:
+    """A factory's immutable declarations and the shared identity history of its logical call."""
+
+    __slots__ = ("_body", "_fingerprint", "_history", "_length", "_open")
+
+    def __init__(
+        self,
+        body: BodyFactory,
+        open_attempt: Callable[[BodyAttemptContext, dict[int, BodyAttempt]], _FactoryAttempt],
+        history: dict[int, BodyAttempt],
+    ) -> None:
+        self._body = body
+        self._history = history
+        self._length, self._fingerprint = _declarations(body)
+        self._open = open_attempt
+
+    @property
+    def replayable(self) -> bool:
+        return True
+
+    def open(self, context: BodyAttemptContext) -> BodyAttempt:
+        attempt = self._open(context, self._history)
+        try:
+            _fingerprint(_current_fingerprint(self._body, context), self._fingerprint)
+            self._length = attempt.check_length(self._length)
+        except BaseException as error:  # noqa: BLE001
+            failure = _factory_failure(context, error)
+            try:
+                attempt.close()
+            except BaseException as secondary:  # noqa: BLE001
+                body_secondary(failure, secondary)
+            raise failure from None
+        return attempt
+
+    def close(self) -> None:
+        """Leave history clearing to the whole call's owner."""
+
+
+class _AsyncFactoryCall:
+    """An async factory's declarations and the call-owned raw-attempt identity history."""
+
+    __slots__ = ("_body", "_cleanup", "_fingerprint", "_history", "_length", "_open")
+
+    def __init__(
+        self,
+        body: AsyncBodyFactory,
+        open_attempt: Callable[
+            [BodyAttemptContext, dict[int, AsyncBodyAttempt], AsyncBodyCleanup], Awaitable[_AsyncFactoryAttempt]
+        ],
+        history: dict[int, AsyncBodyAttempt],
+        cleanup: AsyncBodyCleanup,
+    ) -> None:
+        self._body = body
+        self._history = history
+        self._length, self._fingerprint = _declarations(body)
+        self._open = open_attempt
+        self._cleanup = cleanup
+
+    @property
+    def replayable(self) -> bool:
+        return True
+
+    async def aopen(self, context: BodyAttemptContext) -> AsyncBodyAttempt:
+        attempt = await self._open(context, self._history, self._cleanup)
+        try:
+            _fingerprint(_current_fingerprint(self._body, context), self._fingerprint)
+            self._length = attempt.check_length(self._length)
+        except BaseException as error:  # noqa: BLE001
+            failure = _factory_failure(context, error)
+            await self._cleanup(attempt.aclose, error=failure)
+            raise failure from None
+        return attempt
+
+    async def aclose(self) -> None:
+        """Leave history clearing to the whole call's owner."""
+
+
+def _attempt_length(attempt: BodyAttempt | AsyncBodyAttempt, context: BodyAttemptContext) -> int | None:
+    try:
+        return attempt.content_length
+    except Exception as error:  # noqa: BLE001
+        raise _failed(context, error) from None
+
+
+def _attempt_type(attempt: BodyAttempt | AsyncBodyAttempt, context: BodyAttemptContext) -> str | None:
+    try:
+        return attempt.content_type
+    except Exception as error:  # noqa: BLE001
+        raise _failed(context, error) from None
+
+
+def _declarations(body: BodyFactory | AsyncBodyFactory) -> tuple[int | None, bytes | None]:
+    try:
+        return body.content_length, body.fingerprint
+    except Exception as error:  # noqa: BLE001
+        raise BodyFactoryError(cause=error) from None
+
+
+def _current_fingerprint(body: BodyFactory | AsyncBodyFactory, context: BodyAttemptContext) -> bytes | None:
+    try:
+        return body.fingerprint
+    except Exception as error:  # noqa: BLE001
+        raise _failed(context, error) from None
+
+
+def _factory_failure(context: BodyAttemptContext, error: BaseException) -> BaseException:
+    return _failed(context, error) if isinstance(error, Exception) and not isinstance(error, SDKError) else error
+
+
+def body_secondary(error: BaseException, failure: BaseException) -> None:
+    """Keep the first native interruption, otherwise retain cleanup beside the body failure."""
+    if isinstance(error, Exception) and not isinstance(failure, Exception):
+        raise failure from None
+    add_secondary(error, failure)
+
+
+def _fingerprint(actual: bytes | None, expected: bytes | None) -> None:
+    if actual != expected:
+        raise BodyChangedError(source_kind="factory", check="fingerprint")
+
+
+def bind_input(body: FileBody | StreamBody) -> _FileCall | _PathCall | _StreamCall:
+    """Claim one known synchronous input for the private call executor."""
+    return body._bind()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+async def bind_async_input(body: AsyncFileBody | AsyncStreamBody) -> _AsyncFileCall | _AsyncPathCall | _AsyncStreamCall:
+    """Claim one known async input and settle any disk preparation."""
+    return await body._bind() if isinstance(body, AsyncFileBody) else body._bind()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+def bind_factory(body: BodyFactory, history: dict[int, BodyAttempt]) -> _FactoryCall:
+    """Bind a synchronous factory to the call's raw-attempt identity ledger."""
+    return body._bind(history)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+def bind_async_factory(
+    body: AsyncBodyFactory, history: dict[int, AsyncBodyAttempt], cleanup: AsyncBodyCleanup
+) -> _AsyncFactoryCall:
+    """Bind an async factory to the call's raw-attempt identity ledger."""
+    return body._bind(history, cleanup)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
 SyncBinaryBody: TypeAlias = bytes | FileBody | StreamBody | BodyFactory

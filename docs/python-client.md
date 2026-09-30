@@ -483,19 +483,19 @@ fields, a missing required field, a field of another media type, or fields for a
 
 ```text
 a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields missing a required one ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='missing') [operation_id='createPet', field_path=('media_type',), condition='missing'] configuration_error
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 1, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=True context={}
 update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
 ```
@@ -742,7 +742,7 @@ views. The following examples use a generated package named `pets` and take the 
 | `total_timeout` | `60` | Relative budget from call entry through encoding, callbacks, sending, reading, and decoding |
 | `deadline` | `None` | An absolute monotonic deadline created by `Deadline.after(seconds)` |
 | `cancel_token` | `None` | An explicit cancellation signal shared with the call |
-| `max_network_sends` | `1` | Maximum number of send slots the call may reserve |
+| `max_network_sends` | `1 + max_retries + (max_redirects if enabled)` | Maximum number of send slots the call may reserve; `3` with the fixed defaults |
 | `stream_idle_timeout` | `60` | Read inactivity limit after a streaming response is handed to the caller |
 | `stream_total_timeout` | `None` | Total stream lifetime after handoff |
 | `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
@@ -790,7 +790,9 @@ have their own two- and three-second caps. A phase is clamped to the remaining t
 `PhaseTimeoutError`, a subclass of `TransportError`, means the phase's own cap expired. It carries `phase`,
 `effective_timeout`, `delivery_state`, and the native timeout in `cause`. A cap supplied by the total deadline instead
 raises `DeadlineExceededError`; equal caps favor the deadline. That error is separate from `TransportError` and carries
-`deadline_at`, `elapsed`, `delivery_state`, and the interrupted activity in `phase`. Neither timeout causes a retry.
+`deadline_at`, `elapsed`, `delivery_state`, and the interrupted activity in `phase`. Logical deadlines never retry.
+Phase timeouts can be candidates under the safety, replay, and budget rules below; pool timeouts are excluded unless
+`retry_on_pool_timeout=True` is explicit.
 
 Synchronous total deadlines are cooperative: the client checks them around callbacks and encoding/decoding, and at
 SDK send and chunk boundaries. A blocking callback, DNS resolution, or native socket operation can return after the
@@ -937,9 +939,9 @@ failures before sending do not increment the attempt count. A reserved send slot
 `ResponseInfo`, terminal call events, and `SDKError` expose snapshots of these counters, together with
 `redirect_count`, `auth_exchange_count`, `auth_exchange_budget_used`, `auth_refresh_ids`, and `auth_refresh_pending`.
 Errors expose counters even when no response arrived: their `info` remains `None` in that case. The readonly
-`wire_send_count` field on errors is currently `None`; adapter invocations do not prove the number of wire sends
-inside an injected transport. `BudgetExceededError` identifies the exhausted `budget_kind`, its `limit`, and its
-`used` slots.
+`wire_send_count` field on errors and `ResponseInfo` is `None` when the adapter cannot prove wire sends. The
+SDK-owned native adapter supplies this evidence; an injected transport's send invocations alone do not prove its
+internal wire count. `BudgetExceededError` identifies the exhausted `budget_kind`, its `limit`, and its `used` slots.
 
 Closing a client changes it to `CLOSING` immediately. New work is refused, and active calls or stream reads raise
 `ClientClosedError` when the SDK observes closing. A view's close affects that view; closing the owning client
@@ -955,3 +957,250 @@ has the same cooperative limits as other sync callbacks.
 Cancelling an async file upload can return before its current disk operation finishes. The SDK retains that work,
 keeps an open-file input claimed until it settles, and closes an owned handle once. Borrowed handles remain open.
 `aclose()` includes this pending work in its cleanup wait.
+
+## Retries and operation contracts
+
+`RetryOptions` applies on clients, views, and calls. Its fields merge independently; omitted fields inherit, while a
+status set replaces the inherited set. `retry=None` is invalid. Automatic retries require a candidate failure or
+status, operation safety, replayable input, and enough time and send slots. JSON/model decoding, arbitrary callbacks,
+body-factory programming errors, cancellation, and logical deadlines never restart a request.
+
+| Field | Effective default | Meaning |
+|---|---|---|
+| `max_retries` | `2` | Retries after the initial attempt; `0` disables retries |
+| `initial_delay`, `max_delay` | `0.5`, `8` seconds | Exponential backoff, with maximum at least the initial delay |
+| `jitter` | `"full"` | Uniform delay below the exponential cap; `"none"` uses the cap |
+| `statuses` | `{408, 429, 500, 502, 503, 504}` | Replace with an integer set in 400–599; 401/403/407 are forbidden |
+| `max_retry_after` | `60` seconds | Positive cap on accepted server delay; `None` removes this cap |
+| `respect_retry_after` | `True` | Explicit `False` ignores server delay hints |
+| `retry_after_ms_header`, `should_retry_header` | Operation declaration, otherwise `None` | Vendor controls require generated metadata; explicit `None` disables one |
+| `retry_on_pool_timeout` | `False` | Avoid amplifying pool contention unless explicitly enabled |
+
+GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default. POST, PATCH, and other methods require an explicit
+`retry_safety="idempotent"` declaration or a valid server key contract. Proven unsent connection failures from the
+SDK-owned native transport can permit otherwise unsafe methods; a custom adapter's reported `NOT_SENT` alone
+cannot establish that proof. `retry_safety="never"` prohibits every resend, including a proven unsent request.
+TLS/certificate and configuration errors, permanent DNS failures, and unclassified failures are not candidates.
+
+A server delay is a minimum: the client never shortens it to fit `max_retry_after` or the remaining deadline. A
+valid server veto prevents a retry. Without a valid hint, bounded exponential backoff applies. Retry waits consume the
+same logical budget as sending and decoding. `RetryOptions(respect_retry_after=False)` is an explicit application
+policy override, disclosed in every generated README; it is never silently embedded in generated defaults.
+
+```python
+from pets import Client
+from pets.options import RedirectOptions, RequestOptions, RetryOptions
+
+
+def fetch_with_retries(client: Client, url: str) -> bytes:
+    options = RequestOptions(
+        retry=RetryOptions(max_retries=2, max_retry_after=20),
+        redirects=RedirectOptions(enabled=True, max_redirects=2),
+        total_timeout=30,
+    )
+    return client.request_raw("GET", url, options=options).read()
+```
+
+Buffered and streaming raw APIs return the final HTTP response when status retries end, including non-2xx statuses.
+Transport, policy, deadline, cancellation, and budget failures still raise. A hook failure, or a response that cannot
+be released within `cleanup_timeout`, stops a planned retry after its response was discarded: the call then raises
+that response's status error with `retry_stop_reason="callback_failure"` and the failure among its secondary errors. Typed operations retain final response
+metadata in their operation error. A streaming response can retry during acquisition; after handoff, body failures
+terminate that stream and never issue another request.
+
+### Declare API guarantees during generation
+
+The generator entrypoint remains internal during development. This example uses the current internal generator;
+there is no released client CLI or public client-generator facade yet. It assumes `api.yaml` declares
+`POST /orders` and generates its model package alongside the client.
+
+```python
+from pathlib import Path
+
+from datamodel_code_generator import GenerateConfig, OpenAPIScope
+from datamodel_code_generator._api_generation import generate_target
+from datamodel_code_generator._client.config import (
+    ClientGenerationConfig,
+    ClientOperationConfig,
+    IdempotencyMetadata,
+    RuntimeOperationMetadata,
+)
+from datamodel_code_generator._client.target import ClientTarget
+from datamodel_code_generator.format import Formatter
+
+
+generate_target(
+    Path("api.yaml"),
+    model_config=GenerateConfig(
+        output=Path("build/order_models.py"),
+        input_file_type="openapi",
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
+        formatters=[Formatter.BUILTIN],
+    ),
+    config=ClientGenerationConfig(
+        output=Path("build/orders"),
+        package="orders",
+        model_package="order_models",
+        operations=(
+            ClientOperationConfig(
+                ref="/paths/~1orders/post",
+                runtime=RuntimeOperationMetadata(
+                    idempotency=IdempotencyMetadata(
+                        header_name="Idempotency-Key",
+                        replay_safe_with_key=True,
+                        retention_seconds=86400,
+                        scope="orders-v1",
+                    ),
+                    retry_after_ms_header="X-Retry-In-Ms",
+                    should_retry_header="X-Retry-Permitted",
+                ),
+            ),
+        ),
+    ),
+    generator=ClientTarget(),
+)
+```
+
+The corresponding flat target-file entry is:
+
+```toml
+[[operations]]
+ref = "/paths/~1orders/post"
+
+[operations.runtime]
+retry_safety = "method_default"
+retry_after_ms_header = "X-Retry-In-Ms"
+should_retry_header = "X-Retry-Permitted"
+
+[operations.runtime.idempotency]
+header_name = "Idempotency-Key"
+replay_safe_with_key = true
+retention_seconds = 86400
+scope = "orders-v1"
+```
+
+All four idempotency fields are required. Retention must be positive and finite; booleans are not numbers. Scope is a
+nonsecret opaque identifier containing non-whitespace text. The key header must be an HTTP token and cannot share
+an outgoing position with an effective parameter or authentication header. The two response control headers must
+have distinct names. Header comparisons ignore ASCII case; outgoing and incoming positions are independent.
+Unknown TOML keys receive `E_CONFIG_UNKNOWN`; malformed values receive `E_CONFIG_VALUE`, and ownership conflicts
+receive `E_CONFIG_CONFLICT`. The generated README lists only the finalized selected operations and their contracts.
+
+### Supply and retain an idempotency key
+
+`IdempotencyMetadata` describes the API's guarantee. The generated package's `IdempotencyKey` supplies a call's key:
+`IdempotencyKey("saved-value", first_used_at=aware_datetime)` or `IdempotencyKey.new()`. The latter creates a UUID4 and
+records the current UTC time. The value is omitted from its representation. A known timestamp must be timezone-aware.
+A value without a known prior-use time may be sent but cannot justify an unsafe retry; an expired key also cannot.
+
+With `idempotency_key=UNSET`, the client creates one key only for an operation with an idempotency declaration.
+`idempotency_key=None` disables automatic creation. A caller key on a client/view is conditional on the operation's
+declaration; an explicit non-None call value on an undeclared operation or `request_raw` fails before sending. The
+same call retains one key, origin, and scope throughout retries; expiry never causes automatic key replacement.
+A `replay_safe_with_key=False` declaration allows the header without promising that it makes an unsafe resend safe.
+The contract does not guarantee exactly-once business execution.
+
+Keys must be nonempty, UTF-8-encodable strings. ASCII control characters are rejected except for interior tabs;
+leading or trailing ASCII spaces and tabs are also rejected. Interior spaces, tabs, and valid Unicode are preserved
+without trimming or normalization. Invalid keys raise `ConfigurationError` when constructed, before any send.
+
+```python
+from datetime import datetime
+
+from pets import Client
+from pets.options import IdempotencyKey, RequestOptions
+
+
+def keyed_view(client: Client, value: str, first_used_at: datetime) -> Client:
+    key = IdempotencyKey(value, first_used_at=first_used_at)
+    return client.with_options(RequestOptions(idempotency_key=key))
+```
+
+Use the returned view in a `with` block and call an operation with the matching declaration. Supply the persisted
+first-use time, not the time of the newest retry. An attached key whose retention has expired stops replay even for
+a normally safe method.
+
+## Body replay and resource ownership
+
+Immutable bytes and JSON encoding results are retained and reused without rerunning serialization for each attempt.
+The JSON encoding allocation scales with the call's input size independently of response-byte limits. Multipart
+fixes its boundary once per logical call and can replay only if every part can replay.
+
+`FileBody(file)` records the current offset at call entry and seeks back there for each attempt when possible.
+Borrowed files stay open and their final position is not restored. Concurrent reads of one borrowed file by different
+calls are rejected. `FileBody.from_path(path)` and `AsyncFileBody.from_path(path)` reopen for each attempt and compare
+device, inode, size, and modification time; identical stat data does not guarantee identical bytes. The caller must
+keep input immutable. Explicit async file adapters own one worker with at most one disk chunk in flight; their
+caller closes them when borrowed. File and multipart reads use chunks of at most 64 KiB.
+
+```python
+from pathlib import Path
+
+from pets import Client
+from pets.bodies import FileBody
+from pets.options import RequestOptions, RetryOptions
+
+
+def upload_file(client: Client, url: str, path: Path) -> bytes:
+    response = client.request_raw(
+        "PUT", url, body=FileBody.from_path(path), options=RequestOptions(retry=RetryOptions(max_retries=2))
+    )
+    return response.read()
+```
+
+`StreamBody` and `AsyncStreamBody` are one-shot. After consumption they cannot replay, and the SDK does not buffer or
+spool them to create replayability. Owned iterators are closed; borrowed iterators remain caller-owned.
+
+`BodyFactory` and `AsyncBodyFactory` must return a fresh `BodyAttempt` or `AsyncBodyAttempt` with the same payload for
+every invocation. Each returned attempt is SDK-owned and closes on success, failure, or interruption. A factory is
+responsible for freshness across all calls: the detection ledger covers a logical call and an immediate cross-call
+guard, rather than indefinite object history. Length/fingerprint/stat checks detect available evidence of changes
+without buffering the whole payload; a detected change raises `BodyChangedError`. Factory callback failures do not
+retry. An already-used attempt raises `BodyNotReplayableError`.
+
+## Redirects and transport construction
+
+Redirects are disabled by default. `RedirectOptions` merges per field, with `enabled=False`, `max_redirects=5`,
+`allow_303_to_get=False`, `allowed_origins=()`, and `allow_https_downgrade=False`. An empty origin allowlist permits
+only the original origin. An allowed destination and permission to downgrade HTTPS are separate conditions.
+
+301/302 follow only GET/HEAD. 303 changes to GET for GET/HEAD or explicit `allow_303_to_get=True`; it removes the body
+and content/framing headers, including Content-Encoding. 307/308 retain the method/body and require replayability
+and operation safety. Every hop consumes a send slot and the same call deadline. Credentials and cookies from the
+original request are stripped across origins. Repeated method/URL loops, invalid or multiple Location values,
+forbidden destinations, exhausted redirect limits, or unsafe replay raise `RedirectPolicyError`. It directly
+inherits `SDKError` and exposes readonly `delivery_state`, `body_available=False`, and available response metadata.
+Native failure while constructing a redirect also raises this error if no response handle can be returned.
+
+A HEAD operation also follows a 303 as GET, regardless of `allow_303_to_get`. Its typed return contract remains
+bodyless: ordinary and `with_response` calls return `None` data for an empty final body and raise
+`BodyProtocolError(condition="forbidden_body")` if the GET returns content. Use `with_raw_response` or
+`with_streaming_response` to access that final GET body without typed decoding.
+
+`TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
+`verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=False`, `http2=False`, `max_connections=100`,
+`max_keepalive_connections=20`, `keepalive_expiry=5`, and `retry_owner="sdk"`. Supplying an SSLContext uses its CA,
+verification, and client certificate settings and rejects any explicit `verify` override. Proxy/environment/TLS
+choices are explicit. HTTP/2 is opt-in and requires its optional dependency.
+
+```python
+from ssl import create_default_context
+
+from pets import Client
+from pets.options import ClientOptions, TransportOptions
+
+
+def configured_client(ca_file: str) -> Client:
+    context = create_default_context(cafile=ca_file)
+    transport = TransportOptions(ssl_context=context, max_connections=50, max_keepalive_connections=10)
+    return Client(options=ClientOptions(transport=transport))
+```
+
+Use the returned client in a `with` block. The supplied CA bundle controls TLS verification; this example leaves
+verification enabled and does not inherit proxy configuration from the environment.
+
+An injected native client's pool/proxy/TLS settings remain its own, and incompatible SDK construction settings are
+rejected. Borrowed clients and adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
+The default native transport has no internal retries. `retry_owner="transport"` requires an explicitly injected
+adapter with the internal retry-count, deadline, and body-safety contract and disables SDK retry decisions.
+`network_send_count` still counts adapter invocations; only trusted evidence permits a non-None `wire_send_count`.

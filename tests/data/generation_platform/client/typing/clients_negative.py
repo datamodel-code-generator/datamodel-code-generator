@@ -12,12 +12,24 @@ from pets.errors import (
     DeliveryState,
     LimiterExecutionError,
     PhaseTimeoutError,
+    RedirectPolicyError,
     RequestCancelledError,
     SDKError,
 )
 from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permit
-from pets.options import CancelToken, ClientOptions, Deadline, RequestOptions, TimeoutOptions, ValidationOptions
-from pets.responses import RawResponse
+from pets.options import (
+    CancelToken,
+    ClientOptions,
+    Deadline,
+    IdempotencyKey,
+    RedirectOptions,
+    RequestOptions,
+    RetryOptions,
+    TimeoutOptions,
+    TransportOptions,
+    ValidationOptions,
+)
+from pets.responses import RawResponse, ResponseInfo
 from pets.transports import OwnedTransportAdapter
 from pets.types.pets import (
     AttachFilesRequestCodecs,
@@ -164,3 +176,38 @@ def misuse_deadline_errors(error: SDKError) -> None:
     SDKError(network_send_count="one")  # error
     error.network_send_count = 0  # error
     error.wire_send_count = 0  # error
+
+
+def misuse_retry_options(key: IdempotencyKey, info: ResponseInfo, error: RedirectPolicyError) -> None:
+    RetryOptions(max_retries=None)  # error
+    RetryOptions(jitter="equal")  # error
+    RetryOptions(statuses=[429, 503])  # error
+    RetryOptions(respect_retry_after=None)  # error
+    RetryOptions(retry_after_ms_header=42)  # error
+    RedirectOptions(enabled=None)  # error
+    RedirectOptions(allowed_origins=["https://example.com"])  # error
+    RequestOptions(retry=None)  # error
+    RequestOptions(redirects=None)  # error
+    RequestOptions(idempotency_key="opaque")  # error
+    RequestOptions(transport=TransportOptions())  # error
+    ClientOptions(transport=None)  # error
+    TransportOptions(verify="strict")  # error
+    TransportOptions(retry_owner="native")  # error
+    IdempotencyKey()  # error
+    IdempotencyKey("opaque", None)  # error
+    IdempotencyKey("opaque", first_used_at="2026-09-28")  # error
+    key.value = "changed"  # error
+    key.first_used_at = None  # error
+    ResponseInfo(
+        status_code=200,
+        headers=info.headers,
+        call_id=info.call_id,
+        elapsed=0,
+        content_type=None,
+        wire_send_count="one",  # error
+    )
+    info.wire_send_count = 1  # error
+    RedirectPolicyError()  # error
+    RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, body_available=True)  # error
+    error.body_available = False  # error
+    error.delivery_state = DeliveryState.NOT_SENT  # error

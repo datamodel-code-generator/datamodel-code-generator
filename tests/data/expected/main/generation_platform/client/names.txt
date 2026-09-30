@@ -42,6 +42,8 @@ render pydantic_v2.BaseModel
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
   namespace client helpers [] bindings 4

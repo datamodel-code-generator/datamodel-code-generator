@@ -252,5 +252,261 @@
   },
   "toml-body-field-names-unknown": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nbody_arguments = \"both\"\n\n[[operations]]\nref = \"/paths/~1pets/post\"\nbody_field_names = [{ media_type = \"application/json\", name = \"tag\", python = \"pet_tag\" }]\n"
+  },
+  "retry-values": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "retry_safety": "method_default",
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 86400,
+            "scope": "orders-v1"
+          },
+          "retry_after_ms_header": "X-Retry-In-Ms",
+          "should_retry_header": "X-Retry-Permitted"
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "retry_safety": "idempotent",
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 86400,
+            "scope": "orders-v1"
+          },
+          "retry_after_ms_header": "X-Retry-In-Ms",
+          "should_retry_header": "X-Retry-Permitted"
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "retry_safety": "never",
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": false,
+            "retention_seconds": 86400,
+            "scope": "orders-v1"
+          },
+          "retry_after_ms_header": "X-Retry-In-Ms",
+          "should_retry_header": "X-Retry-Permitted"
+        }
+      }
+    ]
+  },
+  "retry-invalid": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "retry_safety": null
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "retry_safety": "safe"
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": "header"
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "retry_after_ms_header": ""
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "should_retry_header": "bad name"
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "bad name",
+            "replay_safe_with_key": true,
+            "retention_seconds": 86400,
+            "scope": "orders-v1"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": 1,
+            "retention_seconds": 86400,
+            "scope": "orders-v1"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 0,
+            "scope": "orders-v1"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": -1,
+            "scope": "orders-v1"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": true,
+            "scope": "orders-v1"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": "60",
+            "scope": "orders-v1"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+            "scope": "orders-v1"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 86400,
+            "scope": " \t"
+          }
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 86400,
+            "scope": 1
+          }
+        }
+      }
+    ]
+  },
+  "retry-conflicting-controls": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "retry_after_ms_header": "X-Retry",
+          "should_retry_header": "x-retry"
+        }
+      }
+    ]
+  },
+  "retry-missing-field": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 86400
+          }
+        }
+      }
+    ]
+  },
+  "retry-unknown-field": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "idempotency": {
+            "header_name": "Idempotency-Key",
+            "replay_safe_with_key": true,
+            "retention_seconds": 86400,
+            "scope": "orders-v1",
+            "secret": "not-permitted"
+          }
+        }
+      }
+    ]
+  },
+  "toml-retry-values": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nretry_safety = \"idempotent\"\nretry_after_ms_header = \"X-Retry-In-Ms\"\nshould_retry_header = \"X-Retry-Permitted\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nretention_seconds = 86400\nscope = \"orders-v1\"\n"
+  },
+  "toml-retry-safety": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nretry_safety = \"safe\"\n"
+  },
+  "toml-retry-type": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nretry_safety = false\n"
+  },
+  "toml-retry-unknown": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nauth_challenge_less_401 = true\n"
+  },
+  "toml-retry-idempotency-unknown": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nretention_seconds = 86400\nscope = \"orders-v1\"\nextra = 1\n"
+  },
+  "toml-retry-idempotency-type": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\nidempotency = \"key\"\n"
+  },
+  "toml-retry-retention": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nretention_seconds = nan\nscope = \"orders-v1\"\n"
+  },
+  "toml-retry-retention-infinite": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nretention_seconds = inf\nscope = \"orders-v1\"\n"
+  },
+  "toml-retry-retention-missing": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nscope = \"orders-v1\"\n"
+  },
+  "toml-retry-header-missing": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nreplay_safe_with_key = false\nretention_seconds = 86400\nscope = \"orders-v1\"\n"
+  },
+  "toml-retry-replay-missing": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nretention_seconds = 86400\nscope = \"orders-v1\"\n"
+  },
+  "toml-retry-scope-missing": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime.idempotency]\nheader_name = \"Idempotency-Key\"\nreplay_safe_with_key = false\nretention_seconds = 86400\n"
   }
 }

@@ -1,0 +1,2 @@
+APIGenerationError
+  E_CONFIG_VALUE config operations[0].runtime.idempotency.replay_safe_with_key: operations[0].runtime.idempotency.replay_safe_with_key must be a boolean

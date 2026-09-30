@@ -23,6 +23,8 @@ render pydantic_v2.BaseModel
   write client/_generated/model_bindings.py
   write client/_generated/client_checks.py
   write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
   namespace client helpers [] bindings 19
@@ -76,6 +78,8 @@ render typing.TypedDict
   write client/_generated/model_bindings.py
   write client/_generated/client_checks.py
   write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
   namespace client helpers [] bindings 19

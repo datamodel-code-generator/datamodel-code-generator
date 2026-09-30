@@ -1,0 +1,19 @@
+# pets pydantic_v2.BaseModel
+  codec omits owned input = Pet(id=1, name='encoded', tag=None)
+  omitted input released before send = [(True, 1, 1, b'encoded')]
+  source close failure typed ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', cause=RuntimeError('owned input close failed')] cleanup_error
+  source released once = (True, 1)
+  source close failure buffered ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [cause=RuntimeError('owned input close failed')] cleanup_error
+  source released once = (True, 1)
+  source close failure stream ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [cause=RuntimeError('owned input close failed')] cleanup_error
+  source released once = (True, 1)
+  ownership sends = 4
+  async codec omits owned input = Pet(id=1, name='encoded', tag=None)
+  async omitted input released before send = [(True, 1, 1, b'encoded')]
+  async source close failure typed ! CleanupError: CleanupError(operation_id='uploadPhoto', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='uploadPhoto', cause=RuntimeError('owned input close failed')] cleanup_error
+  async source released once = (True, 1)
+  async source close failure buffered ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [cause=RuntimeError('owned input close failed')] cleanup_error
+  async source released once = (True, 1)
+  async source close failure stream ! CleanupError: CleanupError(call_id='<call>', pending_calls=0, pending_leases=0) [cause=RuntimeError('owned input close failed')] cleanup_error
+  async source released once = (True, 1)
+  async ownership sends = 4

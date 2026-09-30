@@ -962,6 +962,7 @@ class _Finisher:
         bundled = _bundled_models(self.root, (self.cwd / output.expanduser()).resolve(), config.model_package)
         included = (self.layout.package.as_posix(), *(() if bundled is None else (bundled.as_posix(),)))
         readme = ("README.md",) if any(file.path == _README for file in rendered.files) else ()
+        documentation = tuple(file.path.as_posix() for file in rendered.files if file.kind == "documentation")
         return "\n".join((
             "[build-system]",
             'requires = ["hatchling>=1.27"]',
@@ -979,7 +980,7 @@ class _Finisher:
             'sources = ["src"]',
             "",
             "[tool.hatch.build.targets.sdist]",
-            f"only-include = {_toml_array((*included, *readme, 'pyproject.toml'))}",
+            f"only-include = {_toml_array((*included, *readme, *documentation, 'pyproject.toml'))}",
         ))
 
     def layout_files(self, rendered: TargetRender) -> tuple[RenderedFile, ...]:

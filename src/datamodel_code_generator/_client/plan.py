@@ -25,6 +25,7 @@ from datamodel_code_generator._client.naming import (
 )
 from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._generation_contract import (
+    LiteralMapping,
     LiteralScalar,
     LiteralSequence,
     SourceLocation,
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
         BodyFieldName,
         ClientGenerationConfig,
         ClientOperationConfig,
+        IdempotencyMetadata,
     )
     from datamodel_code_generator._generation_contract import (
         FinalPythonType,
@@ -220,6 +222,10 @@ class OperationSpec:
     body_arguments: BodyArguments = "body"
     body_field_names: tuple[BodyFieldName, ...] = ()
     fields: tuple[FieldBranch, ...] = ()
+    retry_safety: Literal["method_default", "idempotent", "never"] = "method_default"
+    idempotency: IdempotencyMetadata | None = None
+    retry_after_ms_header: str | None = None
+    should_retry_header: str | None = None
 
     @property
     def head(self) -> bool:
@@ -394,6 +400,8 @@ class Planner:
         parameters = self.parameters(operation, setting)
         body = None if operation.request_body is None else self.body(operation, operation.request_body, setting)
         runtime = None if setting is None else setting.runtime
+        if setting is not None and setting.runtime.idempotency is not None:
+            self._idempotency_header(operation, setting, parameters)
         success_statuses = () if runtime is None else runtime.success_statuses
         responses = tuple(
             self.response(operation, declaration, success_statuses) for declaration in operation.responses
@@ -424,7 +432,52 @@ class Planner:
             description=None if setting is None else setting.description,
             body_arguments=(None if setting is None else setting.body_arguments) or self.config.body_arguments,
             body_field_names=() if setting is None else setting.body_field_names,
+            retry_safety="method_default" if runtime is None else runtime.retry_safety,
+            idempotency=None if runtime is None else runtime.idempotency,
+            retry_after_ms_header=None if runtime is None else runtime.retry_after_ms_header,
+            should_retry_header=None if runtime is None else runtime.should_retry_header,
         )
+
+    def _idempotency_header(
+        self, operation: OperationContract, setting: ClientOperationConfig, parameters: tuple[ParameterSpec, ...]
+    ) -> None:
+        """Reject ownership shared by the key contract and an effective request header or security scheme."""
+        metadata = setting.runtime.idempotency
+        assert metadata is not None
+        owners = {item.wire_name.lower() for item in parameters if item.location == "header"}
+        requirements = {
+            str(key.value)
+            for name, value in operation.facts
+            if name == "security" and isinstance(value, LiteralSequence)
+            for requirement in value.items
+            if isinstance(requirement, LiteralMapping)
+            for key, _ in requirement.entries
+            if isinstance(key, LiteralScalar)
+        }
+        document = (
+            operation.declaration.location.document if operation.security_declared else operation.id.use_site.document
+        )
+        for scheme in self.request.batch.security_schemes:
+            if scheme.use_site.document != document or scheme.name not in requirements:
+                continue
+            kind = fact(scheme, "type")
+            if kind == "apiKey" and fact(scheme, "in") == "header":
+                owners.add(str(fact(scheme, "name")).lower())
+            elif kind in {"http", "oauth2", "openIdConnect"}:
+                owners.add("authorization")
+        if metadata.header_name.lower() in owners:
+            index = self.config.operations.index(setting)
+            message = (
+                f"The idempotency header {metadata.header_name!r} of {_label(operation)} already has a request owner"
+            )
+            self.problems.append(
+                _problem(
+                    "E_CONFIG_CONFLICT",
+                    message,
+                    operation.id.use_site,
+                    f"operations[{index}].runtime.idempotency.header_name",
+                )
+            )
 
     def resource(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
         """Return the operation's resource namespace: explicit, its first tag's mapped or snake name, or default."""
