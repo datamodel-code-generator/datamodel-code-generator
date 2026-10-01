@@ -66,7 +66,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Thing',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing',
         fields=(
             FieldBinding(
                 field_id='models:Thing.name',

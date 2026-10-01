@@ -589,7 +589,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Cat',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Cat',
         fields=(
             FieldBinding(
                 field_id='models:Cat.kind',
@@ -612,7 +612,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Discriminated',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Discriminated',
         fields=(
             FieldBinding(
                 field_id='models:Discriminated.pet',
@@ -635,7 +635,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Dog',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Dog',
         fields=(
             FieldBinding(
                 field_id='models:Dog.kind',
@@ -658,7 +658,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Wide',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Wide',
         fields=(
             FieldBinding(
                 field_id='models:Wide.big',
@@ -681,7 +681,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:Described',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Described',
         fields=(
             FieldBinding(
                 field_id='models:Described.name',
@@ -701,7 +701,12 @@ def _model_4() -> ModelBinding:
 
 @cache
 def _model_5() -> ModelBinding:
-    return ModelBinding(symbol='models:Name', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:Name',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Name',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -709,7 +714,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:Patterned',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Patterned',
         fields=(
             FieldBinding(
                 field_id='models:Patterned.code',
@@ -732,7 +737,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:Bounded',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Bounded',
         fields=(
             FieldBinding(
                 field_id='models:Bounded.name',
@@ -755,7 +760,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:MaybeInner',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/MaybeInner',
         fields=(
             FieldBinding(
                 field_id='models:MaybeInner.a',
@@ -778,7 +783,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:Wrapper',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Wrapper',
         fields=(
             FieldBinding(
                 field_id='models:Wrapper.inner',
@@ -801,7 +806,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:Extended',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Extended',
         fields=(
             FieldBinding(
                 field_id='models:Extended.a',
@@ -836,7 +841,7 @@ def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:Defaulted',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Defaulted',
         fields=(
             FieldBinding(
                 field_id='models:Defaulted.a',
@@ -859,7 +864,7 @@ def _model_12() -> ModelBinding:
     return ModelBinding(
         symbol='models:Listed',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Listed',
         fields=(
             FieldBinding(
                 field_id='models:Listed.items',
@@ -894,7 +899,7 @@ def _model_13() -> ModelBinding:
     return ModelBinding(
         symbol='models:Mapped',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Mapped',
         fields=(
             FieldBinding(
                 field_id='models:Mapped.counts',
@@ -917,7 +922,7 @@ def _model_14() -> ModelBinding:
     return ModelBinding(
         symbol='models:Opaque',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Opaque',
         fields=(
             FieldBinding(
                 field_id='models:Opaque.mail',
@@ -940,7 +945,7 @@ def _model_15() -> ModelBinding:
     return ModelBinding(
         symbol='models:Anything',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Anything',
         fields=(
             FieldBinding(
                 field_id='models:Anything.value',
@@ -975,7 +980,7 @@ def _model_16() -> ModelBinding:
     return ModelBinding(
         symbol='models:Stamped',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Stamped',
         fields=(
             FieldBinding(
                 field_id='models:Stamped.at',
@@ -1022,7 +1027,7 @@ def _model_17() -> ModelBinding:
     return ModelBinding(
         symbol='models:Extra',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Extra',
         fields=(
             FieldBinding(
                 field_id='models:Extra.a',
@@ -1046,7 +1051,7 @@ def _model_18() -> ModelBinding:
     return ModelBinding(
         symbol='models:Nested',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Nested',
         fields=(
             FieldBinding(
                 field_id='models:Nested.grid',
@@ -1081,7 +1086,7 @@ def _model_19() -> ModelBinding:
     return ModelBinding(
         symbol='models:Box',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Box',
         fields=(
             FieldBinding(
                 field_id='models:Box.label',
@@ -1125,7 +1130,12 @@ def _model_19() -> ModelBinding:
 
 @cache
 def _model_20() -> ModelBinding:
-    return ModelBinding(symbol='models:Label', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:Label',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Label',
+        root=LeafNode(),
+    )
 
 
 CONTEXT_0: Final = CodecContext(

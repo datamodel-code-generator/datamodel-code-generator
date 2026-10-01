@@ -193,7 +193,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='adapted.models:Cat',
         native_kind='model',
-        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pets/oneOf/0',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Cat',
         fields=(
             FieldBinding(
                 field_id='adapted.models:Cat.kind',
@@ -216,7 +216,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='adapted.models:Dog',
         native_kind='model',
-        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pets/oneOf/1',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Dog',
         fields=(
             FieldBinding(
                 field_id='adapted.models:Dog.kind',

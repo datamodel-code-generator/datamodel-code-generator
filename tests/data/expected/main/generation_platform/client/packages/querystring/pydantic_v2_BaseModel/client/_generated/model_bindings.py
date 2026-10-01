@@ -119,7 +119,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchGetQuerystringCriteriaParameter',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldSearchGetQuerystringCriteriaParameter.term',
@@ -154,7 +154,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=LeafNode()),
     )
 
@@ -164,7 +164,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchGetResponse200XNextHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/responses/200/headers/X-Next/schema',
         root=LeafNode(),
     )
 
@@ -174,7 +174,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLookupGetQuerystringFilterParameter',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1lookup/get/parameters/0/content/application~1json/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldLookupGetQuerystringFilterParameter.term',
@@ -209,7 +209,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLookupGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1lookup/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=LeafNode()),
     )
 

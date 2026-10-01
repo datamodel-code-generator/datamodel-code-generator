@@ -172,7 +172,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='variants_modular_basemodel_models.name:Name',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Name',
         root=LeafNode(),
     )
 
@@ -182,7 +182,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='variants_modular_basemodel_models.owner:Owner',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/documents/0#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='variants_modular_basemodel_models.owner:Owner.name',
@@ -217,7 +217,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='variants_modular_basemodel_models.pet:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='variants_modular_basemodel_models.pet:Pet.id',
@@ -276,7 +276,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='variants_modular_basemodel_models.field_owners_get_response:FieldOwnersGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1owners/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='variants_modular_basemodel_models.owner:Owner')),
     )
 
