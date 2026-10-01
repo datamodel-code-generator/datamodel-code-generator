@@ -30,7 +30,7 @@ DIALECT = "https://json-schema.org/draft/2020-12/schema"
 JSON_COOKIE = ParameterCodecCapabilities(
     locations=("cookie",),
     styles=("form",),
-    explode_values=(False,),
+    explode_values=(True,),
     value_kinds=("array",),
     supports_empty_containers=True,
 )
@@ -43,7 +43,7 @@ NAMES = CodecCapabilities(backends=("pydantic_v2.BaseModel",), native_kinds=("ar
 SCRIPTED = {
     **{
         location: ParameterCodecCapabilities(
-            locations=(location,), styles=(style,), explode_values=(False,), value_kinds=("object",)
+            locations=(location,), styles=(style,), explode_values=(location == "cookie",), value_kinds=("object",)
         )
         for location, style in (("path", "simple"), ("query", "form"), ("header", "simple"), ("cookie", "form"))
     },

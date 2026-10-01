@@ -29,7 +29,7 @@ from datamodel_code_generator._target_config import load_target_config
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_protocol_records import RECORDS
-from tests.data.python.model_codec_adapters import declaration
+from tests.data.python.codec_declarations import declaration
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"

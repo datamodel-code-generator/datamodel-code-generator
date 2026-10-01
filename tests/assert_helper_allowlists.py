@@ -49,16 +49,6 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
     ),
 }
 FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "model-codec-e2e": (
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._codec_declarations",
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._generation_contract",
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._openapi_codec_plan",
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._openapi_codec_render",
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._openapi_wire_plan",
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._runtime.model_codecs",
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._runtime.model_codecs.media",
-        "private-import:tests/data/python/model_codec_adapters.py::datamodel_code_generator._runtime.model_codecs.wire",
-    ),
     "binding-e2e": (
         "normal-path-mock:tests/data/python/binding_failure_inputs.py::failed_module_capture",
         "normal-path-mock:tests/data/python/binding_final_failures.py::final_type_failure",
@@ -230,7 +220,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     ),
     "disguised-asserts": (
         "disguised-assert:tests/data/python/generation_session_inputs.py::session_cleanup_failures.exercise",
-        "disguised-assert:tests/data/python/model_codec_adapters.py::_use_keys",
         "disguised-assert:tests/data/python/target_generation.py::_Scenario.current",
         "disguised-assert:tests/data/python/target_generation.py::_Scenario.generate",
         "disguised-assert:tests/data/python/target_generation.py::_Scenario.relocate",

@@ -1,4 +1,4 @@
-"""Register codec adapters, render generated model bindings, and run them from an imported generated package."""
+"""Generate servers and clients with registered codec adapters, and run cases through their imported bindings."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
     ],
 )
 def test_codec_adapters(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Select, check, render, and run registered adapters with the core's direction and boundary rules."""
+    """Select, render, and run registered adapters under the core's direction and boundary rules, or refuse them."""
     assert_output(
         adapter_codec_report(ADAPTERS / f"{source}.yaml", ADAPTERS / f"{cases}.json", tmp_path, monkeypatch),
         EXPECTED / f"{cases}.txt",

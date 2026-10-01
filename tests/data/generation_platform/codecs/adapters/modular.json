@@ -1,8 +1,9 @@
 {
+  "modular": true,
   "bindings": true,
   "declarations": {
     "exports": [
-      {"schema": {"pointer": "/components/schemas/owners.Owner"}, "module": "adapted.models.owners", "symbol": "Owner"}
+      {"schema": {"pointer": "/components/schemas/owners.Owner"}, "module": "adapted_models.owners", "symbol": "Owner"}
     ]
   },
   "cases": [

@@ -3,10 +3,6 @@
   "base_class": "app.bases.Base"
  },
  "bindings": true,
- "sources": {
-  "adapted.exports": "from adapted.models import Pet\n\nPetAlias = Pet\n",
-  "adapted.dynamic": "exec('Tags = list')\n"
- },
  "declarations": {
   "compatibility": [
    {
@@ -38,7 +34,7 @@
     "schema": {
      "pointer": "/components/schemas/Keeper"
     },
-    "module": "adapted.models",
+    "module": "adapted_models",
     "symbol": "Keeper"
    },
    {
@@ -61,7 +57,7 @@
     "schema": {
      "pointer": "/components/schemas/Missing"
     },
-    "module": "adapted.models",
+    "module": "adapted_models",
     "symbol": "Missing"
    },
    {
@@ -90,7 +86,7 @@
     "schema": {
      "pointer": "/components/schemas/Pet"
     },
-    "module": "adapted.models",
+    "module": "adapted_models",
     "symbol": "models.Pet"
    }
   ],
